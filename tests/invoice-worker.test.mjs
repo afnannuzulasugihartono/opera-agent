@@ -109,7 +109,7 @@ test('the refresh form is forwarded whole, and its redirect comes back to the pa
 test('a redirect written as a path is rewritten too, because the function only knows its own address', async () => {
   reset(() => new Response(null, {
     status: 303,
-    headers: { location: '/functions/v1/opera-agent-billing?invoice_id=Uji%20Sandbox%3A2027-09&token=tok-1234&refresh=failed' }
+    headers: { location: '/opera-agent-billing?invoice_id=Uji%20Sandbox%3A2027-09&token=tok-1234&refresh=failed' }
   }));
 
   const response = await worker.fetch(new Request(PAGE, {

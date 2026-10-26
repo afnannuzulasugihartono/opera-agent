@@ -30,6 +30,7 @@ import {
   priceFor,
   providerAmount,
   providerOrderId,
+  providerSaysMissing,
   providerSettlement,
   snapChargeRequest,
   snapExpireRequest,
@@ -179,6 +180,24 @@ test('the status of an order is asked on the host the stated environment names',
   const production = snapStatusRequest({ orderId: 'oa-1', serverKey: 'k', environment: 'production' });
   assert.equal(production.url, 'https://api.midtrans.com/v2/oa-1/status');
   assert.equal(snapStatusRequest({ orderId: '', serverKey: 'k' }), null, 'without an order there is nothing to ask about');
+});
+
+// WHY A MISSING TRANSACTION IS READ FROM THE BODY AND NOT THE HTTP STATUS.
+// Midtrans documents a 200 whose body carries status_code 404 and "Transaction doesn't exist.", and the live attempt on 2026-10-26 answered exactly that while its payment page still showed a pending QRIS.
+// A retry that read only the HTTP status refused to close an attempt that was not there, so the customer could never get a second link.
+// The rule is a helper because the call site that uses it runs where no Node test can follow.
+
+test('a transaction the provider says does not exist is read from the body, where the 404 hides', () => {
+  assert.equal(providerSaysMissing({ status_code: '404', status_message: "Transaction doesn't exist." }), true);
+  assert.equal(providerSaysMissing({ status_code: 404 }), true, 'the code means the same as a string or a number');
+  assert.equal(providerSaysMissing({ status_code: '201', transaction_status: 'pending' }), false);
+  assert.equal(providerSaysMissing({ status_code: '401', status_message: 'Access denied' }), false, 'a refused key is not a missing transaction');
+  assert.equal(providerSaysMissing(null), false);
+
+  const fn = fs.readFileSync(new URL('../supabase/functions/opera-agent-billing/index.ts', import.meta.url), 'utf8');
+  assert.match(fn, /if \(providerSaysMissing\(payload\)\) return \{ state: "closed", status: "not found" \}/,
+    'the call site treats a missing transaction as nothing to close before it judges the status');
+  assert.match(fn, /status_code \$\{code\}/, 'a refused status names the provider code an operator needs');
 });
 
 // WHY A RETRY ASKS THE PROVIDER TO EXPIRE THE OLD ATTEMPT.

@@ -48,9 +48,13 @@ async function askFunction(request) {
 }
 
 // WHY A REDIRECT IS REWRITTEN INSTEAD OF FOLLOWED.
-// The refresh form posts here, and the function answers 303 to the address it knows: its own URL.
+// The refresh form posts here, and the function answers 303 to the address it knows: its own path.
 // Following that answer would leave the browser at the old address with a 200, so a reload would post the form again.
-// Rewriting the Location keeps the address and the method honest, and only the function's own path is rewritten, so another host cannot be turned into a link on the product's domain.
+// Rewriting the Location keeps the address and the method honest, and only the function's own answer is rewritten, so another host cannot be turned into a link on the product's domain.
+
+// WHY THE PATH THE FUNCTION SEES IS NOT THE PATH IN THIS FILE.
+// Measured live on 2026-10-26: the same function answered a redirect to /opera-agent-billing, not to /functions/v1/opera-agent-billing, because the gateway strips the prefix before the function reads its own URL.
+// So the rule is the shape of the answer, not a path this file guessed: a root-relative Location belongs to the function, and an absolute one is rewritten only when its host is the function's.
 
 function pageLocation(location) {
   if (!location) return '';
@@ -61,7 +65,8 @@ function pageLocation(location) {
     return '';
   }
   const fn = new URL(FUNCTION_URL);
-  if (at.origin !== fn.origin || at.pathname !== fn.pathname) return '';
+  const ours = location.startsWith('/') || at.origin === fn.origin;
+  if (!ours) return '';
   return `${PAGE_PATH}${at.search}`;
 }
 

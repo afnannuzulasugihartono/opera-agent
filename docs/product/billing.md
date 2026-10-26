@@ -86,7 +86,7 @@ priced lines (the price list)  ->  an invoice (one per customer per month)
   the one door for both kinds of bill: pass the deliveries for a per-delivery invoice,
   or pass the same deliveries with `plan` (`plan.pilot` or `plan.firm`) for a plan
   month. There is no second path for an operator to learn.
-- `tests/billing.test.mjs` — the money rules, proved (46 tests).
+- `tests/billing.test.mjs` — the money rules, proved (47 tests).
 - `tests/invoice-page.test.mjs` — every page state, escaped and read (11 tests).
 - `tests/invoice-worker.test.mjs` — the page proxy, its relabel, its redirect, its asset
   fallback and its failure page (9 tests).
@@ -128,6 +128,11 @@ attempt two and later carry the number in the hash, so the provider accepts them
 transactions. Before a new attempt opens, the old one is put to the provider: a
 settlement closes the invoice through the same amount check as a notification, a pending
 attempt is expired, and an answer this function does not understand opens nothing.
+Midtrans hides a missing transaction inside an HTTP 200 whose body says `status_code`
+404 and "Transaction doesn't exist."; measured live on 2026-10-26 against a live pending
+QRIS, that body made a retry refuse to close an attempt that was not there. A missing
+transaction is now nothing to close, because a charge with that key cannot open a
+payable link for an order the provider does not know.
 
 The link's deadline is stored with the link and comes from one constant, the same one
 the charge request carries: 24 hours, inside the provider's window. A page that printed

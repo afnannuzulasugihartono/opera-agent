@@ -276,6 +276,16 @@ export function snapStatusRequest({ orderId, serverKey = '', environment = 'prod
   };
 }
 
+// WHY A 404 HIDES INSIDE A 200.
+// Midtrans documents this endpoint as answering 200 with a body whose status_code is 404 and whose status_message is "Transaction doesn't exist.".
+// Measured live on 2026-10-26: a live Snap transaction answered exactly that through the status endpoint while its payment page still showed a pending QRIS.
+// The HTTP status therefore cannot say whether the transaction exists, and a caller that trusts only it refuses to close an attempt that is not there to close.
+// A missing transaction is nothing to close: a charge with this key cannot open a payable link for an order the provider does not know, so treating it as closed cannot leave a second payable transaction behind.
+
+export function providerSaysMissing(payload) {
+  return Boolean(payload && typeof payload === 'object' && String(payload.status_code || '') === '404');
+}
+
 // WHY A RETRY ASKS THE PROVIDER TO EXPIRE THE OLD ATTEMPT.
 // A customer who asks for a second link has said the first one is not the one they will pay, and two payable transactions for one invoice is how somebody pays twice.
 // The provider accepts an expire call while the transaction is still pending, and answers with that transaction's own status, so the answer says whether the first attempt is dead.

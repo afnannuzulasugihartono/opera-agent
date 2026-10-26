@@ -44,6 +44,7 @@ import {
   paidAmountCents,
   planInvoiceLines,
   providerOrderId,
+  providerSaysMissing,
   providerSettlement,
   snapChargeRequest,
   snapPaymentMethods,
@@ -202,6 +203,7 @@ async function closeAttempt(orderId: string | null | undefined): Promise<Attempt
     return { state: "refused", why: `the provider answered ${response.status} when asked about that order` };
   }
   if (!payload) return { state: "refused", why: "the provider answered with a body that is not JSON" };
+  if (providerSaysMissing(payload)) return { state: "closed", status: "not found" };
   const answer = providerSettlement(payload);
   if (answer.settled) {
     return { state: "paid", status: answer.status, grossAmount: answer.grossAmount, paymentType: answer.paymentType, transactionId: answer.transactionId };
@@ -209,7 +211,9 @@ async function closeAttempt(orderId: string | null | undefined): Promise<Attempt
   const status = String(answer.status || "").toLowerCase();
   if (["expire", "deny", "cancel", "failure"].includes(status)) return { state: "closed", status };
   if (status !== "pending") {
-    return { state: "refused", why: `the provider reports ${answer.status || "nothing"} for that order` };
+    const code = String(payload.status_code || "");
+    const message = String(payload.status_message || "");
+    return { state: "refused", why: `the provider reports ${answer.status || "nothing"} for that order${code ? ` (status_code ${code}${message ? `: ${message}` : ""})` : ""}` };
   }
   const expire = snapExpireRequest({ orderId, serverKey: MIDTRANS_SERVER_KEY, environment: MIDTRANS_ENVIRONMENT });
   if (!expire) return { state: "refused", why: "the expire request could not be built" };
