@@ -13,10 +13,10 @@
     { code: 'en', text: 'EN', name: 'English' }
   ];
 
-  var CSS = '.lang{display:inline-flex;align-items:center;border:1px solid rgba(255,255,255,.16);border-radius:980px;padding:2px;white-space:nowrap}'
-    + '.lang button{width:auto;margin:0;border:0;background:transparent;color:#86868b;font:inherit;font-size:12px;font-weight:600;line-height:1;padding:5px 10px;border-radius:980px;cursor:pointer}'
-    + '.lang button:hover{color:#f5f5f7}'
-    + '.lang button[aria-pressed="true"]{background:rgba(62,207,142,.16);color:#f5f5f7}'
+  var CSS = '.lang{display:inline-flex;align-items:center;border:1px solid rgba(22,21,19,.14);border-radius:980px;padding:2px;white-space:nowrap}'
+    + '.lang button{width:auto;margin:0;border:0;background:transparent;color:#64615a;font:inherit;font-size:11.5px;font-weight:600;line-height:1;padding:5px 9px;border-radius:980px;cursor:pointer}'
+    + '.lang button:hover{color:#161513}'
+    + '.lang button[aria-pressed="true"]{background:rgba(11,107,82,.1);color:#0b6b52}'
     + '.lang span[aria-hidden="true"]{display:none}';
 
   var painted = false;

@@ -1,14 +1,14 @@
-<!-- @last-edited: 2026-10-07 00:00 UTC+7. -->
+<!-- @last-edited: 2026-10-26 UTC+7. -->
 <!-- @title: dukungan.html — practical reference, real links only. -->
 <!-- @state: Dukungan. -->
-<!-- @dependencies: none. -->
+<!-- @dependencies: site.css, i18n.js. -->
 
 <!doctype html>
 <html lang="id">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="theme-color" content="#f6f7f2" />
+  <meta name="theme-color" content="#f7f5ef" />
   <title data-i18n="meta.title">Dukungan — Opera Agent</title>
   <meta name="description" content="Dukungan Opera Agent: cara mengatasi device yang tidak muncul, ekstensi yang tidak ter-pasang, sesi yang keluar sendiri, dan laporan privasi yang benar." />
   <link rel="stylesheet" href="/site.css" />
@@ -19,75 +19,21 @@
   <meta property="og:description" content="Dukungan Opera Agent: cara mengatasi device yang tidak muncul, ekstensi yang tidak ter-pasang, sesi yang keluar sendiri, dan laporan privasi yang benar." />
   <meta property="og:url" content="https://opera-agent.pages.dev/dukungan" />
   <meta property="og:locale" content="id_ID" />
-  <style>
-    /*
-     * WHY the same single-file shape as the rest of the site: no build step and no external origin.
-     * This page makes no network call at all.
-     */
-
-
-    h2 { margin: 32px 0 8px; font-size: 19px; }
-    p, li { color: var(--muted); }
-    p strong, li strong { color: var(--text); }
-    .updated { font-size: 13px; }
-
-    /*
-     * WHY the copy box: a config that cannot be copied gets retyped, and a retyped client ID or URL fails as a broken connection, not as a typo.
-     * One button per block, clipboard first with a selection fallback.
-     */
-    .copybox { position: relative; margin: 12px 0 20px; }
-    .copybox pre {
-      margin: 0;
-      padding: 14px;
-      padding-top: 44px;
-      background: var(--surface-soft);
-      border: 1px solid var(--line);
-      border-radius: 10px;
-      overflow-x: auto;
-    }
-    .copybox pre code { color: var(--text); font-size: 13px; }
-    .copybox button {
-      position: absolute;
-      top: 8px;
-      right: 8px;
-      background: var(--surface);
-      color: var(--accent);
-      border: 1px solid var(--line-strong);
-      border-radius: 8px;
-      font-size: 12.5px;
-      padding: 5px 12px;
-      cursor: pointer;
-    }
-    .copybox button:hover { border-color: var(--accent); }
-    h3 { margin: 24px 0 4px; font-size: 16px; }
-
-    /*
-     * WHY the map: five sections with no way to jump is a wall of text.
-     * One list of anchors, same muted voice as the rest, and a company policy reads navigable instead of endless.
-     */
-    .toc { margin: 0 0 8px; padding: 0; list-style: none; font-size: 13.5px; }
-    .toc li { margin: 0 0 4px; }
-    section[id], h2[id] { scroll-margin-top: 70px; }
-</style>
 </head>
 <body>
   <header>
     <div class="wrap">
       <nav>
-        <a class="brand" href="./beranda.html">Opera Agent</a>
-        <a href="./unduh.html" data-i18n="nav.download">Unduh</a>
-        <a href="./beranda.html#model" data-i18n="nav.model">Model Anda</a>
-        <a href="./akun.html" data-i18n="nav.account">Akun</a>
-        <a href="./dashboard.html">Dashboard</a>
-        <a href="./privasi.html" data-i18n="nav.privacy">Privasi</a>
-        <a href="./fitur.html" data-i18n="nav.features">Fitur</a>
-        <a href="./dukungan.html" aria-current="page" data-i18n="nav.support">Dukungan</a>
+        <a class="brand" href="./beranda.html"><svg class="brandMark" viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="7" fill="#101512" /><path d="M8 5.6v12.8l3.1-2.9 1.9 4.5 2.4-1-2-4.5h3.9L8 5.6Z" fill="#3ecf8e" /></svg><span>Opera Agent</span></a>
+        
+<a href="./unduh.html" data-i18n="nav.download">Unduh</a>        <a class="nav-sec" href="./beranda.html#model" data-i18n="nav.model">Model Anda</a>        <a href="./dashboard.html">Dashboard</a>        <a class="nav-account" href="./akun.html" data-i18n="nav.account">Akun</a>        <a class="nav-sec" href="./fitur.html" data-i18n="nav.features">Fitur</a>        <a class="nav-sec" href="./privasi.html" data-i18n="nav.privacy">Privasi</a>        <a class="nav-sec" href="./dukungan.html" aria-current="page" data-i18n="nav.support">Dukungan</a>
         <span class="lang" data-lang-toggle></span><a class="navCta" href="./index.html" data-i18n="nav.signin">Masuk</a>
       </nav>
     </div>
   </header>
 
-    <main class="wrap">
+  <main class="wrap prose">
+    <p class="eyebrow">Dukungan</p>
     <h1 data-i18n="page.title">Dukungan</h1>
     <p class="updated" data-i18n="page.sub">Di mana Anda bisa minta tolong, dan di mana Anda bisa lapor.</p>
     <p data-i18n="intro">Ini produk yang dioperasikan sendiri, jadi dukungan paling efektif adalah langkah

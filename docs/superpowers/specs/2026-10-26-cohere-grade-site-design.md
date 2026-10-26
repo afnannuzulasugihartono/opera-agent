@@ -36,6 +36,27 @@ Target keberhasilan yang dapat diukur:
 - Tidak ada klaim baru: angka tetap dibaca dari kode oleh tes yang ada, tanpa
   logo pelanggan atau metrik palsu.
 
+## Status implementasi (2026-10-26)
+
+Fondasi dan seluruh 12 halaman sudah memakai sistem ini.
+
+- `landing/site.css` memuat token, `@font-face` Instrument Sans, chrome, footer,
+  section, kartu, tombol, tabel, dan prose. Lembar halaman hanya menambah aturan
+  yang khas: `beranda.css`, `auth.css`, `dashboard.css`, `download.css`,
+  `features.css`, dan `app.css`.
+- Palet mengikuti tabel di bawah dengan dua penyesuaian terukur: `--ink:
+  #161513` (bukan `#141414`) dan `--line: rgba(22,21,19,.11)`, supaya batas
+  kartu tetap terbaca di kanvas `#F7F5EF`.
+- `theme-color` setiap halaman `#f7f5ef`; font disajikan lokal dengan `font-src
+  'self'`; tidak ada aset eksternal.
+- Gate desain (`landing-visual`, `landing-dashboard`, `landing-auth`,
+  `landing-unduhswap`) sekarang membaca stylesheet yang benar-benar dimuat
+  halaman, bukan blok `<style>` inline yang sudah tidak ada. Aturannya tidak
+  dilonggarkan: angka, urutan breakpoint, dan bentuk kontrol tetap dikunci.
+- Diverifikasi: `npm test` 1523/1523, `npm run check` ok, `format-comments` 427
+  file ok, dan tidak ada overflow horizontal di 390px pada beranda, unduh,
+  unduh-berkas, fitur, dukungan, 404, dan consent.
+
 ## Non-goals
 
 - Tidak menyalin aset Cohere: tidak ada markup, stylesheet, gambar, atau font

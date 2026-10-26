@@ -1,0 +1,228 @@
+/*
+ * @last-edited: 2026-10-26 UTC+7.
+ * @title: app.css — the signed-in shell shared by the account page and the dashboard.
+ * @state: one page head, one settings grid, one profile card, and the responsive rules both app surfaces use.
+ * @dependencies: site.css.
+ *
+ * WHY a second shared sheet: the sign-in, account and dashboard pages share a page head and a card rhythm, and copying it into each page is how the old console drifted from the public site.
+ */
+
+main.account,
+main.console { padding-top: 56px; padding-bottom: 80px; }
+
+.appHead {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px 32px;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin: 0 0 32px;
+  padding: 0 0 26px;
+  border-bottom: 1px solid var(--line);
+}
+
+.appHead .eyebrow { margin: 0 0 10px; }
+
+.appHead h1 {
+  margin: 0 0 8px;
+  font-size: clamp(32px, 3.4vw, 46px);
+  line-height: 1.05;
+  letter-spacing: -.04em;
+}
+
+.appHead p {
+  max-width: 62ch;
+  margin: 0;
+  color: var(--muted);
+  font-size: 15px;
+}
+
+.appHead .row { margin: 0; }
+
+/* ── settings grid ──────────────────────────────────────────────────────── */
+
+.accountGrid {
+  display: grid;
+  grid-template-columns: 300px minmax(0, 1fr);
+  gap: 22px;
+  align-items: start;
+}
+
+.accountAside {
+  position: sticky;
+  top: 92px;
+  display: grid;
+  gap: 16px;
+}
+
+.accountMain { display: grid; gap: 16px; }
+
+@media (max-width: 860px) {
+  .accountGrid { grid-template-columns: 1fr; }
+  .accountAside { position: static; }
+}
+
+.profileCard { padding: 24px; }
+
+.profile {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+}
+
+.avatar {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 50px;
+  height: 50px;
+  border-radius: 16px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 17px;
+  font-weight: 650;
+  letter-spacing: -.03em;
+  box-shadow: 0 8px 20px -10px rgba(11, 107, 82, .5);
+}
+
+.identity {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.identity .name {
+  overflow: hidden;
+  color: var(--ink);
+  font-size: 15.5px;
+  font-weight: 650;
+  letter-spacing: -.02em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.identity .meta {
+  margin: 0;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 12.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.profileFoot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 18px 0 0;
+  padding: 16px 0 0;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 12.5px;
+}
+
+.accountNav { padding: 10px; }
+
+.accountNav h2 {
+  margin: 8px 10px 8px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
+.accountNav a {
+  display: block;
+  padding: 9px 12px;
+  border-radius: 9px;
+  color: var(--muted);
+  font-size: 13.5px;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.accountNav a:hover {
+  background: var(--surface-soft);
+  color: var(--ink);
+}
+
+.accountNav a:first-of-type { color: var(--ink); }
+
+.appCard {
+  padding: 26px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: 0 1px 2px rgba(22, 21, 19, .03);
+}
+
+.appCard h2 {
+  margin: 0 0 4px;
+  font-size: 18px;
+  letter-spacing: -.025em;
+}
+
+.appCard .meta {
+  margin: 0 0 18px;
+  color: var(--muted);
+  font-size: 13.5px;
+}
+
+.appCard .row { margin-top: 20px; }
+
+.appCard dl.facts {
+  padding: 0;
+  border: 0;
+}
+
+.appCard dl.facts dt {
+  padding: 10px 0;
+  border-top: 1px solid var(--line);
+}
+
+.appCard dl.facts dd {
+  padding: 10px 0;
+  border-top: 1px solid var(--line);
+  color: var(--ink);
+}
+
+.appCard dl.facts dt:first-of-type,
+.appCard dl.facts dd:first-of-type { border-top: 0; }
+
+.appCard ul.linked,
+.appCard ul.scopes {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--muted);
+  font-size: 13.5px;
+}
+
+.appCard ul.linked li,
+.appCard ul.scopes li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 0;
+  border-top: 1px solid var(--line);
+}
+
+.appCard ul.linked li:first-child,
+.appCard ul.scopes li:first-child { border-top: 0; }
+
+.appCard ul.linked code {
+  background: var(--surface-soft);
+  color: var(--ink);
+}
+
+@media (max-width: 440px) {
+  .appCard { padding: 20px; }
+  .appHead { align-items: flex-start; }
+  .appHead .row,
+  .appHead > .btn { width: 100%; }
+  .appHead > .btn { justify-content: center; }
+}

@@ -1,136 +1,935 @@
 /*
  * @last-edited: 2026-10-26 UTC+7.
- * @title: site.css — the palette, reset and viewport rules every page of the site shares.
- * @state: the design tokens, the document reset and the viewport rules; per-page colour and chrome stay in each page.
- * @dependencies: none.
+ * @title: site.css — the design tokens, reset, chrome and components every page of the site shares.
+ * @state: a light paper canvas, one local typeface, an aligned 1200px shell, and the shared header, footer, card and control rules.
+ * @dependencies: fonts/instrument-sans-latin.woff2.
  *
- * WHY here and not in twelve pages: these rules are the same rule everywhere, and a page that restates them drifts.
- * The palette and the reset are one decision; the site answering its own viewport is another, and it is the same answer on every page.
- * Per-page copies are how the ID|EN toggle ended up dead on three pages at once.
- * i18n.js already proved this site loads a same-origin asset under this CSP, so this needs no new permission.
- *
- * Scope: the palette, the document reset, and width and height.
- * Per-page colour, type and chrome stay in each page.
+ * WHY one file: twelve pages that restate a palette drift a shade at a time.
+ * Tokens are the decision; a page may add a page token, never override a core one.
  */
 
-/* ── the palette and the reset every page shares ──────────────────────────────────────── */
-
-/*
- * WHY here and not in twelve pages: the palette and the reset are one decision, and a page that restates them drifts.
- * A page keeps only what makes it that page, plus a token it overrides.
- */
-
-:root {
-  --bg: #f6f7f2;
-  --surface: #ffffff;
-  --surface-soft: #edf1ec;
-  --line: rgba(20, 32, 51, .12);
-  --line-strong: rgba(20, 32, 51, .22);
-  --text: #142033;
-  --muted: #5e6978;
-  --accent: #1d7567;
-  --accent-soft: rgba(29, 117, 103, .13);
-  --warn: #aa5b3d;
-  --ink: #142033;
-  --lime: #d9ef7a;
-  --ease: cubic-bezier(.28, .11, .32, 1);
+@font-face {
+  font-family: "Instrument Sans";
+  font-style: normal;
+  font-weight: 400 700;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("/fonts/instrument-sans-latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 
-* { box-sizing: border-box; }
+/* ── tokens ─────────────────────────────────────────────────────────────── */
+
+:root {
+  --paper: #f7f5ef;
+  --surface: #ffffff;
+  --surface-soft: #f1efe8;
+  --surface-strong: #e9e6dc;
+  --ink: #161513;
+  --muted: #64615a;
+  --line: rgba(22, 21, 19, .11);
+  --line-strong: rgba(22, 21, 19, .2);
+  --accent: #0b6b52;
+  --accent-strong: #08503e;
+  --accent-soft: #e3f0ea;
+  --brand: #3ecf8e;
+  --ink-panel: #101512;
+  --panel-text: #eff2ec;
+  --warn: #9a532c;
+  --danger: #b3261e;
+  --danger-soft: #fbecea;
+  --focus: #0b6b52;
+  --radius: 22px;
+  --radius-sm: 12px;
+  --pill: 980px;
+  --shadow: 0 1px 2px rgba(22, 21, 19, .04), 0 22px 55px -34px rgba(22, 21, 19, .3);
+  --shadow-lift: 0 2px 4px rgba(22, 21, 19, .05), 0 30px 70px -34px rgba(22, 21, 19, .34);
+  --ease: cubic-bezier(.22, .61, .24, 1);
+  --font: "Instrument Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --wrap: 1200px;
+  --prose: 720px;
+  --bg: var(--paper);
+  --text: var(--ink);
+  --lime: var(--brand);
+}
+
+/* ── reset and type ─────────────────────────────────────────────────────── */
+
+*,
+*::before,
+*::after { box-sizing: border-box; }
+
+[hidden] { display: none !important; }
+
+html {
+  height: 100%;
+  -webkit-text-size-adjust: 100%;
+  scroll-padding-top: 92px;
+}
 
 body {
   margin: 0;
-  background: var(--bg);
-  color: var(--text);
-  font: 16px/1.6 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font);
+  font-size: 16px;
+  line-height: 1.62;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
   font-kerning: normal;
 }
 
-::selection { background: var(--lime); color: var(--ink); }
-:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+header,
+footer { flex: 0 0 auto; }
 
-/* Apple scrolls anchors; readers who asked for stillness keep the jump. */
+main {
+  flex: 1 0 auto;
+  width: 100%;
+  padding: 84px 0 96px;
+}
 
-@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+::selection { background: var(--brand); color: var(--ink); }
 
-a { color: var(--accent); }
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
 
-/* ── height ─────────────────────────────────────────────────────────────── */
+a {
+  color: var(--accent);
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1px;
+}
 
-/*
- * dvh, not vh: on a phone the browser's own chrome eats the viewport, and 100vh is measured before that happens, so the footer lands below the fold.
- * The vh line is the fallback and comes first so dvh wins where both exist.
- */
+a:hover { color: var(--accent-strong); }
 
-html { height: 100%; -webkit-text-size-adjust: 100%; }
+img,
+video,
+canvas,
+svg { max-width: 100%; height: auto; }
 
-body {
-  min-height: 100vh;
-  min-height: 100dvh;
+pre,
+table { max-width: 100%; }
+
+h1,
+h2,
+h3,
+h4,
+p,
+li,
+td,
+th,
+label,
+summary { overflow-wrap: break-word; }
+
+h1,
+h2,
+h3,
+h4 {
+  margin: 0;
+  color: var(--ink);
+  font-weight: 600;
+  letter-spacing: -.03em;
+  text-wrap: balance;
+}
+
+h1 {
+  margin: 0 0 18px;
+  font-size: clamp(42px, 5.6vw, 78px);
+  line-height: .99;
+  letter-spacing: -.045em;
+}
+
+h2 {
+  margin: 0 0 12px;
+  font-size: clamp(28px, 3.2vw, 44px);
+  line-height: 1.06;
+  letter-spacing: -.035em;
+}
+
+h3 {
+  font-size: 18px;
+  line-height: 1.28;
+  letter-spacing: -.02em;
+}
+
+p { margin: 0 0 16px; }
+
+p:last-child { margin-bottom: 0; }
+
+strong { font-weight: 650; }
+
+small { font-size: 13px; }
+
+code,
+kbd,
+samp {
+  font-family: var(--mono);
+  font-size: .86em;
+  padding: 2px 6px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--surface-soft);
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+  overflow-wrap: anywhere;
+}
+
+pre {
+  margin: 0 0 18px;
+  padding: 16px 18px;
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface-soft);
+  font: 13px/1.7 var(--mono);
+}
+
+pre code {
+  padding: 0;
+  border: 0;
+  background: none;
+  font-size: 13px;
+  overflow-wrap: normal;
+}
+
+hr {
+  height: 1px;
+  margin: 36px 0;
+  border: 0;
+  background: var(--line);
+}
+
+/* ── layout ─────────────────────────────────────────────────────────────── */
+
+.wrap {
+  width: min(100% - 48px, var(--wrap));
+  margin-inline: auto;
+  padding: 0;
+}
+
+main.wrap.prose,
+main.wrap.narrow { max-width: var(--prose); }
+
+main.wrap.wide { max-width: var(--wrap); }
+
+main.wrap.auth { max-width: 1080px; }
+
+@media (max-width: 560px) {
+  .wrap { width: min(100% - 32px, var(--wrap)); }
+}
+
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 18px;
+  color: var(--accent);
+  font-size: 11.5px;
+  font-weight: 650;
+  letter-spacing: .14em;
+  line-height: 1.4;
+  text-transform: uppercase;
+}
+
+.eyebrow::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--brand);
+  box-shadow: 0 0 0 3px rgba(62, 207, 142, .18);
+}
+
+.lede {
+  max-width: 58ch;
+  color: var(--muted);
+  font-size: clamp(17px, 1.4vw, 19px);
+  line-height: 1.62;
+}
+
+.muted { color: var(--muted); }
+
+.meta {
+  margin: 0 0 14px;
+  color: var(--muted);
+  font-size: 13.5px;
+  line-height: 1.55;
+}
+
+.sub {
+  max-width: 62ch;
+  margin: 0 0 28px;
+  color: var(--muted);
+  font-size: 18px;
+  line-height: 1.6;
+}
+
+.sectionHead {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, .9fr);
+  gap: 32px;
+  align-items: end;
+  margin: 0 0 40px;
+}
+
+.sectionHead h2 { margin: 0; }
+
+.sectionHead p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 17px;
+}
+
+@media (max-width: 760px) {
+  .sectionHead { grid-template-columns: 1fr; gap: 12px; align-items: start; }
+}
+
+/* ── header ─────────────────────────────────────────────────────────────── */
+
+header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  border-bottom: 1px solid var(--line);
+  background: rgba(247, 245, 239, .86);
+  -webkit-backdrop-filter: saturate(180%) blur(18px);
+  backdrop-filter: saturate(180%) blur(18px);
+}
+
+/* WHY the chrome shares the content measure: a 980px bar over a 1200px page reads as a mistake at a glance. */
+
+header .wrap { max-width: var(--wrap); }
+
+header nav {
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  gap: 26px;
+  min-height: 68px;
+  padding: 12px 0;
+  overflow-x: auto;
+  scrollbar-width: none;
 }
 
-header, footer { flex: 0 0 auto; }
+header nav::-webkit-scrollbar { display: none; }
 
-main { flex: 1 0 auto; width: 100%; }
-
-footer {
-  padding-bottom: max(52px, calc(52px + env(safe-area-inset-bottom)));
-  padding-left: max(0px, env(safe-area-inset-left));
-  padding-right: max(0px, env(safe-area-inset-right));
+header nav .brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  flex: 0 0 auto;
+  margin-right: auto;
+  color: var(--ink);
+  font-size: 15.5px;
+  font-weight: 650;
+  letter-spacing: -.025em;
+  text-decoration: none;
+  white-space: nowrap;
 }
 
-.wrap,
-main > .wrap { width: min(100% - 48px, 1240px); margin-inline: auto; }
+header nav .brand:hover { color: var(--ink); }
 
-@media (max-width: 380px) {
-  .wrap, main > .wrap { width: min(100% - 28px, 1240px); }
+.brandMark {
+  width: 22px;
+  height: 22px;
+  flex: 0 0 auto;
+  border-radius: 7px;
+  box-shadow: 0 1px 2px rgba(22, 21, 19, .18);
 }
 
-img, video, canvas, svg { max-width: 100%; height: auto; }
+header nav a:not(.brand):not(.navCta) {
+  flex: 0 0 auto;
+  padding: 6px 0;
+  color: var(--muted);
+  font-size: 13.5px;
+  font-weight: 500;
+  letter-spacing: -.01em;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: color .2s var(--ease);
+}
 
-pre, table { max-width: 100%; overflow-x: auto; }
+header nav a:not(.brand):not(.navCta):hover,
+header nav a[aria-current="page"]:not(.brand):not(.navCta) {
+  color: var(--ink);
+}
 
-h1, h2, h3, p, li, td, th, label, summary { overflow-wrap: break-word; }
+header nav a[aria-current="page"]:not(.brand):not(.navCta) { box-shadow: inset 0 -1px 0 var(--ink); }
 
-h1 { font-size: clamp(28px, 1.4rem + 1.4vw, 44px); line-height: 1.15; }
+/* WHY the filled action keeps its own ink when the page it points at is the current one: without this, the current-page rule painted black on black and the button read as an empty pill. */
 
-h2 { font-size: clamp(21px, 1.1rem + .8vw, 30px); line-height: 1.25; }
+header nav .navCta,
+header nav .navCta[aria-current="page"] { color: #fff; }
 
-nav .navCta {
-  padding: 6px 15px;
-  border-radius: 980px;
+header nav .navCta {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  padding: 0 17px;
+  border: 1px solid var(--ink);
+  border-radius: var(--pill);
   background: var(--ink);
   color: #fff;
   font-size: 13px;
   font-weight: 600;
   text-decoration: none;
   white-space: nowrap;
-  flex: 0 0 auto;
+  transition: background .2s var(--ease), border-color .2s var(--ease);
 }
 
-nav .navCta:hover { background: var(--accent); color: #fff; }
-
-header nav a,
-header nav .brand { white-space: nowrap; flex: 0 0 auto; }
-
-@container (max-width: 420px) {
-  .card { padding: 16px; }
+header nav .navCta:hover {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fff;
 }
 
-.hero--full {
-  min-height: min(72dvh, 720px);
+@media (max-width: 980px) {
+  header nav { gap: 18px; min-height: 62px; padding: 10px 0; }
+  header nav a.nav-sec { display: none; }
+}
+
+@media (max-width: 720px) {
+  header nav { gap: 14px; mask-image: linear-gradient(to right, #000 92%, transparent); -webkit-mask-image: linear-gradient(to right, #000 92%, transparent); }
+  header nav a:not(.brand):not(.navCta) { font-size: 13px; }
+  header nav .navCta { min-height: 34px; padding: 0 14px; }
+}
+
+/*
+ * WHY the account and console links leave the phone row first: at 390px the sign-in action was scrolled off-screen while three secondary doors pushed it there, and a visitor who cannot see the one filled action has no way in.
+ * The footer still carries every door.
+ */
+
+@media (max-width: 620px) {
+  header nav { gap: 12px; mask-image: none; -webkit-mask-image: none; }
+  header nav .nav-account,
+  header nav a[href$="dashboard.html"] { display: none; }
+  header nav .navCta { padding: 0 13px; }
+}
+
+/* ── footer ─────────────────────────────────────────────────────────────── */
+
+footer {
+  border-top: 1px solid var(--line);
+  background: var(--surface-soft);
+  padding: 54px 0 max(36px, calc(36px + env(safe-area-inset-bottom)));
+  color: var(--muted);
+  font-size: 13.5px;
+}
+
+footer .cols {
   display: flex;
-  flex-direction: column;
+  flex-direction: column-reverse;
+  gap: 26px;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+footer .doors {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 30px;
+  max-width: 100%;
+}
+
+footer .doors a {
+  color: var(--muted);
+  font-size: 13.5px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: color .2s var(--ease);
+}
+
+footer .doors a:hover { color: var(--ink); }
+
+footer .cols > span:first-child {
+  color: var(--muted);
+  font-size: 12.5px;
+}
+
+@media (min-width: 760px) {
+  footer .cols { flex-direction: row; align-items: center; }
+  footer .doors { justify-content: flex-end; }
+}
+
+/* ── buttons, chips and cards ───────────────────────────────────────────── */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
   justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 22px;
+  border: 1px solid var(--line-strong);
+  border-radius: 980px;
+  background: var(--surface);
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 14.5px;
+  font-weight: 600;
+  line-height: 1;
+  text-align: center;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  box-shadow: 0 1px 0 rgba(22, 21, 19, .04);
+  transition: background .2s var(--ease), border-color .2s var(--ease), color .2s var(--ease), transform .2s var(--ease);
+}
+
+.btn:hover {
+  border-color: var(--ink);
+  color: var(--ink);
+  transform: translateY(-1px);
+}
+
+.btn.primary {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fff;
+  box-shadow: 0 10px 24px -12px rgba(11, 107, 82, .55);
+}
+
+.btn.primary:hover {
+  border-color: var(--accent-strong);
+  background: var(--accent-strong);
+  color: #fff;
+}
+
+.btn.ghost {
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+}
+
+.btn.ghost:hover {
+  border-color: var(--line-strong);
+  background: var(--surface);
+}
+
+.btn.danger {
+  border-color: rgba(179, 38, 30, .32);
+  background: transparent;
+  color: var(--danger);
+}
+
+.btn.danger:hover {
+  border-color: var(--danger);
+  background: var(--danger);
+  color: #fff;
+}
+
+.btn:disabled {
+  opacity: .5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn.sm {
+  min-height: 36px;
+  padding: 0 16px;
+  font-size: 13.5px;
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.row[hidden] { display: none; }
+
+.card {
+  padding: 28px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.card > h2:first-child,
+.card > h3:first-child { margin-top: 0; }
+
+.card h2 { font-size: 19px; }
+
+.card h3 { font-size: 16px; }
+
+.tile {
+  display: block;
+  padding: 22px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--surface);
+  color: inherit;
+  text-decoration: none;
+  transition: transform .25s var(--ease), border-color .25s var(--ease), box-shadow .25s var(--ease);
+}
+
+.tile:hover {
+  border-color: var(--line-strong);
+  box-shadow: var(--shadow);
+  transform: translateY(-2px);
+}
+
+.tile h3 { margin: 0 0 6px; font-size: 16px; }
+
+.tile p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 16px;
+}
+
+/* WHY three tracks: five exits read as three and two, not as a full row with one orphan. */
+
+.exitGrid { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+
+@media (max-width: 700px) { .exitGrid { grid-template-columns: 1fr; } }
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 26px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--pill);
+  background: var(--surface-soft);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .01em;
+  white-space: nowrap;
+}
+
+.chip.good {
+  border-color: rgba(11, 107, 82, .2);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.chip.warn {
+  border-color: rgba(154, 83, 44, .22);
+  background: #f8eee6;
+  color: var(--warn);
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: var(--muted);
+}
+
+.dot.online,
+.dot.good { background: var(--accent); }
+
+.dot.offline,
+.dot.warn { background: var(--warn); }
+
+/* ── facts, steps and prose ─────────────────────────────────────────────── */
+
+dl.facts {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 10px 22px;
+  margin: 0;
+  font-size: 14px;
+}
+
+dl.facts dt {
+  color: var(--muted);
+  font-weight: 500;
+}
+
+dl.facts dd {
+  margin: 0;
+  min-width: 0;
+}
+
+@media (max-width: 440px) {
+  dl.facts { grid-template-columns: 1fr; gap: 2px 0; }
+  dl.facts dd { margin: 0 0 12px; }
+}
+
+ol.steps {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: step;
+  display: grid;
+  gap: 18px;
+}
+
+ol.steps li {
+  position: relative;
+  padding-left: 44px;
+  color: var(--muted);
+  counter-increment: step;
+}
+
+ol.steps li::before {
+  content: counter(step, decimal-leading-zero);
+  position: absolute;
+  left: 0;
+  top: 1px;
+  color: var(--accent);
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+ol.steps strong { color: var(--ink); }
+
+.prose h1 {
+  margin: 0 0 12px;
+  font-size: clamp(36px, 4.2vw, 54px);
+  line-height: 1.02;
+}
+
+.prose .updated { margin: 0 0 24px; }
+
+.prose h2 {
+  margin: 44px 0 12px;
+  font-size: 24px;
+  letter-spacing: -.025em;
+}
+
+.prose h3 {
+  margin: 28px 0 8px;
+  font-size: 18px;
+}
+
+.prose p,
+.prose li { color: var(--muted); }
+
+.prose p strong,
+.prose li strong { color: var(--ink); }
+
+.prose ul,
+.prose ol { padding-left: 22px; }
+
+.prose li { margin: 0 0 8px; }
+
+.toc {
+  margin: 0 0 32px;
+  padding: 18px 20px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface);
+  list-style: none;
+  font-size: 14px;
+  columns: 2;
+  column-gap: 30px;
+}
+
+.toc li { margin: 0 0 6px; break-inside: avoid; }
+
+@media (max-width: 560px) { .toc { columns: 1; } }
+
+/* ── forms ──────────────────────────────────────────────────────────────── */
+
+label {
+  display: block;
+  margin: 0 0 7px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 550;
+}
+
+input,
+select,
+textarea {
+  width: 100%;
+  min-height: 46px;
+  margin: 0 0 16px;
+  padding: 11px 14px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 15px;
+  transition: border-color .2s var(--ease), box-shadow .2s var(--ease);
+}
+
+input::placeholder,
+textarea::placeholder { color: #98948b; }
+
+input:hover,
+select:hover,
+textarea:hover { border-color: rgba(22, 21, 19, .32); }
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(11, 107, 82, .13);
+}
+
+select {
+  appearance: none;
+  padding-right: 40px;
+  background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%), linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+  background-position: calc(100% - 19px) 21px, calc(100% - 14px) 21px;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+}
+
+button { font-family: inherit; }
+
+.status {
+  min-height: 22px;
+  margin: 12px 0 0;
+  color: var(--muted);
+  font-size: 13.5px;
+}
+
+.status.ok { color: var(--accent); }
+
+.status.warn { color: var(--warn); }
+
+.status.bad { color: var(--danger); }
+
+.note,
+.footnote {
+  margin: 12px 0 0;
+  color: var(--muted);
+  font-size: 12.5px;
+  line-height: 1.55;
+}
+
+/* ── surfaces ───────────────────────────────────────────────────────────── */
+
+.panelDark {
+  border-radius: var(--radius);
+  background: var(--ink-panel);
+  color: var(--panel-text);
+  box-shadow: 0 30px 70px -34px rgba(16, 21, 18, .7);
+}
+
+.panelDark code {
+  border-color: rgba(255, 255, 255, .12);
+  background: rgba(255, 255, 255, .07);
+  color: var(--panel-text);
+}
+
+.panelDark a { color: #9fe6c8; }
+
+/* ── OAuth consent lists ────────────────────────────────────────────────── */
+
+ul.scopes {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+ul.scopes li { margin: 0 0 8px; }
+
+ul.scopes strong { color: var(--ink); }
+
+ul.scopes .warn { color: var(--warn); }
+
+ul.consents {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+ul.consents li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  align-items: baseline;
+  padding: 12px 0;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 13.5px;
+}
+
+ul.consents li:first-child { border-top: 0; padding-top: 0; }
+
+ul.consents .who { color: var(--ink); font-weight: 600; }
+
+ul.consents .when { color: var(--muted); font-size: 12.5px; }
+
+ul.consents button { margin-left: auto; }
+
+/* ── document utilities ────────────────────────────────────────────────── */
+
+.prose .updated,
+.lang-note {
+  color: var(--muted);
+  font-size: 12.5px;
+}
+
+.lang-note {
+  margin: 0 0 18px;
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface-soft);
+}
+
+.copybox {
+  position: relative;
+  margin: 12px 0 22px;
+}
+
+.copybox pre {
+  padding-top: 48px;
+  overflow-x: auto;
+}
+
+.copybox button {
+  position: absolute;
+  top: 9px;
+  right: 9px;
+  padding: 5px 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--accent);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.copybox button:hover { border-color: var(--accent); }
+
+.tile h2 {
+  margin: 0 0 4px;
+  font-size: 16px;
+  letter-spacing: -.02em;
+}
+
+/* ── motion and print ──────────────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: no-preference) {
+  html { scroll-behavior: smooth; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
+  *,
+  *::before,
+  *::after {
     animation-duration: .01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: .01ms !important;
@@ -139,127 +938,13 @@ header nav .brand { white-space: nowrap; flex: 0 0 auto; }
 }
 
 @media (hover: hover) and (pointer: fine) {
-  a, button { transition: color .2s ease, background-color .2s ease, border-color .2s ease; }
+  a,
+  button { transition: color .2s var(--ease), background-color .2s var(--ease), border-color .2s var(--ease); }
 }
 
 @media print {
-  header, footer { display: none !important; }
+  header,
+  footer { display: none !important; }
   body { background: #fff; color: #000; }
-}
-
-/* ── the chrome every page shares ──────────────────────────────────────────────── */
-
-header {
-  position: sticky;
-  top: 0;
-  z-index: 2;
-  background: rgba(246, 247, 242, .88);
-  -webkit-backdrop-filter: saturate(180%) blur(20px);
-  backdrop-filter: saturate(180%) blur(20px);
-  border-bottom: 1px solid var(--line);
-}
-
-/*
- * WHY THE CHROME KEEPS ITS OWN WIDTH.
- * index.html sets .wrap to 560px, and the header shares that wrap, so at 912px the ten nav items spilled 24px past the viewport and the document scrolled sideways.
- * 980px is the widest content wrap on the site, so the header is never narrower than the row it holds while the page below keeps its own measure.
- * A shorthand .wrap rule cannot win against this one, because header .wrap carries the extra element.
- */
-
-header .wrap { max-width: 980px; }
-
-nav { display: flex; gap: 24px; align-items: center; padding: 15px 0; overflow-x: auto; scrollbar-width: thin; }
-nav .brand { font-weight: 600; letter-spacing: -.01em; margin-right: auto; color: var(--text); text-decoration: none; }
-nav a { color: var(--muted); text-decoration: none; font-size: 13px; letter-spacing: -.01em; padding: 3px 0; transition: color .25s var(--ease); }
-nav a:hover { color: var(--text); }
-
-nav a[aria-current="page"] { color: var(--text); }
-
-/*
- * WHY the row scrolls where it does: the ten nav children measure 747px together, and the wrap spends 40px of padding inside the viewport's 48px margin, so the row needs 835px and scrolls below that.
- * The old rule switched at 800px and counted only the 48px margin, which left every window between 801 and 835 overflowing past the right edge.
- * The scroll sits on the nav at every width, so a page with a narrower wrap scrolls its own header instead of pushing the document sideways; below 800 the gap tightens and the mask shows there is more.
- * Wrapping instead of scrolling is what this replaces: it stacks the brand into two ragged lines.
- */
-
-@media (max-width: 800px) {
-  nav { gap: 14px; padding: 12px 0;
-    mask-image: linear-gradient(to right, #000 88%, transparent);
-    -webkit-mask-image: linear-gradient(to right, #000 88%, transparent); }
-  nav a { white-space: nowrap; }
-  nav .brand { margin-right: 6px; }
-}
-
-/* ── the footer every page shares ────────────────────────────────────────────────── */
-
-footer { border-top: 1px solid var(--line); padding: 30px 0 52px; color: var(--muted); font-size: 12.5px; }
-footer .cols { display: flex; flex-wrap: wrap; gap: 14px; justify-content: space-between; }
-
-/*
- * WHY the gap and not a margin: the six footer doors are written with no whitespace between the tags, so an inline row of anchors has no break opportunity and pushed the footer 32px past a 320px screen.
- * A flex gap breaks between items wherever the line runs out.
- */
-
-footer a { color: var(--muted); text-decoration: none; transition: color .25s var(--ease); }
-footer .doors { display: flex; flex-wrap: wrap; gap: 4px 14px; }
-footer a:hover { color: var(--text); }
-
-/* ── the defaults every page starts from ────────────────────────────────────────── */
-
-/*
- * WHY these and not the pages: ten pages want the same measure, the same first heading and the same top padding.
- * A page that wants another value writes it inline, after this file, so its rule still wins.
- */
-
-.wrap { max-width: 720px; margin: 0 auto; padding: 0 20px; }
-h1 { margin: 0 0 8px; font-size: 28px; letter-spacing: -.01em; }
-main { padding: 56px 0; }
-
-/* ── the shared product language ───────────────────────────────────────────────────── */
-
-/*
- * WHY the landing surface is light: the product is technical, but the public site should feel calm and legible before it feels clever.
- * The ink, teal and lime tokens give every page one visual system while the dark demo panels keep the browser proof recognisable.
- */
-
-body { background: var(--bg); }
-a { text-underline-offset: 3px; }
-header nav .brand { color: var(--ink); font-weight: 750; letter-spacing: -.04em; }
-header nav .brand::before {
-  content: '';
-  display: inline-block;
-  width: 11px;
-  height: 11px;
-  margin: 0 8px 0 1px;
-  border-radius: 3px 7px 3px 7px;
-  background: var(--lime);
-  vertical-align: 1px;
-  box-shadow: inset -3px -3px 0 rgba(20, 32, 51, .14);
-}
-nav a { color: var(--muted); }
-nav a:hover, nav a[aria-current="page"] { color: var(--ink); }
-main { padding-top: 72px; }
-main.wrap, main > .wrap { position: relative; }
-main.wrap::before, main > .wrap::before {
-  content: '';
-  position: absolute;
-  top: -72px;
-  right: 4%;
-  width: 180px;
-  height: 180px;
-  border-radius: 50%;
-  background: var(--lime);
-  opacity: .32;
-  filter: blur(42px);
-  pointer-events: none;
-  z-index: -1;
-}
-.btn { box-shadow: 0 1px 0 rgba(20, 32, 51, .05); }
-.btn.primary { box-shadow: 0 8px 20px rgba(20, 32, 51, .14); }
-.card, .tile { box-shadow: 0 12px 32px rgba(20, 32, 51, .05); }
-footer { background: #eef1eb; }
-
-@media (max-width: 800px) {
-  main { padding-top: 48px; }
-  main.wrap::before, main > .wrap::before { top: -48px; right: -8%; width: 130px; height: 130px; }
+  main { padding: 0; }
 }

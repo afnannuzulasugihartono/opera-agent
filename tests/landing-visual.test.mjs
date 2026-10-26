@@ -76,10 +76,13 @@ test('the header is never squeezed by a page that keeps a narrow column', () => 
   // The header therefore keeps the widest content measure on the site, and the nav scrolls itself whenever even that is too tight.
 
   const index = cssOf('index.html');
-  assert.match(index, /header \.wrap\s*\{[^}]*max-width:\s*980px/, 'the chrome keeps the widest measure, whatever the column below does');
-  assert.match(index, /nav\s*\{[^}]*overflow-x:\s*auto/, 'the row scrolls itself when the wrap is still too tight');
+  assert.match(index, /--wrap:\s*1200px/, 'the shell names a measure wide enough for the chrome and the page below it');
+  assert.match(index, /header \.wrap\s*\{[^}]*max-width:\s*var\(--wrap\)/, 'the chrome keeps that measure, whatever the column below does');
+  assert.match(index, /header nav\s*\{[^}]*overflow-x:\s*auto/, 'the row scrolls itself when the wrap is still too tight');
+  assert.match(index, /@media \(max-width: 980px\)[\s\S]*?header nav a\.nav-sec \{ display: none; \}/,
+    'and it sheds the secondary items before a laptop runs out of room');
   for (const page of pages) {
-    assert.match(cssOf(page), /header \.wrap\s*\{[^}]*max-width:\s*980px/, `${page} gives the shared header the same rule`);
+    assert.match(cssOf(page), /header \.wrap\s*\{[^}]*max-width:\s*var\(--wrap\)/, `${page} gives the shared header the same rule`);
   }
 });
 
@@ -87,7 +90,7 @@ test('a code pill never crosses its card border or breaks mid-word', () => {
   for (const page of pages) {
     assert.doesNotMatch(read(page), /word-break:\s*break-all/, `${page} breaks at word bounds, not mid-token`);
   }
-  assert.match(read('beranda.html'), /box-decoration-break:\s*clone/, 'a wrapped pill keeps both halves boxed');
+  assert.match(cssOf('beranda.html'), /box-decoration-break:\s*clone/, 'a wrapped pill keeps both halves boxed');
 });
 
 test('the marked nav item is visible, not metadata only', () => {
@@ -143,7 +146,7 @@ test('the 404 exits are real doors, counted honestly', () => {
   assert.ok(tiles.length >= 4, 'the exits exist as links, not divs');
   const words = { 4: 'Empat', 5: 'Lima', 6: 'Enam' };
   assert.match(html, new RegExp(`${words[tiles.length]} jalan keluar`), 'the copy counts what stands under it');
-  assert.match(html, /\.tile:hover/, 'a tile answers the hover, so it reads clickable');
+  assert.match(read('site.css'), /\.tile:hover/, 'a tile answers the hover, so it reads clickable');
 });
 
 test('the legal pages open with a map, not a wall', () => {
@@ -174,10 +177,10 @@ test('home after sign-in is a console door, not the sales pitch again', () => {
 
 test('display type sets the page apart from its own dashboard', () => {
 
-  const html = read('beranda.html');
-  assert.match(html, /clamp\(40px, 7\.5vw, 84px\)/, 'the headline spans display sizes');
-  assert.match(html, /h2 \{[^}]*font-size: clamp\(30px, 4vw, 44px\)/, 'sections step down to a clear second rank');
-  assert.match(html, /section \{[^}]*padding: 96px 0/, 'and breathe around each idea');
+  const css = cssOf('beranda.html');
+  assert.match(css, /clamp\(44px, 6vw, 82px\)/, 'the headline spans display sizes');
+  assert.match(css, /h2 \{[^}]*font-size: clamp\(28px, 3\.2vw, 44px\)/, 'sections step down to a clear second rank');
+  assert.match(css, /\.section \{[^}]*padding: 104px 0/, 'and breathe around each idea');
 });
 
 test('buttons are pills on every surface that has them', () => {
@@ -187,8 +190,9 @@ test('buttons are pills on every surface that has them', () => {
     assert.match(html, /\.btn \{[^}]*border-radius: 980px/, `${page} pills its buttons`);
   }
   const auth = cssOf('index.html');
-  assert.match(auth, /\.provider \{[^}]*border-radius: 980px/, 'provider entries match');
-  assert.match(auth, /button \{[^}]*border-radius: 980px/, 'and so does the submit');
+  assert.match(auth, /--pill:\s*980px/, 'one pill token, not a radius per control');
+  assert.match(auth, /\.provider \{[^}]*border-radius: var\(--pill\)/, 'provider entries match');
+  assert.match(auth, /\.gateCard form button\[type="submit"\] \{[^}]*border-radius: var\(--pill\)/, 'and so does the submit');
 });
 
 test('the hero carries its footnote instead of hiding the catch', () => {
@@ -200,13 +204,14 @@ test('the hero carries its footnote instead of hiding the catch', () => {
 
 test('motion is an enhancement, never the content', () => {
 
-  const html = read('beranda.html');
-  assert.match(html, /documentElement\.classList\.add\('js'\)/, 'JS announces itself before anything hides');
-  assert.match(html, /html\.js \.reveal/, 'hiding requires that announcement');
-  assert.match(html, /prefers-reduced-motion/, 'and the motion bows out when asked');
-  assert.match(html, /IntersectionObserver/, 'one observer per page, not per pixel');
+  const page = read('beranda.html');
+  const css = cssOf('beranda.html');
+  assert.match(page, /documentElement\.classList\.add\('js'\)/, 'JS announces itself before anything hides');
+  assert.match(css, /html\.js \.reveal/, 'hiding requires that announcement');
+  assert.match(css, /prefers-reduced-motion/, 'and the motion bows out when asked');
+  assert.match(page, /IntersectionObserver/, 'one observer per page, not per pixel');
 
-  assert.match(html, /@media print\s*{[^}]*\.reveal[^}]*opacity:\s*1/s,
+  assert.match(css, /@media print\s*{[^}]*\.reveal[^}]*opacity:\s*1/s,
     'print shows every section, or the motion has hidden the page from being read');
 });
 

@@ -1,17 +1,19 @@
-<!-- @last-edited: 2026-10-10 UTC+7. -->
+<!-- @last-edited: 2026-10-26 UTC+7. -->
 <!-- @title: dashboard — the control panel: devices, history, the project's tables, pairing, and one command. -->
 <!-- @state: console shell with a command-history table and a read-only table editor; reads only through opera_my_devices and the opera_konsol_* reader RPCs — never a raw table path; reads the content script's DOM marker to say whether the extension is installed here. -->
-<!-- @dependencies: none. -->
+<!-- @dependencies: site.css, app.css, dashboard.css, i18n.js. -->
 
 <!doctype html>
 <html lang="id">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="theme-color" content="#f6f7f2" />
+  <meta name="theme-color" content="#f7f5ef" />
   <title>Dashboard — Opera Agent</title>
   <meta name="description" content="Dashboard Opera Agent: device yang ter-pairing, perintahnya, akun ini, dan kendali atasnya." />
   <link rel="stylesheet" href="/site.css" />
+  <link rel="stylesheet" href="/app.css" />
+  <link rel="stylesheet" href="/dashboard.css" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%230b0d10'/%3E%3Cpath d='M5.2 2.2v10.2l2.5-2.3 1.5 3.6 1.9-.8-1.6-3.6h3.1L5.2 2.2Z' fill='%233ecf8e'/%3E%3C/svg%3E" />
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="Opera Agent" />
@@ -19,523 +21,37 @@
   <meta property="og:description" content="Dashboard Opera Agent: device yang ter-pairing, perintahnya, akun ini, dan kendali atasnya." />
   <meta property="og:url" content="https://opera-agent.pages.dev/dashboard" />
   <meta property="og:locale" content="id_ID" />
-  <style>
-
-    /*
-     * WHY the same single-file shape as the rest of the site: no build step, and the only network the CSP allows is the project Auth plus its REST.
-     */
-
-    :root { --danger: #ef4444; }
-
-
-    /*
-     * WHY the console goes wide while prose stays narrow: device cards stacked full-width in a 720px column on a 1280px screen waste half the monitor.
-     * Past ~70ch prose reads worse, so only this app surface breaks out — text pages keep their measure.
-     */
-    .wrap.wide { max-width: 1120px; }
-    #devices { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; align-items: start; }
-    #devices .card { margin: 0; }
-    #devices .empty { grid-column: 1 / -1; }
-    @media (max-width: 860px) {
-      #devices { grid-template-columns: 1fr; }
-    }
-
-    header {
-      position: sticky;
-      top: 0;
-      z-index: 2;
-       background: rgba(246, 247, 242, .88);
-      -webkit-backdrop-filter: saturate(180%) blur(20px);
-      backdrop-filter: saturate(180%) blur(20px);
-       border-bottom: 1px solid var(--line);
-    }
-
-    nav { display: flex; gap: 24px; align-items: center; padding: 15px 0; }
-    nav .brand { font-weight: 600; letter-spacing: -.01em; margin-right: auto; color: var(--text); text-decoration: none; }
-    nav a { color: var(--muted); text-decoration: none; font-size: 13px; letter-spacing: -.01em; padding: 3px 0; white-space: nowrap; transition: color .25s var(--ease); }
-    nav a:hover { color: var(--text); }
-    nav a[aria-current="page"] { color: var(--text); }
-
-    /*
-     * WHY the header row scrolls on a phone: the rail already does, but this is the site nav, and seven items never fit 390px without stacking the brand into two ragged lines.
-     * Scoped to header nav so the rail keeps its own.
-     */
-    @media (max-width: 800px) {
-      header nav { overflow-x: auto; gap: 14px; padding: 12px 0; scrollbar-width: thin;
-        mask-image: linear-gradient(to right, #000 88%, transparent);
-        -webkit-mask-image: linear-gradient(to right, #000 88%, transparent); }
-      header nav a { white-space: nowrap; }
-      header nav .brand { margin-right: 6px; }
-    }
-
-    main { padding: 44px 0 56px; }
-    h1 { margin: 0 0 6px; font-size: 28px; letter-spacing: -.01em; }
-    .sub { color: var(--muted); margin: 0 0 22px; }
-
-    /*
-     * WHY the rail: a page with four unrelated jobs and no divider reads as a form
-     *
-     * someone forgot to finish.
-     * The rail is the page's table of contents, so a reader can jump to the one thing they came for and see what else exists.
-     * It collapses to a horizontal strip on a phone, because a vertical rail at
-     *
-     * 320px would push the first control off the screen.
-     */
-
-    .layout { display: grid; grid-template-columns: 180px minmax(0, 1fr); gap: 28px; align-items: start; }
-    .rail { position: sticky; top: 78px; display: grid; gap: 2px; }
-    .rail a {
-      display: block;
-      padding: 7px 10px;
-      border-radius: 8px;
-      color: var(--muted);
-      text-decoration: none;
-      font-size: 13.5px;
-      border-left: 2px solid transparent;
-    }
-    .rail a:hover { color: var(--text); background: var(--surface); }
-    .rail a[aria-current="true"] { color: var(--text); border-left-color: var(--accent); background: var(--surface); }
-    .rail .railNote { color: var(--muted); font-size: 12px; padding: 10px 10px 0; border-top: 1px solid var(--line); margin-top: 8px; }
-
-    @media (max-width: 640px) {
-      .layout { grid-template-columns: minmax(0, 1fr); gap: 18px; }
-      .rail { position: static; grid-auto-flow: column; grid-auto-columns: max-content; overflow-x: auto; gap: 6px; padding-bottom: 4px; }
-      .rail a { border-left: 0; border-bottom: 2px solid transparent; white-space: nowrap; }
-      .rail a[aria-current="true"] { border-left: 0; border-bottom-color: var(--accent); }
-      .rail .railNote { display: none; }
-    }
-
-    section { scroll-margin-top: 78px; margin: 0 0 26px; }
-    section h2 { margin: 0 0 4px; font-size: 17px; letter-spacing: -.005em; }
-
-    .card {
-      background: var(--surface);
-      border: 1px solid var(--line);
-      border-radius: 14px;
-      padding: 20px;
-      margin: 0 0 14px;
-    }
-    .card > h2:first-child, .card > h3:first-child { margin-top: 0; }
-    .card h3 { margin: 0 0 4px; font-size: 15.5px; }
-
-    .meta { color: var(--muted); font-size: 13px; margin: 0 0 12px; }
-    .online { color: var(--accent); }
-    .offline { color: var(--warn); }
-
-    /*
-     * WHY a grid of facts rather than a sentence: an operator comparing two devices
-     *
-     * reads columns, not prose.
-     * The definition list keeps label and value paired so
-     *
-     * a narrow screen does not turn "extension 1.6.16" into an orphaned number.
-     */
-
-    dl.facts { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 6px 16px; margin: 0 0 14px; font-size: 13.5px; }
-    dl.facts dt { color: var(--muted); }
-    dl.facts dd { margin: 0; min-width: 0; }
-
-    /*
-     * WHY the checklist: an empty device list plus three unexplained sections is where a new reader stalls.
-     * The page already holds every signal, so progress is computed from loaded data, never claimed.
-     */
-    .checklist { margin: 12px 0 0; padding: 0; list-style: none; font-size: 13.5px; }
-    .checklist li { display: flex; gap: 9px; padding: 5px 0; color: var(--muted); }
-    .checklist li.done { color: var(--text); }
-    .checklist .box {
-      width: 17px;
-      height: 17px;
-      border-radius: 50%;
-      border: 1px solid var(--line);
-      flex: none;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 11px;
-      margin-top: 2px;
-    }
-    .checklist li.done .box { background: var(--accent); border-color: var(--accent); color: #04211d; }
-
-    /*
-     * WHY the box: the code arrived as a sentence inside a status line, which a reader had to pick apart and retype.
-     * Big, spaced, one click to copy, and a countdown from the expiry the server returns.
-     */
-    .pairCodeBox { margin: 14px 0 0; padding: 14px; border: 1px dashed var(--line); border-radius: 10px; }
-    .pairCodeBox[hidden] { display: none; }
-    .pairCode {
-      display: block;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-      font-size: 26px;
-      letter-spacing: .12em;
-      margin: 0 0 10px;
-      overflow-wrap: anywhere;
-    }
-    .pairCodeBox .row { margin-top: 0; align-items: center; }
-    #pairCountdown { margin: 0; }
-
-    /*
-     * WHY the summary is numbers: the card once repeated the device list in prose ("2 device ter-pairing, 1 daring") while the list showed the same facts below.
-     * Three blocks computed from the same payload answer at a glance.
-     */
-    .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 14px 0 0; padding: 0; }
-    .stats div { margin: 0; }
-    .stats dt { font-size: 12px; color: var(--muted); }
-    .stats dd { margin: 2px 0 0; font-size: 19px; font-weight: 650; letter-spacing: -.01em; }
-    @media (max-width: 420px) { .stats dd { font-size: 16px; } }
-
-    /*
-     * WHY the dot plus the chip: two stacked cards differed only in their third row, so telling which device is down meant reading both.
-     * State, name and build on the first line answer it before any row is read.
-     */
-    .cardHead { display: flex; align-items: center; gap: 9px; margin: 0 0 10px; }
-    .cardHead h3 { margin: 0; font-size: 15.5px; }
-    .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--muted); flex: none; }
-    .dot.online { background: var(--accent); }
-    .dot.offline { background: var(--warn); }
-    .chip {
-      margin-left: auto;
-      font-size: 12px;
-      color: var(--muted);
-      border: 1px solid var(--line);
-      border-radius: 999px;
-      padding: 1px 9px;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-      white-space: nowrap;
-    }
-
-    /*
-     * WHY the two verbs share a row: two tall, near-empty cards stacked left a full screen of whitespace between input and outcome.
-     * They split on desktop and stack on a phone, like every other pair on this site.
-     */
-    .duo { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-    .duo section { margin-bottom: 14px; }
-    @media (max-width: 640px) {
-      .duo { grid-template-columns: 1fr; }
-    }
-
-    .empty {
-      border: 1px dashed var(--line);
-      border-radius: 14px;
-      padding: 22px 20px;
-      color: var(--muted);
-      font-size: 14px;
-      margin: 0 0 14px;
-    }
-    .empty strong { color: var(--text); font-weight: 600; }
-
-    ul.commands { margin: 0; padding: 0; list-style: none; color: var(--muted); font-size: 13px; }
-    ul.commands li {
-      display: flex;
-      justify-content: space-between;
-      gap: 12px;
-      padding: 6px 0;
-      border-top: 1px solid var(--line);
-    }
-    ul.commands li:first-child { border-top: 0; }
-    /*
-     * WHY the ink is named per row: every history row once read in the same muted ink, so one failed click sat invisible among completions.
-     * The word stays — colour never carries meaning alone.
-     */
-    .commands li .online { color: var(--accent); }
-    .commands li .offline { color: var(--warn); }
-
-    code {
-      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-      font-size: 12.5px;
-      background: var(--surface-soft);
-      border: 1px solid var(--line);
-      border-radius: 6px;
-      padding: 1px 5px;
-
-      /*
-       * WHY the wrap: a device id, an account id and a localhost callback are the
-       *
-       * three unbreakable strings on these pages, and a token with no spaces scrolls a
-       *
-       * phone sideways.
-       * This is the page an operator opens when something is wrong.
-       */
-
-      overflow-wrap: anywhere;
-      word-break: break-word;
-    }
-
-    .row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
-
-    /*
-     * WHY the id reads as code and is clickable: support asks for it first, and an operator should never retype a UUID to report which browser is misbehaving.
-     */
-
-    .deviceId { cursor: pointer; }
-    .deviceId:hover { border-color: var(--accent); color: var(--accent); }
-
-    .btn {
-      display: inline-block;
-      padding: 11px 22px;
-      border-radius: 980px;
-      border: 1px solid var(--line-strong);
-      background: var(--surface);
-      color: var(--text);
-      text-decoration: none;
-      font-size: 15px;
-      cursor: pointer;
-      font-family: inherit;
-      transition: background .25s var(--ease), border-color .25s var(--ease), transform .25s var(--ease);
-    }
-    .btn:hover { border-color: var(--accent); }
-    .btn:disabled { opacity: .5; cursor: default; }
-    .btn.ghost { background: transparent; }
-
-    /*
-     * WHY one danger colour, used once: the only irreversible action on this page is revoking a device, and it is the one a reader must not hit by muscle memory.
-     */
-
-    .btn.danger { border-color: var(--danger); color: var(--danger); }
-    .btn.danger:hover { background: var(--danger); color: #0b0d10; }
-
-    label { display: block; margin: 0 0 6px; font-size: 13px; color: var(--muted); }
-    input[type="text"] {
-      width: 100%;
-      margin: 0 0 14px;
-      padding: 10px 12px;
-      border-radius: 9px;
-      border: 1px solid var(--line);
-      background: var(--surface-soft);
-      color: var(--text);
-      font: inherit;
-      font-size: 14px;
-    }
-
-    .status { min-height: 22px; font-size: 13.5px; margin: 12px 0 0; color: var(--muted); }
-    .status.ok { color: var(--accent); }
-    .status.warn { color: var(--warn); }
-    .status.bad { color: var(--danger); }
-
-    /*
-     * WHY a tone-strip rather than a badge: a badge draws the eye with colour, and the
-     *
-     * one thing a reader opens this page for is whether a device is reachable.
-     * The dot carries the state and the words beside it carry the meaning, so the page
-     *
-     * still works when colour does not.
-     */
-
-    .tone { display: inline-flex; align-items: center; gap: 7px; font-size: 13.5px; }
-    .tone::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--muted); flex: none; }
-    .tone.good { color: var(--accent); }
-    .tone.good::before { background: var(--accent); }
-    .tone.warn { color: var(--warn); }
-    .tone.warn::before { background: var(--warn); }
-
-    /*
-     * WHY the shell overrides by later order: every rule above is pinned, so the console look — icon rail, top tabs, one visible section, dense history — lives here, never by editing a rule a test names.
-     */
-
-    .layout { grid-template-columns: 208px minmax(0, 1fr); }
-    .content { min-width: 0; }
-    .content.tabbed > section:not(.active) { display: none; }
-    .content.tabbed > section.active { display: block; }
-    .content.tabbed .duo > section:not(.active) { display: none; }
-    .content.tabbed .duo > section.active { display: block; }
-    .tabbed .duo { display: grid; grid-template-columns: 1fr; }
-    .tabs {
-      display: flex;
-      gap: 4px;
-      overflow-x: auto;
-      border-bottom: 1px solid var(--line);
-      margin: 0 0 18px;
-      padding-bottom: 2px;
-      scrollbar-width: thin;
-    }
-    .tabs a {
-      color: var(--muted);
-      text-decoration: none;
-      font-size: 13.5px;
-      padding: 8px 12px;
-      border-bottom: 2px solid transparent;
-      white-space: nowrap;
-    }
-    .tabs a:hover { color: var(--text); }
-    .tabs a[aria-current="true"] { color: var(--text); border-bottom-color: var(--accent); }
-    .rail a::before { display: inline-block; width: 20px; margin-right: 8px; text-align: center; opacity: .8; }
-    .rail a[href="#ringkasan"]::before { content: "◉"; }
-    .rail a[href="#device"]::before { content: "▣"; }
-    .rail a[href="#riwayat"]::before { content: "≣"; }
-    .rail a[href="#tabel"]::before { content: "▦"; }
-    .rail a[href="#dengar"]::before { content: "◍"; }
-    .rail a[href="#pairing"]::before { content: "⧉"; }
-    .rail a[href="#aksi"]::before { content: "▶"; }
-    .rail a[href="#akun"]::before { content: "●"; }
-    .tableCard { padding: 8px; overflow-x: auto; }
-    table.history { width: 100%; border-collapse: collapse; font-size: 13px; }
-    .history th {
-      text-align: left;
-      color: var(--muted);
-      font-weight: 500;
-      font-size: 12px;
-      padding: 8px 10px;
-      border-bottom: 1px solid var(--line-strong);
-      white-space: nowrap;
-    }
-    .history td { padding: 7px 10px; border-bottom: 1px solid var(--line); vertical-align: middle; }
-    .history tr:last-child td { border-bottom: 0; }
-
-    /*
-     * WHY the zebra: five columns of muted ink scan badly at speed, and the history table is read while something is wrong.
-     * A faint second tone carries the row the way every production table prints one.
-     */
-    .history tbody tr:nth-child(even) { background: rgba(255, 255, 255, .02); }
-    .history td .dot { display: inline-block; vertical-align: 1px; margin-right: 6px; }
-    .history td .online { color: var(--accent); }
-    .history td .offline { color: var(--warn); }
-
-    /*
-     * WHY the editor is one instrument, not a stack of cards: the list, the grid and the pager answer one question — what is in this table — and a page change is a query, not navigation.
-     * The grid scrolls inside its own pane, so the rail and the tabs never move while someone pages through twenty-eight thousand rows.
-     */
-    .konsol { display: grid; grid-template-columns: 196px minmax(0, 1fr); gap: 16px; align-items: start; }
-    .konsolSide { display: grid; gap: 2px; align-content: start; }
-    .konsolSide button {
-      display: flex;
-      justify-content: space-between;
-      gap: 8px;
-      width: 100%;
-      padding: 7px 10px;
-      border: 0;
-      border-left: 2px solid transparent;
-      border-radius: 8px;
-      background: none;
-      color: var(--muted);
-      font: inherit;
-      font-size: 13px;
-      text-align: left;
-      cursor: pointer;
-    }
-    .konsolSide button:hover:not(:disabled) { color: var(--text); background: var(--surface); }
-    .konsolSide button[aria-current="true"] { color: var(--text); border-left-color: var(--accent); background: var(--surface); }
-    .konsolSide button:disabled { opacity: .55; cursor: not-allowed; }
-    .konsolSide .meta { font-variant-numeric: tabular-nums; }
-
-    /*
-     * WHY grouped and captioned: sixteen table names scan as a wall until the two rules behind them are visible — nine belong to this account, seven to the operator.
-     * The caption is the Studio sidebar's section label, nothing more.
-     */
-    .konsolSide .konsolGroup {
-      color: var(--muted);
-      font-size: 11px;
-      letter-spacing: .06em;
-      text-transform: uppercase;
-      padding: 12px 10px 4px;
-    }
-    .konsolSide .konsolGroup:first-child { padding-top: 2px; }
-    .konsolMain { min-width: 0; }
-    .konsolBar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin: 0 0 4px; }
-    .konsolBar input {
-      flex: 1;
-      min-width: 180px;
-      margin: 0;
-      padding: 9px 12px;
-      border-radius: 9px;
-      border: 1px solid var(--line);
-      background: var(--surface-soft);
-      color: var(--text);
-      font: inherit;
-      font-size: 13.5px;
-    }
-    .konsolScroll { overflow: auto; max-height: 460px; overscroll-behavior: contain; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); }
-    .konsolScroll .empty { margin: 0; border: 0; border-radius: 0; }
-    .konsolGrid { border-collapse: collapse; width: 100%; font: 12.5px/1.55 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
-    .konsolGrid th, .konsolGrid td {
-      padding: 6px 12px;
-      border-bottom: 1px solid var(--line);
-      text-align: left;
-      white-space: nowrap;
-      max-width: 320px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .konsolGrid th {
-      position: sticky;
-      top: 0;
-      z-index: 1;
-      background: var(--surface-soft);
-      border-bottom: 1px solid var(--line-strong);
-      font-weight: 600;
-    }
-    .konsolGrid th button {
-      display: block;
-      width: 100%;
-      padding: 0;
-      border: 0;
-      background: none;
-      color: inherit;
-      font: inherit;
-      text-align: left;
-      cursor: pointer;
-    }
-    .konsolGrid th button:hover { color: var(--accent); }
-
-    /*
-     * WHY zebra, selection ink and right-aligned figures: the three signals every production grid carries.
-     * The tinted row says which row the JSON pane below is showing; the numeric class comes from the catalog type, never from the value.
-     */
-    .konsolGrid tbody tr { cursor: pointer; }
-    .konsolGrid tbody tr:nth-child(even) { background: rgba(255, 255, 255, .02); }
-    .konsolGrid tbody tr:hover { background: var(--surface-soft); }
-    .konsolGrid tbody tr[aria-selected="true"] { background: var(--accent-soft); }
-    .konsolGrid tbody tr:last-child td { border-bottom: 0; }
-    .konsolGrid td.num, .konsolGrid th.num { text-align: right; font-variant-numeric: tabular-nums; }
-    .konsolFoot { margin-top: 10px; }
-    .konsolFoot .meta { font-variant-numeric: tabular-nums; }
-    .konsolJson {
-      background: var(--surface-soft);
-      border: 1px solid var(--line);
-      border-radius: 14px;
-      padding: 14px;
-      margin: 12px 0 0;
-      max-height: 260px;
-      overflow: auto;
-      font: 12.5px/1.55 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-      white-space: pre-wrap;
-      word-break: break-word;
-    }
-    .konsolJson[hidden] { display: none; }
-    @media (max-width: 900px) {
-      .konsol { grid-template-columns: minmax(0, 1fr); }
-      .konsolSide { grid-auto-flow: column; grid-auto-columns: max-content; overflow-x: auto; gap: 6px; padding-bottom: 4px; }
-      .konsolSide .konsolGroup { padding: 0 6px; align-self: center; }
-      .konsolSide button { border-left: 0; border-bottom: 2px solid transparent; white-space: nowrap; }
-      .konsolSide button[aria-current="true"] { border-left: 0; border-bottom-color: var(--accent); }
-    }
-  </style>
 </head>
 <body>
   <header>
     <div class="wrap">
       <nav>
-        <a class="brand" href="./beranda.html">Opera Agent</a>
-        <a href="./unduh.html">Unduh</a>
-        <a href="./beranda.html#model">Model Anda</a>
-        <a href="./akun.html">Akun</a>
-        <a href="./dashboard.html" aria-current="page">Dashboard</a>
-        <a href="./privasi.html">Privasi</a>
-        <a href="./fitur.html">Fitur</a>
-        <a href="./dukungan.html">Dukungan</a>
+        <a class="brand" href="./beranda.html"><svg class="brandMark" viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="7" fill="#101512" /><path d="M8 5.6v12.8l3.1-2.9 1.9 4.5 2.4-1-2-4.5h3.9L8 5.6Z" fill="#3ecf8e" /></svg><span>Opera Agent</span></a>
+        
+<a href="./unduh.html">Unduh</a>        <a class="nav-sec" href="./beranda.html#model">Model Anda</a>        <a href="./dashboard.html" aria-current="page">Dashboard</a>        <a class="nav-account" href="./akun.html">Akun</a>        <a class="nav-sec" href="./fitur.html">Fitur</a>        <a class="nav-sec" href="./privasi.html">Privasi</a>        <a class="nav-sec" href="./dukungan.html">Dukungan</a>
         <span class="lang" data-lang-toggle></span><a class="navCta" href="./index.html">Masuk</a>
       </nav>
     </div>
   </header>
 
-  <main class="wrap wide">
-    <h1>Dashboard</h1>
-    <p class="sub" id="whoami">Memeriksa sesi…</p>
+  <main class="wrap wide console">
+    <div class="appHead">
+      <div>
+        <p class="eyebrow">Konsol</p>
+        <h1>Dashboard</h1>
+        <p id="whoami">Memeriksa sesi…</p>
+      </div>
+      <div class="row">
+        <a class="btn primary" href="./unduh.html">Pasang extension</a>
+        <a class="btn" href="./akun.html">Kelola akun</a>
+      </div>
+    </div>
 
     <div class="layout">
-
       <nav class="rail" aria-label="Bagian dashboard">
-        <a href="#ringkasan">Ringkasan</a>
+        <a href="#ringkasan" aria-current="true">Ringkasan</a>
         <a href="#device">Device</a>
-        <a href="#riwayat" aria-current="true">Riwayat</a>
+        <a href="#riwayat">Riwayat</a>
         <a href="#tabel">Tabel</a>
         <a href="#dengar">Dengar</a>
         <a href="#pairing">Pairing</a>
@@ -545,17 +61,7 @@
       </nav>
 
       <div class="content tabbed">
-        <nav class="tabs" aria-label="Tab dashboard">
-          <a href="#ringkasan">Ringkasan</a>
-          <a href="#device">Device</a>
-          <a href="#riwayat" aria-current="true">Riwayat</a>
-          <a href="#tabel">Tabel</a>
-          <a href="#dengar">Dengar</a>
-          <a href="#pairing">Pairing</a>
-          <a href="#aksi">Aksi</a>
-          <a href="#akun">Akun</a>
-        </nav>
-        <section id="ringkasan">
+        <section id="ringkasan" class="active">
           <h2>Ringkasan</h2>
           <div class="card">
             <p class="tone" id="installState" role="status" aria-live="polite">&nbsp;</p>
@@ -575,7 +81,7 @@
           <div id="devices"></div>
         </section>
 
-        <section id="riwayat" class="active">
+        <section id="riwayat">
           <h2>Riwayat</h2>
           <p class="meta">Perintah terbaru di semua device, terbaru dulu. Hanya method dan status — tanpa isi perintah.</p>
           <div class="card tableCard">
@@ -1496,8 +1002,8 @@
     function showSection() {
       const sections = [...document.querySelectorAll('main section[id]')];
       if (!sections.length) return;
-      const wanted = (globalThis.location.hash || '#riwayat').slice(1);
-      const target = sections.some((section) => section.id === wanted) ? wanted : 'riwayat';
+      const wanted = (globalThis.location.hash || '#ringkasan').slice(1);
+      const target = sections.some((section) => section.id === wanted) ? wanted : 'ringkasan';
       for (const section of sections) section.classList.toggle('active', section.id === target);
       for (const link of document.querySelectorAll('.rail a, .tabs a')) {
         if (link.getAttribute('href') === `#${target}`) link.setAttribute('aria-current', 'true');

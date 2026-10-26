@@ -1,14 +1,14 @@
-<!-- @last-edited: 2026-10-10 UTC+7. -->
+<!-- @last-edited: 2026-10-26 UTC+7. -->
 <!-- @title: consent — the OAuth permission screen, on the same origin as the rest of the site. -->
 <!-- @state: reads one authorization_id; no password, no external origin, no invented app name. -->
-<!-- @dependencies: none. -->
+<!-- @dependencies: site.css, i18n.js. -->
 
 <!doctype html>
 <html lang="id">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="theme-color" content="#f6f7f2" />
+  <meta name="theme-color" content="#f7f5ef" />
   <title>Izin OAuth — Opera Agent</title>
   <meta name="description" content="Layar izin OAuth Opera Agent: aplikasi mana yang meminta akses, lalu izinkan atau tolak." />
   <link rel="stylesheet" href="/site.css" />
@@ -20,121 +20,21 @@
   <meta property="og:url" content="https://opera-agent.pages.dev/oauth/consent" />
   <meta property="og:locale" content="id_ID" />
   <meta name="robots" content="noindex" />
-  <style>
-    /*
-     * WHY the site palette and not the old consent screen's: this page is part of the site now, and a reader who was on the home page must not land somewhere that looks like a different product asking for browser control.
-     */
-    :root { --danger: #9f2942; }
-
-
-    .sub { color: var(--muted); margin: 0 0 24px; }
-    .sub.warn { color: var(--warn); }
-    .sub.ok { color: var(--accent); }
-
-    .card {
-      background: var(--surface);
-      border: 1px solid var(--line);
-      border-radius: 18px;
-      padding: 20px;
-      margin: 0 0 14px;
-    }
-
-    .card h2 { margin: 0 0 4px; font-size: 17px; }
-    .meta { color: var(--muted); font-size: 13px; margin: 0 0 12px; }
-
-    /*
-     * WHY a definition list and not prose: the things a person must judge before granting browser control are who is asking, where the code goes, and how much.
-     * Naming them in a column makes each one impossible to skim past.
-     */
-    dl.facts { margin: 0; display: grid; grid-template-columns: max-content 1fr; gap: 8px 16px; font-size: 13.5px; }
-    dl.facts dt { color: var(--muted); }
-    dl.facts dd { margin: 0; overflow-wrap: anywhere; }
-    ul.scopes { margin: 0; padding: 0; list-style: none; }
-    ul.scopes li { margin: 0 0 6px; }
-    ul.scopes li:last-child { margin-bottom: 0; }
-    ul.scopes .warn { color: var(--warn); }
-    ul.consents { margin: 0; padding: 0; list-style: none; }
-    ul.consents li {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px 12px;
-      align-items: baseline;
-      padding: 10px 0;
-      border-top: 1px solid var(--line);
-      font-size: 13.5px;
-    }
-    ul.consents li:first-child { border-top: none; padding-top: 0; }
-    ul.consents .who { font-weight: 600; }
-    ul.consents .when { color: var(--muted); font-size: 12.5px; }
-    ul.consents button { margin-left: auto; }
-
-    /*
-     * WHY stacked under 420px: the label column is max-content and never shrinks, so on a phone the value is left in a sliver.
-     * Every settings page a reader already knows puts the value under its label at this width.
-     */
-    @media (max-width: 420px) {
-      dl.facts { grid-template-columns: 1fr; gap: 2px 0; }
-      dl.facts dd { margin: 0 0 10px; }
-    }
-
-    code {
-      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-      font-size: 12.5px;
-      background: var(--surface-soft);
-      border: 1px solid var(--line);
-      border-radius: 6px;
-      padding: 1px 5px;
-      /*
-       * WHY the wrap: a device id, an account id and a localhost callback are the three unbreakable strings on these pages, and a token with no spaces scrolls a phone sideways.
-       * This is the page an operator opens when something is wrong.
-       */
-      overflow-wrap: anywhere;
-      word-break: break-word;
-    }
-
-    .row { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 18px; }
-
-    .btn {
-      display: inline-block;
-      padding: 11px 22px;
-      border-radius: 980px;
-      border: 1px solid var(--line-strong);
-      background: var(--surface);
-      color: var(--text);
-      text-decoration: none;
-      font-size: 15px;
-      cursor: pointer;
-      transition: background .25s var(--ease), border-color .25s var(--ease), transform .25s var(--ease);
-    }
-
-    .btn.primary { background: var(--accent); border-color: var(--accent); color: #05231f; font-weight: 600; }
-    .btn.primary:hover { background: #1ac3b0; }
-    .btn.danger { border-color: var(--danger); color: #ffb4bf; }
-    .btn:disabled { opacity: .5; cursor: not-allowed; }
-
-    .status { min-height: 22px; font-size: 13.5px; margin: 12px 0 0; color: var(--muted); }
-    .status.ok { color: var(--accent); }
-    .status.warn { color: var(--warn); }
-</style>
 </head>
 <body>
   <header>
     <div class="wrap">
       <nav>
-        <a class="brand" href="/beranda.html">Opera Agent</a>
-        <a href="/unduh.html">Unduh</a>
-        <a href="/beranda.html#model">Model Anda</a>
-        <a href="/akun.html">Akun</a>
-        <a href="/dashboard.html">Dashboard</a>
-        <a href="/privasi.html">Privasi</a>
-        <a href="/fitur.html">Fitur</a>
-        <a href="/dukungan.html">Dukungan</a>
+        <a class="brand" href="/beranda.html"><svg class="brandMark" viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="7" fill="#101512" /><path d="M8 5.6v12.8l3.1-2.9 1.9 4.5 2.4-1-2-4.5h3.9L8 5.6Z" fill="#3ecf8e" /></svg><span>Opera Agent</span></a>
+        
+<a href="/unduh.html">Unduh</a>        <a class="nav-sec" href="/beranda.html#model">Model Anda</a>        <a href="/dashboard.html">Dashboard</a>        <a class="nav-account" href="/akun.html">Akun</a>        <a class="nav-sec" href="/fitur.html">Fitur</a>        <a class="nav-sec" href="/privasi.html">Privasi</a>        <a class="nav-sec" href="/dukungan.html">Dukungan</a>
         <span class="lang" data-lang-toggle></span><a class="navCta" href="/index.html">Masuk</a>
       </nav>
     </div>
   </header>
 
-  <main class="wrap">
+  <main class="wrap prose">
+    <p class="eyebrow">OAuth</p>
     <h1>Izin aplikasi</h1>
     <p class="sub" id="status" role="status" aria-live="polite">Memuat permintaan…</p>
 

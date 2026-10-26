@@ -1,72 +1,43 @@
-<!-- @last-edited: 2026-10-06 16:35 UTC+7. -->
+<!-- @last-edited: 2026-10-26 UTC+7. -->
 <!-- @title: 404 — a lost visitor gets the four ways out, not a host error. -->
 <!-- @state: served by the catch-all rewrite in vercel.json. -->
-<!-- @dependencies: none. -->
+<!-- @dependencies: site.css, i18n.js. -->
 
 <!doctype html>
 <html lang="id">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="theme-color" content="#f6f7f2" />
+  <meta name="theme-color" content="#f7f5ef" />
   <title data-i18n="meta.title">Halaman tidak ditemukan — Opera Agent</title>
-  <meta name="description" content="Halaman ini tidak ada. Links ke beranda, unduhan, akun, dan dashboard Opera Agent." />
+  <meta name="description" content="Halaman ini tidak ada. Tautan ke beranda, unduhan, akun, dan dashboard Opera Agent." />
   <link rel="stylesheet" href="/site.css" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%230b0d10'/%3E%3Cpath d='M5.2 2.2v10.2l2.5-2.3 1.5 3.6 1.9-.8-1.6-3.6h3.1L5.2 2.2Z' fill='%233ecf8e'/%3E%3C/svg%3E" />
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="Opera Agent" />
   <meta property="og:title" content="Halaman tidak ditemukan — Opera Agent" />
-  <meta property="og:description" content="Halaman ini tidak ada. Links ke beranda, unduhan, akun, dan dashboard Opera Agent." />
+  <meta property="og:description" content="Halaman ini tidak ada. Tautan ke beranda, unduhan, akun, dan dashboard Opera Agent." />
   <meta property="og:url" content="https://opera-agent.pages.dev/" />
   <meta property="og:locale" content="id_ID" />
   <meta name="robots" content="noindex" />
-  <style>
-    /*
-     * WHY the same single-file shape as the rest of the site: a 404 that looks like someone else's error page loses the reader before they read it.
-     */
-
-
-    main { padding: 64px 0 40px; }
-    h1 { margin: 0 0 10px; font-size: 28px; letter-spacing: -.01em; }
-    p { color: var(--muted); }
-
-    .grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); margin-top: 22px; }
-
-    .tile {
-      display: block;
-      background: var(--surface);
-      border: 1px solid var(--line);
-      border-radius: 18px;
-      padding: 16px;
-      text-decoration: none;
-    }
-
-    .tile:hover { border-color: var(--accent); }
-    .tile h2 { margin: 0 0 4px; font-size: 15px; color: var(--text); }
-    .tile p { margin: 0; font-size: 13px; }
-</style>
 </head>
 <body>
   <header>
     <div class="wrap">
       <nav>
-        <a class="brand" href="./beranda.html" aria-current="page">Opera Agent</a>
-        <a href="./unduh.html" data-i18n="nav.download">Unduh</a>
-        <a href="./beranda.html#model" data-i18n="nav.model">Model Anda</a>
-        <a href="./akun.html" data-i18n="nav.account">Akun</a>
-        <a href="./dashboard.html">Dashboard</a>
-        <a href="./privasi.html" data-i18n="nav.privacy">Privasi</a>
-        <a href="./fitur.html" data-i18n="nav.features">Fitur</a>
-        <a href="./dukungan.html" data-i18n="nav.support">Dukungan</a>
+        <a class="brand" href="./beranda.html" aria-current="page"><svg class="brandMark" viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="7" fill="#101512" /><path d="M8 5.6v12.8l3.1-2.9 1.9 4.5 2.4-1-2-4.5h3.9L8 5.6Z" fill="#3ecf8e" /></svg><span>Opera Agent</span></a>
+        
+<a href="./unduh.html" data-i18n="nav.download">Unduh</a>        <a class="nav-sec" href="./beranda.html#model" data-i18n="nav.model">Model Anda</a>        <a href="./dashboard.html">Dashboard</a>        <a class="nav-account" href="./akun.html" data-i18n="nav.account">Akun</a>        <a class="nav-sec" href="./fitur.html" data-i18n="nav.features">Fitur</a>        <a class="nav-sec" href="./privasi.html" data-i18n="nav.privacy">Privasi</a>        <a class="nav-sec" href="./dukungan.html" data-i18n="nav.support">Dukungan</a>
         <span class="lang" data-lang-toggle></span><a class="navCta" href="./index.html" data-i18n="nav.signin">Masuk</a>
       </nav>
     </div>
   </header>
 
   <main class="wrap">
+    <p class="eyebrow">404</p>
     <h1 data-i18n="page.title">Halaman ini tidak ada</h1>
-    <p data-i18n="page.sub">Alamatnya mungkin salah ketik, atau halaman itu sudah dipindahkan. Lima jalan keluar:</p>
-    <div class="grid">
+    <p class="lede" data-i18n="page.sub">Alamatnya mungkin salah ketik, atau halaman itu sudah dipindahkan. Lima jalan keluar:</p>
+    <div class="grid exitGrid">
       <a class="tile" href="./beranda.html">
         <h2 data-i18n="tile.home.title">Beranda</h2>
         <p data-i18n="tile.home.body">Cara kerjanya dan semua jawaban umum.</p>

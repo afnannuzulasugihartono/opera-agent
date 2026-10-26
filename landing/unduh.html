@@ -1,7 +1,7 @@
-<!-- @last-edited: 2026-10-09 UTC+7.
+<!-- @last-edited: 2026-10-26 UTC+7. -->
 <!-- @title: unduh — one giant door, then the details. -->
 <!-- @state: the hero centers the title, the value, and the one door; both formats share one page with its own browser cards. -->
-<!-- @dependencies: none. -->
+<!-- @dependencies: site.css, download.css, i18n.js. -->
 
 
 <!doctype html>
@@ -9,7 +9,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="theme-color" content="#f6f7f2" />
+  <meta name="theme-color" content="#f7f5ef" />
   <title data-i18n="meta.title">Unduh — Opera Agent</title>
   <meta name="description" content="Unduh Opera Agent: arsip manual atau CRX bertanda tangan untuk Chrome, Edge, Brave, Opera, dan Vivaldi." />
   <link rel="stylesheet" href="/site.css" />
@@ -21,71 +21,14 @@
   <meta property="og:description" content="Unduh Opera Agent: arsip manual atau CRX bertanda tangan untuk Chrome, Edge, Brave, Opera, dan Vivaldi." />
   <meta property="og:url" content="https://opera-agent.pages.dev/unduh" />
   <meta property="og:locale" content="id_ID" />
-  <style>
-    /*
-     * WHY the same single-file shape as the rest of the site: no build step and no external origin, so the archive link is the only way out of this page.
-     */
-
-
-    /*
-     * WHY the Steam shape: one hero answers before any detail — the title, the value, and the one door — with a product shot beside it, because a wall of centered prose reads as a manual, not a download page.
-     * The shot is pure CSS, so no asset can rot and no script hash moves.
-     */
-    .wrap.wide { max-width: 1120px; }
-    .hero { display: grid; grid-template-columns: 1.05fr .95fr; gap: 48px; align-items: center; margin: 20px 0 12px; }
-    .hero-text h1 { text-align: left; font-size: clamp(40px, 5.4vw, 60px); line-height: 1.05; margin: 0 0 14px; }
-    .hero-text > p { text-align: left; }
-    .hero-cta { margin: 24px 0 6px; }
-    /*
-     * WHY Steam's button grammar, in brand green: block, uppercase, letterspaced, glyph pinned right, gradient that slides on hover.
-     * Uppercase rides CSS so the pinned anchor text stays exact.
-     */
-     .btn.giant { display: block; width: 100%; max-width: 420px; padding: 17px 52px 17px 26px; font-size: 19px; line-height: 1; letter-spacing: .03em; text-transform: uppercase; text-align: left; border-radius: 4px; border: 0; color: #fff; background: linear-gradient(to right, #1d7567 50%, #155c52 100%); background-size: 200%; background-position: right 0; filter: drop-shadow(0 8px 14px rgba(20, 32, 51, .16)); transition: background-position 300ms ease-in; position: relative; }
-    .btn.giant:hover { background-position: 0 0; }
-    .btn.giant::after { content: "\2193"; position: absolute; right: 24px; top: 50%; transform: translateY(-50%); font-size: 20px; margin: 0; }
-    .stats { display: flex; gap: 36px; margin: 20px 0 4px; }
-    .stat { display: grid; grid-template-columns: auto auto; grid-template-rows: auto auto; column-gap: 8px; align-items: baseline; }
-    .stat-dot { width: 8px; height: 8px; border-radius: 50%; align-self: center; }
-    .stat-dot.live { background: #2EBFFF; box-shadow: 0 0 8px #2EBFFF; }
-    .stat-dot.safe { background: #BAFF2E; box-shadow: 0 0 8px #BAFF2E; }
-    .stat-label { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
-    .stat-num { grid-column: 1 / -1; font-size: 30px; font-weight: 700; letter-spacing: -.01em; }
-    .also { font-size: 13.5px; }
-    .chips { display: flex; gap: 8px; margin: 12px 0 0; }
-    .chips span { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 8px; background: var(--surface-soft); border: 1px solid var(--line-strong); font-size: 13px; font-weight: 700; color: var(--muted); }
-    .shot { background: var(--surface); border: 1px solid var(--line-strong); border-radius: 16px; padding: 14px 16px 18px; box-shadow: 0 24px 60px rgba(0, 0, 0, .45); }
-    .shot-bar { display: flex; gap: 6px; margin-bottom: 14px; }
-    .shot-bar i { width: 10px; height: 10px; border-radius: 50%; background: var(--line-strong); }
-    .shot-row { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-top: 1px solid var(--line); }
-    .shot-row .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--muted); flex: none; }
-    .shot-row .dot.on { background: var(--accent); box-shadow: 0 0 10px var(--accent); }
-    .shot-row .dot.dim { opacity: .45; }
-    .shot-row .ln { height: 9px; border-radius: 5px; background: var(--surface-soft); border: 1px solid var(--line); }
-    .shot-row .ln.w70 { width: 70%; } .shot-row .ln.w60 { width: 60%; } .shot-row .ln.w45 { width: 45%; }
-    .shot-row .pill { margin-left: auto; width: 34px; height: 18px; border-radius: 980px; background: var(--surface-soft); border: 1px solid var(--line-strong); flex: none; }
-    .shot-row .pill.on { background: var(--accent-soft); border-color: var(--accent); }
-    @media (max-width: 860px) {
-      .hero { grid-template-columns: 1fr; gap: 28px; }
-      .shot { max-width: 440px; }
-    }
-    @media (prefers-reduced-motion: no-preference) {
-      .shot { animation: shot-float 9s ease-in-out infinite; }
-      @keyframes shot-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-7px); } }
-    }
-</style>
 </head>
 <body>
   <header>
     <div class="wrap">
       <nav>
-        <a class="brand" href="./beranda.html">Opera Agent</a>
-        <a href="./unduh.html" aria-current="page" data-i18n="nav.download">Unduh</a>
-        <a href="./beranda.html#model" data-i18n="nav.model">Model Anda</a>
-        <a href="./akun.html" data-i18n="nav.account">Akun</a>
-        <a href="./dashboard.html">Dashboard</a>
-        <a href="./privasi.html" data-i18n="nav.privacy">Privasi</a>
-        <a href="./fitur.html" data-i18n="nav.features">Fitur</a>
-        <a href="./dukungan.html" data-i18n="nav.support">Dukungan</a>
+        <a class="brand" href="./beranda.html"><svg class="brandMark" viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="7" fill="#101512" /><path d="M8 5.6v12.8l3.1-2.9 1.9 4.5 2.4-1-2-4.5h3.9L8 5.6Z" fill="#3ecf8e" /></svg><span>Opera Agent</span></a>
+        
+<a href="./unduh.html" aria-current="page" data-i18n="nav.download">Unduh</a>        <a class="nav-sec" href="./beranda.html#model" data-i18n="nav.model">Model Anda</a>        <a href="./dashboard.html">Dashboard</a>        <a class="nav-account" href="./akun.html" data-i18n="nav.account">Akun</a>        <a class="nav-sec" href="./fitur.html" data-i18n="nav.features">Fitur</a>        <a class="nav-sec" href="./privasi.html" data-i18n="nav.privacy">Privasi</a>        <a class="nav-sec" href="./dukungan.html" data-i18n="nav.support">Dukungan</a>
         <span class="lang" data-lang-toggle></span><a class="navCta" href="./index.html" data-i18n="nav.signin">Masuk</a>
       </nav>
     </div>
@@ -94,6 +37,7 @@
   <main class="wrap wide">
     <div class="hero">
       <div class="hero-text">
+        <p class="eyebrow" data-i18n="page.eyebrow">Unduh</p>
         <h1 data-i18n="page.title">Pasang Opera Agent</h1>
          <p data-i18n="page.value">Gratis dan tanpa toko: satu arsip .zip untuk semua browser Chromium; mesin enterprise dapat memakai CRX bertanda tangan.</p>
 
@@ -109,13 +53,22 @@
         <p class="chips" aria-label="Browser yang didukung"><span title="Chrome">C</span><span title="Edge">E</span><span title="Brave">B</span><span title="Opera">O</span><span title="Vivaldi">V</span></p>
       </div>
       <div class="shot" aria-hidden="true">
-        <div class="shot-bar"><i></i><i></i><i></i></div>
-        <div class="shot-row"><span class="dot on"></span><span class="ln w70"></span><span class="pill on"></span></div>
-        <div class="shot-row"><span class="dot"></span><span class="ln w45"></span><span class="pill"></span></div>
-        <div class="shot-row"><span class="dot dim"></span><span class="ln w60"></span><span class="pill"></span></div>
+        <div class="shotBar"><i></i><i></i><i></i><span>opera-agent.pages.dev/unduh</span></div>
+        <div class="shotFile">
+          <span class="shotIcon">↓</span>
+          <div class="shotMeta"><strong>opera-agent.zip</strong><span>Semua browser Chromium</span></div>
+          <span class="chip good">Terbaru</span>
+        </div>
+        <ul class="shotList">
+          <li><span class="dot on"></span>Chrome<b>Load unpacked</b></li>
+          <li><span class="dot on"></span>Edge<b>Load unpacked</b></li>
+          <li><span class="dot on"></span>Opera<b>Load unpacked</b></li>
+        </ul>
+        <div class="shotFoot"><span class="chip">Gratis</span><span>Tanpa toko</span><span>Update otomatis</span></div>
       </div>
     </div>
 
+    <div class="downloadBody">
      <h2 data-i18n="perms.title">Izin, dengan alasan jelas.</h2>
      <p data-i18n="perms.sub">Enam izin. Tidak ada yang tersembunyi.</p>
     <dl class="facts">
@@ -131,6 +84,7 @@
     <h2 data-i18n="review.title">Kenapa belum ada tombol pasang sekali klik</h2>
     <p data-i18n-html="review.body">Extension dengan akses <code>debugger</code> harus lewat review Chrome Web Store.
     Sementara itu pengguna pertama memuat sendiri, dan listing menyusul setelah review.</p>
+    </div>
   </main>
 
   <footer>
@@ -153,6 +107,7 @@
     "nav.support": "Support",
     "meta.title": "Download — Opera Agent",
     "page.title": "Install Opera Agent",
+    "page.eyebrow": "Download",
     "page.value": "Free and storeless: one .zip archive for every Chromium browser; enterprise machines can use the signed CRX.",
     "page.fresh": "Always the newest build.",
     "stat.mcp": "MCP commands",

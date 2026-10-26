@@ -64,7 +64,7 @@ test('every page renders in standards mode with its own theme color', () => {
     const full = raw(page);
     const head = full.slice(0, full.toLowerCase().indexOf('<!doctype html>')).replace(/<!--[\s\S]*?-->/g, '');
     assert.doesNotMatch(head, /\S/, `${page} has no text before the doctype`);
-    assert.match(full, /<meta name="theme-color" content="#f6f7f2"/, `${page} tints the browser chrome`);
+    assert.match(full, /<meta name="theme-color" content="#f7f5ef"/, `${page} tints the browser chrome`);
   }
 });
 
