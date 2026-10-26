@@ -1,4 +1,4 @@
-@last-edited: 2026-10-25 UTC+7.
+@last-edited: 2026-10-26 UTC+7.
 @related: [AGENTS.md](../AGENTS.md)
 
 # handoff
@@ -10,15 +10,13 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
 
 ## State
 
-- `main` = `origin/main`. The branches beyond it are the pull-request stack, not parked
-  work: each is the base of the next, and every merge is `--ff-only`.
+- `main` = `origin/main`. #112 is open and waits for the owner's merge; a branch starts from
+  `main` and merges back by `--rebase` once the four checks are green.
 - Version `1.6.27` in [`extension/manifest.json`](../extension/manifest.json) is the source
   of truth; [`check.mjs`](../scripts/check.mjs) also asserts the MCP version, the store form, and the secret regex.
-- **1.6.27 shipped on 2026-10-15, and `main` has taken it.** #86 merged as `e99bf5a`; the
-  CRX route answers 200 with `x-opera-sha256` equal to the bytes, and the release carries
-  both zips, the CRX and SHA256SUMS.
-- **Twenty pull requests are stacked and wait for the owner's merge.** #87 is now based
-  on `main` and clean; the chain runs to #107 `report-job`. #93 is closed, #88 stands apart.
+- **1.6.27 shipped on 2026-10-15.** #86 merged as `e99bf5a`; the CRX route answers 200 with
+  `x-opera-sha256` equal to the bytes, and the release carries both zips, the CRX and SHA256SUMS.
+- **The stack is merged.** The twenty-branch chain landed base by base through #111, and `main` carries it.
 - **The standard is a test, not a document.** `tests/code-standard.test.mjs` bars a file
   over 1,200 lines (one exception), leftover markers, a repeated block, and an unexercised export.
 - **The comment rule is a formatter, not a scanner.** Column-zero blocks are section headers
@@ -40,16 +38,15 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
   standard file, a pull request that skips CI, a CRLF file, or a dead path.
 - **The browser drive depends on nothing but the page it drives.** A ref dies with its
   document, its route or the extension epoch, so the drive re-finds what it clicks.
-- Gates: `npm test`, `npm run check` - 31 primitives, 179 runtime safety files, 1464 unit
+- Gates: `npm test`, `npm run check` - 31 primitives, 181 runtime safety files, 1491 unit
   tests, green.
 - **The local driver is modular, and its tests are too.** `local/primitives.js` assembles six
   modules; `tools.js` holds the MCP surface as data; the tests are one file per module.
 - Production, measured against the live database: 76 `opera_*` functions (65
   `SECURITY DEFINER`), 20 `opera_*` tables, and **9 deployed edge functions**.
-- **Somebody can pay for a delivered client-month.** `invoice_create` prices manifest rows
-  from `opera_price_list`, writes one invoice per customer per month, and returns a signed
-  link; QRIS covers a small invoice, the provider's list a large one, and it is the one
-  door for both a per-delivery bill and a plan month.
+- **Somebody can pay for a delivered client-month.** `invoice_create` prices manifest rows,
+  writes one invoice per customer per month, and returns a signed link; it is the one door
+  for both a per-delivery bill and a plan month.
 - **The everyday Chrome is drivable at localhost speed.** `OPERA_LOCAL_TRANSPORT=bridge`
   runs the whole MCP surface over it.
 - **The statement job is the first product, and it is local.** `statement_card` names the
@@ -77,8 +74,7 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
   `lastInputMs` - so the model can tell whether the person is looking. Fails open.
 - **The plan path exists; the model call does not.** The model composes a plan once and the
   device runs it locally; [`goal-plan.js`](../extension/lib/goal-plan.js) shares the allowlist.
-- **Cloudflare Pages at `opera-agent.pages.dev` serves the site; Vercel is the backup**,
-  and `vercel.app` stays in the CORS allowlist.
+- **Cloudflare Pages at `opera-agent.pages.dev` serves the site; Vercel is the backup**, and `vercel.app` stays in CORS.
 - **A deploy is a dispatch, not a push.** [`deploy-site.yml`](../.github/workflows/deploy-site.yml)
   publishes `landing/` with `wrangler pages deploy` after the unit and syntax gates; a push
   that does not deploy leaves CI green and the old build live. The Vercel CLI cannot deploy.
@@ -100,9 +96,9 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
 1. **The Cloudflare API token pasted into a chat is still live** and carries
    `Account API Tokens Write`. The owner has chosen to leave it for now.
 2. **The migration ledger is mapped, and two files were applied outside it.** Measured
-   2026-10-26: 106 tree files against 112 applied versions, and
+   2026-10-26: 107 tree files against 113 applied versions, and
    `supabase/migrations/ledger-map.json` names the version that applied each file with
-   its evidence — 102 proved, 2 with no ledger row, 2 applied outside the ledger (their
+   its evidence — 103 proved, 2 with no ledger row, 2 applied outside the ledger (their
    SQL is in the database and no ledger row carries it).
    `tests/migration-ledger-map.test.mjs` fails when a file is added and the map is silent.
 3. **OAuth via OpenCode works end to end.** Authorize answers 302 to the consent page, the
@@ -126,9 +122,13 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
 12. **A bridged window on the taskbar is restored, not refused.** `tabs.activate` reads the
     window first and sends `state: 'normal'` with the focus ask when it is minimized, because
     `focused: true` alone was measured to leave it there; the live suite proves the restore.
-13. **A real Snap payment has not moved, but the request is proved against the real
-    provider.** Driven live 2026-10-26: a plan invoice came back with `provider`
-    `midtrans` and a `pay_url`. No customer has paid, so no notification has closed one.
+13. **A sandbox payment closes a real invoice on the provider's signature; production has not.**
+    Driven 2026-10-26: a QRIS payment of Rp 99.000 through the simulator; `Uji Sandbox:2027-08`
+    was `paid` at 09:22:30.476 by the signed settlement, every notification written to `opera_notification_log`.
+    The first rule used an HMAC with the server key while Midtrans documents
+    `SHA512(order + status + amount + key)`, so real notifications were refused; the formula is now
+    the provider's and the log reads `the provider signed it`. No real money has moved: production
+    is `[UNVERIFIED]`.
 
 ## CI
 

@@ -1,7 +1,7 @@
 {
  "measured": "2026-10-26",
  "source": "supabase_migrations.schema_migrations on project nenmkmtvjremqphfqnfw",
- "method": "a tree file is proved applied by the ledger naming it (version, or the name the CLI recorded), or by the applied SQL carrying the file's tokens; a file whose SQL is in the database with no ledger row is applied-outside-ledger",
+ "method": "a tree file is proved applied by the ledger naming it (version, or the name the CLI recorded), or by the applied SQL carrying the file's tokens; a file whose SQL is in the database with no ledger row is applied-outside-ledger; a file applied by hand from its own text and then recorded with migration repair is applied-then-recorded, which claims the objects exist and does not claim a content match the ledger never stored",
  "counts": {
   "version-and-name": 44,
   "name": 24,
@@ -9,10 +9,11 @@
   "ledger-names-the-file": 1,
   "no-ledger-row": 2,
   "part-of-combined": 13,
-  "applied-outside-ledger": 2
+  "applied-outside-ledger": 2,
+  "applied-then-recorded": 1
  },
- "treeFiles": 106,
- "resolved": 102,
+ "treeFiles": 107,
+ "resolved": 103,
  "unapplied": 2,
  "map": [
   {
@@ -650,6 +651,12 @@
    "remote": "20261023000000",
    "evidence": "version-and-name",
    "cover": 0.8135593220338984
+  },
+  {
+   "file": "20261026082000_opera_notification_log.sql",
+   "remote": "20261026082000",
+   "evidence": "applied-then-recorded",
+   "cover": 1
   }
  ]
 }

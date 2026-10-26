@@ -22,7 +22,8 @@ const EVIDENCE = [
   'content',
   'part-of-combined',
   'applied-outside-ledger',
-  'no-ledger-row'
+  'no-ledger-row',
+  'applied-then-recorded'
 ];
 
 const treeFiles = fs.readdirSync(new URL('supabase/migrations/', root))

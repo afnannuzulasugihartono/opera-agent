@@ -1,4 +1,4 @@
-@last-edited: 2026-10-22 UTC+7.
+@last-edited: 2026-10-26 UTC+7.
 @related: [monetization](monetization.md) - [statement job](../jobs/statements.md) - [handoff](../handoff.md)
 
 # The money: how somebody pays for this
@@ -43,6 +43,7 @@ priced lines (the price list)  ->  an invoice (one per customer per month)
         |  the customer opens the signed link: the lines, the amount, the way to pay
         v
         +--> the provider's signed notification  ->  paid (terminal)
+        |         a signature that does not match asks the provider what it recorded
         |
         +--> a transfer recorded by the operator ->  paid (terminal)
 ```
@@ -55,22 +56,25 @@ priced lines (the price list)  ->  an invoice (one per customer per month)
   the priced lines inside). `20261021120000_opera_provider_order_id.sql` adds the
   provider's own order id, because the readable invoice id has characters Midtrans
   refuses. `20261022090639_opera_price_decision.sql` sets the plan and overage prices.
-  The tables are readable by the server only: a customer reaches their invoice
-  through a signed link, not through the table.
+  `20261026082000_opera_notification_log.sql` records every notification that reaches
+  the function and what it did with it. The tables are readable by the server only: a
+  customer reaches their invoice through a signed link, not through the table.
 - `supabase/functions/_shared/billing.js` — the rules, and nothing else: the amount of
   an invoice, the plan line and its overage, the manifest rows turned into lines, the
-  invoice token, the provider's signature check, the rule that only a settled
-  transaction is a payment, the legal provider order id, and the QRIS-only rule for
-  small invoices.
+  invoice token, the provider's signature check and the shape of the stored key,
+  the provider status request, the rule that only a settled transaction is a payment,
+  the rule that a paid invoice is not paid again, the legal provider order id, and the
+  QRIS-only rule for small invoices.
 - `supabase/functions/opera-agent-billing/index.ts` — the function: it opens an
-  invoice, serves the invoice page, closes it from a signed notification, and records
-  a transfer with the operator's note.
+  invoice, serves the invoice page, closes it from a signed notification or from the
+  provider's own answer when the signature does not match, writes every notification
+  down, and records a transfer with the operator's note.
 - `supabase/functions/opera-agent-mcp/tools.ts` — the `invoice_create` tool, so the
   agent that delivered the statements can hand the operator the bill for them. It is
   the one door for both kinds of bill: pass the deliveries for a per-delivery invoice,
   or pass the same deliveries with `plan` (`plan.pilot` or `plan.firm`) for a plan
   month. There is no second path for an operator to learn.
-- `tests/billing.test.mjs` — the money rules, proved (25 tests).
+- `tests/billing.test.mjs` — the money rules, proved (39 tests).
 
 ## Measured live, in production
 
@@ -90,6 +94,10 @@ The whole path was driven against the deployed functions, not simulated:
 | the same notification replayed after the provider key was removed | **400** `the notification was not signed by the provider` |
 | `settle-manual` with no operator token, after the 2026-10-22 deploy | **401** `the operator token is missing or wrong` |
 | the price list after the price decision (read with SQL) | `plan.pilot` 9,900,000 cents; `plan.firm` 24,900,000; overage 1,000,000 |
+| a real QRIS payment of Rp 99.000 in the sandbox, driven through the provider's simulator | provider `settlement`; invoice `Uji Sandbox:2027-08` **paid** at 09:22:30.476, the log row written 0.3 s later, and the log says `the provider signed it` |
+| the `pending` notification of that same payment | acknowledged; log: `the provider signed it; the transaction is not settled` |
+| a notification-shaped body with no signature for an order that is only `pending` | **400**; the log says `the signature did not match (…) and the provider reports pending for that order` |
+| a notification for an invoice already paid | **200** `the invoice was already paid at ...`; `paid_at` unchanged |
 
 Three lessons are now tests instead of comments. The first deploy created invoices and
 then answered `Buffer is not defined` to every customer who opened one, because the
@@ -103,10 +111,33 @@ boundary in both directions, and the 100× notification is refused live.
 
 The Snap request is proved twice: against a provider stood up in the test, and against
 the real one. Driven live on 2026-10-26, a plan invoice came back with `provider`
-`midtrans`, a derived order id (`oa-2e8ba0634c-Uji-Midtrans-2026-10`) and a `pay_url`,
-so Midtrans accepted the charge and returned a checkout link. What is still not driven
-is the money itself: no customer has paid, so no signed notification has closed an
-invoice. That step is `[UNVERIFIED]` until the first real payment lands.
+`midtrans`, a derived order id and a `pay_url`, so Midtrans accepted the charge and
+returned a checkout link.
+
+**The money path closed on 2026-10-26, in sandbox.** A QRIS payment of Rp 99.000 was
+driven through the provider's own simulator; the provider reported `PAID`, and invoice
+`Uji Sandbox:2027-06` became `paid`. The run
+is recorded in `opera_notification_log` — `pending` then `settlement`, `user_agent
+Veritrans`, `gross_amount 99000.00` — so "the provider never reached us" and "it reached
+us and we refused" are now different rows instead of the same silence.
+
+That log is what found the remaining defect, and the defect was ours: the signature was
+computed as an HMAC with the server key, while Midtrans documents
+`SHA512(order_id + status_code + gross_amount + ServerKey)` — the key is appended to the
+string, not used as an HMAC secret. The two values can never agree, which is why four
+payments settled and every notification was refused while the same key opened the
+charge. The rule now follows the provider's formula, the test is pinned to a vector
+computed by another implementation, and the retired HMAC is asserted to fail. Driven live
+after the fix: `Uji Sandbox:2027-08` was closed by a notification the function judged
+`the provider signed it`.
+
+The provider answer stays as the second line of defence: a refused signature is still a
+question, not an ending, and the invoice closes only when the provider reports
+`settlement` (or an accepted `capture`) for the exact amount. A forged body cannot pass,
+because the provider answers about its own transaction.
+
+Production is a different matter: the account is still under review and no real money
+has moved, so a real customer payment closing a real invoice is `[UNVERIFIED]`.
 
 The plan line is proved live as well: a plan invoice driven on 2026-10-26 came back as
 one line of Rp 99.000 for two delivered client-months, which is the plan's cap doing its
@@ -167,22 +198,26 @@ in rupiah) or Wise/manual for the first few clients. The price for a foreign cus
 must be set in USD with a monthly minimum, not converted from Rp 99.000: at that unit the
 $0.50 fixed fee alone is larger than the whole invoice.
 
-## What the owner sets (four environment values)
+## What the owner sets (five environment values)
 
 | Value | What it is | Without it |
 |---|---|---|
 | `BILLING_SECRET` | the key that signs invoice links | no invoice can be opened; the function refuses |
 | `OPERA_BILLING_TOKEN` | the operator's token for opening invoices and recording a transfer | the `invoice_create` tool and `settle-manual` refuse |
 | `MIDTRANS_SERVER_KEY` | the payment provider's server key | invoices are created and served, but the pay button is replaced by a transfer instruction, and no notification is believed |
+| `MIDTRANS_ENVIRONMENT` | `sandbox` or `production`: which host the charge and the status question go to | the function assumes `production`, and a sandbox key is refused by that host |
 | `BILLING_BANK` | the account line printed on an unpaid invoice | the invoice says to transfer but does not name the account |
 
-The first two are set in the project's secrets already; the third is not, because
-there is no provider account yet; the fourth is the owner's own account line, and the
-invoice is honest without it but harder to pay. The provider is one column on the
-invoice (`provider`), and the signature check follows the provider's documented rule,
-so swapping providers is a row and a function, not a rewrite. A provider's webhook URL
-is the function itself: it recognises a notification by the order id and signature
-it carries, not by a field the provider never sends.
+The first two are set in the project's secrets already; the provider key and the
+environment are set for sandbox; the last is the owner's own account line, and the
+invoice is honest without it but harder to pay. The environment is stated and never
+read from the key: the sandbox key starts `SB-Mid-server-` and the production key
+`Mid-server-`, and the environment is still stated rather than inferred, because the
+function should not depend on a format the provider can change. The provider is one column on the invoice
+(`provider`), and the signature check follows the provider's documented rule, so
+swapping providers is a row and a function, not a rewrite. A provider's webhook URL
+is the function itself: it recognises a notification by the order id and status code
+it carries, never by a field name the provider might not send.
 
 ## How a plan invoice is made
 
@@ -198,10 +233,10 @@ rather than billed as zero. The command is in
 - Whether a customer stays on `plan.pilot` or moves to `plan.firm`. The plan is a
   price, not an entitlement check; the operator chooses it from the delivered count,
   and `planInvoiceLines` refuses a plan it cannot price.
-- Which provider is contracted. The code is ready for Midtrans in rupiah (QRIS only
-  below Rp 100.000, the provider's list above), and the callback is drilled with a
-  signed notification. There is no Midtrans account yet, so `MIDTRANS_SERVER_KEY` is
-  unset and no real money has moved.
+- Which provider is contracted. Midtrans is wired in rupiah (QRIS only below
+  Rp 100.000, the provider's list above) and the callback is drilled with real sandbox
+  payments. The account is still under business review, so no real money has moved and
+  the production host is untested with a live payment.
 - Multi-currency. `opera_price_list` is unique on `kind`, so it holds one price per
   kind. A USD price needs the uniqueness to become `(kind, currency)` and the invoice
   to choose the row by the customer's currency. Until then `snapPaymentMethods`

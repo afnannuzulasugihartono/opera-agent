@@ -166,9 +166,22 @@ export function snapPaymentMethods(amountCents, currency = 'IDR') {
 // Building the request here means the shape - the legal order id, the whole rupiah, the QRIS-only list, the Basic header - is checkable against a provider that is stood up in a test, and only the network call stays in the function.
 // The provider is still Midtrans and the URL is still theirs: the function decides nothing this module did not decide first.
 
-export const SNAP_CHARGE_URL = 'https://app.midtrans.com/snap/v1/transactions';
+// WHY THE ENVIRONMENT IS NAMED AND NOT GUESSED FROM THE KEY.
+// Midtrans serves sandbox and production on different hosts and each refuses the other's key.
+// The first version read the environment from the key's prefix, and a key that did not belong to the host it was sent to was turned away with 401 and no charge.
+// The prefix does name the environment today - sandbox keys start SB-Mid-server-, production keys Mid-server- - but a host inferred from a string the provider controls breaks silently the day the format changes, and the failure looks like a bad key.
+// So the environment is stated, and the refusal log names the host that was used so a mismatch is visible instead of silent.
 
-export function snapChargeRequest({ orderId, amountCents, currency = 'IDR', customerId = '', enabled = null, serverKey = '' }) {
+export const SNAP_ENVIRONMENTS = Object.freeze({
+  production: 'https://app.midtrans.com/snap/v1/transactions',
+  sandbox: 'https://app.sandbox.midtrans.com/snap/v1/transactions'
+});
+
+export function snapUrlFor(environment) {
+  return SNAP_ENVIRONMENTS[String(environment || 'production')] || SNAP_ENVIRONMENTS.production;
+}
+
+export function snapChargeRequest({ orderId, amountCents, currency = 'IDR', customerId = '', enabled = null, serverKey = '', environment = 'production' }) {
   const gross = providerAmount(amountCents, currency);
   if (gross === null) return null;
   const request = {
@@ -177,7 +190,7 @@ export function snapChargeRequest({ orderId, amountCents, currency = 'IDR', cust
   };
   if (enabled) request.enabled_payments = enabled;
   return {
-    url: SNAP_CHARGE_URL,
+    url: snapUrlFor(environment),
     method: 'POST',
     headers: {
       Authorization: `Basic ${btoa(`${serverKey}:`)}`,
@@ -185,6 +198,42 @@ export function snapChargeRequest({ orderId, amountCents, currency = 'IDR', cust
     },
     body: JSON.stringify(request)
   };
+}
+
+// WHY A REFUSED SIGNATURE ASKS THE PROVIDER INSTEAD OF ENDING THE CONVERSATION.
+// A signature that does not match has two causes that look identical from the body: it was not signed by the provider, or it was signed with a different secret than the one stored here.
+// Measured live on 2026-10-26: real notifications arrived from the provider's own user agent, carried signature_key and the right amount, and every one was refused, with nothing in the body able to say which cause it was.
+// The provider records the transaction and will say what happened to it, over the same key the charge already used, so the answer to a refused signature is a question, not a rejection.
+// A forged body cannot pass this: the provider answers about its own transaction, never about the claim in the request.
+
+export const SNAP_STATUS = Object.freeze({
+  production: 'https://api.midtrans.com/v2',
+  sandbox: 'https://api.sandbox.midtrans.com/v2'
+});
+
+export function snapStatusUrl(environment, orderId) {
+  const base = SNAP_STATUS[String(environment || 'production')] || SNAP_STATUS.production;
+  return `${base}/${encodeURIComponent(String(orderId || ''))}/status`;
+}
+
+export function snapStatusRequest({ orderId, serverKey = '', environment = 'production' }) {
+  if (!orderId) return null;
+  return {
+    url: snapStatusUrl(environment, orderId),
+    method: 'GET',
+    headers: {
+      Authorization: `Basic ${btoa(`${serverKey}:`)}`,
+      Accept: 'application/json'
+    }
+  };
+}
+
+export function providerSettlement(payload) {
+  if (!payload || typeof payload !== 'object') return { settled: false, status: '', grossAmount: '' };
+  const status = String(payload.transaction_status || '');
+  const fraud = String(payload.fraud_status === undefined ? 'accept' : payload.fraud_status);
+  const settled = status === 'settlement' || (status === 'capture' && (fraud === 'accept' || fraud === ''));
+  return { settled, status, grossAmount: String(payload.gross_amount === undefined ? '' : payload.gross_amount) };
 }
 
 // WHY THE REDIRECT IS READ BY ONE RULE.
@@ -269,14 +318,65 @@ export function planInvoiceLines(deliveries, plan, period) {
   return { lines, refused: [], included: Math.min(derived.lines.length, included) };
 }
 
-export function notificationSignatureValid(notification, serverKey) {
-  if (!notification || !serverKey) return false;
+// WHY THE FIELD IS signature_key AND NOT signature.
+// Midtrans names the field signature_key, and the first version of this rule read notification.signature instead.
+// Measured live: a sandbox payment settled, Midtrans said PAID, and the invoice stayed open, because the signature it sent arrived in a field this code did not read and the comparison was made against nothing.
+// A notification is the only way an invoice becomes paid, so a field name that does not match the provider's contract is a payment that silently never lands.
+// The alias is accepted because the value still has to match the signature; the field name is not the secret.
+
+// WHY THE SHAPE OF A STORED SECRET IS MEASURED AND ITS VALUE IS NOT.
+// A paste artifact is invisible: a length that is one too long, or a character outside the alphabet a provider key uses, says what no amount of staring at a masked field can.
+// The shape is a count and a boolean, so it can be written to a log without putting any part of the key there.
+
+export function secretShape(secret) {
+  const raw = secret === undefined || secret === null ? '' : String(secret);
+  const outside = raw.replace(/[A-Za-z0-9_-]/g, '').length;
+  const prefix = ['SB-Mid-server-', 'Mid-server-'].find((known) => raw.startsWith(known)) || 'not a provider key';
+  return `${raw.length} chars, prefix ${prefix}, ${outside} outside the key alphabet`;
+}
+
+// WHY THE SIGNATURE IS A HASH AND NOT AN HMAC.
+// Midtrans documents signature_key as SHA512(order_id + status_code + gross_amount + ServerKey): the key is appended to the string and the whole thing is hashed in one pass.
+// The first version used the key as an HMAC secret, which produces a different value for every notification and can never match one.
+// Measured live on 2026-10-26: four sandbox payments settled and every notification was refused, while the same key opened the charge and answered the status question.
+// That combination is what a wrong formula looks like, because a wrong key cannot open a charge.
+// The test agreed with the code because it was written from the same belief, so the vector below was produced by another implementation and the retired rule is asserted to fail.
+
+export function providerSignature(notification, serverKey) {
+  if (!notification || !serverKey) return '';
   const orderId = String(notification.order_id || '');
   const statusCode = String(notification.status_code || '');
   const grossAmount = String(notification.gross_amount || '');
-  if (!orderId || !statusCode || !grossAmount) return false;
-  const expected = hmacSha512(serverKey, `${orderId}${statusCode}${grossAmount}`);
-  return sameText(expected, String(notification.signature || ''));
+  if (!orderId || !statusCode || !grossAmount) return '';
+  return createHash('sha512').update(`${orderId}${statusCode}${grossAmount}${serverKey}`).digest('hex');
+}
+
+export function notificationSignatureValid(notification, serverKey) {
+  if (!notification || !serverKey) return false;
+  const given = notification.signature_key ?? notification.signature;
+  if (!given) return false;
+  return sameText(providerSignature(notification, serverKey), String(given));
+}
+
+// WHY THE ANSWER TO A NOTIFICATION IS NOT THE PAYMENT RESULT.
+// The provider reads a non-2xx answer as "not delivered" and sends the same body again.
+// So the status code answers one question — did this endpoint receive and understand it — while the body says whether money moved.
+// Measured live: a correctly signed "still pending" answered 400, and the provider's history showed it as undelivered beside a real rejection, which buried the rejection.
+// A body the function cannot act on and a human should look at still answers no.
+
+// WHY A CLOSED INVOICE IS NOT CLOSED AGAIN.
+// The provider repeats itself, so the same settlement arrives more than once and a late notification can follow the one that closed the invoice.
+// The moment money landed is evidence: a second notification may confirm it, never move it.
+
+export function needsClosing(invoice) {
+  if (!invoice) return false;
+  return invoice.status !== 'paid' || !invoice.paid_at;
+}
+
+export function notificationAcknowledged(outcome) {
+  if (!outcome) return false;
+  if (outcome.ok) return true;
+  return outcome.retry === false;
 }
 
 export function isSettled(notification) {
