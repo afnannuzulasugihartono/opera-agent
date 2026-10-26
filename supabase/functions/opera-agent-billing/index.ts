@@ -68,6 +68,7 @@ const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
 const BILLING_SECRET = Deno.env.get("BILLING_SECRET") || "";
 const BILLING_TOKEN = Deno.env.get("OPERA_BILLING_TOKEN") || "";
 const MIDTRANS_SERVER_KEY = Deno.env.get("MIDTRANS_SERVER_KEY") || "";
+const MIDTRANS_ENVIRONMENT = Deno.env.get("MIDTRANS_ENVIRONMENT") || "production";
 
 // The first customers pay by transfer; the account line is theirs to read, so it is configuration and never code.
 
@@ -172,7 +173,8 @@ async function createInvoice({ customer_id, period, lines }: { customer_id: stri
       currency: out.currency,
       customerId: customer_id,
       enabled: payment.enabled,
-      serverKey: MIDTRANS_SERVER_KEY
+      serverKey: MIDTRANS_SERVER_KEY,
+      environment: MIDTRANS_ENVIRONMENT
     });
     if (charge) {
       const response = await fetch(charge.url, { method: charge.method, headers: charge.headers, body: charge.body });
@@ -184,11 +186,15 @@ async function createInvoice({ customer_id, period, lines }: { customer_id: stri
       // Measured live: a key that did not belong to the host it was sent to produced exactly that silence, and the only way to tell "no key" from "key refused" was a log.
       // The status and the provider's own words are logged; the key never is.
       if (!redirect) {
+        // WHY THE WHOLE ANSWER IS WRITTEN, NOT ONE FIELD OF IT.
+        // The first version read error_messages and status_message, and Midtrans answered {"error":"Unauthorized"} instead, so the log said "no redirect and no token" and named nothing.
+        // The provider's own words are the diagnosis, so the body is written down as it came; the key never is.
+        const why = JSON.stringify(body).slice(0, 300);
         log.warn("SNAP_CHARGE_REFUSED", JSON.stringify({
           orderId,
           status: response.status,
           environment: charge.url.includes("sandbox") ? "sandbox" : "production",
-          why: String((body as Record<string, unknown>)?.error_messages ?? (body as Record<string, unknown>)?.status_message ?? "no redirect and no token in the answer")
+          why
         }));
       }
       if (redirect) {

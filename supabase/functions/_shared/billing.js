@@ -166,20 +166,22 @@ export function snapPaymentMethods(amountCents, currency = 'IDR') {
 // Building the request here means the shape - the legal order id, the whole rupiah, the QRIS-only list, the Basic header - is checkable against a provider that is stood up in a test, and only the network call stays in the function.
 // The provider is still Midtrans and the URL is still theirs: the function decides nothing this module did not decide first.
 
-// WHY THE URL FOLLOWS THE KEY RATHER THAN A SETTING.
-// Midtrans serves sandbox and production on different hosts, and each refuses the other's key: a sandbox key sent to the production host is turned away, and the reverse is worse.
-// The key carries its own environment - a sandbox key starts with SB- - so the URL is derived from the key and a mispairing is impossible rather than a setting somebody forgot to flip.
-// The notification signature is computed with the same key on both hosts, so nothing else changes with the environment.
+// WHY THE ENVIRONMENT IS NAMED AND NOT GUESSED FROM THE KEY.
+// Midtrans serves sandbox and production on different hosts and each refuses the other's key.
+// The first version of this rule read the environment from the key's prefix, on the belief that a sandbox key starts with SB-.
+// Measured live, that belief was false for this merchant: the sandbox key and the production key both start Mid-server-, so the sandbox key was sent to the production host and turned away with 401.
+// A key cannot name its own environment when both look alike, so the environment is stated, and the refusal log names the host that was used so a mismatch is visible instead of silent.
 
-export const SNAP_PRODUCTION_URL = 'https://app.midtrans.com/snap/v1/transactions';
+export const SNAP_ENVIRONMENTS = Object.freeze({
+  production: 'https://app.midtrans.com/snap/v1/transactions',
+  sandbox: 'https://app.sandbox.midtrans.com/snap/v1/transactions'
+});
 
-export const SNAP_SANDBOX_URL = 'https://app.sandbox.midtrans.com/snap/v1/transactions';
-
-export function snapUrlFor(serverKey) {
-  return String(serverKey || '').startsWith('SB-') ? SNAP_SANDBOX_URL : SNAP_PRODUCTION_URL;
+export function snapUrlFor(environment) {
+  return SNAP_ENVIRONMENTS[String(environment || 'production')] || SNAP_ENVIRONMENTS.production;
 }
 
-export function snapChargeRequest({ orderId, amountCents, currency = 'IDR', customerId = '', enabled = null, serverKey = '' }) {
+export function snapChargeRequest({ orderId, amountCents, currency = 'IDR', customerId = '', enabled = null, serverKey = '', environment = 'production' }) {
   const gross = providerAmount(amountCents, currency);
   if (gross === null) return null;
   const request = {
@@ -188,7 +190,7 @@ export function snapChargeRequest({ orderId, amountCents, currency = 'IDR', cust
   };
   if (enabled) request.enabled_payments = enabled;
   return {
-    url: snapUrlFor(serverKey),
+    url: snapUrlFor(environment),
     method: 'POST',
     headers: {
       Authorization: `Basic ${btoa(`${serverKey}:`)}`,

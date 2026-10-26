@@ -257,15 +257,20 @@ test('the request is answered by a provider that parses it the way Midtrans does
 // The function answered 500 to a real invoice and the helper's tests stayed green, because a test of a function says nothing about the call that feeds it.
 // So the call is read here and the names it passes are checked against the names its own signature destructures.
 
-// WHY THE URL IS DERIVED AND NOT CONFIGURED.
-// A sandbox key sent to the production host is turned away and the reverse is worse, so the environment is read from the key rather than from a setting somebody has to remember to flip.
+// WHY THE ENVIRONMENT IS STATED AND NOT READ FROM THE KEY.
+// The first rule read it from the key's prefix on the belief that a sandbox key starts with SB-.
+// Measured live for this merchant that was false: both keys start Mid-server-, so a sandbox key reached the production host and was turned away with 401.
+// A key cannot name its own environment when the two look alike, so the environment is stated and the refusal log names the host that was used.
 
-test('the charge URL follows the key, so a sandbox key cannot reach the production host', () => {
-  assert.equal(snapUrlFor('SB-Mid-server-sandbox'), 'https://app.sandbox.midtrans.com/snap/v1/transactions');
-  assert.equal(snapUrlFor('Mid-server-production'), 'https://app.midtrans.com/snap/v1/transactions');
-  assert.equal(snapUrlFor(''), 'https://app.midtrans.com/snap/v1/transactions', 'no key is no charge, and the URL is the production one');
-  const request = snapChargeRequest({ ...SNAP_INVOICE, serverKey: 'SB-Mid-server-sandbox' });
-  assert.match(request.url, /sandbox/);
+test('the charge URL follows the stated environment, because the key cannot say which one it is', () => {
+  assert.equal(snapUrlFor('sandbox'), 'https://app.sandbox.midtrans.com/snap/v1/transactions');
+  assert.equal(snapUrlFor('production'), 'https://app.midtrans.com/snap/v1/transactions');
+  assert.equal(snapUrlFor(''), 'https://app.midtrans.com/snap/v1/transactions', 'an unstated environment is production, and a sandbox key must not reach it by default');
+  assert.equal(snapUrlFor('nonsense'), 'https://app.midtrans.com/snap/v1/transactions', 'a typo in the setting is production, not sandbox');
+  const sandbox = snapChargeRequest({ ...SNAP_INVOICE, serverKey: 'Mid-server-4zljU5Q', environment: 'sandbox' });
+  assert.match(sandbox.url, /sandbox/, 'a sandbox key with sandbox stated reaches the sandbox host');
+  const production = snapChargeRequest({ ...SNAP_INVOICE, serverKey: 'Mid-server-4zljU5Q' });
+  assert.match(production.url, /app\.midtrans\.com/, 'the same key with nothing stated stays on production');
 });
 
 test('the snap charge call passes the customer the function actually has', () => {
