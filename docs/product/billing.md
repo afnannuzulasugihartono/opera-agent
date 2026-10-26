@@ -94,7 +94,7 @@ The whole path was driven against the deployed functions, not simulated:
 | the same notification replayed after the provider key was removed | **400** `the notification was not signed by the provider` |
 | `settle-manual` with no operator token, after the 2026-10-22 deploy | **401** `the operator token is missing or wrong` |
 | the price list after the price decision (read with SQL) | `plan.pilot` 9,900,000 cents; `plan.firm` 24,900,000; overage 1,000,000 |
-| a real QRIS payment of Rp 99.000 in the sandbox, driven through the provider's simulator | provider `settlement`; invoice `Uji Sandbox:2027-08` **paid** 0.3 s later, and the log says `the provider signed it` |
+| a real QRIS payment of Rp 99.000 in the sandbox, driven through the provider's simulator | provider `settlement`; invoice `Uji Sandbox:2027-08` **paid** at 09:22:30.476, the log row written 0.3 s later, and the log says `the provider signed it` |
 | the `pending` notification of that same payment | acknowledged; log: `the provider signed it; the transaction is not settled` |
 | a notification-shaped body with no signature for an order that is only `pending` | **400**; the log says `the signature did not match (…) and the provider reports pending for that order` |
 | a notification for an invoice already paid | **200** `the invoice was already paid at ...`; `paid_at` unchanged |
@@ -116,7 +116,7 @@ returned a checkout link.
 
 **The money path closed on 2026-10-26, in sandbox.** A QRIS payment of Rp 99.000 was
 driven through the provider's own simulator; the provider reported `PAID`, and invoice
-`Uji Sandbox:2027-06` became `paid` 0.2 seconds after the notification arrived. The run
+`Uji Sandbox:2027-06` became `paid`. The run
 is recorded in `opera_notification_log` — `pending` then `settlement`, `user_agent
 Veritrans`, `gross_amount 99000.00` — so "the provider never reached us" and "it reached
 us and we refused" are now different rows instead of the same silence.

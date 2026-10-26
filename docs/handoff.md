@@ -123,8 +123,8 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
     window first and sends `state: 'normal'` with the focus ask when it is minimized, because
     `focused: true` alone was measured to leave it there; the live suite proves the restore.
 13. **A sandbox payment closes a real invoice on the provider's signature; production has not.**
-    Driven 2026-10-26: a QRIS payment of Rp 99.000 through the simulator, and `Uji Sandbox:2027-08`
-    went `paid` 0.3 s after settlement, with every notification written to `opera_notification_log`.
+    Driven 2026-10-26: a QRIS payment of Rp 99.000 through the simulator; `Uji Sandbox:2027-08`
+    was `paid` at 09:22:30.476 by the signed settlement, every notification written to `opera_notification_log`.
     The first rule used an HMAC with the server key while Midtrans documents
     `SHA512(order + status + amount + key)`, so real notifications were refused; the formula is now
     the provider's and the log reads `the provider signed it`. No real money has moved: production
