@@ -5,13 +5,10 @@
 
 What is true now, and what to do next. Cap 150 lines. Spent detail: git history.
 
-Simplify first, code second, comment third. Cover every button on every site, and grow the
-capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
-
 ## State
 
-- `main` = `origin/main`. #112 is open and waits for the owner's merge; a branch starts from
-  `main` and merges back by `--rebase` once the four checks are green.
+- `main` = `origin/main`. #112 and #113 (stacked on #112) are open and wait for the owner's
+  merge; a branch starts from `main` and merges back by `--rebase` once the four checks are green.
 - Version `1.6.27` in [`extension/manifest.json`](../extension/manifest.json) is the source
   of truth; [`check.mjs`](../scripts/check.mjs) also asserts the MCP version, the store form, and the secret regex.
 - **1.6.27 shipped on 2026-10-15.** #86 merged as `e99bf5a`; the CRX route answers 200 with
@@ -38,7 +35,7 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
   standard file, a pull request that skips CI, a CRLF file, or a dead path.
 - **The browser drive depends on nothing but the page it drives.** A ref dies with its
   document, its route or the extension epoch, so the drive re-finds what it clicks.
-- Gates: `npm test`, `npm run check` - 31 primitives, 181 runtime safety files, 1491 unit
+- Gates: `npm test`, `npm run check` - 31 primitives, 183 runtime safety files, 1519 unit
   tests, green.
 - **The local driver is modular, and its tests are too.** `local/primitives.js` assembles six
   modules; `tools.js` holds the MCP surface as data; the tests are one file per module.
@@ -95,18 +92,16 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
 
 1. **The Cloudflare API token pasted into a chat is still live** and carries
    `Account API Tokens Write`. The owner has chosen to leave it for now.
-2. **The migration ledger is mapped, and two files were applied outside it.** Measured
-   2026-10-26: 107 tree files against 113 applied versions, and
-   `supabase/migrations/ledger-map.json` names the version that applied each file with
-   its evidence — 103 proved, 2 with no ledger row, 2 applied outside the ledger (their
-   SQL is in the database and no ledger row carries it).
-   `tests/migration-ledger-map.test.mjs` fails when a file is added and the map is silent.
+2. **The migration ledger is mapped.** Measured 2026-10-26: 107 tree files against 113
+   applied versions; `supabase/migrations/ledger-map.json` names the version that applied each
+   file with its evidence — 103 proved, 2 with no ledger row, 2 applied outside the ledger (SQL
+   in the database, no row). `tests/migration-ledger-map.test.mjs` fails a file the map omits.
 3. **OAuth via OpenCode works end to end.** Authorize answers 302 to the consent page, the
    code exchanges for a one-hour token, and a tool call completes. Google sign-in is unverified.
 4. **MCP resolves one device per account and stamps the harness provider.**
    `X-Opera-Device` picks among the caller's devices. A real second account still wants a test.
-5. **Polling is the one latency lever.** 676.6 ms of 1875.3 ms average over 9,079 commands
-   is the device not yet asking (`opera_claim_next_wait`, p95 1914.4 ms).
+5. **Polling is the one latency lever.** 676.6 ms of 1875.3 ms average over 9,079 commands is
+   the device not yet asking (`opera_claim_next_wait`, p95 1914.4 ms).
 6. **One-off writes run as `adhoc.*` ephemeral workflows.** Compile, register, start, poll,
    delete; the compiler stays device-local and the key never leaves ([`security.md`](security.md)).
 7. Publishable-key rotation still needs owner action. Edge deploy runs via the logged-in CLI.
@@ -116,19 +111,22 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
     tables through `SECURITY DEFINER` `opera_konsol_*` readers; a write side is next.
 10. **The update endpoint answers in a nested query string.** Ask with
     `?id=ofgemipoobcnbjkfanmofjbdonjapmgl`.
-11. **The price is decided and applied.** `plan.pilot` is Rp 99.000 for up to 15
-    client-months, `plan.firm` is Rp 249.000 for up to 50, and an extra client-month is
-    Rp 10.000; the invoice is issued after the first batch is accepted, and none has arrived.
+11. **The price is decided and applied.** `plan.pilot` Rp 99.000 up to 15 client-months,
+    `plan.firm` Rp 249.000 up to 50, extra Rp 10.000; invoiced after the first accepted batch,
+    and none has arrived.
 12. **A bridged window on the taskbar is restored, not refused.** `tabs.activate` reads the
     window first and sends `state: 'normal'` with the focus ask when it is minimized, because
     `focused: true` alone was measured to leave it there; the live suite proves the restore.
 13. **A sandbox payment closes a real invoice on the provider's signature; production has not.**
     Driven 2026-10-26: a QRIS payment of Rp 99.000 through the simulator; `Uji Sandbox:2027-08`
-    was `paid` at 09:22:30.476 by the signed settlement, every notification written to `opera_notification_log`.
-    The first rule used an HMAC with the server key while Midtrans documents
-    `SHA512(order + status + amount + key)`, so real notifications were refused; the formula is now
-    the provider's and the log reads `the provider signed it`. No real money has moved: production
-    is `[UNVERIFIED]`.
+    was `paid` at 09:22:30.476 by the signed settlement, every notification written to
+    `opera_notification_log`. The first rule used an HMAC with the server key while Midtrans
+    documents `SHA512(order + status + amount + key)`, so real notifications were refused; the
+    formula is now the provider's and the log reads `the provider signed it`. The page is served
+    at `opera-agent.pages.dev/invoice`: a live link's refresh added no attempt, a forced-expired
+    link opened attempt 2 while attempt 1 answered `expire`, its late expire notification cleared
+    nothing, and a payment through attempt 2 closed `Uji Sandbox:2027-09` with its method and
+    transaction id. No real money has moved: production is `[UNVERIFIED]`.
 
 ## CI
 
