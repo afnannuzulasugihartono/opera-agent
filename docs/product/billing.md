@@ -104,7 +104,9 @@ live on 2026-10-26: the shared function domain answered the function's HTML as
 source and the refresh form could not be submitted. `https://opera-agent.pages.dev/invoice`
 proxies the function through `landing/_worker.js`, and the operator's link is built from
 `BILLING_PAGE_URL`, falling back to the function URL when that setting is absent.
-`[UNVERIFIED]` until the sandbox drive opens the page at the site.
+Driven live on 2026-10-26: the site answered `text/html` with `no-store`,
+`no-referrer` and `noindex`, the page rendered the amount and the deadline, and the
+refresh form posted and came back to `/invoice`.
 
 The page says the state in words, not in colour:
 
@@ -146,11 +148,16 @@ holding. A pending or settled notification never clears a link. A settled notifi
 records the provider's `payment_type` and `transaction_id` beside the paid moment, so an
 operator can see how the money arrived, not only that it did.
 
-None of this has been driven against the sandbox yet: the first sandbox payment that
-opens a link, closes it, asks for a second one, and settles through the older attempt is
-the proof. `[UNVERIFIED]`
+The lifecycle was driven against the sandbox on 2026-10-26: a refresh while the link was
+live added no attempt; a page forced past its deadline offered a new link, the old
+attempt answered `expire` at the provider, and attempt two opened with its own order id.
+The `expire` notification for attempt one arrived 0.3 s after attempt two was opened and
+cleared nothing: the customer paid through the new link, the provider reported
+`settlement`, and the invoice closed with the method and the transaction id recorded.
+What remains unit-proved rather than live is a settlement that names an older attempt:
+no sandbox run has paid an attempt after the invoice moved past it.
 
-## Measured live, in production
+## Measured live, against the deployed functions
 
 The whole path was driven against the deployed functions, not simulated:
 
@@ -172,6 +179,11 @@ The whole path was driven against the deployed functions, not simulated:
 | the `pending` notification of that same payment | acknowledged; log: `the provider signed it; the transaction is not settled` |
 | a notification-shaped body with no signature for an order that is only `pending` | **400**; the log says `the signature did not match (…) and the provider reports pending for that order` |
 | a notification for an invoice already paid | **200** `the invoice was already paid at ...`; `paid_at` unchanged |
+| a refresh while the link was live, as the customer | **303** back to `/invoice`; no attempt added, `provider_order_ids` still one entry |
+| a page forced past its deadline, refreshed as the customer | **303** to `/invoice`; attempt 2 opened, attempt 1 answered `expire` at the provider |
+| the `expire` notification for attempt 1, arriving 0.3 s after attempt 2 opened | acknowledged, `accepted` false; attempt 2's link stayed live |
+| a QRIS payment of Rp 99.000 through attempt 2's link | provider `settlement`; `Uji Sandbox:2027-09` **paid**, `paid_method qris`, `provider_transaction_id f997c5d4-…`; log `the provider signed it; the invoice is closed` |
+| the paid page, opened as the customer | `text/html`, no Pay button and no form; "Paid on 26 Oct 2026, 17:24 UTC+7 with QRIS. Provider transaction f997c5d4-…" |
 
 Three lessons are now tests instead of comments. The first deploy created invoices and
 then answered `Buffer is not defined` to every customer who opened one, because the
