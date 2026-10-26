@@ -74,7 +74,7 @@ test('every state is one readable page with no script and no asset to load', () 
 test('a paid invoice says when and how the money came, and offers no way to pay again', () => {
   const html = render(PAID);
   assert.match(html, /Status: Paid/);
-  assert.match(html, /Paid on 26 Oct 2026, 08:55 UTC with QRIS\./);
+  assert.match(html, /Paid on 26 Oct 2026, 15:55 UTC\+7 with QRIS\./);
   assert.match(html, /Provider transaction b1e3-4c/);
   assert.doesNotMatch(html, /<form/i);
   assert.doesNotMatch(html, /app\.sandbox\.midtrans\.com/);
@@ -93,19 +93,23 @@ test('a live link is a Pay button and the deadline the provider was given', () =
   const html = render(LIVE);
   assert.match(html, new RegExp(`href="${PAY_URL}"`));
   assert.match(html, /Pay Rp 99\.000/);
-  assert.match(html, /This payment link is valid until 27 Oct 2026, 09:00 UTC\./);
+  assert.match(html, /This payment link is valid until 27 Oct 2026, 16:00 UTC\+7\./);
   assert.doesNotMatch(html, /2026-10-27T09:00:00\.000Z/, 'the deadline is a date a person can read, not a raw ISO string');
   assert.doesNotMatch(html, /<form/i, 'a live link needs no refresh');
 });
 
 test('an expired link says so, renders no dead Pay button and offers the refresh form', () => {
   const html = render(EXPIRED, { canRefresh: true });
-  assert.match(html, /This payment link expired on 25 Oct 2026, 09:00 UTC\. It can no longer be used\./);
+  assert.match(html, /This payment link expired on 25 Oct 2026, 16:00 UTC\+7\. It can no longer be used\./);
   assert.doesNotMatch(html, /app\.sandbox\.midtrans\.com/);
   assert.doesNotMatch(html, /Pay Rp/);
   assert.match(html, /<form method="post">/);
   assert.match(html, /name="action" value="refresh-payment"/);
   assert.match(html, /Get a new payment link/);
+  const noKey = render(EXPIRED, { canRefresh: false, bank: 'BCA 123-456 a/n Firma Contoh' });
+  assert.match(noKey, /Transfer Rp 99\.000 and quote invoice Toko Sinar Jaya:2026-10\./, 'without a provider the bank line is the only way left');
+  assert.match(noKey, /BCA 123-456/);
+  assert.doesNotMatch(noKey, /<form/i);
 });
 
 test('a link with no known deadline is still shown, and the page says what it does not know', () => {

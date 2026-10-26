@@ -233,7 +233,12 @@ function nextAttempt(invoice: InvoiceRow): number {
 // The status and the provider's own words are logged; the key never is.
 // The whole answer is written, not one field of it: Midtrans answered {"error":"Unauthorized"} once, and the log that read only error_messages named nothing.
 
-async function openNewAttempt(invoice: InvoiceRow, { customerId }: { customerId: string }): Promise<Link | null> {
+// WHY THE AMOUNT IS PASSED AND NOT TAKEN FROM THE ROW.
+// The create path can re-price an invoice, so the row still carries the old amount while the caller has already computed the new one.
+// A charge built from the row would ask the customer for yesterday's price and then write the new amount beside it, and the settlement would be refused by the amount check.
+// The refresh path passes nothing and gets the row's own amount, which is what it means.
+
+async function openNewAttempt(invoice: InvoiceRow, { customerId, amountCents = Number(invoice.amount_cents), currency = invoice.currency }: { customerId: string; amountCents?: number; currency?: string }): Promise<Link | null> {
   const previous = invoice.provider_order_id || null;
   if (previous) {
     const closed = await closeAttempt(previous);
@@ -252,12 +257,12 @@ async function openNewAttempt(invoice: InvoiceRow, { customerId }: { customerId:
     }
   }
   const attempt = nextAttempt(invoice);
-  const orderId = providerOrderId(invoice.id, Number(invoice.amount_cents), invoice.currency, attempt);
-  const payment = snapPaymentMethods(invoice.amount_cents, invoice.currency);
+  const orderId = providerOrderId(invoice.id, amountCents, currency, attempt);
+  const payment = snapPaymentMethods(amountCents, currency);
   const charge = snapChargeRequest({
     orderId,
-    amountCents: Number(invoice.amount_cents),
-    currency: invoice.currency,
+    amountCents,
+    currency,
     customerId: customerId,
     enabled: payment.enabled,
     serverKey: MIDTRANS_SERVER_KEY,
@@ -292,25 +297,60 @@ async function openNewAttempt(invoice: InvoiceRow, { customerId }: { customerId:
 // WHY A PAID ROW IS NOT WRITTEN BY A CREATE THAT RACED THE PAYMENT.
 // The paid check happens before the provider call because opening a link is the moment money can move, and that call takes time.
 // So a write over an existing row is guarded by paid_at is null: a payment that landed in between leaves the row paid and this call answers 409 instead of turning it back to open.
-// A new invoice has no payment to race, so it is inserted with on conflict so two operators creating the same month write one row.
+// The write is also guarded by the attempt it read: two operators opening a link for one invoice must not overwrite each other's attempt, because the loser's transaction would stay payable with nothing in the row naming it.
+// A new invoice has no payment to race, so it is inserted once; the second insert loses the unique id and answers with the row that won instead of overwriting it.
+
+async function invoiceRow(id: string): Promise<InvoiceRow | null> {
+  const supabase = await db();
+  const { data } = await supabase.from("opera_invoices").select("*").eq("id", id).maybeSingle();
+  return data || null;
+}
+
+// WHY A LOSING ATTEMPT IS CLOSED INSTEAD OF FORGOTTEN.
+// The charge was already opened at the provider before the row could be written, and a payable transaction nobody recorded is a link that can still take money.
+// If the row already names it, another writer opened the same attempt and there is nothing to close.
+// A settlement on an attempt that lost the write cannot be attached to the invoice, so it is named in the log for a human: money that moved must never disappear quietly.
+
+async function abandonOrphan(opened: unknown, fresh: InvoiceRow | null): Promise<void> {
+  const orderId = typeof opened === "string" ? opened : "";
+  if (!orderId || !fresh) return;
+  const recorded = new Set([fresh.provider_order_id, ...(fresh.provider_order_ids || [])].filter(Boolean));
+  if (recorded.has(orderId)) return;
+  const closed = await closeAttempt(orderId);
+  if (closed.state === "refused") {
+    log.warn("PAYMENT_ATTEMPT_ORPHANED", JSON.stringify({ orderId, why: closed.why }));
+  } else if (closed.state === "paid") {
+    log.error("PAYMENT_ATTEMPT_PAID_UNRECORDED", JSON.stringify({ orderId, grossAmount: closed.grossAmount, status: closed.status }));
+  }
+}
 
 async function writeInvoice(row: Record<string, unknown>, existing: InvoiceRow | null): Promise<InvoiceRow> {
   const supabase = await db();
   if (!existing) {
-    const { data, error } = await supabase.from("opera_invoices").upsert(row, { onConflict: "id" }).select().single();
-    if (error) throw new Error(`invoice not written: ${error.message}`);
-    return data;
+    const { data, error } = await supabase.from("opera_invoices").insert(row).select().single();
+    if (!error) return data;
+    if (error.code !== "23505") throw new Error(`invoice not written: ${error.message}`);
+    const fresh = await invoiceRow(String(row.id));
+    if (!fresh) throw new Error(`invoice not written: ${error.message}`);
+    if (fresh.status === "paid") throw new HttpError(409, `${fresh.id} was paid while its payment link was being opened; nothing was written over it.`);
+    await abandonOrphan(row.provider_order_id, fresh);
+    return fresh;
   }
   const { id, ...fields } = row;
-  const { data, error } = await supabase.from("opera_invoices")
+  const expected = existing.provider_order_id || null;
+  let query = supabase.from("opera_invoices")
     .update(fields)
     .eq("id", String(id))
-    .is("paid_at", null)
-    .select()
-    .maybeSingle();
+    .is("paid_at", null);
+  query = expected ? query.eq("provider_order_id", expected) : query.is("provider_order_id", null);
+  const { data, error } = await query.select().maybeSingle();
   if (error) throw new Error(`invoice not written: ${error.message}`);
-  if (!data) throw new HttpError(409, `${String(id)} was paid while its payment link was being opened; nothing was written over it.`);
-  return data;
+  if (data) return data;
+  const fresh = await invoiceRow(String(id));
+  if (!fresh) throw new HttpError(409, `${String(id)} changed while its payment link was being opened; nothing was written over it.`);
+  if (fresh.status === "paid") throw new HttpError(409, `${String(id)} was paid while its payment link was being opened; nothing was written over it.`);
+  await abandonOrphan(row.provider_order_id, fresh);
+  return fresh;
 }
 
 async function createInvoice({ customer_id, period, lines }: { customer_id: string; period: string; lines: Line[] }): Promise<{ invoice: InvoiceRow; token: string }> {
@@ -344,25 +384,26 @@ async function createInvoice({ customer_id, period, lines }: { customer_id: stri
     && Number(existing.amount_cents) === out.amountCents
     && existing.currency === out.currency;
   const state = existing ? payLinkState(existing) : "none";
-  const history = Array.isArray(existing?.provider_order_ids)
+
+  // WHY THE LAST ATTEMPT SURVIVES A WRITE THAT OPENS NO NEW LINK.
+  // A row written between the migration and the deploy carries its attempt in the scalar and an empty array; counting only the array would lose the order id a later close has to ask about.
+  // And when a re-price cannot open a charge, the old attempt is still the thing the provider may be holding, so its pointer stays: the next opener closes it before it charges.
+  const history = Array.isArray(existing?.provider_order_ids) && existing.provider_order_ids.length
     ? existing.provider_order_ids.filter((orderId) => typeof orderId === "string" && orderId)
-    : [];
+    : existing?.provider_order_id ? [existing.provider_order_id] : [];
   let link: Link = {
     pay_url: null,
     pay_url_expires_at: null,
-    provider: null,
-    provider_ref: null,
-    provider_order_id: null,
+    provider: existing?.provider || null,
+    provider_ref: existing?.provider_ref || null,
+    provider_order_id: existing?.provider_order_id || null,
     provider_order_ids: history
   };
   if (unchanged && (state === "live" || state === "unknown")) {
     link = {
+      ...link,
       pay_url: existing?.pay_url || null,
-      pay_url_expires_at: existing?.pay_url_expires_at || null,
-      provider: existing?.provider || null,
-      provider_ref: existing?.provider_ref || null,
-      provider_order_id: existing?.provider_order_id || null,
-      provider_order_ids: history
+      pay_url_expires_at: existing?.pay_url_expires_at || null
     };
   } else if (MIDTRANS_SERVER_KEY && payment.chargeable) {
     const opened = await openNewAttempt(existing ?? {
@@ -373,7 +414,7 @@ async function createInvoice({ customer_id, period, lines }: { customer_id: stri
       amount_cents: out.amountCents,
       currency: out.currency,
       lines: { priced: out.priced, unpriced: out.unpriced }
-    }, { customerId: customer_id });
+    }, { customerId: customer_id, amountCents: out.amountCents, currency: out.currency });
     if (opened) link = opened;
   }
 
@@ -640,18 +681,14 @@ Deno.serve(async (req: Request) => {
             try {
               const opened = await openNewAttempt(invoice, { customerId: invoice.customer_id });
               if (opened) {
-                const supabase = await db();
-                const { error } = await supabase.from("opera_invoices")
-                  .update(opened)
-                  .eq("id", invoice.id)
-                  .is("paid_at", null);
-                if (error) throw new Error(`invoice not written: ${error.message}`);
+                await writeInvoice({ id: invoice.id, ...opened }, invoice);
               } else {
                 failed = true;
               }
             } catch (error) {
-              if (!(error instanceof HttpError && error.status === 409)) throw error;
-              log.warn("PAYMENT_REFRESH_REFUSED", error.message);
+              const why = error instanceof Error ? error.message : String(error);
+              if (error instanceof HttpError && error.status === 409) log.warn("PAYMENT_REFRESH_REFUSED", why);
+              else log.error("PAYMENT_REFRESH_FAILED", why);
               failed = true;
             }
           } else {

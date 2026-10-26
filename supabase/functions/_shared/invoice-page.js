@@ -17,9 +17,9 @@
 // The token is the authority to open this invoice, so a copy in a heading or a second link is the capability written where a shoulder or a screenshot can read it.
 // The only thing that needs it again is the refresh form, so that hidden field is the only place the page carries it.
 
-// WHY THE TIMES ARE PRINTED IN UTC.
-// The stored moment is a moment in UTC and the customer's clock is not ours to guess, so the page states the zone rather than printing a number that means nothing without one.
-// The format is spelled out instead of taken from a locale, so the same row renders the same text wherever the function runs.
+// WHY THE TIMES ARE PRINTED IN THE MERCHANT'S ZONE.
+// The money is rupiah and the customers read Jakarta time, so a deadline printed in UTC would expire seven hours before the hour a customer reads on the page.
+// The zone is stated rather than implied, and the format is spelled out instead of taken from a locale, so the same row renders the same text wherever the function runs.
 
 import { payLinkState } from './billing.js';
 
@@ -36,12 +36,15 @@ const escapeHtml = (value) => String(value ?? '')
   .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
   .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 
+const ZONE_OFFSET_MS = 7 * 60 * 60 * 1000;
+
 const moment = (value) => {
   if (!value) return '';
-  const at = new Date(String(value));
-  if (Number.isNaN(at.getTime())) return '';
+  const parsed = new Date(String(value));
+  if (Number.isNaN(parsed.getTime())) return '';
+  const at = new Date(parsed.getTime() + ZONE_OFFSET_MS);
   const pad = (number) => String(number).padStart(2, '0');
-  return `${at.getUTCDate()} ${MONTHS[at.getUTCMonth()]} ${at.getUTCFullYear()}, ${pad(at.getUTCHours())}:${pad(at.getUTCMinutes())} UTC`;
+  return `${at.getUTCDate()} ${MONTHS[at.getUTCMonth()]} ${at.getUTCFullYear()}, ${pad(at.getUTCHours())}:${pad(at.getUTCMinutes())} UTC+7`;
 };
 
 // WHY THE METHOD IS TRANSLATED AND NOT PRINTED RAW.
@@ -100,6 +103,7 @@ function paidBlock(invoice) {
 
 function paymentBlock(invoice, { token, bank, canRefresh, now, refreshFailed }) {
   const total = escapeHtml(money(invoice.amount_cents, invoice.currency));
+  const bankLine = bank ? `<p><small>${escapeHtml(bank)}</small></p>` : '';
   const status = String(invoice.status || '').toLowerCase();
   if (status === 'paid') return paidBlock(invoice);
   if (status === 'void') return '<p class="state">This invoice is cancelled. Nothing is owed and no payment is due.</p>';
@@ -109,15 +113,16 @@ function paymentBlock(invoice, { token, bank, canRefresh, now, refreshFailed }) 
 <p class="state">This payment link is valid until ${escapeHtml(moment(invoice.pay_url_expires_at))}.</p>`;
   }
   if (state === 'expired') {
-    const form = canRefresh ? refreshForm(invoice, token, refreshFailed) : '';
-    return `<p class="state">This payment link expired on ${escapeHtml(moment(invoice.pay_url_expires_at))}. It can no longer be used.</p>${form}`;
+    const next = canRefresh
+      ? refreshForm(invoice, token, refreshFailed)
+      : `<p>Transfer ${total} and quote invoice ${escapeHtml(invoice.id)}.</p>${bankLine}`;
+    return `<p class="state">This payment link expired on ${escapeHtml(moment(invoice.pay_url_expires_at))}. It can no longer be used.</p>${next}`;
   }
   if (state === 'unknown') {
     const form = canRefresh ? refreshForm(invoice, token, refreshFailed) : '';
     return `<p><a class="pay" href="${escapeHtml(invoice.pay_url)}">Pay ${total}</a></p>
-<p class="state">This payment link is open. Its deadline is unknown.</p>${form}`;
+<p class="state">This payment link is open. Its deadline is unknown. If it does not open, get a new one.</p>${form}`;
   }
-  const bankLine = bank ? `<p><small>${escapeHtml(bank)}</small></p>` : '';
   const form = canRefresh ? refreshForm(invoice, token, refreshFailed) : '';
   return `<p>Transfer ${total} and quote invoice ${escapeHtml(invoice.id)}.</p>${bankLine}${form}`;
 }
@@ -145,7 +150,7 @@ export function invoicePage(invoice, { token, bank = '', now = Date.now(), canRe
  th,td{border-bottom:1px solid #ddd;padding:.6rem .4rem;text-align:left;vertical-align:top}
  th{font-size:.85rem;color:#444;font-weight:600}
  td.amount,th.amount{text-align:right;white-space:nowrap}
- .amount{font-size:1.25rem;font-weight:700}
+ .total{font-size:1.25rem;font-weight:700;text-align:right}
  .state{margin:1rem 0}
  .pay{display:inline-block;background:#1d4ed8;color:#fff;padding:.85rem 1.25rem;border-radius:.4rem;text-decoration:none;font-weight:600}
  .paid{color:#0f7664;font-weight:700}
@@ -165,7 +170,7 @@ export function invoicePage(invoice, { token, bank = '', now = Date.now(), canRe
 <tr><th>What was delivered</th><th>Qty</th><th class="amount">Amount</th></tr>
 ${lineRows(invoice)}
 </table>
-<p class="amount">Total ${escapeHtml(money(invoice.amount_cents, invoice.currency))}</p>
+<p class="total">Total ${escapeHtml(money(invoice.amount_cents, invoice.currency))}</p>
 ${paymentBlock(invoice, { token, bank, canRefresh, now, refreshFailed })}
 <p><small>Only what was delivered is charged. A delivery that failed is not on this invoice.</small></p>
 </main>
