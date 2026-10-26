@@ -1,262 +1,257 @@
 @last-edited: 2026-10-26 UTC+7.
 @related: [`../../../AGENTS.md`](../../../AGENTS.md) - [`../../handoff.md`](../../handoff.md) - [`../../design-references.md`](../../design-references.md)
 
-# Spec: Situs kelas Cohere — bahasa visual terang untuk situs publik
+# Spec: Situs kelas Cohere — bahasa visual terang, sedikit kata, CTA di depan
 
-Disetujui sebagai arah pada 2026-10-26: pendekatan **B** (sistem desain baru,
-beranda disusun ulang, halaman lain di-reskin). Spec ini belum menyentuh kode;
-ia memutuskan bentuk, batas, dan urutan langkah. Yang diubah adalah bahasa
-visual. Konten, klaim, angka, dan tautan tidak berubah.
+Disetujui sebagai arah pada 2026-10-26, direvisi atas umpan balik pemilik pada
+hari yang sama: pembaca tidak membaca paragraf, mereka menekan tombol. Spec ini
+belum menyentuh kode; ia memutuskan bentuk, batas, dan urutan langkah.
 
 ## Intent
 
-Situs publik (`opera-agent.pages.dev`) sudah benar secara teknis: CSP memuat
-aset sendiri, angka fitur cocok dengan kode, Lighthouse accessibility 1. Yang
-belum cocok adalah kelasnya. Tema gelap dengan aksen hijau neon dan tipografi
-berat terasa seperti dokumentasi teknis, bukan produk korporat yang bisa
-dipercahkan pembeli baru.
+Situs publik sudah benar secara teknis: CSP memuat aset sendiri, angka cocok
+dengan kode, Lighthouse accessibility 1. Yang belum cocok adalah kelasnya.
+Tema gelap, paragraf panjang, dan aksen neon terasa seperti dokumentasi teknis.
 
-Spesifikasi ini memindahkan seluruh situs publik ke bahasa visual terang yang
-tenang, dengan Cohere sebagai patokan ukuran (diukur, bukan disalin). Target
-keberhasilan yang dapat diukur:
+Spesifikasi ini memindahkan seluruh situs publik ke bahasa visual terang kelas
+korporat, dengan Cohere sebagai patokan ukuran (diukur, bukan disalin), dan
+satu aturan copy baru: **satu headline, satu baris, satu tombol atau satu
+gambar per section.**
 
-- Satu sistem token (`site.css`) dipakai 12 halaman; tidak ada warna, radius,
-  atau ukuran huruf ad hoc di dalam halaman.
+Target keberhasilan yang dapat diukur:
+
+- Satu sistem token (`site.css`) untuk 12 halaman; tidak ada warna, radius, atau
+  ukuran huruf ad hoc di markup halaman.
 - Kontras setiap pasangan teks/latar di token minimal 4.5:1, diuji otomatis.
-- `landing/beranda.html` punya tepat satu `h1`, hero dua kolom dengan mock UI
-  produk yang berlabel "Contoh", dan section id `#install`, `#model`,
-  `#signin`, `#privacy`, `#faq` masih ada.
+- `beranda.html` punya tepat satu `h1`, hero dua kolom dengan mock UI berlabel
+  "Contoh", dan section id `#install`, `#model`, `#signin`, `#privacy`,
+  `#faq` masih ada.
+- Tidak ada paragraf pemasaran lebih dari 2 baris (≈ 25 kata) di luar halaman
+  hukum; tes menolaknya.
 - Lighthouse accessibility dan best-practices tetap 1 di `/beranda` dan `/`.
-- Tidak ada aset eksternal: hanya satu file font lokal (woff2 subset latin),
+- Tidak ada aset eksternal: satu file font lokal (woff2 subset latin),
   `font-src 'self'` di setiap policy, `img-src` tetap `data:`.
-- `npm test`, `npm run check`, formatter, gitleaks, dan gate browser Python
-  hijau di setiap fase; SonarCloud hijau di PR.
-- Tidak ada klaim baru: jumlah tool/primitive/izin tetap dibaca dari kode oleh
-  tes yang sudah ada, dan tidak ada logo pelanggan atau metrik palsu.
+- `npm test`, `npm run check`, formatter, gitleaks, gate browser Python hijau
+  di setiap fase; SonarCloud hijau di PR.
+- Tidak ada klaim baru: angka tetap dibaca dari kode oleh tes yang ada, tanpa
+  logo pelanggan atau metrik palsu.
 
 ## Non-goals
 
 - Tidak menyalin aset Cohere: tidak ada markup, stylesheet, gambar, atau font
   milik mereka di tree ini. Patokan adalah ukuran dan tata bahasa, bukan isi.
-- Tidak mengubah halaman invoice (served by Supabase function), edge function,
-  atau surface cloud.
-- Tidak menambah framework, bundler, atau dependency; situs tetap HTML/CSS/JS
-  statis.
-- Tidak menulis ulang copy selain yang diperlukan tata letak; pasangan ID/EN
-  baru hanya boleh memuat klaim yang sudah ada di tree.
-- Tidak mengubah perilaku `index.html`, `akun.html`, `dashboard.html`:
-  form, fetch, dan tabel tetap, hanya kulit yang berubah.
-- Tidak menyebut versi build di halaman mana pun (aturan yang sudah ada).
-- Tidak deploy ke produksi dan tidak membuka PR di luar arahan pemilik;
-  deploy situs dari branch tetap lewat `deploy-site.yml`.
+- Tidak mengubah halaman invoice, edge function, atau surface cloud.
+- Tidak menambah framework, bundler, atau dependency; situs tetap statis.
+- Tidak mengubah perilaku `index.html`, `akun.html`, `dashboard.html`: form,
+  fetch, dan tabel tetap, hanya kulit yang berubah.
+- Tidak menyebut versi build di halaman mana pun.
+- Tidak menulis ulang halaman hukum (`privasi`, `syarat`) menjadi ringkas; di
+  sana prose tetap wajib.
+- Tidak deploy ke produksi dan tidak membuka PR di luar arahan pemilik.
 
 ## Fakta terverifikasi
 
 Diambil dari tree dan situs live pada 2026-10-26.
 
 - 12 halaman HTML di `landing/` (termasuk `landing/oauth/consent.html`) memuat
-  `/site.css`; `landing/download.css` hanya dipakai halaman unduhan.
+  `/site.css`; `landing/download.css` hanya untuk halaman unduhan.
 - `landing/_headers` memuat 25 blok path, `landing/vercel.json` 15 entri
-  header; keduanya harus tetap sinkron (tes `landing-hosting` menegakkannya).
+  header; keduanya harus sinkron (tes `landing-hosting` menegakkannya).
 - CSP sekarang: `default-src 'none'`, `style-src 'self' 'unsafe-inline'`,
-  `script-src 'self'` plus hash inline, `connect-src` bervariasi,
-  `img-src data:`. Tidak ada `font-src`, dan tidak ada font lokal.
-- Toggle bahasa dibangun oleh `landing/i18n.js` ke dalam mount
-  `[data-lang-toggle]`; label aksesibel sudah memuat teks yang terlihat.
-- `beranda.html` 637 baris, `dashboard.html` 1518 baris (sudah melewati batas
-  norma; baris kode standar 1200 mengizinkan satu exception), `site.css` 265
-  baris. Redesign tidak boleh menambah panjang `dashboard.html`.
-- Lighthouse `/beranda` dan `/index.html` di build saat ini: accessibility 1,
-  best-practices 1, SEO 0.8; satu-satunya audit gagal adalah `robots-txt` yang
-  merupakan artefak CSP (`connect-src 'none'`), bukan cacat file.
-- Patokan terukur dari `https://cohere.com/` pada 2026-10-26 (di browser
-  Chromium, 1112px viewport): latar putih `rgb(255,255,255)`, teks
-  `rgb(33,33,33)`, `h1` 60px berat 400 dengan font custom "CohereText"
-  (fallback Space Grotesk/Inter), body 16px, navigasi sangat sedikit tautan,
-  strip logo pelanggan, dan visual produk di bawah lipatan pertama. Situs
-  mereka memakai font dan fotografi proprietary; tidak ada yang dibawa masuk.
+  `script-src 'self'` plus hash inline, `img-src data:`. Tidak ada `font-src`
+  dan tidak ada font lokal.
+- Toggle bahasa dibangun `landing/i18n.js` ke mount `[data-lang-toggle]`;
+  label aksesibelnya sudah memuat teks yang terlihat.
+- `beranda.html` 637 baris, `dashboard.html` 1518 baris (satu pengecualian
+  terhadap batas 1200), `site.css` 265 baris. Redesign tidak boleh menambah
+  panjang `dashboard.html`.
+- Lighthouse `/beranda` dan `/index.html` pada build saat ini: accessibility 1,
+  best-practices 1, SEO 0.8; satu-satunya audit gagal `robots-txt` adalah
+  artefak CSP (`connect-src 'none'`), bukan cacat file.
+- Patokan `https://cohere.com/` di Chromium 1112px, 2026-10-26: latar
+  `rgb(255,255,255)`, teks `rgb(33,33,33)`, `h1` 60px berat 400 ("Your AI. Your
+  rules."), body 16px, navigasi sangat sedikit tautan, strip logo pelanggan,
+  visual besar di setiap section, ditutup satu CTA "Ready to put AI to work?".
+  Font dan fotografi mereka proprietary; tidak ada yang dibawa.
+- Patokan `https://code.visualstudio.com/` di Chromium 1112px, 2026-10-26: latar
+  gelap `rgb(13,16,20)`, `h1` 60px berat 700, `h2` 30px/600, body 14px
+  system-ui, CTA primer biru `#0078D4` radius 4px dengan label platform
+  ("Download for Windows"), kartu unduhan berarsir terang, 28 section, 49
+  gambar. Ritmenya: satu H2 pendek lalu satu visual produk, dengan pita CTA
+  tengah halaman ("Start building with AI agents for free").
 
 ## Bahasa visual (token)
 
-Satu tempat: `landing/site.css`. Token didefinisikan sebagai custom property
-dan dipakai oleh semua komponen; halaman boleh menambah token tema halaman,
-tidak boleh meng-override token inti.
+Satu tempat: `landing/site.css`. Token sebagai custom property; halaman boleh
+menambah token tema halaman, tidak boleh meng-override token inti.
 
 ### Warna
 
 | Token | Nilai | Peran |
 | --- | --- | --- |
 | `--paper` | `#F7F5EF` | kanvas dasar |
-| `--surface` | `#FFFFFF` | kartu, panel, permukaan naik |
+| `--surface` | `#FFFFFF` | kartu, panel |
 | `--ink` | `#141414` | teks utama |
 | `--muted` | `#5F5C55` | teks sekunder, eyebrow |
-| `--line` | `rgba(20,20,20,.10)` | garis rambut, border kartu |
-| `--accent` | `#0B6B52` | CTA, tautan, fokus (kontras di kanvas terang) |
-| `--accent-soft` | `#E4F2EC` | latar aksen lembut, chip |
-| `--brand` | `#3ECF8E` | titik status dan highlight kecil saja |
-| `--ink-panel` | `#101312` | satu panel gelap per halaman (jeda kontras) |
+| `--line` | `rgba(20,20,20,.10)` | border, garis rambut |
+| `--accent` | `#0B6B52` | CTA, tautan, fokus |
+| `--accent-soft` | `#E4F2EC` | chip, latar aksen lembut |
+| `--brand` | `#3ECF8E` | titik status dan highlight kecil |
+| `--ink-panel` | `#101312` | mock produk dan pita CTA tengah |
 
-Aturan pakai:
-
-- Tombol utama: latar `--accent`, teks putih, radius penuh.
-- Tombol kedua: border `--ink`, teks `--ink`, latar transparan.
-- Tautan: `--accent`, underline saat hover saja.
+- Tombol utama: latar `--accent`, teks putih, radius penuh, tinggi 44px.
+- Tombol kedua: border `--ink`, latar transparan.
 - `--brand` hanya untuk titik status 6–8px dan highlight di bawah teks; tidak
   pernah untuk teks besar di latar terang.
-- Satu panel gelap per halaman, tidak lebih; sisanya kertas terang.
+- Permukaan gelap maksimal dua per halaman: mock produk dan pita CTA tengah.
+  Sisanya kertas terang.
 
 ### Tipografi
 
-- Font tunggal: **Instrument Sans** variable (OFL), disimpan lokal di
-  `landing/fonts/`, subset latin, `font-display: swap`, `preload` pada
-  `beranda.html` saja (halaman lain tidak memuat hero besar).
-- Display: berat 500, `clamp(44px, 5.5vw, 84px)`, line-height 1.02,
-  letter-spacing `-0.03em`.
-- H2: `clamp(28px, 3vw, 44px)`, berat 500, line-height 1.1.
-- Body: 16px/1.6; prose `max-width: 68ch`.
-- Eyebrow: 12px, berat 500, uppercase, letter-spacing `.14em`, `--muted`.
-- Angka: `font-variant-numeric: tabular-nums`.
-- Mono (nama primitive, kode): stack sistem
-  `ui-monospace, SFMono-Regular, Menlo, Consolas, monospace`, 13px.
-- Fallback stack: `"Instrument Sans", system-ui, -apple-system, "Segoe UI",
-  Roboto, sans-serif`.
+- Satu font: **Instrument Sans** variable (OFL) di `landing/fonts/`, subset
+  latin, `font-display: swap`, `preload` hanya di `beranda.html`.
+- Display: 500, `clamp(44px, 5.5vw, 84px)`, line-height 1.02, tracking
+  `-0.03em`. H2: `clamp(28px, 3vw, 44px)`, 500. Body: 16px/1.6.
+- Eyebrow: 12px, 500, uppercase, tracking `.14em`, `--muted`.
+- Angka `tabular-nums`; mono stack sistem 13px untuk nama primitive.
+- Fallback: `"Instrument Sans", system-ui, -apple-system, "Segoe UI", Roboto,
+  sans-serif`.
 
 ### Ruang, bentuk, gerak
 
-- Skala: 4, 8, 12, 16, 24, 32, 48, 64, 96, 112, 128.
-- Section: padding blok 112px desktop, 64px di bawah 700px.
-- Lebar: konten maks 1200px, prose 720px, gutter 24px.
-- Radius: kartu 20px, kartu besar 24px, kontrol 999px, input 12px.
-- Bayangan: satu level `0 1px 2px rgba(20,20,20,.06)`; tidak ada blur tebal.
-- Gerak: masuk viewport fade + translate 8px, 240ms, `prefers-reduced-motion`
-  mematikan. Tidak ada parallay, tidak ada autoplay.
-- Fokus: `outline: 2px solid var(--accent)`, offset 2px, terlihat di semua
-  kontrol.
+- Skala 4–128; section 112px desktop, 64px di bawah 700px.
+- Konten maks 1200px, prose 720px, gutter 24px.
+- Radius: kartu 20px, kontrol 999px, input 12px. Satu level shadow tipis.
+- Masuk viewport: fade + translate 8px, 240ms, mati saat reduced-motion.
+- Fokus: `outline: 2px solid var(--accent)`, offset 2px.
+
+## Aturan copy (baru, mengikat)
+
+Pembaca menekan tombol, bukan membaca paragraf. Setiap section pemasaran:
+
+- Satu headline: `h1` maksimal 5 kata, `h2` maksimal 6 kata.
+- Satu baris dukungan: maksimal 20 kata.
+- Satu aksi: satu CTA (tombol atau tautan tegas), bukan daftar tautan.
+- Satu objek visual: mock produk, angka, atau pita — bukan ikon hiasan.
+- Paragraf pemasaran maksimum 2 baris; detail pindah ke halaman rujukannya.
+- CTA primer menyebut platform yang terdeteksi ("Unduh untuk Chrome"), dengan
+  tautan kecil ke pilihan lain di bawahnya.
+
+Tes baru menolak headline, baris dukungan, atau paragraf yang melewati batas
+ini.
 
 ## Komponen bersama
 
 Ditulis ulang di `site.css`, dipakai semua halaman:
 
-- **Chrome**: strip atas tipis (klaim "konten hanya ke endpoint Anda" + tautan
-  ke `#privacy`), nav krem dengan wordmark, tautan 14px, pil hijau "Unduh",
-  mount toggle bahasa. Sticky, border-bottom 1px `--line`, tanpa blur berat.
-- **Footer**: empat kolom tautan, baris hukum, toggle bahasa, tanpa ikon
-  sosial.
-- **Kartu**: surface putih, border `--line`, radius 20px, padding 28px;
-  judul 17px/500, body 14.5px muted.
+- **Chrome**: strip atas tipis (klaim "konten hanya ke endpoint Anda" + tautan),
+  nav krem, wordmark, tautan 14px, pil hijau "Unduh", mount toggle bahasa.
+  Sticky, border-bottom `--line`, tanpa blur berat.
+- **Footer**: empat kolom tautan, baris hukum, toggle bahasa.
+- **Kartu**: putih, border `--line`, radius 20px, padding 28px, judul 17px/500.
 - **Stat band**: angka 40px tabular, label 13px muted, dipisah `--line`.
-- **Langkah bernomor**: angka 13px mono muted + judul 15px/500 + body 14.5px.
-- **Panel gelap**: latar `--ink-panel`, teks `#F2F1EC`, mono 13px, radius 24px.
-- **Mock UI**: browser window terang (title bar tiga titik, address bar,
-  viewport) dengan elemen produk dirender dari HTML/CSS; selalu berlabel
-  "Contoh" (teks, bukan alt), `role="img"` dengan `aria-label` yang menyebut
-  bahwa ini contoh.
+- **Langkah bernomor**: angka 13px mono muted, judul 15px/500, body 14.5px.
+- **Permukaan gelap** (dua per halaman): `--ink-panel`, teks `#F2F1EC`, mono
+  13px, radius 24px. Satu untuk mock produk, satu untuk pita CTA tengah.
+- **Mock UI**: browser window terang dirender dari HTML/CSS (title bar, address
+  bar, viewport) dengan elemen produk; selalu berlabel "Contoh", `role="img"`
+  dengan `aria-label` yang menyebut contoh.
+
+## Visual per section (grafis memanjakan mata)
+
+Beranda memimpin dengan gambar dan tombol, bukan prosa. Ritme VS Code: satu
+headline pendek lalu satu objek visual; kanvas terang ala Cohere.
+
+1. Hero: `h1` maksimal 5 kata, satu baris, CTA primer "Unduh untuk <browser
+   terdeteksi>" + CTA kedua "Sambungkan model", tiga angka jujur. Kanan:
+   mock browser gelap (editor + panel tool call, primitif nyata), label
+   "Contoh" — mock gelap berdiri di kanvas terang seperti screenshot VS Code.
+2. Strip kredibilitas: tiga teks, tanpa logo palsu.
+3. `#install` Instalasi: H2 pendek + tiga langkah bernomor + mock unduhan.
+4. `#model` Bawa model sendiri: H2 pendek + mock form model + satu baris.
+5. Pita CTA tengah: "Pakai gratis. Bawa model sendiri." + satu tombol unduh.
+6. `#signin` Masuk: panel gelap berisi kutipan primitive dan satu baris MCP.
+7. `#privacy` Apa yang meninggalkan mesin Anda: pita penuh tiga kolom.
+8. `#faq` Pertanyaan yang sering masuk: enam pertanyaan satu baris.
+9. CTA akhir: satu kalimat besar, satu tombol, lalu footer.
+
+Section id (`#install`, `#model`, `#signin`, `#privacy`, `#faq`) dan seluruh
+kunci i18n tetap dipakai; yang berubah tampilan dan komposisi.
+
+Aturan permukaan gelap: maksimal dua per halaman — mock produk dan pita CTA
+tengah. Sisanya kertas terang.
 
 ## Halaman
 
-### `beranda.html` (disusun ulang)
+Setiap halaman memakai aturan copy yang sama: headline pendek, satu baris, satu
+tombol, satu visual. Yang berubah hanya objek visualnya.
 
-Urutan section baru, id lama dipertahankan, seluruh kunci i18n tetap dipakai:
-
-1. Hero: eyebrow "Daftar terbuka", `h1` "Asisten Anda mengemudikan browser
-   Anda." dengan frasa akhir di `--accent`, subcopy, CTA "Unduh" +
-   "Sambungkan model", footnote "Gratis dipakai. Model ditagih penyedia Anda.",
-   dan tiga stat jujur (34 tool MCP, 31 primitive, 6 izin). Kanan: mock
-   browser dengan Google Sheets dan panel tool call (primitif nyata), label
-   "Contoh".
-2. Strip kredibilitas (bukan logo pelanggan): "Bicara MCP", "Chrome · Edge ·
-   Brave · Opera · Vivaldi", "Kunci model tidak pernah ke server ini".
-3. Kartu kemampuan (3): kendali browser, model milik Anda, manusia di loop.
-4. `#install` Instalasi: tiga langkah bernomor + mock unduhan.
-5. `#model` Bawa model sendiri: dua kolom, kiri copy, kanan mock form model.
-6. `#signin` Masuk: panel gelap satu-satunya, berisi kutipan primitive
-   (`signin.tools.dd`) dan daftar singkat MCP.
-7. `#privacy` Apa yang meninggalkan mesin Anda: pita penuh, tiga kolom.
-8. `#faq` Pertanyaan yang sering masuk: dua kolom, garis rambut.
-9. CTA akhir: satu kalimat besar + tombol unduh.
-10. Footer.
-
-### `fitur.html`
-
-Intro editorial, stat band (34/31/6), enam izin sebagai kartu bernomor, lalu
-bagian model dan pairing yang sudah ada. Semua nama izin tetap dibaca dari
-manifest oleh tes.
-
-### `unduh.html`, `unduh-berkas.html`
-
-Kartu kertas, satu unduhan utama (`.zip`) sebagai tombol hijau, CRX sebagai
-tombol kedua, lima kartu browser, syarat satu baris, catatan hash. Tata letak
-mengikuti grammar kartu VS Code yang sudah diadopsi, dengan palet baru.
-
-### `index.html`, `akun.html`, `dashboard.html`
-
-Permukaan aplikasi terang dengan token yang sama. `index.html` mempertahankan
-split brand-panel + kartu form (grammar Facebook yang sudah diadopsi) dengan
-kanvas terang. `dashboard.html` hanya reskin: token, tabel, chip, tombol;
-tidak ada perubahan struktur atau fetch, dan panjang file tidak boleh tumbuh.
-
-### `privasi.html`, `syarat.html`, `dukungan.html`, `404.html`, `oauth/consent.html`
-
-Prose 720px, chrome dan footer baru, heading hierarchy tetap satu `h1`.
+- **`beranda.html`**: susunan di atas, satu `h1`, copy dipangkas ke aturan copy.
+- **`fitur.html`**: H1 "Fitur", satu baris, stat band (34/31/6), enam izin
+  sebagai kartu bernomor, satu tombol unduh di akhir.
+- **`unduh.html`**: H1 pendek, satu baris, CTA primer menyebut browser terdeteksi,
+  tiga langkah bernomor, kartu per browser.
+- **`unduh-berkas.html`**: lima kartu browser, satu unduhan utama per kartu
+  (`.zip` tombol hijau, CRX tombol kedua), satu baris syarat per kartu. Grammar
+  kartu VS Code yang sudah diadopsi, palet baru.
+- **`index.html`, `akun.html`, `dashboard.html`**: permukaan aplikasi terang
+  dengan token sama. `index.html` mempertahankan split brand-panel + kartu
+  form dengan kanvas terang; CTA-nya satu tombol utama. `dashboard.html` reskin
+  saja: token, tabel, chip, tombol; tanpa perubahan struktur atau fetch,
+  panjang file tidak tumbuh.
+- **`privasi.html`, `syarat.html`, `dukungan.html`, `404.html`,
+  `oauth/consent.html`**: prose 720px, chrome dan footer baru, satu `h1`.
+  Halaman hukum dikecualikan dari aturan copy.
 
 ## Teknis
 
-- **CSP**: tambahkan `font-src 'self'` ke setiap blok di `landing/_headers`
-  dan `landing/vercel.json` yang memuat `site.css` (25 dan 15 blok).
-  `style-src 'self' 'unsafe-inline'` dan `script-src` hash tidak berubah.
-  `img-src` tetap `data:` karena seluruh visual adalah HTML/CSS/SVG.
-- **Font**: `landing/fonts/instrument-sans-latin.woff2` (variable, subset
-  latin, target di bawah 60 KB), `@font-face` di `site.css`, `preload` +
-  `crossorigin` pada `beranda.html`. Tes gagal jika file hilang atau policy
-  tidak mengizinkannya.
-- **i18n**: setiap teks baru masuk ke dict `en` dengan pasangan ID yang
-  ditulis; tidak ada kunci tanpa pasangan (tes `landing-i18n` menegakkannya).
-- **Tes**: perbarui `tests/landing-visual.test.mjs` (token, satu H1, mock
-  berlabel), `tests/landing-hosting.test.mjs` (font-src, aset terlarang),
-  `tests/landing-claims.test.mjs` (angka tetap dari kode), dan tes halaman yang
-  memaku gaya gelap lama. Tes yang tidak lagi benar diganti dengan bukti
-  setara, tidak dibuang diam-diam.
-- **Kode standar**: komentar CSS mengikuti format `scripts/format-comments.mjs`
-  (blok kolom nol sebagai header section, blok indentasi mendokumentasikan kode
-  di bawahnya). Tidak ada file melewati 1200 baris selain pengecualian yang
-  sudah ada.
+- **CSP**: tambahkan `font-src 'self'` ke setiap blok di `landing/_headers` dan
+  `landing/vercel.json` yang memuat `site.css` (25 dan 15 blok). `style-src`,
+  `script-src`, dan `img-src` tidak berubah.
+- **Font**: `landing/fonts/instrument-sans-latin.woff2` (variable, subset latin,
+  di bawah 60 KB), `@font-face` di `site.css`, `preload` + `crossorigin` di
+  `beranda.html`. Tes gagal jika file hilang atau policy tidak mengizinkan.
+- **i18n**: setiap teks baru masuk dict `en` dengan pasangan ID; tidak ada kunci
+  tanpa pasangan (tes `landing-i18n` menegakkannya).
+- **Tes**: perbarui `landing-visual` (token, satu `h1`, mock berlabel, batas
+  panjang paragraf), `landing-hosting` (`font-src`, aset terlarang),
+  `landing-claims` (angka tetap dari kode), dan tes halaman yang memaku gaya
+  gelap lama. Tes yang tidak lagi benar diganti bukti setara, tidak dibuang
+  diam-diam.
+- **Kode standar**: komentar CSS mengikuti `scripts/format-comments.mjs`; tidak
+  ada file baru melewati 1200 baris.
 - **Kejujuran**: tidak ada logo pelanggan, metrik pengguna, atau klaim baru.
-  Angka di situs tetap dibaca ulang oleh tes dari `protocol.js`, kontrak MCP,
-  dan `manifest.json`.
 
 ## Urutan kerja
 
-1. Fondasi: token, font, `@font-face`, `font-src` di kedua host, chrome dan
-   footer bersama, mock UI. Gate penuh + deploy branch.
-2. `beranda.html`: hero, strip kredibilitas, kartu kemampuan, langkah, panel
-   gelap, privasi, FAQ, CTA. Gate penuh + verifikasi live + Lighthouse.
-3. `fitur.html`, `unduh.html`, `unduh-berkas.html`. Gate + verifikasi.
-4. `index.html`, `akun.html`, `404.html`, `oauth/consent.html`,
-   `privasi.html`, `syarat.html`, `dukungan.html`. Gate + verifikasi.
-5. `dashboard.html` reskin terakhir (paling besar, paling berisiko). Gate.
-6. Update `docs/design-references.md` dengan bagian Cohere (apa yang diukur,
-   apa yang diadopsi, apa yang ditinggalkan) dan `docs/handoff.md`.
+1. Fondasi: token, font, `font-src` di kedua host, chrome, footer, mock UI.
+2. `beranda.html` lengkap dengan copy baru.
+3. `fitur.html`, `unduh.html`, `unduh-berkas.html`.
+4. `index.html`, `akun.html`, `404.html`, `oauth/consent.html`, `privasi.html`,
+   `syarat.html`, `dukungan.html`.
+5. `dashboard.html` reskin terakhir.
+6. Update `docs/design-references.md` (bagian Cohere) dan `docs/handoff.md`.
 
 ## Risiko dan bukti
 
-| Risiko | Bukti yang menutupnya |
+| Risiko | Bukti |
 | --- | --- |
-| Font baru memicu CLS atau memblokir render | `font-display: swap`, `size-adjust` disetel, Lighthouse CLS diukur sebelum/sesudah |
-| Kontras hijau di kanvas terang kurang | tes kontras token (WCAG 4.5:1) |
-| Halaman sekunder pecah saat reskin | gate unit + verifikasi live setiap halaman |
-| Redesign menggeser angka/klaim | tes `landing-claims`, `landing-hosting`, `landing-visual` tetap hijau |
-| SonarCloud duplikasi naik | tidak ada baris panjang identik disalin; mock dan kartu adalah komponen bersama |
-| `dashboard.html` melewati batas baris | reskin hanya menukar token, panjang file tidak boleh tumbuh |
+| Font baru memicu CLS | `font-display: swap`, Lighthouse CLS diukur |
+| Kontras hijau di kanvas terang kurang | tes kontras token WCAG 4.5:1 |
+| Halaman sekunder pecah saat reskin | gate unit + verifikasi live tiap halaman |
+| Copy memanjang lagi | tes batas kata headline, baris dukungan, dan paragraf |
+| Angka/klaim bergeser | tes `landing-claims`, `landing-hosting`, `landing-visual` |
+| SonarCloud duplikasi naik | komponen bersama, tidak ada baris identik disalin |
+| `dashboard.html` melewati batas baris | panjang file tidak boleh tumbuh |
 
 ## Definition of Done
 
-- 12 halaman memuat sistem token yang sama; tidak ada warna/ukuran ad hoc di
-  markup halaman.
+- 12 halaman memakai token yang sama; tidak ada warna/ukuran ad hoc di markup.
 - `npm test`, `npm run check`, formatter, gitleaks 8.24.0, dan
   `py tests/browser_extension_test.py` hijau.
 - Lighthouse `/beranda` dan `/` accessibility 1, best-practices 1, tanpa error
-  console; CSS terukur termuat (`site.css` 200, rules terhitung).
-- Branch ter-deploy lewat `deploy-site.yml` dan situs live memuat font,
-  kanvas terang, dan mock UI berlabel "Contoh".
+  console; `site.css` 200 dan rules terhitung.
+- Branch ter-deploy lewat `deploy-site.yml`; situs live memuat font, kanvas
+  terang, dan mock UI berlabel "Contoh".
 - `docs/design-references.md` dan `docs/handoff.md` diperbarui.
 - Tidak ada PR merge tanpa arahan pemilik.
