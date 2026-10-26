@@ -122,13 +122,13 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
 12. **A bridged window on the taskbar is restored, not refused.** `tabs.activate` reads the
     window first and sends `state: 'normal'` with the focus ask when it is minimized, because
     `focused: true` alone was measured to leave it there; the live suite proves the restore.
-13. **A sandbox payment closes a real invoice; production has not, and the stored key does
-    not sign its own notifications.** Driven 2026-10-26: a QRIS payment of Rp 99.000 through
-    the provider's simulator, and `Uji Sandbox:2027-06` went `paid` 0.2 s after the
-    notification arrived, with every notification written to `opera_notification_log`. The
-    signature never matched under three readings of the stored key, so a refused signature
-    asks the provider what it recorded, and that answer closes the invoice — proved live. A
-    clean re-paste of the server key is owed. No real money has moved: production is `[UNVERIFIED]`.
+13. **A sandbox payment closes a real invoice on the provider's signature; production has not.**
+    Driven 2026-10-26: a QRIS payment of Rp 99.000 through the simulator, and `Uji Sandbox:2027-08`
+    went `paid` 0.3 s after settlement, with every notification written to `opera_notification_log`.
+    The first rule used an HMAC with the server key while Midtrans documents
+    `SHA512(order + status + amount + key)`, so real notifications were refused; the formula is now
+    the provider's and the log reads `the provider signed it`. No real money has moved: production
+    is `[UNVERIFIED]`.
 
 ## CI
 

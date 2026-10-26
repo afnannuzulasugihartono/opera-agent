@@ -50,8 +50,7 @@ import {
   snapRedirect,
   secretShape,
   snapStatusRequest,
-  verifyInvoiceToken,
-  whichReadingSigned
+  verifyInvoiceToken
 } from "../_shared/billing.js";
 
 type PriceRow = { kind: string; unit: string; amount_cents: number; currency: string; active: boolean };
@@ -305,9 +304,10 @@ async function noteNotification(
 }
 
 // WHY A REFUSED SIGNATURE BECOMES A QUESTION TO THE PROVIDER.
-// A signature that does not match has two causes that look identical from the body: it was not signed by the provider, or it was signed with a different secret than the one stored here.
-// Measured live on 2026-10-26: real notifications arrived from the provider's own user agent with the right order id and amount, and every one was refused, with nothing in the body able to say which cause it was.
+// A signature that does not match has causes that look identical from the body: it was not signed by the provider, or it was signed with a secret other than the one stored here.
+// Measured live on 2026-10-26: real notifications arrived from the provider's own user agent with the right order id and amount, and every one was refused; the body could not say why, and the cause turned out to be this module's own formula.
 // The provider records the transaction, so asking it what happened is a stronger proof than the body: the answer is about its own transaction, never about the claim in the request.
+// It stays as the answer to a refusal now that the formula matches, because a rotated key and a forged body must both end somewhere honest.
 // The status code and the key never leave the function; only the settlement and the amount it reports come back.
 
 async function providerSaysSettled(orderId: string): Promise<{ settled: boolean; status: string; grossAmount: string; why: string }> {
@@ -410,12 +410,9 @@ Deno.serve(async (req: Request) => {
         const signatureField = notification.signature_key != null
           ? "signature_key"
           : notification.signature != null ? "signature" : null;
-        const signedReading = whichReadingSigned(notification, MIDTRANS_SERVER_KEY);
-        const signed = signedReading !== "none";
+        const signed = notificationSignatureValid(notification, MIDTRANS_SERVER_KEY);
         let judged = notification;
-        let source = signedReading === "as-stored"
-          ? "the provider signed it"
-          : `the provider signed it once the stored key is read ${signedReading}`;
+        let source = "the provider signed it";
         if (!signed) {
           const provider = await providerSaysSettled(String(notification.order_id || ""));
           if (!provider.settled) {

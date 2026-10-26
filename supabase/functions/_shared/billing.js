@@ -168,9 +168,9 @@ export function snapPaymentMethods(amountCents, currency = 'IDR') {
 
 // WHY THE ENVIRONMENT IS NAMED AND NOT GUESSED FROM THE KEY.
 // Midtrans serves sandbox and production on different hosts and each refuses the other's key.
-// The first version of this rule read the environment from the key's prefix, on the belief that a sandbox key starts with SB-.
-// Measured live, that belief was false for this merchant: the sandbox key and the production key both start Mid-server-, so the sandbox key was sent to the production host and turned away with 401.
-// A key cannot name its own environment when both look alike, so the environment is stated, and the refusal log names the host that was used so a mismatch is visible instead of silent.
+// The first version read the environment from the key's prefix, and a key that did not belong to the host it was sent to was turned away with 401 and no charge.
+// The prefix does name the environment today - sandbox keys start SB-Mid-server-, production keys Mid-server- - but a host inferred from a string the provider controls breaks silently the day the format changes, and the failure looks like a bad key.
+// So the environment is stated, and the refusal log names the host that was used so a mismatch is visible instead of silent.
 
 export const SNAP_ENVIRONMENTS = Object.freeze({
   production: 'https://app.midtrans.com/snap/v1/transactions',
@@ -322,15 +322,7 @@ export function planInvoiceLines(deliveries, plan, period) {
 // Midtrans names the field signature_key, and the first version of this rule read notification.signature instead.
 // Measured live: a sandbox payment settled, Midtrans said PAID, and the invoice stayed open, because the signature it sent arrived in a field this code did not read and the comparison was made against nothing.
 // A notification is the only way an invoice becomes paid, so a field name that does not match the provider's contract is a payment that silently never lands.
-// The alias is accepted because the value still has to match the HMAC; the field name is not the secret.
-
-// WHY A STORED SECRET IS READ MORE THAN ONE WAY.
-// A key is copied by a person and pasted into a dashboard, so it can carry what a clipboard adds: a newline, a zero-width space, a non-breaking space.
-// The signature is computed over the exact value stored here, so one invisible character makes every notification fail while nothing about the body looks wrong.
-// Measured live on 2026-10-26: the charge opened with the stored key and every notification signed with it was refused, and trim() alone did not explain it.
-// The readings are tried against the notification itself and the one that matched is named, so a paste artifact is reported instead of hidden behind a fallback.
-
-export const SECRET_READINGS = Object.freeze(['as-stored', 'trimmed', 'printable-ascii']);
+// The alias is accepted because the value still has to match the signature; the field name is not the secret.
 
 // WHY THE SHAPE OF A STORED SECRET IS MEASURED AND ITS VALUE IS NOT.
 // A paste artifact is invisible: a length that is one too long, or a character outside the alphabet a provider key uses, says what no amount of staring at a masked field can.
@@ -339,33 +331,31 @@ export const SECRET_READINGS = Object.freeze(['as-stored', 'trimmed', 'printable
 export function secretShape(secret) {
   const raw = secret === undefined || secret === null ? '' : String(secret);
   const outside = raw.replace(/[A-Za-z0-9_-]/g, '').length;
-  const prefix = raw.startsWith('Mid-server-') ? 'Mid-server-' : 'not Mid-server-';
+  const prefix = ['SB-Mid-server-', 'Mid-server-'].find((known) => raw.startsWith(known)) || 'not a provider key';
   return `${raw.length} chars, prefix ${prefix}, ${outside} outside the key alphabet`;
 }
 
-export function readSecret(secret, reading) {
-  const raw = secret === undefined || secret === null ? '' : String(secret);
-  if (reading === 'trimmed') return raw.trim();
-  if (reading === 'printable-ascii') return raw.replace(/[^\x21-\x7e]/g, '');
-  return raw;
-}
+// WHY THE SIGNATURE IS A HASH AND NOT AN HMAC.
+// Midtrans documents signature_key as SHA512(order_id + status_code + gross_amount + ServerKey): the key is appended to the string and the whole thing is hashed in one pass.
+// The first version used the key as an HMAC secret, which produces a different value for every notification and can never match one.
+// Measured live on 2026-10-26: four sandbox payments settled and every notification was refused, while the same key opened the charge and answered the status question.
+// That combination is what a wrong formula looks like, because a wrong key cannot open a charge.
+// The test agreed with the code because it was written from the same belief, so the vector below was produced by another implementation and the retired rule is asserted to fail.
 
-export function whichReadingSigned(notification, secret) {
-  for (const reading of SECRET_READINGS) {
-    if (notificationSignatureValid(notification, readSecret(secret, reading))) return reading;
-  }
-  return 'none';
+export function providerSignature(notification, serverKey) {
+  if (!notification || !serverKey) return '';
+  const orderId = String(notification.order_id || '');
+  const statusCode = String(notification.status_code || '');
+  const grossAmount = String(notification.gross_amount || '');
+  if (!orderId || !statusCode || !grossAmount) return '';
+  return createHash('sha512').update(`${orderId}${statusCode}${grossAmount}${serverKey}`).digest('hex');
 }
 
 export function notificationSignatureValid(notification, serverKey) {
   if (!notification || !serverKey) return false;
-  const orderId = String(notification.order_id || '');
-  const statusCode = String(notification.status_code || '');
-  const grossAmount = String(notification.gross_amount || '');
-  if (!orderId || !statusCode || !grossAmount) return false;
-  const expected = hmacSha512(serverKey, `${orderId}${statusCode}${grossAmount}`);
   const given = notification.signature_key ?? notification.signature;
-  return sameText(expected, String(given || ''));
+  if (!given) return false;
+  return sameText(providerSignature(notification, serverKey), String(given));
 }
 
 // WHY THE ANSWER TO A NOTIFICATION IS NOT THE PAYMENT RESULT.

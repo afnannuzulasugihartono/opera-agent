@@ -9,7 +9,7 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createHmac } from 'node:crypto';
+import { createHash, createHmac } from 'node:crypto';
 import http from 'node:http';
 import fs from 'node:fs';
 
@@ -32,10 +32,8 @@ import {
   snapPaymentMethods,
   snapStatusRequest,
   snapUrlFor,
-  readSecret,
-  SECRET_READINGS,
+  providerSignature,
   secretShape,
-  whichReadingSigned,
   snapRedirect,
   SNAP_QRIS_ONLY_BELOW_CENTS,
   verifyInvoiceToken
@@ -97,16 +95,27 @@ test('the invoice link carries authority in itself, so it needs no lookup to be 
   assert.equal(verifyInvoiceToken('inv-1', token, ''), false, 'without a secret nothing is verified');
 });
 
-test('a payment notification is believed only when the provider signed it', () => {
-  const key = 'server-key';
-  const notification = { order_id: 'order-1', status_code: '200', gross_amount: '4000000' };
-  const payload = `${notification.order_id}${notification.status_code}${notification.gross_amount}`;
-  const signature_key = createHmac('sha512', key).update(payload).digest('hex');
-  assert.equal(notificationSignatureValid({ ...notification, signature_key }, key), true);
+// WHY THE PROVIDER'S OWN FORMULA IS PINNED AND NOT RE-DERIVED HERE.
+// Midtrans documents signature_key as SHA512(order_id + status_code + gross_amount + ServerKey): the key is appended, not used as an HMAC secret.
+// The first version used HMAC and this test made the same call, so the test agreed with the bug while four live payments were refused.
+// The vector below was computed by .NET's SHA512 over "oa-1" + "200" + "99000.00" + "SB-Mid-server-test", so agreement is two implementations agreeing.
+
+test('a payment notification is believed only when the provider signed it, by the provider\'s own formula', () => {
+  const key = 'SB-Mid-server-test';
+  const notification = { order_id: 'oa-1', status_code: '200', gross_amount: '99000.00' };
+  const expected = '878c25a28679403c167be585e7705708901f13ae769009e499d26b379212361e4edcf331ea90680bbb5023e55db87d48b79bfad6eea45364acb045e48dd17f67';
+  assert.equal(providerSignature(notification, key), expected, 'SHA-512 of order, status, amount and key, in that order');
+  assert.equal(notificationSignatureValid({ ...notification, signature_key: expected }, key), true);
   assert.equal(notificationSignatureValid({ ...notification, signature_key: 'wrong' }, key), false);
-  assert.equal(notificationSignatureValid({ ...notification, gross_amount: '1', signature_key }, key), false, 'a bigger claim does not pass');
-  assert.equal(notificationSignatureValid({ ...notification, signature_key }, 'other-key'), false);
-  assert.equal(notificationSignatureValid({ ...notification, signature_key }, ''), false, 'without a key nothing is verified');
+  assert.equal(notificationSignatureValid({ ...notification, gross_amount: '1', signature_key: expected }, key), false, 'a bigger claim does not pass');
+  assert.equal(notificationSignatureValid({ ...notification, signature_key: expected }, 'other-key'), false);
+  assert.equal(notificationSignatureValid({ ...notification, signature_key: expected }, ''), false, 'without a key nothing is verified');
+  assert.equal(notificationSignatureValid({ ...notification }, key), false, 'a body with no signature is not signed');
+
+  // The retired rule: the key as an HMAC secret over the three fields.
+  // This is the value the function computed while every real notification was refused.
+  const retired = createHmac('sha512', key).update(`${notification.order_id}${notification.status_code}${notification.gross_amount}`).digest('hex');
+  assert.equal(notificationSignatureValid({ ...notification, signature_key: retired }, key), false, 'an HMAC with the key is not what Midtrans sends');
 });
 
 // WHY THE PROVIDER'S FIELD NAME HAS A TEST OF ITS OWN.
@@ -178,42 +187,24 @@ test('only the provider\'s own words for a settlement count as paid', () => {
   assert.equal(providerSettlement(null).settled, false);
 });
 
-test('a refused signature asks the provider, and the reading that verified is named', () => {
+test('a refused signature asks the provider, and the provider formula is the only one believed', () => {
   const fn = fs.readFileSync(new URL('../supabase/functions/opera-agent-billing/index.ts', import.meta.url), 'utf8');
   assert.match(fn, /providerSaysSettled\(String\(notification\.order_id/, 'a refusal must become a question, not an ending');
-  assert.match(fn, /whichReadingSigned\(notification, MIDTRANS_SERVER_KEY\)/, 'the stored key is read as stored, and the reading that signed is reported');
-  assert.doesNotMatch(fn, /MIDTRANS_SERVER_KEY = .*\.trim\(\)/, 'cleaning the key would hide the evidence that the stored secret needs fixing');
+  assert.match(fn, /notificationSignatureValid\(notification, MIDTRANS_SERVER_KEY\)/, 'the signature is checked by the provider rule');
+  assert.doesNotMatch(fn, /whichReadingSigned/, 're-reading the key cannot substitute for the formula the provider uses');
 });
-
-// WHY A KEY THAT A CLIPBOARD TOUCHED MUST STILL BE READABLE.
-// A pasted key can carry a newline or a zero-width space, and the signature is computed over the exact stored value.
-// Measured live: the charge opened with the stored key while every notification signed with it was refused, and trim() alone did not close the gap.
-// The reading that worked is named, so the stored secret is reported as needing a clean paste instead of being silently repaired.
 
 // WHY THE SHAPE IS MEASURED AND THE VALUE IS NOT.
 // A masked dashboard field cannot show a key that arrived one character too long, and the value must never reach a log.
 // A count and a boolean answer the same question without carrying any part of the secret.
+// The sandbox prefix SB-Mid-server- was missing from the first version of this rule, so a correct sandbox key was reported as "not a provider key".
 
 test('the shape of a stored secret names a paste artifact without the secret', () => {
   assert.equal(secretShape('Mid-server-abc'), '14 chars, prefix Mid-server-, 0 outside the key alphabet');
-  assert.equal(secretShape('Mid-server-abc\n'), '15 chars, prefix Mid-server-, 1 outside the key alphabet');
-  assert.equal(secretShape('"Mid-server-abc"'), '16 chars, prefix not Mid-server-, 2 outside the key alphabet');
-  assert.equal(secretShape(''), '0 chars, prefix not Mid-server-, 0 outside the key alphabet');
-});
-
-test('the same key still signs when the clipboard added something to it', () => {
-  const key = 'mid-server-abc';
-  const notification = { order_id: 'order-1', status_code: '200', gross_amount: '99000.00' };
-  const payload = `${notification.order_id}${notification.status_code}${notification.gross_amount}`;
-  const signed = { ...notification, signature_key: createHmac('sha512', key).update(payload).digest('hex') };
-
-  assert.equal(whichReadingSigned(signed, key), 'as-stored');
-  assert.equal(whichReadingSigned(signed, `${key}\n`), 'trimmed', 'a newline from a paste survives trim only');
-  assert.equal(whichReadingSigned(signed, `${key}\u200b`), 'printable-ascii', 'a zero-width space survives trim, so the reading has to name it');
-  assert.equal(whichReadingSigned(signed, `${key}\u00a0`), 'trimmed', 'a non-breaking space ends the value, so trim reaches it');
-  assert.equal(whichReadingSigned(signed, 'another-key'), 'none');
-  assert.equal(readSecret(`${key}\u200b`, 'printable-ascii'), key);
-  assert.deepEqual([...SECRET_READINGS], ['as-stored', 'trimmed', 'printable-ascii']);
+  assert.equal(secretShape('SB-Mid-server-abc'), '17 chars, prefix SB-Mid-server-, 0 outside the key alphabet');
+  assert.equal(secretShape('SB-Mid-server-abc\n'), '18 chars, prefix SB-Mid-server-, 1 outside the key alphabet');
+  assert.equal(secretShape('"Mid-server-abc"'), '16 chars, prefix not a provider key, 2 outside the key alphabet');
+  assert.equal(secretShape(''), '0 chars, prefix not a provider key, 0 outside the key alphabet');
 });
 
 test('every notification that arrives is written down, refused or accepted', () => {
@@ -382,19 +373,18 @@ test('the request is answered by a provider that parses it the way Midtrans does
 // So the call is read here and the names it passes are checked against the names its own signature destructures.
 
 // WHY THE ENVIRONMENT IS STATED AND NOT READ FROM THE KEY.
-// The first rule read it from the key's prefix on the belief that a sandbox key starts with SB-.
-// Measured live for this merchant that was false: both keys start Mid-server-, so a sandbox key reached the production host and was turned away with 401.
-// A key cannot name its own environment when the two look alike, so the environment is stated and the refusal log names the host that was used.
+// The prefix does name the environment today - sandbox keys start SB-Mid-server-, production keys Mid-server- - but the host is a setting the operator controls, not a fact parsed out of a secret.
+// A key sent to the wrong host is refused with 401 and no charge, which looks exactly like a bad key, so the rule states the environment and the refusal log names the host that was used.
 
-test('the charge URL follows the stated environment, because the key cannot say which one it is', () => {
+test('the charge URL follows the stated environment, and is never inferred from the key', () => {
   assert.equal(snapUrlFor('sandbox'), 'https://app.sandbox.midtrans.com/snap/v1/transactions');
   assert.equal(snapUrlFor('production'), 'https://app.midtrans.com/snap/v1/transactions');
   assert.equal(snapUrlFor(''), 'https://app.midtrans.com/snap/v1/transactions', 'an unstated environment is production, and a sandbox key must not reach it by default');
   assert.equal(snapUrlFor('nonsense'), 'https://app.midtrans.com/snap/v1/transactions', 'a typo in the setting is production, not sandbox');
-  const sandbox = snapChargeRequest({ ...SNAP_INVOICE, serverKey: 'Mid-server-4zljU5Q', environment: 'sandbox' });
+  const sandbox = snapChargeRequest({ ...SNAP_INVOICE, serverKey: 'SB-Mid-server-4zljU5Q', environment: 'sandbox' });
   assert.match(sandbox.url, /sandbox/, 'a sandbox key with sandbox stated reaches the sandbox host');
   const production = snapChargeRequest({ ...SNAP_INVOICE, serverKey: 'Mid-server-4zljU5Q' });
-  assert.match(production.url, /app\.midtrans\.com/, 'the same key with nothing stated stays on production');
+  assert.match(production.url, /app\.midtrans\.com/, 'a production key with nothing stated stays on production');
 });
 
 test('the snap charge call passes the customer the function actually has', () => {
@@ -415,8 +405,9 @@ test('the money rules run where Buffer does not exist, which is where they faile
   const saved = globalThis.Buffer;
   const token = invoiceToken('inv-1', 'secret');
   const notification = { order_id: 'order-1', status_code: '200', gross_amount: '4000000' };
-  const payload = `${notification.order_id}${notification.status_code}${notification.gross_amount}`;
-  const signature_key = createHmac('sha512', 'server-key').update(payload).digest('hex');
+  const signature_key = createHash('sha512')
+    .update(`${notification.order_id}${notification.status_code}${notification.gross_amount}server-key`)
+    .digest('hex');
   try {
     delete globalThis.Buffer;
     assert.equal(verifyInvoiceToken('inv-1', token, 'secret'), true);

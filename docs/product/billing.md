@@ -61,7 +61,7 @@ priced lines (the price list)  ->  an invoice (one per customer per month)
   customer reaches their invoice through a signed link, not through the table.
 - `supabase/functions/_shared/billing.js` — the rules, and nothing else: the amount of
   an invoice, the plan line and its overage, the manifest rows turned into lines, the
-  invoice token, the provider's signature check and the readings of the stored key,
+  invoice token, the provider's signature check and the shape of the stored key,
   the provider status request, the rule that only a settled transaction is a payment,
   the rule that a paid invoice is not paid again, the legal provider order id, and the
   QRIS-only rule for small invoices.
@@ -94,8 +94,9 @@ The whole path was driven against the deployed functions, not simulated:
 | the same notification replayed after the provider key was removed | **400** `the notification was not signed by the provider` |
 | `settle-manual` with no operator token, after the 2026-10-22 deploy | **401** `the operator token is missing or wrong` |
 | the price list after the price decision (read with SQL) | `plan.pilot` 9,900,000 cents; `plan.firm` 24,900,000; overage 1,000,000 |
-| a real QRIS payment of Rp 99.000 in the sandbox, driven through the provider's simulator | provider `settlement`; invoice `Uji Sandbox:2027-06` **paid** 0.2 s later |
-| a notification-shaped body with no signature for an order that is only `pending` | **400**; the log says `the signature did not match and the provider reports pending for that order` |
+| a real QRIS payment of Rp 99.000 in the sandbox, driven through the provider's simulator | provider `settlement`; invoice `Uji Sandbox:2027-08` **paid** 0.3 s later, and the log says `the provider signed it` |
+| the `pending` notification of that same payment | acknowledged; log: `the provider signed it; the transaction is not settled` |
+| a notification-shaped body with no signature for an order that is only `pending` | **400**; the log says `the signature did not match (…) and the provider reports pending for that order` |
 | a notification for an invoice already paid | **200** `the invoice was already paid at ...`; `paid_at` unchanged |
 
 Three lessons are now tests instead of comments. The first deploy created invoices and
@@ -120,15 +121,20 @@ is recorded in `opera_notification_log` — `pending` then `settlement`, `user_a
 Veritrans`, `gross_amount 99000.00` — so "the provider never reached us" and "it reached
 us and we refused" are now different rows instead of the same silence.
 
-That log is what found the remaining defect. The signature stored in the project does
-not sign these notifications under any of the three readings tried (as stored, trimmed,
-printable ASCII), while the same key opens the charge. So a refused signature is a
-question, not an ending: the function asks the provider what it recorded for that order,
-over the same key, and closes the invoice only when the provider answers `settlement`
-(or an accepted `capture`) for the exact amount. A forged body cannot pass, because the
-provider answers about its own transaction. What is still owed is a clean re-paste of
-the server key from the dashboard; until then every close is provider-confirmed, which
-is the stronger of the two proofs.
+That log is what found the remaining defect, and the defect was ours: the signature was
+computed as an HMAC with the server key, while Midtrans documents
+`SHA512(order_id + status_code + gross_amount + ServerKey)` — the key is appended to the
+string, not used as an HMAC secret. The two values can never agree, which is why four
+payments settled and every notification was refused while the same key opened the
+charge. The rule now follows the provider's formula, the test is pinned to a vector
+computed by another implementation, and the retired HMAC is asserted to fail. Driven live
+after the fix: `Uji Sandbox:2027-08` was closed by a notification the function judged
+`the provider signed it`.
+
+The provider answer stays as the second line of defence: a refused signature is still a
+question, not an ending, and the invoice closes only when the provider reports
+`settlement` (or an accepted `capture`) for the exact amount. A forged body cannot pass,
+because the provider answers about its own transaction.
 
 Production is a different matter: the account is still under review and no real money
 has moved, so a real customer payment closing a real invoice is `[UNVERIFIED]`.
@@ -205,8 +211,9 @@ $0.50 fixed fee alone is larger than the whole invoice.
 The first two are set in the project's secrets already; the provider key and the
 environment are set for sandbox; the last is the owner's own account line, and the
 invoice is honest without it but harder to pay. The environment is stated and never
-read from the key: this merchant's sandbox and production keys both start
-`Mid-server-`, so a prefix proves nothing. The provider is one column on the invoice
+read from the key: the sandbox key starts `SB-Mid-server-` and the production key
+`Mid-server-`, and the environment is still stated rather than inferred, because the
+function should not depend on a format the provider can change. The provider is one column on the invoice
 (`provider`), and the signature check follows the provider's documented rule, so
 swapping providers is a row and a function, not a rewrite. A provider's webhook URL
 is the function itself: it recognises a notification by the order id and status code
