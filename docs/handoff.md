@@ -10,8 +10,8 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
 
 ## State
 
-- `main` = `origin/main`, and no pull request is open. A branch starts from `main` and
-  merges back by `--rebase` once the four checks are green.
+- `main` = `origin/main`. #112 is open and waits for the owner's merge; a branch starts from
+  `main` and merges back by `--rebase` once the four checks are green.
 - Version `1.6.27` in [`extension/manifest.json`](../extension/manifest.json) is the source
   of truth; [`check.mjs`](../scripts/check.mjs) also asserts the MCP version, the store form, and the secret regex.
 - **1.6.27 shipped on 2026-10-15.** #86 merged as `e99bf5a`; the CRX route answers 200 with
