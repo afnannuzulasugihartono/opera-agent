@@ -1,6 +1,6 @@
-// @last-edited: 2026-10-06 12:20 UTC+7.
+// @last-edited: 2026-10-26 UTC+7.
 // @title: landing-claims — every number the site states is checked against the code.
-// @state: 8 locks, all green; the audit that wrote them found the permission count unstated.
+// @state: every number the site states is checked against the code.
 // @dependencies: node:test, node:assert, node:fs, extension-source.
 
 // The site's copy must never claim what the runtime cannot do.
@@ -49,7 +49,12 @@ test('the primitive count on the site equals the allowlist the extension enforce
 });
 
 test('the site names the permission count it asks the reader to accept', () => {
-  assert.ok(site.includes(`${manifest.permissions.length} izin`) || site.includes('lima izin'), 'the permission count is stated');
+  const count = manifest.permissions.length;
+  const words = ['nol', 'satu', 'dua', 'tiga', 'empat', 'lima', 'enam', 'tujuh', 'delapan', 'sembilan', 'sepuluh'];
+  assert.ok(count > 0 && count < words.length, 'the manifest declares a count this test can spell');
+  assert.match(site, new RegExp(`\\b(${count}|${words[count]})\\s+izin`, 'i'),
+    `the permission count is stated as ${count} or ${words[count]}`);
+  assert.doesNotMatch(site, /\blima izin\b/i, 'and no page still says five when the manifest declares six');
   assert.match(read('landing/unduh.html'), /debugger/, 'the heaviest permission is named and justified');
 });
 

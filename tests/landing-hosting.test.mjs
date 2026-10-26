@@ -1,6 +1,6 @@
-// @last-edited: 2026-10-10 UTC+7.
+// @last-edited: 2026-10-26 UTC+7.
 // @title: landing-hosting — how both hosts are configured, and why each line is there.
-// @state: 5 locks; the site is served by both hosts, so both configs must say the same thing.
+// @state: the site is served by both hosts, so both configs must say the same thing, and every page must be allowed to load what it names.
 // @dependencies: node:test, node:assert, node:fs.
 
 // The site is served by Cloudflare Pages as well as Vercel, and the two configure headers in different files: vercel.json on one, _headers on the other.
@@ -108,6 +108,61 @@ test('every inline module script is named by a hash, and the CSP offers no unsaf
     assert.doesNotMatch(csp, /script-src[^;]*unsafe-inline/, `${path} has no inline-script loophole`);
     assert.ok(csp.includes(hashOf(html)), `${path} CSP names its exact inline script`);
   }
+});
+
+test('every page may load the stylesheet and script it names', () => {
+
+  // WHY THE POLICY IS CHECKED AGAINST THE ASSETS AND NOT ONLY AGAINST THE OTHER HOST.
+  // Measured live on 2026-10-26: every page linked /site.css, every CSP said style-src 'unsafe-inline' without 'self', and both hosts blocked the site's own stylesheet.
+  // The only symptom was a console error: the header computed as display:block and the nav lost its layout.
+  // The drift test above would have kept the two hosts equal in their mistake, so this test asks the question the drift test cannot.
+
+  const pages = fs.readdirSync(new URL('landing/', root)).filter((f) => f.endsWith('.html'));
+  for (const page of pages) {
+    const html = read(`landing/${page}`);
+    const assets = [
+      ...[...html.matchAll(/<link[^>]+rel="stylesheet"[^>]+href="([^"]+)"/g)].map((m) => ['style-src', m[1]]),
+      ...[...html.matchAll(/<script[^>]+src="([^"]+)"/g)].map((m) => ['script-src', m[1]])
+    ];
+    const rule = rules.find((r) => r.paths.includes(`/${page}`));
+    assert.ok(rule, `${page} has a _headers rule`);
+    const csp = rule.headers['Content-Security-Policy'];
+    assert.ok(csp, `${page} has a CSP`);
+    for (const [directive, href] of assets) {
+      if (/^[a-z]+:|^\/\//i.test(href)) continue;
+      assert.match(csp, new RegExp(`${directive} [^;]*'self'`), `${page} may load its own ${href} under ${directive}`);
+    }
+  }
+});
+
+test('the features page states the counts and the permissions the product has', () => {
+
+  // WHY THE FEATURES PAGE IS READ AGAINST THE CODE.
+  // Measured on 2026-10-26: the page said 31 tools and 29 primitives, its meta said 39 and 28, and it named five permissions while the manifest declares six.
+  // A marketing page that undercounts its own permissions is not a rounding error: it describes a product with less access than the one it ships.
+
+  const protocol = read('extension/lib/protocol.js');
+  const specs = /METHOD_SPECS\s*=\s*Object\.freeze\(\{([\s\S]*?)\n\}\);/.exec(protocol)?.[1] ?? '';
+  const primitives = [...specs.matchAll(/^\s{2}'([a-z_]+\.[a-z_]+)':/gm)].length;
+  const contract = JSON.parse(read('tests/fixtures/mcp-contract-v1.json'));
+  const manifest = JSON.parse(read('extension/manifest.json'));
+  const fitur = read('landing/fitur.html');
+
+  assert.ok(primitives > 0, 'the protocol exports an allowlist to count');
+  assert.equal(contract.toolCount, contract.tools.length, 'the contract agrees with itself');
+  assert.match(fitur, new RegExp(`>${contract.toolCount} tool, ${primitives} primitive<`),
+    `the Indonesian heading states ${contract.toolCount} tools and ${primitives} primitives`);
+  assert.match(fitur, new RegExp(`"${contract.toolCount} tools, ${primitives} primitives"`),
+    'the English heading states the same counts');
+  assert.match(fitur, new RegExp(`<meta name="description" content="[^"]*${contract.toolCount} tool dan ${primitives} primitive`),
+    'the description a search engine reads states the same counts');
+
+  for (const permission of manifest.permissions) {
+    assert.match(fitur, new RegExp(`\\b${permission}\\b`, 'i'), `the features page names the ${permission} permission`);
+  }
+  assert.equal(manifest.permissions.length, 6, 'the manifest still declares six API permissions, so the page must say six');
+  assert.match(fitur, /Enam izin, dijelaskan/, 'the Indonesian heading counts six permissions');
+  assert.match(fitur, /Six permissions, each explained/, 'the English heading counts six permissions');
 });
 
 test('the site hosts no archive, because the endpoint serves the newest one', () => {
