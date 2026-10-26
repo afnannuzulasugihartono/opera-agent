@@ -48,6 +48,7 @@ import {
   snapChargeRequest,
   snapPaymentMethods,
   snapRedirect,
+  secretShape,
   snapStatusRequest,
   verifyInvoiceToken,
   whichReadingSigned
@@ -78,6 +79,7 @@ const BILLING_TOKEN = Deno.env.get("OPERA_BILLING_TOKEN") || "";
 // A sanitised copy would make the check pass and destroy the evidence that the stored secret needs fixing.
 
 const MIDTRANS_SERVER_KEY = Deno.env.get("MIDTRANS_SERVER_KEY") || "";
+const KEY_SHAPE = secretShape(MIDTRANS_SERVER_KEY);
 const MIDTRANS_ENVIRONMENT = Deno.env.get("MIDTRANS_ENVIRONMENT") || "production";
 
 // The first customers pay by transfer; the account line is theirs to read, so it is configuration and never code.
@@ -417,11 +419,11 @@ Deno.serve(async (req: Request) => {
         if (!signed) {
           const provider = await providerSaysSettled(String(notification.order_id || ""));
           if (!provider.settled) {
-            await noteNotification(notification, signatureField, false, `the signature did not match and ${provider.why}`, req);
+            await noteNotification(notification, signatureField, false, `the signature did not match (${KEY_SHAPE}) and ${provider.why}`, req);
             return json({ ok: false, error: "the notification was not signed by the provider" }, 400, cors);
           }
           judged = { order_id: notification.order_id, gross_amount: provider.grossAmount, transaction_status: provider.status };
-          source = `the signature did not match and ${provider.why}`;
+          source = `the signature did not match (${KEY_SHAPE}) and ${provider.why}`;
         }
         const out = await markPaid(judged);
         await noteNotification(notification, signatureField, out.ok, `${source}; ${out.why || "the invoice is closed"}`, req);

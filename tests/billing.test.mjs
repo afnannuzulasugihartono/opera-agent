@@ -34,6 +34,7 @@ import {
   snapUrlFor,
   readSecret,
   SECRET_READINGS,
+  secretShape,
   whichReadingSigned,
   snapRedirect,
   SNAP_QRIS_ONLY_BELOW_CENTS,
@@ -188,6 +189,17 @@ test('a refused signature asks the provider, and the reading that verified is na
 // A pasted key can carry a newline or a zero-width space, and the signature is computed over the exact stored value.
 // Measured live: the charge opened with the stored key while every notification signed with it was refused, and trim() alone did not close the gap.
 // The reading that worked is named, so the stored secret is reported as needing a clean paste instead of being silently repaired.
+
+// WHY THE SHAPE IS MEASURED AND THE VALUE IS NOT.
+// A masked dashboard field cannot show a key that arrived one character too long, and the value must never reach a log.
+// A count and a boolean answer the same question without carrying any part of the secret.
+
+test('the shape of a stored secret names a paste artifact without the secret', () => {
+  assert.equal(secretShape('Mid-server-abc'), '14 chars, prefix Mid-server-, 0 outside the key alphabet');
+  assert.equal(secretShape('Mid-server-abc\n'), '15 chars, prefix Mid-server-, 1 outside the key alphabet');
+  assert.equal(secretShape('"Mid-server-abc"'), '16 chars, prefix not Mid-server-, 2 outside the key alphabet');
+  assert.equal(secretShape(''), '0 chars, prefix not Mid-server-, 0 outside the key alphabet');
+});
 
 test('the same key still signs when the clipboard added something to it', () => {
   const key = 'mid-server-abc';

@@ -332,6 +332,17 @@ export function planInvoiceLines(deliveries, plan, period) {
 
 export const SECRET_READINGS = Object.freeze(['as-stored', 'trimmed', 'printable-ascii']);
 
+// WHY THE SHAPE OF A STORED SECRET IS MEASURED AND ITS VALUE IS NOT.
+// A paste artifact is invisible: a length that is one too long, or a character outside the alphabet a provider key uses, says what no amount of staring at a masked field can.
+// The shape is a count and a boolean, so it can be written to a log without putting any part of the key there.
+
+export function secretShape(secret) {
+  const raw = secret === undefined || secret === null ? '' : String(secret);
+  const outside = raw.replace(/[A-Za-z0-9_-]/g, '').length;
+  const prefix = raw.startsWith('Mid-server-') ? 'Mid-server-' : 'not Mid-server-';
+  return `${raw.length} chars, prefix ${prefix}, ${outside} outside the key alphabet`;
+}
+
 export function readSecret(secret, reading) {
   const raw = secret === undefined || secret === null ? '' : String(secret);
   if (reading === 'trimmed') return raw.trim();
