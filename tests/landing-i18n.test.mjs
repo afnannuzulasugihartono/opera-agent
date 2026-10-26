@@ -11,9 +11,7 @@ import vm from 'node:vm';
 const root = new URL('..', import.meta.url);
 const read = (name) => fs.readFileSync(new URL(name, root), 'utf8');
 
-const TOGGLE = '<span class="lang"><button type="button" data-lang="id" aria-pressed="true" aria-label="ID — Bahasa Indonesia">ID</button>'
-  + '<span aria-hidden="true">|</span>'
-  + '<button type="button" data-lang="en" aria-pressed="false" aria-label="EN — English">EN</button></span>';
+const TOGGLE = '<span class="lang" data-lang-toggle></span>';
 
 const DICT_PAGES = ['beranda.html', 'unduh.html', 'unduh-berkas.html', 'fitur.html', 'dukungan.html', '404.html', 'privasi.html', 'syarat.html', 'index.html'];
 const TOGGLE_PAGES = [...DICT_PAGES, 'akun.html', 'dashboard.html', 'oauth/consent.html'];
@@ -64,14 +62,15 @@ test('the pages without a dict mark nothing, so no toggle promises what is not t
   }
 });
 
-test('the toggle is one identical control on every page that may carry it', () => {
+test('the toggle is one identical mount on every page that may carry it', () => {
   for (const page of TOGGLE_PAGES) {
     const html = read(`landing/${page}`);
     const nav = html.match(/<nav>[\s\S]*?<\/nav>/)[0];
-    assert.ok(nav.includes(TOGGLE), `${page} carries the toggle inside its nav`);
+    assert.ok(nav.includes(TOGGLE), `${page} carries the mount inside its nav`);
 
     const count = html.split(TOGGLE).length - 1;
     assert.equal(count, 1, `${page} carries it exactly once`);
+    assert.doesNotMatch(nav, /<button[^>]*data-lang=/, `${page} lets the mechanism build the buttons instead of copying them`);
   }
 });
 
@@ -80,7 +79,7 @@ test('the toggle announces the text it shows, so the eye and the ear hear the sa
   // WHY THE VISIBLE TEXT MUST SIT INSIDE THE ACCESSIBLE NAME.
   // Lighthouse measured label-content-name-mismatch on 2026-10-26: the ID button's name was "Bahasa Indonesia" while its face says "ID", so a screen reader announced a different control from the one on screen.
   // The rule is a substring rule, and it also makes voice control work: "click ID" only lands if "ID" is part of the name.
-  // Every page that loads the mechanism is walked, not a hand-kept list, so a new page cannot be born with a mismatched toggle.
+  // The name is built beside the text, so no page can carry one without the other; every page that loads the mechanism is walked, not a hand-kept list.
 
   const pages = fs.readdirSync(new URL('landing/', root), { recursive: true })
     .map((name) => String(name).replaceAll('\\', '/'))
@@ -88,26 +87,25 @@ test('the toggle announces the text it shows, so the eye and the ear hear the sa
     .sort();
   assert.ok(pages.includes('oauth/consent.html'), 'the nested consent page is in scope');
 
-  let checked = 0;
+  let mounts = 0;
   for (const page of pages) {
     const html = read(`landing/${page}`);
-    const buttons = [...html.matchAll(/<button\b[^>]*data-lang="(id|en)"[^>]*>([^<]*)<\/button>/g)];
-    if (!/i18n\.js/.test(html)) {
-      assert.equal(buttons.length, 0, `${page} carries no toggle without the mechanism that paints it`);
-      continue;
-    }
-    assert.ok(buttons.length >= 2, `${page} carries at least one button per language`);
-    assert.deepEqual([...new Set(buttons.map(([, lang]) => lang))].sort(), ['en', 'id'], `${page} offers both languages`);
-
-    for (const [tag, lang, visible] of buttons) {
-      const label = /aria-label="([^"]*)"/.exec(tag)?.[1] ?? '';
-      assert.ok(visible.trim(), `${page}: the ${lang} button shows text`);
-      assert.ok(label.includes(visible), `${page}: the ${lang} label "${label}" contains the visible "${visible}"`);
-      assert.match(label, lang === 'id' ? /Bahasa Indonesia/ : /English/, `${page}: the ${lang} label names the language in full`);
-      checked += 1;
-    }
+    const carries = html.includes(TOGGLE);
+    assert.equal(carries, /i18n\.js/.test(html), `${page}: the mount and the mechanism arrive together`);
+    if (carries) mounts += 1;
   }
-  assert.ok(checked >= TOGGLE_PAGES.length * 2, 'every page that carries the toggle was checked');
+  assert.ok(mounts >= TOGGLE_PAGES.length, 'every page that carries the toggle was walked');
+
+  const run = runMechanism({ withHead: true });
+  assert.equal(run.buttons.length, 2, 'the mechanism builds one button per language');
+  for (const button of run.buttons) {
+    const visible = button.textContent;
+    const label = button.getAttribute('aria-label');
+    const lang = button.getAttribute('data-lang');
+    assert.ok(visible.trim(), `the ${lang} button shows text`);
+    assert.ok(label.includes(visible), `the ${lang} label "${label}" contains the visible "${visible}"`);
+    assert.match(label, lang === 'id' ? /Bahasa Indonesia/ : /English/, `the ${lang} label names the language in full`);
+  }
 });
 
 test('the mechanism phones nowhere, ever', () => {
@@ -133,43 +131,45 @@ test('the authored Indonesian stands byte-for-byte where the pins read it', () =
 function runMechanism({ stored = null, dict = { en: { greeting: 'Hello', ph: 'Write here' } }, readyState = 'complete', storageThrows = false, withHead = false } = {}) {
   const store = stored === null ? {} : { 'oa-lang': stored };
   const listeners = {};
-  const element = (attrs, textContent) => ({
+  const element = (tag, attrs, textContent) => ({
+    tag,
     textContent,
     innerHTML: textContent,
     attrs: { ...attrs },
     handlers: {},
+    children: [],
     getAttribute(key) { return this.attrs[key]; },
     setAttribute(key, value) { this.attrs[key] = String(value); },
     addEventListener(event, handler) { this.handlers[event] = handler; },
+    appendChild(child) { this.children.push(child); },
   });
-  const nodes = [element({ 'data-i18n': 'greeting' }, 'Halo'), element({ 'data-i18n': 'missing' }, 'Tetap')];
-  const rich = [element({ 'data-i18n-html': 'rich' }, 'Baca <a href="./x.html">panduan</a> dulu.')];
+  const nodes = [element('p', { 'data-i18n': 'greeting' }, 'Halo'), element('p', { 'data-i18n': 'missing' }, 'Tetap')];
+  const rich = [element('p', { 'data-i18n-html': 'rich' }, 'Baca <a href="./x.html">panduan</a> dulu.')];
   const attributed = [
-    element({ 'data-i18n-attr': 'placeholder:ph', placeholder: 'Tulis di sini' }, ''),
-    element({ 'data-i18n-attr': 'placeholder:missing', placeholder: 'Tetap di sini' }, ''),
+    element('input', { 'data-i18n-attr': 'placeholder:ph', placeholder: 'Tulis di sini' }, ''),
+    element('input', { 'data-i18n-attr': 'placeholder:missing', placeholder: 'Tetap di sini' }, ''),
   ];
-  const buttons = [
-    element({ 'data-lang': 'id', 'aria-pressed': 'true' }, 'ID'),
-    element({ 'data-lang': 'en', 'aria-pressed': 'false' }, 'EN'),
-  ];
+  const mount = element('span', { class: 'lang', 'data-lang-toggle': '' }, '');
+  const buttons = () => mount.children.filter((child) => child.attrs['data-lang']);
   const dictNode = { textContent: JSON.stringify(dict) };
   const head = { children: [], appendChild(child) { this.children.push(child); } };
   const documentStub = {
     readyState,
     documentElement: { lang: 'id' },
     getElementById: (id) => (id === 'i18n-dict' ? dictNode : null),
+    createElement: (tag) => element(tag, {}, ''),
     querySelectorAll: (selector) => {
       if (selector === '[data-i18n]') return nodes;
       if (selector === '[data-i18n-html]') return rich;
       if (selector === '[data-i18n-attr]') return attributed;
-      if (selector === 'button[data-lang]') return buttons;
+      if (selector === '[data-lang-toggle]') return [mount];
+      if (selector === 'button[data-lang]') return buttons();
       return [];
     },
     addEventListener: (event, handler) => { listeners[event] = handler; },
   };
   if (withHead) {
     documentStub.head = head;
-    documentStub.createElement = (tag) => element({ 'data-tag': tag }, '');
   }
   const context = vm.createContext({
     console, JSON, Map,
@@ -184,7 +184,8 @@ function runMechanism({ stored = null, dict = { en: { greeting: 'Hello', ph: 'Wr
   });
   vm.runInContext(read('landing/i18n.js'), context, { filename: 'i18n.js' });
   return {
-    api: context.window.OperaAgentI18n, nodes, rich, attributed, buttons, store, listeners, head, document: context.document,
+    api: context.window.OperaAgentI18n, nodes, rich, attributed, mount, store, listeners, head, document: context.document,
+    get buttons() { return buttons(); },
     click: (button) => button.handlers.click.call(button),
   };
 }
@@ -238,6 +239,9 @@ test('while the document still parses, the helper exists and the swap waits for 
   run.listeners.DOMContentLoaded();
   assert.equal(run.nodes[0].textContent, 'Hello', 'the full page swaps once it exists');
   assert.equal(run.document.documentElement.lang, 'en');
+  assert.equal(run.buttons.length, 2, 'the control is built');
+  run.listeners.DOMContentLoaded();
+  assert.equal(run.buttons.length, 2, 'a second event does not build it again');
 });
 
 test('a mixed paragraph swaps its markup and swaps it back, never blanking', () => {
@@ -268,7 +272,7 @@ test('the toggle paints itself once, stays reachable, and presses the active lan
   const run = runMechanism({ stored: 'en', withHead: true });
   assert.equal(run.head.children.length, 1, 'one stylesheet is injected');
   const paint = run.head.children[0];
-  assert.equal(paint.attrs['data-tag'], 'style', 'it is a style element');
+  assert.equal(paint.tag, 'style', 'it is a style element');
   assert.match(paint.textContent, /\.lang/, 'it paints the shared control');
   assert.match(paint.textContent, /aria-pressed/, 'the pressed button reads pressed');
   assert.doesNotMatch(paint.textContent, /@keyframes|transition|animation/, 'with no motion anywhere in it');

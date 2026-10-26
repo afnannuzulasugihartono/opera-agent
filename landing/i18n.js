@@ -1,12 +1,17 @@
-// @last-edited: 2026-10-09 UTC+7.
+// @last-edited: 2026-10-26 UTC+7.
 // @title: i18n — one shared language swap for every page of the site.
-// @state: classic script, zero dependencies; reads oa-lang plus the page dict, swaps text and rich paragraphs, paints its own toggle, never networks.
+// @state: classic script, zero dependencies; builds the toggle into its mount, reads oa-lang plus the page dict, swaps text and rich paragraphs, paints its own styles, never networks.
 // @dependencies: none.
 
 (function () {
   'use strict';
 
   var KEY = 'oa-lang';
+
+  var LANGS = [
+    { code: 'id', text: 'ID', name: 'Bahasa Indonesia' },
+    { code: 'en', text: 'EN', name: 'English' }
+  ];
 
   var CSS = '.lang{display:inline-flex;align-items:center;border:1px solid rgba(255,255,255,.16);border-radius:980px;padding:2px;white-space:nowrap}'
     + '.lang button{width:auto;margin:0;border:0;background:transparent;color:#86868b;font:inherit;font-size:12px;font-weight:600;line-height:1;padding:5px 10px;border-radius:980px;cursor:pointer}'
@@ -15,6 +20,39 @@
     + '.lang span[aria-hidden="true"]{display:none}';
 
   var painted = false;
+
+  // WHY THE CONTROL IS BUILT HERE AND NOT COPIED INTO TWELVE PAGES.
+  // The toggle was authored markup on every page, so its label had to be corrected page by page and the copies drifted.
+  // One builder means one place defines the two buttons, their separator, and a name that contains the text a reader sees.
+
+  function build() {
+    var mounts = document.querySelectorAll('[data-lang-toggle]');
+
+    for (var i = 0; i < mounts.length; i += 1) {
+      var mount = mounts[i];
+
+      if (mount.getAttribute('data-built') === 'true') continue;
+
+      mount.setAttribute('data-built', 'true');
+
+      for (var j = 0; j < LANGS.length; j += 1) {
+        if (j > 0) {
+          var bar = document.createElement('span');
+          bar.setAttribute('aria-hidden', 'true');
+          bar.textContent = '|';
+          mount.appendChild(bar);
+        }
+
+        var button = document.createElement('button');
+        button.setAttribute('type', 'button');
+        button.setAttribute('data-lang', LANGS[j].code);
+        button.setAttribute('aria-pressed', LANGS[j].code === current ? 'true' : 'false');
+        button.setAttribute('aria-label', LANGS[j].text + ' — ' + LANGS[j].name);
+        button.textContent = LANGS[j].text;
+        mount.appendChild(button);
+      }
+    }
+  }
 
   function paint() {
     if (painted) return;
@@ -186,6 +224,7 @@
   }
 
   function init() {
+    build();
     paint();
     apply();
     wire();
