@@ -1,17 +1,18 @@
-<!-- @last-edited: 2026-10-06 16:35 UTC+7. -->
+<!-- @last-edited: 2026-10-26 UTC+7. -->
 <!-- @title: akun — who you are, which provider you signed in with, and how to leave. -->
 <!-- @state: reads only the session Supabase issued; strangers are sent to sign-in. -->
-<!-- @dependencies: none. -->
+<!-- @dependencies: site.css, app.css, i18n.js. -->
 
 <!doctype html>
 <html lang="id">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="theme-color" content="#0b0d10" />
+  <meta name="theme-color" content="#f7f5ef" />
   <title>Akun — Opera Agent</title>
   <meta name="description" content="Akun Opera Agent: identitas Anda, penyedia yang tertaut, dan device yang ter-pairing." />
   <link rel="stylesheet" href="/site.css" />
+  <link rel="stylesheet" href="/app.css" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%230b0d10'/%3E%3Cpath d='M5.2 2.2v10.2l2.5-2.3 1.5 3.6 1.9-.8-1.6-3.6h3.1L5.2 2.2Z' fill='%233ecf8e'/%3E%3C/svg%3E" />
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="Opera Agent" />
@@ -19,168 +20,91 @@
   <meta property="og:description" content="Akun Opera Agent: identitas Anda, penyedia yang tertaut, dan device yang ter-pairing." />
   <meta property="og:url" content="https://opera-agent.pages.dev/akun" />
   <meta property="og:locale" content="id_ID" />
-  <style>
-    /*
-     * WHY the same single-file shape as the rest of the site: no build step, and the only network the CSP allows is the project Auth.
-     */
-
-
-    .sub { color: var(--muted); margin: 0 0 24px; }
-
-    .card {
-      background: var(--surface);
-      border: 1px solid var(--line);
-      border-radius: 18px;
-      padding: 20px;
-      margin: 0 0 14px;
-    }
-
-    .card h2 { margin: 0 0 4px; font-size: 17px; }
-    .meta { color: var(--muted); font-size: 13px; margin: 0 0 12px; }
-    code {
-      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-      font-size: 12.5px;
-      background: var(--surface-soft);
-      border: 1px solid var(--line);
-      border-radius: 6px;
-      padding: 1px 5px;
-      /*
-       * WHY the wrap: a device id, an account id and a localhost callback are the three unbreakable strings on these pages, and a token with no spaces scrolls a phone sideways.
-       * This is the page an operator opens when something is wrong.
-       */
-      overflow-wrap: anywhere;
-      word-break: break-word;
-    }
-
-    .row { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 18px; }
-
-    /*
-     * WHY initials instead of the provider's avatar image: every page may reach one network origin, pinned in vercel.json.
-     * An <img> from the provider's CDN would be a second origin, a second CSP entry, and a third party receiving a request on every page view.
-     * The name and provider name carry the same information.
-     */
-    .profile { display: flex; gap: 14px; align-items: center; }
-    .avatar {
-      flex: 0 0 auto;
-      width: 44px;
-      height: 44px;
-      border-radius: 50%;
-      background: var(--accent);
-      color: #06231f;
-      font-weight: 700;
-      font-size: 17px;
-      display: grid;
-      place-items: center;
-    }
-    .identity { display: grid; gap: 1px; min-width: 0; }
-    .identity .name { font-weight: 600; }
-    .identity .meta { color: var(--muted); font-size: 13px; overflow-wrap: anywhere; margin: 0; }
-
-    /*
-     * WHY a definition list for facts: the label and its value line up in a column, which is what every settings page a reader already knows looks like.
-     */
-    dl.facts { margin: 0; display: grid; grid-template-columns: max-content 1fr; gap: 8px 16px; font-size: 13.5px; }
-    dl.facts dt { color: var(--muted); }
-    dl.facts dd { margin: 0; overflow-wrap: anywhere; }
-
-    /*
-     * WHY stacked under 420px: the label column is max-content and never shrinks, so on a phone the value is left in a sliver.
-     * Every settings page a reader already knows puts the value under its label at this width.
-     */
-    @media (max-width: 420px) {
-      dl.facts { grid-template-columns: 1fr; gap: 2px 0; }
-      dl.facts dd { margin: 0 0 10px; }
-    }
-
-    .btn {
-      display: inline-block;
-      padding: 11px 22px;
-      border-radius: 980px;
-      border: 1px solid var(--line-strong);
-      background: var(--surface);
-      color: var(--text);
-      text-decoration: none;
-      font-size: 15px;
-      cursor: pointer;
-      transition: background .25s var(--ease), border-color .25s var(--ease), transform .25s var(--ease);
-    }
-
-    .btn.primary { background: var(--accent); border-color: var(--accent); color: #05231f; font-weight: 600; }
-    .btn.primary:hover { background: #1ac3b0; }
-
-    .status { min-height: 22px; font-size: 13.5px; margin: 12px 0 0; color: var(--muted); }
-    .status.ok { color: var(--accent); }
-    .status.warn { color: var(--warn); }
-</style>
 </head>
 <body>
   <header>
     <div class="wrap">
       <nav>
-        <a class="brand" href="./beranda.html">Opera Agent</a>
-        <a href="./unduh.html">Unduh</a>
-        <a href="./beranda.html#model">Model Anda</a>
-        <a href="./akun.html" aria-current="page">Akun</a>
-        <a href="./dashboard.html">Dashboard</a>
-        <a href="./privasi.html">Privasi</a>
-        <a href="./fitur.html">Fitur</a>
-        <a href="./dukungan.html">Dukungan</a>
-        <span class="lang"><button type="button" data-lang="id" aria-pressed="true" aria-label="Bahasa Indonesia">ID</button><span aria-hidden="true">|</span><button type="button" data-lang="en" aria-pressed="false" aria-label="English">EN</button></span><a class="navCta" href="./index.html">Masuk</a>
+        <a class="brand" href="./beranda.html"><svg class="brandMark" viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="7" fill="#101512" /><path d="M8 5.6v12.8l3.1-2.9 1.9 4.5 2.4-1-2-4.5h3.9L8 5.6Z" fill="#3ecf8e" /></svg><span>Opera Agent</span></a>
+        
+<a href="./unduh.html">Unduh</a>        <a class="nav-sec" href="./beranda.html#model">Model Anda</a>        <a href="./dashboard.html">Dashboard</a>        <a class="nav-account" href="./akun.html" aria-current="page">Akun</a>        <a class="nav-sec" href="./fitur.html">Fitur</a>        <a class="nav-sec" href="./privasi.html">Privasi</a>        <a class="nav-sec" href="./dukungan.html">Dukungan</a>
+        <span class="lang" data-lang-toggle></span><a class="navCta" href="./index.html">Masuk</a>
       </nav>
     </div>
   </header>
 
-  <main class="wrap">
-    <h1>Akun</h1>
-    <p class="sub" id="whoami">Memeriksa sesi…</p>
-
-    <div class="card">
-      <div class="profile">
-        <span class="avatar" id="avatar" aria-hidden="true"></span>
-        <span class="identity">
-          <span class="name" id="profileName">&nbsp;</span>
-          <span class="meta" id="profileMeta">&nbsp;</span>
-          <span class="meta" id="profileProvider">&nbsp;</span>
-        </span>
+  <main class="wrap account">
+    <div class="appHead">
+      <div>
+        <p class="eyebrow">Akun</p>
+        <h1>Akun Anda</h1>
+        <p id="whoami">Memeriksa sesi…</p>
       </div>
+      <a class="btn primary" href="./dashboard.html">Buka Dashboard</a>
     </div>
 
-    <div class="card">
-      <h2>Identitas akun</h2>
-      <p class="meta">Data ini datang dari penyedia yang Anda pakai masuk, bukan dari kami.</p>
-      <dl class="facts">
-        <dt>Alamat</dt><dd id="factEmail">&mdash;</dd>
-        <dt>Penyedia</dt><dd id="factProvider">&mdash;</dd>
-        <dt>Masuk terakhir</dt><dd id="factLastSignIn">&mdash;</dd>
-        <dt>ID akun</dt><dd><code id="factUserId" data-copy-target="factUserId">&mdash;</code></dd>
-      </dl>
-      <div class="row">
-        <button class="btn" type="button" data-copy-target="factUserId">Salin ID akun</button>
-      </div>
-    </div>
+    <div class="accountGrid">
+      <aside class="accountAside">
+        <div class="appCard profileCard">
+          <div class="profile">
+            <span class="avatar" id="avatar" aria-hidden="true">OA</span>
+            <span class="identity">
+              <span class="name" id="profileName">Memeriksa sesi…</span>
+              <span class="meta" id="profileMeta">Akun Opera Agent</span>
+              <span class="meta" id="profileProvider">&nbsp;</span>
+            </span>
+          </div>
+          <div class="profileFoot"><span>Akun Opera Agent</span><span class="chip good">Aktif</span></div>
+        </div>
 
-    <div class="card">
-      <h2>Penyedia tertaut</h2>
-      <p class="meta">Akun yang sama dapat masuk lewat lebih dari satu penyedia. Hanya yang tertaut yang bisa mengenali Anda.</p>
-      <ul class="linked" id="linkedProviders"><li class="meta">Memeriksa…</li></ul>
-    </div>
+        <nav class="appCard accountNav" aria-label="Bagian akun">
+          <h2>Di halaman ini</h2>
+          <a href="#identitas">Identitas</a>
+          <a href="#penyedia">Penyedia</a>
+          <a href="#device">Device</a>
+          <a href="#sesi">Sesi</a>
+        </nav>
+      </aside>
 
-    <div class="card">
-      <h2>Device Anda</h2>
-      <p class="meta" id="deviceSummary">Memeriksa…</p>
-      <div class="row">
-        <a class="btn primary" href="./dashboard.html">Buka dashboard</a>
-        <a class="btn" href="./beranda.html#install">Pasang di device lain</a>
-      </div>
-    </div>
+      <div class="accountMain">
+        <section class="appCard" id="identitas">
+          <h2>Identitas akun</h2>
+          <p class="meta">Data ini datang dari penyedia yang Anda pakai masuk, bukan dari kami.</p>
+          <dl class="facts">
+            <dt>Alamat</dt><dd id="factEmail">&mdash;</dd>
+            <dt>Penyedia</dt><dd id="factProvider">&mdash;</dd>
+            <dt>Masuk terakhir</dt><dd id="factLastSignIn">&mdash;</dd>
+            <dt>ID akun</dt><dd><code id="factUserId" data-copy-target="factUserId">&mdash;</code></dd>
+          </dl>
+          <div class="row">
+            <button class="btn" type="button" data-copy-target="factUserId">Salin ID akun</button>
+          </div>
+        </section>
 
-    <div class="card">
-      <h2>Sesi</h2>
-      <p class="meta">Keluar menghapus token dari browser ini. Device yang sudah ter-pairing tetap ter-pairing, dan Anda perlu masuk lagi sebelum bisa menjalankan perintah.</p>
-      <div class="row">
-        <button class="btn" type="button" id="signOutButton">Keluar</button>
+        <section class="appCard" id="penyedia">
+          <h2>Penyedia tertaut</h2>
+          <p class="meta">Akun yang sama dapat masuk lewat lebih dari satu penyedia. Hanya yang tertaut yang bisa mengenali Anda.</p>
+          <ul class="linked" id="linkedProviders"><li class="meta">Memeriksa…</li></ul>
+        </section>
+
+        <section class="appCard" id="device">
+          <h2>Device Anda</h2>
+          <p class="meta" id="deviceSummary">Memeriksa…</p>
+          <div class="row">
+            <a class="btn primary" href="./dashboard.html">Buka dashboard</a>
+            <a class="btn" href="./beranda.html#install">Pasang di device lain</a>
+          </div>
+        </section>
+
+        <section class="appCard" id="sesi">
+          <h2>Sesi</h2>
+          <p class="meta">Keluar menghapus token dari browser ini. Device yang sudah ter-pairing tetap ter-pairing, dan Anda perlu masuk lagi sebelum bisa menjalankan perintah.</p>
+          <div class="row">
+            <button class="btn danger" type="button" id="signOutButton">Keluar</button>
+          </div>
+          <p class="status" id="status" role="status" aria-live="polite">&nbsp;</p>
+        </section>
       </div>
-      <p class="status" id="status" role="status" aria-live="polite">&nbsp;</p>
     </div>
   </main>
 

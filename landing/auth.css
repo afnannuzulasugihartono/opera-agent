@@ -1,0 +1,274 @@
+/*
+ * @last-edited: 2026-10-26 UTC+7.
+ * @title: auth.css — the sign-in and account gate: one promise column, one card of ways in.
+ * @state: a left column that states the product boundary, and a right card that offers providers, a magic link, and the language choice.
+ * @dependencies: site.css.
+ *
+ * WHY a page sheet: the gate is the only page with a provider list and tabs, and those rules would fight the console inside site.css.
+ */
+
+main.auth { padding-top: 64px; padding-bottom: 96px; }
+
+.split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.02fr);
+  gap: clamp(40px, 6vw, 92px);
+  align-items: start;
+}
+
+/* ── the promise column ─────────────────────────────────────────────────── */
+
+.brand {
+  position: sticky;
+  top: 112px;
+  padding: 4px 0;
+}
+
+.brand .mark {
+  width: 46px;
+  height: 46px;
+  border-radius: 13px;
+  box-shadow: 0 10px 24px -12px rgba(16, 21, 18, .55);
+}
+
+.brand .eyebrow {
+  display: flex;
+  margin: 28px 0 14px;
+}
+
+.brand h1 {
+  max-width: 13ch;
+  margin: 0 0 18px;
+  font-size: clamp(36px, 4.2vw, 58px);
+  line-height: 1.02;
+  letter-spacing: -.045em;
+}
+
+.brand .lede {
+  max-width: 44ch;
+  margin: 0 0 28px;
+  font-size: 17px;
+}
+
+.promises {
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--line);
+  list-style: none;
+}
+
+.promises li {
+  display: flex;
+  gap: 12px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.promises li::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  flex: 0 0 auto;
+  margin-top: 7px;
+  border-radius: 50%;
+  background: var(--brand);
+  box-shadow: 0 0 0 3px rgba(62, 207, 142, .16);
+}
+
+/* ── the gate card ──────────────────────────────────────────────────────── */
+
+.gate {
+  width: 100%;
+  max-width: 520px;
+  justify-self: end;
+}
+
+.gateCard {
+  padding: 30px;
+  box-shadow: var(--shadow-lift);
+}
+
+.gateCard h2 {
+  margin: 0 0 8px;
+  font-size: 22px;
+  letter-spacing: -.03em;
+}
+
+.tabcopy {
+  margin: 0 0 20px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.tabs {
+  display: flex;
+  gap: 4px;
+  margin: 0 0 24px;
+  padding: 4px;
+  border-radius: var(--pill);
+  background: var(--surface-soft);
+}
+
+.tabs button {
+  flex: 1;
+  width: auto;
+  min-height: 38px;
+  padding: 0 16px;
+  border: 1px solid transparent;
+  border-radius: var(--pill);
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .2s var(--ease), color .2s var(--ease), box-shadow .2s var(--ease);
+}
+
+.tabs button:hover { color: var(--ink); }
+
+.tabs button[aria-selected="true"] {
+  border-color: var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: 0 1px 2px rgba(22, 21, 19, .07);
+}
+
+.gateCard form button[type="submit"] {
+  width: 100%;
+  min-height: 48px;
+  margin: 2px 0 0;
+  padding: 0 22px;
+  border: 1px solid var(--accent);
+  border-radius: var(--pill);
+  background: var(--accent);
+  color: #fff;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 10px 24px -14px rgba(11, 107, 82, .7);
+  transition: background .2s var(--ease), border-color .2s var(--ease);
+}
+
+.gateCard form button[type="submit"]:hover {
+  border-color: var(--accent-strong);
+  background: var(--accent-strong);
+}
+
+.or {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 20px 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.or::before,
+.or::after {
+  content: "";
+  height: 1px;
+  flex: 1;
+  background: var(--line);
+}
+
+.provider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 48px;
+  margin: 0 0 10px;
+  padding: 10px 20px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--pill);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 14.5px;
+  font-weight: 550;
+  text-decoration: none;
+  transition: border-color .2s var(--ease), background .2s var(--ease), transform .2s var(--ease);
+}
+
+.provider:hover {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--ink);
+  transform: translateY(-1px);
+}
+
+.provider svg {
+  width: 17px;
+  height: 17px;
+  flex: none;
+}
+
+.resend {
+  margin: 18px 0 0;
+  text-align: center;
+}
+
+button.linklike {
+  width: auto;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+button.linklike:hover { color: var(--accent-strong); text-decoration: underline; }
+
+.gateCard .note {
+  margin: 16px 0 0;
+  font-size: 12.5px;
+}
+
+.langlist {
+  margin: 20px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  text-align: center;
+}
+
+.langlist button {
+  width: auto;
+  min-height: 0;
+  padding: 4px 6px;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 400;
+  cursor: pointer;
+}
+
+.langlist button:hover { color: var(--ink); }
+
+.langlist button[aria-pressed="true"] {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+@media (max-width: 900px) {
+  main.auth { padding-top: 44px; }
+  .split { grid-template-columns: 1fr; gap: 34px; }
+  .brand { position: static; }
+  .brand h1 { max-width: 18ch; }
+  .gate { max-width: none; justify-self: stretch; }
+}
+
+@media (max-width: 480px) {
+  .gateCard { padding: 22px; }
+  .brand h1 { font-size: clamp(32px, 9vw, 44px); }
+  .promises li { font-size: 13.5px; }
+}

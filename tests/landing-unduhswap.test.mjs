@@ -15,6 +15,7 @@ import { createHash } from 'node:crypto';
 const root = new URL('..', import.meta.url);
 const read = (name) => fs.readFileSync(new URL(`landing/${name}`, root), 'utf8');
 const hub = read('unduh.html');
+const hubCss = read('download.css');
 const berkas = read('unduh-berkas.html');
 
 const ZIP = 'https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/download/opera-agent.zip';
@@ -37,8 +38,8 @@ test('the also-available row names the other doors without leaving the page', ()
   assert.match(row, /juga tersedia/, 'the row says what it is');
   assert.ok(row.includes('<a href="./unduh-berkas.html">Panduan format</a>'), 'the one format guide');
   assert.ok(row.includes('<a href="./dashboard.html">Dashboard</a>'), 'and the dashboard');
-  assert.match(hub, /\.btn\.giant \{[^}]*font-size: 19px/, 'the giant door is styled larger than the rest');
-  assert.match(hub, /\.hero-text h1 \{[^}]*text-align: left/, 'and the hero reads left like the reference, beside its visual');
+  assert.match(hubCss, /\.btn\.giant \{[^}]*font-size: 19px/, 'the giant door is styled larger than the rest');
+  assert.match(hubCss, /\.hero-text h1 \{[^}]*text-align: left/, 'and the hero reads left like the reference, beside its visual');
 });
 
 test('every merged card names its own extensions surface and the archive requirement', () => {
