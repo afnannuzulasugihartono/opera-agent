@@ -101,17 +101,19 @@ cents while Midtrans charges rupiah: the first version sent cents, so a Rp 5.000
 invoice would have asked the customer for Rp 500.000. The conversion is now a tested
 boundary in both directions, and the 100× notification is refused live.
 
-The Snap request itself is driven against a provider stood up in the test: the legal
-order id, the whole-rupiah amount, the QRIS-only list and the Basic header are sent over
-real HTTP to a server that parses them, and a redirect without a token is refused. What
-is still not driven is a real payment, because there is no Midtrans account: the server
-key is the one value only the owner can set. That step is `[UNVERIFIED]` until
-`MIDTRANS_SERVER_KEY` exists.
+The Snap request is proved twice: against a provider stood up in the test, and against
+the real one. Driven live on 2026-10-26, a plan invoice came back with `provider`
+`midtrans`, a derived order id (`oa-2e8ba0634c-Uji-Midtrans-2026-10`) and a `pay_url`,
+so Midtrans accepted the charge and returned a checkout link. What is still not driven
+is the money itself: no customer has paid, so no signed notification has closed an
+invoice. That step is `[UNVERIFIED]` until the first real payment lands.
 
-The plan line and the positive manual settlement are proved by unit tests, not yet by
-a live invoice and a live transfer: the function is deployed and refuses an
-unauthenticated settlement, but the operator token is not in the agent's environment.
-The first real transfer is the live proof. `[UNVERIFIED]`
+The plan line is proved live as well: a plan invoice driven on 2026-10-26 came back as
+one line of Rp 99.000 for two delivered client-months, which is the plan's cap doing its
+job rather than two per-delivery lines. The positive manual settlement is still proved
+by unit tests only: the function refuses an unauthenticated settlement, and the
+operator token is not in the agent's environment. The first real transfer is the live
+proof. `[UNVERIFIED]`
 
 ## What the provider charges (measured 2026-10-21)
 

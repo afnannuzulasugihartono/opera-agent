@@ -126,9 +126,9 @@ capability the Goals in [`AGENTS.md`](../AGENTS.md) name.
 12. **A bridged window on the taskbar is restored, not refused.** `tabs.activate` reads the
     window first and sends `state: 'normal'` with the focus ask when it is minimized, because
     `focused: true` alone was measured to leave it there; the live suite proves the restore.
-13. **A real Snap payment has not moved.** The request and the Basic header are driven
-    against a provider stood up in `tests/billing.test.mjs`; the server key is the
-    owner's to set, so `MIDTRANS_SERVER_KEY` is still unset.
+13. **A real Snap payment has not moved, but the request is proved against the real
+    provider.** Driven live 2026-10-26: a plan invoice came back with `provider`
+    `midtrans` and a `pay_url`. No customer has paid, so no notification has closed one.
 
 ## CI
 

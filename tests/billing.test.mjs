@@ -11,6 +11,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHmac } from 'node:crypto';
 import http from 'node:http';
+import fs from 'node:fs';
 
 import {
   amountFor,
@@ -247,6 +248,25 @@ test('the request is answered by a provider that parses it the way Midtrans does
     assert.equal(JSON.parse(seen[0].body).transaction_details.gross_amount, 99000);
   } finally {
     await new Promise((resolve) => server.close(resolve));
+  }
+});
+
+// WHY THE CALL SITE IS TESTED AND NOT ONLY THE HELPER.
+// The Snap request was extracted into a helper and the helper was proved against a provider stood up here, while the call inside the Deno function passed a name that did not exist in its scope.
+// The function answered 500 to a real invoice and the helper's tests stayed green, because a test of a function says nothing about the call that feeds it.
+// So the call is read here and the names it passes are checked against the names its own signature destructures.
+
+test('the snap charge call passes the customer the function actually has', () => {
+  const source = fs.readFileSync(new URL('../supabase/functions/opera-agent-billing/index.ts', import.meta.url), 'utf8');
+  const from = source.indexOf('snapChargeRequest({');
+  assert.ok(from >= 0, 'the billing function must call the shared charge builder');
+  const call = source.slice(from, source.indexOf('});', from));
+  assert.match(call, /customerId:\s*customer_id/,
+    'the helper takes customerId and the function has customer_id; a shorthand here is a silent undefined');
+  assert.match(source, /createInvoice\(\{\s*customer_id/,
+    'the name the call reads must be the name the signature destructures');
+  for (const field of ['orderId', 'amountCents', 'currency', 'enabled', 'serverKey']) {
+    assert.ok(call.includes(`${field}`), `the call must still pass ${field}`);
   }
 });
 

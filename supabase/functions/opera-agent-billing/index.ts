@@ -170,7 +170,7 @@ async function createInvoice({ customer_id, period, lines }: { customer_id: stri
       orderId,
       amountCents: out.amountCents,
       currency: out.currency,
-      customerId,
+      customerId: customer_id,
       enabled: payment.enabled,
       serverKey: MIDTRANS_SERVER_KEY
     });
