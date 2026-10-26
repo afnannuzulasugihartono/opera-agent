@@ -19,15 +19,22 @@ import {
   isSettled,
   linesFromDeliveries,
   manualSettlement,
+  needsClosing,
+  notificationAcknowledged,
   notificationSignatureValid,
   paidAmountCents,
   planInvoiceLines,
   priceFor,
   providerAmount,
   providerOrderId,
+  providerSettlement,
   snapChargeRequest,
   snapPaymentMethods,
+  snapStatusRequest,
   snapUrlFor,
+  readSecret,
+  SECRET_READINGS,
+  whichReadingSigned,
   snapRedirect,
   SNAP_QRIS_ONLY_BELOW_CENTS,
   verifyInvoiceToken
@@ -93,12 +100,117 @@ test('a payment notification is believed only when the provider signed it', () =
   const key = 'server-key';
   const notification = { order_id: 'order-1', status_code: '200', gross_amount: '4000000' };
   const payload = `${notification.order_id}${notification.status_code}${notification.gross_amount}`;
-  const signature = createHmac('sha512', key).update(payload).digest('hex');
-  assert.equal(notificationSignatureValid({ ...notification, signature }, key), true);
-  assert.equal(notificationSignatureValid({ ...notification, signature: 'wrong' }, key), false);
-  assert.equal(notificationSignatureValid({ ...notification, gross_amount: '1', signature }, key), false, 'a bigger claim does not pass');
-  assert.equal(notificationSignatureValid({ ...notification, signature }, 'other-key'), false);
-  assert.equal(notificationSignatureValid({ ...notification, signature }, ''), false, 'without a key nothing is verified');
+  const signature_key = createHmac('sha512', key).update(payload).digest('hex');
+  assert.equal(notificationSignatureValid({ ...notification, signature_key }, key), true);
+  assert.equal(notificationSignatureValid({ ...notification, signature_key: 'wrong' }, key), false);
+  assert.equal(notificationSignatureValid({ ...notification, gross_amount: '1', signature_key }, key), false, 'a bigger claim does not pass');
+  assert.equal(notificationSignatureValid({ ...notification, signature_key }, 'other-key'), false);
+  assert.equal(notificationSignatureValid({ ...notification, signature_key }, ''), false, 'without a key nothing is verified');
+});
+
+// WHY THE PROVIDER'S FIELD NAME HAS A TEST OF ITS OWN.
+// The first rule read notification.signature while Midtrans sends signature_key, and the test above used the same invented name, so the test agreed with the bug instead of catching it.
+// Measured live: a sandbox payment settled, Midtrans answered PAID, and the invoice stayed open, because the signature arrived in a field this code did not read and the comparison was made against nothing.
+// A notification is the only way an invoice becomes paid, so the field name is pinned here rather than left to agree with whatever the code happens to say.
+
+test('the signature is read from the field the provider sends, and the field is named', () => {
+  const shared = fs.readFileSync(new URL('../supabase/functions/_shared/billing.js', import.meta.url), 'utf8');
+  assert.match(shared, /signature_key/, 'the rule must read the field Midtrans sends');
+  assert.match(shared, /notification\.signature_key\s*\?\?/, 'the provider field is read first, and the alias is the fallback');
+
+  // The same field name decides whether a notification is recognised at all.
+  const fn = fs.readFileSync(new URL('../supabase/functions/opera-agent-billing/index.ts', import.meta.url), 'utf8');
+  assert.match(fn, /signature_key/, 'the function must look for the field the provider sends');
+  assert.doesNotMatch(fn, /Boolean\(body\.signature\)/, 'looking for a field the provider never sends turns every notification into "unknown action"');
+  assert.match(fn, /Boolean\(body\.order_id\) && Boolean\(body\.status_code\)/, 'a notification is recognised by what it says happened, not by carrying a signature');
+});
+
+// WHY "UNDERSTOOD" AND "PAID" ARE TWO DIFFERENT ANSWERS.
+// The provider reads a non-2xx answer as "not delivered" and sends the same body again.
+// Measured live: a correctly signed "still pending" answered 400, and the provider's history showed it as undelivered beside a real rejection, so the rejection had no shape of its own.
+// The status code answers whether the body was received and understood; the body answers whether money moved.
+
+test('a notification is acknowledged when it is understood, and refused when a human must look', () => {
+  assert.equal(notificationAcknowledged({ ok: true, invoice: 'Toko Sinar Jaya:2026-08' }), true, 'a closed invoice is acknowledged');
+  assert.equal(notificationAcknowledged({ ok: false, why: 'the transaction is not settled', retry: false }), true, 'a signed pending notification is understood, so it is acknowledged');
+  assert.equal(notificationAcknowledged({ ok: false, why: 'no invoice with that order id' }), false, 'an order we cannot place is not something to acknowledge and forget');
+  assert.equal(notificationAcknowledged({ ok: false, why: 'the paid amount is not the invoice amount' }), false, 'a wrong amount is a person\'s problem, not a retry');
+  assert.equal(notificationAcknowledged(null), false);
+});
+
+// WHY A CLOSED INVOICE IS NOT CLOSED AGAIN.
+// Measured live on 2026-10-26: a settlement closed an invoice at 08:55:13, a pending notification arrived eleven seconds later, and paid_at moved to 08:55:24.
+// The moment money landed is evidence the provider cannot restore, so a second notification may confirm it and must never rewrite it.
+
+test('an invoice that is already paid is not paid again', () => {
+  assert.equal(needsClosing({ status: 'paid', paid_at: '2026-10-26T08:55:13Z' }), false, 'a paid invoice keeps the moment it was paid');
+  assert.equal(needsClosing({ status: 'paid', paid_at: null }), true, 'a paid row with no moment is repaired rather than left blank');
+  assert.equal(needsClosing({ status: 'open', paid_at: null }), true);
+  assert.equal(needsClosing(null), false);
+});
+
+// WHY THE LOG HAS TO BE WRITTEN FROM BOTH SIDES OF THE VERDICT.
+// A refusal used to leave no trace, so "the provider never reached us" and "it reached us and we said no" looked identical, and four payment attempts were spent telling them apart.
+// The row is written on the refused branch and on the accepted branch, before the answer is returned.
+
+// WHY THE PROVIDER IS ASKED WHEN THE SIGNATURE DOES NOT MATCH.
+// Real notifications arrived from the provider's own user agent and were refused, and the body could not say whether it was forged or signed with a different secret.
+// The provider records the transaction, so its answer is stronger than the body: it is about its own transaction, never about the claim in the request.
+
+test('the status of an order is asked on the host the stated environment names', () => {
+  const sandbox = snapStatusRequest({ orderId: 'oa-1', serverKey: 'k', environment: 'sandbox' });
+  assert.equal(sandbox.url, 'https://api.sandbox.midtrans.com/v2/oa-1/status');
+  assert.equal(sandbox.method, 'GET');
+  assert.equal(sandbox.headers.Authorization, `Basic ${Buffer.from('k:').toString('base64')}`);
+  const production = snapStatusRequest({ orderId: 'oa-1', serverKey: 'k', environment: 'production' });
+  assert.equal(production.url, 'https://api.midtrans.com/v2/oa-1/status');
+  assert.equal(snapStatusRequest({ orderId: '', serverKey: 'k' }), null, 'without an order there is nothing to ask about');
+});
+
+test('only the provider\'s own words for a settlement count as paid', () => {
+  assert.deepEqual(providerSettlement({ transaction_status: 'settlement', gross_amount: '99000.00' }),
+    { settled: true, status: 'settlement', grossAmount: '99000.00' });
+  assert.equal(providerSettlement({ transaction_status: 'capture', fraud_status: 'accept' }).settled, true);
+  assert.equal(providerSettlement({ transaction_status: 'capture', fraud_status: 'challenge' }).settled, false, 'a challenged capture is not money');
+  assert.equal(providerSettlement({ transaction_status: 'pending' }).settled, false);
+  assert.equal(providerSettlement({ transaction_status: 'deny' }).settled, false);
+  assert.equal(providerSettlement(null).settled, false);
+});
+
+test('a refused signature asks the provider, and the reading that verified is named', () => {
+  const fn = fs.readFileSync(new URL('../supabase/functions/opera-agent-billing/index.ts', import.meta.url), 'utf8');
+  assert.match(fn, /providerSaysSettled\(String\(notification\.order_id/, 'a refusal must become a question, not an ending');
+  assert.match(fn, /whichReadingSigned\(notification, MIDTRANS_SERVER_KEY\)/, 'the stored key is read as stored, and the reading that signed is reported');
+  assert.doesNotMatch(fn, /MIDTRANS_SERVER_KEY = .*\.trim\(\)/, 'cleaning the key would hide the evidence that the stored secret needs fixing');
+});
+
+// WHY A KEY THAT A CLIPBOARD TOUCHED MUST STILL BE READABLE.
+// A pasted key can carry a newline or a zero-width space, and the signature is computed over the exact stored value.
+// Measured live: the charge opened with the stored key while every notification signed with it was refused, and trim() alone did not close the gap.
+// The reading that worked is named, so the stored secret is reported as needing a clean paste instead of being silently repaired.
+
+test('the same key still signs when the clipboard added something to it', () => {
+  const key = 'mid-server-abc';
+  const notification = { order_id: 'order-1', status_code: '200', gross_amount: '99000.00' };
+  const payload = `${notification.order_id}${notification.status_code}${notification.gross_amount}`;
+  const signed = { ...notification, signature_key: createHmac('sha512', key).update(payload).digest('hex') };
+
+  assert.equal(whichReadingSigned(signed, key), 'as-stored');
+  assert.equal(whichReadingSigned(signed, `${key}\n`), 'trimmed', 'a newline from a paste survives trim only');
+  assert.equal(whichReadingSigned(signed, `${key}\u200b`), 'printable-ascii', 'a zero-width space survives trim, so the reading has to name it');
+  assert.equal(whichReadingSigned(signed, `${key}\u00a0`), 'trimmed', 'a non-breaking space ends the value, so trim reaches it');
+  assert.equal(whichReadingSigned(signed, 'another-key'), 'none');
+  assert.equal(readSecret(`${key}\u200b`, 'printable-ascii'), key);
+  assert.deepEqual([...SECRET_READINGS], ['as-stored', 'trimmed', 'printable-ascii']);
+});
+
+test('every notification that arrives is written down, refused or accepted', () => {
+  const fn = fs.readFileSync(new URL('../supabase/functions/opera-agent-billing/index.ts', import.meta.url), 'utf8');
+  const calls = fn.match(/await noteNotification\(/g) || [];
+  assert.equal(calls.length, 2, 'the refused branch and the accepted branch both write the row');
+  assert.match(fn, /from\("opera_notification_log"\)/, 'the row goes to the table the migration created');
+  assert.match(fn, /signature_field/, 'which field carried the signature is what separates a contract mismatch from a bad secret');
+  assert.doesNotMatch(fn, /signature_key:\s*String\(notification\.signature_key/, 'the signature itself is never stored');
 });
 
 test('the invoice is derived from the manifest: one line per delivered client-month', () => {
@@ -292,13 +404,13 @@ test('the money rules run where Buffer does not exist, which is where they faile
   const token = invoiceToken('inv-1', 'secret');
   const notification = { order_id: 'order-1', status_code: '200', gross_amount: '4000000' };
   const payload = `${notification.order_id}${notification.status_code}${notification.gross_amount}`;
-  const signature = createHmac('sha512', 'server-key').update(payload).digest('hex');
+  const signature_key = createHmac('sha512', 'server-key').update(payload).digest('hex');
   try {
     delete globalThis.Buffer;
     assert.equal(verifyInvoiceToken('inv-1', token, 'secret'), true);
     assert.equal(verifyInvoiceToken('inv-1', 'x'.repeat(32), 'secret'), false);
-    assert.equal(notificationSignatureValid({ ...notification, signature }, 'server-key'), true);
-    assert.equal(notificationSignatureValid({ ...notification, signature: 'wrong' }, 'server-key'), false);
+    assert.equal(notificationSignatureValid({ ...notification, signature_key }, 'server-key'), true);
+    assert.equal(notificationSignatureValid({ ...notification, signature_key: 'wrong' }, 'server-key'), false);
   } finally {
     globalThis.Buffer = saved;
   }

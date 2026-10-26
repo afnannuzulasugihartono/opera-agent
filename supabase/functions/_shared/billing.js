@@ -200,6 +200,42 @@ export function snapChargeRequest({ orderId, amountCents, currency = 'IDR', cust
   };
 }
 
+// WHY A REFUSED SIGNATURE ASKS THE PROVIDER INSTEAD OF ENDING THE CONVERSATION.
+// A signature that does not match has two causes that look identical from the body: it was not signed by the provider, or it was signed with a different secret than the one stored here.
+// Measured live on 2026-10-26: real notifications arrived from the provider's own user agent, carried signature_key and the right amount, and every one was refused, with nothing in the body able to say which cause it was.
+// The provider records the transaction and will say what happened to it, over the same key the charge already used, so the answer to a refused signature is a question, not a rejection.
+// A forged body cannot pass this: the provider answers about its own transaction, never about the claim in the request.
+
+export const SNAP_STATUS = Object.freeze({
+  production: 'https://api.midtrans.com/v2',
+  sandbox: 'https://api.sandbox.midtrans.com/v2'
+});
+
+export function snapStatusUrl(environment, orderId) {
+  const base = SNAP_STATUS[String(environment || 'production')] || SNAP_STATUS.production;
+  return `${base}/${encodeURIComponent(String(orderId || ''))}/status`;
+}
+
+export function snapStatusRequest({ orderId, serverKey = '', environment = 'production' }) {
+  if (!orderId) return null;
+  return {
+    url: snapStatusUrl(environment, orderId),
+    method: 'GET',
+    headers: {
+      Authorization: `Basic ${btoa(`${serverKey}:`)}`,
+      Accept: 'application/json'
+    }
+  };
+}
+
+export function providerSettlement(payload) {
+  if (!payload || typeof payload !== 'object') return { settled: false, status: '', grossAmount: '' };
+  const status = String(payload.transaction_status || '');
+  const fraud = String(payload.fraud_status === undefined ? 'accept' : payload.fraud_status);
+  const settled = status === 'settlement' || (status === 'capture' && (fraud === 'accept' || fraud === ''));
+  return { settled, status, grossAmount: String(payload.gross_amount === undefined ? '' : payload.gross_amount) };
+}
+
 // WHY THE REDIRECT IS READ BY ONE RULE.
 // The provider answers with a redirect_url and a token, and either one missing means the charge was not opened even though the HTTP status said otherwise.
 // One function decides what a good answer is, so the function cannot accept a 200 that carries no way to pay.
@@ -282,6 +318,34 @@ export function planInvoiceLines(deliveries, plan, period) {
   return { lines, refused: [], included: Math.min(derived.lines.length, included) };
 }
 
+// WHY THE FIELD IS signature_key AND NOT signature.
+// Midtrans names the field signature_key, and the first version of this rule read notification.signature instead.
+// Measured live: a sandbox payment settled, Midtrans said PAID, and the invoice stayed open, because the signature it sent arrived in a field this code did not read and the comparison was made against nothing.
+// A notification is the only way an invoice becomes paid, so a field name that does not match the provider's contract is a payment that silently never lands.
+// The alias is accepted because the value still has to match the HMAC; the field name is not the secret.
+
+// WHY A STORED SECRET IS READ MORE THAN ONE WAY.
+// A key is copied by a person and pasted into a dashboard, so it can carry what a clipboard adds: a newline, a zero-width space, a non-breaking space.
+// The signature is computed over the exact value stored here, so one invisible character makes every notification fail while nothing about the body looks wrong.
+// Measured live on 2026-10-26: the charge opened with the stored key and every notification signed with it was refused, and trim() alone did not explain it.
+// The readings are tried against the notification itself and the one that matched is named, so a paste artifact is reported instead of hidden behind a fallback.
+
+export const SECRET_READINGS = Object.freeze(['as-stored', 'trimmed', 'printable-ascii']);
+
+export function readSecret(secret, reading) {
+  const raw = secret === undefined || secret === null ? '' : String(secret);
+  if (reading === 'trimmed') return raw.trim();
+  if (reading === 'printable-ascii') return raw.replace(/[^\x21-\x7e]/g, '');
+  return raw;
+}
+
+export function whichReadingSigned(notification, secret) {
+  for (const reading of SECRET_READINGS) {
+    if (notificationSignatureValid(notification, readSecret(secret, reading))) return reading;
+  }
+  return 'none';
+}
+
 export function notificationSignatureValid(notification, serverKey) {
   if (!notification || !serverKey) return false;
   const orderId = String(notification.order_id || '');
@@ -289,7 +353,29 @@ export function notificationSignatureValid(notification, serverKey) {
   const grossAmount = String(notification.gross_amount || '');
   if (!orderId || !statusCode || !grossAmount) return false;
   const expected = hmacSha512(serverKey, `${orderId}${statusCode}${grossAmount}`);
-  return sameText(expected, String(notification.signature || ''));
+  const given = notification.signature_key ?? notification.signature;
+  return sameText(expected, String(given || ''));
+}
+
+// WHY THE ANSWER TO A NOTIFICATION IS NOT THE PAYMENT RESULT.
+// The provider reads a non-2xx answer as "not delivered" and sends the same body again.
+// So the status code answers one question — did this endpoint receive and understand it — while the body says whether money moved.
+// Measured live: a correctly signed "still pending" answered 400, and the provider's history showed it as undelivered beside a real rejection, which buried the rejection.
+// A body the function cannot act on and a human should look at still answers no.
+
+// WHY A CLOSED INVOICE IS NOT CLOSED AGAIN.
+// The provider repeats itself, so the same settlement arrives more than once and a late notification can follow the one that closed the invoice.
+// The moment money landed is evidence: a second notification may confirm it, never move it.
+
+export function needsClosing(invoice) {
+  if (!invoice) return false;
+  return invoice.status !== 'paid' || !invoice.paid_at;
+}
+
+export function notificationAcknowledged(outcome) {
+  if (!outcome) return false;
+  if (outcome.ok) return true;
+  return outcome.retry === false;
 }
 
 export function isSettled(notification) {
