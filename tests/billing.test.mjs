@@ -504,6 +504,20 @@ test('one invoice keeps one payable transaction, and an older attempt cannot kil
   assert.match(fn, /is\("paid_at", null\)/, 'a write never reopens a paid row');
 });
 
+// WHY THE OPERATOR'S LINK IS PINNED TO THE SITE.
+// Measured live on 2026-10-26: the shared function domain answers the page as text/plain under a sandbox policy, so the function's own URL shows a customer source instead of a bill.
+// The site serves the same page through landing/_worker.js, so the link an operator hands out is built from BILLING_PAGE_URL, and the function's URL remains only the fallback for a deployment that never set it.
+
+test('the operator link names the page host, and falls back to the function', () => {
+  const fn = fs.readFileSync(new URL('../supabase/functions/opera-agent-billing/index.ts', import.meta.url), 'utf8');
+  assert.match(fn, /BILLING_PAGE_URL = \(Deno\.env\.get\("BILLING_PAGE_URL"\) \|\| ""\)\.replace\(\/\\\/\+\$\/, ""\)/,
+    'the setting is read once and its trailing slash cannot double the page path');
+  assert.match(fn, /const base = BILLING_PAGE_URL \|\| `\$\{SUPABASE_URL\}\/functions\/v1\/opera-agent-billing`/,
+    'a deployment without the setting still answers with a link that works');
+  assert.match(fn, /const link = `\$\{base\}\?invoice_id=\$\{encodeURIComponent\(out\.invoice\.id\)\}&token=\$\{out\.token\}`/,
+    'the link carries the invoice and the token, encoded');
+});
+
 test('the money rules run where Buffer does not exist, which is where they failed first', () => {
   const saved = globalThis.Buffer;
   const token = invoiceToken('inv-1', 'secret');

@@ -97,6 +97,13 @@ const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
 const BILLING_SECRET = Deno.env.get("BILLING_SECRET") || "";
 const BILLING_TOKEN = Deno.env.get("OPERA_BILLING_TOKEN") || "";
 
+// WHY THE OPERATOR'S LINK NAMES THE SITE AND NOT THIS FUNCTION.
+// Measured live on 2026-10-26: the gateway that fronts every project's functions answers this function's HTML as text/plain under a sandbox policy, so a customer sees the page's source.
+// The site serves the same page through a thin worker that keeps the page's headers and rewrites the refresh redirect, so the link an operator hands out names the site.
+// With no site configured the function's own URL stays as the fallback: the page is readable there even when a browser will not render it as a page.
+
+const BILLING_PAGE_URL = (Deno.env.get("BILLING_PAGE_URL") || "").replace(/\/+$/, "");
+
 // WHY THE KEY IS KEPT EXACTLY AS IT WAS STORED.
 // The signature is computed over this value, so the value is not adjusted here: which reading of it signs is measured against each notification and named in the log.
 // A sanitised copy would make the check pass and destroy the evidence that the stored secret needs fixing.
@@ -746,7 +753,8 @@ Deno.serve(async (req: Request) => {
         }
         if (!lines.length) return json({ error: "no deliveries to charge for" }, 400, cors);
         const out = await createInvoice({ customer_id: customerId, period, lines });
-        const link = `${SUPABASE_URL}/functions/v1/opera-agent-billing?invoice_id=${encodeURIComponent(out.invoice.id)}&token=${out.token}`;
+        const base = BILLING_PAGE_URL || `${SUPABASE_URL}/functions/v1/opera-agent-billing`;
+        const link = `${base}?invoice_id=${encodeURIComponent(out.invoice.id)}&token=${out.token}`;
         return json({ invoice: out.invoice, url: link }, 200, cors);
       }
       return json({ error: "unknown action" }, 400, cors);

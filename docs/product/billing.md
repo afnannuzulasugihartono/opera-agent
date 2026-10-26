@@ -78,13 +78,18 @@ priced lines (the price list)  ->  an invoice (one per customer per month)
   provider's own answer when the signature does not match, writes every notification
   down, opens a new link when the customer asks for one, and records a transfer with the
   operator's note.
+- `landing/_worker.js` — the site's path to the page: a proxy for `/invoice` that keeps
+  the page's headers, labels the HTML as HTML, and rewrites the refresh redirect back to
+  `/invoice`; every other path goes to the static site unchanged.
 - `supabase/functions/opera-agent-mcp/tools.ts` — the `invoice_create` tool, so the
   agent that delivered the statements can hand the operator the bill for them. It is
   the one door for both kinds of bill: pass the deliveries for a per-delivery invoice,
   or pass the same deliveries with `plan` (`plan.pilot` or `plan.firm`) for a plan
   month. There is no second path for an operator to learn.
-- `tests/billing.test.mjs` — the money rules, proved (45 tests).
+- `tests/billing.test.mjs` — the money rules, proved (46 tests).
 - `tests/invoice-page.test.mjs` — every page state, escaped and read (11 tests).
+- `tests/invoice-worker.test.mjs` — the page proxy, its relabel, its redirect, its asset
+  fallback and its failure page (9 tests).
 
 ## The page a customer opens, and the link behind it
 
@@ -92,6 +97,14 @@ The invoice link is a page, not a checkout: it names the invoice, the customer, 
 period, every delivery it charges for with its quantity and amount, every delivery it
 does not charge for and why, and the total. It ends with the sentence that makes the
 amount checkable: only what was delivered is charged.
+
+The page is served from the product's own domain, not from the function's. Measured
+live on 2026-10-26: the shared function domain answered the function's HTML as
+`text/plain` under `default-src 'none'; sandbox`, so the browser showed the page as
+source and the refresh form could not be submitted. `https://opera-agent.pages.dev/invoice`
+proxies the function through `landing/_worker.js`, and the operator's link is built from
+`BILLING_PAGE_URL`, falling back to the function URL when that setting is absent.
+`[UNVERIFIED]` until the sandbox drive opens the page at the site.
 
 The page says the state in words, not in colour:
 
