@@ -157,7 +157,16 @@ header {
   border-bottom: 1px solid rgba(255, 255, 255, .06);
 }
 
-nav { display: flex; gap: 24px; align-items: center; padding: 15px 0; }
+/*
+ * WHY THE CHROME KEEPS ITS OWN WIDTH.
+ * index.html sets .wrap to 560px, and the header shares that wrap, so at 912px the ten nav items spilled 24px past the viewport and the document scrolled sideways.
+ * 980px is the widest content wrap on the site, so the header is never narrower than the row it holds while the page below keeps its own measure.
+ * A shorthand .wrap rule cannot win against this one, because header .wrap carries the extra element.
+ */
+
+header .wrap { max-width: 980px; }
+
+nav { display: flex; gap: 24px; align-items: center; padding: 15px 0; overflow-x: auto; scrollbar-width: thin; }
 nav .brand { font-weight: 600; letter-spacing: -.01em; margin-right: auto; color: var(--text); text-decoration: none; }
 nav a { color: var(--muted); text-decoration: none; font-size: 13px; letter-spacing: -.01em; padding: 3px 0; transition: color .25s var(--ease); }
 nav a:hover { color: var(--text); }
@@ -165,14 +174,14 @@ nav a:hover { color: var(--text); }
 nav a[aria-current="page"] { color: var(--text); }
 
 /*
- * WHY the row scrolls at 800px and not at 390px: the ten nav children measure 748px together, and the container is the viewport minus 48, so the row stops fitting at 796px.
- * The band used to read 640px, which left every window between 641 and 796 overflowing with no rule to catch it — a 155px dead band where the last item sat past the right edge.
- * Measured, then rounded up.
+ * WHY the row scrolls where it does: the ten nav children measure 747px together, and the wrap spends 40px of padding inside the viewport's 48px margin, so the row needs 835px and scrolls below that.
+ * The old rule switched at 800px and counted only the 48px margin, which left every window between 801 and 835 overflowing past the right edge.
+ * The scroll sits on the nav at every width, so a page with a narrower wrap scrolls its own header instead of pushing the document sideways; below 800 the gap tightens and the mask shows there is more.
  * Wrapping instead of scrolling is what this replaces: it stacks the brand into two ragged lines.
  */
 
 @media (max-width: 800px) {
-  nav { overflow-x: auto; gap: 14px; padding: 12px 0; scrollbar-width: thin;
+  nav { gap: 14px; padding: 12px 0;
     mask-image: linear-gradient(to right, #000 88%, transparent);
     -webkit-mask-image: linear-gradient(to right, #000 88%, transparent); }
   nav a { white-space: nowrap; }

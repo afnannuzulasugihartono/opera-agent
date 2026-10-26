@@ -1,6 +1,6 @@
-// @last-edited: 2026-10-25 UTC+7.
+// @last-edited: 2026-10-26 UTC+7.
 // @title: landing-visual — the site looks finished on every screen.
-// @state: red first: gibberish hero copy, nested sections, overflowing nav and code pills.
+// @state: 20 locks; the page is read with the stylesheets it loads, so the header, nav, pills and footer are judged as rendered.
 // @dependencies: test, assert, fs.
 
 // Company grade is decided in five seconds on a phone: a hero that shows the product, copy without a broken sentence, and nothing spilling out of its box.
@@ -66,6 +66,21 @@ test('the nav survives a 390px phone without wrapping ragged', () => {
   }
   const index = cssOf('beranda.html');
   assert.match(index, /overflow-x:\s*auto/, 'the row scrolls instead of wrapping');
+});
+
+test('the header is never squeezed by a page that keeps a narrow column', () => {
+
+  // WHY THE HEADER HAS ITS OWN WIDTH.
+  // Measured live on 2026-10-26: index.html sets .wrap to 560px, and the header shares that wrap, so at a 912px window the last nav item ended at 936px and the document scrolled sideways by 24px.
+  // The nav row measures 747px, and the wrap spends 40px of padding inside the viewport margin, so the row needs 835px; the old 800px rule counted only the margin and left 801-835 overflowing.
+  // The header therefore keeps the widest content measure on the site, and the nav scrolls itself whenever even that is too tight.
+
+  const index = cssOf('index.html');
+  assert.match(index, /header \.wrap\s*\{[^}]*max-width:\s*980px/, 'the chrome keeps the widest measure, whatever the column below does');
+  assert.match(index, /nav\s*\{[^}]*overflow-x:\s*auto/, 'the row scrolls itself when the wrap is still too tight');
+  for (const page of pages) {
+    assert.match(cssOf(page), /header \.wrap\s*\{[^}]*max-width:\s*980px/, `${page} gives the shared header the same rule`);
+  }
 });
 
 test('a code pill never crosses its card border or breaks mid-word', () => {
