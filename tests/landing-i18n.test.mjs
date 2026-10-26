@@ -1,6 +1,6 @@
-// @last-edited: 2026-10-09 UTC+7.
+// @last-edited: 2026-10-26 UTC+7.
 // @title: landing-i18n — the shared toggle swaps English on, and only on, the pages that carry a dict.
-// @state: 11 locks; the mechanism file is executed against a stub DOM, the pages are read as source.
+// @state: 12 locks; the mechanism file is executed against a stub DOM, the pages are read as source.
 // @dependencies: test, assert, fs, vm.
 
 import test from 'node:test';
@@ -11,9 +11,9 @@ import vm from 'node:vm';
 const root = new URL('..', import.meta.url);
 const read = (name) => fs.readFileSync(new URL(name, root), 'utf8');
 
-const TOGGLE = '<span class="lang"><button type="button" data-lang="id" aria-pressed="true" aria-label="Bahasa Indonesia">ID</button>'
+const TOGGLE = '<span class="lang"><button type="button" data-lang="id" aria-pressed="true" aria-label="ID — Bahasa Indonesia">ID</button>'
   + '<span aria-hidden="true">|</span>'
-  + '<button type="button" data-lang="en" aria-pressed="false" aria-label="English">EN</button></span>';
+  + '<button type="button" data-lang="en" aria-pressed="false" aria-label="EN — English">EN</button></span>';
 
 const DICT_PAGES = ['beranda.html', 'unduh.html', 'unduh-berkas.html', 'fitur.html', 'dukungan.html', '404.html', 'privasi.html', 'syarat.html', 'index.html'];
 const TOGGLE_PAGES = [...DICT_PAGES, 'akun.html', 'dashboard.html', 'oauth/consent.html'];
@@ -73,6 +73,41 @@ test('the toggle is one identical control on every page that may carry it', () =
     const count = html.split(TOGGLE).length - 1;
     assert.equal(count, 1, `${page} carries it exactly once`);
   }
+});
+
+test('the toggle announces the text it shows, so the eye and the ear hear the same control', () => {
+
+  // WHY THE VISIBLE TEXT MUST SIT INSIDE THE ACCESSIBLE NAME.
+  // Lighthouse measured label-content-name-mismatch on 2026-10-26: the ID button's name was "Bahasa Indonesia" while its face says "ID", so a screen reader announced a different control from the one on screen.
+  // The rule is a substring rule, and it also makes voice control work: "click ID" only lands if "ID" is part of the name.
+  // Every page that loads the mechanism is walked, not a hand-kept list, so a new page cannot be born with a mismatched toggle.
+
+  const pages = fs.readdirSync(new URL('landing/', root), { recursive: true })
+    .map((name) => String(name).replaceAll('\\', '/'))
+    .filter((name) => name.endsWith('.html'))
+    .sort();
+  assert.ok(pages.includes('oauth/consent.html'), 'the nested consent page is in scope');
+
+  let checked = 0;
+  for (const page of pages) {
+    const html = read(`landing/${page}`);
+    const buttons = [...html.matchAll(/<button\b[^>]*data-lang="(id|en)"[^>]*>([^<]*)<\/button>/g)];
+    if (!/i18n\.js/.test(html)) {
+      assert.equal(buttons.length, 0, `${page} carries no toggle without the mechanism that paints it`);
+      continue;
+    }
+    assert.ok(buttons.length >= 2, `${page} carries at least one button per language`);
+    assert.deepEqual([...new Set(buttons.map(([, lang]) => lang))].sort(), ['en', 'id'], `${page} offers both languages`);
+
+    for (const [tag, lang, visible] of buttons) {
+      const label = /aria-label="([^"]*)"/.exec(tag)?.[1] ?? '';
+      assert.ok(visible.trim(), `${page}: the ${lang} button shows text`);
+      assert.ok(label.includes(visible), `${page}: the ${lang} label "${label}" contains the visible "${visible}"`);
+      assert.match(label, lang === 'id' ? /Bahasa Indonesia/ : /English/, `${page}: the ${lang} label names the language in full`);
+      checked += 1;
+    }
+  }
+  assert.ok(checked >= TOGGLE_PAGES.length * 2, 'every page that carries the toggle was checked');
 });
 
 test('the mechanism phones nowhere, ever', () => {
