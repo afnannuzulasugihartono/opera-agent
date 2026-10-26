@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-10 UTC+7.
+// @last-edited: 2026-10-26 UTC+7.
 // @title: landing-company — the site reads as a real company site.
 // @state: red first: no favicon, mismatched footer, no crawler files, stale invite-only copy.
 // @dependencies: test, assert, fs.
@@ -64,7 +64,7 @@ test('every page renders in standards mode with its own theme color', () => {
     const full = raw(page);
     const head = full.slice(0, full.toLowerCase().indexOf('<!doctype html>')).replace(/<!--[\s\S]*?-->/g, '');
     assert.doesNotMatch(head, /\S/, `${page} has no text before the doctype`);
-    assert.match(full, /<meta name="theme-color" content="#0b0d10"/, `${page} tints the browser chrome`);
+    assert.match(full, /<meta name="theme-color" content="#f6f7f2"/, `${page} tints the browser chrome`);
   }
 });
 

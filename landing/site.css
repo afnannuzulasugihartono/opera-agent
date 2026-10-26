@@ -1,5 +1,5 @@
 /*
- * @last-edited: 2026-10-25 UTC+7.
+ * @last-edited: 2026-10-26 UTC+7.
  * @title: site.css — the palette, reset and viewport rules every page of the site shares.
  * @state: the design tokens, the document reset and the viewport rules; per-page colour and chrome stay in each page.
  * @dependencies: none.
@@ -21,16 +21,18 @@
  */
 
 :root {
-  --bg: #0b0d10;
-  --surface: #16191e;
-  --surface-soft: #1d2127;
-  --line: rgba(255, 255, 255, .08);
-  --line-strong: rgba(255, 255, 255, .16);
-  --text: #f5f5f7;
-  --muted: #86868b;
-  --accent: #3ecf8e;
-  --accent-soft: rgba(62,207,142,.14);
-  --warn: #f59e0b;
+  --bg: #f6f7f2;
+  --surface: #ffffff;
+  --surface-soft: #edf1ec;
+  --line: rgba(20, 32, 51, .12);
+  --line-strong: rgba(20, 32, 51, .22);
+  --text: #142033;
+  --muted: #5e6978;
+  --accent: #1d7567;
+  --accent-soft: rgba(29, 117, 103, .13);
+  --warn: #aa5b3d;
+  --ink: #142033;
+  --lime: #d9ef7a;
   --ease: cubic-bezier(.28, .11, .32, 1);
 }
 
@@ -47,7 +49,7 @@ body {
   font-kerning: normal;
 }
 
-::selection { background: var(--accent-soft); }
+::selection { background: var(--lime); color: var(--ink); }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 
 /* Apple scrolls anchors; readers who asked for stillness keep the jump. */
@@ -102,8 +104,8 @@ h2 { font-size: clamp(21px, 1.1rem + .8vw, 30px); line-height: 1.25; }
 nav .navCta {
   padding: 6px 15px;
   border-radius: 980px;
-  background: #3ecf8e;
-  color: #05231f;
+  background: var(--ink);
+  color: #fff;
   font-size: 13px;
   font-weight: 600;
   text-decoration: none;
@@ -111,7 +113,7 @@ nav .navCta {
   flex: 0 0 auto;
 }
 
-nav .navCta:hover { background: #1ac3b0; color: #05231f; }
+nav .navCta:hover { background: var(--accent); color: #fff; }
 
 header nav a,
 header nav .brand { white-space: nowrap; flex: 0 0 auto; }
@@ -151,10 +153,10 @@ header {
   position: sticky;
   top: 0;
   z-index: 2;
-  background: rgba(11, 13, 16, .72);
+  background: rgba(246, 247, 242, .88);
   -webkit-backdrop-filter: saturate(180%) blur(20px);
   backdrop-filter: saturate(180%) blur(20px);
-  border-bottom: 1px solid rgba(255, 255, 255, .06);
+  border-bottom: 1px solid var(--line);
 }
 
 /*
@@ -212,3 +214,52 @@ footer a:hover { color: var(--text); }
 .wrap { max-width: 720px; margin: 0 auto; padding: 0 20px; }
 h1 { margin: 0 0 8px; font-size: 28px; letter-spacing: -.01em; }
 main { padding: 56px 0; }
+
+/* ── the shared product language ───────────────────────────────────────────────────── */
+
+/*
+ * WHY the landing surface is light: the product is technical, but the public site should feel calm and legible before it feels clever.
+ * The ink, teal and lime tokens give every page one visual system while the dark demo panels keep the browser proof recognisable.
+ */
+
+body { background: var(--bg); }
+a { text-underline-offset: 3px; }
+header nav .brand { color: var(--ink); font-weight: 750; letter-spacing: -.04em; }
+header nav .brand::before {
+  content: '';
+  display: inline-block;
+  width: 11px;
+  height: 11px;
+  margin: 0 8px 0 1px;
+  border-radius: 3px 7px 3px 7px;
+  background: var(--lime);
+  vertical-align: 1px;
+  box-shadow: inset -3px -3px 0 rgba(20, 32, 51, .14);
+}
+nav a { color: var(--muted); }
+nav a:hover, nav a[aria-current="page"] { color: var(--ink); }
+main { padding-top: 72px; }
+main.wrap, main > .wrap { position: relative; }
+main.wrap::before, main > .wrap::before {
+  content: '';
+  position: absolute;
+  top: -72px;
+  right: 4%;
+  width: 180px;
+  height: 180px;
+  border-radius: 50%;
+  background: var(--lime);
+  opacity: .32;
+  filter: blur(42px);
+  pointer-events: none;
+  z-index: -1;
+}
+.btn { box-shadow: 0 1px 0 rgba(20, 32, 51, .05); }
+.btn.primary { box-shadow: 0 8px 20px rgba(20, 32, 51, .14); }
+.card, .tile { box-shadow: 0 12px 32px rgba(20, 32, 51, .05); }
+footer { background: #eef1eb; }
+
+@media (max-width: 800px) {
+  main { padding-top: 48px; }
+  main.wrap::before, main > .wrap::before { top: -48px; right: -8%; width: 130px; height: 130px; }
+}
