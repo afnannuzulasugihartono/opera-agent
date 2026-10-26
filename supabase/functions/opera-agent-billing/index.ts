@@ -1,7 +1,7 @@
-// @last-edited: 2026-10-21 UTC+7.
+// @last-edited: 2026-10-26 UTC+7.
 // @title: opera-agent-billing — the invoice a customer opens, and the callback that closes it.
-// @state: quotes a delivery into an amount, opens an invoice, serves it to its owner, marks it paid from a signed notification, and records a transfer by hand.
-// @dependencies: edge-runtime, supabase-js, ../_shared/billing.js, ../_shared/cors.js, ../_shared/edge-log.js.
+// @state: quotes a delivery into an amount, opens one payable transaction per invoice, serves the page in the state the row is in, closes it from a signed notification or the provider's own answer, records a transfer by hand, and opens a new link when the customer asks.
+// @dependencies: edge-runtime, supabase-js, ../_shared/billing.js, ../_shared/invoice-page.js, ../_shared/cors.js, ../_shared/edge-log.js.
 
 // WHY THIS FUNCTION EXISTS.
 // The product sells a delivered client-month, and a sale that nobody can pay for is a demo.
@@ -25,12 +25,13 @@
 // So the gross amount in the notification has to equal the invoice once both are in cents, or the invoice stays open and the difference is somebody's problem to look at.
 
 // WHY A PAID INVOICE IS NEVER REOPENED.
-// Creating an invoice is idempotent so an operator can correct a month before it is paid, but the same upsert run after the money landed would turn a paid invoice back to open and ask the customer twice.
+// Creating an invoice is idempotent so an operator can correct a month before it is paid, but the same write run after the money landed would turn a paid invoice back to open and ask the customer twice.
 // So the paid state is terminal here, and a later call is refused with the invoice's name.
 
 import "@supabase/edge-runtime";
 import { createEdgeLog } from "../_shared/edge-log.js";
 import { CORS_DEFAULT_ORIGINS, resolveAllowedOrigin } from "../_shared/cors.js";
+import { invoicePage } from "../_shared/invoice-page.js";
 import {
   amountFor,
   invoiceToken,
@@ -42,15 +43,19 @@ import {
   notificationSignatureValid,
   paidAmountCents,
   planInvoiceLines,
-  providerAmount,
   providerOrderId,
+  providerSaysMissing,
   providerSettlement,
   snapChargeRequest,
   snapPaymentMethods,
   snapRedirect,
   secretShape,
+  snapExpireRequest,
   snapStatusRequest,
-  verifyInvoiceToken
+  verifyInvoiceToken,
+  PAY_LINK_EXPIRY,
+  payLinkDeadline,
+  payLinkState
 } from "../_shared/billing.js";
 
 type PriceRow = { kind: string; unit: string; amount_cents: number; currency: string; active: boolean };
@@ -64,14 +69,41 @@ type InvoiceRow = {
   currency: string;
   lines: { priced: Line[]; unpriced: Line[]; manual?: { note: string; at: string } };
   pay_url?: string | null;
+  pay_url_expires_at?: string | null;
+  provider?: string | null;
+  provider_ref?: string | null;
   provider_order_id?: string | null;
+  provider_order_ids?: string[] | null;
+  paid_at?: string | null;
+  paid_method?: string | null;
+  provider_transaction_id?: string | null;
 };
+type Link = {
+  pay_url: string | null;
+  pay_url_expires_at: string | null;
+  provider: string | null;
+  provider_ref: string | null;
+  provider_order_id: string | null;
+  provider_order_ids: string[];
+};
+type AttemptClose =
+  | { state: "none" }
+  | { state: "paid"; status: string; grossAmount: string; paymentType: string; transactionId: string }
+  | { state: "closed"; status: string }
+  | { state: "refused"; why: string };
 type BillingClient = Awaited<ReturnType<typeof db>>;
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
 const BILLING_SECRET = Deno.env.get("BILLING_SECRET") || "";
 const BILLING_TOKEN = Deno.env.get("OPERA_BILLING_TOKEN") || "";
+
+// WHY THE OPERATOR'S LINK NAMES THE SITE AND NOT THIS FUNCTION.
+// Measured live on 2026-10-26: the gateway that fronts every project's functions answers this function's HTML as text/plain under a sandbox policy, so a customer sees the page's source.
+// The site serves the same page through a thin worker that keeps the page's headers and rewrites the refresh redirect, so the link an operator hands out names the site.
+// With no site configured the function's own URL stays as the fallback: the page is readable there even when a browser will not render it as a page.
+
+const BILLING_PAGE_URL = (Deno.env.get("BILLING_PAGE_URL") || "").replace(/\/+$/, "");
 
 // WHY THE KEY IS KEPT EXACTLY AS IT WAS STORED.
 // The signature is computed over this value, so the value is not adjusted here: which reading of it signs is measured against each notification and named in the log.
@@ -96,54 +128,240 @@ function db() {
   return clientPromise;
 }
 
-const money = (cents: number, currency: string): string => {
-  const value = (Number(cents) || 0) / 100;
-  return currency === 'IDR'
-    ? `Rp ${value.toLocaleString('id-ID', { maximumFractionDigits: 0 })}`
-    : `${currency} ${value.toFixed(2)}`;
-};
+// WHY THE BODY IS READ BY ITS CONTENT TYPE.
+// The operator and the provider post JSON, and the customer's refresh form is a browser form, which posts urlencoded fields.
+// A body that cannot be parsed is an empty object, so a malformed request falls through to "unknown action" instead of a 500 that says nothing about the request.
 
-const escapeHtml = (value: unknown): string => String(value ?? "")
-  .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
-  .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+async function readBody(req: Request): Promise<Record<string, unknown>> {
+  const type = (req.headers.get("content-type") || "").toLowerCase();
+  if (type.includes("application/x-www-form-urlencoded")) {
+    const form = await req.formData().catch(() => null);
+    if (!form) return {};
+    const body: Record<string, unknown> = {};
+    for (const [name, value] of form.entries()) {
+      if (typeof value === "string") body[name] = value;
+    }
+    return body;
+  }
+  return await req.json().catch(() => ({})) as Record<string, unknown>;
+}
 
-// WHY THE PAGE IS BUILT HERE AND NOT IN A TEMPLATE FILE.
-// A template is a file the deploy has to carry, and this function is the thing that must never 500 on a customer who opens a link.
-// One function, one page, no moving parts.
+// WHY THE PAGE'S HEADERS SAY WHAT THE PAGE MAY DO.
+// The page carries a token in its body, so it must not be cached, must not leak the link that opened it as a referrer, and must not be framed by another site.
+// The policy allows the inline styles the page needs and nothing else: no script, no font, no image, and a form that can only post back to this function.
+// The CORS map already carries cache-control, so the merge keeps one value for it rather than two spellings of the same rule.
 
-function invoicePage(invoice: InvoiceRow): string {
-  const lines = (invoice.lines?.priced || []).map((line: Line) => `<tr><td>${escapeHtml(line.description || line.unit || line.kind)}</td><td>${line.quantity}</td><td>${escapeHtml(money(line.amountCents, invoice.currency))}</td></tr>`).join("");
-  const unpriced = (invoice.lines?.unpriced || []).map((line: Line) => `<tr><td>${escapeHtml(line.description || line.kind)}</td><td colspan="2">not charged: ${escapeHtml(line.reason)}</td></tr>`).join("");
-  const paid = invoice.status === 'paid';
-  const manual = invoice.lines?.manual;
-  const bank = !paid && !invoice.pay_url && BILLING_BANK
-    ? `<p><small>${escapeHtml(BILLING_BANK)}</small></p>`
-    : '';
-  const pay = paid
-    ? `<p class="paid">Paid. Thank you.</p>${manual ? `<p><small>Recorded by hand: ${escapeHtml(manual.note)} (${escapeHtml(manual.at)})</small></p>` : ''}`
-    : invoice.pay_url
-      ? `<p><a class="pay" href="${escapeHtml(invoice.pay_url)}">Pay ${escapeHtml(money(invoice.amount_cents, invoice.currency))}</a></p>`
-      : `<p class="pay">Transfer ${escapeHtml(money(invoice.amount_cents, invoice.currency))} and quote invoice ${escapeHtml(invoice.id)}.</p>${bank}`;
-  return `<!doctype html><meta charset="utf-8"><title>Invoice ${escapeHtml(invoice.id)}</title>
-<style>
- body{font:16px/1.5 system-ui,sans-serif;max-width:44rem;margin:3rem auto;padding:0 1rem;color:#111}
- h1{font-size:1.4rem} table{border-collapse:collapse;width:100%;margin:1rem 0}
- td,th{border-bottom:1px solid #ddd;padding:.5rem .4rem;text-align:left}
- .amount{font-size:1.3rem;font-weight:700} .pay a.pay{background:#1d4ed8;color:#fff;padding:.7rem 1.1rem;border-radius:.4rem;text-decoration:none}
- .paid{color:#0f7664;font-weight:700} small{color:#666}
-</style>
-<h1>Invoice ${escapeHtml(invoice.id)}</h1>
-<p>${escapeHtml(invoice.customer_id)} &middot; period ${escapeHtml(invoice.period)} &middot; status ${escapeHtml(invoice.status)}</p>
-<table><tr><th>What was delivered</th><th>Qty</th><th>Amount</th></tr>${lines}${unpriced}</table>
-<p class="amount">Total ${escapeHtml(money(invoice.amount_cents, invoice.currency))}</p>
-${pay}
-<p><small>Only what was delivered is charged. A delivery that failed is not on this invoice.</small></p>`;
+const PAGE_POLICY = "default-src 'none'; style-src 'unsafe-inline'; form-action 'self'; base-uri 'none'; frame-ancestors 'none'";
+
+function pageHeaders(cors: Record<string, string>): Record<string, string> {
+  return {
+    ...cors,
+    "content-type": "text/html; charset=utf-8",
+    "cache-control": "no-store",
+    "referrer-policy": "no-referrer",
+    "x-content-type-options": "nosniff",
+    "content-security-policy": PAGE_POLICY
+  };
 }
 
 async function priceList(supabase: BillingClient): Promise<PriceRow[]> {
   const { data, error } = await supabase.from("opera_price_list").select("kind, unit, amount_cents, currency, active");
   if (error) throw new Error(`price list unreadable: ${error.message}`);
   return data || [];
+}
+
+async function readInvoice(invoiceId: string, token: string): Promise<InvoiceRow> {
+  if (!verifyInvoiceToken(invoiceId, token, BILLING_SECRET)) throw new HttpError(401, "that link does not open that invoice.");
+  const supabase = await db();
+  const { data, error } = await supabase.from("opera_invoices").select("*").eq("id", invoiceId).single();
+  if (error || !data) throw new HttpError(404, "no such invoice.");
+  return data;
+}
+
+// WHY A RETRY ASKS THE PROVIDER WHAT THE OLD ATTEMPT IS BEFORE OPENING A NEW ONE.
+// A timer is not the provider: the stored deadline says when the link should die, and only the provider knows whether a customer already paid through it.
+// So the old attempt is looked up, a settlement closes the invoice through the same amount check as a notification, and a pending attempt is expired at the provider before another charge is opened.
+// A refusal - no key, a network answer, a status this function does not understand - leaves the invoice as it was: opening a second payable transaction on a guess is the one mistake that costs a customer money.
+// The expire answer is read past its HTTP status: Midtrans documents a 200 whose body carries status_code 412 and "Merchant cannot modify the status of the transaction", which is a refusal in the shape of a success.
+// A success carries 407 and transaction_status expire, so the one code that means "not closed" is checked instead of the code that means "settled".
+// Treating that 412 as closed would open a second payable transaction beside one the provider refused to kill.
+
+async function closeAttempt(orderId: string | null | undefined): Promise<AttemptClose> {
+  if (!orderId) return { state: "none" };
+  const request = snapStatusRequest({ orderId, serverKey: MIDTRANS_SERVER_KEY, environment: MIDTRANS_ENVIRONMENT });
+  if (!request) return { state: "none" };
+  let response: Response;
+  let payload: Record<string, unknown> | null;
+  try {
+    response = await fetch(request.url, { method: request.method, headers: request.headers });
+    payload = await response.json().catch(() => null);
+  } catch (error) {
+    return { state: "refused", why: `the provider could not be asked: ${(error as Error).message}` };
+  }
+  if (!response.ok) {
+    if (response.status === 404) return { state: "closed", status: "not found" };
+    return { state: "refused", why: `the provider answered ${response.status} when asked about that order` };
+  }
+  if (!payload) return { state: "refused", why: "the provider answered with a body that is not JSON" };
+  if (providerSaysMissing(payload)) return { state: "closed", status: "not found" };
+  const answer = providerSettlement(payload);
+  if (answer.settled) {
+    return { state: "paid", status: answer.status, grossAmount: answer.grossAmount, paymentType: answer.paymentType, transactionId: answer.transactionId };
+  }
+  const status = String(answer.status || "").toLowerCase();
+  if (["expire", "deny", "cancel", "failure"].includes(status)) return { state: "closed", status };
+  if (status !== "pending") {
+    const code = String(payload.status_code || "");
+    const message = String(payload.status_message || "");
+    return { state: "refused", why: `the provider reports ${answer.status || "nothing"} for that order${code ? ` (status_code ${code}${message ? `: ${message}` : ""})` : ""}` };
+  }
+  const expire = snapExpireRequest({ orderId, serverKey: MIDTRANS_SERVER_KEY, environment: MIDTRANS_ENVIRONMENT });
+  if (!expire) return { state: "refused", why: "the expire request could not be built" };
+  try {
+    const closed = await fetch(expire.url, { method: expire.method, headers: expire.headers });
+    const body = await closed.json().catch(() => null) as Record<string, unknown> | null;
+    if (closed.ok && String(body?.status_code || "") !== "412") return { state: "closed", status: "expired" };
+    return { state: "refused", why: `the provider answered ${closed.status} to the expire request${body ? `: ${JSON.stringify(body).slice(0, 200)}` : ""}` };
+  } catch (error) {
+    return { state: "refused", why: `the expire request failed: ${(error as Error).message}` };
+  }
+}
+
+// WHY THE ATTEMPT NUMBER IS COUNTED FROM THE ARRAY.
+// The array holds every attempt this invoice opened, so its length is the number of the next one, and the scalar counts as one even when a row predates the array.
+// Counting past a legacy scalar matters: reusing the id of an attempt that was just closed asks the provider for a transaction it already knows.
+
+function nextAttempt(invoice: InvoiceRow): number {
+  const opened = Array.isArray(invoice.provider_order_ids)
+    ? invoice.provider_order_ids.filter((id) => typeof id === "string" && id)
+    : [];
+  return Math.max(opened.length, invoice.provider_order_id ? 1 : 0) + 1;
+}
+
+// WHY A REFUSED CHARGE IS WRITTEN DOWN.
+// A charge the provider turns away leaves the invoice with no pay button and a transfer instruction instead, and nothing in the answer says why.
+// Measured live: a key that did not belong to the host it was sent to produced exactly that silence, and the only way to tell "no key" from "key refused" was a log.
+// The status and the provider's own words are logged; the key never is.
+// The whole answer is written, not one field of it: Midtrans answered {"error":"Unauthorized"} once, and the log that read only error_messages named nothing.
+
+// WHY THE AMOUNT IS PASSED AND NOT TAKEN FROM THE ROW.
+// The create path can re-price an invoice, so the row still carries the old amount while the caller has already computed the new one.
+// A charge built from the row would ask the customer for yesterday's price and then write the new amount beside it, and the settlement would be refused by the amount check.
+// The refresh path passes nothing and gets the row's own amount, which is what it means.
+
+async function openNewAttempt(invoice: InvoiceRow, { customerId, amountCents = Number(invoice.amount_cents), currency = invoice.currency }: { customerId: string; amountCents?: number; currency?: string }): Promise<Link | null> {
+  const previous = invoice.provider_order_id || null;
+  if (previous) {
+    const closed = await closeAttempt(previous);
+    if (closed.state === "paid") {
+      const settled = await markPaid({
+        order_id: previous,
+        gross_amount: closed.grossAmount,
+        transaction_status: closed.status,
+        payment_type: closed.paymentType,
+        transaction_id: closed.transactionId
+      });
+      throw new HttpError(409, `${invoice.id} has just been paid${settled.ok ? "" : `, and the record could not be closed: ${settled.why}`}; no second charge was opened.`);
+    }
+    if (closed.state === "refused") {
+      throw new HttpError(409, `the previous payment link could not be closed: ${closed.why}`);
+    }
+  }
+  const attempt = nextAttempt(invoice);
+  const orderId = providerOrderId(invoice.id, amountCents, currency, attempt);
+  const payment = snapPaymentMethods(amountCents, currency);
+  const charge = snapChargeRequest({
+    orderId,
+    amountCents,
+    currency,
+    customerId: customerId,
+    enabled: payment.enabled,
+    serverKey: MIDTRANS_SERVER_KEY,
+    environment: MIDTRANS_ENVIRONMENT,
+    expiry: PAY_LINK_EXPIRY
+  });
+  if (!charge) return null;
+  const response = await fetch(charge.url, { method: charge.method, headers: charge.headers, body: charge.body });
+  const body = await response.json().catch(() => ({})) as Record<string, unknown>;
+  const redirect = response.ok ? snapRedirect(body) : null;
+  if (!redirect) {
+    log.warn("SNAP_CHARGE_REFUSED", JSON.stringify({
+      orderId,
+      attempt,
+      status: response.status,
+      environment: charge.url.includes("sandbox") ? "sandbox" : "production",
+      why: JSON.stringify(body).slice(0, 300)
+    }));
+    return null;
+  }
+  const history = Array.isArray(invoice.provider_order_ids) ? invoice.provider_order_ids.filter((id) => typeof id === "string" && id) : [];
+  return {
+    pay_url: redirect.payUrl,
+    pay_url_expires_at: payLinkDeadline(),
+    provider: "midtrans",
+    provider_ref: redirect.token || orderId,
+    provider_order_id: orderId,
+    provider_order_ids: [...history, orderId]
+  };
+}
+
+// WHY A PAID ROW IS NOT WRITTEN BY A CREATE THAT RACED THE PAYMENT.
+// The paid check happens before the provider call because opening a link is the moment money can move, and that call takes time.
+// So a write over an existing row is guarded by paid_at is null: a payment that landed in between leaves the row paid and this call answers 409 instead of turning it back to open.
+// The write is also guarded by the attempt it read: two operators opening a link for one invoice must not overwrite each other's attempt, because the loser's transaction would stay payable with nothing in the row naming it.
+// A new invoice has no payment to race, so it is inserted once; the second insert loses the unique id and answers with the row that won instead of overwriting it.
+
+async function invoiceRow(id: string): Promise<InvoiceRow | null> {
+  const supabase = await db();
+  const { data } = await supabase.from("opera_invoices").select("*").eq("id", id).maybeSingle();
+  return data || null;
+}
+
+// WHY A LOSING ATTEMPT IS CLOSED INSTEAD OF FORGOTTEN.
+// The charge was already opened at the provider before the row could be written, and a payable transaction nobody recorded is a link that can still take money.
+// If the row already names it, another writer opened the same attempt and there is nothing to close.
+// A settlement on an attempt that lost the write cannot be attached to the invoice, so it is named in the log for a human: money that moved must never disappear quietly.
+
+async function abandonOrphan(opened: unknown, fresh: InvoiceRow | null): Promise<void> {
+  const orderId = typeof opened === "string" ? opened : "";
+  if (!orderId || !fresh) return;
+  const recorded = new Set([fresh.provider_order_id, ...(fresh.provider_order_ids || [])].filter(Boolean));
+  if (recorded.has(orderId)) return;
+  const closed = await closeAttempt(orderId);
+  if (closed.state === "refused") {
+    log.warn("PAYMENT_ATTEMPT_ORPHANED", JSON.stringify({ orderId, why: closed.why }));
+  } else if (closed.state === "paid") {
+    log.error("PAYMENT_ATTEMPT_PAID_UNRECORDED", JSON.stringify({ orderId, grossAmount: closed.grossAmount, status: closed.status }));
+  }
+}
+
+async function writeInvoice(row: Record<string, unknown>, existing: InvoiceRow | null): Promise<InvoiceRow> {
+  const supabase = await db();
+  if (!existing) {
+    const { data, error } = await supabase.from("opera_invoices").insert(row).select().single();
+    if (!error) return data;
+    if (error.code !== "23505") throw new Error(`invoice not written: ${error.message}`);
+    const fresh = await invoiceRow(String(row.id));
+    if (!fresh) throw new Error(`invoice not written: ${error.message}`);
+    if (fresh.status === "paid") throw new HttpError(409, `${fresh.id} was paid while its payment link was being opened; nothing was written over it.`);
+    await abandonOrphan(row.provider_order_id, fresh);
+    return fresh;
+  }
+  const { id, ...fields } = row;
+  const expected = existing.provider_order_id || null;
+  let query = supabase.from("opera_invoices")
+    .update(fields)
+    .eq("id", String(id))
+    .is("paid_at", null);
+  query = expected ? query.eq("provider_order_id", expected) : query.is("provider_order_id", null);
+  const { data, error } = await query.select().maybeSingle();
+  if (error) throw new Error(`invoice not written: ${error.message}`);
+  if (data) return data;
+  const fresh = await invoiceRow(String(id));
+  if (!fresh) throw new HttpError(409, `${String(id)} changed while its payment link was being opened; nothing was written over it.`);
+  if (fresh.status === "paid") throw new HttpError(409, `${String(id)} was paid while its payment link was being opened; nothing was written over it.`);
+  await abandonOrphan(row.provider_order_id, fresh);
+  return fresh;
 }
 
 async function createInvoice({ customer_id, period, lines }: { customer_id: string; period: string; lines: Line[] }): Promise<{ invoice: InvoiceRow; token: string }> {
@@ -167,56 +385,51 @@ async function createInvoice({ customer_id, period, lines }: { customer_id: stri
     throw new HttpError(409, `${id} is paid; a later call does not reopen an invoice that has been paid.`);
   }
 
+  // WHY A LINK IS REUSED ONLY WHILE IT IS ALIVE.
+  // An idempotent invoice_create must not kill a customer's live QR, so an unchanged amount and currency keep the link and the deadline the row already carries.
+  // An expired link is not reused, because the page would have to render a Pay button the provider will refuse.
+  // A legacy row with no stored deadline is "unknown" and is kept: it has a link, it may still work, and replacing it would be the create path deciding something nobody measured.
+
   const payment = snapPaymentMethods(out.amountCents, out.currency);
   const unchanged = Boolean(existing)
     && Number(existing.amount_cents) === out.amountCents
     && existing.currency === out.currency;
-  let pay_url = unchanged ? existing?.pay_url || null : null;
-  let provider = unchanged ? existing?.provider || null : null;
-  let provider_ref = unchanged ? existing?.provider_ref || null : null;
-  let provider_order_id = unchanged ? existing?.provider_order_id || null : null;
+  const state = existing ? payLinkState(existing) : "none";
 
-  if (MIDTRANS_SERVER_KEY && payment.chargeable && !pay_url) {
-    const orderId = providerOrderId(id, out.amountCents, out.currency);
-    const charge = snapChargeRequest({
-      orderId,
-      amountCents: out.amountCents,
+  // WHY THE LAST ATTEMPT SURVIVES A WRITE THAT OPENS NO NEW LINK.
+  // A row written between the migration and the deploy carries its attempt in the scalar and an empty array; counting only the array would lose the order id a later close has to ask about.
+  // And when a re-price cannot open a charge, the old attempt is still the thing the provider may be holding, so its pointer stays: the next opener closes it before it charges.
+  const history = Array.isArray(existing?.provider_order_ids) && existing.provider_order_ids.length
+    ? existing.provider_order_ids.filter((orderId) => typeof orderId === "string" && orderId)
+    : existing?.provider_order_id ? [existing.provider_order_id] : [];
+  let link: Link = {
+    pay_url: null,
+    pay_url_expires_at: null,
+    provider: existing?.provider || null,
+    provider_ref: existing?.provider_ref || null,
+    provider_order_id: existing?.provider_order_id || null,
+    provider_order_ids: history
+  };
+  if (unchanged && (state === "live" || state === "unknown")) {
+    link = {
+      ...link,
+      pay_url: existing?.pay_url || null,
+      pay_url_expires_at: existing?.pay_url_expires_at || null
+    };
+  } else if (MIDTRANS_SERVER_KEY && payment.chargeable) {
+    const opened = await openNewAttempt(existing ?? {
+      id,
+      customer_id,
+      period,
+      status: "open",
+      amount_cents: out.amountCents,
       currency: out.currency,
-      customerId: customer_id,
-      enabled: payment.enabled,
-      serverKey: MIDTRANS_SERVER_KEY,
-      environment: MIDTRANS_ENVIRONMENT
-    });
-    if (charge) {
-      const response = await fetch(charge.url, { method: charge.method, headers: charge.headers, body: charge.body });
-      const body = await response.json().catch(() => ({})) as Record<string, unknown>;
-      const redirect = response.ok ? snapRedirect(body) : null;
-
-      // WHY A REFUSED CHARGE IS WRITTEN DOWN.
-      // A charge the provider turns away leaves the invoice with no pay button and a transfer instruction instead, and nothing in the answer says why.
-      // Measured live: a key that did not belong to the host it was sent to produced exactly that silence, and the only way to tell "no key" from "key refused" was a log.
-      // The status and the provider's own words are logged; the key never is.
-      if (!redirect) {
-        // WHY THE WHOLE ANSWER IS WRITTEN, NOT ONE FIELD OF IT.
-        // The first version read error_messages and status_message, and Midtrans answered {"error":"Unauthorized"} instead, so the log said "no redirect and no token" and named nothing.
-        // The provider's own words are the diagnosis, so the body is written down as it came; the key never is.
-        const why = JSON.stringify(body).slice(0, 300);
-        log.warn("SNAP_CHARGE_REFUSED", JSON.stringify({
-          orderId,
-          status: response.status,
-          environment: charge.url.includes("sandbox") ? "sandbox" : "production",
-          why
-        }));
-      }
-      if (redirect) {
-        pay_url = redirect.payUrl;
-        provider = "midtrans";
-        provider_ref = redirect.token || orderId;
-        provider_order_id = orderId;
-      }
-    }
+      lines: { priced: out.priced, unpriced: out.unpriced }
+    }, { customerId: customer_id, amountCents: out.amountCents, currency: out.currency });
+    if (opened) link = opened;
   }
-  const { data, error } = await supabase.from("opera_invoices").upsert({
+
+  const data = await writeInvoice({
     id,
     customer_id,
     period,
@@ -224,12 +437,8 @@ async function createInvoice({ customer_id, period, lines }: { customer_id: stri
     amount_cents: out.amountCents,
     currency: out.currency,
     lines: { priced: out.priced, unpriced: out.unpriced },
-    provider,
-    provider_ref,
-    provider_order_id,
-    pay_url
-  }, { onConflict: "id" }).select().single();
-  if (error) throw new Error(`invoice not written: ${error.message}`);
+    ...link
+  }, existing ?? null);
   return { invoice: data, token };
 }
 
@@ -261,14 +470,6 @@ async function settleManual({ invoice_id, amount_cents, note }: { invoice_id: st
     .maybeSingle();
   if (updateError) throw new Error(`invoice not closed: ${updateError.message}`);
   if (!data) throw new HttpError(409, "the invoice changed while it was being settled; check it and try again");
-  return data;
-}
-
-async function readInvoice(invoiceId: string, token: string): Promise<InvoiceRow> {
-  if (!verifyInvoiceToken(invoiceId, token, BILLING_SECRET)) throw new HttpError(401, "that link does not open that invoice.");
-  const supabase = await db();
-  const { data, error } = await supabase.from("opera_invoices").select("*").eq("id", invoiceId).single();
-  if (error || !data) throw new HttpError(404, "no such invoice.");
   return data;
 }
 
@@ -310,19 +511,20 @@ async function noteNotification(
 // It stays as the answer to a refusal now that the formula matches, because a rotated key and a forged body must both end somewhere honest.
 // The status code and the key never leave the function; only the settlement and the amount it reports come back.
 
-async function providerSaysSettled(orderId: string): Promise<{ settled: boolean; status: string; grossAmount: string; why: string }> {
+async function providerSaysSettled(orderId: string): Promise<{ settled: boolean; status: string; grossAmount: string; paymentType: string; transactionId: string; why: string }> {
+  const empty = { settled: false, status: "", grossAmount: "", paymentType: "", transactionId: "" };
   const request = snapStatusRequest({ orderId, serverKey: MIDTRANS_SERVER_KEY, environment: MIDTRANS_ENVIRONMENT });
-  if (!request) return { settled: false, status: "", grossAmount: "", why: "there is no order id to ask about" };
+  if (!request) return { ...empty, why: "there is no order id to ask about" };
   try {
     const response = await fetch(request.url, { method: request.method, headers: request.headers });
     const payload = await response.json().catch(() => null);
     if (!response.ok) {
-      return { settled: false, status: "", grossAmount: "", why: `the provider answered ${response.status} when asked about that order` };
+      return { ...empty, why: `the provider answered ${response.status} when asked about that order` };
     }
     const answer = providerSettlement(payload);
     return { ...answer, why: `the provider reports ${answer.status || "nothing"} for that order` };
   } catch (error) {
-    return { settled: false, status: "", grossAmount: "", why: `the provider could not be asked: ${(error as Error).message}` };
+    return { ...empty, why: `the provider could not be asked: ${(error as Error).message}` };
   }
 }
 
@@ -335,21 +537,45 @@ async function providerSaysSettled(orderId: string): Promise<{ settled: boolean;
 // Measured live on 2026-10-26: a settlement closed the invoice at 08:55:13 and a pending notification arrived eleven seconds later, moving paid_at to 08:55:24.
 // The moment money landed is evidence, and a second notification must not rewrite it.
 
+// WHY THE NOTIFICATION FINDS THE INVOICE BY ANY ATTEMPT IT OPENED.
+// A retry opens a new order id, so a settlement for the first attempt carries an id that is no longer the current one.
+// The array holds every attempt, and containment finds the invoice whichever attempt the provider is talking about; the scalar would only find the last one.
+// The invoice id is still accepted after that, for a notification signed by hand and for an invoice written before a derived id existed.
+
+async function invoiceForOrder(orderId: string): Promise<InvoiceRow | null> {
+  const supabase = await db();
+  const byAttempt = await supabase.from("opera_invoices").select("*").contains("provider_order_ids", [orderId]).maybeSingle();
+  if (byAttempt.data) return byAttempt.data;
+  const byId = await supabase.from("opera_invoices").select("*").eq("id", orderId).maybeSingle();
+  return byId.data || null;
+}
+
+// WHY A TERMINAL NOTIFICATION CLEARS ONLY THE CURRENT LINK.
+// The provider says expire, deny, cancel or failure about the transaction it is naming, and an invoice may have opened several.
+// Clearing the link a customer is holding because an older attempt died would take away the one way to pay that still works.
+// So the row is left open and only the current attempt's link is removed; a pending or settled notification never clears a link, because one means money may still arrive and the other means it did.
+
 async function markPaid(notification: Record<string, unknown>): Promise<{ ok: boolean; why?: string; invoice?: string; retry?: boolean }> {
   const supabase = await db();
   const orderId = String(notification.order_id || "");
-
-  // WHY THE LOOKUP TRIES THE PROVIDER ID FIRST.
-  // The id a person reads ("Toko Sinar Jaya:2026-08") contains characters the provider refuses, so the transaction carries a derived id.
-  // The invoice id is still accepted for a notification signed by hand and for invoices written before the derived id existed.
-  const byProvider = await supabase.from("opera_invoices").select("*").eq("provider_order_id", orderId).maybeSingle();
-  let invoice = byProvider.data;
-  if (!invoice) {
-    const byId = await supabase.from("opera_invoices").select("*").eq("id", orderId).maybeSingle();
-    invoice = byId.data;
-  }
+  const invoice = await invoiceForOrder(orderId);
   if (!invoice) return { ok: false, why: "no invoice with that order id" };
-  if (!isSettled(notification)) return { ok: false, why: "the transaction is not settled", retry: false };
+
+  if (!isSettled(notification)) {
+    const status = String(notification.transaction_status || notification.status || "").toLowerCase();
+    const terminal = ["expire", "deny", "cancel", "failure"].includes(status);
+    const current = String(invoice.provider_order_id || "") === orderId;
+    if (terminal && current) {
+      const { error } = await supabase.from("opera_invoices")
+        .update({ pay_url: null, pay_url_expires_at: null })
+        .eq("id", invoice.id)
+        .eq("status", "open");
+      if (error) throw new Error(`the payment link was not cleared: ${error.message}`);
+      return { ok: false, why: "the transaction is not settled; the provider closed the current payment link", retry: false };
+    }
+    return { ok: false, why: "the transaction is not settled", retry: false };
+  }
+
   const paidCents = paidAmountCents(notification.gross_amount, invoice.currency);
   if (paidCents === null || paidCents !== Number(invoice.amount_cents)) {
     return { ok: false, why: `the paid amount (${String(notification.gross_amount)}) is not the invoice amount (${invoice.amount_cents} cents)` };
@@ -357,8 +583,15 @@ async function markPaid(notification: Record<string, unknown>): Promise<{ ok: bo
   if (!needsClosing(invoice)) {
     return { ok: true, invoice: invoice.id, why: `the invoice was already paid at ${invoice.paid_at}` };
   }
+  const paidMethod = String(notification.payment_type || "").trim();
+  const transactionId = String(notification.transaction_id || "").trim();
   const { data: closed, error: updateError } = await supabase.from("opera_invoices")
-    .update({ status: "paid", paid_at: new Date().toISOString() })
+    .update({
+      status: "paid",
+      paid_at: new Date().toISOString(),
+      paid_method: paidMethod || null,
+      provider_transaction_id: transactionId || null
+    })
     .eq("id", invoice.id)
     .is("paid_at", null)
     .select("id");
@@ -396,10 +629,17 @@ Deno.serve(async (req: Request) => {
       if (!invoiceId || !token) return json({ error: "invoice_id and token are required" }, 400, cors);
       const invoice = await readInvoice(invoiceId, token);
       if (url.searchParams.get("format") === "json") return json({ invoice }, 200, cors);
-      return new Response(invoicePage(invoice), { headers: { "content-type": "text/html; charset=utf-8", ...cors } });
+      const canRefresh = Boolean(MIDTRANS_SERVER_KEY)
+        && snapPaymentMethods(invoice.amount_cents, invoice.currency).chargeable;
+      return new Response(invoicePage(invoice, {
+        token,
+        bank: BILLING_BANK,
+        canRefresh,
+        refreshFailed: url.searchParams.get("refresh") === "failed"
+      }), { headers: pageHeaders(cors) });
     }
     if (req.method === "POST") {
-      const body = await req.json().catch(() => ({})) as Record<string, unknown>;
+      const body = await readBody(req);
       // WHY A NOTIFICATION IS RECOGNISED BY THE ORDER AND THE STATUS CODE.
       // Recognition used to demand a signature field, so a provider payload whose signature arrived under a different name fell through to "unknown action" and left no trace anywhere.
       // What makes a body a notification is what the provider says happened; whether it is believed is a separate question, answered by the signature.
@@ -419,13 +659,55 @@ Deno.serve(async (req: Request) => {
             await noteNotification(notification, signatureField, false, `the signature did not match (${KEY_SHAPE}) and ${provider.why}`, req);
             return json({ ok: false, error: "the notification was not signed by the provider" }, 400, cors);
           }
-          judged = { order_id: notification.order_id, gross_amount: provider.grossAmount, transaction_status: provider.status };
+          judged = {
+            order_id: notification.order_id,
+            gross_amount: provider.grossAmount,
+            transaction_status: provider.status,
+            payment_type: provider.paymentType,
+            transaction_id: provider.transactionId
+          };
           source = `the signature did not match (${KEY_SHAPE}) and ${provider.why}`;
         }
         const out = await markPaid(judged);
         await noteNotification(notification, signatureField, out.ok, `${source}; ${out.why || "the invoice is closed"}`, req);
 
         return json(out, notificationAcknowledged(out) ? 200 : 400, cors);
+      }
+
+      // WHY THE REFRESH FORM IS A POST AND NOT A LINK.
+      // A link that opens a payable transaction can be fired by a prefetcher, a mail scanner or a stray click, and every one of those would open a new charge.
+      // A POST carries the token from the form body, verifies it exactly as the page did, and answers with a redirect so a reload cannot post again.
+      // The customer never sees the provider's words: a refusal is one line on the page, and the reason is written to the log.
+
+      if (body.action === "refresh-payment") {
+        const invoiceId = String(body.invoice_id || "");
+        const token = String(body.token || "");
+        const page = new URL(req.url);
+        page.search = new URLSearchParams({ invoice_id: invoiceId, token }).toString();
+        const invoice = await readInvoice(invoiceId, token);
+        const status = String(invoice.status || "");
+        let failed = false;
+        if (status !== "paid" && status !== "void" && payLinkState(invoice) !== "live") {
+          if (MIDTRANS_SERVER_KEY && snapPaymentMethods(invoice.amount_cents, invoice.currency).chargeable) {
+            try {
+              const opened = await openNewAttempt(invoice, { customerId: invoice.customer_id });
+              if (opened) {
+                await writeInvoice({ id: invoice.id, ...opened }, invoice);
+              } else {
+                failed = true;
+              }
+            } catch (error) {
+              const why = error instanceof Error ? error.message : String(error);
+              if (error instanceof HttpError && error.status === 409) log.warn("PAYMENT_REFRESH_REFUSED", why);
+              else log.error("PAYMENT_REFRESH_FAILED", why);
+              failed = true;
+            }
+          } else {
+            failed = true;
+          }
+        }
+        if (failed) page.searchParams.set("refresh", "failed");
+        return new Response(null, { status: 303, headers: { location: `${page.pathname}${page.search}`, ...cors } });
       }
       if (body.action === "settle-manual") {
         const token = req.headers.get("authorization") || "";
@@ -475,7 +757,8 @@ Deno.serve(async (req: Request) => {
         }
         if (!lines.length) return json({ error: "no deliveries to charge for" }, 400, cors);
         const out = await createInvoice({ customer_id: customerId, period, lines });
-        const link = `${SUPABASE_URL}/functions/v1/opera-agent-billing?invoice_id=${encodeURIComponent(out.invoice.id)}&token=${out.token}`;
+        const base = BILLING_PAGE_URL || `${SUPABASE_URL}/functions/v1/opera-agent-billing`;
+        const link = `${base}?invoice_id=${encodeURIComponent(out.invoice.id)}&token=${out.token}`;
         return json({ invoice: out.invoice, url: link }, 200, cors);
       }
       return json({ error: "unknown action" }, 400, cors);

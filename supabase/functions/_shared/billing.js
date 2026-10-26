@@ -1,6 +1,6 @@
-// @last-edited: 2026-10-21 UTC+7.
+// @last-edited: 2026-10-26 UTC+7.
 // @title: billing — what a delivery is worth, and how an invoice proves it.
-// @state: the price of a unit, the amount of an invoice, and the two signatures that make a payment claim true.
+// @state: the price of a unit, the amount of an invoice, the two signatures that make a payment claim true, the provider order id an attempt carries, and the one rule that says whether a payment link is still payable.
 // @dependencies: node:crypto.
 
 // WHY THE MONEY IS DATA AND NOT CODE.
@@ -46,6 +46,11 @@
 // Midtrans accepts only letters, digits and dash, underscore, tilde and dot in an order id, and refuses the whole transaction on any other character.
 // The invoice id is "<customer>:<period>" and a customer name has spaces, so the id that a person reads cannot be the id the provider is given.
 // The provider id is derived from the invoice id, the amount and the currency: it is stable for an unchanged invoice, it changes when the amount changes, and it is always legal.
+
+// WHY A RETRY HAS ITS OWN ORDER ID.
+// One invoice may need more than one payable transaction: a link runs out, or the customer asks for a new one after the first attempt was closed.
+// The provider refuses a second charge under an order id it already knows, and a notification names the attempt, so from the second attempt on the number is part of the hash input.
+// The first attempt keeps the id it has always had, because an invoice that never retried must not change the id under a link already in a customer's hands.
 
 // WHY THE PROVIDER AMOUNT IS NOT THE LEDGER AMOUNT.
 // The ledger stores cents, because a price can have a fractional unit; Midtrans charges whole rupiah, because the rupiah has no subunit in a card transaction.
@@ -125,9 +130,12 @@ export function paidAmountCents(grossAmount, currency = 'IDR') {
   return Math.round(value * 100);
 }
 
-export function providerOrderId(invoiceId, amountCents, currency = 'IDR') {
+export function providerOrderId(invoiceId, amountCents, currency = 'IDR', attempt = 1) {
+  const counted = Math.trunc(Number(attempt));
+  const number = Number.isFinite(counted) && counted > 1 ? counted : 1;
+  const retry = number > 1 ? `\u0000${number}` : '';
   const stamp = createHash('sha256')
-    .update(`${invoiceId}\u0000${Number(amountCents) || 0}\u0000${currency || 'IDR'}`)
+    .update(`${invoiceId}\u0000${Number(amountCents) || 0}\u0000${currency || 'IDR'}${retry}`)
     .digest('hex')
     .slice(0, 10);
   const readable = String(invoiceId || '')
@@ -135,6 +143,35 @@ export function providerOrderId(invoiceId, amountCents, currency = 'IDR') {
     .replace(/^[-.]+|[-.]+$/g, '')
     .slice(0, 36);
   return `oa-${stamp}-${readable}`.slice(0, 50);
+}
+
+// WHY THE LINK'S LIFE IS ONE CONSTANT AND NOT A NUMBER IN TWO PLACES.
+// The provider is asked for a 24-hour link and the page promises the same 24 hours; two numbers would drift apart and the page would either promise time it does not have or hide a link that still works.
+// Midtrans accepts a duration from minutes to seven days, so a day is inside the range, and it accepts the unit in the singular or the plural.
+// The deadline is computed from this constant instead of read back from the provider, because the charge answer carries no expiry field and the clock starts when the charge is created.
+
+export const PAY_LINK_EXPIRY = Object.freeze({ unit: 'hour', duration: 24 });
+
+const EXPIRY_MS = Object.freeze({ second: 1000, minute: 60_000, hour: 3_600_000, day: 86_400_000 });
+
+export function payLinkDeadline(now = Date.now()) {
+  const start = Number(now);
+  const step = EXPIRY_MS[PAY_LINK_EXPIRY.unit] || EXPIRY_MS.hour;
+  return new Date((Number.isFinite(start) ? start : Date.now()) + step * PAY_LINK_EXPIRY.duration).toISOString();
+}
+
+// WHY ONE RULE DECIDES WHAT A LINK IS.
+// The page, the create path and the refresh action all have to answer the same question about the same row, and three answers would disagree the day one of them moved.
+// So the state is computed here from the link and its deadline: nothing to pay, a deadline nobody knows, a deadline still ahead, or one that has passed.
+// A deadline that cannot be parsed is "unknown" rather than "expired": an honest page shows the link and says it does not know when it stops working.
+
+export function payLinkState(invoice, now = Date.now()) {
+  if (!invoice || !invoice.pay_url) return 'none';
+  const deadline = Date.parse(String(invoice.pay_url_expires_at || ''));
+  if (!Number.isFinite(deadline)) return 'unknown';
+  const at = Number(now);
+  const moment = Number.isFinite(at) ? at : Date.now();
+  return deadline > moment ? 'live' : 'expired';
 }
 
 export const SNAP_QRIS_ONLY_BELOW_CENTS = 10_000_000;
@@ -181,7 +218,12 @@ export function snapUrlFor(environment) {
   return SNAP_ENVIRONMENTS[String(environment || 'production')] || SNAP_ENVIRONMENTS.production;
 }
 
-export function snapChargeRequest({ orderId, amountCents, currency = 'IDR', customerId = '', enabled = null, serverKey = '', environment = 'production' }) {
+// WHY THE EXPIRY IS PASSED IN AND NOT INVENTED HERE.
+// The page has to print the moment the link stops working, and the provider has to stop it at that moment.
+// So the caller passes one expiry - the same constant the stored deadline is computed from - and this function only carries it in the body.
+// A request without one keeps the provider's own default, which is what an invoice written before a stored deadline already has.
+
+export function snapChargeRequest({ orderId, amountCents, currency = 'IDR', customerId = '', enabled = null, serverKey = '', environment = 'production', expiry = null }) {
   const gross = providerAmount(amountCents, currency);
   if (gross === null) return null;
   const request = {
@@ -189,6 +231,7 @@ export function snapChargeRequest({ orderId, amountCents, currency = 'IDR', cust
     customer_details: { first_name: String(customerId || '').slice(0, 50) }
   };
   if (enabled) request.enabled_payments = enabled;
+  if (expiry) request.expiry = expiry;
   return {
     url: snapUrlFor(environment),
     method: 'POST',
@@ -216,6 +259,11 @@ export function snapStatusUrl(environment, orderId) {
   return `${base}/${encodeURIComponent(String(orderId || ''))}/status`;
 }
 
+export function snapExpireUrl(environment, orderId) {
+  const base = SNAP_STATUS[String(environment || 'production')] || SNAP_STATUS.production;
+  return `${base}/${encodeURIComponent(String(orderId || ''))}/expire`;
+}
+
 export function snapStatusRequest({ orderId, serverKey = '', environment = 'production' }) {
   if (!orderId) return null;
   return {
@@ -228,12 +276,50 @@ export function snapStatusRequest({ orderId, serverKey = '', environment = 'prod
   };
 }
 
+// WHY A 404 HIDES INSIDE A 200.
+// Midtrans documents this endpoint as answering 200 with a body whose status_code is 404 and whose status_message is "Transaction doesn't exist.".
+// Measured live on 2026-10-26: a live Snap transaction answered exactly that through the status endpoint while its payment page still showed a pending QRIS.
+// The HTTP status therefore cannot say whether the transaction exists, and a caller that trusts only it refuses to close an attempt that is not there to close.
+// A missing transaction is nothing to close: a charge with this key cannot open a payable link for an order the provider does not know, so treating it as closed cannot leave a second payable transaction behind.
+
+export function providerSaysMissing(payload) {
+  return Boolean(payload && typeof payload === 'object' && String(payload.status_code || '') === '404');
+}
+
+// WHY A RETRY ASKS THE PROVIDER TO EXPIRE THE OLD ATTEMPT.
+// A customer who asks for a second link has said the first one is not the one they will pay, and two payable transactions for one invoice is how somebody pays twice.
+// The provider accepts an expire call while the transaction is still pending, and answers with that transaction's own status, so the answer says whether the first attempt is dead.
+// The path sits beside the status path on the host the stated environment names; only POST is accepted there, and the key never travels in the URL.
+
+export function snapExpireRequest({ orderId, serverKey = '', environment = 'production' }) {
+  if (!orderId) return null;
+  return {
+    url: snapExpireUrl(environment, orderId),
+    method: 'POST',
+    headers: {
+      Authorization: `Basic ${btoa(`${serverKey}:`)}`,
+      Accept: 'application/json'
+    }
+  };
+}
+
+// WHY THE SETTLEMENT ANSWER CARRIES HOW THE MONEY CAME.
+// "Paid" is the fact the invoice needs, and it is also the least an operator can be told: a QRIS settlement, a card capture and a transfer are different evidence.
+// The provider names the method and the transaction in every answer, so both are carried back and stored when the invoice closes.
+// An absent field is an empty string rather than undefined, so a caller never has to tell "missing" from "not read".
+
 export function providerSettlement(payload) {
-  if (!payload || typeof payload !== 'object') return { settled: false, status: '', grossAmount: '' };
+  if (!payload || typeof payload !== 'object') return { settled: false, status: '', grossAmount: '', paymentType: '', transactionId: '' };
   const status = String(payload.transaction_status || '');
   const fraud = String(payload.fraud_status === undefined ? 'accept' : payload.fraud_status);
   const settled = status === 'settlement' || (status === 'capture' && (fraud === 'accept' || fraud === ''));
-  return { settled, status, grossAmount: String(payload.gross_amount === undefined ? '' : payload.gross_amount) };
+  return {
+    settled,
+    status,
+    grossAmount: String(payload.gross_amount === undefined ? '' : payload.gross_amount),
+    paymentType: String(payload.payment_type === undefined ? '' : payload.payment_type),
+    transactionId: String(payload.transaction_id === undefined ? '' : payload.transaction_id)
+  };
 }
 
 // WHY THE REDIRECT IS READ BY ONE RULE.
