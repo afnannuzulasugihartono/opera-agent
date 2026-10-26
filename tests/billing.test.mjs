@@ -27,6 +27,7 @@ import {
   providerOrderId,
   snapChargeRequest,
   snapPaymentMethods,
+  snapUrlFor,
   snapRedirect,
   SNAP_QRIS_ONLY_BELOW_CENTS,
   verifyInvoiceToken
@@ -255,6 +256,17 @@ test('the request is answered by a provider that parses it the way Midtrans does
 // The Snap request was extracted into a helper and the helper was proved against a provider stood up here, while the call inside the Deno function passed a name that did not exist in its scope.
 // The function answered 500 to a real invoice and the helper's tests stayed green, because a test of a function says nothing about the call that feeds it.
 // So the call is read here and the names it passes are checked against the names its own signature destructures.
+
+// WHY THE URL IS DERIVED AND NOT CONFIGURED.
+// A sandbox key sent to the production host is turned away and the reverse is worse, so the environment is read from the key rather than from a setting somebody has to remember to flip.
+
+test('the charge URL follows the key, so a sandbox key cannot reach the production host', () => {
+  assert.equal(snapUrlFor('SB-Mid-server-sandbox'), 'https://app.sandbox.midtrans.com/snap/v1/transactions');
+  assert.equal(snapUrlFor('Mid-server-production'), 'https://app.midtrans.com/snap/v1/transactions');
+  assert.equal(snapUrlFor(''), 'https://app.midtrans.com/snap/v1/transactions', 'no key is no charge, and the URL is the production one');
+  const request = snapChargeRequest({ ...SNAP_INVOICE, serverKey: 'SB-Mid-server-sandbox' });
+  assert.match(request.url, /sandbox/);
+});
 
 test('the snap charge call passes the customer the function actually has', () => {
   const source = fs.readFileSync(new URL('../supabase/functions/opera-agent-billing/index.ts', import.meta.url), 'utf8');

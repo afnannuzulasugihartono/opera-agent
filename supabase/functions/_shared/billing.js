@@ -166,7 +166,18 @@ export function snapPaymentMethods(amountCents, currency = 'IDR') {
 // Building the request here means the shape - the legal order id, the whole rupiah, the QRIS-only list, the Basic header - is checkable against a provider that is stood up in a test, and only the network call stays in the function.
 // The provider is still Midtrans and the URL is still theirs: the function decides nothing this module did not decide first.
 
-export const SNAP_CHARGE_URL = 'https://app.midtrans.com/snap/v1/transactions';
+// WHY THE URL FOLLOWS THE KEY RATHER THAN A SETTING.
+// Midtrans serves sandbox and production on different hosts, and each refuses the other's key: a sandbox key sent to the production host is turned away, and the reverse is worse.
+// The key carries its own environment - a sandbox key starts with SB- - so the URL is derived from the key and a mispairing is impossible rather than a setting somebody forgot to flip.
+// The notification signature is computed with the same key on both hosts, so nothing else changes with the environment.
+
+export const SNAP_PRODUCTION_URL = 'https://app.midtrans.com/snap/v1/transactions';
+
+export const SNAP_SANDBOX_URL = 'https://app.sandbox.midtrans.com/snap/v1/transactions';
+
+export function snapUrlFor(serverKey) {
+  return String(serverKey || '').startsWith('SB-') ? SNAP_SANDBOX_URL : SNAP_PRODUCTION_URL;
+}
 
 export function snapChargeRequest({ orderId, amountCents, currency = 'IDR', customerId = '', enabled = null, serverKey = '' }) {
   const gross = providerAmount(amountCents, currency);
@@ -177,7 +188,7 @@ export function snapChargeRequest({ orderId, amountCents, currency = 'IDR', cust
   };
   if (enabled) request.enabled_payments = enabled;
   return {
-    url: SNAP_CHARGE_URL,
+    url: snapUrlFor(serverKey),
     method: 'POST',
     headers: {
       Authorization: `Basic ${btoa(`${serverKey}:`)}`,

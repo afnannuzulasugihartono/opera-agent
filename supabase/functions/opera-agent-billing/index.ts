@@ -178,6 +178,19 @@ async function createInvoice({ customer_id, period, lines }: { customer_id: stri
       const response = await fetch(charge.url, { method: charge.method, headers: charge.headers, body: charge.body });
       const body = await response.json().catch(() => ({})) as Record<string, unknown>;
       const redirect = response.ok ? snapRedirect(body) : null;
+
+      // WHY A REFUSED CHARGE IS WRITTEN DOWN.
+      // A charge the provider turns away leaves the invoice with no pay button and a transfer instruction instead, and nothing in the answer says why.
+      // Measured live: a key that did not belong to the host it was sent to produced exactly that silence, and the only way to tell "no key" from "key refused" was a log.
+      // The status and the provider's own words are logged; the key never is.
+      if (!redirect) {
+        log.warn("SNAP_CHARGE_REFUSED", JSON.stringify({
+          orderId,
+          status: response.status,
+          environment: charge.url.includes("sandbox") ? "sandbox" : "production",
+          why: String((body as Record<string, unknown>)?.error_messages ?? (body as Record<string, unknown>)?.status_message ?? "no redirect and no token in the answer")
+        }));
+      }
       if (redirect) {
         pay_url = redirect.payUrl;
         provider = "midtrans";
