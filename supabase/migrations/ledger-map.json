@@ -10,10 +10,10 @@
   "no-ledger-row": 2,
   "part-of-combined": 13,
   "applied-outside-ledger": 2,
-  "applied-then-recorded": 1
+  "applied-then-recorded": 2
  },
- "treeFiles": 107,
- "resolved": 103,
+ "treeFiles": 108,
+ "resolved": 104,
  "unapplied": 2,
  "map": [
   {
@@ -655,6 +655,12 @@
   {
    "file": "20261026082000_opera_notification_log.sql",
    "remote": "20261026082000",
+   "evidence": "applied-then-recorded",
+   "cover": 1
+  },
+  {
+   "file": "20261026120000_opera_invoice_payment_attempts.sql",
+   "remote": "20261026120000",
    "evidence": "applied-then-recorded",
    "cover": 1
   }

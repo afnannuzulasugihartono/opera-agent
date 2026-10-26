@@ -57,24 +57,80 @@ priced lines (the price list)  ->  an invoice (one per customer per month)
   provider's own order id, because the readable invoice id has characters Midtrans
   refuses. `20261022090639_opera_price_decision.sql` sets the plan and overage prices.
   `20261026082000_opera_notification_log.sql` records every notification that reaches
-  the function and what it did with it. The tables are readable by the server only: a
-  customer reaches their invoice through a signed link, not through the table.
+  the function and what it did with it. `20261026120000_opera_invoice_payment_attempts.sql`
+  adds every attempt an invoice opened, the moment its current link stops working, and
+  the method and provider transaction the money arrived by. The tables are readable by
+  the server only: a customer reaches their invoice through a signed link, not through
+  the table.
 - `supabase/functions/_shared/billing.js` — the rules, and nothing else: the amount of
   an invoice, the plan line and its overage, the manifest rows turned into lines, the
   invoice token, the provider's signature check and the shape of the stored key,
-  the provider status request, the rule that only a settled transaction is a payment,
-  the rule that a paid invoice is not paid again, the legal provider order id, and the
-  QRIS-only rule for small invoices.
+  the provider status request, the provider expire request, the rule that only a settled
+  transaction is a payment, the rule that a paid invoice is not paid again, the legal
+  provider order id and the attempt number that makes a retry a new one, the link's
+  expiry and the one rule that says whether a link is payable, and the QRIS-only rule
+  for small invoices.
+- `supabase/functions/_shared/invoice-page.js` — the page: one function of the row, no
+  Deno API, no script and no asset, so a Node test can render every state a customer can
+  open.
 - `supabase/functions/opera-agent-billing/index.ts` — the function: it opens an
   invoice, serves the invoice page, closes it from a signed notification or from the
   provider's own answer when the signature does not match, writes every notification
-  down, and records a transfer with the operator's note.
+  down, opens a new link when the customer asks for one, and records a transfer with the
+  operator's note.
 - `supabase/functions/opera-agent-mcp/tools.ts` — the `invoice_create` tool, so the
   agent that delivered the statements can hand the operator the bill for them. It is
   the one door for both kinds of bill: pass the deliveries for a per-delivery invoice,
   or pass the same deliveries with `plan` (`plan.pilot` or `plan.firm`) for a plan
   month. There is no second path for an operator to learn.
-- `tests/billing.test.mjs` — the money rules, proved (39 tests).
+- `tests/billing.test.mjs` — the money rules, proved (45 tests).
+- `tests/invoice-page.test.mjs` — every page state, escaped and read (11 tests).
+
+## The page a customer opens, and the link behind it
+
+The invoice link is a page, not a checkout: it names the invoice, the customer, the
+period, every delivery it charges for with its quantity and amount, every delivery it
+does not charge for and why, and the total. It ends with the sentence that makes the
+amount checkable: only what was delivered is charged.
+
+The page says the state in words, not in colour:
+
+| What the row says | What the customer reads |
+|---|---|
+| paid | **Paid**, the moment, the method in human words and the provider's transaction id in small text: no Pay button and no form |
+| open, link live | a **Pay** button and "This payment link is valid until <time>" |
+| open, link expired | the moment it expired, no Pay button, and a button to get a new link when one can be opened |
+| open, no known deadline | the link (it may still work), one sentence saying the deadline is unknown, and the button |
+| open, no link | the transfer instruction, the account line when `BILLING_BANK` is set, and the button when a provider key can open one |
+| void | "This invoice is cancelled": no Pay button and no form |
+
+The button is a form that posts back to the same page with the invoice id and the
+token; it is not a link, because a prefetcher or a mail scanner that followed it would
+open a payable transaction. A token appears only in that hidden field. A refresh that
+failed is one line above the form, and the provider's words stay in the log.
+
+Behind the page there is at most one payable transaction per invoice. An attempt is a
+provider order id hashed with its number: attempt one is the id it has always been, and
+attempt two and later carry the number in the hash, so the provider accepts them as new
+transactions. Before a new attempt opens, the old one is put to the provider: a
+settlement closes the invoice through the same amount check as a notification, a pending
+attempt is expired, and an answer this function does not understand opens nothing.
+
+The link's deadline is stored with the link and comes from one constant, the same one
+the charge request carries: 24 hours, inside the provider's window. A page that printed
+a second opinion would disagree with Midtrans the moment the two drifted.
+
+A notification finds its invoice through every attempt the invoice ever opened, so a
+settlement for an older attempt still lands. A terminal notification (`expire`, `deny`,
+`cancel`, `failure`) leaves the invoice open and clears the link only when it names the
+current attempt: an older attempt dying must not take away the link the customer is
+holding. A pending or settled notification never clears a link. A settled notification
+records the provider's `payment_type` and `transaction_id` beside the paid moment, so an
+operator can see how the money arrived, not only that it did.
+
+None of this has been driven against the sandbox yet: the first sandbox payment that
+opens a link, closes it, asks for a second one, and settles through the older attempt is
+the proof. `[UNVERIFIED]`
 
 ## Measured live, in production
 
