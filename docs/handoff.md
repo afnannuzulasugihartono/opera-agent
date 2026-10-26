@@ -35,7 +35,7 @@ What is true now, and what to do next. Cap 150 lines. Spent detail: git history.
   standard file, a pull request that skips CI, a CRLF file, or a dead path.
 - **The browser drive depends on nothing but the page it drives.** A ref dies with its
   document, its route or the extension epoch, so the drive re-finds what it clicks.
-- Gates: `npm test`, `npm run check` - 31 primitives, 183 runtime safety files, 1519 unit
+- Gates: `npm test`, `npm run check` - 31 primitives, 183 runtime safety files, 1522 unit
   tests, green.
 - **The local driver is modular, and its tests are too.** `local/primitives.js` assembles six
   modules; `tools.js` holds the MCP surface as data; the tests are one file per module.
@@ -71,7 +71,9 @@ What is true now, and what to do next. Cap 150 lines. Spent detail: git history.
   `lastInputMs` - so the model can tell whether the person is looking. Fails open.
 - **The plan path exists; the model call does not.** The model composes a plan once and the
   device runs it locally; [`goal-plan.js`](../extension/lib/goal-plan.js) shares the allowlist.
-- **Cloudflare Pages at `opera-agent.pages.dev` serves the site; Vercel is the backup**, and `vercel.app` stays in CORS.
+- **Cloudflare Pages at `opera-agent.pages.dev` serves the site; Vercel is the backup**, and
+  `vercel.app` stays in CORS. Every `style-src` now allows `'self'`, so `/site.css` loads on both.
+  The features page counts 34 tools, 31 primitives and six permissions, against the code.
 - **A deploy is a dispatch, not a push.** [`deploy-site.yml`](../.github/workflows/deploy-site.yml)
   publishes `landing/` with `wrangler pages deploy` after the unit and syntax gates; a push
   that does not deploy leaves CI green and the old build live. The Vercel CLI cannot deploy.
