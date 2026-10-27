@@ -23,43 +23,48 @@ export function createWaits({ cdp, sleep, readState, readRows, read, primitives,
   // The page expression resolves with what it saw, which makes the cost inspectable instead of a blind sleep: quiet means the last change was at least 32ms ago, deadline means the page was still moving when the 120ms cap arrived.
   async function settle() {
     const started = Date.now();
+    const answer = (why, state, detail) => ({
+      waitedMs: Date.now() - started,
+      quietMs: Number(state?.quietMs) || 0,
+      maxMs: SETTLE_MAX_MS,
+      changes: Number(state?.changes) || 0,
+      why,
+      visibility: state?.visibility ?? null,
+      ...(detail ? { detail } : {})
+    });
+
     let armed = false;
     let last = null;
     try {
-      await cdp.send('Runtime.evaluate', { expression: SETTLE_ARM_EXPRESSION, returnByValue: true });
+      await cdp.send('Runtime.evaluate', {
+        expression: SETTLE_ARM_EXPRESSION,
+        returnByValue: true
+      });
       armed = true;
       const polls = Math.ceil(SETTLE_MAX_MS / SETTLE_POLL_MS);
       for (let poll = 0; poll < polls; poll += 1) {
         await sleep(SETTLE_POLL_MS);
-        const { result } = await cdp.send('Runtime.evaluate', { expression: SETTLE_READ_EXPRESSION, returnByValue: true });
+        const { result } = await cdp.send('Runtime.evaluate', {
+          expression: SETTLE_READ_EXPRESSION,
+          returnByValue: true
+        });
         const state = result?.value;
         if (!state || state.missing) {
-          return { waitedMs: Date.now() - started, quietMs: 0, maxMs: SETTLE_MAX_MS, changes: 0, why: 'failed', detail: 'the page lost the settle watcher' };
+          return answer('failed', null, 'the page lost the settle watcher');
         }
         last = state;
-        if (state.quietMs >= SETTLE_QUIET_MS) {
-          return {
-            waitedMs: Date.now() - started,
-            quietMs: state.quietMs,
-            maxMs: SETTLE_MAX_MS,
-            changes: state.changes,
-            why: 'quiet',
-            visibility: state.visibility
-          };
-        }
+        if (state.quietMs >= SETTLE_QUIET_MS) return answer('quiet', state);
       }
-      return {
-        waitedMs: Date.now() - started,
-        quietMs: last?.quietMs ?? 0,
-        maxMs: SETTLE_MAX_MS,
-        changes: last?.changes ?? 0,
-        why: 'deadline',
-        visibility: last?.visibility ?? null
-      };
+      return answer('deadline', last);
     } catch (error) {
-      return { waitedMs: Date.now() - started, quietMs: 0, maxMs: SETTLE_MAX_MS, changes: 0, why: 'failed', detail: error?.message || String(error) };
+      return answer('failed', null, error?.message || String(error));
     } finally {
-      if (armed) await cdp.send('Runtime.evaluate', { expression: SETTLE_DISARM_EXPRESSION, returnByValue: true }).catch(() => null);
+      if (armed) {
+        await cdp.send('Runtime.evaluate', {
+          expression: SETTLE_DISARM_EXPRESSION,
+          returnByValue: true
+        }).catch(() => null);
+      }
     }
   }
 

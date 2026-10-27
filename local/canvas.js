@@ -35,6 +35,9 @@
 // A canvas editor that selects and copies nothing either has an empty document or a mirror that did not fill, and the two are not the same thing.
 // Reporting the empty string as the read would call both of them an empty page, so the ladder continues to the picture and the caret cost stays in the answer.
 
+// WHY A SURFACE NOTHING CAN ANSWER NAMES THE PICTURE.
+// The driver does not read pixels and does not pretend to: naming the one tool that returns a picture lets the caller decide, rather than handing back an empty string that looks like an empty page.
+
 import { SELECTION_STATE_EXPRESSION } from './page-expressions.js';
 import { probeSurface, measureAx, buildProfile, describeProfile } from './surface-profile.js';
 import { createCaretGuard, gateRead } from './caret-guard.js';
@@ -47,7 +50,26 @@ import {
   readLadder
 } from './read-strategy.js';
 
-const VIEW_WHY = 'the borrow selected the whole document, so the view is left where the selection ended; the caret verdict says whether the caret itself came back';
+// WHY THE VIEW IS REPORTED AS LEFT WHERE IT IS.
+// The borrow selects the whole document and the caret then moves to its end, so the view scrolls with it - and no key in this driver puts the view back, only the caret.
+// A caller that reads viewRestored:false knows the picture it takes next is of the end of the document rather than of where the person was reading.
+
+const VIEW_WHY = 'the borrow selected the whole document, so the view is left where the selection ended;'
+  + ' the caret verdict says whether the caret itself came back';
+
+// WHY THE SETTLE VERDICTS ARE NAMED ONCE.
+// settled means one thing on the DOM path - the text stood still across two samples - and cannot mean it anywhere else: the tree was sampled once and the copy cannot be repeated without moving the caret twice.
+// So the other two paths answer settled:null and name what would prove it, and the sentence a caller reads is the same sentence every time rather than one written inline at each return.
+
+const SETTLED_WHY_AX = 'this read sampled the accessibility tree once, so it can say what the text is and not that it stopped moving; wait_still() is the proof of that';
+const SETTLED_WHY_COPY = 'the text came from a selection copy; a second copy would move the caret twice, so read again after wait_still() or take capture_page() as the proof';
+
+// WHY A BORROW THAT RETURNED NOTHING IS NOT AN EMPTY DOCUMENT.
+// A canvas editor that selects and copies nothing either has an empty document or a mirror that did not fill, and the two are not the same thing.
+// Reporting the empty string as the read would call both of them an empty page, so the ladder moves on to the picture and the reason travels with the caret cost.
+
+const EMPTY_COPY_WHY = 'the selection answered no text, which is not the same as an empty document; the ladder continues to the picture';
+const NO_MARK_WHY = 'the caret could not be remembered, so the borrow was refused';
 
 export function createCanvasMethods({ cdp, primitives, readState }) {
   // WHY THE COPY READS THE SELECTION AND NOT A SITE'S CLIPBOARD TRICK.
@@ -156,7 +178,7 @@ export function createCanvasMethods({ cdp, primitives, readState }) {
             text,
             ready: state.ready ?? null,
             settled: null,
-            settledWhy: 'this read sampled the accessibility tree once, so it can say what the text is and not that it stopped moving; wait_still() is the proof of that',
+            settledWhy: SETTLED_WHY_AX,
             surface,
             strategy: step.strategy,
             harm: step.harm,
@@ -184,14 +206,14 @@ export function createCanvasMethods({ cdp, primitives, readState }) {
               skipped,
               description: describeProfile(surface),
               settled: null,
-              settledWhy: 'the text came from a selection copy; a second copy would move the caret twice, so read again after wait_still() or take capture_page() as the proof',
+              settledWhy: SETTLED_WHY_COPY,
               ...afterBorrow(borrow)
             };
           }
-          skipped.push({ strategy: step.strategy, harm: step.harm, why: 'the selection answered no text, which is not the same as an empty document; the ladder continues to the picture' });
+          skipped.push({ strategy: step.strategy, harm: step.harm, why: EMPTY_COPY_WHY });
           continue;
         }
-        skipped.push({ strategy: step.strategy, harm: step.harm, why: 'the caret could not be remembered, so the borrow was refused' });
+        skipped.push({ strategy: step.strategy, harm: step.harm, why: NO_MARK_WHY });
         continue;
       }
 
