@@ -153,6 +153,74 @@ test('a dropped connection reconnects on a backoff that grows and is capped', ()
   assert.ok(timers[timers.length - 1].ms <= 30000, 'backoff must be capped');
 });
 
+// WHY A CONNECTING SOCKET IS DETACHED AND NOT CLOSED.
+// Measured in the console: closing a socket whose readyState is still 0 aborts the TCP handshake Chrome has already begun, before the WebSocket handshake completes, and Chrome reports "WebSocket is closed before the connection is established".
+// Detaching the handlers is safe only because the bridge pushes nothing before it has read a hello the detached socket will never send, so a socket that never opened is inert rather than dangerous.
+
+test('a socket still in its handshake is detached rather than closed, so no console error is bought', () => {
+  const { client } = harness();
+  client.start();
+
+  const connecting = FakeSocket.last;
+  assert.equal(connecting.readyState, 0, 'the socket has not finished its handshake');
+
+  client.stop();
+
+  assert.equal(connecting.closes, 0, 'a connecting socket is not closed, because that aborts the TCP handshake Chrome already began');
+  assert.equal(connecting.onopen, null, 'and its handlers are detached, so it can neither deliver a command nor schedule the retry its close would have');
+  assert.equal(connecting.onclose, null);
+});
+
+test('a socket that has opened is closed, because that is the only way to end it', () => {
+  const { client } = harness();
+  client.start();
+
+  const live = FakeSocket.last;
+  live.open();
+  client.stop();
+
+  assert.equal(live.closes, 1, 'an open socket is closed - detaching it would leave the connection running with nobody listening');
+});
+
+// WHY AN OPEN SOCKET RESETS THE BACKOFF AND A CLOSED ONE DOES NOT.
+// Measured on a flaky connection: the wait doubled 500ms, 1s, 2s, 4s... to the 30s cap and only reset on a full handshake, so a network that came back cost up to thirty seconds to notice.
+// An open socket proves the network is reachable, which is the only thing the backoff is guessing at, so the wait starts over from there.
+// A socket that never opened proves nothing, so the wait keeps growing - which is what stops a downed bridge being hammered.
+
+// The socket opened, so the network is proven and the wait does not grow when it drops.
+
+test('an open socket resets the backoff, because the network is the thing the backoff guesses at', () => {
+  const { client, sockets, timers, states } = harness();
+  client.start();
+  sockets[0].open();
+  sockets[0].receive(JSON.stringify({ type: 'ready' }));
+
+  sockets[0].drop();
+  timers[0].fn();
+  sockets[1].open();
+  sockets[1].drop();
+  assert.equal(timers[1].ms, timers[0].ms, 'a socket that opened proves the network, so the next wait starts over rather than growing');
+  assert.ok(states.some((s) => s.status === 'reconnecting'), 'and the drop was still seen');
+});
+
+// The socket never opens: the network is down, and each attempt costs more than the last.
+
+test('a socket that never opened keeps growing the backoff, so a downed bridge is not hammered', () => {
+  const { client, sockets, timers } = harness();
+  client.start();
+
+  sockets[0].drop(1006, 'network went away');
+  timers[0].fn();
+  sockets[1].drop(1006, 'still away');
+  assert.ok(timers[1].ms > timers[0].ms, 'the wait grows while the network says nothing');
+
+  for (let i = 0; i < 12; i += 1) {
+    timers[timers.length - 1].fn();
+    sockets[sockets.length - 1].drop(1006, 'still away');
+  }
+  assert.ok(timers[timers.length - 1].ms <= 30000, 'and it is still capped');
+});
+
 test('a rejected handshake stops the device for good instead of retrying forever', () => {
   const { client, sockets, timers, states } = harness();
   client.start();

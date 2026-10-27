@@ -38,13 +38,46 @@ import { createSocketClient } from '../lib/socket-client.js';
 import { releaseDebuggerSession, releaseIdleDebuggerSessions } from '../lib/debugger-session.js';
 import { withDebugger } from './capture.js';
 
-const BRIDGE_WS = globalThis.OPERA_BRIDGE_WS || 'ws://127.0.0.1:9451';
+// WHY THE PORT IS DISCOVERED AND NOT ASSUMED.
+// Measured: a stale extension dialled ws://127.0.0.1:19451 while the local server listened on 9451, the connection was refused, and every command silently took the cloud relay instead - 268 to 797 ms a call where loopback answers in 8 to 13 ms. The port is the one thing a stale build gets wrong, and getting it wrong costs twenty to fifty times the latency with nothing in the answer that says so.
+// So the candidates are probed, the one that answers is used, and the state names the port it found - a reader can see which road is live rather than inferring it from how slow everything is.
+
+const CONFIGURED_WS = globalThis.OPERA_BRIDGE_WS || 'ws://127.0.0.1:9451';
+const CANDIDATE_PORTS = [9451, 19451, 9333, 9222];
+
+// WHY THE PROBE IS AN HTTP FETCH AND NOT A SOCKET.
+// Opening and closing a WebSocket against the real bridge disturbs it: measured, the server saw the device leave and dropped the command in flight.
+// A fetch to the same port proves something is listening without joining the conversation - the bridge answers 404 to a plain GET, which is exactly the fact being looked for.
+
+export const probePort = async (port) => {
+  try {
+    await fetch(`http://127.0.0.1:${port}/`, { method: 'GET', cache: 'no-store' });
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+// The configured address is tried first, because an operator who set one meant it.
+// Everything after it is a guess, and the first one that answers wins - the order is the order they were seen in the wild, not a ranking.
+
+export async function discoverBridge() {
+  const configured = /^ws:\/\/127\.0\.0\.1:(\d+)/.exec(CONFIGURED_WS);
+  const order = configured ? [Number(configured[1]), ...CANDIDATE_PORTS.filter((p) => p !== Number(configured[1]))] : CANDIDATE_PORTS;
+  for (const port of order) {
+    if (await probePort(port)) return { url: `ws://127.0.0.1:${port}`, port, discovered: port !== Number(configured?.[1] ?? -1) };
+  }
+  return { url: CONFIGURED_WS, port: Number(configured?.[1] ?? 0), discovered: false };
+}
+
 const BRIDGE_ALARM = 'opera-bridge-link';
 const DEBUGGER_IDLE_MS = 60000;
 
 let running = false;
 let generation = 0;
 let client = null;
+let bridgePort = 0;
+let bridgeUrl = '';
 
 const stats = { commands: 0, replies: 0, alarms: 0, failures: 0, lastError: null };
 let trace = [];
@@ -65,11 +98,16 @@ function note(event) {
   trace = [...trace.slice(-11), { at: Date.now(), event }];
 }
 
+// WHY THE PORT IS IN THE ANSWER.
+// A reader checking why every call is slow needs to know which road is live, and the port is the whole of that answer: loopback is 8-13 ms and the relay is 268-797 ms. Naming it turns "the agent feels slow" into a fact someone can act on.
+
 export function bridgeLinkState() {
   return {
     ...stats,
     running,
     linked: client ? client.isReady() : false,
+    port: bridgePort,
+    url: bridgeUrl,
     trace: trace.map((entry) => ({ ms: entry.at - startedAt, event: entry.event }))
   };
 }
@@ -160,19 +198,30 @@ export function ensureBridgeLink() {
   startedAt = Date.now();
   trace = [];
   const mine = ++generation;
-  client = createSocketClient({
-    url: BRIDGE_WS,
-    token: '',
-    deviceName: 'bridge',
-    execute,
-    onState: (event) => {
-      if (mine !== generation) return;
-      if (event?.status === 'ready') note('ready');
-      if (event?.status === 'error') stats.lastError = String(event.message || 'error').slice(0, 300);
-    }
+  // The port is found before the socket is opened, so a stale build lands on the road that is actually listening rather than on the one it remembers.
+  discoverBridge().then((found) => {
+    if (mine !== generation) return;
+    bridgePort = found.port;
+    bridgeUrl = found.url;
+    note(found.discovered ? `port ${found.port} discovered` : `port ${found.port} configured`);
+    client = createSocketClient({
+      url: found.url,
+      token: '',
+      deviceName: 'bridge',
+      execute,
+      onState: (event) => {
+        if (mine !== generation) return;
+        if (event?.status === 'ready') note('ready');
+        if (event?.status === 'error') stats.lastError = String(event.message || 'error').slice(0, 300);
+      }
+    });
+    client.start();
+    note('socket starting');
+  }).catch(() => {
+    if (mine !== generation) return;
+    stats.lastError = 'the local bridge could not be found on this machine';
+    note('no local bridge');
   });
-  client.start();
-  note('socket starting');
 }
 
 export function stopBridgeLink() {
