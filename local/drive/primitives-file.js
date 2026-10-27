@@ -1,7 +1,7 @@
 // @last-edited: 2026-10-21 UTC+7.
 // @title: primitives-file — the verbs that move a file: upload, drop, and download.
 // @state: the file chooser, the dropped file, and the download that proves itself on disk.
-// @dependencies: node:buffer, ./page-expressions.js.
+// @dependencies: node:buffer, page-expressions.
 
 // WHY THIS FILE EXISTS
 

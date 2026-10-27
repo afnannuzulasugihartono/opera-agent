@@ -25,9 +25,9 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-import { installedBrowsers, openSession } from '../local/driver.js';
-import { asDriver } from '../local/sessions.js';
-import { createMcpServer } from '../local/mcp-server.js';
+import { installedBrowsers, openSession } from '../local/core/driver.js';
+import { asDriver } from '../local/core/sessions.js';
+import { createMcpServer } from '../local/agent/mcp-server.js';
 
 const PORT = 9466;
 const runsArg = process.argv.find((value) => value.startsWith('--runs='));

@@ -1,7 +1,7 @@
 // @last-edited: 2026-10-27 UTC+7.
 // @title: canvas — the reads a surface that is not a page full of text can answer, and the guard in front of the one that moves a caret.
 // @state: the ladder walk for read, the caret line read, and the generic selection copy they share.
-// @dependencies: ./page-expressions.js, ./surface-profile.js, ./caret-guard.js, ./read-strategy.js.
+// @dependencies: page-expressions, surface-profile, caret-guard, read-strategy.
 
 // WHY THIS MODULE EXISTS
 
@@ -38,7 +38,7 @@
 // WHY A SURFACE NOTHING CAN ANSWER NAMES THE PICTURE.
 // The driver does not read pixels and does not pretend to: naming the one tool that returns a picture lets the caller decide, rather than handing back an empty string that looks like an empty page.
 
-import { SELECTION_STATE_EXPRESSION } from './page-expressions.js';
+import { SELECTION_STATE_EXPRESSION } from '../drive/page-expressions.js';
 import { probeSurface, measureAx, buildProfile, describeProfile } from './surface-profile.js';
 import { createCaretGuard, gateRead } from './caret-guard.js';
 import {

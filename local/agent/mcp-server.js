@@ -1,7 +1,7 @@
 // @last-edited: 2026-10-25 UTC+7.
 // @title: mcp-server — the stdio MCP surface over the local driver.
 // @state: 8 locks; the handshake, the advertised tools, and every way a call can fail without killing the server.
-// @dependencies: ./statements.js, ./reports.js, ./documents.js, ./burst.js, ./tools.js, ./advice.js.
+// @dependencies: statements, reports, documents, burst, tools, advice.
 
 // WHY THIS FILE EXISTS
 
@@ -27,10 +27,10 @@ const PROTOCOL_VERSION = '2024-11-05';
 // Asking a driver for them would mean a statement job fails on a machine where the browser is closed, which is exactly when a bookkeeper wants to see what was delivered last month.
 // For the same reason the statement, report and document calls answer before a tab is resolved inside run(): opening a session would touch a browser the job does not need.
 
-import { statementCard, statementDelivered } from './statements.js';
-import { reportFromFile } from './reports.js';
-import { documentFromFile } from './documents.js';
-import { BURST_INPUT_ACTIONS, normalizeBurst, runLocalBurst } from './burst.js';
+import { statementCard, statementDelivered } from '../jobs/statements.js';
+import { reportFromFile } from '../jobs/reports.js';
+import { documentFromFile } from '../jobs/documents.js';
+import { BURST_INPUT_ACTIONS, normalizeBurst, runLocalBurst } from '../drive/burst.js';
 import { TOOLS, ASKABLE, askParams, STRAY_FILE_TAB } from './tools.js';
 
 // The tool table lives in tools.js: the surface is data, and this file is the protocol that answers it.

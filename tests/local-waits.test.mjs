@@ -1,16 +1,16 @@
 // @last-edited: 2026-10-23 UTC+7.
 // @title: local-waits — a wait ends on evidence, not on a clock that guessed how long a page takes.
 // @state: the page settle, the mutation wait, and the text, row and stillness waits built on it.
-// @dependencies: node:test, strict, ../local/primitives.js.
+// @dependencies: node:test, strict, ../local/drive/primitives.js.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   SETTLE_MAX_MS,
   SETTLE_POLL_MS
-} from '../local/page-expressions.js';
-import { createPrimitives } from '../local/primitives.js';
-import { createWaits } from '../local/waits.js';
+} from '../local/drive/page-expressions.js';
+import { createPrimitives } from '../local/drive/primitives.js';
+import { createWaits } from '../local/drive/waits.js';
 import { recordingCdp, DOC_URL } from './helpers/local-page.mjs';
 
 test('settle watches the page from Node, so a hidden tab cannot clamp its timer', async () => {

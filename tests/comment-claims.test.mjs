@@ -56,7 +56,7 @@ const numbersIn = (text) => [...text.matchAll(/(?<![\w.])(\d[\d_]*)(?![\w.])/g)]
   .map((match) => match[1].replace(/_/g, ''))
   .filter((number) => number.length >= 3);
 
-export function unsupportedNumbers(text, ext) {
+function unsupportedNumbers(text, ext) {
   const mask = commentLineMask(text, ext);
   const lines = text.split('\n');
   const found = [];

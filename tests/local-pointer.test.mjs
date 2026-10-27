@@ -1,12 +1,12 @@
 // @last-edited: 2026-10-23 UTC+7.
 // @title: local-pointer — a click is a coordinate sent into a page that may have moved, and the answer says what was under it.
 // @state: clicks, hovers, the mark a person watching can see, and the handles measured at the moment of the press.
-// @dependencies: node:test, strict, ../local/primitives.js.
+// @dependencies: node:test, strict, ../local/drive/primitives.js.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createPrimitives } from '../local/primitives.js';
-import { createPointerMethods } from '../local/pointer.js';
+import { createPrimitives } from '../local/drive/primitives.js';
+import { createPointerMethods } from '../local/drive/pointer.js';
 import { pipelinedCdp, recordingCdp } from './helpers/local-page.mjs';
 
 test('a click answers with the element under the point', async () => {

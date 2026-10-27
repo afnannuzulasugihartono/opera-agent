@@ -34,7 +34,7 @@ The wire contract is one file, `extension/lib/protocol.js`, and it is the source
 
 The tool surface is data, in two places for two surfaces:
 
-- `local/tools.js` — the local stdio server's tools.
+- `local/agent/tools.js` — the local stdio server's tools.
 - `supabase/functions/opera-agent-mcp/tools.ts` — the cloud server's tools, registered one `registerTool` call each.
 
 The Postgres names are in the migrations, and the edge functions refuse anything that is not a bare identifier before it reaches the database: `supabase/functions/opera-agent-mcp/index.ts` and `supabase/functions/opera-agent-bridge/index.ts` both reject a function or argument name that fails `^[a-z_][a-z0-9_]*$`.
@@ -43,7 +43,7 @@ The Postgres names are in the migrations, and the edge functions refuse anything
 
 The shapes are pinned by tests, so a name in the wrong shape fails a gate rather than reaching a user:
 
-- `tests/readme.test.mjs` reads the local tool names out of `local/tools.js` and counts them against the number the README claims.
+- `tests/readme.test.mjs` reads the local tool names out of `local/agent/tools.js` and counts them against the number the README claims.
 - `tests/ax-observation.test.mjs` counts the cloud tools by matching `server.registerTool("([a-z_]+)"`, and pins the total at 34.
 - `docs/api.md` documents the gateway's `method` parameter and the pattern it must match, and `tests/api-docs.test.mjs` fails when that document stops covering the routed paths.
 

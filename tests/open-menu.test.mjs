@@ -1,13 +1,13 @@
 // @last-edited: 2026-10-15 UTC+7.
 // @title: open-menu — walk a menu to a row, and click only what the caller named.
 // @state: a fake page that answers the menu tree, the box of every row and the clicks.
-// @dependencies: node:test, assert, ../local/primitives.js.
+// @dependencies: node:test, assert, ../local/drive/primitives.js.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { createPrimitives } from '../local/primitives.js';
-import { SETTLE_POLL_MS } from '../local/page-expressions.js';
+import { createPrimitives } from '../local/drive/primitives.js';
+import { SETTLE_POLL_MS } from '../local/drive/page-expressions.js';
 
 // WHY THESE CLAIMS EXIST.
 // Measured live on Google Docs: a walk for ["Insert", "Image", "Upload from computer"] opened the two menus and then clicked the leaf on the way, which opened the operating system's own file dialog - a window nothing inside the browser can close again - and the answer still said acted: false.

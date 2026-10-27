@@ -1,7 +1,7 @@
 // @last-edited: 2026-10-23 UTC+7.
 // @title: input — the typing and key primitives, and the proof that the text landed.
 // @state: type, append, key, keys, selectAll and clear, over the edit signature that says the page moved.
-// @dependencies: ./page-expressions.js.
+// @dependencies: page-expressions.
 
 // WHY THIS MODULE EXISTS
 

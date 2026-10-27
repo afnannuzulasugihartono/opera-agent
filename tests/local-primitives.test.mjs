@@ -1,11 +1,11 @@
 // @last-edited: 2026-10-23 UTC+7.
 // @title: local-primitives — the assembled driver keeps navigation, focus and the raw escape hatch.
 // @state: window state, focus window and bringing the tab forward, asked through the browser before the machine.
-// @dependencies: node:test, strict, ../local/primitives.js.
+// @dependencies: node:test, strict, ../local/drive/primitives.js.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createPrimitives } from '../local/primitives.js';
+import { createPrimitives } from '../local/drive/primitives.js';
 import { recordingCdp } from './helpers/local-page.mjs';
 
 test('the window state asks the browser, not the operating system, when it can', async () => {

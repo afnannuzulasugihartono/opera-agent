@@ -1,7 +1,7 @@
 // @last-edited: 2026-10-14 UTC+7.
 // @title: bridge-server.test — the loopback server pushes, settles, and keeps the worker alive.
 // @state: integration pins over a real socket pair on an ephemeral port.
-// @dependencies: node:test, strict, node:http, ../local/bridge-server.js, ../extension/lib/socket-protocol.js.
+// @dependencies: node:test, strict, node:http, ../local/bridge/bridge-server.js, ../extension/lib/socket-protocol.js.
 
 // WHY A REAL SOCKET HERE.
 // The frame codec is unit-pinned separately; what can only be proven over a real connection is the part that actually failed in production: a handshake that completes, a command that arrives the instant it is sent, a completion that settles the caller, and a heartbeat that keeps an otherwise idle worker from dying.
@@ -12,8 +12,8 @@ import assert from 'node:assert/strict';
 import { connect as netConnect } from 'node:net';
 import { request as httpRequest } from 'node:http';
 
-import { createBridgeServer } from '../local/bridge-server.js';
-import { acceptKey, encodeText } from '../local/ws-server.js';
+import { createBridgeServer } from '../local/bridge/bridge-server.js';
+import { acceptKey, encodeText } from '../local/bridge/ws-server.js';
 import { parseFrame } from '../extension/lib/socket-protocol.js';
 
 function connect(port, origin) {

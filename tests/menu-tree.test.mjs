@@ -1,7 +1,7 @@
 // @last-edited: 2026-10-15 UTC+7.
 // @title: menu-tree — an app's menus read as a tree, and a tree that cannot lie.
 // @state: four states, level matching, nearest names, limits.
-// @dependencies: node:test, strict, ../local/menu-tree.js.
+// @dependencies: node:test, strict, ../local/drive/menu-tree.js.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -15,7 +15,7 @@ import {
   nearestNames,
   revealOf,
   stateOf
-} from '../local/menu-tree.js';
+} from '../local/drive/menu-tree.js';
 
 // WHY FOUR STATES ARE TESTED AND NOT TWO.
 // The lie that costs an agent the most time is reporting a command one hover away as one the application does not have.

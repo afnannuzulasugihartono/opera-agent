@@ -1,12 +1,12 @@
 // @last-edited: 2026-10-13 UTC+7.
 // @title: local-sessions — one cached driver per tab, fronted on switch, tested without a browser.
 // @state: 9 locks; adapter shape, cache keys, front-once, close-drop.
-// @dependencies: node:test, strict, ../local/sessions.js.
+// @dependencies: node:test, strict, ../local/core/sessions.js.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { asDriver, createSessionStore, findOn } from '../local/sessions.js';
+import { asDriver, createSessionStore, findOn } from '../local/core/sessions.js';
 
 function fakeSession() {
   const calls = [];

@@ -20,14 +20,14 @@
 import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { openSession, installedBrowsers } from '../driver.js';
-import { windowState, focusWindow } from '../window-focus.js';
-import { dialogState, dialogType, dialogPress } from '../dialog.js';
-import { createSessionStore } from '../sessions.js';
-import { listPageWebSockets, openTab, closeTab } from '../transport.js';
-import { bridgePort, bridgeReachable, closeBridgeTarget, listBridgeTargets, openBridgeTarget } from '../bridge.js';
-import { guide } from '../agent-guide.js';
-import { startStdio } from '../mcp-server.js';
+import { openSession, installedBrowsers } from '../core/driver.js';
+import { windowState, focusWindow } from '../core/window-focus.js';
+import { dialogState, dialogType, dialogPress } from '../drive/dialog.js';
+import { createSessionStore } from '../core/sessions.js';
+import { listPageWebSockets, openTab, closeTab } from '../core/transport.js';
+import { bridgePort, bridgeReachable, closeBridgeTarget, listBridgeTargets, openBridgeTarget } from '../bridge/bridge.js';
+import { guide } from '../agent/agent-guide.js';
+import { startStdio } from '../agent/mcp-server.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const pkg = createRequire(join(here, '..', 'package.json'))('./package.json');

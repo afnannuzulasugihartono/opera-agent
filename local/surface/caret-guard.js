@@ -1,7 +1,7 @@
 // @last-edited: 2026-10-27 UTC+7.
 // @title: caret-guard — the gate in front of a read that moves a caret, and the verdict that never claims a restore it did not measure.
 // @state: the gate, the restorability rule, the verdict, and one factory that drives the DOM with injected primitives.
-// @dependencies: ./page-expressions.js, ./read-strategy.js.
+// @dependencies: page-expressions, read-strategy.
 
 // WHY THE GATE AND THE DRIVER ARE THE SAME FILE.
 // They answer one question from two sides: may this read run, and did it leave the page as it found it.
@@ -16,7 +16,7 @@
 // Reading only the top document is what made the old restore report failure on a page that plainly had a caret.
 // The expression that reads it is shared with the copy, so both answer from the same frame.
 
-import { SELECTION_STATE_EXPRESSION } from './page-expressions.js';
+import { SELECTION_STATE_EXPRESSION } from '../drive/page-expressions.js';
 import { HARM_CARET_MOVE, HARM_NONE } from './read-strategy.js';
 
 // WHY A MISSING ANSWER IS A STATE AND NOT A CRASH.

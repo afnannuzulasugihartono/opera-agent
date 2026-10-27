@@ -1,7 +1,7 @@
 // @last-edited: 2026-10-11 UTC+7.
 // @title: local-transport — the real socket, browser discovery, and waiting for a launch that is not up yet.
 // @state: 7 locks; URL discovery, connection failure, open-ordering, and a bounded wait that reports rather than hangs.
-// @dependencies: node:test, strict, ../local/transport.js.
+// @dependencies: node:test, strict, ../local/core/transport.js.
 
 // WHY THIS FILE EXISTS
 
@@ -21,7 +21,7 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { connect, discoverWebSocket, openTab, waitForBrowser } from '../local/transport.js';
+import { connect, discoverWebSocket, openTab, waitForBrowser } from '../local/core/transport.js';
 
 test('a new tab is opened as its own target, so a drive never hijacks the page already open', async () => {
   const calls = [];

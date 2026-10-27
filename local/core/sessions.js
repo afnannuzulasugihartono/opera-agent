@@ -37,8 +37,8 @@ export function findOn(page, query) {
 // Clicking it hits dead menu background instead of the row, which dismisses the menu and looks exactly like a missed click.
 // The exact row is tried first; the substring stays as the fallback it always was.
 
-import { guide } from './agent-guide.js';
-import { createFocusGuard } from './focus-guard.js';
+import { guide } from '../agent/agent-guide.js';
+import { createFocusGuard } from '../drive/focus-guard.js';
 
 // WHY THE CLICK'S OWN ANSWER IS PASSED THROUGH RATHER THAN REBUILT.
 // The row is what the caller asked for; the proof of what the click hit belongs to the click.

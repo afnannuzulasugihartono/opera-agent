@@ -1,16 +1,16 @@
 // @last-edited: 2026-10-23 UTC+7.
 // @title: local-observe — what the page says about itself, read in as few round trips as it can be read in.
 // @state: snapshot, scroll, computed, capture and viewport, and the page expressions that answer them.
-// @dependencies: node:test, strict, ../local/primitives.js.
+// @dependencies: node:test, strict, ../local/drive/primitives.js.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   scrollExpression,
   snapshotExpression
-} from '../local/page-expressions.js';
-import { createPrimitives } from '../local/primitives.js';
-import { createObserveMethods } from '../local/observe.js';
+} from '../local/drive/page-expressions.js';
+import { createPrimitives } from '../local/drive/primitives.js';
+import { createObserveMethods } from '../local/drive/observe.js';
 import { recordingCdp } from './helpers/local-page.mjs';
 
 const SCROLL_CDP = (answer) => {

@@ -1,7 +1,7 @@
 // @last-edited: 2026-10-15 UTC+7.
 // @title: local-dev-shim — the dev proxy forwards, swaps, and fails loudly, proven with fakes.
 // @state: round trips, init replay, queued swap, named reload failures, crash budget.
-// @dependencies: node:test, strict, ../local/dev-shim.js.
+// @dependencies: node:test, strict, ../local/core/dev-shim.js.
 
 // WHY EVERYTHING IS FAKE HERE.
 // A supervisor test that spawns real processes and watches real files tests the operating system's timing, not the supervisor: flaky where it should be exact.
@@ -10,7 +10,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { createSupervisor } from '../local/dev-shim.js';
+import { createSupervisor } from '../local/core/dev-shim.js';
 
 function fakeChild() {
   const listeners = {};

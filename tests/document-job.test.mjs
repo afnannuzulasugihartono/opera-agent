@@ -1,7 +1,7 @@
 // @last-edited: 2026-10-25 UTC+7.
 // @title: document-job — a paper is planned on disk with tables, images and graphs, and a plan that cannot be checked is refused.
 // @state: the parser, the validators, the docplan and the recheck, each pinned by one behaviour.
-// @dependencies: node:test, strict, ../local/documents.js.
+// @dependencies: node:test, strict, ../local/jobs/documents.js.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -9,7 +9,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
-import { parseDocument, buildDocument, verifyDocument, documentFromFile } from '../local/documents.js';
+import { parseDocument, buildDocument, verifyDocument, documentFromFile } from '../local/jobs/documents.js';
 
 const DOC = {
   title: 'Menu inventory',

@@ -1,7 +1,7 @@
 // @last-edited: 2026-10-23 UTC+7.
 // @title: primitives — the local driver assembled from the modules that each answer one question.
 // @state: navigation, focus and the raw protocol escape hatch, with the typing, pointer, reads, waits, canvas and file verbs assigned from their own modules.
-// @dependencies: ./input.js, ./pointer.js, ./observe.js, ./waits.js, ./canvas.js, ./primitives-file.js, ./window-focus.js.
+// @dependencies: input, pointer, observe, waits, canvas, primitives-file, window-focus.
 
 // WHY THIS FILE EXISTS
 
@@ -18,16 +18,16 @@ import nodeFs from 'node:fs';
 import nodeOs from 'node:os';
 import nodePath from 'node:path';
 
-import { measureAx, probeSurface, buildProfile, describeProfile } from './surface-profile.js';
-import { readLadder } from './read-strategy.js';
-import { actionLadder } from './action-strategy.js';
+import { measureAx, probeSurface, buildProfile, describeProfile } from '../surface/surface-profile.js';
+import { readLadder } from '../surface/read-strategy.js';
+import { actionLadder } from '../surface/action-strategy.js';
 import { filePrimitives } from './primitives-file.js';
 import { createInputMethods } from './input.js';
 import { createPointerMethods } from './pointer.js';
 import { createObserveMethods } from './observe.js';
 import { createWaits } from './waits.js';
-import { createCanvasMethods } from './canvas.js';
-import { windowState as osWindowState, focusWindow as osFocusWindow } from './window-focus.js';
+import { createCanvasMethods } from '../surface/canvas.js';
+import { windowState as osWindowState, focusWindow as osFocusWindow } from '../core/window-focus.js';
 
 export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Promise((r) => setTimeout(r, ms)), fs = nodeFs, os = nodeOs, path = nodePath, now = Date.now } = {}) {
   const capped = (limit) => Math.min(Math.max(1, Number(limit) || 120), 500);

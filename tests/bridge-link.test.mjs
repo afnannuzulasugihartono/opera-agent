@@ -1,7 +1,7 @@
 // @last-edited: 2026-10-14 UTC+7.
 // @title: bridge-link.test — the extension half of the loopback conversation, without a browser.
 // @state: the real socket server pushes; this worker answers CDP over it.
-// @dependencies: node:test, strict, ../extension/worker/bridge-link.js, ../local/bridge-server.js.
+// @dependencies: node:test, strict, ../extension/worker/bridge-link.js, ../local/bridge/bridge-server.js.
 
 // WHY A REAL SERVER HERE.
 // The whole point of the socket road is that the device receives a command it never asked for, so a stubbed transport would prove nothing that matters.
@@ -10,8 +10,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { createBridgeServer } from '../local/bridge-server.js';
-import { encodeText } from '../local/ws-server.js';
+import { createBridgeServer } from '../local/bridge/bridge-server.js';
+import { encodeText } from '../local/bridge/ws-server.js';
 
 const listeners = {};
 function event(name) {
@@ -124,7 +124,7 @@ test('the worker gives up before the local side stops listening', async () => {
   const workerBound = await import('../extension/worker/bridge-link.js')
     .then(() => Number(globalThis.OPERA_BRIDGE_HANDLE_TIMEOUT_MS ?? 8000));
   const callerBound = Number((await import('node:fs')).readFileSync(
-    new URL('../local/bridge.js', import.meta.url), 'utf8'
+    new URL('../local/bridge/bridge.js', import.meta.url), 'utf8'
   ).match(/const REPLY_TIMEOUT_MS = (\d+)/)?.[1]);
 
   assert.ok(workerBound < callerBound,

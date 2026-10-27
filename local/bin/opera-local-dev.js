@@ -14,7 +14,7 @@ import fs from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { createSupervisor } from '../dev-shim.js';
+import { createSupervisor } from '../core/dev-shim.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, '..', '..');

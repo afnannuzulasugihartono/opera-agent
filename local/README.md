@@ -7,6 +7,27 @@ Protocol, with no cloud round trip and no dependencies.
 npx opera-local
 ```
 
+## Layout
+
+One package, six groups, split by the job each module does rather than by layer.
+`agent/` speaks MCP and touches no page, `drive/` owns the verbs, and one group
+imports another only where a single driver shape or page expression is genuinely
+shared.
+
+| group | what lives there | entry |
+|---|---|---|
+| `core` | browser discovery, the CDP client, the transport, the driver and its per-tab sessions, the dev shim, the OS window | `core/driver.js` |
+| `bridge` | the loopback conversation with the extension: the driver's transport, the poll server, the websocket primitives | `bridge/bridge.js` |
+| `drive` | the verbs that act on a page: typing, pointer, reads, waits, menus, dialogs, bursts, file I/O, the assembled primitives, the page-side expressions they share | `drive/primitives.js` |
+| `surface` | what a surface is and how to measure, read and act on it: the profile, the read and action ladders, the caret guard, the canvas read | `surface/canvas.js` |
+| `jobs` | disk work that opens no tab: statement cards and manifests, reports, documents | `jobs/statements.js` |
+| `agent` | the MCP surface itself: the stdio server, the tool table as data, the advice, the task guide | `agent/mcp-server.js` |
+
+The binary is `bin/opera-local.js`: it decides CDP or bridge, builds the driver and
+the per-tab sessions, and hands them to `agent/mcp-server.js`, which is the only
+stdio contract in the tree. `package.json` ships the groups by name, so a module
+added inside one ships with it.
+
 ## Why this exists
 
 The same action measured two ways on one machine:

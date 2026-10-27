@@ -1,12 +1,12 @@
 // @last-edited: 2026-10-27 UTC+7.
 // @title: action-strategy — grounding an action on a surface, decided from the same evidence the read used.
 // @state: one table of profiles against the grounding ladder each produces.
-// @dependencies: node:test, node:assert/strict, ../local/action-strategy.js.
+// @dependencies: node:test, node:assert/strict, ../local/surface/action-strategy.js.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { ACTION_COORDINATE, ACTION_DOM, actionLadder } from '../local/action-strategy.js';
+import { ACTION_COORDINATE, ACTION_DOM, actionLadder } from '../local/surface/action-strategy.js';
 
 const names = (profile) => actionLadder(profile).map((step) => step.strategy);
 

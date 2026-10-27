@@ -1,13 +1,13 @@
 // @last-edited: 2026-10-25 UTC+7.
 // @title: agent-guide — the roads are honest, and honesty is a build failure when they are not.
 // @state: recipe-to-tool locks, side-effect coverage, topic filtering.
-// @dependencies: node:test, strict, ../local/agent-guide.js, ../local/mcp-server.js.
+// @dependencies: node:test, strict, ../local/agent/agent-guide.js, ../local/agent/mcp-server.js.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { RECIPES, SIDE_EFFECTS, guide } from '../local/agent-guide.js';
-import { TOOLS } from '../local/mcp-server.js';
+import { RECIPES, SIDE_EFFECTS, guide } from '../local/agent/agent-guide.js';
+import { TOOLS } from '../local/agent/mcp-server.js';
 
 const names = new Set(TOOLS.map((tool) => tool.name));
 

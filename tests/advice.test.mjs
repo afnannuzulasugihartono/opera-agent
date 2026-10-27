@@ -1,13 +1,13 @@
 // @last-edited: 2026-10-15 UTC+7.
 // @title: advice — a failure that names the problem and what to do about it.
 // @state: rules keyed by failure, moves that name real calls, honesty locks.
-// @dependencies: node:test, strict, ../local/advice.js, ../local/mcp-server.js.
+// @dependencies: node:test, strict, ../local/agent/advice.js, ../local/agent/mcp-server.js.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { RULES, withAdvice } from '../local/advice.js';
-import { TOOLS } from '../local/mcp-server.js';
+import { RULES, withAdvice } from '../local/agent/advice.js';
+import { TOOLS } from '../local/agent/mcp-server.js';
 
 const names = new Set(TOOLS.map((tool) => tool.name));
 

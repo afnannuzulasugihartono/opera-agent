@@ -1,7 +1,7 @@
 // @last-edited: 2026-10-23 UTC+7.
 // @title: waits — the page's own settle, and the event-driven waits built on it.
 // @state: settle and waitForIdle, then one mutation wait with text, row and stillness on top.
-// @dependencies: ./page-expressions.js.
+// @dependencies: page-expressions.
 
 // WHY THE SETTLE LIVES HERE AND NOT WITH THE VERBS.
 // Every wait in this file polls the same thing: has the page stopped changing.
@@ -15,7 +15,7 @@ import {
   SETTLE_QUIET_MS,
   SETTLE_READ_EXPRESSION
 } from './page-expressions.js';
-import { MIN_DOM_TEXT, probeSurface } from './surface-profile.js';
+import { MIN_DOM_TEXT, probeSurface } from '../surface/surface-profile.js';
 
 export function createWaits({ cdp, sleep, readState, readRows, read, primitives, now = Date.now }) {
   // WHY SETTLE IS A PRIMITIVE AND NOT A TOOL.

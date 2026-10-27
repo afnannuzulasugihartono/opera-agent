@@ -1,7 +1,7 @@
 // @last-edited: 2026-10-11 UTC+7.
 // @title: driver — launches a browser on its own profile, connects, and hands back primitives; or reuses one that is already listening.
 // @state: 5 locks; reuse before launch, profile isolation, and a browser that is actually reachable before it is driven.
-// @dependencies: ./browsers.js, ./cdp.js, ./transport.js, ./primitives.js.
+// @dependencies: browsers, cdp, transport, primitives.
 
 // Why this file exists: the parts below are individually tested and individually correct, and the failure that matters happens between them.
 // A browser launched with a profile that is already in use opens a second window, ignores the debugging port, and reports a connection refused with nothing to suggest why.
@@ -18,7 +18,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 import { BROWSERS, detectBrowsers, expandPath, findBrowser, launchArgs } from './browsers.js';
-import { createPrimitives } from './primitives.js';
+import { createPrimitives } from '../drive/primitives.js';
 import { createCdpClient } from './cdp.js';
 import { connect, discoverPageWebSocket, openTab, pageWebSocketById } from './transport.js';
 import {
@@ -28,7 +28,7 @@ import {
   openBridgeTarget,
   waitForBridgeLink,
   LINK_ERROR
-} from './bridge.js';
+} from '../bridge/bridge.js';
 
 export function installedBrowsers({ platform = process.platform, exists = existsSync, env = process.env } = {}) {
   return detectBrowsers({ platform, exists, env }).map((entry) => ({

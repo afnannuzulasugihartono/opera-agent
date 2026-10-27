@@ -65,7 +65,7 @@
 
   // WHY THE MONEY IS READ TWICE.
   // A bookkeeper checks the manifest by eye, so the text the portal printed is kept; a machine compares two months, so the digits are derived.
-  // This rule mirrors the one in local/statements.js: Indonesian money groups thousands with a dot and sen with a comma, so a trailing ",00" is cents and is dropped, and a figure in brackets is negative.
+  // This rule mirrors the one in local/jobs/statements.js: Indonesian money groups thousands with a dot and sen with a comma, so a trailing ",00" is cents and is dropped, and a figure in brackets is negative.
   // The two copies of this rule are a known pair: if they ever disagree, the same raw text produces two different digit strings, which the proof contract would show.
   const balanceDigits = (raw) => {
     let text = String(raw ?? '').trim();

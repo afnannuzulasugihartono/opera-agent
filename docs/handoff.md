@@ -1,4 +1,4 @@
-@last-edited: 2026-10-26 UTC+7.
+@last-edited: 2026-10-27 UTC+7.
 @related: [AGENTS.md](../AGENTS.md)
 
 # handoff
@@ -31,10 +31,10 @@ What is true now, and what to do next. Cap 150 lines. Spent detail: git history.
   fails a missing standard file, a pull request that skips CI, a CRLF file, or a dead path.
 - **The browser drive depends on nothing but the page it drives.** A ref dies with its
   document, its route or the extension epoch, so the drive re-finds what it clicks.
-- Gates: `npm test`, `npm run check` - 31 primitives, 183 runtime safety files, 1561 unit
+- Gates: `npm test`, `npm run check` - 31 primitives, 183 runtime safety files, 1573 unit
   tests, green.
-- **The local driver is modular, and its tests are too.** `local/primitives.js` assembles the
-  modules; `tools.js` holds the MCP surface as data; the tests are one file per module.
+- **The local driver is modular, grouped, and tested.** `local/` is six groups by job - `core`,
+  `bridge`, `drive`, `surface`, `jobs`, `agent` - and `drive/primitives.js` assembles the verbs.
 - Production, measured against the live database: 76 `opera_*` functions (65
   `SECURITY DEFINER`), 20 `opera_*` tables, and **9 deployed edge functions**.
 - **Somebody can pay for a delivered client-month.** `invoice_create` prices manifest rows and

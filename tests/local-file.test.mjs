@@ -1,7 +1,7 @@
 // @last-edited: 2026-10-23 UTC+7.
 // @title: local-file — upload, drop and download are proven by the bytes on disk, not by an ok.
 // @state: the file verbs, and the staging, chooser interception and delivery checks behind them.
-// @dependencies: node:test, strict, ../local/primitives.js.
+// @dependencies: node:test, strict, ../local/drive/primitives.js.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -10,8 +10,8 @@ import {
   DROP_PHASES,
   UPLOAD_INPUT_EXPRESSION,
   dragMimeType
-} from '../local/page-expressions.js';
-import { createPrimitives } from '../local/primitives.js';
+} from '../local/drive/page-expressions.js';
+import { createPrimitives } from '../local/drive/primitives.js';
 import { recordingCdp } from './helpers/local-page.mjs';
 
 function fakeUploadFs() {
