@@ -56,6 +56,7 @@ export function asDriver(session) {
 
   return {
     read: () => session.read(),
+    surfaceProfile: () => session.surfaceProfile(),
     evaluate: (expression) => session.evaluate(expression),
     settle: () => session.settle(),
     ask: (method, params) => session.ask(method, params),

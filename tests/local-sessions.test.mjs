@@ -13,6 +13,7 @@ function fakeSession() {
   return {
     calls,
     read: async () => { calls.push(['read']); return { url: 'u' }; },
+    surfaceProfile: async () => { calls.push(['surfaceProfile']); return { surface: { canvas: true }, strategy: [] }; },
     evaluate: async (expression) => { calls.push(['evaluate', expression]); return []; },
     clickAt: async (x, y) => { calls.push(['clickAt', x, y]); return { x, y }; },
     hover: async (x, y) => { calls.push(['hover', x, y]); return { x, y }; },
@@ -39,11 +40,17 @@ function fakeSession() {
   };
 }
 
+// WHY surfaceProfile IS DRIVEN HERE.
+// The MCP server calls driver.surfaceProfile(), and the driver is this adapter: a primitive that exists but is not spoken here answers a tool call with "not a function" on a real browser, which is exactly what shipped.
+// Measured: surface_profile failed against a live Google Doc while every unit test passed, because no test drove the adapter with a profile call.
+// So the profile is driven through the adapter like every other verb, and the fake session has to carry the primitive for the call to reach it.
+
 test('the adapter speaks driver verbs over primitive nouns', async () => {
   const session = fakeSession();
   const driver = asDriver(session);
 
   await driver.read();
+  await driver.surfaceProfile();
   await driver.click(3, 4);
   await driver.hover(5, 6);
   await driver.key('a', ['Control']);
@@ -55,7 +62,7 @@ test('the adapter speaks driver verbs over primitive nouns', async () => {
   await driver.front();
 
   const verbs = session.calls.map((c) => c[0]);
-  assert.deepEqual(verbs, ['read', 'clickAt', 'hover', 'key', 'type', 'keys', 'settle', 'waitForText', 'capture', 'front']);
+  assert.deepEqual(verbs, ['read', 'surfaceProfile', 'clickAt', 'hover', 'key', 'type', 'keys', 'settle', 'waitForText', 'capture', 'front']);
 });
 
 // WHY THE ADAPTER RESOLVES THEN CLICKS A HANDLE.
