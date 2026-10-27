@@ -281,7 +281,18 @@ test('scroll takes pixels, the end, a target text or a selector, and nothing is 
 test('scroll reaches the driver with the arguments it was given', async () => {
   const c = ctx();
   const server = createMcpServer(c);
-  c.driver.scroll = async (options) => { c.driver.calls.push(['scroll', options]); return { movedPx: 1400, from: { x: 0, y: 0 }, to: { x: 0, y: 1400 }, atEnd: false, root: 'document', target: { found: false, visible: false, y: 0, text: '' }, why: '' }; };
+  c.driver.scroll = async (options) => {
+    c.driver.calls.push(['scroll', options]);
+    return {
+      movedPx: 1400,
+      from: { x: 0, y: 0 },
+      to: { x: 0, y: 1400 },
+      atEnd: false,
+      root: 'document',
+      target: { found: false, visible: false, y: 0, text: '' },
+      why: ''
+    };
+  };
 
   const res = await server.handle({
     jsonrpc: '2.0', id: 98, method: 'tools/call',

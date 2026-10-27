@@ -226,10 +226,18 @@ test('the profile the ladder reads carries the evidence under every claim', () =
 });
 
 test('a tree cut at the depth cap says so, so short text is not read as a whole document', async () => {
+  // One node per level down to the cap, with the text on the last one: a document this deep has almost certainly been cut by the request.
   const nodes = [{ nodeId: 'root', parentId: undefined, childIds: ['n1'], role: { value: 'RootWebArea' }, name: { value: '' } }];
   let parent = 'root';
   for (let depth = 1; depth <= 60; depth += 1) {
-    nodes.push({ nodeId: `n${depth}`, parentId: parent, childIds: depth === 60 ? [] : [`n${depth + 1}`], role: { value: depth === 60 ? 'InlineTextBox' : 'generic' }, name: { value: depth === 60 ? 'last' : '' } });
+    const leaf = depth === 60;
+    nodes.push({
+      nodeId: `n${depth}`,
+      parentId: parent,
+      childIds: leaf ? [] : [`n${depth + 1}`],
+      role: { value: leaf ? 'InlineTextBox' : 'generic' },
+      name: { value: leaf ? 'last' : '' }
+    });
     parent = `n${depth}`;
   }
   const ax = await measureAx({ ask: async () => ({ nodes }) });
