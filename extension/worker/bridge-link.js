@@ -43,7 +43,7 @@ import { withDebugger } from './capture.js';
 // So the candidates are probed, the one that answers is used, and the state names the port it found - a reader can see which road is live rather than inferring it from how slow everything is.
 
 const CONFIGURED_WS = globalThis.OPERA_BRIDGE_WS || 'ws://127.0.0.1:9451';
-export const CANDIDATE_PORTS = [9451, 19451, 9333, 9222];
+const CANDIDATE_PORTS = [9451, 19451, 9333, 9222];
 
 // WHY THE PROBE IS AN HTTP FETCH AND NOT A SOCKET.
 // Opening and closing a WebSocket against the real bridge disturbs it: measured, the server saw the device leave and dropped the command in flight.
