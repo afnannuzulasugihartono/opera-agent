@@ -13,55 +13,47 @@ What is true now, and what to do next. Cap 150 lines. Spent detail: git history.
   of truth; [`check.mjs`](../scripts/check.mjs) also asserts the MCP version, the store form, and the secret regex.
 - **1.6.27 shipped on 2026-10-15.** #86 merged as `e99bf5a`; the CRX route answers 200 with
   `x-opera-sha256` equal to the bytes, and the release carries both zips, the CRX and SHA256SUMS.
-- **The stack is merged.** The twenty-branch chain landed base by base through #111, and `main` carries it.
-- **The standard is a test, not a document.** `tests/code-standard.test.mjs` bars a file
-  over 1,200 lines (one exception), leftover markers, a repeated block, and an unexercised export.
+- **The standard is a test, not a document.** `tests/code-standard.test.mjs` bars a file over
+  1,200 lines, leftover markers, a repeated block, and an unexercised export.
 - **The comment rule is a formatter, not a scanner.** Column-zero blocks are section headers
-  with a blank line around them; indented blocks document the code under them; a sentence
-  is one line. The gate is `format(file) === file`, pinned by `tests/comment-format.test.mjs`.
+  with a blank line around them; indented blocks document the code under them; a sentence is
+  one line. The gate is `format(file) === file`, pinned by `tests/comment-format.test.mjs`.
 - **#100 is green, and the landing styles have one home.** New-code duplication fell from
-  9.2% to 2.0%: the comment corpus is one table, and the shared chrome, footer and download
-  rules live in `landing/site.css` and `landing/download.css`. Chromium agrees, style for style.
-- **The dead code is gone, and a gate holds it.** `tests/hygiene.test.mjs` fails when a
-  module with its own code is reached by nothing but its own test.
-- **Every file says what it is.** All four header fields are on every walked source file;
-  the gate fails on a scaffold word, a doubled name, a commit message, or a missing field.
-- **One home for each shared module.** The eight `lib/` files that only re-exported another
-  module are gone: the edge and the extension import the shared file directly.
-- **A number a comment quotes has to exist.** Every quoted number is held by code, a test or
-  a file name; `tests/comment-claims.test.mjs` refuses one that is not.
-- **The repository carries what a reader and a reviewer need.** `tests/readme.test.mjs`
-  reads the README's numbers out of the code; `tests/professional.test.mjs` fails a missing
-  standard file, a pull request that skips CI, a CRLF file, or a dead path.
+  9.2% to 2.0%, and the shared chrome, footer and download rules live in `landing/site.css`.
+- **The dead code is gone, and a gate holds it.** `tests/hygiene.test.mjs` fails when a module
+  with its own code is reached by nothing but its own test.
+- **Every file says what it is.** All four header fields are on every walked source file; the
+  gate fails on a scaffold word, a doubled name, or a missing field.
+- **One home for each shared module, and a number a comment quotes has to exist.** The eight
+  `lib/` files that only re-exported another module are gone, and
+  `tests/comment-claims.test.mjs` refuses a quoted number held by nothing.
+- **The repository carries what a reader and a reviewer need.** `tests/professional.test.mjs`
+  fails a missing standard file, a pull request that skips CI, a CRLF file, or a dead path.
 - **The browser drive depends on nothing but the page it drives.** A ref dies with its
   document, its route or the extension epoch, so the drive re-finds what it clicks.
-- Gates: `npm test`, `npm run check` - 31 primitives, 183 runtime safety files, 1523 unit
+- Gates: `npm test`, `npm run check` - 31 primitives, 183 runtime safety files, 1561 unit
   tests, green.
-- **The local driver is modular, and its tests are too.** `local/primitives.js` assembles six
+- **The local driver is modular, and its tests are too.** `local/primitives.js` assembles the
   modules; `tools.js` holds the MCP surface as data; the tests are one file per module.
 - Production, measured against the live database: 76 `opera_*` functions (65
   `SECURITY DEFINER`), 20 `opera_*` tables, and **9 deployed edge functions**.
-- **Somebody can pay for a delivered client-month.** `invoice_create` prices manifest rows,
-  writes one invoice per customer per month, and returns a signed link; it is the one door
-  for both a per-delivery bill and a plan month.
-- **The everyday Chrome is drivable at localhost speed.** `OPERA_LOCAL_TRANSPORT=bridge`
-  runs the whole MCP surface over it.
-- **The statement job is the first product, and it is local.** `statement_card` names the
-  file and folder; `statement_delivered` sniffs the kind, counts PDF pages, records the
-  closing balance with its page named, and appends the client-month to a manifest, refusing
-  a second line. On a password-gated portal the gate was detected, the drive stopped, and
-  the download landed renamed in 464 ms ([`jobs/statements.md`](jobs/statements.md)).
-- **The device delivers a statement without a person watching.** `statement.download`
-  downloads under the card's name, waits until the file is whole, reads the kind and page
-  count from the bytes, and writes one manifest line in browser storage; `statement_deliver`
-  and `statement_manifest` expose it. The drill is in [`jobs/statements.md`](jobs/statements.md).
+- **Somebody can pay for a delivered client-month.** `invoice_create` prices manifest rows and
+  returns a signed link; it is the one door for a per-delivery bill and a plan month.
+- **The everyday Chrome is drivable two ways.** `OPERA_LOCAL_TRANSPORT=bridge` runs the whole
+  MCP surface over the extension, and a browser started with `--remote-debugging-port
+  --user-data-dir` is driven over CDP directly at 23-42 ms against the bridge's 1.875 ms.
+- **The statement job is the first product, and it is local.** `statement_card` names the file
+  and folder; `statement_delivered` sniffs the kind, counts PDF pages, records the closing
+  balance with its page named, and appends the client-month to a manifest, refusing a second
+  line; `statement.download` does it on the device without a person watching. On a
+  password-gated portal the gate was detected, the drive stopped, and the download landed
+  renamed in 464 ms ([`jobs/statements.md`](jobs/statements.md)).
 - **The pilot needs three bookkeepers, not more code.** The offer and checklist are in
-  [`product/first-three-bookkeepers.md`](product/first-three-bookkeepers.md) and
-  [`product/pilot-runbook.md`](product/pilot-runbook.md); only a fixture bank portal is
-  proven, so a pilot runs on the client's machine.
-- **The bridge is a WebSocket with a heartbeat, not a held `POST /poll`.** Chrome ends an
-  idle service worker after about thirty seconds and an inbound frame does not wake it, so
-  the server pings.
+  [`product/first-three-bookkeepers.md`](product/first-three-bookkeepers.md); only a fixture
+  bank portal is proven, so a pilot runs on the client's machine.
+- **The bridge is a WebSocket with a heartbeat, not a held `POST /poll`.** Chrome ends an idle
+  service worker after about thirty seconds and an inbound frame does not wake it, so the
+  server pings.
 - **One CORS policy and one credential-shape check.** Every edge function resolves the
   origin through [`_shared/cors.js`](../supabase/functions/_shared/cors.js); six modules
   import [`lib/secret-pattern.js`](../lib/secret-pattern.js), and `check` bars a redeclaration.
@@ -70,28 +62,24 @@ What is true now, and what to do next. Cap 150 lines. Spent detail: git history.
 - `page.read` reports `userState` - `tabActive`, `windowFocused`, `watching`,
   `lastInputMs` - so the model can tell whether the person is looking. Fails open.
 - **The drive reads a surface from evidence, not from a site name.**
-  `surface_profile` answers canvas, editable, focus and the accessibility region,
-  each with the number it was measured from, and no site is named anywhere in
-  the driver. The read ladder is `a11y -> dom -> select-all -> vision`, ordered
-  by measured cost and harm, and select-all is the only step tagged
-  `caret-move` - it is skipped without `allowCaretMove` and the reason is
-  reported. Measured 2026-10-27 on the everyday Brave profile at port 9333,
-  driving a real Google Doc: profile **42 ms**, gated read **23-27 ms** for
-  2.663 characters with no caret touched, against the bridge's 1.875 ms. A canvas
-  caret is not in the DOM, so `caretRestored` is never claimed;
-  `tests/no-site-code.test.mjs` fails the build if a site name or a `.kix-`
-  selector returns.
+  `surface_profile` answers canvas, editable, focus and the accessibility region with the
+  number each was measured from; the ladder is `a11y -> dom -> select-all -> vision`, and
+  select-all is the only step tagged `caret-move`, so it is skipped without
+  `allowCaretMove` and the reason is reported. Measured 2026-10-27 on the everyday Brave at
+  port 9333 against a real Google Doc: profile 42 ms, gated read 23-27 ms for 2.663
+  characters with no caret touched, against the bridge's 1.875 ms. A canvas caret is not in
+  the DOM, so `caretRestored` is never claimed; `tests/no-site-code.test.mjs` fails the
+  build if a site name or a `.kix-` selector returns.
 - **The plan path exists; the model call does not.** The model composes a plan once and the
   device runs it locally; [`goal-plan.js`](../extension/lib/goal-plan.js) shares the allowlist.
 - **Cloudflare Pages at `opera-agent.pages.dev` serves the site; Vercel is the backup**, and
-  `vercel.app` stays in CORS. Every `style-src` allows `'self'`, the header keeps its own width,
-  and the features page counts 34 tools, 31 primitives and six permissions, against the code.
+  `vercel.app` stays in CORS. Every `style-src` allows `'self'`, and the features page counts
+  34 tools, 31 primitives and six permissions, against the code.
 - **A deploy is a dispatch, not a push.** [`deploy-site.yml`](../.github/workflows/deploy-site.yml)
   publishes `landing/` with `wrangler pages deploy` after the unit and syntax gates; a push
   that does not deploy leaves CI green and the old build live. The Vercel CLI cannot deploy.
-- `landing/_headers` restates the `vercel.json` policy per path for Cloudflare Pages, with
-  HSTS, a locked-down Permissions-Policy, same-origin COOP and CORP, `X-Frame-Options:
-  DENY`, and a hash-named `script-src`.
+- `landing/_headers` restates the `vercel.json` policy per path, with HSTS, a locked-down
+  Permissions-Policy, same-origin COOP and CORP, and `X-Frame-Options: DENY`.
 
 ## Measured, not assumed
 
