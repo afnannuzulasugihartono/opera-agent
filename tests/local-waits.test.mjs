@@ -178,12 +178,16 @@ test('a text wait on a canvas surface reaches past the chrome in the DOM', async
     editable: { value: true, evidence: 'true' },
     focused: { value: true, evidence: 'document.hasFocus() is true' }
   };
-  const RICH_AX = [
-    { frameId: 'editor', role: { value: 'InlineTextBox' }, name: { value: 'First line' } },
-    { frameId: 'editor', role: { value: 'InlineTextBox' }, name: { value: 'Second line' } },
-    { frameId: 'editor', role: { value: 'InlineTextBox' }, name: { value: 'Third line' } },
-    { frameId: 'chrome', role: { value: 'InlineTextBox' }, name: { value: 'Mode tampilan' } }
-  ];
+  const RICH_AX = ['First line', 'Second line', 'Third line', 'Fourth line', 'Fifth line', 'Sixth line', 'Seventh line', 'Eighth line', 'Ninth line', 'Tenth line'];
+  const axTree = (texts) => {
+    const nodes = [
+      { nodeId: 'root', parentId: undefined, childIds: ['chromeRoot', 'docRoot'], role: { value: 'RootWebArea' }, name: { value: '' } },
+      { nodeId: 'chromeRoot', parentId: 'root', childIds: [], role: { value: 'toolbar' }, name: { value: '' } },
+      { nodeId: 'docRoot', parentId: 'root', childIds: [], role: { value: 'generic' }, name: { value: '' } }
+    ];
+    texts.forEach((text, i) => nodes.push({ nodeId: `doc${i}`, parentId: 'docRoot', childIds: [], role: { value: 'InlineTextBox' }, name: { value: text } }));
+    return { nodes };
+  };
   const cdp = {
     calls: [],
     send: async (method, params = {}) => {
@@ -192,7 +196,7 @@ test('a text wait on a canvas surface reaches past the chrome in the DOM', async
       if (method === 'Runtime.evaluate' && expression.includes('window.innerHeight')) {
         return { result: { value: CANVAS_PROBE } };
       }
-      if (method === 'Accessibility.getFullAXTree') return { nodes: RICH_AX };
+      if (method === 'Accessibility.getFullAXTree') return axTree(RICH_AX);
       if (method === 'Runtime.evaluate' && expression.includes('document.title')) {
         return { result: { value: { title: 'Doc', url: DOC_URL, text: 'chrome' } } };
       }

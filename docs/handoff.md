@@ -69,6 +69,18 @@ What is true now, and what to do next. Cap 150 lines. Spent detail: git history.
   publishable key, which is public by design and allowlisted in `.gitleaks.toml`.
 - `page.read` reports `userState` - `tabActive`, `windowFocused`, `watching`,
   `lastInputMs` - so the model can tell whether the person is looking. Fails open.
+- **The drive reads a surface from evidence, not from a site name.**
+  `surface_profile` answers canvas, editable, focus and the accessibility region,
+  each with the number it was measured from, and no site is named anywhere in
+  the driver. The read ladder is `a11y -> dom -> select-all -> vision`, ordered
+  by measured cost and harm, and select-all is the only step tagged
+  `caret-move` - it is skipped without `allowCaretMove` and the reason is
+  reported. Measured 2026-10-27 on the everyday Brave profile at port 9333,
+  driving a real Google Doc: profile **42 ms**, gated read **23-27 ms** for
+  2.663 characters with no caret touched, against the bridge's 1.875 ms. A canvas
+  caret is not in the DOM, so `caretRestored` is never claimed;
+  `tests/no-site-code.test.mjs` fails the build if a site name or a `.kix-`
+  selector returns.
 - **The plan path exists; the model call does not.** The model composes a plan once and the
   device runs it locally; [`goal-plan.js`](../extension/lib/goal-plan.js) shares the allowlist.
 - **Cloudflare Pages at `opera-agent.pages.dev` serves the site; Vercel is the backup**, and

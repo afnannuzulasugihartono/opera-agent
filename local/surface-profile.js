@@ -17,7 +17,12 @@
 
 export const MIN_DOM_TEXT = 40;
 
+// WHY THE BAR IS WRITTEN INTO THE EXPRESSION AND NOT IMPORTED INTO IT.
+// A page expression is a string evaluated in a page that knows nothing about this module, so a constant named here is a name the page has never heard of.
+// Measured on a real Google Doc: the first version of this probe referenced the module's own constant inside the string, the page threw a ReferenceError, and the whole profile came back false - which reads exactly like a page with no canvas, no text and no editor.
+
 export const SURFACE_PROBE_EXPRESSION = `(() => {
+  const MIN_DOM_TEXT = ${MIN_DOM_TEXT};
   const body = document.body;
   const text = body ? String(body.innerText || '') : '';
   const canvases = [...document.querySelectorAll('canvas')];
@@ -45,40 +50,115 @@ export async function probeSurface({ evaluate }) {
   };
 }
 
-// WHY THE DOCUMENT FRAME IS CHOSEN BY COUNT AND NOT BY NAME.
-// A canvas application keeps its chrome and its document in different frames, and the frame that carries the most text boxes is the document.
-// Naming the frame, or filtering chrome by the strings it happens to print, would be per-site code wearing a structural disguise.
+// WHY THE DOCUMENT REGION IS FOUND BY ITS SUBTREE AND NOT BY A FRAME.
+// Measured on a real Google Doc, three ways that do not work: Accessibility.getFullAXTree returns one flat tree of 866 nodes in which a single node carries a frameId, so reading frameId off every node separates nothing; Page.getFrameTree names eight frames, and Accessibility.getPartialAXTree refuses a frame id on its own, asking for a node id, a backend node id or an object id instead.
+// What the tree does carry on every node is parentId and childIds, so the tree can be rebuilt and the region that dominates its own siblings is the document - the toolbar, the menus and the notices are separate subtrees, and they lose.
+// Naming a frame, or filtering chrome by the strings it happens to print, would be per-site code wearing a structural disguise.
+
+// WHY THE REGION IS FOUND BY DESCENDING AND NOT BY TAKING THE BIGGEST SUBTREE.
+// The biggest subtree in any tree is its root, which holds the chrome as well as the document, so taking it returns the toolbar and the notices along with the prose.
+// Descending into whichever child holds the most text stops at the region that dominates its own siblings, which is the document and not the page around it.
+
+// WHY THE TEST IS AGAINST THE SIBLINGS AND NOT AGAINST THE PARENT.
+// The parent's total is the sum of every child, so no child ever outgrows it and a descent that compares against the parent stops at the root and takes the chrome with the document.
+// A region is the document when it holds more than the rest of the page put together, so that is the comparison.
+
+const TEXT_ROLES = new Set(['InlineTextBox', 'StaticText']);
+
+// WHY THE CHILDREN ARE BUILT FROM parentId AND NOT READ FROM childIds.
+// A tree can answer with one and not the other, and a walk that trusts only childIds finds nothing in a tree that carries only parentId - which answers exactly like a page with no text.
+// Measured while writing this: the first fixture listed children on the parent and left childIds empty, and the walk came back with zero text nodes on a tree that plainly held four.
+
+const documentRegion = (nodes) => {
+  const byId = new Map();
+  for (const node of nodes) {
+    if (node?.nodeId === undefined || node.nodeId === null) continue;
+    byId.set(String(node.nodeId), node);
+  }
+  // Two passes, because a tree does not promise its parents before its children.
+  const children = new Map();
+  for (const [id, node] of byId) {
+    const parent = node.parentId === undefined || node.parentId === null ? null : String(node.parentId);
+    if (parent && byId.has(parent)) {
+      const list = children.get(parent) ?? [];
+      if (!list.includes(id)) list.push(id);
+      children.set(parent, list);
+    }
+    for (const child of node.childIds || []) {
+      const childId = String(child);
+      if (!byId.has(childId)) continue;
+      const list = children.get(id) ?? [];
+      if (!list.includes(childId)) list.push(childId);
+      children.set(id, list);
+    }
+  }
+  const measured = new Map();
+  const textOf = (id) => {
+    const node = byId.get(id);
+    if (!node || !TEXT_ROLES.has(node.role?.value ?? '')) return { count: 0, length: 0, parts: [] };
+    const name = String(node.name?.value ?? '');
+    return { count: 1, length: name.length, parts: [name] };
+  };
+  const total = (id, seen) => {
+    if (measured.has(id)) return measured.get(id);
+    if (seen.has(id)) return { count: 0, length: 0, parts: [] };
+    seen.add(id);
+    let sum = textOf(id);
+    for (const childId of children.get(id) || []) {
+      if (!byId.has(childId)) continue;
+      const inner = total(childId, seen);
+      sum = { count: sum.count + inner.count, length: sum.length + inner.length, parts: [...sum.parts, ...inner.parts] };
+    }
+    measured.set(id, sum);
+    return sum;
+  };
+  const roots = [];
+  for (const [id, node] of byId) {
+    const parent = node?.parentId === undefined || node.parentId === null ? null : String(node.parentId);
+    if (!parent || !byId.has(parent)) roots.push(id);
+  }
+  let here = null;
+  for (const id of roots) {
+    const sum = total(id, new Set());
+    if (!here || sum.count > here.sum.count) here = { id, sum };
+  }
+  if (!here) return { count: 0, length: 0, parts: [] };
+  for (;;) {
+    const kids = [];
+    for (const childId of children.get(here.id) || []) {
+      if (!byId.has(childId)) continue;
+      kids.push({ id: childId, sum: total(childId, new Set()) });
+    }
+    if (!kids.length) break;
+    kids.sort((a, b) => b.sum.count - a.sum.count);
+    const siblings = kids.reduce((sum, kid) => sum + kid.sum.count, 0);
+    if (kids[0].sum.count * 2 <= siblings) break;
+    here = kids[0];
+  }
+  return here.sum;
+};
 
 export async function measureAx({ ask, method = 'Accessibility.getFullAXTree' }) {
+  const empty = { axRich: false, textBoxes: 0, textLength: 0, documentText: '' };
   let tree;
   try {
     tree = await ask(method, { maxDepth: 60 });
   } catch {
-    return { axRich: false, documentFrameId: null, textBoxes: 0, textLength: 0, documentText: '' };
+    return empty;
   }
   const nodes = Array.isArray(tree?.nodes) ? tree.nodes : [];
-  const perFrame = new Map();
-  for (const node of nodes) {
-    const role = node?.role?.value ?? '';
-    if (role !== 'InlineTextBox' && role !== 'StaticText') continue;
-    const frame = String(node?.frameId ?? '');
-    const entry = perFrame.get(frame) ?? { count: 0, length: 0, parts: [] };
-    entry.count += 1;
-    entry.length += String(node?.name?.value ?? '').length;
-    entry.parts.push(String(node?.name?.value ?? ''));
-    perFrame.set(frame, entry);
-  }
-  let best = null;
-  for (const [frame, entry] of perFrame) {
-    if (!best || entry.count > best.entry.count) best = { frame, entry };
-  }
-  const rich = Boolean(best) && best.entry.count >= 3;
+  if (!nodes.length) return empty;
+
+  const region = documentRegion(nodes);
+  // WHY THE BAR IS TEN TEXT BOXES.
+  // Measured on a real Google Doc: the document region carries 155 of them and the chrome around it carries 60, so a document clears this by an order of magnitude.
+  // A toolbar alone carries a handful, and reading that first would answer with menu labels - so below this the DOM is the cheaper and the cleaner answer.
+  const rich = region.count >= 10;
   return {
     axRich: rich,
-    documentFrameId: rich ? best.frame : null,
-    textBoxes: best ? best.entry.count : 0,
-    textLength: best ? best.entry.length : 0,
-    documentText: rich ? best.entry.parts.join('') : ''
+    textBoxes: region.count,
+    textLength: region.length,
+    documentText: rich ? region.parts.join('') : ''
   };
 }
 
@@ -91,6 +171,9 @@ export function buildProfile({ probe = {}, ax = {} }) {
     focused: probe.focused?.value === true
   };
 }
+
+// WHY THE DESCRIPTION NAMES WHAT WAS MEASURED.
+// It is the one line a caller reads to know what it is dealing with, so it names the surface's shape and nothing about where that shape was found.
 
 export function describeProfile(profile = {}) {
   const parts = [];

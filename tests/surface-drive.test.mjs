@@ -9,14 +9,18 @@ import assert from 'node:assert/strict';
 import { createPrimitives } from '../local/primitives.js';
 import { HARM_CARET_MOVE, STRATEGY_AX } from '../local/read-strategy.js';
 
-const richAx = [
-  { frameId: 'editor', role: { value: 'InlineTextBox' }, name: { value: 'PROPOSAL PENAWARAN' } },
-  { frameId: 'editor', role: { value: 'InlineTextBox' }, name: { value: 'Kepada Yth.' } },
-  { frameId: 'editor', role: { value: 'InlineTextBox' }, name: { value: 'Tim Pengembangan Lokasi' } },
-  { frameId: 'editor', role: { value: 'InlineTextBox' }, name: { value: 'PT Indomarco Prismatama' } },
-  { frameId: 'editor', role: { value: 'Canvas' }, name: { value: '' } },
-  { frameId: 'chrome', role: { value: 'button' }, name: { value: 'Insert' } }
-];
+const richAx = ['PROPOSAL PENAWARAN', 'Kepada Yth.', 'Tim Pengembangan Lokasi', 'PT Indomarco Prismatama', 'Perihal penawaran lokasi', '1. Identitas Pengusul', '2. Latar Belakang', '3. Rincian Penawaran', '4. Nilai Investasi', '5. Jadwal'];
+const poorAx = ['Share'];
+
+const axTree = (texts) => {
+  const nodes = [
+    { nodeId: 'root', parentId: undefined, childIds: ['chromeRoot', 'docRoot'], role: { value: 'RootWebArea' }, name: { value: '' } },
+    { nodeId: 'chromeRoot', parentId: 'root', childIds: [], role: { value: 'toolbar' }, name: { value: '' } },
+    { nodeId: 'docRoot', parentId: 'root', childIds: [], role: { value: 'generic' }, name: { value: '' } }
+  ];
+  texts.forEach((text, i) => nodes.push({ nodeId: `doc${i}`, parentId: 'docRoot', childIds: [], role: { value: 'InlineTextBox' }, name: { value: text } }));
+  return { nodes };
+};
 
 const fakeCdp = ({ probe, ax = richAx, copy, domText = '', caret = null }) => {
   const sent = [];
@@ -29,7 +33,7 @@ const fakeCdp = ({ probe, ax = richAx, copy, domText = '', caret = null }) => {
       if (method === 'Runtime.evaluate' && expression.includes('window.innerHeight')) {
         return { result: { value: probe } };
       }
-      if (method === 'Accessibility.getFullAXTree') return { nodes: ax };
+      if (method === 'Accessibility.getFullAXTree') return axTree(ax);
       if (method === 'Runtime.evaluate' && expression.includes('document.execCommand')) {
         return { result: { value: copy } };
       }
@@ -68,7 +72,7 @@ test('surface_profile answers without reading the document', async () => {
 });
 
 test('a read with no consent skips the caret-moving step and says why', async () => {
-  const cdp = fakeCdp({ probe: canvasProbe, ax: [{ frameId: 'chrome', role: { value: 'button' }, name: { value: 'Share' } }], copy: '' });
+  const cdp = fakeCdp({ probe: canvasProbe, ax: poorAx, copy: '' });
   const primitives = createPrimitives(cdp, { sleep: async () => {} });
   const out = await primitives.read({ allowCaretMove: false });
   const skipped = out.skipped.find((entry) => entry.harm === HARM_CARET_MOVE);
@@ -82,7 +86,7 @@ test('a read with consent runs the caret-moving step', async () => {
   const canvasCaret = { rangeCount: 1, collapsed: true, anchorOffset: 0, hostTextLength: 0 };
   const cdp = fakeCdp({
     probe: canvasProbe,
-    ax: [{ frameId: 'chrome', role: { value: 'button' }, name: { value: 'Share' } }],
+    ax: poorAx,
     copy: 'PROPOSAL PENAWARAN',
     caret: canvasCaret
   });
@@ -128,7 +132,7 @@ test('a surface no read can answer names the picture instead of returning nothin
     editable: { value: false, evidence: 'no editable host' },
     focused: { value: false, evidence: 'document.hasFocus() is false' }
   };
-  const cdp = fakeCdp({ probe: bareProbe, ax: [{ frameId: 'chrome', role: { value: 'button' }, name: { value: 'Share' } }], copy: '', domText: '' });
+  const cdp = fakeCdp({ probe: bareProbe, ax: poorAx, copy: '', domText: '' });
   const primitives = createPrimitives(cdp, { sleep: async () => {} });
   const out = await primitives.read();
   assert.equal(out.strategy, 'vision');

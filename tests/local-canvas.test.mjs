@@ -22,17 +22,20 @@ const CANVAS_PROBE = {
 
 // A rich accessibility tree whose document frame carries the text.
 
-const RICH_AX = [
-  { frameId: 'editor', role: { value: 'InlineTextBox' }, name: { value: 'PROPOSAL PENAWARAN' } },
-  { frameId: 'editor', role: { value: 'InlineTextBox' }, name: { value: 'Kepada Yth.' } },
-  { frameId: 'editor', role: { value: 'InlineTextBox' }, name: { value: 'Tim Pengembangan Lokasi' } },
-  { frameId: 'editor', role: { value: 'InlineTextBox' }, name: { value: 'PT Indomarco Prismatama' } },
-  { frameId: 'editor', role: { value: 'Canvas' }, name: { value: '' } }
-];
+const RICH_AX = ['PROPOSAL PENAWARAN', 'Kepada Yth.', 'Tim Pengembangan Lokasi', 'PT Indomarco Prismatama', 'Perihal penawaran lokasi', '1. Identitas Pengusul', '2. Latar Belakang', '3. Rincian Penawaran', '4. Nilai Investasi', '5. Jadwal'];
 
-// A tree with no document frame, so the ladder has to reach the gated step.
+const POOR_AX = ['Share'];
 
-const POOR_AX = [{ frameId: 'chrome', role: { value: 'button' }, name: { value: 'Share' } }];
+const axTree = (texts) => {
+  const nodes = [
+    { nodeId: 'root', parentId: undefined, childIds: ['chromeRoot', 'docRoot'], role: { value: 'RootWebArea' }, name: { value: '' } },
+    { nodeId: 'chromeRoot', parentId: 'root', childIds: [], role: { value: 'toolbar' }, name: { value: '' } },
+    { nodeId: 'docRoot', parentId: 'root', childIds: [], role: { value: 'generic' }, name: { value: '' } }
+  ];
+  texts.forEach((text, i) => nodes.push({ nodeId: `doc${i}`, parentId: 'docRoot', childIds: [], role: { value: 'InlineTextBox' }, name: { value: text } }));
+  return { nodes };
+};
+
 
 // The caret a canvas editor exposes: offset 0 on a node with no text, which is what the measurement found.
 
@@ -48,7 +51,7 @@ const canvasCdp = ({ probe = CANVAS_PROBE, ax = RICH_AX, copy = null, caret = CA
       if (method === 'Runtime.evaluate' && expression.includes('window.innerHeight')) {
         return { result: { value: probe } };
       }
-      if (method === 'Accessibility.getFullAXTree') return { nodes: ax };
+      if (method === 'Accessibility.getFullAXTree') return axTree(ax);
       if (method === 'Runtime.evaluate' && expression.includes('hostTextLength')) {
         return { result: { value: caret } };
       }
