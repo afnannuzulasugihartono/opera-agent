@@ -8,6 +8,7 @@ What each release contained, and why. The notes live in
 
 | Release | Date | Notes |
 | --- | --- | --- |
+| 1.6.28 | 2026-10-27 | [a file the caller already holds reaches the page](docs/releases/1.6.28.md) |
 | 1.6.27 | 2026-10-15 | [the local loop tells the truth about itself](docs/releases/1.6.27.md) |
 | 1.6.24 | 2026-10-11 | [notes](docs/releases/1.6.24.md) |
 | 1.6.23 | 2026-10-11 | [notes](docs/releases/1.6.23.md) |

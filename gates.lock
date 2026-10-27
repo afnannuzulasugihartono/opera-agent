@@ -156,29 +156,29 @@
 #    tests/helpers/canonical-source-hash.mjs strips the comment lines and collapses
 #    the whitespace before hashing a tool schema, so the pin holds the tool's
 #    contract and not its indentation.
-scripts/check.mjs d1955af617d8acda958cd33a0289ec461bdc7255
+scripts/check.mjs 2fef150391bbb246b64760dd8f2381c24af2b857
 scripts/scope.mjs 2293857de17bf0077a368729555f3af5a13a6ff5
 scripts/scope-check.mjs d6359cc409244f0fdc13cc7ef496daddd5981910
 
 # --- the pins themselves: editing these is how a drift goes unnoticed ---
-tests/helpers/boundary-locks.mjs 8a600b250c7c17d2dc8077b907fa6be01691f4a4
+tests/helpers/boundary-locks.mjs aa97163a7f2bfebf63d69b8eba3f0f87de5eac9a
 tests/helpers/canonical-source-hash.mjs a4ebaa0d40122afce47a52cba39309d7dfdb1af1
 tests/helpers/comment-format.mjs bced9e4c9b7a58b56e3317067d5e6717dd2040bf
 tests/comment-format.test.mjs 0231619043033b07c22f725feee511d6ebb34bd4
-tests/comment-claims.test.mjs 09b2944f3ca73f2304752df2423ab67a35a462e6
+tests/comment-claims.test.mjs 6081ee779b15410dc69954e97812b0b6791e30f4
 
 # --- structural rules a human reviewer would otherwise have to remember ---
-tests/hygiene.test.mjs 0433fa39ac510e6cc103d607ad51299a257c314c
+tests/hygiene.test.mjs 194dafeae64d4c1dd2f11c4ad65e6f20768f448d
 tests/structure-gates.test.mjs 3ebf0d1b62858e67d7f6fb441461be85e7158a63
 tests/boundary-locks.test.mjs 3a9ae9e36aec03a4470ce2f9cf0971f66724ecf8
 
 # --- controls that decide what the product accepts at runtime ---
-extension/lib/protocol.js 344893e1cbb5b6a9309097af933e5fd2cbb897aa
+extension/lib/protocol.js ae3613f7be2499d24c0bbe716ebe7d538728cdfb
 lib/secret-pattern.js 06386015c5756f83c08ee06cc571b9ae897d850a
 supabase/functions/_shared/cors.js 1563203a5f18b359e2831e52839cfcb935086bf9
 
 # --- surfaces an owner, not an agent, should have to look at ---
-extension/manifest.json edc35efcd7e1476ad5f4f8898988e48bce6cce8f
+extension/manifest.json beecf3ec2feb8fbcd2cc9daf30aa3b5b68cb3e5d
 .gitleaks.toml 341016b1ba0e0ccdfc14a42be66f627f7c7e5a6a
 .github/CODEOWNERS 8b4d8f8bb18f931b9c6e4a15cd06dac9e4be3a20
 .github/workflows/ci.yml 80f930925516346c598531b8f6a027e39819dcd0

@@ -1,7 +1,7 @@
 // @last-edited: 2026-10-14 UTC+7.
 // @title: local-bridge — the local bridge end, proven against a scripted device over a real socket.
 // @state: tab ops, CDP transport, error surfacing, the origin boundary, proof, trust, teardown.
-// @dependencies: node:test, strict, ../local/bridge.js, ../local/cdp.js, ../extension/lib/socket-protocol.js.
+// @dependencies: node:test, strict, ../local/bridge/bridge.js, ../local/core/cdp.js, ../extension/lib/socket-protocol.js.
 
 // WHY A SCRIPTED DEVICE AND NOT THE REAL WORKER.
 // The worker dials one fixed port, so two test files that both import it fight over the same connection — observed, and a green run would have meant nothing.
@@ -29,9 +29,9 @@ import {
   listBridgeTargets,
   openBridgeTarget,
   waitForBridgeLink
-} from '../local/bridge.js';
-import { createCdpClient } from '../local/cdp.js';
-import { createBridgeServer } from '../local/bridge-server.js';
+} from '../local/bridge/bridge.js';
+import { createCdpClient } from '../local/core/cdp.js';
+import { createBridgeServer } from '../local/bridge/bridge-server.js';
 import { completionFrame, handshakeFrame, normalizeCommand, pongFrame } from '../extension/lib/socket-protocol.js';
 
 process.env.OPERA_BRIDGE_PORT = '0';

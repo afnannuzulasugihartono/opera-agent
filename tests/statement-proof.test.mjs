@@ -1,7 +1,7 @@
 // @last-edited: 2026-10-21 UTC+7.
 // @title: statement-proof — the proof a delivered client-month carries, frozen.
 // @state: the record and the manifest answer match the declared contract, field by field and type by type.
-// @dependencies: node:test, strict, node:fs, node:os, node:path, ../local/statements.js.
+// @dependencies: node:test, strict, node:fs, node:os, node:path, ../local/jobs/statements.js.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -9,7 +9,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
-import { statementDelivered } from '../local/statements.js';
+import { statementDelivered } from '../local/jobs/statements.js';
 
 const contract = JSON.parse(
   fs.readFileSync(new URL('./fixtures/statement-proof-v1.json', import.meta.url), 'utf8')

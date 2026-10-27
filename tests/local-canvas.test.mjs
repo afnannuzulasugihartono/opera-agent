@@ -1,14 +1,14 @@
 // @last-edited: 2026-10-27 UTC+7.
 // @title: local-canvas — a surface that is not a page full of text, read through the ladder with the caret-moving step gated.
 // @state: the ladder walk on a canvas surface, the gate in front of the borrow, and the caret line read.
-// @dependencies: node:test, strict, ../local/primitives.js.
+// @dependencies: node:test, strict, ../local/drive/primitives.js.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { SETTLE_POLL_MS } from '../local/page-expressions.js';
-import { createPrimitives } from '../local/primitives.js';
-import { createCanvasMethods } from '../local/canvas.js';
+import { SETTLE_POLL_MS } from '../local/drive/page-expressions.js';
+import { createPrimitives } from '../local/drive/primitives.js';
+import { createCanvasMethods } from '../local/surface/canvas.js';
 import { DOC_URL } from './helpers/local-page.mjs';
 
 // A canvas surface: no text in the DOM, a canvas over most of the viewport, an editable host, and the page has focus.

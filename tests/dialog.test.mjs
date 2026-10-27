@@ -1,7 +1,7 @@
 // @last-edited: 2026-10-15 UTC+7.
 // @title: dialog — an operating system dialog is a window the machine can answer.
 // @state: three named calls, honest refusals, the proof that a page's picker is reachable.
-// @dependencies: node:test, assert, ../local/dialog.js, ../local/mcp-server.js, ../local/agent-guide.js.
+// @dependencies: node:test, assert, ../local/drive/dialog.js, ../local/agent/mcp-server.js, ../local/agent/agent-guide.js.
 
 // WHY THESE CLAIMS EXIST.
 // Measured live on this product's own author: a drive clicked "Upload from computer" in Google Docs, the operating system's file dialog opened, and nothing in the browser could type into it, read it, or close it - a walk that used to end there.
@@ -11,9 +11,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { dialogState, dialogType, dialogPress } from '../local/dialog.js';
-import { TOOLS } from '../local/mcp-server.js';
-import { guide } from '../local/agent-guide.js';
+import { dialogState, dialogType, dialogPress } from '../local/drive/dialog.js';
+import { TOOLS } from '../local/agent/mcp-server.js';
+import { guide } from '../local/agent/agent-guide.js';
 
 // WHY EVERY CALL ANSWERS EVEN WHEN THERE IS NOTHING TO ANSWER ABOUT.
 // A caller that asked the machine a question gets words back when the machine has none to give, because a bare false reads the same as a dialog that refused to answer.

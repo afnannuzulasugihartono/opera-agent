@@ -1,14 +1,14 @@
 // @last-edited: 2026-10-25 UTC+7.
 // @title: window-focus \u2014 a drive can tell that the window it is typing into is behind something.
 // @state: the three platforms, the refusals, the tool that answers it.
-// @dependencies: node:test, assert, ../local/window-focus.js, ../local/mcp-server.js.
+// @dependencies: node:test, assert, ../local/core/window-focus.js, ../local/agent/mcp-server.js.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { windowState, focusWindow } from '../local/window-focus.js';
-import { createFocusGuard } from '../local/focus-guard.js';
-import { TOOLS } from '../local/mcp-server.js';
+import { windowState, focusWindow } from '../local/core/window-focus.js';
+import { createFocusGuard } from '../local/drive/focus-guard.js';
+import { TOOLS } from '../local/agent/mcp-server.js';
 
 // WHY THESE CLAIMS EXIST.
 // Measured live on this machine, with the drive typing into a Google Docs document: a browser window behind another application still took the keys, and a minimized browser window did not.

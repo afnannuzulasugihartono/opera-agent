@@ -1,7 +1,7 @@
 // @last-edited: 2026-10-15 UTC+7.
 // @title: geometry — a point that means the same place after the window changes.
 // @state: the capture's own size, the fraction resolved at click time, the answer that says which.
-// @dependencies: node:test, assert, ../local/primitives.js.
+// @dependencies: node:test, assert, ../local/drive/primitives.js.
 
 // WHY THESE CLAIMS EXIST.
 // Measured live on this product's own author, by resizing this machine's browser window: the viewport went 1144x714 to 1186x670, the capture went 1430x963 to 1483x838, and the device scale stayed at 1.25.
@@ -11,7 +11,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { createPrimitives } from '../local/primitives.js';
+import { createPrimitives } from '../local/drive/primitives.js';
 
 const VIEWPORT = { width: 1186, height: 670, dpr: 1.25 };
 

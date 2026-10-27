@@ -227,6 +227,24 @@ ctx.fillStyle = gradient; ctx.fillRect(0, 0, 640, 320);
 ctx.fillStyle = 'white'; ctx.font = 'bold 38px sans-serif'; ctx.fillText('Opera Agent Vision', 110, 175);
 </script></body></html>'''
 
+FILES_PAGE = '''<!doctype html><html><head><title>Opera Agent Files Test</title></head>
+<body style="margin:0;font-family:sans-serif">
+<input id="picked" type="file" aria-label="Upload file"
+  onchange="document.getElementById('picked-name').textContent = this.files[0] ? this.files[0].name + ':' + this.files[0].size : 'none'" />
+<div id="picked-name">none</div>
+<div id="dropzone" style="width:400px;height:200px;background:#e0e7ff" aria-label="Drop zone">drop here</div>
+<div id="dropped">none</div>
+<script>
+const zone = document.getElementById('dropzone');
+for (const type of ['dragenter', 'dragover']) zone.addEventListener(type, (event) => event.preventDefault());
+zone.addEventListener('drop', (event) => {
+  event.preventDefault();
+  const file = event.dataTransfer.files[0];
+  document.getElementById('dropped').textContent = `${file.name}:${file.size}:${file.type}`;
+});
+</script>
+</body></html>'''
+
 BLANK_PAGE = '''<!doctype html><html><head><title>Opera Agent Blank Test</title>
 <style>html,body{margin:0;width:100%;height:100%;background:#fff}</style></head><body></body></html>'''
 
@@ -601,9 +619,11 @@ class Handler(BaseHTTPRequestHandler):
                 pass
             return
 
-        if self.path.startswith('/page') or self.path.startswith('/visual') or self.path.startswith('/blank') or self.path.startswith('/iframe') or self.path.startswith('/pre8e-r0') or self.path.startswith('/pre8e-r1') or self.path.startswith('/pre8e-r2') or self.path.startswith('/pre8e-r3') or self.path.startswith('/pre8e-r4') or self.path.startswith('/pre8e-r5') or self.path.startswith('/pre8e-uv') or self.path.startswith('/pre8e-ur') or self.path.startswith('/pre8e-ui-identity') or self.path.startswith('/pre8e-r9') or self.path.startswith('/pre8e-ax'):
+        if self.path.startswith('/page') or self.path.startswith('/visual') or self.path.startswith('/blank') or self.path.startswith('/files') or self.path.startswith('/iframe') or self.path.startswith('/pre8e-r0') or self.path.startswith('/pre8e-r1') or self.path.startswith('/pre8e-r2') or self.path.startswith('/pre8e-r3') or self.path.startswith('/pre8e-r4') or self.path.startswith('/pre8e-r5') or self.path.startswith('/pre8e-uv') or self.path.startswith('/pre8e-ur') or self.path.startswith('/pre8e-ui-identity') or self.path.startswith('/pre8e-r9') or self.path.startswith('/pre8e-ax'):
             if self.path.startswith('/pre8e-uv'):
                 document = ACTION_PIPELINE_PAGE
+            elif self.path.startswith('/files'):
+                document = FILES_PAGE
             elif self.path.startswith('/pre8e-ur'):
                 document = RETRY_POPUP_PAGE
             elif self.path.startswith('/pre8e-ax'):
@@ -2752,6 +2772,52 @@ async def run(port, profile):
         failed = await asyncio.to_thread(STATE.wait, cid)
         assert failed['ok'] is False
         assert 'file' in failed['error']['message'].lower()
+
+        cid = STATE.push('tabs.open', {'url': f'http://{HOST}:{port}/files', 'active': False, 'wait': True})
+        files_tab = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['tab']['id']
+        picked_bytes = b'picked by page.files'
+        cid = STATE.push('page.files', {
+            'tabId': files_tab,
+            'filename': 'catatan.txt',
+            'data': 'data:text/plain;base64,' + base64.b64encode(picked_bytes).decode()
+        }, benchmark='files.input')
+        picked = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+        assert picked['mode'] == 'input', picked
+        assert picked['files'] == 1 and picked['bytes'] == len(picked_bytes), picked
+        cid = STATE.push('page.read', {'tabId': files_tab, 'limit': 200, 'includeElements': False})
+        assert 'catatan.txt:' + str(len(picked_bytes)) in assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['page']['text']
+
+        cid = STATE.push('page.query', {'tabId': files_tab, 'selector': '#dropzone'})
+        zone = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['item']
+        dropped_bytes = b'PK\x03\x04opera-agent-paper'
+        cid = STATE.push('page.files', {
+            'tabId': files_tab,
+            'filename': 'opera-agent-paper.docx',
+            'data': 'data:application/vnd.openxmlformats-officedocument.wordprocessingml.document;base64,'
+                    + base64.b64encode(dropped_bytes).decode(),
+            'x': zone['rect']['centerX'],
+            'y': zone['rect']['centerY']
+        }, benchmark='files.drop')
+        dropped = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+        assert dropped['mode'] == 'drop', dropped
+        assert dropped['files'] == 1 and dropped['bytes'] == len(dropped_bytes), dropped
+        assert dropped['target']['id'] == 'dropzone', dropped
+        assert any(event['type'] == 'drop' and event['prevented'] for event in dropped['events']), dropped
+        cid = STATE.push('page.read', {'tabId': files_tab, 'limit': 200, 'includeElements': False})
+        seen = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['page']['text']
+        assert f'opera-agent-paper.docx:{len(dropped_bytes)}:' in seen, seen
+        cid = STATE.push('page.files', {
+            'tabId': files_tab,
+            'filename': 'x.txt',
+            'data': 'data:text/plain;base64,eA==',
+            'selector': '#dropzone'
+        })
+        failed = await asyncio.to_thread(STATE.wait, cid)
+        assert failed['ok'] is False, failed
+        assert 'No file input' in failed['error']['message'], failed
+
+        cid = STATE.push('tabs.close', {'tabId': files_tab})
+        assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
 
         cid = STATE.push('page.collect_links', {'tabId': tab_id, 'sameOrigin': True, 'limit': 20})
         result = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))

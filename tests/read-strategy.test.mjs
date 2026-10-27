@@ -1,7 +1,7 @@
 // @last-edited: 2026-10-27 UTC+7.
 // @title: read-strategy — the read ladder, decided from evidence rather than from a site name.
 // @state: one table of profiles against the ladder each produces, including the cases where a strategy must not appear.
-// @dependencies: node:test, node:assert/strict, ../local/read-strategy.js.
+// @dependencies: node:test, node:assert/strict, ../local/surface/read-strategy.js.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -15,7 +15,7 @@ import {
   STRATEGY_SELECT_ALL,
   STRATEGY_VISION,
   readLadder
-} from '../local/read-strategy.js';
+} from '../local/surface/read-strategy.js';
 
 const names = (profile) => readLadder(profile).map((step) => step.strategy);
 

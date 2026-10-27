@@ -275,6 +275,11 @@ export async function dispatch(method, params = {}, context = {}) {
       const openedTabs = popupsSince(popupLog, tabId, actionStart);
       return { ...result, tabId, ...(openedTabs.length ? { openedTabs } : {}) };
     }
+    case 'page.files': {
+      const tabId = await resolveTabId(params);
+      const result = await contentCall(tabId, 'page.files', params);
+      return { ...result, tabId };
+    }
     case 'page.click': {
       const tabId = await resolveTabId(params);
       const clickOptions = { expect: params.expect, attempts: params.retry?.attempts };

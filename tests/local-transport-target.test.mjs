@@ -6,8 +6,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { listPageWebSockets, pageWebSocketById } from '../local/transport.js';
-import { openSession } from '../local/driver.js';
+import { listPageWebSockets, pageWebSocketById } from '../local/core/transport.js';
+import { openSession } from '../local/core/driver.js';
 
 const PAGES = [
   { id: 'AAA', type: 'page', title: 'Untitled document', url: 'https://docs.google.com/a', webSocketDebuggerUrl: 'ws://x/aaa' },

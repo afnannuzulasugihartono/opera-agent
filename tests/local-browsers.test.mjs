@@ -1,7 +1,7 @@
 // @last-edited: 2026-10-11 UTC+7.
 // @title: local-browsers — the Chromium browsers the local driver launches, where each lives, and that a stranger's machine resolves them.
 // @state: 11 locks; one protocol across the family, environment expansion, separator-insensitive matching, and a launch that cannot be silently swallowed.
-// @dependencies: node:test, strict, ../local/browsers.js.
+// @dependencies: node:test, strict, ../local/core/browsers.js.
 
 // WHY THIS FILE EXISTS
 
@@ -21,7 +21,7 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { BROWSERS, detectBrowsers, expandPath, findBrowser, launchArgs, protocolsFor } from '../local/browsers.js';
+import { BROWSERS, detectBrowsers, expandPath, findBrowser, launchArgs, protocolsFor } from '../local/core/browsers.js';
 
 test('the Chromium family is declared as one protocol, because it is one protocol', () => {
   assert.deepEqual(BROWSERS.map((b) => b.id).sort(),

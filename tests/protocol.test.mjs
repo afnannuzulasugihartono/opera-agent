@@ -1,6 +1,6 @@
 // @last-edited: 2026-10-21 UTC+7.
 // @title: protocol.test — the primitive surface the extension and the MCP server agree on.
-// @state: the allowlist, the burst steps, the fill value rule, and the schemas the server sends.
+// @state: the allowlist, the burst steps, the fill value rule, the file hand-off rule, and the schemas the server sends.
 // @dependencies: node:test, strict, protocol.
 
 import test from 'node:test';
@@ -8,7 +8,7 @@ import assert from 'node:assert/strict';
 import { ALLOWED_METHODS, EXECUTION_MODES, METHOD_SPECS, validateCommand, validateBurst, safeUrl, normalizeError, PRODUCT_VERSION, PROTOCOL_VERSION } from '../extension/lib/protocol.js';
 
 test('version and protocol are stable', () => {
-  assert.equal(PRODUCT_VERSION, '1.6.27');
+  assert.equal(PRODUCT_VERSION, '1.6.28');
   assert.equal(PROTOCOL_VERSION, 1);
 });
 
@@ -77,6 +77,22 @@ test('command validation rejects unknown methods and malformed params', () => {
   assert.equal(validateCommand({ id: 'abcdefgh', method: 'page.fill', params: { ref: 'oa_1_1', value: 'x'.repeat(20001) } }).ok, false);
   assert.equal(validateCommand({ id: 'abcdefgh', method: 'page.capture', params: { previousHash: 'not-a-hash' } }).ok, false);
   assert.equal(validateCommand({ id: 'abcdefgh', method: 'page.capture', params: { bogusKey: true } }).ok, false);
+});
+
+test('page.files carries a data URL to a point or a file input, and refuses what it cannot deliver', () => {
+  const dataUrl = 'data:text/plain;base64,a3VjaW5n';
+  const base = { id: 'abcdefgh', method: 'page.files' };
+  assert.equal(validateCommand({ ...base, params: { filename: 'catatan.txt', data: dataUrl } }).ok, true);
+  assert.equal(validateCommand({ ...base, params: { filename: 'catatan.txt', data: dataUrl, x: 480, y: 300 } }).ok, true);
+  assert.equal(validateCommand({ ...base, params: { filename: 'catatan.txt', data: dataUrl, selector: 'input#unggah' } }).ok, true);
+
+  assert.equal(validateCommand({ ...base, params: { data: dataUrl } }).ok, false, 'a file without a name has nothing to hand the page');
+  assert.equal(validateCommand({ ...base, params: { filename: 'catatan.txt', data: 'a3VjaW5n' } }).ok, false, 'raw base64 must arrive as a data: URL');
+  assert.equal(validateCommand({ ...base, params: { filename: 'catatan.txt', data: 'data:text/plain;base64,' + 'a'.repeat(2000001) } }).ok, false);
+  assert.equal(validateCommand({ ...base, params: { filename: 'catatan.txt', data: dataUrl, x: 480 } }).ok, false, 'a point needs both coordinates');
+  assert.equal(validateCommand({ ...base, params: { filename: 'catatan.txt', data: dataUrl, x: -1, y: 300 } }).ok, false);
+  assert.equal(validateCommand({ ...base, params: { filename: 'x'.repeat(301), data: dataUrl } }).ok, false);
+  assert.equal(validateCommand({ ...base, params: { filename: 'catatan.txt', data: dataUrl, mime: 'text/plain' } }).ok, false, 'the type rides the data URL, not a second field');
 });
 
 test('burst fill checks its value even when the ref comes from refFromStep', () => {

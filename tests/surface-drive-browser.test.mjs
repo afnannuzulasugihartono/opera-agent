@@ -1,7 +1,7 @@
 // @last-edited: 2026-10-27 UTC+7.
 // @title: surface-drive-browser — the shipped ladder, driven against a real browser.
 // @state: one drill that profiles a real surface, reads it through the gated ladder, and proves the caret was not moved.
-// @dependencies: node:test, node:assert/strict, ../local/driver.js.
+// @dependencies: node:test, node:assert/strict, ../local/core/driver.js.
 
 // WHY THIS DRILL IS SKIPPED RATHER THAN FAKED.
 // A unit test proves the decision; only a real browser proves the drive.
@@ -10,7 +10,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { openSession } from '../local/driver.js';
+import { openSession } from '../local/core/driver.js';
 
 const PORT = Number(process.env.OPERA_DRILL_PORT || 9333);
 const TARGET = process.env.OPERA_DRILL_TARGET || '';

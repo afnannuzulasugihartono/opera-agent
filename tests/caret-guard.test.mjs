@@ -1,13 +1,13 @@
 // @last-edited: 2026-10-27 UTC+7.
 // @title: caret-guard — the gate that keeps a read from moving a user's caret, and the verdict that says so when it did.
 // @state: the gate as a table, and the restore verdict on the case the measurement proved impossible.
-// @dependencies: node:test, node:assert/strict, ../local/caret-guard.js, ../local/read-strategy.js.
+// @dependencies: node:test, node:assert/strict, ../local/surface/caret-guard.js, ../local/surface/read-strategy.js.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { HARM_CARET_MOVE, HARM_NONE } from '../local/read-strategy.js';
-import { createCaretGuard, gateRead, rememberedState, restoreVerdict } from '../local/caret-guard.js';
+import { HARM_CARET_MOVE, HARM_NONE } from '../local/surface/read-strategy.js';
+import { createCaretGuard, gateRead, rememberedState, restoreVerdict } from '../local/surface/caret-guard.js';
 
 test('a read that harms nothing is always allowed', () => {
   const gate = gateRead({ harm: HARM_NONE, allowCaretMove: false });

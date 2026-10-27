@@ -21,14 +21,14 @@ import {
   hitExpression,
   imageSize,
   locateExpression
-} from '../local/page-expressions.js';
-import { filePrimitives } from '../local/primitives-file.js';
-import { statementCard } from '../local/statements.js';
-import { bridgePort, LINK_ERROR } from '../local/bridge.js';
-import { installedBrowsers } from '../local/driver.js';
-import { attachToPage, discoverPageWebSocket, waitForPage } from '../local/transport.js';
-import { BridgeSocket, isOriginAllowed } from '../local/ws-server.js';
-import { startStdio } from '../local/mcp-server.js';
+} from '../local/drive/page-expressions.js';
+import { filePrimitives } from '../local/drive/primitives-file.js';
+import { statementCard } from '../local/jobs/statements.js';
+import { bridgePort, LINK_ERROR } from '../local/bridge/bridge.js';
+import { installedBrowsers } from '../local/core/driver.js';
+import { attachToPage, discoverPageWebSocket, waitForPage } from '../local/core/transport.js';
+import { BridgeSocket, isOriginAllowed } from '../local/bridge/ws-server.js';
+import { startStdio } from '../local/agent/mcp-server.js';
 
 test('a key is described the way the protocol sends it', () => {
   const letter = describeKey('a');

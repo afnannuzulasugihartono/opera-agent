@@ -441,7 +441,7 @@ test('a module with its own code is reached by the product, not only by its own 
     if (/^scripts\/.*\.(mjs|py)$/.test(file)) roots.add(file);
     if (/^local\/bin\/.*\.js$/.test(file)) roots.add(file);
   }
-  roots.add('local/mcp-server.js');
+  roots.add('local/agent/mcp-server.js');
   const manifest = JSON.parse(fsSync.readFileSync(path.join(dir, 'extension/manifest.json'), 'utf8'));
   for (const script of manifest.content_scripts || []) for (const js of script.js || []) roots.add(`extension/${js}`);
   if (manifest.background?.service_worker) roots.add(`extension/${manifest.background.service_worker}`);

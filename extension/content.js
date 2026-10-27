@@ -1253,18 +1253,43 @@
   }
 
   async function setFiles(args) {
-    const name = String(args.filename || '');
+    const name = String(args.filename || '').slice(0, 300);
     const dataUrl = String(args.data || '');
-    if (!name || !dataUrl.startsWith('data:')) throw new Error('set_files needs a filename and a data: URL.');
-    const input = document.querySelector('input[type="file"]');
-    if (!input) throw new Error('No file input on this page.');
+    if (!name || !dataUrl.startsWith('data:')) throw new Error('page.files needs a filename and a data: URL.');
     const blob = await (await fetch(dataUrl)).blob();
     const transfer = new DataTransfer();
-    transfer.items.add(new File([blob], name.slice(0, 300), { type: blob.type || 'application/octet-stream' }));
+    transfer.items.add(new File([blob], name, { type: blob.type || 'application/octet-stream' }));
+    if (args.x != null && args.y != null) return dropFiles(transfer, name, Number(args.x), Number(args.y), blob.size);
+    const input = document.querySelector(args.selector ? String(args.selector) : 'input[type="file"]');
+    if (!(input instanceof HTMLInputElement) || input.type !== 'file') {
+      throw new Error('No file input on this page. Give x and y to drop the file on a drop zone instead.');
+    }
     input.files = transfer.files;
     input.dispatchEvent(new Event('input', { bubbles: true }));
     input.dispatchEvent(new Event('change', { bubbles: true }));
-    return { ok: true, files: input.files.length };
+    return { ok: true, mode: 'input', filename: name, files: input.files.length, bytes: blob.size };
+  }
+
+  // WHY a synthetic drop instead of clicking the upload button: that button opens a native picker no page can answer, while a drop zone reads dataTransfer.files, which this fills with the bytes the caller already holds.
+  // The events ride the document because a drop zone's own handler usually sits on an ancestor and only sees a bubbling dragenter; `prevented` is the honest signal of whether anything listened.
+  function dropFiles(transfer, name, x, y, bytes) {
+    const target = document.elementFromPoint(x, y);
+    if (!target) throw new Error('No element at that point.');
+    const events = [];
+    for (const type of ['dragenter', 'dragover', 'drop']) {
+      const event = new DragEvent(type, { bubbles: true, cancelable: true, composed: true, clientX: x, clientY: y, dataTransfer: transfer });
+      const kept = target.dispatchEvent(event);
+      events.push({ type, prevented: !kept });
+    }
+    return {
+      ok: true,
+      mode: 'drop',
+      filename: name,
+      files: transfer.files.length,
+      bytes,
+      target: { tag: String(target.tagName || '').toLowerCase(), id: target.id || '', role: target.getAttribute?.('role') || '' },
+      events
+    };
   }
 
   function fillInfo(args) {
@@ -1902,6 +1927,7 @@
       case 'page.fill': return fill(args);
       case 'page.fill_info': return fillInfo(args);
       case 'page.set_files': return setFiles(args);
+      case 'page.files': return setFiles(args);
       case 'page.focus': return focus(args);
       case 'page.scroll': return scroll(args);
       case 'page.key': return key(args);

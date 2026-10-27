@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "protocolVersion": 1,
-  "toolCount": 34,
-  "sourceSha256": "28063a45cd8e530fa864708bfa1242515a7289f217ef135dbf270b838776b9d0",
+  "toolCount": 35,
+  "sourceSha256": "faa5c43b4f0ff3b0984940acfd526c31cddbb7fb3806cb884a355b8bebf10fdc",
   "tools": [
     "browser_status",
     "run_browser_burst",
@@ -24,6 +24,7 @@
     "find_elements",
     "click_element",
     "fill_element",
+    "upload_file",
     "press_key",
     "stream_keys",
     "scroll_page",

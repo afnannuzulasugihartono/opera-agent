@@ -7,6 +7,27 @@ Protocol, with no cloud round trip and no dependencies.
 npx opera-local
 ```
 
+## Layout
+
+One package, six groups, split by the job each module does rather than by layer.
+`agent/` speaks MCP and touches no page, `drive/` owns the verbs, and one group
+imports another only where a single driver shape or page expression is genuinely
+shared.
+
+| group | what lives there | entry |
+|---|---|---|
+| `core` | browser discovery, the CDP client, the transport, the driver and its per-tab sessions, the dev shim, the OS window | `core/driver.js` |
+| `bridge` | the loopback conversation with the extension: the driver's transport, the poll server, the websocket primitives | `bridge/bridge.js` |
+| `drive` | the verbs that act on a page: typing, pointer, reads, waits, menus, dialogs, bursts, file I/O, the assembled primitives, the page-side expressions they share | `drive/primitives.js` |
+| `surface` | what a surface is and how to measure, read and act on it: the profile, the read and action ladders, the caret guard, the canvas read | `surface/canvas.js` |
+| `jobs` | disk work that opens no tab: statement cards and manifests, reports, documents | `jobs/statements.js` |
+| `agent` | the MCP surface itself: the stdio server, the tool table as data, the advice, the task guide | `agent/mcp-server.js` |
+
+The binary is `bin/opera-local.js`: it decides CDP or bridge, builds the driver and
+the per-tab sessions, and hands them to `agent/mcp-server.js`, which is the only
+stdio contract in the tree. `package.json` ships the groups by name, so a module
+added inside one ships with it.
+
 ## Why this exists
 
 The same action measured two ways on one machine:
@@ -59,13 +80,12 @@ bridge is the road that remains: the extension polls this machine on loopback an
 carries raw CDP both ways, so the whole surface below runs on your real tabs with
 no flags, no queue and no cloud.
 
-The transport is a held `POST /poll` plus a `POST /reply`, not a WebSocket. It
-was one, and this Chrome never handed an inbound loopback frame to an extension
-service worker: the worker's own counters read zero messages after hundreds sent,
-the same frames reached a real WebSocket client every time, and the identical
-code path delivers inbound frames from the cloud relay without trouble. A fetch
-is the one thing Chrome will start a service worker for, so the poll is the
-transport, the wake-up and the keepalive at once.
+The transport is one WebSocket the extension opens to `127.0.0.1:9451` and holds:
+a `hello` frame in, `ready` back, then `command` and `complete` frames — the same
+frames the cloud bridge speaks. The server pings every twenty seconds, because
+Chrome ends an idle service worker and an inbound frame does not wake it. A
+second driver on the same machine reaches the bridge over `POST /command`
+instead of losing the port, so two processes share one browser.
 
 ```bash
 OPERA_LOCAL_TRANSPORT=bridge npx opera-local

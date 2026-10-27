@@ -1,7 +1,7 @@
 // @last-edited: 2026-10-25 UTC+7.
 // @title: local-mcp-server — the stdio MCP surface, driven against a fake browser rather than a process.
 // @state: 8 locks; the protocol handshake, the advertised tools, and the ways a call can fail.
-// @dependencies: node:test, strict, ../local/mcp-server.js.
+// @dependencies: node:test, strict, ../local/agent/mcp-server.js.
 
 // WHY THIS FILE EXISTS
 
@@ -17,7 +17,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { createMcpServer, TOOLS } from '../local/mcp-server.js';
+import { createMcpServer, TOOLS } from '../local/agent/mcp-server.js';
 
 // WHY every method here is async.
 // The real driver is async on every call, and a synchronous fake made the server's missing await invisible: it serialised a promise as {} and the lock still passed.

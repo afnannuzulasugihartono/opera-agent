@@ -1,7 +1,7 @@
 // @last-edited: 2026-10-25 UTC+7.
 // @title: focus-guard — whether anything is going to hear this click, and the one case worth fixing.
 // @state: the page asked every time, the machine asked once in a while and only when the page is deaf.
-// @dependencies: ./window-focus.js.
+// @dependencies: window-focus.
 
 // WHY AN INPUT ACTION CHECKS THE WINDOW ITSELF.
 // Asking the human to press a key in the middle of a drive is the one thing this product promised not to need, so the check happens where the action happens, and every answer says what it found.
@@ -26,7 +26,7 @@
 // WHY IT IS BUILT RATHER THAN WRITTEN.
 // The rules are one closure over the two things a test can hold still - the machine and the clock - so the claims below are checked without launching a shell and without waiting a second.
 
-import { focusWindow, windowState } from './window-focus.js';
+import { focusWindow, windowState } from '../core/window-focus.js';
 
 export function createFocusGuard({
   focus = focusWindow,

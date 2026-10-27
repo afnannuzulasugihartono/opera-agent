@@ -1,7 +1,7 @@
 // @last-edited: 2026-10-23 UTC+7.
 // @title: pointer — the clicks and hovers, and the handles that say what they hit.
 // @state: clickAt, clickFraction, hover, hoverRow, clickHandle, handleBox and resolveHandle, with the mark a person watching can see.
-// @dependencies: ./page-expressions.js.
+// @dependencies: page-expressions.
 
 // WHY THIS MODULE EXISTS
 

@@ -1,7 +1,7 @@
 // @last-edited: 2026-10-11 UTC+7.
 // @title: local-cdp — the local browser driver must correlate, reject and dispatch exactly like CDP, with no browser present.
 // @state: 8 locks; id correlation under concurrency, error rejection, event dispatch, and clean close.
-// @dependencies: node:test, strict, ../local/cdp.js.
+// @dependencies: node:test, strict, ../local/core/cdp.js.
 
 // WHY THIS FILE EXISTS
 
@@ -18,7 +18,7 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createCdpClient } from '../local/cdp.js';
+import { createCdpClient } from '../local/core/cdp.js';
 
 function fakeTransport() {
   const sent = [];

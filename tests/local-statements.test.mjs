@@ -1,7 +1,7 @@
 // @last-edited: 2026-10-21 UTC+7.
 // @title: statements - a card names the file before the drive, and the manifest refuses a file that is not whole.
 // @state: naming, period shape, disk verification, duplicate billing, and the balance as the page printed it.
-// @dependencies: node:test, strict, node:fs, node:os, node:path, ../local/statements.js.
+// @dependencies: node:test, strict, node:fs, node:os, node:path, ../local/jobs/statements.js.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -9,7 +9,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
-import { balanceDigits, slug, statementCard, statementDelivered } from '../local/statements.js';
+import { balanceDigits, slug, statementCard, statementDelivered } from '../local/jobs/statements.js';
 
 const PDF = Buffer.from(
   '%PDF-1.4\n'

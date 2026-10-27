@@ -9,7 +9,7 @@
 // WHY one file: the service worker, the MCP server, and the Node tests must agree on exactly which primitives exist.
 // A second copy of the list would eventually disagree.
 
-export const PRODUCT_VERSION = '1.6.27';
+export const PRODUCT_VERSION = '1.6.28';
 export const PROTOCOL_VERSION = 1;
 
 import { resolveKeyInput } from './keyboard.js';
@@ -66,6 +66,7 @@ export const METHOD_SPECS = Object.freeze({
   'page.pointer': { timeoutMs: 8000 },
   'page.capture': { timeoutMs: 10000 },
   'page.fill': { timeoutMs: 8000 },
+  'page.files': { timeoutMs: 30000 },
   'page.focus': { timeoutMs: 5000 },
   'page.scroll': { timeoutMs: 5000 },
   'page.key': { timeoutMs: 5000 },
@@ -149,7 +150,10 @@ function validateBurstStep(step) {
 }
 
 const BURST_GRID_MAX = 20;
-const BURST_FILE_DATA_MAX = 2000000;
+
+// WHY one cap for every road a file takes: a burst step and a page.files call carry the same bytes to the same page, so a second number would only be a second thing to forget.
+
+const FILE_DATA_MAX = 2000000;
 
 function validateGridStep(step) {
   const unexpectedKey = Object.keys(step).find((key) => !['action', 'rows', 'cols', 'tabId'].includes(key));
@@ -165,7 +169,7 @@ function validateFileStep(step) {
   const unexpectedKey = Object.keys(step).find((key) => !['action', 'filename', 'data', 'tabId'].includes(key));
   if (unexpectedKey) return `Burst file does not allow ${unexpectedKey}.`;
   if (typeof step.filename !== 'string' || !step.filename || step.filename.length > 300) return 'Burst file requires a filename.';
-  if (typeof step.data !== 'string' || !step.data || step.data.length > BURST_FILE_DATA_MAX) return 'Burst file requires data within the byte cap.';
+  if (typeof step.data !== 'string' || !step.data || step.data.length > FILE_DATA_MAX) return 'Burst file requires data within the byte cap.';
   return null;
 }
 
@@ -304,6 +308,30 @@ export function validateCommand(command) {
     }
     if (value.length > 20000) {
       return { ok: false, error: 'page.fill value must be at most 20000 characters.' };
+    }
+  }
+  if (command.method === 'page.files') {
+    const files = command.params || {};
+    const unexpected = Object.keys(files).find((key) => !['tabId', 'filename', 'data', 'x', 'y', 'selector', 'executionMode'].includes(key));
+    if (unexpected) return { ok: false, error: `page.files does not allow ${unexpected}. Send a data: URL in data, not a second field.` };
+    if (typeof files.filename !== 'string' || !files.filename || files.filename.length > 300) {
+      return { ok: false, error: 'page.files requires a filename of at most 300 characters.' };
+    }
+    if (typeof files.data !== 'string' || !/^data:[^,]*,/i.test(files.data)) {
+      return { ok: false, error: 'page.files requires a data: URL carrying the bytes.' };
+    }
+    if (files.data.length > FILE_DATA_MAX) {
+      return { ok: false, error: `page.files data must be at most ${FILE_DATA_MAX} characters.` };
+    }
+    if ((files.x == null) !== (files.y == null)) {
+      return { ok: false, error: 'page.files needs both x and y to drop at a point, or neither to set a file input.' };
+    }
+    for (const key of ['x', 'y']) {
+      if (files[key] == null) continue;
+      if (!Number.isFinite(Number(files[key])) || Number(files[key]) < 0) return { ok: false, error: `Invalid page.files ${key}.` };
+    }
+    if (files.selector != null && (typeof files.selector !== 'string' || !files.selector || files.selector.length > 500)) {
+      return { ok: false, error: 'page.files selector must be a string of at most 500 characters.' };
     }
   }
   if (command.params?.executionMode != null && !EXECUTION_MODES.includes(command.params.executionMode)) {

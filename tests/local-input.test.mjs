@@ -1,7 +1,7 @@
 // @last-edited: 2026-10-23 UTC+7.
 // @title: local-input — typing, chords and streams must behave the way a page that ignores synthetic events actually behaves.
 // @state: the typing and key verbs, and the edit signature that proves the text landed on the page.
-// @dependencies: node:test, strict, ../local/primitives.js.
+// @dependencies: node:test, strict, ../local/drive/primitives.js.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -10,9 +10,9 @@ import {
   modifierMask,
   SETTLE_POLL_MS,
   splitText
-} from '../local/page-expressions.js';
-import { createPrimitives } from '../local/primitives.js';
-import { createInputMethods } from '../local/input.js';
+} from '../local/drive/page-expressions.js';
+import { createPrimitives } from '../local/drive/primitives.js';
+import { createInputMethods } from '../local/drive/input.js';
 import { pipelinedCdp, recordingCdp } from './helpers/local-page.mjs';
 
 test('long text is chunked, because one oversized insert can be dropped without an error', () => {

@@ -30,9 +30,12 @@ const FORBIDDEN_HOSTS = [
   'slides.google.com'
 ];
 
-const localFiles = () => fs.readdirSync(localDir, { withFileTypes: true })
-  .filter((entry) => entry.isFile() && entry.name.endsWith('.js'))
-  .map((entry) => entry.name);
+const localFiles = (dir = localDir, prefix = '') => fs.readdirSync(dir, { withFileTypes: true })
+  .flatMap((entry) => {
+    const name = path.posix.join(prefix, entry.name);
+    return entry.isDirectory() ? localFiles(path.join(dir, entry.name), name) : [name];
+  })
+  .filter((name) => name.endsWith('.js'));
 
 test('no file in local/ names a site or a site selector', () => {
   const offenders = [];
@@ -57,7 +60,7 @@ test('no file in local/ matches a url against a site', () => {
 });
 
 test('the new modules carry the four header fields', () => {
-  for (const name of ['surface-profile.js', 'read-strategy.js', 'caret-guard.js', 'action-strategy.js', 'canvas.js']) {
+  for (const name of ['surface/surface-profile.js', 'surface/read-strategy.js', 'surface/caret-guard.js', 'surface/action-strategy.js', 'surface/canvas.js']) {
     const body = fs.readFileSync(path.join(localDir, name), 'utf8');
     for (const field of ['@last-edited', '@title', '@state', '@dependencies']) {
       assert.ok(body.includes(field), `${name} is missing ${field}`);

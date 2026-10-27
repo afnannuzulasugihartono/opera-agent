@@ -252,7 +252,7 @@ device on the same `bridge-server` measured:
 
 The loopback frames themselves are not the problem. The production cost is in
 the extension/worker path and in the per-command liveness proof
-(`local/bridge.js:124-168`): `attempt()` sends a `ping` before every command
+(`local/bridge/bridge.js:124-168`): `attempt()` sends a `ping` before every command
 unless `OPERA_BRIDGE_TRUST_MS` is set. Each CDP primitive is therefore two
 bridge commands, not one. That is a code-level finding; its real p50/p95 over
 the extension is unverified.
@@ -365,11 +365,11 @@ that refuses the Browser domain.
 
 ### 6. Duplicate tab listing and per-switch front
 
-`resolvedTab()` lists tabs (`local/mcp-server.js:675-684`), then
-`driverFor()` calls `context.resolveTab()` again (`local/mcp-server.js:650-660`).
+`resolvedTab()` lists tabs (`local/agent/mcp-server.js:675-684`), then
+`driverFor()` calls `context.resolveTab()` again (`local/agent/mcp-server.js:650-660`).
 On direct CDP this is ~0.2 ms; over the bridge it is two tab-list commands plus
 pings. The session store also calls `front()` on the first touch of every tab
-(`local/sessions.js:104-115`); `Page.bringToFront` is one-time per switch, not
+(`local/core/sessions.js:104-115`); `Page.bringToFront` is one-time per switch, not
 per action, but it is awaited.
 
 **Expected saving:** small on direct CDP, larger on the bridge and on tab-heavy
@@ -489,7 +489,7 @@ the local path, and it is reproducible by anyone with a Chromium on the machine.
 `npm run benchmark:latency` (`scripts/latency-benchmark.mjs`, `--runs=N` to
 change the sample size). The script launches its own headless Chrome with a
 temp `--user-data-dir`, serves its own 100-row fixture over loopback, imports
-`local/driver.js`, `local/sessions.js` and `local/mcp-server.js`, drives the
+`local/core/driver.js`, `local/core/sessions.js` and `local/agent/mcp-server.js`, drives the
 real primitives and the real MCP surface over them, and times each operation
 with `performance.now()`. No user tab, profile, or credential is used, and the
 browser it launches is killed and its profile removed on the way out.

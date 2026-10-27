@@ -1,0 +1,2504 @@
+{
+ "extensionId": "ofgemipoobcnbjkfanmofjbdonjapmgl",
+ "ok": true,
+ "assertionsTotal": 44,
+ "assertionsPassed": 43,
+ "assertionsFailed": [
+  "liveGoogleMapsBackgroundInput"
+ ],
+ "primitives": 31,
+ "benchmarks": [
+  {
+   "method": "browser.ping",
+   "latencyMs": 17.01,
+   "ok": true,
+   "requestBytes": 106,
+   "responseBytes": 871
+  },
+  {
+   "method": "tabs.find",
+   "latencyMs": 41.6,
+   "ok": true,
+   "requestBytes": 147,
+   "responseBytes": 88
+  },
+  {
+   "method": "tabs.open",
+   "latencyMs": 132.42,
+   "ok": true,
+   "requestBytes": 169,
+   "responseBytes": 261
+  },
+  {
+   "method": "tabs.activate",
+   "latencyMs": 2.61,
+   "ok": true,
+   "requestBytes": 125,
+   "responseBytes": 306
+  },
+  {
+   "method": "page.read",
+   "latencyMs": 47.17,
+   "ok": true,
+   "requestBytes": 166,
+   "responseBytes": 4201
+  },
+  {
+   "method": "page.read",
+   "latencyMs": 62.0,
+   "ok": true,
+   "requestBytes": 169,
+   "responseBytes": 51734
+  },
+  {
+   "method": "page.scroll",
+   "latencyMs": 196.18,
+   "ok": true,
+   "requestBytes": 189,
+   "responseBytes": 1007
+  },
+  {
+   "method": "page.read",
+   "latencyMs": 14.83,
+   "ok": true,
+   "requestBytes": 167,
+   "responseBytes": 42554
+  },
+  {
+   "method": "page.read",
+   "latencyMs": 55.27,
+   "ok": true,
+   "requestBytes": 167,
+   "responseBytes": 35990
+  },
+  {
+   "method": "page.read",
+   "latencyMs": 54.56,
+   "ok": true,
+   "requestBytes": 167,
+   "responseBytes": 35892
+  },
+  {
+   "method": "page.click",
+   "latencyMs": 203.82,
+   "ok": true,
+   "requestBytes": 146,
+   "responseBytes": 716
+  },
+  {
+   "method": "page.read",
+   "latencyMs": 13.14,
+   "ok": true,
+   "requestBytes": 167,
+   "responseBytes": 36102
+  },
+  {
+   "method": "page.click",
+   "latencyMs": 202.32,
+   "ok": true,
+   "requestBytes": 146,
+   "responseBytes": 715
+  },
+  {
+   "method": "tabs.open",
+   "latencyMs": 84.16,
+   "ok": true,
+   "requestBytes": 174,
+   "responseBytes": 278
+  },
+  {
+   "method": "page.find",
+   "latencyMs": 6.12,
+   "ok": true,
+   "requestBytes": 149,
+   "responseBytes": 2680
+  },
+  {
+   "method": "page.query",
+   "latencyMs": 42.68,
+   "ok": true,
+   "requestBytes": 152,
+   "responseBytes": 1238
+  },
+  {
+   "method": "page.click",
+   "latencyMs": 199.21,
+   "ok": true,
+   "requestBytes": 164,
+   "responseBytes": 715
+  },
+  {
+   "method": "page.query",
+   "latencyMs": 2.47,
+   "ok": true,
+   "requestBytes": 146,
+   "responseBytes": 1166
+  },
+  {
+   "method": "page.click",
+   "latencyMs": 146.61,
+   "ok": true,
+   "requestBytes": 164,
+   "responseBytes": 715
+  },
+  {
+   "method": "page.query",
+   "latencyMs": 2.17,
+   "ok": true,
+   "requestBytes": 146,
+   "responseBytes": 1166
+  },
+  {
+   "method": "page.read",
+   "latencyMs": 58.75,
+   "ok": true,
+   "requestBytes": 170,
+   "responseBytes": 18899
+  },
+  {
+   "method": "page.query",
+   "latencyMs": 44.03,
+   "ok": true,
+   "requestBytes": 149,
+   "responseBytes": 1260
+  },
+  {
+   "method": "page.click",
+   "latencyMs": 196.6,
+   "ok": true,
+   "requestBytes": 164,
+   "responseBytes": 715
+  },
+  {
+   "method": "page.read",
+   "latencyMs": 14.36,
+   "ok": true,
+   "requestBytes": 170,
+   "responseBytes": 18899
+  },
+  {
+   "method": "media.state",
+   "latencyMs": 43.66,
+   "ok": true,
+   "requestBytes": 135,
+   "responseBytes": 240
+  },
+  {
+   "method": "tabs.close",
+   "latencyMs": 49.64,
+   "ok": true,
+   "requestBytes": 122,
+   "responseBytes": 71
+  },
+  {
+   "method": "tabs.open",
+   "latencyMs": 123.26,
+   "ok": true,
+   "requestBytes": 174,
+   "responseBytes": 289
+  },
+  {
+   "method": "page.find",
+   "latencyMs": 7.01,
+   "ok": true,
+   "requestBytes": 149,
+   "responseBytes": 3366
+  },
+  {
+   "method": "page.find",
+   "latencyMs": 43.99,
+   "ok": true,
+   "requestBytes": 137,
+   "responseBytes": 1166
+  },
+  {
+   "method": "page.find",
+   "latencyMs": 43.75,
+   "ok": true,
+   "requestBytes": 152,
+   "responseBytes": 1166
+  },
+  {
+   "method": "page.find",
+   "latencyMs": 43.5,
+   "ok": true,
+   "requestBytes": 139,
+   "responseBytes": 2075
+  },
+  {
+   "method": "page.find",
+   "latencyMs": 45.0,
+   "ok": true,
+   "requestBytes": 152,
+   "responseBytes": 2075
+  },
+  {
+   "method": "page.find",
+   "latencyMs": 43.29,
+   "ok": true,
+   "requestBytes": 155,
+   "responseBytes": 1172
+  },
+  {
+   "method": "page.find",
+   "latencyMs": 43.93,
+   "ok": true,
+   "requestBytes": 170,
+   "responseBytes": 1172
+  },
+  {
+   "method": "page.find",
+   "latencyMs": 43.93,
+   "ok": true,
+   "requestBytes": 152,
+   "responseBytes": 1973
+  },
+  {
+   "method": "page.find",
+   "latencyMs": 43.61,
+   "ok": true,
+   "requestBytes": 164,
+   "responseBytes": 2111
+  },
+  {
+   "method": "page.find",
+   "latencyMs": 43.33,
+   "ok": true,
+   "requestBytes": 176,
+   "responseBytes": 1212
+  },
+  {
+   "method": "page.find",
+   "latencyMs": 42.72,
+   "ok": true,
+   "requestBytes": 176,
+   "responseBytes": 1216
+  },
+  {
+   "method": "page.find",
+   "latencyMs": 42.94,
+   "ok": true,
+   "requestBytes": 149,
+   "responseBytes": 1166
+  },
+  {
+   "method": "page.read",
+   "latencyMs": 53.01,
+   "ok": true,
+   "requestBytes": 167,
+   "responseBytes": 6781
+  },
+  {
+   "method": "page.find",
+   "latencyMs": 43.89,
+   "ok": true,
+   "requestBytes": 164,
+   "responseBytes": 2077
+  },
+  {
+   "method": "page.find",
+   "latencyMs": 43.25,
+   "ok": true,
+   "requestBytes": 164,
+   "responseBytes": 931
+  },
+  {
+   "method": "tabs.open",
+   "latencyMs": 126.29,
+   "ok": true,
+   "requestBytes": 183,
+   "responseBytes": 292
+  },
+  {
+   "method": "page.find",
+   "latencyMs": 6.36,
+   "ok": true,
+   "requestBytes": 180,
+   "responseBytes": 1176
+  },
+  {
+   "method": "page.find",
+   "latencyMs": 43.45,
+   "ok": true,
+   "requestBytes": 164,
+   "responseBytes": 1210
+  },
+  {
+   "method": "page.click",
+   "latencyMs": 197.81,
+   "ok": true,
+   "requestBytes": 146,
+   "responseBytes": 715
+  },
+  {
+   "method": "page.click",
+   "latencyMs": 3.97,
+   "ok": false,
+   "requestBytes": 146,
+   "responseBytes": 1260
+  },
+  {
+   "method": "tabs.list",
+   "latencyMs": 42.08,
+   "ok": true,
+   "requestBytes": 103,
+   "responseBytes": 1136
+  },
+  {
+   "method": "tabs.open",
+   "latencyMs": 124.23,
+   "ok": true,
+   "requestBytes": 174,
+   "responseBytes": 285
+  },
+  {
+   "method": "tabs.activate",
+   "latencyMs": 9.58,
+   "ok": true,
+   "requestBytes": 125,
+   "responseBytes": 331
+  },
+  {
+   "method": "page.find",
+   "latencyMs": 45.74,
+   "ok": true,
+   "requestBytes": 184,
+   "responseBytes": 1242
+  },
+  {
+   "method": "page.click",
+   "latencyMs": 148.52,
+   "ok": true,
+   "requestBytes": 146,
+   "responseBytes": 716
+  },
+  {
+   "method": "page.find",
+   "latencyMs": 3.37,
+   "ok": true,
+   "requestBytes": 153,
+   "responseBytes": 1150
+  },
+  {
+   "method": "page.click",
+   "latencyMs": 145.77,
+   "ok": true,
+   "requestBytes": 146,
+   "responseBytes": 716
+  },
+  {
+   "method": "page.key",
+   "latencyMs": 5.1,
+   "ok": true,
+   "requestBytes": 175,
+   "responseBytes": 233
+  },
+  {
+   "method": "page.key",
+   "latencyMs": 45.02,
+   "ok": true,
+   "requestBytes": 168,
+   "responseBytes": 226
+  },
+  {
+   "method": "page.key",
+   "latencyMs": 38.99,
+   "ok": false,
+   "requestBytes": 165,
+   "responseBytes": 127
+  },
+  {
+   "method": "page.query",
+   "latencyMs": 42.44,
+   "ok": true,
+   "requestBytes": 142,
+   "responseBytes": 1222
+  },
+  {
+   "method": "page.click",
+   "latencyMs": 43.35,
+   "ok": false,
+   "requestBytes": 146,
+   "responseBytes": 122
+  },
+  {
+   "method": "page.focus",
+   "latencyMs": 42.37,
+   "ok": true,
+   "requestBytes": 146,
+   "responseBytes": 114
+  },
+  {
+   "method": "page.key",
+   "latencyMs": 42.31,
+   "ok": false,
+   "requestBytes": 164,
+   "responseBytes": 124
+  },
+  {
+   "method": "page.key",
+   "latencyMs": 41.01,
+   "ok": false,
+   "requestBytes": 175,
+   "responseBytes": 124
+  },
+  {
+   "method": "browser.burst",
+   "latencyMs": 3178.53,
+   "ok": true,
+   "requestBytes": 454,
+   "responseBytes": 5759
+  },
+  {
+   "method": "page.find",
+   "latencyMs": 2.56,
+   "ok": true,
+   "requestBytes": 159,
+   "responseBytes": 1218
+  },
+  {
+   "method": "page.find",
+   "latencyMs": 42.89,
+   "ok": true,
+   "requestBytes": 168,
+   "responseBytes": 1252
+  },
+  {
+   "method": "page.click",
+   "latencyMs": 195.13,
+   "ok": true,
+   "requestBytes": 146,
+   "responseBytes": 715
+  },
+  {
+   "method": "page.click",
+   "latencyMs": 2.87,
+   "ok": false,
+   "requestBytes": 146,
+   "responseBytes": 1278
+  },
+  {
+   "method": "page.click",
+   "latencyMs": 144.48,
+   "ok": true,
+   "requestBytes": 146,
+   "responseBytes": 716
+  },
+  {
+   "method": "page.pointer",
+   "latencyMs": 12.98,
+   "ok": true,
+   "requestBytes": 191,
+   "responseBytes": 1388
+  },
+  {
+   "method": "tabs.activate",
+   "latencyMs": 52.39,
+   "ok": true,
+   "requestBytes": 147,
+   "responseBytes": 300
+  },
+  {
+   "method": "tabs.close",
+   "latencyMs": 48.88,
+   "ok": true,
+   "requestBytes": 122,
+   "responseBytes": 71
+  },
+  {
+   "method": "page.find",
+   "latencyMs": 43.98,
+   "ok": true,
+   "requestBytes": 164,
+   "responseBytes": 881
+  },
+  {
+   "method": "page.find",
+   "latencyMs": 42.91,
+   "ok": true,
+   "requestBytes": 177,
+   "responseBytes": 1162
+  },
+  {
+   "method": "page.find",
+   "latencyMs": 42.36,
+   "ok": true,
+   "requestBytes": 165,
+   "responseBytes": 1214
+  },
+  {
+   "method": "page.click",
+   "latencyMs": 195.47,
+   "ok": true,
+   "requestBytes": 146,
+   "responseBytes": 715
+  },
+  {
+   "method": "page.click",
+   "latencyMs": 155.98,
+   "ok": true,
+   "requestBytes": 146,
+   "responseBytes": 714
+  },
+  {
+   "method": "page.read",
+   "latencyMs": 6.68,
+   "ok": true,
+   "requestBytes": 175,
+   "responseBytes": 1769
+  },
+  {
+   "method": "tabs.open",
+   "latencyMs": 125.66,
+   "ok": true,
+   "requestBytes": 174,
+   "responseBytes": 279
+  },
+  {
+   "method": "page.find",
+   "latencyMs": 5.1,
+   "ok": true,
+   "requestBytes": 180,
+   "responseBytes": 1184
+  },
+  {
+   "method": "page.click",
+   "latencyMs": 199.02,
+   "ok": true,
+   "requestBytes": 146,
+   "responseBytes": 715
+  },
+  {
+   "method": "page.read",
+   "latencyMs": 7.33,
+   "ok": true,
+   "requestBytes": 174,
+   "responseBytes": 1657
+  },
+  {
+   "method": "page.find",
+   "latencyMs": 43.49,
+   "ok": true,
+   "requestBytes": 156,
+   "responseBytes": 1244
+  },
+  {
+   "method": "page.read",
+   "latencyMs": 47.44,
+   "ok": true,
+   "requestBytes": 166,
+   "responseBytes": 6453
+  },
+  {
+   "method": "page.find",
+   "latencyMs": 43.99,
+   "ok": true,
+   "requestBytes": 174,
+   "responseBytes": 1208
+  },
+  {
+   "method": "page.click",
+   "latencyMs": 195.46,
+   "ok": true,
+   "requestBytes": 146,
+   "responseBytes": 715
+  },
+  {
+   "method": "page.read",
+   "latencyMs": 7.11,
+   "ok": true,
+   "requestBytes": 167,
+   "responseBytes": 6614
+  },
+  {
+   "method": "page.read",
+   "latencyMs": 48.56,
+   "ok": true,
+   "requestBytes": 167,
+   "responseBytes": 6296
+  },
+  {
+   "method": "page.read",
+   "latencyMs": 47.04,
+   "ok": true,
+   "requestBytes": 167,
+   "responseBytes": 2748
+  },
+  {
+   "method": "browser.burst",
+   "latencyMs": 1073.53,
+   "ok": true,
+   "requestBytes": 321,
+   "responseBytes": 2863
+  },
+  {
+   "method": "browser.burst",
+   "latencyMs": 1.15,
+   "ok": false,
+   "requestBytes": 190,
+   "responseBytes": 153
+  },
+  {
+   "method": "page.find",
+   "latencyMs": 42.63,
+   "ok": true,
+   "requestBytes": 165,
+   "responseBytes": 1162
+  },
+  {
+   "method": "page.click",
+   "latencyMs": 194.34,
+   "ok": true,
+   "requestBytes": 146,
+   "responseBytes": 715
+  },
+  {
+   "method": "watch.start",
+   "latencyMs": 3.33,
+   "ok": true,
+   "requestBytes": 288,
+   "responseBytes": 114
+  },
+  {
+   "method": "page.read",
+   "latencyMs": 7.98,
+   "ok": true,
+   "requestBytes": 135,
+   "responseBytes": 7329
+  },
+  {
+   "method": "watch.list",
+   "latencyMs": 42.43,
+   "ok": true,
+   "requestBytes": 122,
+   "responseBytes": 320
+  },
+  {
+   "method": "tabs.open",
+   "latencyMs": 124.53,
+   "ok": true,
+   "requestBytes": 174,
+   "responseBytes": 280
+  },
+  {
+   "method": "page.query",
+   "latencyMs": 3.47,
+   "ok": true,
+   "requestBytes": 145,
+   "responseBytes": 1158
+  },
+  {
+   "method": "page.click",
+   "latencyMs": 147.76,
+   "ok": true,
+   "requestBytes": 164,
+   "responseBytes": 716
+  },
+  {
+   "method": "page.find",
+   "latencyMs": 2.92,
+   "ok": true,
+   "requestBytes": 164,
+   "responseBytes": 1158
+  },
+  {
+   "method": "page.click",
+   "latencyMs": 3586.44,
+   "ok": true,
+   "requestBytes": 163,
+   "responseBytes": 759
+  },
+  {
+   "method": "page.query",
+   "latencyMs": 2.37,
+   "ok": true,
+   "requestBytes": 153,
+   "responseBytes": 1134
+  },
+  {
+   "method": "page.find",
+   "latencyMs": 43.03,
+   "ok": true,
+   "requestBytes": 166,
+   "responseBytes": 1170
+  },
+  {
+   "method": "page.find",
+   "latencyMs": 43.84,
+   "ok": true,
+   "requestBytes": 164,
+   "responseBytes": 1162
+  },
+  {
+   "method": "page.click",
+   "latencyMs": 194.99,
+   "ok": true,
+   "requestBytes": 164,
+   "responseBytes": 715
+  },
+  {
+   "method": "page.click",
+   "latencyMs": 729.71,
+   "ok": true,
+   "requestBytes": 163,
+   "responseBytes": 755
+  },
+  {
+   "method": "page.query",
+   "latencyMs": 2.49,
+   "ok": true,
+   "requestBytes": 155,
+   "responseBytes": 1142
+  },
+  {
+   "method": "page.find",
+   "latencyMs": 42.31,
+   "ok": true,
+   "requestBytes": 166,
+   "responseBytes": 1176
+  },
+  {
+   "method": "page.click",
+   "latencyMs": 970.28,
+   "ok": true,
+   "requestBytes": 212,
+   "responseBytes": 852
+  },
+  {
+   "method": "page.find",
+   "latencyMs": 2.57,
+   "ok": true,
+   "requestBytes": 164,
+   "responseBytes": 1162
+  },
+  {
+   "method": "page.find",
+   "latencyMs": 43.05,
+   "ok": true,
+   "requestBytes": 165,
+   "responseBytes": 1166
+  },
+  {
+   "method": "page.click",
+   "latencyMs": 194.28,
+   "ok": true,
+   "requestBytes": 164,
+   "responseBytes": 715
+  },
+  {
+   "method": "page.click",
+   "latencyMs": 7600.1,
+   "ok": false,
+   "requestBytes": 210,
+   "responseBytes": 697
+  },
+  {
+   "method": "tabs.navigate",
+   "latencyMs": 121.38,
+   "ok": true,
+   "requestBytes": 167,
+   "responseBytes": 295
+  },
+  {
+   "method": "page.click",
+   "latencyMs": 2.15,
+   "ok": false,
+   "requestBytes": 163,
+   "responseBytes": 520
+  },
+  {
+   "method": "tabs.close",
+   "latencyMs": 45.61,
+   "ok": true,
+   "requestBytes": 122,
+   "responseBytes": 71
+  },
+  {
+   "method": "tabs.open",
+   "latencyMs": 124.45,
+   "ok": true,
+   "requestBytes": 186,
+   "responseBytes": 302
+  },
+  {
+   "method": "page.query",
+   "latencyMs": 3.44,
+   "ok": true,
+   "requestBytes": 148,
+   "responseBytes": 1230
+  },
+  {
+   "method": "page.query",
+   "latencyMs": 43.13,
+   "ok": true,
+   "requestBytes": 154,
+   "responseBytes": 1260
+  },
+  {
+   "method": "page.click",
+   "latencyMs": 200.34,
+   "ok": true,
+   "requestBytes": 164,
+   "responseBytes": 715
+  },
+  {
+   "method": "page.click",
+   "latencyMs": 155.16,
+   "ok": true,
+   "requestBytes": 164,
+   "responseBytes": 714
+  },
+  {
+   "method": "page.read",
+   "latencyMs": 10.22,
+   "ok": true,
+   "requestBytes": 175,
+   "responseBytes": 2761
+  },
+  {
+   "method": "tabs.close",
+   "latencyMs": 51.34,
+   "ok": true,
+   "requestBytes": 122,
+   "responseBytes": 71
+  },
+  {
+   "method": "tabs.open",
+   "latencyMs": 126.64,
+   "ok": true,
+   "requestBytes": 189,
+   "responseBytes": 305
+  },
+  {
+   "method": "page.read",
+   "latencyMs": 15.42,
+   "ok": true,
+   "requestBytes": 168,
+   "responseBytes": 11046
+  },
+  {
+   "method": "page.query",
+   "latencyMs": 43.25,
+   "ok": true,
+   "requestBytes": 153,
+   "responseBytes": 1228
+  },
+  {
+   "method": "page.click",
+   "latencyMs": 197.18,
+   "ok": true,
+   "requestBytes": 164,
+   "responseBytes": 715
+  },
+  {
+   "method": "page.click",
+   "latencyMs": 7604.61,
+   "ok": false,
+   "requestBytes": 225,
+   "responseBytes": 697
+  },
+  {
+   "method": "page.read",
+   "latencyMs": 9.73,
+   "ok": true,
+   "requestBytes": 175,
+   "responseBytes": 2783
+  },
+  {
+   "method": "tabs.close",
+   "latencyMs": 50.72,
+   "ok": true,
+   "requestBytes": 122,
+   "responseBytes": 71
+  },
+  {
+   "method": "tabs.open",
+   "latencyMs": 126.98,
+   "ok": true,
+   "requestBytes": 185,
+   "responseBytes": 301
+  },
+  {
+   "method": "page.query",
+   "latencyMs": 3.66,
+   "ok": true,
+   "requestBytes": 147,
+   "responseBytes": 1226
+  },
+  {
+   "method": "page.query",
+   "latencyMs": 42.72,
+   "ok": true,
+   "requestBytes": 150,
+   "responseBytes": 1268
+  },
+  {
+   "method": "page.click",
+   "latencyMs": 201.55,
+   "ok": true,
+   "requestBytes": 164,
+   "responseBytes": 732
+  },
+  {
+   "method": "page.query",
+   "latencyMs": 2.29,
+   "ok": true,
+   "requestBytes": 147,
+   "responseBytes": 1226
+  },
+  {
+   "method": "page.click",
+   "latencyMs": 42.62,
+   "ok": false,
+   "requestBytes": 164,
+   "responseBytes": 520
+  },
+  {
+   "method": "tabs.close",
+   "latencyMs": 49.35,
+   "ok": true,
+   "requestBytes": 122,
+   "responseBytes": 71
+  },
+  {
+   "method": "tabs.open",
+   "latencyMs": 125.16,
+   "ok": true,
+   "requestBytes": 189,
+   "responseBytes": 305
+  },
+  {
+   "method": "page.query",
+   "latencyMs": 3.44,
+   "ok": true,
+   "requestBytes": 151,
+   "responseBytes": 1220
+  },
+  {
+   "method": "page.query",
+   "latencyMs": 43.01,
+   "ok": true,
+   "requestBytes": 153,
+   "responseBytes": 1256
+  },
+  {
+   "method": "page.click",
+   "latencyMs": 199.76,
+   "ok": true,
+   "requestBytes": 164,
+   "responseBytes": 715
+  },
+  {
+   "method": "page.click",
+   "latencyMs": 7602.6,
+   "ok": false,
+   "requestBytes": 164,
+   "responseBytes": 697
+  },
+  {
+   "method": "page.read",
+   "latencyMs": 50.15,
+   "ok": true,
+   "requestBytes": 175,
+   "responseBytes": 2770
+  },
+  {
+   "method": "tabs.close",
+   "latencyMs": 48.58,
+   "ok": true,
+   "requestBytes": 122,
+   "responseBytes": 71
+  },
+  {
+   "method": "tabs.open",
+   "latencyMs": 129.06,
+   "ok": true,
+   "requestBytes": 189,
+   "responseBytes": 305
+  },
+  {
+   "method": "page.query",
+   "latencyMs": 4.03,
+   "ok": true,
+   "requestBytes": 151,
+   "responseBytes": 1254
+  },
+  {
+   "method": "page.query",
+   "latencyMs": 43.01,
+   "ok": true,
+   "requestBytes": 152,
+   "responseBytes": 1220
+  },
+  {
+   "method": "page.click",
+   "latencyMs": 201.11,
+   "ok": true,
+   "requestBytes": 164,
+   "responseBytes": 715
+  },
+  {
+   "method": "page.click",
+   "latencyMs": 7603.44,
+   "ok": false,
+   "requestBytes": 164,
+   "responseBytes": 697
+  },
+  {
+   "method": "tabs.close",
+   "latencyMs": 8.42,
+   "ok": true,
+   "requestBytes": 122,
+   "responseBytes": 71
+  },
+  {
+   "method": "tabs.open",
+   "latencyMs": 124.82,
+   "ok": true,
+   "requestBytes": 174,
+   "responseBytes": 281
+  },
+  {
+   "method": "page.query",
+   "latencyMs": 3.63,
+   "ok": true,
+   "requestBytes": 148,
+   "responseBytes": 1234
+  },
+  {
+   "method": "page.click",
+   "latencyMs": 198.14,
+   "ok": true,
+   "requestBytes": 164,
+   "responseBytes": 715
+  },
+  {
+   "method": "page.query",
+   "latencyMs": 2.25,
+   "ok": true,
+   "requestBytes": 148,
+   "responseBytes": 1230
+  },
+  {
+   "method": "page.click",
+   "latencyMs": 149.87,
+   "ok": true,
+   "requestBytes": 194,
+   "responseBytes": 762
+  },
+  {
+   "method": "tabs.close",
+   "latencyMs": 11.43,
+   "ok": true,
+   "requestBytes": 122,
+   "responseBytes": 71
+  },
+  {
+   "method": "tabs.open",
+   "latencyMs": 126.76,
+   "ok": true,
+   "requestBytes": 174,
+   "responseBytes": 284
+  },
+  {
+   "method": "page.read",
+   "latencyMs": 35.51,
+   "ok": true,
+   "requestBytes": 168,
+   "responseBytes": 88975
+  },
+  {
+   "method": "page.read",
+   "latencyMs": 52.21,
+   "ok": true,
+   "requestBytes": 187,
+   "responseBytes": 3486
+  },
+  {
+   "method": "page.click",
+   "latencyMs": 150.23,
+   "ok": true,
+   "requestBytes": 146,
+   "responseBytes": 716
+  },
+  {
+   "method": "page.read",
+   "latencyMs": 8.07,
+   "ok": true,
+   "requestBytes": 187,
+   "responseBytes": 3486
+  },
+  {
+   "method": "page.click",
+   "latencyMs": 199.82,
+   "ok": true,
+   "requestBytes": 146,
+   "responseBytes": 715
+  },
+  {
+   "method": "page.read",
+   "latencyMs": 8.72,
+   "ok": true,
+   "requestBytes": 187,
+   "responseBytes": 3863
+  },
+  {
+   "method": "page.read",
+   "latencyMs": 50.51,
+   "ok": true,
+   "requestBytes": 183,
+   "responseBytes": 31829
+  },
+  {
+   "method": "page.query",
+   "latencyMs": 43.83,
+   "ok": true,
+   "requestBytes": 147,
+   "responseBytes": 1228
+  },
+  {
+   "method": "page.click",
+   "latencyMs": 149.36,
+   "ok": true,
+   "requestBytes": 146,
+   "responseBytes": 733
+  },
+  {
+   "method": "page.read",
+   "latencyMs": 9.16,
+   "ok": true,
+   "requestBytes": 187,
+   "responseBytes": 3523
+  },
+  {
+   "method": "tabs.close",
+   "latencyMs": 50.09,
+   "ok": true,
+   "requestBytes": 122,
+   "responseBytes": 71
+  },
+  {
+   "method": "tabs.open",
+   "latencyMs": 124.31,
+   "ok": true,
+   "requestBytes": 174,
+   "responseBytes": 281
+  },
+  {
+   "method": "page.query",
+   "latencyMs": 4.81,
+   "ok": true,
+   "requestBytes": 148,
+   "responseBytes": 1234
+  },
+  {
+   "method": "page.click",
+   "latencyMs": 197.8,
+   "ok": true,
+   "requestBytes": 193,
+   "responseBytes": 804
+  },
+  {
+   "method": "page.click",
+   "latencyMs": 2157.96,
+   "ok": true,
+   "requestBytes": 194,
+   "responseBytes": 810
+  },
+  {
+   "method": "page.query",
+   "latencyMs": 2.7,
+   "ok": true,
+   "requestBytes": 148,
+   "responseBytes": 1230
+  },
+  {
+   "method": "page.click",
+   "latencyMs": 194.67,
+   "ok": true,
+   "requestBytes": 146,
+   "responseBytes": 716
+  },
+  {
+   "method": "page.wait_for",
+   "latencyMs": 2.07,
+   "ok": true,
+   "requestBytes": 186,
+   "responseBytes": 102
+  },
+  {
+   "method": "browser.burst",
+   "latencyMs": 3054.97,
+   "ok": true,
+   "requestBytes": 276,
+   "responseBytes": 4184
+  },
+  {
+   "method": "tabs.close",
+   "latencyMs": 8.92,
+   "ok": true,
+   "requestBytes": 122,
+   "responseBytes": 71
+  },
+  {
+   "method": "tabs.open",
+   "latencyMs": 124.61,
+   "ok": true,
+   "requestBytes": 174,
+   "responseBytes": 284
+  },
+  {
+   "method": "page.query",
+   "latencyMs": 3.66,
+   "ok": true,
+   "requestBytes": 148,
+   "responseBytes": 1300
+  },
+  {
+   "method": "page.click",
+   "latencyMs": 162.09,
+   "ok": true,
+   "requestBytes": 193,
+   "responseBytes": 808
+  },
+  {
+   "method": "page.click",
+   "latencyMs": 2113.01,
+   "ok": true,
+   "requestBytes": 188,
+   "responseBytes": 947
+  },
+  {
+   "method": "tabs.close",
+   "latencyMs": 8.57,
+   "ok": true,
+   "requestBytes": 122,
+   "responseBytes": 71
+  },
+  {
+   "method": "tabs.open",
+   "latencyMs": 124.01,
+   "ok": true,
+   "requestBytes": 174,
+   "responseBytes": 280
+  },
+  {
+   "method": "page.query",
+   "latencyMs": 4.21,
+   "ok": true,
+   "requestBytes": 155,
+   "responseBytes": 1234
+  },
+  {
+   "method": "page.click",
+   "latencyMs": 1250.74,
+   "ok": true,
+   "requestBytes": 204,
+   "responseBytes": 807
+  },
+  {
+   "method": "page.query",
+   "latencyMs": 43.05,
+   "ok": true,
+   "requestBytes": 147,
+   "responseBytes": 1250
+  },
+  {
+   "method": "page.fill",
+   "latencyMs": 195.56,
+   "ok": true,
+   "requestBytes": 230,
+   "responseBytes": 808
+  },
+  {
+   "method": "page.read",
+   "latencyMs": 6.68,
+   "ok": true,
+   "requestBytes": 161,
+   "responseBytes": 1538
+  },
+  {
+   "method": "page.query",
+   "latencyMs": 42.38,
+   "ok": true,
+   "requestBytes": 147,
+   "responseBytes": 1250
+  },
+  {
+   "method": "page.fill",
+   "latencyMs": 2198.28,
+   "ok": true,
+   "requestBytes": 233,
+   "responseBytes": 811
+  },
+  {
+   "method": "page.query",
+   "latencyMs": 2.25,
+   "ok": true,
+   "requestBytes": 147,
+   "responseBytes": 1226
+  },
+  {
+   "method": "page.click",
+   "latencyMs": 702.92,
+   "ok": true,
+   "requestBytes": 194,
+   "responseBytes": 832
+  },
+  {
+   "method": "tabs.get",
+   "latencyMs": 1.37,
+   "ok": true,
+   "requestBytes": 120,
+   "responseBytes": 287
+  },
+  {
+   "method": "tabs.close",
+   "latencyMs": 56.69,
+   "ok": true,
+   "requestBytes": 122,
+   "responseBytes": 71
+  },
+  {
+   "method": "tabs.close",
+   "latencyMs": 45.86,
+   "ok": true,
+   "requestBytes": 122,
+   "responseBytes": 71
+  },
+  {
+   "method": "tabs.open",
+   "latencyMs": 126.67,
+   "ok": true,
+   "requestBytes": 174,
+   "responseBytes": 270
+  },
+  {
+   "method": "page.read",
+   "latencyMs": 9.49,
+   "ok": true,
+   "requestBytes": 148,
+   "responseBytes": 3714
+  },
+  {
+   "method": "page.read",
+   "latencyMs": 64.34,
+   "ok": true,
+   "requestBytes": 148,
+   "responseBytes": 76536
+  },
+  {
+   "method": "page.pointer",
+   "latencyMs": 49.24,
+   "ok": true,
+   "requestBytes": 178,
+   "responseBytes": 1119
+  },
+  {
+   "method": "page.read",
+   "latencyMs": 7.74,
+   "ok": true,
+   "requestBytes": 148,
+   "responseBytes": 3641
+  },
+  {
+   "method": "media.state",
+   "latencyMs": 42.62,
+   "ok": true,
+   "requestBytes": 135,
+   "responseBytes": 237
+  },
+  {
+   "method": "media.pause",
+   "latencyMs": 42.81,
+   "ok": true,
+   "requestBytes": 135,
+   "responseBytes": 237
+  },
+  {
+   "method": "media.seek",
+   "latencyMs": 42.52,
+   "ok": true,
+   "requestBytes": 150,
+   "responseBytes": 239
+  },
+  {
+   "method": "media.play",
+   "latencyMs": 43.15,
+   "ok": true,
+   "requestBytes": 134,
+   "responseBytes": 245
+  },
+  {
+   "method": "media.state",
+   "latencyMs": 2.53,
+   "ok": true,
+   "requestBytes": 135,
+   "responseBytes": 245
+  },
+  {
+   "method": "media.pause",
+   "latencyMs": 43.18,
+   "ok": true,
+   "requestBytes": 135,
+   "responseBytes": 244
+  },
+  {
+   "method": "media.seek",
+   "latencyMs": 39.31,
+   "ok": true,
+   "requestBytes": 150,
+   "responseBytes": 239
+  },
+  {
+   "method": "media.seek",
+   "latencyMs": 38.17,
+   "ok": true,
+   "requestBytes": 151,
+   "responseBytes": 240
+  },
+  {
+   "method": "media.seek",
+   "latencyMs": 39.02,
+   "ok": true,
+   "requestBytes": 150,
+   "responseBytes": 239
+  },
+  {
+   "method": "media.seek",
+   "latencyMs": 39.67,
+   "ok": true,
+   "requestBytes": 151,
+   "responseBytes": 240
+  },
+  {
+   "method": "media.seek",
+   "latencyMs": 39.24,
+   "ok": true,
+   "requestBytes": 150,
+   "responseBytes": 239
+  },
+  {
+   "method": "media.seek",
+   "latencyMs": 38.47,
+   "ok": true,
+   "requestBytes": 151,
+   "responseBytes": 240
+  },
+  {
+   "method": "media.seek",
+   "latencyMs": 39.9,
+   "ok": true,
+   "requestBytes": 150,
+   "responseBytes": 237
+  },
+  {
+   "method": "media.seek",
+   "latencyMs": 39.58,
+   "ok": true,
+   "requestBytes": 150,
+   "responseBytes": 239
+  },
+  {
+   "method": "media.seek",
+   "latencyMs": 39.07,
+   "ok": true,
+   "requestBytes": 150,
+   "responseBytes": 239
+  },
+  {
+   "method": "tabs.close",
+   "latencyMs": 48.29,
+   "ok": true,
+   "requestBytes": 122,
+   "responseBytes": 71
+  },
+  {
+   "method": "tabs.open",
+   "latencyMs": 126.95,
+   "ok": true,
+   "requestBytes": 174,
+   "responseBytes": 270
+  },
+  {
+   "method": "media.stream_start",
+   "latencyMs": 7.33,
+   "ok": true,
+   "requestBytes": 130,
+   "responseBytes": 107
+  },
+  {
+   "method": "media.stream_start",
+   "latencyMs": 42.86,
+   "ok": false,
+   "requestBytes": 130,
+   "responseBytes": 164
+  },
+  {
+   "method": "page.key",
+   "latencyMs": 45.39,
+   "ok": true,
+   "requestBytes": 149,
+   "responseBytes": 224
+  },
+  {
+   "method": "media.stream_stop",
+   "latencyMs": 5.28,
+   "ok": true,
+   "requestBytes": 111,
+   "responseBytes": 66
+  },
+  {
+   "method": "tabs.close",
+   "latencyMs": 49.45,
+   "ok": true,
+   "requestBytes": 122,
+   "responseBytes": 71
+  },
+  {
+   "method": "page.find",
+   "latencyMs": 47.16,
+   "ok": true,
+   "requestBytes": 182,
+   "responseBytes": 1236
+  },
+  {
+   "method": "page.click",
+   "latencyMs": 149.77,
+   "ok": true,
+   "requestBytes": 146,
+   "responseBytes": 733
+  },
+  {
+   "method": "page.read",
+   "latencyMs": 12.92,
+   "ok": true,
+   "requestBytes": 167,
+   "responseBytes": 36046
+  },
+  {
+   "method": "tabs.navigate",
+   "latencyMs": 124.46,
+   "ok": true,
+   "requestBytes": 177,
+   "responseBytes": 278
+  },
+  {
+   "method": "page.read",
+   "latencyMs": 14.13,
+   "ok": true,
+   "requestBytes": 167,
+   "responseBytes": 36222
+  },
+  {
+   "method": "page.capture",
+   "latencyMs": 46.49,
+   "ok": false,
+   "requestBytes": 124,
+   "responseBytes": 243
+  },
+  {
+   "method": "tabs.open",
+   "latencyMs": 124.29,
+   "ok": true,
+   "requestBytes": 172,
+   "responseBytes": 266
+  },
+  {
+   "method": "page.capture",
+   "latencyMs": 41.86,
+   "ok": true,
+   "requestBytes": 174,
+   "responseBytes": 12762
+  },
+  {
+   "method": "page.capture",
+   "latencyMs": 3.27,
+   "ok": true,
+   "requestBytes": 258,
+   "responseBytes": 540
+  },
+  {
+   "method": "page.capture",
+   "latencyMs": 40.2,
+   "ok": false,
+   "requestBytes": 124,
+   "responseBytes": 194
+  },
+  {
+   "method": "page.capture",
+   "latencyMs": 52.61,
+   "ok": true,
+   "requestBytes": 179,
+   "responseBytes": 6564
+  },
+  {
+   "method": "tabs.close",
+   "latencyMs": 49.68,
+   "ok": true,
+   "requestBytes": 122,
+   "responseBytes": 71
+  },
+  {
+   "method": "tabs.open",
+   "latencyMs": 125.39,
+   "ok": true,
+   "requestBytes": 171,
+   "responseBytes": 264
+  },
+  {
+   "method": "page.capture",
+   "latencyMs": 37.68,
+   "ok": false,
+   "requestBytes": 124,
+   "responseBytes": 192
+  },
+  {
+   "method": "tabs.close",
+   "latencyMs": 47.73,
+   "ok": true,
+   "requestBytes": 122,
+   "responseBytes": 71
+  },
+  {
+   "method": "tabs.open",
+   "latencyMs": 124.43,
+   "ok": true,
+   "requestBytes": 172,
+   "responseBytes": 274
+  },
+  {
+   "method": "page.capture",
+   "latencyMs": 4.94,
+   "ok": false,
+   "requestBytes": 124,
+   "responseBytes": 241
+  },
+  {
+   "method": "tabs.close",
+   "latencyMs": 47.31,
+   "ok": true,
+   "requestBytes": 122,
+   "responseBytes": 71
+  },
+  {
+   "method": "page.read",
+   "latencyMs": 45.0,
+   "ok": true,
+   "requestBytes": 176,
+   "responseBytes": 12718
+  },
+  {
+   "method": "page.read",
+   "latencyMs": 45.59,
+   "ok": true,
+   "requestBytes": 180,
+   "responseBytes": 12575
+  },
+  {
+   "method": "tabs.activate",
+   "latencyMs": 41.83,
+   "ok": true,
+   "requestBytes": 147,
+   "responseBytes": 299
+  },
+  {
+   "method": "tabs.activate",
+   "latencyMs": 41.86,
+   "ok": true,
+   "requestBytes": 147,
+   "responseBytes": 299
+  },
+  {
+   "method": "tabs.navigate",
+   "latencyMs": 42.18,
+   "ok": true,
+   "requestBytes": 177,
+   "responseBytes": 277
+  },
+  {
+   "method": "page.query",
+   "latencyMs": 43.75,
+   "ok": true,
+   "requestBytes": 169,
+   "responseBytes": 1200
+  },
+  {
+   "method": "page.click",
+   "latencyMs": 164.28,
+   "ok": true,
+   "requestBytes": 163,
+   "responseBytes": 760
+  },
+  {
+   "method": "page.read",
+   "latencyMs": 14.5,
+   "ok": true,
+   "requestBytes": 167,
+   "responseBytes": 42565
+  },
+  {
+   "method": "page.query",
+   "latencyMs": 45.39,
+   "ok": true,
+   "requestBytes": 169,
+   "responseBytes": 1188
+  },
+  {
+   "method": "tabs.activate",
+   "latencyMs": 42.15,
+   "ok": true,
+   "requestBytes": 125,
+   "responseBytes": 307
+  },
+  {
+   "method": "page.pointer",
+   "latencyMs": 60.8,
+   "ok": true,
+   "requestBytes": 197,
+   "responseBytes": 1232
+  },
+  {
+   "method": "page.query",
+   "latencyMs": 43.23,
+   "ok": true,
+   "requestBytes": 145,
+   "responseBytes": 1190
+  },
+  {
+   "method": "page.query",
+   "latencyMs": 42.3,
+   "ok": true,
+   "requestBytes": 146,
+   "responseBytes": 1166
+  },
+  {
+   "method": "page.pointer",
+   "latencyMs": 62.98,
+   "ok": true,
+   "requestBytes": 226,
+   "responseBytes": 2093
+  },
+  {
+   "method": "page.query",
+   "latencyMs": 42.14,
+   "ok": true,
+   "requestBytes": 146,
+   "responseBytes": 1166
+  },
+  {
+   "method": "page.pointer",
+   "latencyMs": 225.18,
+   "ok": true,
+   "requestBytes": 213,
+   "responseBytes": 2261
+  },
+  {
+   "method": "page.query",
+   "latencyMs": 2.25,
+   "ok": true,
+   "requestBytes": 165,
+   "responseBytes": 1258
+  },
+  {
+   "method": "page.fill",
+   "latencyMs": 151.03,
+   "ok": true,
+   "requestBytes": 175,
+   "responseBytes": 714
+  },
+  {
+   "method": "page.key",
+   "latencyMs": 2.42,
+   "ok": true,
+   "requestBytes": 154,
+   "responseBytes": 148
+  },
+  {
+   "method": "page.query",
+   "latencyMs": 42.25,
+   "ok": true,
+   "requestBytes": 165,
+   "responseBytes": 1292
+  },
+  {
+   "method": "browser.burst",
+   "latencyMs": 168.07,
+   "ok": true,
+   "requestBytes": 474,
+   "responseBytes": 4513
+  },
+  {
+   "method": "page.query",
+   "latencyMs": 2.44,
+   "ok": true,
+   "requestBytes": 165,
+   "responseBytes": 1278
+  },
+  {
+   "method": "browser.burst",
+   "latencyMs": 46.91,
+   "ok": true,
+   "requestBytes": 259,
+   "responseBytes": 2463
+  },
+  {
+   "method": "browser.burst",
+   "latencyMs": 47.07,
+   "ok": true,
+   "requestBytes": 259,
+   "responseBytes": 2465
+  },
+  {
+   "method": "browser.burst",
+   "latencyMs": 47.87,
+   "ok": true,
+   "requestBytes": 259,
+   "responseBytes": 2465
+  },
+  {
+   "method": "browser.burst",
+   "latencyMs": 47.0,
+   "ok": true,
+   "requestBytes": 259,
+   "responseBytes": 2465
+  },
+  {
+   "method": "browser.burst",
+   "latencyMs": 46.65,
+   "ok": true,
+   "requestBytes": 259,
+   "responseBytes": 2463
+  },
+  {
+   "method": "browser.burst",
+   "latencyMs": 47.2,
+   "ok": true,
+   "requestBytes": 259,
+   "responseBytes": 2465
+  },
+  {
+   "method": "browser.burst",
+   "latencyMs": 47.21,
+   "ok": true,
+   "requestBytes": 259,
+   "responseBytes": 2463
+  },
+  {
+   "method": "browser.burst",
+   "latencyMs": 47.64,
+   "ok": true,
+   "requestBytes": 259,
+   "responseBytes": 2465
+  },
+  {
+   "method": "browser.burst",
+   "latencyMs": 46.46,
+   "ok": true,
+   "requestBytes": 259,
+   "responseBytes": 2465
+  },
+  {
+   "method": "browser.burst",
+   "latencyMs": 45.78,
+   "ok": true,
+   "requestBytes": 259,
+   "responseBytes": 2463
+  },
+  {
+   "method": "browser.burst",
+   "latencyMs": 46.23,
+   "ok": true,
+   "requestBytes": 259,
+   "responseBytes": 2463
+  },
+  {
+   "method": "browser.burst",
+   "latencyMs": 46.81,
+   "ok": true,
+   "requestBytes": 259,
+   "responseBytes": 2465
+  },
+  {
+   "method": "browser.burst",
+   "latencyMs": 47.69,
+   "ok": true,
+   "requestBytes": 259,
+   "responseBytes": 2463
+  },
+  {
+   "method": "browser.burst",
+   "latencyMs": 47.17,
+   "ok": true,
+   "requestBytes": 259,
+   "responseBytes": 2465
+  },
+  {
+   "method": "browser.burst",
+   "latencyMs": 46.34,
+   "ok": true,
+   "requestBytes": 259,
+   "responseBytes": 2465
+  },
+  {
+   "method": "browser.burst",
+   "latencyMs": 46.85,
+   "ok": true,
+   "requestBytes": 259,
+   "responseBytes": 2465
+  },
+  {
+   "method": "browser.burst",
+   "latencyMs": 46.56,
+   "ok": true,
+   "requestBytes": 259,
+   "responseBytes": 2465
+  },
+  {
+   "method": "browser.burst",
+   "latencyMs": 47.74,
+   "ok": true,
+   "requestBytes": 259,
+   "responseBytes": 2465
+  },
+  {
+   "method": "browser.burst",
+   "latencyMs": 50.31,
+   "ok": true,
+   "requestBytes": 259,
+   "responseBytes": 2465
+  },
+  {
+   "method": "browser.burst",
+   "latencyMs": 46.51,
+   "ok": true,
+   "requestBytes": 259,
+   "responseBytes": 2465
+  },
+  {
+   "method": "page.query",
+   "latencyMs": 42.66,
+   "ok": true,
+   "requestBytes": 145,
+   "responseBytes": 1242
+  },
+  {
+   "method": "page.pointer",
+   "latencyMs": 42.59,
+   "ok": false,
+   "requestBytes": 200,
+   "responseBytes": 129
+  },
+  {
+   "method": "page.fill",
+   "latencyMs": 43.78,
+   "ok": false,
+   "requestBytes": 175,
+   "responseBytes": 117
+  },
+  {
+   "method": "page.fill",
+   "latencyMs": 42.61,
+   "ok": false,
+   "requestBytes": 192,
+   "responseBytes": 117
+  },
+  {
+   "method": "browser.burst",
+   "latencyMs": 42.38,
+   "ok": true,
+   "requestBytes": 311,
+   "responseBytes": 298
+  },
+  {
+   "method": "page.query",
+   "latencyMs": 43.84,
+   "ok": true,
+   "requestBytes": 165,
+   "responseBytes": 1278
+  },
+  {
+   "method": "page.query",
+   "latencyMs": 42.26,
+   "ok": true,
+   "requestBytes": 143,
+   "responseBytes": 1230
+  },
+  {
+   "method": "page.click",
+   "latencyMs": 42.79,
+   "ok": false,
+   "requestBytes": 165,
+   "responseBytes": 113
+  },
+  {
+   "method": "page.fill",
+   "latencyMs": 42.3,
+   "ok": false,
+   "requestBytes": 183,
+   "responseBytes": 113
+  },
+  {
+   "method": "page.collect_links",
+   "latencyMs": 42.59,
+   "ok": true,
+   "requestBytes": 163,
+   "responseBytes": 166
+  },
+  {
+   "method": "tabs.open",
+   "latencyMs": 132.84,
+   "ok": true,
+   "requestBytes": 183,
+   "responseBytes": 275
+  },
+  {
+   "method": "tabs.list",
+   "latencyMs": 1.53,
+   "ok": true,
+   "requestBytes": 124,
+   "responseBytes": 1561
+  },
+  {
+   "method": "tabs.get",
+   "latencyMs": 39.48,
+   "ok": true,
+   "requestBytes": 120,
+   "responseBytes": 262
+  },
+  {
+   "method": "tabs.find",
+   "latencyMs": 38.45,
+   "ok": true,
+   "requestBytes": 153,
+   "responseBytes": 705
+  },
+  {
+   "method": "tabs.open",
+   "latencyMs": 121.72,
+   "ok": true,
+   "requestBytes": 187,
+   "responseBytes": 279
+  },
+  {
+   "method": "tabs.close",
+   "latencyMs": 5.22,
+   "ok": true,
+   "requestBytes": 122,
+   "responseBytes": 71
+  },
+  {
+   "method": "page.read",
+   "latencyMs": 40.06,
+   "ok": true,
+   "requestBytes": 174,
+   "responseBytes": 1020
+  },
+  {
+   "method": "page.query",
+   "latencyMs": 39.16,
+   "ok": true,
+   "requestBytes": 165,
+   "responseBytes": 1278
+  },
+  {
+   "method": "page.fill",
+   "latencyMs": 143.66,
+   "ok": true,
+   "requestBytes": 173,
+   "responseBytes": 714
+  },
+  {
+   "method": "page.fill",
+   "latencyMs": 111.5,
+   "ok": true,
+   "requestBytes": 194,
+   "responseBytes": 744
+  },
+  {
+   "method": "page.query",
+   "latencyMs": 2.01,
+   "ok": true,
+   "requestBytes": 165,
+   "responseBytes": 1296
+  },
+  {
+   "method": "page.query",
+   "latencyMs": 40.57,
+   "ok": true,
+   "requestBytes": 167,
+   "responseBytes": 1200
+  },
+  {
+   "method": "page.fill",
+   "latencyMs": 148.81,
+   "ok": true,
+   "requestBytes": 206,
+   "responseBytes": 743
+  },
+  {
+   "method": "page.query",
+   "latencyMs": 1.89,
+   "ok": true,
+   "requestBytes": 167,
+   "responseBytes": 1304
+  },
+  {
+   "method": "page.query",
+   "latencyMs": 39.0,
+   "ok": true,
+   "requestBytes": 145,
+   "responseBytes": 1242
+  },
+  {
+   "method": "page.fill",
+   "latencyMs": 39.45,
+   "ok": false,
+   "requestBytes": 183,
+   "responseBytes": 117
+  },
+  {
+   "method": "page.scroll",
+   "latencyMs": 291.53,
+   "ok": true,
+   "requestBytes": 148,
+   "responseBytes": 1012
+  },
+  {
+   "method": "page.query",
+   "latencyMs": 1.98,
+   "ok": true,
+   "requestBytes": 145,
+   "responseBytes": 1242
+  },
+  {
+   "method": "page.pointer",
+   "latencyMs": 39.64,
+   "ok": false,
+   "requestBytes": 169,
+   "responseBytes": 129
+  },
+  {
+   "method": "page.focus",
+   "latencyMs": 39.58,
+   "ok": true,
+   "requestBytes": 146,
+   "responseBytes": 115
+  },
+  {
+   "method": "page.key",
+   "latencyMs": 39.07,
+   "ok": true,
+   "requestBytes": 152,
+   "responseBytes": 146
+  },
+  {
+   "method": "page.key",
+   "latencyMs": 40.65,
+   "ok": true,
+   "requestBytes": 151,
+   "responseBytes": 226
+  },
+  {
+   "method": "page.query",
+   "latencyMs": 40.4,
+   "ok": true,
+   "requestBytes": 145,
+   "responseBytes": 1188
+  },
+  {
+   "method": "page.click",
+   "latencyMs": 197.31,
+   "ok": true,
+   "requestBytes": 164,
+   "responseBytes": 717
+  },
+  {
+   "method": "page.click",
+   "latencyMs": 191.75,
+   "ok": true,
+   "requestBytes": 163,
+   "responseBytes": 764
+  },
+  {
+   "method": "page.find",
+   "latencyMs": 4.67,
+   "ok": true,
+   "requestBytes": 151,
+   "responseBytes": 1188
+  },
+  {
+   "method": "page.collect_links",
+   "latencyMs": 38.68,
+   "ok": true,
+   "requestBytes": 163,
+   "responseBytes": 166
+  },
+  {
+   "method": "page.wait_for",
+   "latencyMs": 38.8,
+   "ok": true,
+   "requestBytes": 167,
+   "responseBytes": 637
+  },
+  {
+   "method": "page.scroll",
+   "latencyMs": 190.27,
+   "ok": true,
+   "requestBytes": 133,
+   "responseBytes": 1013
+  },
+  {
+   "method": "page.query",
+   "latencyMs": 2.2,
+   "ok": true,
+   "requestBytes": 145,
+   "responseBytes": 1170
+  },
+  {
+   "method": "page.scroll",
+   "latencyMs": 190.1,
+   "ok": true,
+   "requestBytes": 148,
+   "responseBytes": 1013
+  },
+  {
+   "method": "page.query",
+   "latencyMs": 2.34,
+   "ok": true,
+   "requestBytes": 145,
+   "responseBytes": 1170
+  },
+  {
+   "method": "page.pointer",
+   "latencyMs": 420.75,
+   "ok": true,
+   "requestBytes": 167,
+   "responseBytes": 1140
+  },
+  {
+   "method": "page.query",
+   "latencyMs": 2.05,
+   "ok": true,
+   "requestBytes": 152,
+   "responseBytes": 1176
+  },
+  {
+   "method": "browser.burst",
+   "latencyMs": 1009.47,
+   "ok": true,
+   "requestBytes": 395,
+   "responseBytes": 3499
+  },
+  {
+   "method": "page.query",
+   "latencyMs": 2.02,
+   "ok": true,
+   "requestBytes": 167,
+   "responseBytes": 1110
+  },
+  {
+   "method": "page.query",
+   "latencyMs": 2.74,
+   "ok": true,
+   "requestBytes": 167,
+   "responseBytes": 1114
+  },
+  {
+   "method": "page.query",
+   "latencyMs": 39.02,
+   "ok": true,
+   "requestBytes": 152,
+   "responseBytes": 1176
+  },
+  {
+   "method": "page.query",
+   "latencyMs": 39.87,
+   "ok": true,
+   "requestBytes": 148,
+   "responseBytes": 1238
+  },
+  {
+   "method": "page.scroll",
+   "latencyMs": 189.63,
+   "ok": true,
+   "requestBytes": 147,
+   "responseBytes": 1013
+  },
+  {
+   "method": "page.query",
+   "latencyMs": 2.52,
+   "ok": true,
+   "requestBytes": 150,
+   "responseBytes": 1242
+  },
+  {
+   "method": "page.read",
+   "latencyMs": 57.42,
+   "ok": true,
+   "requestBytes": 168,
+   "responseBytes": 76770
+  },
+  {
+   "method": "page.query",
+   "latencyMs": 42.77,
+   "ok": true,
+   "requestBytes": 148,
+   "responseBytes": 1238
+  },
+  {
+   "method": "page.pointer",
+   "latencyMs": 2203.1,
+   "ok": true,
+   "requestBytes": 178,
+   "responseBytes": 2183
+  },
+  {
+   "method": "page.query",
+   "latencyMs": 2.12,
+   "ok": true,
+   "requestBytes": 150,
+   "responseBytes": 1242
+  },
+  {
+   "method": "page.read",
+   "latencyMs": 60.25,
+   "ok": true,
+   "requestBytes": 168,
+   "responseBytes": 78003
+  },
+  {
+   "method": "page.pointer",
+   "latencyMs": 1760.15,
+   "ok": true,
+   "requestBytes": 179,
+   "responseBytes": 2188
+  },
+  {
+   "method": "page.pointer",
+   "latencyMs": 2026.75,
+   "ok": true,
+   "requestBytes": 179,
+   "responseBytes": 2188
+  },
+  {
+   "method": "page.query",
+   "latencyMs": 2.26,
+   "ok": true,
+   "requestBytes": 150,
+   "responseBytes": 1246
+  },
+  {
+   "method": "page.read",
+   "latencyMs": 59.05,
+   "ok": true,
+   "requestBytes": 168,
+   "responseBytes": 78463
+  },
+  {
+   "method": "page.read",
+   "latencyMs": 62.7,
+   "ok": true,
+   "requestBytes": 168,
+   "responseBytes": 77854
+  },
+  {
+   "method": "page.query",
+   "latencyMs": 42.42,
+   "ok": true,
+   "requestBytes": 145,
+   "responseBytes": 1188
+  },
+  {
+   "method": "page.click",
+   "latencyMs": 196.78,
+   "ok": true,
+   "requestBytes": 164,
+   "responseBytes": 719
+  },
+  {
+   "method": "page.read",
+   "latencyMs": 20.55,
+   "ok": true,
+   "requestBytes": 168,
+   "responseBytes": 78067
+  },
+  {
+   "method": "page.pointer",
+   "latencyMs": 245.42,
+   "ok": false,
+   "requestBytes": 197,
+   "responseBytes": 332
+  },
+  {
+   "method": "tabs.navigate",
+   "latencyMs": 80.06,
+   "ok": true,
+   "requestBytes": 197,
+   "responseBytes": 299
+  },
+  {
+   "method": "tabs.reload",
+   "latencyMs": 79.46,
+   "ok": true,
+   "requestBytes": 137,
+   "responseBytes": 282
+  },
+  {
+   "method": "browser.burst",
+   "latencyMs": 163.67,
+   "ok": true,
+   "requestBytes": 352,
+   "responseBytes": 4257
+  },
+  {
+   "method": "tabs.open",
+   "latencyMs": 91.02,
+   "ok": true,
+   "requestBytes": 171,
+   "responseBytes": 269
+  },
+  {
+   "method": "page.read",
+   "latencyMs": 8.02,
+   "ok": true,
+   "requestBytes": 193,
+   "responseBytes": 3966
+  },
+  {
+   "method": "statement.download",
+   "latencyMs": 299.36,
+   "ok": true,
+   "requestBytes": 366,
+   "responseBytes": 697
+  },
+  {
+   "method": "statement.download",
+   "latencyMs": 257.85,
+   "ok": true,
+   "requestBytes": 366,
+   "responseBytes": 821
+  },
+  {
+   "method": "statement.manifest",
+   "latencyMs": 1.25,
+   "ok": true,
+   "requestBytes": 112,
+   "responseBytes": 646
+  },
+  {
+   "method": "browser.ping",
+   "latencyMs": 504.77,
+   "ok": true,
+   "requestBytes": 106,
+   "responseBytes": 871
+  },
+  {
+   "method": "browser.ping",
+   "latencyMs": 3.34,
+   "ok": true,
+   "requestBytes": 106,
+   "responseBytes": 871
+  }
+ ]
+}

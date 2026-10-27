@@ -1,7 +1,7 @@
 // @last-edited: 2026-10-14 UTC+7.
 // @title: ws-server.test — the loopback socket speaks RFC 6455 well enough to be trusted.
 // @state: unit pins the handshake, the three length forms, split-frame decoding, and fragmented messages.
-// @dependencies: node:test, strict, ../local/ws-server.js.
+// @dependencies: node:test, strict, ../local/bridge/ws-server.js.
 
 // WHY THIS IS TESTED BEFORE IT IS WIRED.
 // The device is the other half of a socket that only exists on this machine: if the handshake or a frame length is wrong, the extension reports an offline device while the server reports a live one.
@@ -10,7 +10,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { acceptKey, encodeText, createFrameReader, isWebSocketUpgrade } from '../local/ws-server.js';
+import { acceptKey, encodeText, createFrameReader, isWebSocketUpgrade } from '../local/bridge/ws-server.js';
 
 function maskedFrame(opcode, text, { fin = true } = {}) {
   const payload = Buffer.from(text, 'utf8');

@@ -1,7 +1,7 @@
 // @last-edited: 2026-10-25 UTC+7.
 // @title: tools — the MCP tool surface of the local driver, with the schema each call is answered against.
 // @state: every tool name, its description and its input schema, frozen in one table.
-// @dependencies: ./burst.js.
+// @dependencies: burst.
 
 // WHY THE SURFACE IS A TABLE AND NOT A SWITCH.
 // A tool the agent can call is a promise made in writing, and the promise is read far more often than the code behind it is.
@@ -13,7 +13,7 @@
 // A hyphen is refused by every identifier this tree writes - Postgres function names, workflow names in the migrations, and the plugin manifest's name_for_model are all read as bare identifiers, and a hyphen forces quoting in every one of them.
 // An underscore survives JavaScript, TypeScript and SQL unquoted, so it is the one separator that never has to be escaped, and the wire protocol uses it the same way inside a name: page.wait_for.
 
-import { BURST_ACTIONS, BURST_MAX_STEPS } from './burst.js';
+import { BURST_ACTIONS, BURST_MAX_STEPS } from '../drive/burst.js';
 
 const stringArg = (name) => ({ type: 'string', description: name });
 const numberArg = (name) => ({ type: 'number', description: name });

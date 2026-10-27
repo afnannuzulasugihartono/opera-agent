@@ -654,7 +654,7 @@ function vmRunResult(value: unknown) {
   return textResult(value);
 }
 
-const SERVER_VERSION = "1.6.27";
+const SERVER_VERSION = "1.6.28";
 
 // WHY A SOCKET NEXT TO THE HTTP.
 // Every HTTPS call pays for an isolate that has never run before: the platform boots one per request, measured here as twenty distinct isolates for twenty probes, and the boot plus the round trips it cannot reuse cost roughly 1.8 s against work the browser answers in under a millisecond.

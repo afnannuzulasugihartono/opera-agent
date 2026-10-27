@@ -1,13 +1,13 @@
 // @last-edited: 2026-10-27 UTC+7.
 // @title: surface-drive — the assembled driver, proved against a fake CDP client.
 // @state: the profile tool, the gated read, and the answer that names what it skipped and why.
-// @dependencies: node:test, node:assert/strict, ../local/primitives.js, ../local/read-strategy.js.
+// @dependencies: node:test, node:assert/strict, ../local/drive/primitives.js, ../local/surface/read-strategy.js.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { createPrimitives } from '../local/primitives.js';
-import { HARM_CARET_MOVE, STRATEGY_AX } from '../local/read-strategy.js';
+import { createPrimitives } from '../local/drive/primitives.js';
+import { HARM_CARET_MOVE, STRATEGY_AX } from '../local/surface/read-strategy.js';
 
 const richAx = ['PROPOSAL PENAWARAN', 'Kepada Yth.', 'Tim Pengembangan Lokasi', 'PT Indomarco Prismatama', 'Perihal penawaran lokasi', '1. Identitas Pengusul', '2. Latar Belakang', '3. Rincian Penawaran', '4. Nilai Investasi', '5. Jadwal'];
 const poorAx = ['Share'];

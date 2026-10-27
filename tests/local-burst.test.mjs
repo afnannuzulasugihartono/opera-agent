@@ -1,7 +1,7 @@
 // @last-edited: 2026-10-22 UTC+7.
 // @title: local-burst — dependent steps on one tab, one page read at the end.
 // @state: step bounds, ref integrity, stop-on-failure, and a whole-burst deadline.
-// @dependencies: node:test, strict, ../local/burst.js.
+// @dependencies: node:test, strict, ../local/drive/burst.js.
 
 // WHY THIS FILE EXISTS
 
@@ -12,7 +12,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { normalizeBurst, runLocalBurst } from '../local/burst.js';
+import { normalizeBurst, runLocalBurst } from '../local/drive/burst.js';
 
 function fakeDriver() {
   const calls = [];
