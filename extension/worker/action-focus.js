@@ -295,8 +295,18 @@ export async function trustedPointer(tabId, params, context) {
         stableRounds: 2
       });
       scroll.inputMethod = 'debugger';
-      const canMoveY = deltaY > 0 ? !scroll.after?.reachedBottom : deltaY < 0 ? !scroll.after?.reachedTop : false;
-      const canMoveX = deltaX > 0 ? !scroll.after?.reachedRight : deltaX < 0 ? !scroll.after?.reachedLeft : false;
+
+      // WHY THE BOUNDARY IS READ PER AXIS AND PER DIRECTION.
+      // A wheel that moved down asks whether the bottom was reached, and a wheel that moved up asks about the top; asking the wrong one reports a scroll that stopped when it had room.
+      // Written as one expression over four directions it is unreadable, and the answer it gives is what the caller uses to decide whether to scroll again.
+      // It is read after the fallback rather than before it, so the boundary describes the scroll the caller ended up with rather than the one the debugger attempted.
+      const boundaryFor = (axis, delta) => {
+        if (delta > 0) return scroll.after?.[`reached${axis === 'Y' ? 'Bottom' : 'Right'}`] === true;
+        if (delta < 0) return scroll.after?.[`reached${axis === 'Y' ? 'Top' : 'Left'}`] === true;
+        return false;
+      };
+      const canMoveY = deltaY !== 0 && !boundaryFor('Y', deltaY);
+      const canMoveX = deltaX !== 0 && !boundaryFor('X', deltaX);
       if (!scroll.moved && (canMoveY || canMoveX)) {
         scroll = await contentCall(tabId, 'page.scroll_target', {
           x: start.x,
@@ -309,7 +319,7 @@ export async function trustedPointer(tabId, params, context) {
         });
         scroll.inputMethod = 'dom-fallback';
       }
-      scroll.reachedBoundary = deltaY > 0 ? scroll.after?.reachedBottom : deltaY < 0 ? scroll.after?.reachedTop : deltaX > 0 ? scroll.after?.reachedRight : deltaX < 0 ? scroll.after?.reachedLeft : false;
+      scroll.reachedBoundary = deltaY !== 0 ? boundaryFor('Y', deltaY) : boundaryFor('X', deltaX);
     }
     return { ok: true, method: 'debugger', action, executionMode: mode, visiblePointer, start, end, ...(scroll ? { scroll } : {}) };
   })));

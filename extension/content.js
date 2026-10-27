@@ -483,6 +483,9 @@
     return `${(first >>> 0).toString(16).padStart(8, '0')}${(second >>> 0).toString(16).padStart(8, '0')}`;
   }
 
+  // WHY AN ELEMENT IS NAMED BY THE STRONGEST THING IT HAS.
+  // A key has to survive the page redrawing the same element, so it is built from what is most stable about it: a link's address, then its id, then what it says.
+  // The order is a ranking rather than a formula, and a reader checking that the ranking is right should not have to parse a ternary inside a ternary inside a template literal.
   function stableElementIdentity(el) {
     const tag = String(el.tagName || '').toLowerCase();
     const href = el instanceof HTMLAnchorElement ? clean(el.href, 1200) : '';
@@ -491,8 +494,11 @@
     const name = clean(el.getAttribute?.('name'), 120);
     const label = getAssociatedLabel(el);
     const text = clean(el.innerText || el.textContent || '', 300);
-    const source = href ? `href:${href}` : id ? `id:${id}` : `semantic:${tag}|${role}|${name}|${label}|${text}`;
-    return { stableKey: `oa_${stableHash(source)}`, stableKeySource: href ? 'href' : id ? 'id' : 'semantic' };
+    const semantic = `semantic:${tag}|${role}|${name}|${label}|${text}`;
+    const [source, sourceKind] = href
+      ? [`href:${href}`, 'href']
+      : id ? [`id:${id}`, 'id'] : [semantic, 'semantic'];
+    return { stableKey: `oa_${stableHash(source)}`, stableKeySource: sourceKind };
   }
 
   function viewportState() {

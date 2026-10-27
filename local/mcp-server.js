@@ -179,6 +179,8 @@ const afterAction = async (driver, action, limit) => {
   lastSeen = seen;
   const tab = tabSaid.get(driver) ?? null;
   const diff = diffElements(prev ?? [], seen);
+  // A comparison needs both sides: the first action on a driver has no previous page, so url and textGrow are null rather than a difference against nothing.
+  const bothStates = Boolean(prevState && state);
   return asText({
     action,
     ...(tab ? { tab } : {}),
@@ -196,8 +198,8 @@ const afterAction = async (driver, action, limit) => {
       removed: diff.removed,
       reshaped: diff.reshaped,
       baseline: prev === null,
-      url: prevState && state ? (prevState.url === state.url ? 'same' : state.url) : null,
-      textGrew: prevState && state ? state.textChars - prevState.textChars : null
+      url: bothStates ? (prevState.url === state.url ? 'same' : state.url) : null,
+      textGrew: bothStates ? state.textChars - prevState.textChars : null
     }
   });
 };
