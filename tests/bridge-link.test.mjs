@@ -59,7 +59,7 @@ globalThis.OPERA_BRIDGE_WS = `ws://127.0.0.1:${PORT}`;
 const bridge = createBridgeServer({ port: PORT, heartbeatMs: 500 });
 await bridge.listen();
 
-const { stopBridgeLink, bridgeLinkState, ensureBridgeLink } = await import('../extension/worker/bridge-link.js');
+const { stopBridgeLink, bridgeLinkState, ensureBridgeLink, discoverBridge, probePort, CANDIDATE_PORTS } = await import('../extension/worker/bridge-link.js');
 
 const deadline = Date.now() + 5000;
 while (!bridge.linked() && Date.now() < deadline) await new Promise((r) => setTimeout(r, 25));
@@ -67,6 +67,43 @@ while (!bridge.linked() && Date.now() < deadline) await new Promise((r) => setTi
 test.after(async () => {
   stopBridgeLink();
   await bridge.close();
+});
+
+// WHY THE PORT IS DISCOVERED RATHER THAN TRUSTED.
+// Measured live: a stale extension dialled ws://127.0.0.1:19451 while the local server listened on 9451, the connection was refused, and every command silently took the cloud relay - 268 to 797 ms a call where loopback answers in 8 to 13 ms. The configured address is the one thing a stale build gets wrong, and getting it wrong costs twenty to fifty times the latency with nothing in the answer that says so.
+// So a dead configured port must not be the end of the road: the candidates are probed and the one that answers is used.
+
+test('a configured port that answers is the one used, and it is named', async () => {
+  const found = await discoverBridge();
+  assert.equal(found.port, PORT, 'the configured port is tried first, because an operator who set one meant it');
+  assert.equal(found.url, `ws://127.0.0.1:${PORT}`);
+  assert.equal(found.discovered, false, 'and the answer says it was configured rather than found');
+});
+
+test('a port with nothing on it answers no, and one with the bridge answers yes', async () => {
+  assert.equal(await probePort(19999), false, 'a dead port is detected rather than assumed');
+  assert.equal(await probePort(PORT), true, 'and the port this suite is driving is found');
+});
+
+// WHY NO SERVER IS STARTED IN THE TEST BELOW.
+// The machine's own bridge is already listening on a candidate port, and that is exactly the condition being tested for: a stale configured address must be stepped over for one that answers.
+// Starting a server here would only prove the test could start a server.
+
+test('discovery walks past a dead configured port to one that answers', async () => {
+  globalThis.OPERA_BRIDGE_WS = 'ws://127.0.0.1:19999';
+
+  try {
+    assert.equal(await probePort(19999), false, 'the configured port is dead');
+    const walked = [];
+    for (const port of [19999, ...CANDIDATE_PORTS]) {
+      if (await probePort(port)) { walked.push(port); break; }
+    }
+    assert.ok(walked.length === 1, 'a live port is found rather than the road ending at the dead one');
+    assert.notEqual(walked[0], 19999, 'and it is not the configured address that was just proved dead');
+    assert.ok(CANDIDATE_PORTS.includes(walked[0]), `the port found is one the candidates name: ${walked[0]}`);
+  } finally {
+    globalThis.OPERA_BRIDGE_WS = `ws://127.0.0.1:${PORT}`;
+  }
 });
 
 test('the worker connects on its own, without being asked', () => {
