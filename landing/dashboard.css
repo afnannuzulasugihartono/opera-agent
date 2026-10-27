@@ -1,0 +1,559 @@
+/*
+ * @last-edited: 2026-10-26 UTC+7.
+ * @title: dashboard.css — the console shell, the device cards, the history table, and the read-only grid.
+ * @state: one rail, one visible section at a time, and the app surface at the full 1200px measure.
+ * @dependencies: site.css, app.css.
+ *
+ * WHY a page sheet: the console's rail, device cards and table editor are used nowhere else.
+ * The shell and controls come from site.css, so the console cannot drift into a second design system.
+ */
+
+.wrap.wide { max-width: 1200px; }
+
+/* ── page head and rail ─────────────────────────────────────────────────── */
+
+main.console { padding-top: 48px; }
+
+.layout {
+  display: grid;
+  grid-template-columns: 218px minmax(0, 1fr);
+  gap: 34px;
+  align-items: start;
+}
+
+.rail {
+  position: sticky;
+  top: 96px;
+  display: grid;
+  gap: 2px;
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, .5);
+}
+
+.rail a {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 11px;
+  border-radius: 9px;
+  color: var(--muted);
+  font-size: 13.5px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: background .18s var(--ease), color .18s var(--ease);
+}
+
+.rail a:hover {
+  background: var(--surface);
+  color: var(--ink);
+}
+
+.rail a[aria-current="true"] {
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: 0 1px 2px rgba(22, 21, 19, .05);
+}
+
+.rail a[aria-current="true"]::before {
+  content: "";
+  width: 4px;
+  height: 4px;
+  margin-left: -5px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.rail .railNote {
+  margin: 8px 4px 2px;
+  padding: 12px 8px 4px;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 11.5px;
+  line-height: 1.5;
+}
+
+.content { min-width: 0; }
+
+.content.tabbed > section:not(.active) { display: none; }
+
+.content.tabbed > section.active { display: block; }
+
+.content.tabbed .duo > section:not(.active) { display: none; }
+
+.content.tabbed .duo > section.active { display: block; }
+
+/* WHY block and not one grid track: only one of the two verbs is visible at a time, so a grid would leave an empty second column beside it. */
+
+.tabbed .duo { display: block; }
+
+section {
+  margin: 0 0 28px;
+  scroll-margin-top: 96px;
+}
+
+section h2 {
+  margin: 0 0 6px;
+  font-size: 24px;
+  letter-spacing: -.03em;
+}
+
+section > .meta {
+  max-width: 72ch;
+  margin: 0 0 18px;
+  color: var(--muted);
+  font-size: 13.5px;
+}
+
+@media (max-width: 980px) {
+  .layout { grid-template-columns: 190px minmax(0, 1fr); gap: 24px; }
+}
+
+@media (max-width: 760px) {
+  main.console { padding-top: 36px; }
+  .layout { grid-template-columns: 1fr; gap: 18px; }
+  .rail {
+    position: static;
+    grid-auto-flow: column;
+    grid-auto-columns: max-content;
+    gap: 4px;
+    overflow-x: auto;
+    padding: 5px;
+    scrollbar-width: none;
+  }
+  .rail::-webkit-scrollbar { display: none; }
+  .rail a { white-space: nowrap; }
+  .rail a[aria-current="true"]::before { display: none; }
+  .rail .railNote { display: none; }
+}
+
+/* ── summary ────────────────────────────────────────────────────────────── */
+
+.checklist {
+  display: grid;
+  gap: 8px;
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 13.5px;
+}
+
+.checklist li {
+  display: flex;
+  gap: 9px;
+  align-items: flex-start;
+  color: var(--muted);
+}
+
+.checklist li.done { color: var(--ink); }
+
+.checklist .box {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 17px;
+  height: 17px;
+  margin-top: 2px;
+  border: 1px solid var(--line-strong);
+  border-radius: 50%;
+  font-size: 10px;
+}
+
+.checklist li.done .box {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fff;
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 22px 0 0;
+  padding: 0;
+}
+
+.stats div {
+  margin: 0;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface-soft);
+}
+
+.stats dt {
+  color: var(--muted);
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+.stats dd {
+  margin: 6px 0 0;
+  color: var(--ink);
+  font-size: 26px;
+  font-weight: 600;
+  letter-spacing: -.04em;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 480px) {
+  .stats { grid-template-columns: 1fr; }
+  .stats dd { font-size: 22px; }
+}
+
+/* ── device cards ───────────────────────────────────────────────────────── */
+
+#devices {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  align-items: start;
+}
+
+#devices .card { margin: 0; }
+
+#devices .empty { grid-column: 1 / -1; }
+
+@media (max-width: 860px) {
+  #devices { grid-template-columns: 1fr; }
+}
+
+.cardHead {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin: 0 0 12px;
+}
+
+.cardHead h3 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.cardHead .chip { margin-left: auto; }
+
+.deviceId { cursor: pointer; }
+
+.deviceId:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+dl.facts {
+  margin: 0 0 14px;
+}
+
+.tone {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13.5px;
+}
+
+.tone::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--muted);
+}
+
+.tone.good { color: var(--accent); }
+.tone.good::before { background: var(--accent); }
+.tone.warn { color: var(--warn); }
+.tone.warn::before { background: var(--warn); }
+
+/* ── pairing and run ────────────────────────────────────────────────────── */
+
+.duo {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.duo > section { margin-bottom: 16px; }
+
+/* WHY the revoke control keeps a colour of its own: it sits beside the plain actions in every device card, so weight alone cannot tell it apart from "Salin ID". */
+
+.btn.danger {
+  border-color: rgba(179, 38, 30, .28);
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.btn.danger:hover {
+  border-color: var(--danger);
+  background: var(--danger);
+  color: #fff;
+}
+
+@media (max-width: 640px) {
+  .duo { grid-template-columns: 1fr; }
+}
+
+.pairCodeBox {
+  margin: 16px 0 0;
+  padding: 16px;
+  border: 1px dashed var(--line-strong);
+  border-radius: 14px;
+  background: var(--surface-soft);
+}
+
+.pairCodeBox[hidden] { display: none; }
+
+.pairCode {
+  display: block;
+  margin: 0 0 10px;
+  overflow-wrap: anywhere;
+  color: var(--ink);
+  font-family: var(--mono);
+  font-size: 27px;
+  font-weight: 600;
+  letter-spacing: .14em;
+}
+
+.pairCodeBox .row { margin-top: 0; align-items: center; }
+
+#pairCountdown { margin: 0; }
+
+/* ── empty states and command rows ──────────────────────────────────────── */
+
+.empty {
+  margin: 0 0 16px;
+  padding: 24px;
+  border: 1px dashed var(--line-strong);
+  border-radius: 16px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.empty strong { color: var(--ink); }
+
+ul.commands {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+ul.commands li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 7px 0;
+  border-top: 1px solid var(--line);
+}
+
+ul.commands li:first-child { border-top: 0; }
+
+.commands li .online { color: var(--accent); }
+.commands li .offline { color: var(--warn); }
+
+/* ── history ────────────────────────────────────────────────────────────── */
+
+.tableCard {
+  padding: 10px;
+  overflow-x: auto;
+}
+
+table.history {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.history th {
+  padding: 9px 11px;
+  border-bottom: 1px solid var(--line-strong);
+  color: var(--muted);
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: .04em;
+  text-align: left;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.history td {
+  padding: 9px 11px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: middle;
+}
+
+.history tr:last-child td { border-bottom: 0; }
+.history tbody tr:nth-child(even) { background: rgba(22, 21, 19, .018); }
+.history td .dot { display: inline-block; margin-right: 7px; vertical-align: 1px; }
+.history td .online { color: var(--accent); }
+.history td .offline { color: var(--warn); }
+
+/* ── read-only table editor ─────────────────────────────────────────────── */
+
+.konsol {
+  display: grid;
+  grid-template-columns: 190px minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.konsolSide {
+  display: grid;
+  gap: 2px;
+  align-content: start;
+}
+
+.konsolSide button {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  padding: 7px 10px;
+  border: 0;
+  border-left: 2px solid transparent;
+  border-radius: 8px;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.konsolSide button:hover:not(:disabled) { background: var(--surface); color: var(--ink); }
+
+.konsolSide button[aria-current="true"] {
+  border-left-color: var(--accent);
+  background: var(--surface);
+  color: var(--ink);
+}
+
+.konsolSide button:disabled { opacity: .55; cursor: not-allowed; }
+
+.konsolSide .meta { font-variant-numeric: tabular-nums; }
+
+.konsolSide .konsolGroup {
+  padding: 12px 10px 4px;
+  color: var(--muted);
+  font-size: 10.5px;
+  font-weight: 650;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+
+.konsolSide .konsolGroup:first-child { padding-top: 2px; }
+
+.konsolMain { min-width: 0; }
+
+.konsolBar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 4px;
+}
+
+.konsolBar input {
+  flex: 1;
+  min-width: 180px;
+  min-height: 40px;
+  margin: 0;
+  padding: 9px 12px;
+  font-size: 13.5px;
+}
+
+.konsolScroll {
+  max-height: 460px;
+  overflow: auto;
+  overscroll-behavior: contain;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+}
+
+.konsolScroll .empty { margin: 0; border: 0; border-radius: 0; }
+
+.konsolGrid {
+  width: 100%;
+  border-collapse: collapse;
+  font: 12.5px/1.55 var(--mono);
+}
+
+.konsolGrid th,
+.konsolGrid td {
+  max-width: 320px;
+  padding: 7px 12px;
+  overflow: hidden;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.konsolGrid th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  border-bottom: 1px solid var(--line-strong);
+  background: var(--surface-soft);
+  font-weight: 600;
+}
+
+.konsolGrid th button {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.konsolGrid th button:hover { color: var(--accent); }
+
+.konsolGrid tbody tr { cursor: pointer; }
+.konsolGrid tbody tr:nth-child(even) { background: rgba(22, 21, 19, .018); }
+.konsolGrid tbody tr:hover { background: var(--surface-soft); }
+.konsolGrid tbody tr[aria-selected="true"] { background: var(--accent-soft); }
+.konsolGrid tbody tr:last-child td { border-bottom: 0; }
+.konsolGrid td.num,
+.konsolGrid th.num { text-align: right; font-variant-numeric: tabular-nums; }
+
+.konsolFoot { margin-top: 10px; }
+.konsolFoot .meta { font-variant-numeric: tabular-nums; }
+
+.konsolJson {
+  max-height: 260px;
+  margin: 12px 0 0;
+  padding: 14px;
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface-soft);
+  font: 12.5px/1.55 var(--mono);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.konsolJson[hidden] { display: none; }
+
+@media (max-width: 900px) {
+  .konsol { grid-template-columns: 1fr; }
+  .konsolSide {
+    grid-auto-flow: column;
+    grid-auto-columns: max-content;
+    gap: 6px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+  }
+  .konsolSide .konsolGroup { padding: 0 6px; align-self: center; }
+  .konsolSide button { border-left: 0; border-bottom: 2px solid transparent; white-space: nowrap; }
+  .konsolSide button[aria-current="true"] { border-left: 0; border-bottom-color: var(--accent); }
+}

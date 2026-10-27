@@ -73,17 +73,28 @@ export function createInputMethods({ cdp, primitives, sleep, chunkSize = 2000 })
 
   const locateInsertion = async (text, before, after) => {
     const delta = (sigLen(after?.body) - sigLen(before?.body)) + (sigLen(after?.value) - sigLen(before?.value));
+    const missed = { found: false, index: -1, field: false, delta };
     const probe = probeOf(text);
-    if (!probe) return { found: false, index: -1, field: false, before: '', after: '', delta };
+    if (!probe) return { ...missed, before: '', after: '' };
     try {
-      const { result } = await cdp.send('Runtime.evaluate', { expression: locateExpression(probe), returnByValue: true });
+      const { result } = await cdp.send('Runtime.evaluate', {
+        expression: locateExpression(probe),
+        returnByValue: true
+      });
       const at = result?.value;
       if (!at || typeof at.index !== 'number' || at.index < 0) {
-        return { found: false, index: -1, field: false, before: String(at?.before ?? ''), after: '', delta };
+        return { ...missed, before: String(at?.before ?? ''), after: '' };
       }
-      return { found: true, index: at.index, field: at.field === true, before: String(at.before ?? ''), after: String(at.after ?? ''), delta };
+      return {
+        found: true,
+        index: at.index,
+        field: at.field === true,
+        before: String(at.before ?? ''),
+        after: String(at.after ?? ''),
+        delta
+      };
     } catch {
-      return { found: false, index: -1, field: false, before: '', after: '', delta };
+      return { ...missed, before: '', after: '' };
     }
   };
 
@@ -98,7 +109,10 @@ export function createInputMethods({ cdp, primitives, sleep, chunkSize = 2000 })
 
   const focusNow = async () => {
     try {
-      const { result } = await cdp.send('Runtime.evaluate', { expression: FOCUS_EXPRESSION, returnByValue: true });
+      const { result } = await cdp.send('Runtime.evaluate', {
+        expression: FOCUS_EXPRESSION,
+        returnByValue: true
+      });
       return result?.value ?? null;
     } catch {
       return null;
@@ -114,9 +128,10 @@ export function createInputMethods({ cdp, primitives, sleep, chunkSize = 2000 })
       const where = focus?.tag
         ? `focus was on ${focus.trail}${focus.editable ? '' : ', which takes no text'}`
         : 'nothing on the page held focus';
+      const typed = `typed ${out.chars} characters`;
       throw new Error(seen.after.holds
-        ? `typed ${out.chars} characters and nothing on the page changed: ${where} - click_row the field that should receive it, or press Escape if a dialog is over it`
-        : `typed ${out.chars} characters into a page that holds no text and no field to receive them`);
+        ? `${typed} and nothing on the page changed: ${where} - click_row the field that should receive it, or press Escape if a dialog is over it`
+        : `${typed} into a page that holds no text and no field to receive them`);
     }
     return { ...out, landed: true, placed: await locateInsertion(text, before, seen.after) };
   }
@@ -151,31 +166,27 @@ export function createInputMethods({ cdp, primitives, sleep, chunkSize = 2000 })
   async function key(name, modifiers = []) {
     const mask = modifierMask(modifiers);
     const descriptor = describeKey(name);
+    const virtual = {
+      key: descriptor.key,
+      code: descriptor.code,
+      windowsVirtualKeyCode: descriptor.windowsVirtualKeyCode,
+      nativeVirtualKeyCode: descriptor.windowsVirtualKeyCode
+    };
 
+    // A chord is exactly two events, with no modifier press around them: the six-event frame leaked its character into a canvas under rapid fire.
     if (mask !== 0) {
-      const chord = {
-        key: descriptor.key,
-        code: descriptor.code,
-        windowsVirtualKeyCode: descriptor.windowsVirtualKeyCode,
-        nativeVirtualKeyCode: descriptor.windowsVirtualKeyCode
-      };
-      await cdp.send('Input.dispatchKeyEvent', { type: 'rawKeyDown', modifiers: mask, ...chord });
+      await cdp.send('Input.dispatchKeyEvent', { type: 'rawKeyDown', modifiers: mask, ...virtual });
       await sleep(KEY_BEAT_MS);
-      await cdp.send('Input.dispatchKeyEvent', { type: 'keyUp', modifiers: mask, ...chord });
+      await cdp.send('Input.dispatchKeyEvent', { type: 'keyUp', modifiers: mask, ...virtual });
       return { key: name, modifiers: mask };
     }
 
     const printable = Object.prototype.hasOwnProperty.call(descriptor, 'text');
-    const frame = printable
+    await cdp.send('Input.dispatchKeyEvent', printable
       ? { type: 'keyDown', modifiers: mask, ...descriptor }
-      : { type: 'rawKeyDown', modifiers: mask, key: descriptor.key, code: descriptor.code, windowsVirtualKeyCode: descriptor.windowsVirtualKeyCode };
-
-    await cdp.send('Input.dispatchKeyEvent', frame);
+      : { type: 'rawKeyDown', modifiers: mask, ...virtual });
     await sleep(KEY_BEAT_MS);
-    await cdp.send('Input.dispatchKeyEvent', {
-      type: 'keyUp', modifiers: mask, key: descriptor.key, code: descriptor.code,
-      windowsVirtualKeyCode: descriptor.windowsVirtualKeyCode
-    });
+    await cdp.send('Input.dispatchKeyEvent', { type: 'keyUp', modifiers: mask, ...virtual });
 
     return { key: name, modifiers: mask };
   }

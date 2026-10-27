@@ -1,92 +1,521 @@
 /*
- * @last-edited: 2026-10-25 UTC+7.
- * @title: download.css — the prose, command and browser-table rules the two download pages share.
- * @state: the checksum pill, the steps list, the facts list and the browser table; only unduh.html and unduh-berkas.html link it.
- * @dependencies: none.
+ * @last-edited: 2026-10-26 UTC+7.
+ * @title: download.css — the download hub, the per-browser cards, the steps and the checksum block.
+ * @state: one large door, five browser cards, and the verification prose the two download pages share.
+ * @dependencies: site.css.
  *
- * WHY here and not in site.css: the rest of the site never shows a checksum command or a browser table, and putting those rules on every page would change pages that never asked for them.
- * Two pages that share one job share one file.
+ * WHY two pages and one sheet: the hub answers "where do I start" and the file page answers "which one is mine"; both use the same card and step grammar.
  */
 
-h2 { margin: 30px 0 8px; font-size: 19px; }
-p, li { color: var(--muted); }
-p strong, li strong { color: var(--text); }
+.wrap.wide { max-width: 1200px; }
 
-.btn {
-  display: inline-block;
-  padding: 12px 24px;
-  border-radius: 980px;
-  border: 1px solid var(--accent);
-  background: var(--accent);
-  color: #04211d;
-  text-decoration: none;
-  font-size: 15px;
-  font-weight: 600;
-  margin: 8px 0 4px;
-  transition: background .25s var(--ease), border-color .25s var(--ease), transform .25s var(--ease);
+.hero {
+  display: grid;
+  grid-template-columns: 1.02fr .98fr;
+  gap: clamp(36px, 5vw, 72px);
+  align-items: center;
+  margin: 16px 0 56px;
 }
 
-/*
- * WHY the wrap: the checksum command on a download page is fifty-four characters with a path in the middle of it, and a reader on a phone should not have to scroll sideways to read the command they are about to paste.
- * WHY no break-all: it snapped tokens mid-word even when the line had room.
- * anywhere still wraps a 64-hex digest on a phone, but a short token like chrome://policy only breaks when it truly overflows — and both halves stay boxed.
- */
+.hero-text h1 {
+  max-width: 13ch;
+  margin: 0 0 18px;
+  text-align: left;
+  font-size: clamp(40px, 5.4vw, 64px);
+  line-height: 1.02;
+  letter-spacing: -.045em;
+}
+
+.hero-text > p {
+  max-width: 56ch;
+  margin: 0 0 14px;
+  color: var(--muted);
+  font-size: 16.5px;
+  text-align: left;
+}
+
+.hero-cta { margin: 26px 0 12px; }
+
+/* WHY the giant door reads like a platform download: one filled control, a platform-sized label, and a shape the eye cannot confuse with a secondary link. */
+
+.btn.giant {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 430px;
+  min-height: 58px;
+  padding: 0 26px;
+  border: 1px solid var(--accent);
+  border-radius: var(--pill);
+  background: var(--accent);
+  color: #fff;
+  font-size: 19px;
+  font-weight: 650;
+  letter-spacing: .01em;
+  line-height: 1;
+  text-align: left;
+  text-decoration: none;
+  text-transform: uppercase;
+  box-shadow: 0 18px 34px -18px rgba(11, 107, 82, .65);
+  transition: background .2s var(--ease), border-color .2s var(--ease), transform .2s var(--ease);
+}
+
+.btn.giant::after {
+  content: "↓";
+  position: absolute;
+  right: 24px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 20px;
+  font-weight: 400;
+}
+
+.btn.giant:hover {
+  border-color: var(--accent-strong);
+  background: var(--accent-strong);
+  color: #fff;
+  transform: translateY(-1px);
+}
+
+.stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px 40px;
+  margin: 26px 0 26px;
+  padding: 22px 0 0;
+  border-top: 1px solid var(--line);
+}
+
+.stat {
+  display: grid;
+  grid-template-columns: auto auto;
+  grid-template-rows: auto auto;
+  column-gap: 8px;
+  align-items: baseline;
+}
+
+.stat-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  align-self: center;
+}
+
+.stat-dot.live { background: var(--accent); }
+.stat-dot.safe { background: var(--brand); }
+
+.stat-label {
+  color: var(--muted);
+  font-size: 10.5px;
+  font-weight: 650;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
+.stat-num {
+  grid-column: 1 / -1;
+  color: var(--ink);
+  font-size: 32px;
+  font-weight: 600;
+  letter-spacing: -.04em;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.also {
+  color: var(--muted);
+  font-size: 13.5px;
+}
+
+.chips {
+  display: flex;
+  gap: 7px;
+  margin: 16px 0 0;
+}
+
+.chips span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.shot {
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow-lift);
+}
+
+.shotBar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 16px;
+}
+
+.shotBar i {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--line-strong);
+}
+
+.shotBar span {
+  min-width: 0;
+  margin-left: 8px;
+  overflow: hidden;
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 10.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.shotFile {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface-soft);
+}
+
+.shotIcon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 38px;
+  height: 38px;
+  border-radius: 11px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 18px;
+  box-shadow: 0 8px 18px -9px rgba(11, 107, 82, .7);
+}
+
+.shotMeta {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.shotMeta strong {
+  overflow: hidden;
+  color: var(--ink);
+  font-family: var(--mono);
+  font-size: 12.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.shotMeta span {
+  color: var(--muted);
+  font-size: 11.5px;
+}
+
+.shotFile .chip { margin-left: auto; }
+
+.shotList {
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.shotList li {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 2px;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 12.5px;
+}
+
+.shotList li:first-child { border-top: 0; }
+
+.shotList .dot { background: var(--accent); }
+
+.shotList b {
+  margin-left: auto;
+  color: var(--ink);
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+.shotFoot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin: 12px 0 0;
+  padding: 13px 0 0;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 11.5px;
+}
+
+.shotFoot .chip { font-size: 10.5px; }
+
+@media (max-width: 860px) {
+  .hero { grid-template-columns: 1fr; gap: 30px; margin-bottom: 40px; }
+  .shot { max-width: 460px; }
+}
+
+/* ── the file page ──────────────────────────────────────────────────────── */
+
+.hero.files {
+  display: block;
+  max-width: 760px;
+  margin: 8px auto 44px;
+  text-align: center;
+}
+
+.hero.files .eyebrow { justify-content: center; }
+
+.hero.files h1 { margin: 0 0 14px; font-size: clamp(38px, 4.6vw, 56px); }
+.hero.files p { margin: 0; font-size: 16.5px; text-align: center; }
+
+/* WHY one reading measure below the cards: the archive page is a document, and a paragraph that runs the full 1200px loses its reader after the first line. */
+
+.downloadBody {
+  max-width: 780px;
+  margin: 0;
+}
+
+.downloadBody.centered { margin: 0 auto; }
+
+.downloadBody > h2:first-child { margin-top: 0; }
+
+.downloadBody .facts { margin: 18px 0 26px; }
+
+/* WHY five explicit tracks: the five supported browsers are one row, and an auto-fit track left Vivaldi alone under four cards. */
+
+.browsers {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 14px;
+  margin: 0 0 44px;
+}
+
+@media (max-width: 1040px) {
+  .browsers { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+@media (max-width: 720px) {
+  .browsers { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 480px) {
+  .browsers { grid-template-columns: 1fr; }
+}
+
+.browser {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding: 26px 16px 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  text-align: center;
+  transition: border-color .2s var(--ease), box-shadow .2s var(--ease), transform .2s var(--ease);
+}
+
+.browser:hover { border-color: var(--line-strong); box-shadow: var(--shadow); transform: translateY(-2px); }
+
+.browser.yours {
+  border-color: var(--accent);
+  background: linear-gradient(180deg, var(--accent-soft), var(--surface) 42%);
+  box-shadow: 0 0 0 1px var(--accent), var(--shadow);
+}
+
+.browser .glyph {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  margin: 0 auto 12px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface-soft);
+  color: var(--ink);
+  font-size: 20px;
+  font-weight: 650;
+}
+
+.browser h3 { margin: 0 0 14px; font-size: 18px; }
+
+.browser .btn-row { display: flex; justify-content: center; }
+
+.browser .btn {
+  width: 100%;
+  margin: 0;
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fff;
+  font-size: 14px;
+}
+
+.browser .btn:hover { background: var(--accent-strong); border-color: var(--accent-strong); color: #fff; }
+
+/* WHY details and not a select: a select fires navigation on change, hides its choices from the keyboard and from the page's own text, and needs script to restore the closed state on load. */
+
+.browser .more {
+  margin: 10px 0 0;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-soft);
+}
+
+.browser .more[open] { border-color: var(--accent); }
+
+.browser .more > summary {
+  padding: 10px 13px;
+  border-radius: 12px;
+  color: var(--ink);
+  font-size: 12.5px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  list-style: none;
+}
+
+.browser .more > summary::-webkit-details-marker { display: none; }
+
+.browser .more > summary::after { content: " ▾"; color: var(--muted); }
+.browser .more[open] > summary::after { content: " ▴"; }
+
+.browser .more-list {
+  margin: 0;
+  padding: 0 8px 8px;
+  list-style: none;
+}
+
+.browser .more-list a {
+  display: block;
+  padding: 8px 6px;
+  border-radius: 8px;
+  color: var(--accent);
+  font-size: 13px;
+  text-align: left;
+  text-decoration: none;
+}
+
+.browser .more-list a:hover { background: var(--surface); }
+
+.browser .req {
+  margin: 12px 0 0;
+  padding: 0 4px;
+  color: var(--muted);
+  font-size: 11.5px;
+  line-height: 1.55;
+  text-align: left;
+}
+
+.browser .req code {
+  padding: 1px 4px;
+  font-size: 10.5px;
+  white-space: nowrap;
+}
+
+.browser .badge {
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 3px 10px;
+  border-radius: var(--pill);
+  background: var(--accent);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 650;
+  letter-spacing: .04em;
+  white-space: nowrap;
+}
+
+/* ── shared prose and tables ────────────────────────────────────────────── */
+
+h2 { margin: 38px 0 10px; font-size: 26px; letter-spacing: -.03em; }
+
+p, li { color: var(--muted); }
+
+p strong, li strong { color: var(--ink); }
 
 code, .hash {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-family: var(--mono);
   font-size: 12.5px;
-  overflow-wrap: anywhere;
-  word-break: break-word;
-  background: var(--surface-soft);
+  padding: 2px 6px;
   border: 1px solid var(--line);
   border-radius: 7px;
-  padding: 2px 6px;
+  background: var(--surface-soft);
+  overflow-wrap: anywhere;
+  word-break: break-word;
   box-decoration-break: clone;
   -webkit-box-decoration-break: clone;
 }
 
-/*
- * WHY pre-wrap and not just the wrap above: `pre` is white-space: pre, and that outranks the overflow-wrap on the code inside it, so the 118-character curl line ran 662px past a 320px screen and the reader could not reach the tail of the command they were told to paste.
- * pre-wrap keeps the author's line breaks and adds one where the screen ends.
- * The box keeps the command's own padding instead of inheriting the inline code pill.
- */
-
 pre {
-  margin: 0 0 14px;
-  padding: 12px 14px;
-  background: var(--surface-soft);
+  margin: 0 0 16px;
+  padding: 14px 16px;
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: 12px;
+  background: var(--surface-soft);
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
-pre code { padding: 0; border: 0; background: none; }
 
-ol.steps { margin: 0; padding-left: 20px; }
-ol.steps li { margin: 0 0 12px; }
-
-dl.facts { margin: 0; display: grid; grid-template-columns: max-content 1fr; gap: 8px 16px; font-size: 13.5px; }
-dl.facts dt { color: var(--text); font-weight: 600; }
-dl.facts dd { margin: 0; }
-
-/*
- * WHY stacked under 420px: the label column is max-content and never shrinks, so on a phone the value is left in a sliver.
- * Every settings page a reader already knows puts the value under its label at this width.
- */
-
-@media (max-width: 420px) {
-  dl.facts { grid-template-columns: 1fr; gap: 2px 0; }
-  dl.facts dd { margin: 0 0 10px; }
+pre code {
+  padding: 0;
+  border: 0;
+  background: none;
 }
 
-/*
- * WHY a table and not a list: the reader is asking one question per browser, and a table lets each answer sit in the same column so the shape of the answer is visible before any text is read.
- */
+ol.steps { margin: 0; padding: 0; }
 
-table.support { width: 100%; border-collapse: collapse; margin: 14px 0 8px; font-size: 14px; }
-table.support th, table.support td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--line); }
-table.support th { color: var(--muted); font-weight: 600; font-size: 13px; }
+dl.facts {
+  padding: 18px 20px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface);
+}
+
+table.support {
+  width: 100%;
+  margin: 16px 0 8px;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+table.support th,
+table.support td {
+  padding: 10px;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+}
+
+table.support th {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
 table.support td.yes { color: var(--accent); }
 table.support td.no { color: var(--muted); }
 table.support tr:last-child td { border-bottom: 0; }
+
 .meta { color: var(--muted); font-size: 13px; }

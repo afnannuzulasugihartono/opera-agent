@@ -1,224 +1,274 @@
-// @last-edited: 2026-10-23 UTC+7.
-// @title: canvas — Google Docs reads and caret restore on a canvas editor.
-// @state: read, caretLine, and the helpers that borrow and return the caret.
-// @dependencies: ./page-expressions.js.
+// @last-edited: 2026-10-27 UTC+7.
+// @title: canvas — the reads a surface that is not a page full of text can answer, and the guard in front of the one that moves a caret.
+// @state: the ladder walk for read, the caret line read, and the generic selection copy they share.
+// @dependencies: ./page-expressions.js, ./surface-profile.js, ./caret-guard.js, ./read-strategy.js.
 
 // WHY THIS MODULE EXISTS
 
-// A Google Doc is not a page full of text.
-// It is a canvas with a caret, so reading means borrowing the selection, copying it, and putting the caret back where it was.
-// Keeping that dance here keeps primitives.js from owning a document editor's caret machinery.
+// A canvas surface is not a page full of text, so reading it is a different question from reading a DOM page.
+// This module asks that question: it measures what the surface is, walks the ladder of reads in the order the measurement justifies, and puts a gate in front of the one read that costs the user something.
+// What used to live here was one site's answer to that question, written as that site's selectors; what lives here now is the question.
 
+// WHY THE READ WALKS A LADDER INSTEAD OF ASKING THE URL.
+// The read this replaces recognised one site by its address and then ran that site's clipboard trick on it, which is why every other canvas page came back empty.
+// A profile measured from the page itself says which reads are available and what each costs, and the ladder is walked in that order.
+// The step that moves a caret is gated, because the measurement behind it showed a canvas caret cannot be put back.
+
+// WHY ONLY AN EDITABLE CANVAS VETOES THE DOM STEP.
+// A canvas editor keeps its chrome in the DOM and its document in pixels, so reading the DOM would answer with the chrome and stop.
+// A canvas without an editable host is a picture beside text - a chart, a map, a viewer - and the text around it is the page's own text, so vetoing that read throws away the only text there is.
+
+// WHY THE DOM READ TAKES TWO SAMPLES.
+// readyState lies: measured live, a page reported complete with a tenth of its text and reached the rest 600ms later.
+// So the read settles and looks again, and answers with whether the text stood still and by how much it grew.
+
+// WHY THE CONSENT IS ASKED BEFORE THE SELECTION IS BORROWED.
+// The borrow is the destructive half of this read, and a caller who did not ask for it must not pay for it.
+// The caret verdict rides along whatever the copy returned, so a caller learns what the read cost even when it succeeded.
+
+// WHY THE ACCESSIBILITY TREE IS MEASURED ONLY WHEN IT CAN REORDER THE LADDER.
+// Measured on the owner's profile: a full accessibility tree answers a canvas document in 19-30ms, and one innerText answers an ordinary page in a single call.
+// On a page with no canvas the DOM leads whatever the tree holds, so the tree is paid for there only when the DOM answers nothing.
+// A profile call still measures both halves: it is the answer to "what is this", and that answer is worth the round trip.
+
+// WHY AN EMPTY COPY IS NOT AN EMPTY DOCUMENT.
+// A canvas editor that selects and copies nothing either has an empty document or a mirror that did not fill, and the two are not the same thing.
+// Reporting the empty string as the read would call both of them an empty page, so the ladder continues to the picture and the caret cost stays in the answer.
+
+// WHY A SURFACE NOTHING CAN ANSWER NAMES THE PICTURE.
+// The driver does not read pixels and does not pretend to: naming the one tool that returns a picture lets the caller decide, rather than handing back an empty string that looks like an empty page.
+
+import { SELECTION_STATE_EXPRESSION } from './page-expressions.js';
+import { probeSurface, measureAx, buildProfile, describeProfile } from './surface-profile.js';
+import { createCaretGuard, gateRead } from './caret-guard.js';
 import {
-  CARET_TOLERANCE_PX,
-  CARET_SCROLL_ATTEMPTS,
-  DOCS_COPY_EXPRESSION,
-  LOCAL_CARET_EXPRESSION,
-  SCROLL_MARK,
-  SELECTION_TEXT_EXPRESSION,
-  isDocsDocument
-} from './page-expressions.js';
+  HARM_NONE,
+  STRATEGY_AX,
+  STRATEGY_DOM,
+  STRATEGY_SELECT_ALL,
+  STRATEGY_VISION,
+  readLadder
+} from './read-strategy.js';
 
-export function createCanvasMethods({ cdp, primitives, sleep, readState }) {
-  const caretHostExpression = `
-    const drawn = (() => { ${LOCAL_CARET_EXPRESSION} })();
-    if (drawn) return drawn;
-    try {
-      const sel = document.getSelection();
-      if (sel && sel.rangeCount === 1 && sel.isCollapsed) return sel.getRangeAt(0).startContainer.parentElement;
-    } catch { /* a range that will not hand over its node is simply no host */ }
-    return null;`;
+// WHY THE VIEW IS REPORTED AS LEFT WHERE IT IS.
+// The borrow selects the whole document and the caret then moves to its end, so the view scrolls with it - and no key in this driver puts the view back, only the caret.
+// A caller that reads viewRestored:false knows the picture it takes next is of the end of the document rather than of where the person was reading.
 
-  const scrollChainExpression = `
-    const chain = [];
-    for (let el = host.parentElement; el; el = el.parentElement) {
-      chain.push(el);
-      if (el === document.documentElement) break;
-    }
-    return chain;`;
+const VIEW_WHY = 'the borrow selected the whole document, so the view is left where the selection ended;'
+  + ' the caret verdict says whether the caret itself came back';
 
-  // WHY THE BOXES THAT SCROLL ARE FOUND BY A MARK AND NOT BY THE CARET.
-  // Measured live: while the whole document is selected the page draws no caret at all, so anything that walks up from the caret has nothing to walk up from - and the view stayed at the end of the document, putting the caret onto a picture.
-  // The boxes are marked while the caret is still there to be measured, and the marks are taken off again as soon as the restore is done with them.
-  const markedChainExpression = `
-    return [...document.querySelectorAll('[${SCROLL_MARK}]')]
-      .sort((a, b) => Number(a.getAttribute('${SCROLL_MARK}')) - Number(b.getAttribute('${SCROLL_MARK}')));`;
+// WHY THE SETTLE VERDICTS ARE NAMED ONCE.
+// settled means one thing on the DOM path - the text stood still across two samples - and cannot mean it anywhere else: the tree was sampled once and the copy cannot be repeated without moving the caret twice.
+// So the other two paths answer settled:null and name what would prove it, and the sentence a caller reads is the same sentence every time rather than one written inline at each return.
 
-  const clearMarkExpression = `
-    document.querySelectorAll('[${SCROLL_MARK}]').forEach((el) => el.removeAttribute('${SCROLL_MARK}'));`;
+const SETTLED_WHY_AX = 'this read sampled the accessibility tree once, so it can say what the text is and not that it stopped moving; wait_still() is the proof of that';
+const SETTLED_WHY_COPY = 'the text came from a selection copy; a second copy would move the caret twice, so read again after wait_still() or take capture_page() as the proof';
 
-  const scrollSumExpression = `
-    return chain.reduce((acc, el) => ({ x: acc.x + el.scrollLeft, y: acc.y + el.scrollTop }), { x: 0, y: 0 });`;
+// WHY A BORROW THAT RETURNED NOTHING IS NOT AN EMPTY DOCUMENT.
+// A canvas editor that selects and copies nothing either has an empty document or a mirror that did not fill, and the two are not the same thing.
+// Reporting the empty string as the read would call both of them an empty page, so the ladder moves on to the picture and the reason travels with the caret cost.
 
-  const rememberCaret = async () => primitives.evaluate(`(() => {
-    const host = (() => { ${caretHostExpression} })();
-    if (!host) return null;
-    const box = host.getBoundingClientRect();
-    if (!box || (!box.width && !box.height)) return null;
-    const chain = (() => { ${scrollChainExpression} })();
-    (() => { ${clearMarkExpression} })();
-    chain.forEach((el, i) => el.setAttribute('${SCROLL_MARK}', String(i)));
-    const sum = (() => { ${scrollSumExpression} })();
-    const y = Math.round(box.top + box.height / 2);
-    return {
-      x: Math.round(box.left),
-      y,
-      absX: Math.round(box.left + sum.x),
-      absY: Math.round(y + sum.y),
-      scroll: chain.map((el) => [el.scrollLeft, el.scrollTop])
-    };
-  })()`);
+const EMPTY_COPY_WHY = 'the selection answered no text, which is not the same as an empty document; the ladder continues to the picture';
+const NO_MARK_WHY = 'the caret could not be remembered, so the borrow was refused';
 
-  const lost = (caretWhy, viewRestored = false) => ({ caretRestored: false, viewRestored, caretWhy });
+export function createCanvasMethods({ cdp, primitives, readState }) {
+  // WHY THE COPY READS THE SELECTION AND NOT A SITE'S CLIPBOARD TRICK.
+  // The expression this replaces found one site's hidden editable frame by name, asked it to fill itself on a copy event, and stripped the invisible characters that site inserts - which is per-site code, and it is gone.
+  // What is left is the technique without the site: borrow the selection, then read it back from whichever frame holds it.
+  // A surface that mirrors its text through the selection answers; a surface that holds its text as pixels does not, and that is reported rather than papered over.
+  // It reads the same expression the caret guard reads, so the text and the caret verdict come from one frame rather than from two that may not be the same.
 
-  const putCaretBack = async (mark) => {
-    if (!mark || !Array.isArray(mark.scroll)) return lost('the page showed no caret to remember');
-    const pairs = JSON.stringify(mark.scroll.map(([x, y]) => [Number(x) || 0, Number(y) || 0]));
-    const where = JSON.stringify([Number(mark.absX) || 0, Number(mark.absY) || 0]);
-    let point = null;
-    for (let attempt = 1; attempt <= CARET_SCROLL_ATTEMPTS; attempt += 1) {
-      point = await primitives.evaluate(`(() => {
-        const chain = (() => { ${markedChainExpression} })();
-        const want = ${pairs};
-        if (!chain.length || chain.length !== want.length) return { why: 'the page no longer has the boxes that were scrolling, so the place is not the one that was measured' };
-        chain.forEach((el, i) => { el.scrollLeft = want[i][0]; el.scrollTop = want[i][1]; });
-        const settled = chain.every((el, i) => el.scrollLeft === want[i][0] && el.scrollTop === want[i][1]);
-        const now = (() => { ${scrollSumExpression} })();
-        const mark = ${where};
-        let x = Math.round(mark[0] - now.x);
-        let y = Math.round(mark[1] - now.y);
-        const inner = chain[0];
-        if (inner && (y < 0 || y > window.innerHeight || x < 0 || x > window.innerWidth)) {
-          const dy = y < 0 ? y - 8 : Math.max(0, y - window.innerHeight + 8);
-          const dx = x < 0 ? x - 8 : Math.max(0, x - window.innerWidth + 8);
-          inner.scrollTop += dy;
-          inner.scrollLeft += dx;
-          x -= dx;
-          y -= dy;
-        }
-        return { x, y, settled };
-      })()`);
-      if (point?.why) return lost(point.why);
-      if (attempt > 1 && point.settled) break;
-      await primitives.settle();
-    }
-    if (point.settled) await primitives.clickAt(point.x, point.y).catch(() => null);
+  const copySelection = async () => {
+    const state = await primitives.evaluate(SELECTION_STATE_EXPRESSION);
+    const text = state && typeof state.text === 'string' ? state.text : '';
+    return text.length > 0 ? text : null;
+  };
+
+  const guard = createCaretGuard({ evaluate: primitives.evaluate });
+
+  let measured = null;
+  const axOf = async () => {
+    if (!measured) measured = await measureAx({ ask: primitives.ask });
+    return measured;
+  };
+
+  // WHY THE REGION TEXT IS RETURNED EVEN WHEN THE TREE IS THIN.
+  // The rich bar decides which read leads, not whether a text is worth returning.
+  // On a page with no canvas the DOM has already answered nothing, so the tree is the only text there is; on a canvas page a thin region is the chrome around the picture, and returning it would name the menu as the document.
+  const readAxText = (ax, surface) => {
+    const text = String(ax?.documentText || '');
+    if (text.trim().length === 0) return null;
+    if (ax.axRich === true || surface.canvas !== true) return text;
+    return null;
+  };
+
+  const guardedSelectAll = async (allowCaretMove) => {
+    const mark = await guard.remember();
+    if (mark.restorable !== true && allowCaretMove !== true) return null;
+    await primitives.key('a', ['Control']);
     await primitives.settle();
-    const seen = await primitives.evaluate(`(() => {
-      const chain = (() => { ${markedChainExpression} })();
-      const want = ${pairs};
-      if (chain.length === want.length) {
-        chain.forEach((el, i) => { el.scrollLeft = want[i][0]; el.scrollTop = want[i][1]; });
-      }
-      (() => { ${clearMarkExpression} })();
-      const host = (() => { ${caretHostExpression} })();
-      if (!host) return { why: 'the page showed no caret after the click' };
-      const box = host.getBoundingClientRect();
-      const sum = (() => { ${scrollSumExpression} })();
-      return {
-        absX: Math.round(box.left + sum.x),
-        absY: Math.round(box.top + box.height / 2 + sum.y),
-        settled: chain.every((el, i) => el.scrollLeft === want[i][0] && el.scrollTop === want[i][1])
-      };
-    })()`);
-    if (!seen || seen.why) return lost(seen?.why ?? 'the page lost the caret again', point.settled);
-    const same = Math.abs(seen.absX - mark.absX) <= CARET_TOLERANCE_PX
-      && Math.abs(seen.absY - mark.absY) <= CARET_TOLERANCE_PX;
-    if (!same) {
-      return lost(point.settled
-        ? 'the caret is not where it was left, so the click did not take'
-        : 'the view did not go back where it was, so the place no longer holds the caret', point.settled && seen.settled);
-    }
-    return { caretRestored: true, viewRestored: seen.settled, caretWhy: '' };
+    const copied = await copySelection();
+    await primitives.key('End').catch(() => null);
+    const caret = await guard.verdict(mark);
+    return { text: copied ?? '', caret };
   };
 
-  const copyDocsText = async () => {
-    const { result } = await cdp.send('Runtime.evaluate', {
-      expression: DOCS_COPY_EXPRESSION,
-      returnByValue: true
-    });
-    return typeof result?.value === 'string' ? result.value : null;
-  };
-
-  const focusDocsCanvas = async () => {
-    const point = await primitives.evaluate(`(() => {
-      const tile = document.querySelector('.kix-canvas-tile-content');
-      if (!tile) return null;
-      const r = tile.getBoundingClientRect();
-      return { x: Math.round(r.x + r.width / 2), y: Math.round(r.y + Math.min(150, r.height / 2)) };
-    })()`);
-    if (point && Number.isFinite(point.x) && Number.isFinite(point.y)) {
-      await primitives.clickAt(point.x, point.y);
-    } else {
-      const { width } = await primitives.viewport();
-      await primitives.clickAt(Math.round(width * 0.45), 200);
-    }
-  };
-
-  const readDocsText = async () => {
-    try {
-      await primitives.key('a', ['Control']);
-      await sleep(150);
-      let text = await copyDocsText();
-      if (text === '') {
-        await focusDocsCanvas();
-        await primitives.key('a', ['Control']);
-        await sleep(150);
-        text = await copyDocsText();
-      }
-      return text;
-    } finally {
-      await primitives.key('End').catch(() => null);
-    }
-  };
-
-  async function read() {
-    const state = await readState();
-    if (!isDocsDocument(state.url)) {
-      await primitives.settle();
-      const again = await readState();
-      return {
-        title: again.title,
-        url: again.url,
-        text: again.text,
-        ready: again.ready ?? null,
-        settled: again.text === state.text,
-        grewBy: again.text.length - state.text.length,
-        caretMoved: false,
-        caretRestored: true,
-        viewRestored: true,
-        caretWhy: ''
-      };
-    }
-    const mark = await rememberCaret();
-    const text = await readDocsText();
-    const back = await putCaretBack(mark);
-
-    // WHY settled IS UNKNOWN HERE RATHER THAN GUESSED.
-    // This text comes from a selection copy, and asking whether it has stopped changing would mean a second copy - another select-all and another caret move, on the one path where a caret move is the expensive thing.
-    // So the read reports what it did not measure, and names the cost of measuring it.
-    return {
-      ...state,
-      text: text ?? state.text,
-      ready: state.ready ?? null,
-      settled: null,
-      settledWhy: 'the text came from a selection copy; a second copy would move the caret twice, so read again after wait_still() or take capture_page() as the proof',
+  // The caret fields a read that never borrowed carries, and the ones a read that did carries, kept in one place so no answer can claim more than it measured.
+  const untouched = { caretMoved: false, caretRestored: true, viewRestored: true, caretWhy: '', viewWhy: '' };
+  const afterBorrow = (borrow) => borrow === null
+    ? untouched
+    : {
       caretMoved: true,
-      ...back
+      caretRestored: borrow.caret.restored,
+      viewRestored: false,
+      caretWhy: borrow.caret.why,
+      viewWhy: VIEW_WHY
+    };
+
+  async function read(options = {}) {
+    const allowCaretMove = options.allowCaretMove === true;
+    const probe = await probeSurface({ evaluate: primitives.evaluate });
+    const ax = probe.canvas?.value === true ? await axOf() : {};
+    const surface = buildProfile({ probe, ax });
+    const ladder = readLadder(surface);
+    const skipped = [];
+    let borrow = null;
+
+    for (const step of ladder) {
+      if (step.harm !== HARM_NONE) {
+        const gate = gateRead({ harm: step.harm, allowCaretMove });
+        if (!gate.allowed) {
+          skipped.push({ strategy: step.strategy, harm: step.harm, why: gate.why });
+          continue;
+        }
+      }
+
+      if (step.strategy === STRATEGY_DOM) {
+        if (surface.canvas === true && surface.editable === true) continue;
+        const state = await readState();
+        if ((state.text || '').trim().length > 0) {
+          await primitives.settle();
+          const again = await readState();
+          return {
+            title: again.title,
+            url: again.url,
+            text: again.text,
+            ready: again.ready ?? null,
+            settled: again.text === state.text,
+            grewBy: again.text.length - state.text.length,
+            surface,
+            strategy: step.strategy,
+            harm: step.harm,
+            skipped,
+            description: describeProfile(surface),
+            ...untouched
+          };
+        }
+        continue;
+      }
+
+      if (step.strategy === STRATEGY_AX) {
+        const text = readAxText(await axOf(), surface);
+        if (text) {
+          // The title and url are one cheap call the caller expects on every read; whether the text has stopped moving is not something one sample of the tree can answer.
+          const state = await readState();
+          return {
+            title: state.title,
+            url: state.url,
+            text,
+            ready: state.ready ?? null,
+            settled: null,
+            settledWhy: SETTLED_WHY_AX,
+            surface,
+            strategy: step.strategy,
+            harm: step.harm,
+            skipped,
+            description: describeProfile(surface),
+            ...untouched
+          };
+        }
+        continue;
+      }
+
+      if (step.strategy === STRATEGY_SELECT_ALL) {
+        const answer = await guardedSelectAll(allowCaretMove);
+        if (answer) {
+          borrow = { caret: answer.caret, text: answer.text };
+          if (answer.text.length > 0) {
+            return {
+              title: '',
+              url: '',
+              text: answer.text,
+              caret: answer.caret,
+              surface,
+              strategy: step.strategy,
+              harm: step.harm,
+              skipped,
+              description: describeProfile(surface),
+              settled: null,
+              settledWhy: SETTLED_WHY_COPY,
+              ...afterBorrow(borrow)
+            };
+          }
+          skipped.push({ strategy: step.strategy, harm: step.harm, why: EMPTY_COPY_WHY });
+          continue;
+        }
+        skipped.push({ strategy: step.strategy, harm: step.harm, why: NO_MARK_WHY });
+        continue;
+      }
+
+      if (step.strategy === STRATEGY_VISION) {
+        // The driver does not read pixels, and does not pretend to: it names the one tool that returns a picture, so the caller decides rather than receiving an empty string that looks like an empty page.
+        return {
+          title: '',
+          url: '',
+          text: '',
+          surface,
+          strategy: step.strategy,
+          harm: step.harm,
+          skipped,
+          description: describeProfile(surface),
+          visionWhy: 'this surface offers no text to any read that asks nothing of it; call capture_page for the picture',
+          ...afterBorrow(borrow)
+        };
+      }
+    }
+
+    return {
+      title: '',
+      url: '',
+      text: '',
+      surface,
+      strategy: 'none',
+      harm: HARM_NONE,
+      skipped,
+      description: describeProfile(surface),
+      visionWhy: 'every read this surface offers was skipped; call capture_page for the picture',
+      ...afterBorrow(borrow)
     };
   }
 
+  // WHY THE LINE IS READ FROM THE SELECTION FIRST.
+  // This read used to ask the url whether the page was a document editor and then chose the clipboard for it, which is the site recognition this change removes.
+  // The selection is the cheaper answer and works wherever the page holds its text; the selection copy is the fallback for a surface whose mirror only holds what a selection put there, and which one is needed is a question the page answers.
+  // The verdict rides along, so a caret this read could not put back is reported rather than assumed.
   async function caretLine() {
-    const { url } = await readState();
-    const mark = await rememberCaret();
+    const mark = await guard.remember();
     await primitives.key('Home');
     await primitives.settle();
     await primitives.key('End', ['Shift']);
     await primitives.settle();
-    const line = isDocsDocument(url) ? await copyDocsText() : await primitives.evaluate(SELECTION_TEXT_EXPRESSION);
+    let line = await copySelection();
     await primitives.key('End').catch(() => null);
-    const back = await putCaretBack(mark);
-    return { line: typeof line === 'string' ? line : '', caretMoved: true, ...back };
+    const back = await guard.verdict(mark);
+    return {
+      line: typeof line === 'string' ? line : '',
+      caretMoved: true,
+      caretRestored: back.restored,
+      viewRestored: false,
+      caretWhy: back.why,
+      viewWhy: VIEW_WHY
+    };
   }
 
   return { read, caretLine };

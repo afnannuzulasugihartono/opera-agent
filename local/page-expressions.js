@@ -103,8 +103,11 @@ const SNAPSHOT_ROLES = new Set([
 // A wrong guess types into the wrong paragraph.
 // The caret therefore rides every snapshot as a final row, so the next keystroke's landing is read, not remembered.
 // A collapsed selection reports its point; a ranged one reports nothing, because a selection's focus end has no honest single point and reads collapse selections anyway.
-// Docs draws its caret as an element the page exposes, which is the one per-site selector this generic expression is allowed: a canvas caret has no other API, and the test below holds that exception to exactly one name.
 // The row carries no line text: the mirror a copy reads from only holds what a selection put there, so a line is read by selecting it first, and that dance lives in caret_line rather than in every map.
+
+// WHY THE DRAWN CARET IS NOT READ.
+// The caret a canvas editor draws as an element was the only per-site selector this expression ever carried, and it is removed: on a shared document the page holds several carets, this client's and its collaborators', and picking the wrong one measured and clicked somebody else's cursor, which never moves - so every restore reported success while the real caret went to the end of the document.
+// The selection below is per-client, so it names this client's caret and never a collaborator's, and on a canvas editor it carries no position at all, which is the truth the gated read reports rather than papers over.
 
 // WHY A SUBMENU IS HOVERED AGAIN WHILE IT IS WAITED FOR.
 // Measured live: a submenu opened by hover came and went with where the pointer was, and a walk that hovered once and then read was answered with an empty level often enough to matter.
@@ -116,18 +119,6 @@ const SNAPSHOT_ROLES = new Set([
 // Taking the last caret in the document measured and clicked somebody else's cursor — which never moves — so every restore reported success while the real caret went to the end of the document.
 // The caret of this client is the one drawn in the text colour; the name and the colour of the others are how the page marks them.
 
-export const LOCAL_CARET_EXPRESSION = `
-  const live = [...document.querySelectorAll('.kix-cursor-caret')].filter((el) => {
-    if (!el.isConnected) return false;
-    const r = el.getBoundingClientRect();
-    return r.width > 0 || r.height > 0;
-  });
-  if (!live.length) return null;
-  const ink = getComputedStyle(document.body).color;
-  const mine = live.find((el) => (el.getAttribute('style') || '').includes(ink))
-    ?? live.find((el) => !(el.parentElement && el.parentElement.textContent || '').trim())
-    ?? live[0];
-  return mine;`;
 
 const SNAPSHOT_EXPRESSION = `(() => {
   const LIMIT = __LIMIT__;
@@ -211,11 +202,6 @@ const SNAPSHOT_EXPRESSION = `(() => {
 
   const caretOf = () => {
     const usable = (r) => (r && (r.x !== 0 || r.y !== 0 || r.width !== 0 || r.height !== 0)) ? r : null;
-    const kix = (() => { ${LOCAL_CARET_EXPRESSION} })();
-    if (kix) {
-      const r = usable(kix.getBoundingClientRect());
-      if (r) return { x: Math.round(r.x + r.width / 2), y: Math.round(r.y + r.height / 2) };
-    }
     try {
       const sel = document.getSelection();
       if (!sel || sel.rangeCount === 0 || !sel.isCollapsed) return null;
@@ -321,36 +307,9 @@ export function snapshotExpression(limit) {
 // textContent stays as the fallback for a frame that renders nothing.
 // Trailing blank lines are trimmed on the way out: they are layout air, not content.
 
-// WHY THE SELECTION IS BORROWED AND RETURNED.
-// The copy path reads whatever is selected, so a full read selects all first — and anything the person had selected is replaced the moment Ctrl+A lands.
-// End collapses the selection back to a caret at the end of the document, which is the one position a read can honestly promise: the content is untouched, the caret is not where it was.
-// A read that left the whole document selected would turn the agent's next keystroke into a deletion.
-
-// WHY AN EMPTY COPY EARNS ONE RETRY.
-// Ctrl+A selects nothing when the editor never had focus, and the cleared box then reads as an empty document that is not empty.
-// One click in the canvas tile focuses the editor for the second attempt; the retry is the only path that can pay the background-window mouse penalty, and only when the fast path came back with nothing.
-
-export const DOCS_COPY_EXPRESSION = `(() => {
-  try {
-    const frame = document.querySelector('.docs-texteventtarget-iframe');
-    if (!frame || !frame.contentDocument) return null;
-    const target = frame.contentDocument.querySelector('[contenteditable]');
-    if (!target) return null;
-    target.replaceChildren();
-    target.dispatchEvent(new CustomEvent('copy'));
-    const body = frame.contentDocument.body;
-    const raw = target.innerText || (body ? body.textContent : '') || '';
-    const ZW_FIRST = 8203;
-    const ZW_LAST = 8205;
-    const BOM = 65279;
-    let text = '';
-    for (const ch of raw) {
-      const code = ch.codePointAt(0);
-      if ((code < ZW_FIRST || code > ZW_LAST) && code !== BOM) text += ch;
-    }
-    return text.trimEnd();
-  } catch { return null; }
-})()`;
+// WHY THE SELECTION COPY IS NOT HERE ANY MORE.
+// It read whatever a selection held, and the expression that filled the selection was one site's: it named that site's hidden frame and stripped the invisible characters that site inserts.
+// The technique without the site lives in canvas.js, where it is gated, and the site's version of it is gone.
 
 // WHY AN UPLOAD NEVER OPENS THE FILE DIALOG.
 // The native picker is OS chrome: CDP cannot see it, click it, or dismiss it, so a drive that opens one is stuck until a human intervenes.
@@ -398,15 +357,9 @@ export const UPLOAD_FIND_GAP_MS = 400;
     // this machine's browser window: the viewport went 1144x714 to 1186x670 while the device scale stayed at 1.25, so the same CSS pixel stopped meaning the same place.
     // A fraction is resolved against the viewport as it is at the moment of the click, which survives that, and the answer says which pixels it became and in what space - so a caller that meant a fixed pixel still gets the truth about the space it landed in.
 
-export const CARET_TOLERANCE_PX = 12;
-
-// WHY THE VIEW IS PUT BACK TWICE AND THE CLICK WAITS FOR THE SECOND.
-// Measured live: the read scrolls the document to the caret, and the page finishes that scroll on its own frame — after the first write.
-// A click that goes out in between lands on whatever happens to be under it, and on the thesis document that was an image: the caret was restored onto a picture.
-// So the scroll is written, the page is given the settle to argue, and the click only goes out once a second write held.
-
-export const CARET_SCROLL_ATTEMPTS = 3;
-export const SCROLL_MARK = 'data-opera-scroll';
+// WHY THE SCROLL-MARK CARET RESTORE IS GONE.
+// It marked the boxes that scroll, put the view back, clicked the caret into place and measured again - and on a canvas editor the measurement it compared against was a caret the DOM does not carry, so it reported a restore it had not achieved while the real caret sat at the end of the document.
+// A verdict that cannot be wrong is worth more than a restore that sometimes is, so the guard reports what it measured and the driver no longer claims the rest.
 
 // WHY A MENU IS POLLED UNTIL IT IS DRAWN.
 // Measured live, the Insert dropdown was still absent five seconds after the click; a fixed gap of any honest size is either slow on a good machine or early on a slow one.
@@ -474,22 +427,70 @@ export const UPLOAD_INPUT_EXPRESSION = `(() => {
   return scan(document);
 })()`;
 
-export function isDocsDocument(url) {
-  return String(url || '').includes('docs.google.com/document/d/');
-}
-
 // WHY READING A LINE SELECTS IT FIRST.
 // The mirror a copy reads from only holds what a selection put there: measured live as an empty line beside a perfectly visible caret.
 // So the read selects its own line — Home, Shift+End — copies, and collapses back to the line end, which is the documented end state: the caret moves within its line and never past it.
 // The steps wait on the settle between them, because injected keys land late and the copy must not run before the selection exists.
 
-export const SELECTION_TEXT_EXPRESSION = `(() => {
-  try {
-    const sel = document.getSelection();
-    if (!sel || sel.rangeCount === 0) return '';
-    return String(sel.toString()).slice(0, 500);
-  } catch { return ''; }
+// WHY THE SELECTION IS READ ONCE, FOR EVERY ASKER.
+// Three expressions used to walk the frames looking for a selection: one returned the text, one returned the caret's position, and one returned the longest text it could find.
+// They did not have to agree, and on a page with two frames holding selections they did not: the copy answered from one frame while the caret verdict measured another, so a restore was reported against a position the borrow never touched.
+// One expression answers every asker from the same frame, which makes that disagreement impossible rather than merely unlikely.
+
+// WHY THE FRAME IS THE ONE HOLDING THE MOST TEXT, AND THE CARET IS THE FALLBACK.
+// A canvas editor holds its document in an iframe, and after a select-all that iframe's selection carries every word in the document, so it is the frame that answers.
+// A collapsed caret holds no text at all, so it can never win on length; the first frame with any selection is kept beside it, and a page whose only selection is a caret is answered by that one.
+
+// WHY THE HOST IS NAMED AS A PATH AND NOT AS AN OFFSET.
+// An offset and a length are true of every node of that length, so a caret that moved to a different node of the same length would read as restored.
+// A path from the host element down from the document root names one node in the tree, and the text node's own index separates two text nodes inside the same element.
+
+export const SELECTION_STATE_EXPRESSION = `(() => {
+  const frames = [document, ...[...document.querySelectorAll('iframe')].map((f) => { try { return f.contentDocument; } catch { return null; } }).filter(Boolean)];
+  const stateOf = (doc, sel, frame) => {
+    const node = sel.getRangeAt(0).startContainer;
+    const host = node.nodeType === 3 ? node.parentElement : node;
+    const path = [];
+    let here = host;
+    while (here && here.parentElement) {
+      path.push([...here.parentElement.children].indexOf(here));
+      here = here.parentElement;
+    }
+    const textIndex = node.nodeType === 3 && node.parentElement ? [...node.parentElement.childNodes].indexOf(node) : -1;
+    return {
+      frame,
+      rangeCount: sel.rangeCount,
+      collapsed: sel.isCollapsed,
+      anchorOffset: sel.anchorOffset,
+      text: String(sel),
+      hostPath: host ? path.reverse().join('/') + ':' + textIndex : '',
+      hostTextLength: host ? String(node.textContent || '').length : 0
+    };
+  };
+  const nothing = { frame: -1, rangeCount: 0, collapsed: null, anchorOffset: 0, text: '', hostPath: '', hostTextLength: 0 };
+  let caret = null;
+  let richest = null;
+  for (let frame = 0; frame < frames.length; frame += 1) {
+    let sel = null;
+    try { sel = frames[frame].getSelection ? frames[frame].getSelection() : null; } catch { continue; }
+    if (!sel || sel.rangeCount === 0) continue;
+    const state = stateOf(frames[frame], sel, frame);
+    if (!caret) caret = state;
+    if (!richest || state.text.length > richest.text.length) richest = state;
+  }
+  return richest || caret || nothing;
 })()`;
+
+// WHY THE PAGE'S OWN WORDS ARE READ AS ONE OBJECT.
+// Every read of a page answers with the same four things - what it calls itself, where it is, what it says, and whether it has finished saying it.
+// Written out here, the read is one expression a person can paste into a console and see for themselves, which is the property every expression in this file has.
+
+export const PAGE_STATE_TEXT_EXPRESSION = `({
+  title: document.title,
+  url: location.href,
+  text: document.body ? document.body.innerText : "",
+  ready: document.readyState
+})`;
 
 export function modifierMask(modifiers = []) {
   return modifiers.reduce((mask, name) => {
@@ -619,7 +620,7 @@ export const hitExpression = (x, y) => `(() => {
 })() /*opera-hit*/`;
 
 // WHY THE SCROLLER IS FOUND BY ITS SCROLL HEIGHT.
-// Measured live on a Google Doc with 21 pages: the document scroller is div.kix-appview-editor with 21,874 pixels of travel, and the first version of this found it by walking up from a text node and therefore missed it, because a canvas editor holds its content as pixels and the text nodes around it belong to the chrome.
+// Measured live on a 21-page canvas document: its scroller holds 21,874 pixels of travel, and the first version of this found it by walking up from a text node and therefore missed it, because a canvas editor holds its content as pixels and the text nodes around it belong to the chrome.
 // A scroller is anything with room to move; the tallest room wins, the document itself comes first when it has room of its own, and the answer names which one moved - because the one that moved is not the one a caller would have guessed.
 
 // WHY THE WHEEL IS NOT USED HERE.

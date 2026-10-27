@@ -16,6 +16,7 @@ import fs from 'node:fs';
 
 const root = new URL('..', import.meta.url);
 const read = (name) => fs.readFileSync(new URL(`landing/${name}`, root), 'utf8');
+const css = read('dashboard.css');
 const vercel = JSON.parse(fs.readFileSync(new URL('landing/vercel.json', root), 'utf8'));
 const bySource = Object.fromEntries(vercel.headers.map((h) => [h.source, h.headers]));
 
@@ -140,15 +141,14 @@ test('the dashboard has a rail, because it has five jobs and no divider', () => 
     assert.ok(html.includes(`<h2>${heading}</h2>`), `${heading} has a heading of its own`);
   }
 
-  assert.match(html, /@media \(max-width: 640px\)/, 'the rail has a narrow-screen form');
-  assert.match(html, /grid-auto-flow: column/, 'and it becomes a horizontal strip');
+  assert.match(css, /@media \(max-width: 760px\)[\s\S]*?\.rail \{[^}]*grid-auto-flow: column/s, 'the rail has a narrow-screen form, and becomes a horizontal strip below 760px');
 });
 
 test('the destructive control looks destructive', () => {
   const html = read('dashboard.html');
 
   assert.match(html, /class="btn danger"/, 'the revoke control is marked as the dangerous one');
-  assert.match(html, /\.btn\.danger\s*\{[^}]*var\(--danger\)/, 'and the danger colour is defined for it');
+  assert.match(css, /\.btn\.danger\s*\{[^}]*var\(--danger\)/, 'and the danger colour is defined for it');
 
   assert.match(html, /globalThis\.confirm\(`Cabut \$\{button\.dataset\.name\}/, 'revoking still asks first');
 });
@@ -200,7 +200,7 @@ test('the page shows each connected device id and can copy it', () => {
 
 test('the dashboard shares the site navigation and footer', () => {
   const html = read('dashboard.html');
-  assert.match(html, /class="brand"[^>]*>Opera Agent</, 'the brand is shared');
+  assert.match(html, /class="brand"[^>]*>[\s\S]{0,400}?Opera Agent</, 'the brand is shared');
   assert.match(html, /privasi\.html/, 'the privacy policy is linked');
   assert.match(html, /syarat\.html/, 'the terms are linked');
   assert.match(html, /Keluar|akun\.html/, 'the way to the account page is one click away');
@@ -351,8 +351,8 @@ test('a failed command looks failed, not like every other row', () => {
 
   assert.match(html, /commandInk = \(status\) => status === 'completed' \? 'online' : status === 'failed' \? 'offline' : ''/, 'completed reads green, failed reads amber, anything else stays muted');
   assert.match(html, /class="\$\{commandInk\(command\.status\)\}"/, 'and every history row uses it');
-  assert.match(html, /\.commands li \.online/, 'the stylesheet defines the completed ink');
-  assert.match(html, /\.commands li \.offline/, 'and the failed ink');
+  assert.match(css, /\.commands li \.online/, 'the stylesheet defines the completed ink');
+  assert.match(css, /\.commands li \.offline/, 'and the failed ink');
 });
 
 test('a device card leads with its state, not its name alone', () => {
@@ -366,11 +366,11 @@ test('pairing and run sit side by side on a wide screen', () => {
 
   const html = read('dashboard.html');
   assert.match(html, /class="duo"/, 'one wrapper holds both verbs');
-  assert.match(html, /\.duo \{[^}]*grid-template-columns: 1fr 1fr/, 'and the wrapper splits in two');
+  assert.match(css, /\.duo \{[^}]*grid-template-columns: 1fr 1fr/, 'and the wrapper splits in two');
 
-  const splitAt = html.indexOf('.duo {');
-  const queryAt = html.indexOf('@media (max-width: 640px)', splitAt);
-  const collapseAt = html.indexOf('.duo { grid-template-columns: 1fr; }', queryAt);
+  const splitAt = css.indexOf('\n.duo {');
+  const queryAt = css.indexOf('@media (max-width: 640px)', splitAt);
+  const collapseAt = css.indexOf('.duo { grid-template-columns: 1fr; }', queryAt);
   assert.ok(splitAt > -1 && queryAt > splitAt && collapseAt > queryAt, 'collapsing under it');
 });
 
@@ -406,13 +406,13 @@ test('the console uses the screen, the prose keeps its measure', () => {
 
   const html = read('dashboard.html');
   assert.match(html, /wrap wide/, 'the console breaks out of the prose column');
-  assert.match(html, /\.wrap\.wide \{[^}]*max-width: 1120px/, 'to eleven-twenty, not infinity');
-  assert.match(html, /#devices \{[^}]*grid-template-columns: 1fr 1fr/, 'two cards share a row on desktop');
-  const gridAt = html.indexOf('#devices {');
-  const queryAt = html.indexOf('@media (max-width: 860px)', gridAt);
-  const collapseAt = html.indexOf('#devices { grid-template-columns: 1fr; }', queryAt);
+  assert.match(css, /\.wrap\.wide \{[^}]*max-width: 1200px/, 'to a named twelve-hundred measure, not infinity');
+  assert.match(css, /#devices \{[^}]*grid-template-columns: 1fr 1fr/, 'two cards share a row on desktop');
+  const gridAt = css.indexOf('#devices {');
+  const queryAt = css.indexOf('@media (max-width: 860px)', gridAt);
+  const collapseAt = css.indexOf('#devices { grid-template-columns: 1fr; }', queryAt);
   assert.ok(gridAt > -1 && queryAt > gridAt && collapseAt > queryAt, 'and one column on a phone');
-  assert.match(html, /\.duo \{[^}]*grid-template-columns: 1fr 1fr/, 'the verbs keep their shared row');
+  assert.match(css, /\.duo \{[^}]*grid-template-columns: 1fr 1fr/, 'the verbs keep their shared row');
 });
 
 test('the history section lists every command newest first', () => {

@@ -15,50 +15,56 @@ import {
   SETTLE_QUIET_MS,
   SETTLE_READ_EXPRESSION
 } from './page-expressions.js';
+import { MIN_DOM_TEXT, probeSurface } from './surface-profile.js';
 
-export function createWaits({ cdp, sleep, readState, readRows, isDocsDocument, read, primitives, now = Date.now }) {
+export function createWaits({ cdp, sleep, readState, readRows, read, primitives, now = Date.now }) {
   // WHY SETTLE IS A PRIMITIVE AND NOT A TOOL.
   // Every action needs the same short look before the page is read, so the wait belongs beside the actions, not in the surface where a caller has to remember it.
   // The page expression resolves with what it saw, which makes the cost inspectable instead of a blind sleep: quiet means the last change was at least 32ms ago, deadline means the page was still moving when the 120ms cap arrived.
   async function settle() {
     const started = Date.now();
+    const answer = (why, state, detail) => ({
+      waitedMs: Date.now() - started,
+      quietMs: Number(state?.quietMs) || 0,
+      maxMs: SETTLE_MAX_MS,
+      changes: Number(state?.changes) || 0,
+      why,
+      visibility: state?.visibility ?? null,
+      ...(detail ? { detail } : {})
+    });
+
     let armed = false;
     let last = null;
     try {
-      await cdp.send('Runtime.evaluate', { expression: SETTLE_ARM_EXPRESSION, returnByValue: true });
+      await cdp.send('Runtime.evaluate', {
+        expression: SETTLE_ARM_EXPRESSION,
+        returnByValue: true
+      });
       armed = true;
       const polls = Math.ceil(SETTLE_MAX_MS / SETTLE_POLL_MS);
       for (let poll = 0; poll < polls; poll += 1) {
         await sleep(SETTLE_POLL_MS);
-        const { result } = await cdp.send('Runtime.evaluate', { expression: SETTLE_READ_EXPRESSION, returnByValue: true });
+        const { result } = await cdp.send('Runtime.evaluate', {
+          expression: SETTLE_READ_EXPRESSION,
+          returnByValue: true
+        });
         const state = result?.value;
         if (!state || state.missing) {
-          return { waitedMs: Date.now() - started, quietMs: 0, maxMs: SETTLE_MAX_MS, changes: 0, why: 'failed', detail: 'the page lost the settle watcher' };
+          return answer('failed', null, 'the page lost the settle watcher');
         }
         last = state;
-        if (state.quietMs >= SETTLE_QUIET_MS) {
-          return {
-            waitedMs: Date.now() - started,
-            quietMs: state.quietMs,
-            maxMs: SETTLE_MAX_MS,
-            changes: state.changes,
-            why: 'quiet',
-            visibility: state.visibility
-          };
-        }
+        if (state.quietMs >= SETTLE_QUIET_MS) return answer('quiet', state);
       }
-      return {
-        waitedMs: Date.now() - started,
-        quietMs: last?.quietMs ?? 0,
-        maxMs: SETTLE_MAX_MS,
-        changes: last?.changes ?? 0,
-        why: 'deadline',
-        visibility: last?.visibility ?? null
-      };
+      return answer('deadline', last);
     } catch (error) {
-      return { waitedMs: Date.now() - started, quietMs: 0, maxMs: SETTLE_MAX_MS, changes: 0, why: 'failed', detail: error?.message || String(error) };
+      return answer('failed', null, error?.message || String(error));
     } finally {
-      if (armed) await cdp.send('Runtime.evaluate', { expression: SETTLE_DISARM_EXPRESSION, returnByValue: true }).catch(() => null);
+      if (armed) {
+        await cdp.send('Runtime.evaluate', {
+          expression: SETTLE_DISARM_EXPRESSION,
+          returnByValue: true
+        }).catch(() => null);
+      }
     }
   }
 
@@ -82,13 +88,22 @@ export function createWaits({ cdp, sleep, readState, readRows, isDocsDocument, r
     }
   }
 
+  // WHY THE WAIT ASKS THE PAGE WHAT IT IS BEFORE IT TRUSTS ITS TEXT.
+  // This used to ask the url whether the page was a document editor and then read the document for it, which is the site recognition the drive no longer carries.
+  // A length bar is not the decision either: measured on a real Google Doc, the chrome around the canvas holds 1,312 characters of its own, so a wait that only measures length polls the toolbar forever and reports found:false for text that is right there in the document.
+  // So the probe decides once: a page with no canvas takes the cheap DOM answer, and a canvas page is read through the ladder, which reaches past the chrome.
   async function waitForText(text, { timeoutMs = 10000, intervalMs = 100, absent = false, now: clock = now } = {}) {
+    const surface = await probeSurface({ evaluate: primitives.evaluate });
+    const domLeads = surface.canvas.value !== true;
     return waitForMutation(
       async () => {
-        const probe = await readState();
-        return isDocsDocument(probe.url) ? await read() : probe;
+        if (domLeads) {
+          const state = await readState();
+          if ((state.text || '').trim().length >= MIN_DOM_TEXT) return state;
+        }
+        return read();
       },
-      (state) => state.text.includes(text) !== absent,
+      (state) => String(state.text ?? '').includes(text) !== absent,
       { timeoutMs, now: clock }
     );
   }

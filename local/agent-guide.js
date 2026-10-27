@@ -29,6 +29,11 @@ export const RECIPES = Object.freeze([
     note: 'On a Google Doc this reads the document itself, not the toolbar around it.'
   },
   {
+    task: 'Meet a site you have never seen',
+    do: ['surface_profile', 'read_page'],
+    note: 'surface_profile costs one call and moves nothing, so it is the safe first step anywhere. Read the strategy it returns before paying for a read.'
+  },
+  {
     task: 'See what can be clicked, with coordinates',
     do: ['ax_snapshot'],
     note: 'Menus and dialogs come first, so a menu the agent just opened is never past the cap.'
@@ -126,7 +131,8 @@ export const SIDE_EFFECTS = Object.freeze({
   list_tabs: [],
   open_url: ['opens a new tab in the same browser'],
   close_tab: ['closes a tab the caller may still be holding'],
-  read_page: ['on a Google Doc selects the whole document, then puts the caret back where it was', 'answers caretRestored, so a caret it could not put back is known and not guessed'],
+  read_page: ['with allowCaretMove, borrows the selection on a canvas editor to read the text through it, and answers caretRestored as what was measured rather than what was hoped', 'without it, that step is skipped and the reason is reported, because a canvas caret is not in the DOM and cannot be promised back'],
+  surface_profile: [],
   find_elements: [],
   click: ['moves the pointer and presses'],
   resolve_row: ['leaves the page alone'],
@@ -145,7 +151,7 @@ export const SIDE_EFFECTS = Object.freeze({
   ask_page: [],
   wait_for_row: [],
   wait_still: [],
-  caret_line: ['selects the caret line, then puts the caret back where it was', 'answers caretRestored, so a caret it could not put back is known and not guessed'],
+  caret_line: ['selects the caret line to read it, and answers caretRestored as what was measured rather than what was hoped'],
   upload: ['fills a file input, which fires the change the page listens for'],
   drop_file: ['brings the tab to front and drops a file on it'],
   intercept_file_chooser: ['changes whether the native file picker appears on this tab'],

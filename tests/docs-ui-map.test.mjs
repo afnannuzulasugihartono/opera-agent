@@ -6,7 +6,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { resolveMenuTarget, MENU_MAP } from '../supabase/functions/_shared/docs-ui-map.js';
+import { resolveMenuTarget } from '../supabase/functions/_shared/docs-ui-map.js';
 
 test('every menu label the workflows use exists in the map', () => {
   const dir = new URL('../supabase/migrations/', import.meta.url);

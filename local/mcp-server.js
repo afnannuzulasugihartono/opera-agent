@@ -1,7 +1,7 @@
 // @last-edited: 2026-10-25 UTC+7.
 // @title: mcp-server — the stdio MCP surface over the local driver.
 // @state: 8 locks; the handshake, the advertised tools, and every way a call can fail without killing the server.
-// @dependencies: ./driver.js.
+// @dependencies: ./statements.js, ./reports.js, ./documents.js, ./burst.js, ./tools.js, ./advice.js.
 
 // WHY THIS FILE EXISTS
 
@@ -30,7 +30,7 @@ const PROTOCOL_VERSION = '2024-11-05';
 import { statementCard, statementDelivered } from './statements.js';
 import { reportFromFile } from './reports.js';
 import { documentFromFile } from './documents.js';
-import { BURST_ACTIONS, BURST_INPUT_ACTIONS, BURST_MAX_STEPS, normalizeBurst, runLocalBurst } from './burst.js';
+import { BURST_INPUT_ACTIONS, normalizeBurst, runLocalBurst } from './burst.js';
 import { TOOLS, ASKABLE, askParams, STRAY_FILE_TAB } from './tools.js';
 
 // The tool table lives in tools.js: the surface is data, and this file is the protocol that answers it.
@@ -179,6 +179,8 @@ const afterAction = async (driver, action, limit) => {
   lastSeen = seen;
   const tab = tabSaid.get(driver) ?? null;
   const diff = diffElements(prev ?? [], seen);
+  // A comparison needs both sides: the first action on a driver has no previous page, so url and textGrow are null rather than a difference against nothing.
+  const bothStates = Boolean(prevState && state);
   return asText({
     action,
     ...(tab ? { tab } : {}),
@@ -196,8 +198,8 @@ const afterAction = async (driver, action, limit) => {
       removed: diff.removed,
       reshaped: diff.reshaped,
       baseline: prev === null,
-      url: prevState && state ? (prevState.url === state.url ? 'same' : state.url) : null,
-      textGrew: prevState && state ? state.textChars - prevState.textChars : null
+      url: bothStates ? (prevState.url === state.url ? 'same' : state.url) : null,
+      textGrew: bothStates ? state.textChars - prevState.textChars : null
     }
   });
 };
@@ -411,8 +413,10 @@ const windowMatch = async (tab, driver) => (tab ? String(tab.title ?? '') : page
         sessions.delete(args.tabId);
         return asText(out);
       }
+      case 'surface_profile':
+        return asText(await driver.surfaceProfile());
       case 'read_page':
-        return asText(await driver.read());
+        return asText(await driver.read({ allowCaretMove: args.allowCaretMove === true }));
       case 'find_elements':
         return asText(await driver.find(args.query));
       case 'click':

@@ -1,6 +1,6 @@
-// @last-edited: 2026-10-23 UTC+7.
-// @title: local-page — the fake page and the fake document the local driver's tests drive.
-// @state: one recording CDP, one Docs URL, and one document copy path that answers in the order the read asks.
+// @last-edited: 2026-10-27 UTC+7.
+// @title: local-page — the fake pages the local driver's tests drive.
+// @state: one recording CDP, one pipelined CDP, and one document url the canvas surfaces answer with.
 // @dependencies: none.
 
 // WHY THE FAKES LIVE APART FROM THE TESTS.
@@ -64,48 +64,6 @@ export function recordingCdp() {
 
 
 export const DOC_URL = 'https://docs.google.com/document/d/abc/edit';
-
-// WHY THE FAKE ANSWERS THREE CARET QUESTIONS AND NOT ONE.
-// A read writes the caret down, puts the view back so the click lands on that spot, and then looks again to see whether the caret came back.
-// One answer cannot serve all three, because the third is the measurement the whole claim rests on.
-
-// WHY THE MEASUREMENT IS IN CONTENT COORDINATES.
-// Measured live: after a read the caret sat below the visible page, at y=1649 in a 1215-tall viewport, so the viewport point before and after matched while the caret was nowhere near where it started.
-// Content coordinates — the viewport point plus the scroll of every box around it — do not move when the page scrolls, so they can tell the truth about a caret that is off the screen.
-
-
-export function docsCdp(copyAnswers, caret = null) {
-  const calls = [];
-  const pending = [...copyAnswers];
-  return {
-    calls,
-    send: async (method, params = {}) => {
-      calls.push({ method, params });
-      if (method === 'Runtime.evaluate') {
-        if (params.expression.includes('texteventtarget')) {
-          return pending.shift() ?? { result: { value: null } };
-        }
-        if (params.expression.includes('scroll: chain.map(')) {
-          return { result: { value: caret?.mark ?? null } };
-        }
-        if (params.expression.includes('const now =')) {
-          return { result: { value: caret?.point ?? null } };
-        }
-        if (params.expression.includes('absX: Math.round')) {
-          return { result: { value: caret?.seen ?? null } };
-        }
-        if (params.expression.includes('kix-canvas-tile')) {
-          return { result: { value: { x: 700, y: 200 } } };
-        }
-        if (params.expression.includes('document.title')) {
-          return { result: { value: { title: 'Doc', url: DOC_URL, text: 'chrome' } } };
-        }
-      }
-      return { result: {} };
-    }
-  };
-}
-
 
 export function pipelinedCdp(handler = () => ({})) {
   const calls = [];

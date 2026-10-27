@@ -1,7 +1,7 @@
 // @last-edited: 2026-10-23 UTC+7.
 // @title: primitives — the local driver assembled from the modules that each answer one question.
 // @state: navigation, focus and the raw protocol escape hatch, with the typing, pointer, reads, waits, canvas and file verbs assigned from their own modules.
-// @dependencies: ./input.js, ./pointer.js, ./observe.js, ./waits.js, ./canvas.js, ./primitives-file.js, ./window-focus.js, ./page-expressions.js.
+// @dependencies: ./input.js, ./pointer.js, ./observe.js, ./waits.js, ./canvas.js, ./primitives-file.js, ./window-focus.js.
 
 // WHY THIS FILE EXISTS
 
@@ -18,7 +18,9 @@ import nodeFs from 'node:fs';
 import nodeOs from 'node:os';
 import nodePath from 'node:path';
 
-import { isDocsDocument } from './page-expressions.js';
+import { measureAx, probeSurface, buildProfile, describeProfile } from './surface-profile.js';
+import { readLadder } from './read-strategy.js';
+import { actionLadder } from './action-strategy.js';
 import { filePrimitives } from './primitives-file.js';
 import { createInputMethods } from './input.js';
 import { createPointerMethods } from './pointer.js';
@@ -46,11 +48,33 @@ export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Pr
       return cdp.send(method, params);
     },
 
+    // WHY A PAGE EXCEPTION IS AN ERROR AND NOT A MISSING VALUE.
+    // Measured on a real Google Doc: the first probe referenced a constant the page had never heard of, the page threw, and the answer came back undefined - which reads exactly like a page with no canvas, no text and no editor.
+    // A thrown page expression is a fact about the page, so it is raised here rather than flattened into a value the caller cannot tell from a measurement.
     async evaluate(expression) {
-      const { result } = await cdp.send('Runtime.evaluate', {
+      const reply = await cdp.send('Runtime.evaluate', {
         expression, returnByValue: true, awaitPromise: true
       });
-      return result?.value;
+      if (reply?.exceptionDetails) {
+        const detail = reply.exceptionDetails;
+        throw new Error(`the page threw while evaluating: ${detail.text || 'unknown error'}${detail.exception?.description ? ` (${String(detail.exception.description).split('\n')[0]})` : ''}`);
+      }
+      return reply?.result?.value;
+    },
+
+    // WHY THE PROFILE IS A PRIMITIVE OF ITS OWN.
+    // An agent meeting a site for the first time has to know what the surface is before it can know what a read will cost, and paying a full read to find out is the wrong order.
+    // This asks nothing of the page and moves no caret, so it is the one call that is always safe on a surface nobody has seen.
+    async surfaceProfile() {
+      const probe = await probeSurface({ evaluate: primitives.evaluate });
+      const ax = await measureAx({ ask: primitives.ask });
+      const surface = buildProfile({ probe, ax });
+      return {
+        surface,
+        strategy: readLadder(surface),
+        action: actionLadder(surface),
+        description: describeProfile(surface)
+      };
     },
 
     // WHY THE PAGE IS ASKED BEFORE THE MACHINE, AND WHY IT IS ENOUGH.
@@ -115,10 +139,10 @@ export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Pr
   const pointer = createPointerMethods({ cdp, primitives });
   Object.assign(primitives, pointer);
 
-  const canvas = createCanvasMethods({ cdp, primitives, sleep, readState });
+  const canvas = createCanvasMethods({ cdp, primitives, readState });
   Object.assign(primitives, canvas);
 
-  const waits = createWaits({ cdp, sleep, readState, readRows, isDocsDocument, read: () => primitives.read(), primitives, now });
+  const waits = createWaits({ cdp, sleep, readState, readRows, read: () => primitives.read(), primitives, now });
   Object.assign(primitives, waits);
 
   Object.assign(primitives, filePrimitives(primitives, { cdp, sleep, fs, os, path, readState }));

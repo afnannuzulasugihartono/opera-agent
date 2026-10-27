@@ -101,9 +101,20 @@ export const TOOLS = Object.freeze([
     inputSchema: { type: 'object', properties: { tabId: stringArg('which tab to close, from list_tabs') }, required: ['tabId'] }
   },
   {
+    name: 'surface_profile',
+    description: 'Report what a surface is, measured, before reading it: whether its text lives in the DOM and how many characters, how much of the viewport a canvas covers, whether an editable host exists, whether the page has focus, and which accessibility subtree carries the document. Every claim carries the number it was measured from, and no site is named anywhere in the answer. truncated is true when the accessibility tree came back as deep as it was asked for, so its text may be cut. It reads no document text and moves no caret, so it is the one call that is always safe. Use it first on a site you have not seen, and read the strategy it returns to know what a read will cost.',
+    inputSchema: { type: 'object', properties: { tabId: tabArg }, required: [] }
+  },
+  {
     name: 'read_page',
-    description: 'Read one tab: url, title and text, plus whether that text had stopped moving. settled and grewBy come from two reads a beat apart, because readyState lies: measured live, a page reported complete with a tenth of its text and reached the rest 600 ms later - a read that says settled:false is a page still filling in, so read again or wait_still() before acting. On a Google Doc the text is the document itself, read through the editor with paragraphs kept as lines; that read borrows the selection and puts the caret back where it was, answering caretMoved and caretRestored so a caret it could not restore is known rather than guessed, and settled is null there with settledWhy, because a second copy would move the caret twice. On other canvas-rendered pages little or no text comes back, so pair this with capture_page when the task needs to see content.',
-    inputSchema: { type: 'object', properties: { tabId: tabArg } }
+    description: 'Read one tab: url, title and text, plus whether that text had stopped moving. settled and grewBy come from two reads a beat apart, because readyState lies: measured live, a page reported complete with a tenth of its text and reached the rest 600 ms later - a read that says settled:false is a page still filling in, so read again or wait_still() before acting; on the accessibility and selection steps settled is null with the reason, because one sample cannot say the text stopped. The read walks a ladder chosen from what the surface measures as: the accessibility tree first where a canvas covers the viewport, then the DOM, then a selection copy, then a picture. Every step but the selection copy asks nothing of the page, and the answer names which step it used, what that step cost, and anything it skipped. A canvas editor holds its caret in its own model rather than in the DOM, so a selection copy cannot promise to put the caret back - without allowCaretMove it is skipped and the reason is reported, and with it the answer carries caretRestored and viewRestored as what was measured rather than what was hoped: a consented borrow also leaves the view scrolled to the end of the document. A selection copy that returns nothing is not reported as an empty document; the ladder moves on to the picture. On canvas-rendered pages the tree is cut at a depth cap, and surface.truncated says so.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        tabId: tabArg,
+        allowCaretMove: { type: 'boolean', description: 'consent, recorded on this call only, for a read that borrows the selection on a canvas editor. Without it that step is skipped and the reason is reported, because a canvas caret is not in the DOM and cannot be promised back.' }
+      }
+    }
   },
   {
     name: 'find_elements',
@@ -305,7 +316,7 @@ export const TOOLS = Object.freeze([
   },
   {
     name: 'caret_line',
-    description: 'Report the text of the line the caret stands on. Selects its own line to read it, then puts the caret back where it was and answers caretRestored so a caret it could not put back is known. Dismiss any menu first; with one open the keys walk the menu instead of the text.',
+    description: 'Report the text of the line the caret stands on. Selects its own line to read it, then answers caretRestored as what was measured rather than what was hoped: on a page whose caret lives in its own model rather than in the DOM, this is reported as not restored and never as restored. It also leaves the view scrolled to the end of the line, so viewRestored is false and the read is gated like the selection copy is - Dismiss any menu first; with one open the keys walk the menu instead of the text.',
     inputSchema: { type: 'object', properties: { tabId: tabArg } }
   },
   {

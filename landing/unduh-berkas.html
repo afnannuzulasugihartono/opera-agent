@@ -1,7 +1,7 @@
-<!-- @last-edited: 2026-10-10 UTC+7.
+<!-- @last-edited: 2026-10-26 UTC+7. -->
 <!-- @title: unduh-berkas — one card per browser, the archive filled and the rest closed, then every install path. -->
 <!-- @state: the merged page: each browser card fills the .zip and closes the .crx and the update manifest behind a details; the steps, verification, enterprise notes, and matrix live here, and the hub only opens the door. -->
-<!-- @dependencies: none. -->
+<!-- @dependencies: site.css, download.css, i18n.js. -->
 
 
 <!doctype html>
@@ -9,7 +9,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="theme-color" content="#0b0d10" />
+  <meta name="theme-color" content="#f7f5ef" />
   <title data-i18n="meta.title">Unduh berkas — Opera Agent</title>
   <meta name="description" content="Unduh Opera Agent untuk Chrome, Edge, Brave, Opera, dan Vivaldi: arsip .zip manual atau CRX bertanda tangan untuk mesin enterprise." />
   <link rel="stylesheet" href="/site.css" />
@@ -21,76 +21,22 @@
   <meta property="og:description" content="Unduh Opera Agent untuk Chrome, Edge, Brave, Opera, dan Vivaldi: arsip .zip manual atau CRX bertanda tangan untuk mesin enterprise." />
   <meta property="og:url" content="https://opera-agent.pages.dev/unduh-berkas" />
   <meta property="og:locale" content="id_ID" />
-  <style>
-    /*
-     * WHY the same single-file shape as the rest of the site: no build step and no external origin, so the archive link is the only way out of this page.
-     */
-
-
-    /*
-     * WHY one grid for five browsers: the reader asks "which one is mine", and the matching card answers before any prose is read.
-     */
-    .wrap.wide { max-width: 1120px; }
-    .hero { text-align: center; margin: 8px auto 6px; max-width: 640px; }
-    .hero h1 { font-size: clamp(36px, 4.6vw, 52px); line-height: 1.08; margin: 0 0 12px; }
-    .hero p { font-size: 17px; }
-    .browsers { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin: 26px 0 10px; }
-    .browser { position: relative; background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 24px 18px 20px; text-align: center; transition: border-color .25s var(--ease), box-shadow .25s var(--ease); }
-    .browser.yours { border-color: var(--accent); background: var(--accent-soft); box-shadow: 0 0 0 1px var(--accent), 0 18px 44px rgba(0, 0, 0, .4); }
-    .browser .glyph { display: flex; align-items: center; justify-content: center; width: 52px; height: 52px; margin: 0 auto 10px; border-radius: 14px; background: var(--surface-soft); border: 1px solid var(--line-strong); font-size: 24px; font-weight: 700; }
-    .browser h3 { margin: 0 0 12px; font-size: 18px; }
-    /*
-     * WHY one filled button above one closed list: this is the shape code.visualstudio.com/download uses, and the principle behind it is that a reader who lands here wants the file that works — only someone rolling the extension out to a fleet wants the signed one.
-     * Two equal buttons gave the home path and the enterprise path the same visual weight, which is the one thing this page must not do: the .crx is REFUSED on an unmanaged machine, so a reader who picks it by shape loses ten minutes to learn that.
-     */
-    .browser .btn-row { display: flex; justify-content: center; }
-    .browser .btn { margin: 4px 0; padding: 13px 24px; font-size: 15px; width: 100%; }
-
-    /*
-     * WHY details and not a select: a select fires navigation on change, hides its choices from the keyboard and from the page's own text, and needs script to restore the closed state on load.
-     * details is native, focusable, open by keyboard alone, and reads correctly with the page's script blocked — which is this page's whole posture, connect-src 'none' included.
-     */
-    .browser .more { margin: 2px 0 0; border: 1px solid var(--line-strong); border-radius: 12px; }
-    .browser .more[open] { border-color: var(--accent); }
-    .browser .more > summary {
-      list-style: none;
-      cursor: pointer;
-      padding: 11px 14px;
-      text-align: left;
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--text);
-      border-radius: 12px;
-    }
-    .browser .more > summary::-webkit-details-marker { display: none; }
-    .browser .more > summary::after { content: " ▾"; color: var(--muted); }
-    .browser .more[open] > summary::after { content: " ▴"; }
-    .browser .more-list { list-style: none; margin: 0; padding: 0 8px 8px; }
-    .browser .more-list a { display: block; padding: 9px 6px; font-size: 13.5px; color: var(--accent); text-decoration: none; border-radius: 8px; text-align: left; }
-    .browser .more-list a:hover { background: var(--surface-soft); }
-    .browser .req { font-size: 12.5px; margin: 10px 0 0; }
-    .browser .badge { position: absolute; top: -11px; left: 50%; transform: translateX(-50%); background: var(--accent); color: #04211d; font-size: 11px; font-weight: 700; padding: 2px 10px; border-radius: 980px; white-space: nowrap; }
-</style>
 </head>
 <body>
   <header>
     <div class="wrap">
       <nav>
-        <a class="brand" href="./beranda.html">Opera Agent</a>
-        <a href="./unduh.html" aria-current="page" data-i18n="nav.download">Unduh</a>
-        <a href="./beranda.html#model" data-i18n="nav.model">Model Anda</a>
-        <a href="./akun.html" data-i18n="nav.account">Akun</a>
-        <a href="./dashboard.html">Dashboard</a>
-        <a href="./privasi.html" data-i18n="nav.privacy">Privasi</a>
-        <a href="./fitur.html" data-i18n="nav.features">Fitur</a>
-        <a href="./dukungan.html" data-i18n="nav.support">Dukungan</a>
-        <span class="lang"><button type="button" data-lang="id" aria-pressed="true" aria-label="Bahasa Indonesia">ID</button><span aria-hidden="true">|</span><button type="button" data-lang="en" aria-pressed="false" aria-label="English">EN</button></span><a class="navCta" href="./index.html" data-i18n="nav.signin">Masuk</a>
+        <a class="brand" href="./beranda.html"><svg class="brandMark" viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="7" fill="#101512" /><path d="M8 5.6v12.8l3.1-2.9 1.9 4.5 2.4-1-2-4.5h3.9L8 5.6Z" fill="#3ecf8e" /></svg><span>Opera Agent</span></a>
+        
+<a href="./unduh.html" aria-current="page" data-i18n="nav.download">Unduh</a>        <a class="nav-sec" href="./beranda.html#model" data-i18n="nav.model">Model Anda</a>        <a href="./dashboard.html">Dashboard</a>        <a class="nav-account" href="./akun.html" data-i18n="nav.account">Akun</a>        <a class="nav-sec" href="./fitur.html" data-i18n="nav.features">Fitur</a>        <a class="nav-sec" href="./privasi.html" data-i18n="nav.privacy">Privasi</a>        <a class="nav-sec" href="./dukungan.html" data-i18n="nav.support">Dukungan</a>
+        <span class="lang" data-lang-toggle></span><a class="navCta" href="./index.html" data-i18n="nav.signin">Masuk</a>
       </nav>
     </div>
   </header>
 
   <main class="wrap wide">
-    <div class="hero">
+    <div class="hero files">
+      <p class="eyebrow">Berkas</p>
       <h1 data-i18n="page.title">Unduh berkas</h1>
       <p data-i18n="page.sub">Lima kartu, dua berkas yang sama. Opera Agent hanya punya satu build untuk
       semua browser Chromium, jadi tiap kartu berbeda pada halaman ekstensi yang Anda
@@ -113,7 +59,8 @@
             <li><a href="https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/update.xml?id=ofgemipoobcnbjkfanmofjbdonjapmgl" data-i18n="card.manifest">Manifest pembaruan</a></li>
           </ul>
         </details>
-        <p class="req" data-i18n-html="card.chrome.req">Ekstrak → buka <code>chrome://extensions</code>, mode developer → Load unpacked. Hanya via policy enterprise-managed; Drag-and-drop manual ditolak.</p>
+        <p class="req" data-i18n-html="card.chrome.req">Ekstrak → buka <code>chrome://extensions</code> → Load unpacked.</p>
+        <p class="meta cardPolicy" data-i18n-html="card.policy">Butuh <strong>mode developer</strong>; .crx untuk mesin <strong>enterprise-managed</strong>, <strong>Drag-and-drop manual ditolak</strong>.</p>
       </article>
       <article class="browser" data-browser="edge">
         <span class="badge" hidden data-i18n="card.yours">Browser Anda</span>
@@ -129,7 +76,8 @@
             <li><a href="https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/update.xml?id=ofgemipoobcnbjkfanmofjbdonjapmgl" data-i18n="card.manifest">Manifest pembaruan</a></li>
           </ul>
         </details>
-        <p class="req" data-i18n-html="card.edge.req">Ekstrak → buka <code>edge://extensions</code>, mode developer → Load unpacked. Hanya via policy enterprise-managed; Drag-and-drop manual ditolak.</p>
+        <p class="req" data-i18n-html="card.edge.req">Ekstrak → buka <code>edge://extensions</code> → Load unpacked.</p>
+        <p class="meta cardPolicy" data-i18n-html="card.policy">Butuh <strong>mode developer</strong>; .crx untuk mesin <strong>enterprise-managed</strong>, <strong>Drag-and-drop manual ditolak</strong>.</p>
       </article>
       <article class="browser" data-browser="brave">
         <span class="badge" hidden data-i18n="card.yours">Browser Anda</span>
@@ -145,7 +93,8 @@
             <li><a href="https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/update.xml?id=ofgemipoobcnbjkfanmofjbdonjapmgl" data-i18n="card.manifest">Manifest pembaruan</a></li>
           </ul>
         </details>
-        <p class="req" data-i18n-html="card.brave.req">Ekstrak → buka <code>brave://extensions</code>, mode developer → Load unpacked. Hanya via policy enterprise-managed; Drag-and-drop manual ditolak.</p>
+        <p class="req" data-i18n-html="card.brave.req">Ekstrak → buka <code>brave://extensions</code> → Load unpacked.</p>
+        <p class="meta cardPolicy" data-i18n-html="card.policy">Butuh <strong>mode developer</strong>; .crx untuk mesin <strong>enterprise-managed</strong>, <strong>Drag-and-drop manual ditolak</strong>.</p>
       </article>
       <article class="browser" data-browser="opera">
         <span class="badge" hidden data-i18n="card.yours">Browser Anda</span>
@@ -161,7 +110,8 @@
             <li><a href="https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/update.xml?id=ofgemipoobcnbjkfanmofjbdonjapmgl" data-i18n="card.manifest">Manifest pembaruan</a></li>
           </ul>
         </details>
-        <p class="req" data-i18n-html="card.opera.req">Ekstrak → buka <code>opera://extensions</code>, mode developer → Load unpacked. Hanya via policy enterprise-managed; Drag-and-drop manual ditolak.</p>
+        <p class="req" data-i18n-html="card.opera.req">Ekstrak → buka <code>opera://extensions</code> → Load unpacked.</p>
+        <p class="meta cardPolicy" data-i18n-html="card.policy">Butuh <strong>mode developer</strong>; .crx untuk mesin <strong>enterprise-managed</strong>, <strong>Drag-and-drop manual ditolak</strong>.</p>
       </article>
       <article class="browser" data-browser="vivaldi">
         <span class="badge" hidden data-i18n="card.yours">Browser Anda</span>
@@ -177,7 +127,8 @@
             <li><a href="https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/update.xml?id=ofgemipoobcnbjkfanmofjbdonjapmgl" data-i18n="card.manifest">Manifest pembaruan</a></li>
           </ul>
         </details>
-        <p class="req" data-i18n-html="card.vivaldi.req">Ekstrak → buka <code>opera://extensions</code>, mode developer → Load unpacked. Hanya via policy enterprise-managed; Drag-and-drop manual ditolak.</p>
+        <p class="req" data-i18n-html="card.vivaldi.req">Ekstrak → buka <code>opera://extensions</code> → Load unpacked.</p>
+        <p class="meta cardPolicy" data-i18n-html="card.policy">Butuh <strong>mode developer</strong>; .crx untuk mesin <strong>enterprise-managed</strong>, <strong>Drag-and-drop manual ditolak</strong>.</p>
       </article>
     </div>
 
@@ -208,11 +159,12 @@
       "card.crx": "Download .crx",
       "card.more": "Other downloads",
       "card.manifest": "Update manifest",
-      "card.chrome.req": "Extract → open <code>chrome://extensions</code>, developer mode → Load unpacked. Only via enterprise-managed policy; manual drag-and-drop is refused.",
-      "card.edge.req": "Extract → open <code>edge://extensions</code>, developer mode → Load unpacked. Only via enterprise-managed policy; manual drag-and-drop is refused.",
-      "card.brave.req": "Extract → open <code>brave://extensions</code>, developer mode → Load unpacked. Only via enterprise-managed policy; manual drag-and-drop is refused.",
-      "card.opera.req": "Extract → open <code>opera://extensions</code>, developer mode → Load unpacked. Only via enterprise-managed policy; manual drag-and-drop is refused.",
-      "card.vivaldi.req": "Extract → open <code>opera://extensions</code>, developer mode → Load unpacked. Only via enterprise-managed policy; manual drag-and-drop is refused.",
+      "card.policy": "Needs <strong>developer mode</strong>; the .crx is for <strong>enterprise-managed</strong> machines, and <strong>manual drag-and-drop is refused</strong>.",
+      "card.chrome.req": "Extract → open <code>chrome://extensions</code> → Load unpacked.",
+      "card.edge.req": "Extract → open <code>edge://extensions</code> → Load unpacked.",
+      "card.brave.req": "Extract → open <code>brave://extensions</code> → Load unpacked.",
+      "card.opera.req": "Extract → open <code>opera://extensions</code> → Load unpacked.",
+      "card.vivaldi.req": "Extract → open <code>opera://extensions</code> → Load unpacked.",
       "fallback.hash": "This archive is always the newest build, so its fingerprint changes every release. How to fetch the fingerprint the server is currently serving, and how to compare it with the file you downloaded, is in <a href=\"#verifikasi\">Verify the files</a>.",
       "steps.title": "Five steps to install from the archive",
       "verify.intro": "The archive and the <code>.crx</code> file always hold the newest build, so their fingerprints change every release and cannot be printed on a static page. Fetch the fingerprint the server is currently serving, then compare it with yours:",
@@ -253,6 +205,7 @@
       }
     </script>
 
+    <div class="downloadBody centered">
     <p data-i18n-html="fallback.body">Kalau kebijakan ditolak, atau browser kamu tidak ada di daftar di atas, ambil
     <a href="#berkas">arsip .zip</a> dari kartu di atas dan muat sendiri. Cara ini berjalan
     di semua browser Chromium.</p>
@@ -321,6 +274,7 @@ Get-FileHash .\opera-agent-*.zip -Algorithm SHA256</code></pre>
     Chrome, bukan salah berkasnya.</p>
 
     <p><a href="./unduh.html" data-i18n="back">&larr; Kembali ke Unduh</a></p>
+    </div>
   </main>
 
   <footer>

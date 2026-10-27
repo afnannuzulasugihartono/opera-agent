@@ -12,6 +12,7 @@ import fs from 'node:fs';
 
 const root = new URL('..', import.meta.url);
 const html = fs.readFileSync(new URL('landing/index.html', root), 'utf8');
+const authCss = fs.readFileSync(new URL('landing/auth.css', root), 'utf8');
 const vercel = JSON.parse(fs.readFileSync(new URL('landing/vercel.json', root), 'utf8'));
 
 const AUTH_HOST = 'https://nenmkmtvjremqphfqnfw.supabase.co/auth/v1';
@@ -125,8 +126,8 @@ test('the gate splits brand from form, and stacks on a narrow screen', () => {
   const mark = 'M5.2 2.2v10.2l2.5-2.3 1.5 3.6 1.9-.8-1.6-3.6h3.1L5.2 2.2Z';
   assert.ok(html.includes(`<path d="${mark}"`), 'the panel mark reuses the favicon path inline');
   assert.ok(html.includes(`d='${mark}'`), 'which is the path the favicon carries');
-  assert.match(html, /grid-template-columns: 1fr 1\.1fr/, 'two columns on a wide screen');
-  assert.match(html, /@media \(max-width: 860px\)/, 'stacked below 860px');
+  assert.match(authCss, /grid-template-columns: minmax\(0, 1fr\) minmax\(0, 1\.02fr\)/, 'two columns on a wide screen');
+  assert.match(authCss, /@media \(max-width: 900px\)[\s\S]*?\.split \{ grid-template-columns: 1fr;/, 'stacked below 900px, where the promise column would squeeze the card');
   assert.doesNotMatch(html, /#1877f2|#0866ff/i, 'no Facebook blue rides along');
 });
 

@@ -21,7 +21,7 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { connect, discoverWebSocket, openTab, closeTab, waitForBrowser } from '../local/transport.js';
+import { connect, discoverWebSocket, openTab, waitForBrowser } from '../local/transport.js';
 
 test('a new tab is opened as its own target, so a drive never hijacks the page already open', async () => {
   const calls = [];

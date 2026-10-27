@@ -35,10 +35,17 @@ const reachable = (entry) => {
 // WHY THE ENTRY POINT IS EXEMPT FROM THE MODULE LIST.
 // npm ships a bin through the `bin` directory, not as a module anyone imports, so the entry point is covered by that name and every module below it is checked as a module.
 
-test('every module the bin can reach is inside the published files', () => {
-  const needed = [...reachable('bin/opera-local'), ...reachable('mcp-server')].map((name) => `${name}.js`);
+// WHY EVERY FILE IN bin/ IS WALKED AND NOT ONLY opera-local.js.
+// Measured: dev-shim.js sat on disk, was imported by bin/opera-local-dev.js, and was absent from the files list, so the dev binary shipped and died on its first import with ERR_MODULE_NOT_FOUND while this test passed.
+// The list was only ever walked from one entry point, and a second entry point in the same directory is exactly the shape that hides.
 
-  const missing = needed.filter((name) => !shipped.includes(name) && !(name === 'bin/opera-local.js' && shipped.includes('bin')));
+test('every module the bin can reach is inside the published files', () => {
+  const bins = readdirSync(join(local, 'bin')).filter((name) => name.endsWith('.js'));
+  const entries = bins.map((name) => `bin/${name.replace(/\.js$/, '')}`);
+  const needed = [...entries.flatMap((entry) => [...reachable(entry)]), ...reachable('mcp-server')].map((name) => `${name}.js`);
+
+  // An entry point is carried by the "bin" directory itself rather than by a module name, so a file sitting directly in bin/ is exempt and nothing under it is.
+  const missing = needed.filter((name) => !shipped.includes(name) && !(name.startsWith('bin/') && shipped.includes('bin')));
   assert.deepEqual(missing, [], `npx opera-local would install a package that dies on import: ${missing.join(', ')}`);
 });
 
