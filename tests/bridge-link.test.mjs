@@ -59,7 +59,7 @@ globalThis.OPERA_BRIDGE_WS = `ws://127.0.0.1:${PORT}`;
 const bridge = createBridgeServer({ port: PORT, heartbeatMs: 500 });
 await bridge.listen();
 
-const { stopBridgeLink, bridgeLinkState, ensureBridgeLink, discoverBridge, probePort, CANDIDATE_PORTS } = await import('../extension/worker/bridge-link.js');
+const { stopBridgeLink, bridgeLinkState, ensureBridgeLink, discoverBridge, probePort } = await import('../extension/worker/bridge-link.js');
 
 const deadline = Date.now() + 5000;
 while (!bridge.linked() && Date.now() < deadline) await new Promise((r) => setTimeout(r, 25));
@@ -85,25 +85,26 @@ test('a port with nothing on it answers no, and one with the bridge answers yes'
   assert.equal(await probePort(PORT), true, 'and the port this suite is driving is found');
 });
 
-// WHY NO SERVER IS STARTED IN THE TEST BELOW.
-// The machine's own bridge is already listening on a candidate port, and that is exactly the condition being tested for: a stale configured address must be stepped over for one that answers.
-// Starting a server here would only prove the test could start a server.
+// WHY THE WALK IS DRIVEN BY A PROBE THE TEST CONTROLS.
+// The first version walked the real candidate list and asserted a live port was found, which is only true on a machine running a bridge - on CI it found nothing and failed, and a test that passes on one machine and fails on another is testing the machine.
+// The claim worth pinning is the order: a dead configured address is stepped over and the first live port wins.
 
 test('discovery walks past a dead configured port to one that answers', async () => {
-  globalThis.OPERA_BRIDGE_WS = 'ws://127.0.0.1:19999';
+  const dead = 19999;
+  const live = PORT;
+  // The live port is put first in the walk, because the claim is about the order and not about which port the machine happens to be serving.
+  // A walk that finds some other live port first has still stepped over the dead one, but it has not proved the dead one is the reason it kept going.
+  const order = [dead, live];
 
-  try {
-    assert.equal(await probePort(19999), false, 'the configured port is dead');
-    const walked = [];
-    for (const port of [19999, ...CANDIDATE_PORTS]) {
-      if (await probePort(port)) { walked.push(port); break; }
-    }
-    assert.ok(walked.length === 1, 'a live port is found rather than the road ending at the dead one');
-    assert.notEqual(walked[0], 19999, 'and it is not the configured address that was just proved dead');
-    assert.ok(CANDIDATE_PORTS.includes(walked[0]), `the port found is one the candidates name: ${walked[0]}`);
-  } finally {
-    globalThis.OPERA_BRIDGE_WS = `ws://127.0.0.1:${PORT}`;
+  assert.equal(await probePort(dead), false, 'the configured port is dead');
+  assert.equal(await probePort(live), true, 'and a port with the bridge on it answers');
+
+  const walked = [];
+  for (const port of order) {
+    if (await probePort(port)) { walked.push(port); break; }
   }
+
+  assert.deepEqual(walked, [live], 'the dead configured port is stepped over and the live one is found');
 });
 
 test('the worker connects on its own, without being asked', () => {
