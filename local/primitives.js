@@ -18,7 +18,6 @@ import nodeFs from 'node:fs';
 import nodeOs from 'node:os';
 import nodePath from 'node:path';
 
-import { isDocsDocument } from './page-expressions.js';
 import { measureAx, probeSurface, buildProfile, describeProfile } from './surface-profile.js';
 import { readLadder } from './read-strategy.js';
 import { actionLadder } from './action-strategy.js';

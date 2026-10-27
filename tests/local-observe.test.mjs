@@ -402,7 +402,8 @@ test('overlay rows come first, matched by role and never by site', () => {
 test('the text caret rides the snapshot so the next keystroke lands knowingly', () => {
   const expression = snapshotExpression(120);
 
-  assert.ok(expression.includes('kix-cursor-caret'), 'the canvas caret Docs exposes');
+  assert.ok(!expression.includes('kix-cursor-caret'), 'the drawn caret is not read: on a shared document it is somebody else\'s');
+  assert.ok(expression.includes('getSelection'), 'the caret row comes from this client\'s own selection');
   assert.ok(expression.includes("role: 'caret'"), 'rides as a final row, past the limit');
   assert.ok(expression.includes('isCollapsed'), 'a ranged selection reports nothing rather than a dishonest point');
   assert.ok(!expression.includes('docs-texteventtarget-iframe'), 'the line lives behind caret_line, which selects first; the map carries coordinates only');
