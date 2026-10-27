@@ -6,13 +6,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  isDocsDocument,
   SETTLE_MAX_MS,
   SETTLE_POLL_MS
 } from '../local/page-expressions.js';
 import { createPrimitives } from '../local/primitives.js';
 import { createWaits } from '../local/waits.js';
-import { recordingCdp, docsCdp } from './helpers/local-page.mjs';
+import { recordingCdp, docsCdp, DOC_URL } from './helpers/local-page.mjs';
 
 test('settle watches the page from Node, so a hidden tab cannot clamp its timer', async () => {
   const cdp = recordingCdp();
@@ -109,18 +108,17 @@ test('a read on a settled page takes two samples and says the text stood still',
 
   const out = await createPrimitives(cdp, { sleep: async (ms) => { slept.push(ms); } }).read();
 
-  assert.deepEqual(out, {
-    title: 't',
-    url: 'u',
-    text: 'body text',
-    ready: 'complete',
-    settled: true,
-    grewBy: 0,
-    caretMoved: false,
-    caretRestored: true,
-    viewRestored: true,
-    caretWhy: ''
-  });
+  assert.equal(out.title, 't');
+  assert.equal(out.url, 'u');
+  assert.equal(out.text, 'body text');
+  assert.equal(out.ready, 'complete');
+  assert.equal(out.settled, true, 'the text stood still across the two samples');
+  assert.equal(out.grewBy, 0, 'and it did not grow');
+  assert.equal(out.strategy, 'dom');
+  assert.equal(out.harm, 'none');
+  assert.equal(out.caretMoved, false);
+  assert.equal(out.caretRestored, true);
+  assert.equal(out.caretWhy, '');
   const asks = cdp.calls.filter((c) => c.method === 'Runtime.evaluate').map((c) => c.params.expression);
   assert.ok(asks.some((expression) => expression.includes('opera-settle-arm')), 'the read settles before its second sample');
   assert.ok(asks.some((expression) => expression.includes('opera-settle-read')), 'and asks the page how quiet it is');
@@ -168,15 +166,48 @@ test('a read on a page still filling in says so, and answers with the later samp
 });
 
 
-test('a text wait on a Doc reads the document, not the canvas chrome', async () => {
-  const cdp = docsCdp([{ result: { value: 'First line\nSecond line' } }]);
+// WHY THIS TEST NAMES A CANVAS SURFACE AND NOT A SITE.
+// It used to ask for a Google Doc by name and assert the document came from that site's clipboard.
+// The behaviour worth pinning is the same for any canvas editor: the DOM around the canvas holds chrome, and the wait must not end on that chrome.
+// So the fake models a canvas surface and the assertion is that the wait reaches past the chrome.
+
+test('a text wait on a canvas surface reaches past the chrome in the DOM', async () => {
+  const CANVAS_PROBE = {
+    textInDom: { value: false, evidence: 0 },
+    canvas: { value: true, evidence: 0.61 },
+    editable: { value: true, evidence: 'true' },
+    focused: { value: true, evidence: 'document.hasFocus() is true' }
+  };
+  const RICH_AX = [
+    { frameId: 'editor', role: { value: 'InlineTextBox' }, name: { value: 'First line' } },
+    { frameId: 'editor', role: { value: 'InlineTextBox' }, name: { value: 'Second line' } },
+    { frameId: 'editor', role: { value: 'InlineTextBox' }, name: { value: 'Third line' } },
+    { frameId: 'chrome', role: { value: 'InlineTextBox' }, name: { value: 'Mode tampilan' } }
+  ];
+  const cdp = {
+    calls: [],
+    send: async (method, params = {}) => {
+      cdp.calls.push({ method, params });
+      const expression = String(params.expression ?? '');
+      if (method === 'Runtime.evaluate' && expression.includes('window.innerHeight')) {
+        return { result: { value: CANVAS_PROBE } };
+      }
+      if (method === 'Accessibility.getFullAXTree') return { nodes: RICH_AX };
+      if (method === 'Runtime.evaluate' && expression.includes('document.title')) {
+        return { result: { value: { title: 'Doc', url: DOC_URL, text: 'chrome' } } };
+      }
+      if (method === 'Runtime.evaluate' && expression.includes('opera-settle-read')) {
+        return { result: { value: { changes: 1, quietMs: 40, elapsedMs: 40, visibility: 'visible' } } };
+      }
+      return { result: { value: null } };
+    }
+  };
   const p = createPrimitives(cdp, { sleep: async () => {} });
 
-  const out = await p.waitForText('Second line', { timeoutMs: 100, intervalMs: 10 });
+  const out = await p.waitForText('Second line', { timeoutMs: 200, intervalMs: 10 });
 
   assert.match(out.text, /Second line/, 'the wait ends on the words in the document');
-  assert.ok(cdp.calls.some((c) => c.method === 'Runtime.evaluate' && c.params.expression.includes('texteventtarget')),
-    'and it pays the document copy rather than trusting body.innerText');
+  assert.ok(!/^chrome$/.test(out.text.trim()), 'and not on the chrome the DOM holds');
 });
 
 

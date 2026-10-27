@@ -36,10 +36,14 @@ const CARET_HOST_EXPRESSION = `(() => {
   return { rangeCount: 0, collapsed: null, anchorOffset: 0, hostTextLength: 0 };
 })()`;
 
-export function rememberedState(selection = {}) {
-  const hostTextLength = Number(selection.hostTextLength) || 0;
-  const anchorOffset = Number(selection.anchorOffset) || 0;
-  const restorable = Number(selection.rangeCount) > 0 && hostTextLength > 0;
+// WHY A MISSING ANSWER IS A STATE AND NOT A CRASH.
+// The expression runs in a page that may have navigated, or may refuse the evaluation, and a read that throws on a null answer takes the whole drive down over a question it could have answered with "there was nothing to remember".
+
+export function rememberedState(selection) {
+  const seen = selection && typeof selection === 'object' ? selection : {};
+  const hostTextLength = Number(seen.hostTextLength) || 0;
+  const anchorOffset = Number(seen.anchorOffset) || 0;
+  const restorable = Number(seen.rangeCount) > 0 && hostTextLength > 0;
   return {
     restorable,
     anchorOffset,

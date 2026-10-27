@@ -44,21 +44,23 @@ const VISION_STEP = {
 // Measured: the accessibility tree answers a canvas document in 19-30ms and the DOM text answers an ordinary page in one innerText.
 // Reading the accessibility tree first on an ordinary page would change every existing caller's answer for no gain, so the DOM leads there and the accessibility tree leads where the DOM is empty.
 
+// WHY THE ACCESSIBILITY TREE LEADS WHERE A CANVAS COVERS THE VIEWPORT.
+// It answers a canvas document in 19-30ms and touches nothing, so it leads there.
+// A page with no canvas holds its own text in the DOM, where one innerText is the cheaper and the cleaner answer, so the DOM leads there instead.
+// The discriminator is the canvas, which is a structural fact about the page, rather than how much text the DOM happens to hold - a canvas editor keeps real text in its chrome, and a length bar cannot tell that text from a short page's.
+
+// WHY SELECT-ALL NEEDS BOTH SIGNALS.
+// A canvas without an editable region has nothing to select, so offering the step would report an empty read as an answer.
+
 export function readLadder(profile = {}) {
-  const textInDom = profile.textInDom === true;
   const canvas = profile.canvas === true;
   const editable = profile.editable === true;
   const axRich = profile.axRich === true;
 
   const ladder = [];
-  // WHY THE ACCESSIBILITY TREE ONLY LEADS WHERE THE DOM IS EMPTY.
-  // It answers a canvas document in 19-30ms and touches nothing, so it leads there.
-  // On a page that already holds its text it is the slower, messier answer, so it stays as the fallback instead.
-  if (axRich && !textInDom) ladder.push(AX_STEP);
+  if (canvas && axRich) ladder.push(AX_STEP);
   ladder.push(DOM_STEP);
-  if (!(axRich && !textInDom)) ladder.push(AX_STEP);
-  // WHY SELECT-ALL NEEDS BOTH SIGNALS.
-  // A canvas without an editable region has nothing to select, so offering the step would report an empty read as an answer.
+  if (!(canvas && axRich)) ladder.push(AX_STEP);
   if (canvas && editable) ladder.push(SELECT_ALL_STEP);
   ladder.push(VISION_STEP);
   return ladder.map((step) => ({ ...step }));

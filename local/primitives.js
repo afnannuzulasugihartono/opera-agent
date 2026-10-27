@@ -19,6 +19,9 @@ import nodeOs from 'node:os';
 import nodePath from 'node:path';
 
 import { isDocsDocument } from './page-expressions.js';
+import { measureAx, probeSurface, buildProfile, describeProfile } from './surface-profile.js';
+import { readLadder } from './read-strategy.js';
+import { actionLadder } from './action-strategy.js';
 import { filePrimitives } from './primitives-file.js';
 import { createInputMethods } from './input.js';
 import { createPointerMethods } from './pointer.js';
@@ -51,6 +54,21 @@ export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Pr
         expression, returnByValue: true, awaitPromise: true
       });
       return result?.value;
+    },
+
+    // WHY THE PROFILE IS A PRIMITIVE OF ITS OWN.
+    // An agent meeting a site for the first time has to know what the surface is before it can know what a read will cost, and paying a full read to find out is the wrong order.
+    // This asks nothing of the page and moves no caret, so it is the one call that is always safe on a surface nobody has seen.
+    async surfaceProfile() {
+      const probe = await probeSurface({ evaluate: primitives.evaluate });
+      const ax = await measureAx({ ask: primitives.ask });
+      const surface = buildProfile({ probe, ax });
+      return {
+        surface,
+        strategy: readLadder(surface),
+        action: actionLadder(surface),
+        description: describeProfile(surface)
+      };
     },
 
     // WHY THE PAGE IS ASKED BEFORE THE MACHINE, AND WHY IT IS ENOUGH.
@@ -115,10 +133,18 @@ export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Pr
   const pointer = createPointerMethods({ cdp, primitives });
   Object.assign(primitives, pointer);
 
-  const canvas = createCanvasMethods({ cdp, primitives, sleep, readState });
+  const canvas = createCanvasMethods({
+    cdp,
+    primitives,
+    readState,
+    readLadder,
+    describeProfile,
+    measureAx,
+    buildProfile
+  });
   Object.assign(primitives, canvas);
 
-  const waits = createWaits({ cdp, sleep, readState, readRows, isDocsDocument, read: () => primitives.read(), primitives, now });
+  const waits = createWaits({ cdp, sleep, readState, readRows, read: () => primitives.read(), primitives, now });
   Object.assign(primitives, waits);
 
   Object.assign(primitives, filePrimitives(primitives, { cdp, sleep, fs, os, path, readState }));

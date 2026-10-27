@@ -398,15 +398,9 @@ export const UPLOAD_FIND_GAP_MS = 400;
     // this machine's browser window: the viewport went 1144x714 to 1186x670 while the device scale stayed at 1.25, so the same CSS pixel stopped meaning the same place.
     // A fraction is resolved against the viewport as it is at the moment of the click, which survives that, and the answer says which pixels it became and in what space - so a caller that meant a fixed pixel still gets the truth about the space it landed in.
 
-export const CARET_TOLERANCE_PX = 12;
-
-// WHY THE VIEW IS PUT BACK TWICE AND THE CLICK WAITS FOR THE SECOND.
-// Measured live: the read scrolls the document to the caret, and the page finishes that scroll on its own frame — after the first write.
-// A click that goes out in between lands on whatever happens to be under it, and on the thesis document that was an image: the caret was restored onto a picture.
-// So the scroll is written, the page is given the settle to argue, and the click only goes out once a second write held.
-
-export const CARET_SCROLL_ATTEMPTS = 3;
-export const SCROLL_MARK = 'data-opera-scroll';
+// WHY THE SCROLL-MARK CARET RESTORE IS GONE.
+// It marked the boxes that scroll, put the view back, clicked the caret into place and measured again - and on a canvas editor the measurement it compared against was a caret the DOM does not carry, so it reported a restore it had not achieved while the real caret sat at the end of the document.
+// A verdict that cannot be wrong is worth more than a restore that sometimes is, so the guard reports what it measured and the driver no longer claims the rest.
 
 // WHY A MENU IS POLLED UNTIL IT IS DRAWN.
 // Measured live, the Insert dropdown was still absent five seconds after the click; a fixed gap of any honest size is either slow on a good machine or early on a slow one.

@@ -15,8 +15,9 @@ import {
   SETTLE_QUIET_MS,
   SETTLE_READ_EXPRESSION
 } from './page-expressions.js';
+import { MIN_DOM_TEXT } from './surface-profile.js';
 
-export function createWaits({ cdp, sleep, readState, readRows, isDocsDocument, read, primitives, now = Date.now }) {
+export function createWaits({ cdp, sleep, readState, readRows, read, primitives, now = Date.now }) {
   // WHY SETTLE IS A PRIMITIVE AND NOT A TOOL.
   // Every action needs the same short look before the page is read, so the wait belongs beside the actions, not in the surface where a caller has to remember it.
   // The page expression resolves with what it saw, which makes the cost inspectable instead of a blind sleep: quiet means the last change was at least 32ms ago, deadline means the page was still moving when the 120ms cap arrived.
@@ -82,11 +83,15 @@ export function createWaits({ cdp, sleep, readState, readRows, isDocsDocument, r
     }
   }
 
+  // WHY THE WAIT ASKS THE PAGE WHETHER IT HOLDS TEXT.
+  // This used to ask the url whether the page was a document editor and then read the document for it, which is the site recognition the drive no longer carries.
+  // A page that holds its own text answers immediately; a canvas page answers empty and the wait falls through to the gated read, so the decision is made by the page rather than by its address.
   async function waitForText(text, { timeoutMs = 10000, intervalMs = 100, absent = false, now: clock = now } = {}) {
     return waitForMutation(
       async () => {
         const probe = await readState();
-        return isDocsDocument(probe.url) ? await read() : probe;
+        if ((probe.text || '').trim().length >= MIN_DOM_TEXT) return probe;
+        return read();
       },
       (state) => state.text.includes(text) !== absent,
       { timeoutMs, now: clock }

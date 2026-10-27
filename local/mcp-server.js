@@ -411,8 +411,10 @@ const windowMatch = async (tab, driver) => (tab ? String(tab.title ?? '') : page
         sessions.delete(args.tabId);
         return asText(out);
       }
+      case 'surface_profile':
+        return asText(await driver.surfaceProfile());
       case 'read_page':
-        return asText(await driver.read());
+        return asText(await driver.read({ allowCaretMove: args.allowCaretMove === true }));
       case 'find_elements':
         return asText(await driver.find(args.query));
       case 'click':

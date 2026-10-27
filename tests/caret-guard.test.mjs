@@ -54,8 +54,7 @@ test('a DOM selection that moved is reported as moved, not as restored', () => {
 });
 
 test('the guard remembers a position and reports it back', async () => {
-  // The fake evaluate walks the frames the expression names, so the expression
-  // itself is what is under test rather than a stubbed answer.
+  // The fake evaluate walks the frames the expression names, so the expression itself is what is under test rather than a stubbed answer.
   const evaluate = async () => ({
     rangeCount: 1,
     collapsed: true,

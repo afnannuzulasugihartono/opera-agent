@@ -11,6 +11,12 @@
 // A selector or a domain in this file would be the per-site code this change exists to remove.
 // Everything here is a property any page has: how much text it holds in the DOM, how much of the viewport a canvas covers, whether an editable host exists, and whether the page has focus.
 
+// WHY THIS IS A CHEAP PRE-FILTER AND NOT THE DECISION.
+// The wait uses it to avoid paying a full read on every poll of a page that plainly holds its own text.
+// It is deliberately small, because a length bar cannot tell a short page's text from a canvas editor's chrome - the canvas signal in the profile is what makes that call, and this only skips the obvious case.
+
+export const MIN_DOM_TEXT = 40;
+
 export const SURFACE_PROBE_EXPRESSION = `(() => {
   const body = document.body;
   const text = body ? String(body.innerText || '') : '';
@@ -22,7 +28,7 @@ export const SURFACE_PROBE_EXPRESSION = `(() => {
   }, 0);
   const editableHost = document.querySelector('[contenteditable=""], [contenteditable="true"], [role="textbox"]');
   return {
-    textInDom: { value: text.trim().length >= 200, evidence: text.trim().length },
+    textInDom: { value: text.trim().length >= MIN_DOM_TEXT, evidence: text.trim().length },
     canvas: { value: canvases.length > 0 && covered / viewport >= 0.2, evidence: Math.round((covered / viewport) * 100) / 100 },
     editable: { value: Boolean(editableHost), evidence: editableHost ? (editableHost.getAttribute('contenteditable') || editableHost.getAttribute('role')) : 'no editable host' },
     focused: { value: document.hasFocus() === true, evidence: 'document.hasFocus() is ' + String(document.hasFocus()) }
