@@ -80,13 +80,12 @@ bridge is the road that remains: the extension polls this machine on loopback an
 carries raw CDP both ways, so the whole surface below runs on your real tabs with
 no flags, no queue and no cloud.
 
-The transport is a held `POST /poll` plus a `POST /reply`, not a WebSocket. It
-was one, and this Chrome never handed an inbound loopback frame to an extension
-service worker: the worker's own counters read zero messages after hundreds sent,
-the same frames reached a real WebSocket client every time, and the identical
-code path delivers inbound frames from the cloud relay without trouble. A fetch
-is the one thing Chrome will start a service worker for, so the poll is the
-transport, the wake-up and the keepalive at once.
+The transport is one WebSocket the extension opens to `127.0.0.1:9451` and holds:
+a `hello` frame in, `ready` back, then `command` and `complete` frames — the same
+frames the cloud bridge speaks. The server pings every twenty seconds, because
+Chrome ends an idle service worker and an inbound frame does not wake it. A
+second driver on the same machine reaches the bridge over `POST /command`
+instead of losing the port, so two processes share one browser.
 
 ```bash
 OPERA_LOCAL_TRANSPORT=bridge npx opera-local
