@@ -54,6 +54,18 @@ import {
 const BASE_RETRY_MS = 500;
 const MAX_RETRY_MS = 30000;
 
+// WHY THE BACKOFF IS RESET WHEN A SOCKET OPENS, AND NOT ONLY ON THE HANDSHAKE.
+// Measured on a flaky connection: the wait doubled 500ms, 1s, 2s, 4s... to the 30s cap and only reset on a full handshake, so a network that came back cost up to thirty seconds to notice.
+// An open socket proves the network is reachable, which is the only thing the backoff is guessing at, so the wait starts over from there.
+// A socket that never opened proves nothing, so the wait keeps growing - which is what stops a downed bridge being hammered.
+// The two are tested separately, because they are two different facts about the same number.
+
+// WHY A CONNECTING SOCKET IS DETACHED RATHER THAN CLOSED.
+// Measured in the console: closing a socket whose readyState is still 0 aborts the TCP handshake Chrome has already begun, before the WebSocket handshake completes, and Chrome reports it as "WebSocket is closed before the connection is established".
+// The abort is not free of consequence either way, so the handlers are detached instead: a detached socket can neither deliver a command nor schedule the retry its close would have scheduled.
+// That is safe here and nowhere else, because the bridge pushes nothing before it has read a hello this socket will never send - verified in bridge-server, which answers false for every push while handshaken is false.
+// A socket that never opened is therefore inert rather than dangerous, and no console error is bought for it.
+
 // WHY the mapping from socket events to connection state lives here as a pure function instead of inline in the worker.
 // It used to be an object literal inside the onState callback, where a bare `retryMs` with no binding threw a ReferenceError the first time the callback fired.
 // That killed start() before the socket was ever opened, and because the client was already assigned, nothing ever retried: the device sat at "connecting" with no socket and no error, which is exactly what the integration test reported.
@@ -215,7 +227,16 @@ export function createSocketClient({
   const closeSocket = (target) => {
     if (!target) return;
     try {
-      if (target.readyState === 0 || target.readyState === 1) target.close();
+      if (target.readyState === 1) {
+        target.close();
+        return;
+      }
+      if (target.readyState === 0) {
+        target.onopen = null;
+        target.onmessage = null;
+        target.onerror = null;
+        target.onclose = null;
+      }
     } catch { }
   };
 
@@ -277,6 +298,7 @@ export function createSocketClient({
     next.onopen = () => {
       heard();
       connectedAt = now();
+      retryMs = BASE_RETRY_MS;
       frame(handshakeFrame(token, deviceName));
     };
 
