@@ -9,19 +9,19 @@ What is true now, and what to do next. Cap 150 lines. Spent detail: git history.
 
 - `main` = `origin/main`. #112 and #113 (stacked on #112) are open and wait for the owner's
   merge; a branch starts from `main` and merges back by `--rebase` once the four checks are green.
-- Version `1.6.27` in [`extension/manifest.json`](../extension/manifest.json) is the source
+- Version `1.6.28` in [`extension/manifest.json`](../extension/manifest.json) is the source
   of truth; [`check.mjs`](../scripts/check.mjs) also asserts the MCP version, the store form, and the secret regex.
 - **1.6.27 shipped on 2026-10-15.** #86 merged as `e99bf5a`; the CRX route answers 200 with
   `x-opera-sha256` equal to the bytes, and the release carries both zips, the CRX and SHA256SUMS.
+- **1.6.28 waits on `cline/6m4r5na4`.** It adds `page.files` (32nd primitive) and `upload_file`
+  (35th tool); CI builds the CRX, the edge functions and the site from this source.
 - **The standard is a test, not a document.** `tests/code-standard.test.mjs` bars a file over
   1,200 lines, leftover markers, a repeated block, and an unexercised export.
-- **The comment rule is a formatter, not a scanner.** Column-zero blocks are section headers
-  with a blank line around them; indented blocks document the code under them; a sentence is
-  one line. The gate is `format(file) === file`, pinned by `tests/comment-format.test.mjs`.
+- **The comment rule is a formatter, not a scanner.** A sentence is one line, and the gate is
+  `format(file) === file`; column-zero blocks are headers, indented blocks document the code under them.
 - **#100 is green, and the landing styles have one home.** New-code duplication fell from
   9.2% to 2.0%, and the shared chrome, footer and download rules live in `landing/site.css`.
-- **The dead code is gone, and a gate holds it.** `tests/hygiene.test.mjs` fails when a module
-  with its own code is reached by nothing but its own test.
+- **The dead code is gone, and a gate holds it.** `tests/hygiene.test.mjs` fails a module reached by nothing but its own test.
 - **Every file says what it is.** All four header fields are on every walked source file; the
   gate fails on a scaffold word, a doubled name, or a missing field.
 - **One home for each shared module, and a number a comment quotes has to exist.** The eight
@@ -31,8 +31,7 @@ What is true now, and what to do next. Cap 150 lines. Spent detail: git history.
   fails a missing standard file, a pull request that skips CI, a CRLF file, or a dead path.
 - **The browser drive depends on nothing but the page it drives.** A ref dies with its
   document, its route or the extension epoch, so the drive re-finds what it clicks.
-- Gates: `npm test`, `npm run check` - 31 primitives, 183 runtime safety files, 1573 unit
-  tests, green.
+- Gates: `npm test`, `npm run check` - 32 primitives, 183 runtime safety files, green.
 - **The local driver is modular, grouped, and tested.** `local/` is six groups by job - `core`,
   `bridge`, `drive`, `surface`, `jobs`, `agent` - and `drive/primitives.js` assembles the verbs.
 - Production, measured against the live database: 76 `opera_*` functions (65
@@ -74,7 +73,7 @@ What is true now, and what to do next. Cap 150 lines. Spent detail: git history.
   device runs it locally; [`goal-plan.js`](../extension/lib/goal-plan.js) shares the allowlist.
 - **Cloudflare Pages at `opera-agent.pages.dev` serves the site; Vercel is the backup**, and
   `vercel.app` stays in CORS. Every `style-src` allows `'self'`, and the features page counts
-  34 tools, 31 primitives and six permissions, against the code.
+  35 tools, 32 primitives and six permissions, against the code.
 - **A deploy is a dispatch, not a push.** [`deploy-site.yml`](../.github/workflows/deploy-site.yml)
   publishes `landing/` with `wrangler pages deploy` after the unit and syntax gates; a push
   that does not deploy leaves CI green and the old build live. The Vercel CLI cannot deploy.

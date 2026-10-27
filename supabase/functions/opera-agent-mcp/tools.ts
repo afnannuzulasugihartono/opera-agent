@@ -1,5 +1,5 @@
 // @last-edited: 2026-10-21 UTC+7.
-// @title: tools — the 34 tools this MCP server offers, and the schemas they take.
+// @title: tools — the 35 tools this MCP server offers, and the schemas they take.
 // @state: every tool the surface advertises, with the input shape each one answers.
 // @dependencies: @modelcontextprotocol/sdk, zod/v4, ../_shared/seal-vm-program.js.
 
@@ -38,6 +38,24 @@ const uppercaseLetters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
 const digits = "0123456789".split("");
 const navigationKeySchema = z.enum(["Enter", "Tab", "Escape", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Home", "End", "PageUp", "PageDown", "Space", "Backspace", "Delete", "Comma", "Period", "Slash", ...lowercaseLetters, ...uppercaseLetters, ...digits]);
 const modifierSchema = z.enum(["alt", "control", "ctrl", "shift", "meta", "cmd", "command", "option", "super", "win"]);
+
+// WHY the bytes are typed into a data: URL here and not on the device: the caller already holds the file, and the device cannot ask the page for one without a native picker nobody can answer.
+// The MIME comes from the caller when it says so and from the extension otherwise, because Drive files a docx by the type it is handed.
+
+const MIME_BY_EXTENSION: Record<string, string> = {
+  docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  pptx: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  pdf: "application/pdf", csv: "text/csv", txt: "text/plain", json: "application/json",
+  html: "text/html", png: "image/png", jpg: "image/jpeg", jpeg: "image/jpeg", gif: "image/gif",
+  webp: "image/webp", mp3: "audio/mpeg", wav: "audio/wav", mp4: "video/mp4", zip: "application/zip"
+};
+
+function fileDataUrl(filename: string, data: string, mime?: string) {
+  if (/^data:/i.test(data)) return data;
+  const extension = filename.slice(filename.lastIndexOf(".") + 1).toLowerCase();
+  return `data:${mime || MIME_BY_EXTENSION[extension] || "application/octet-stream"};base64,${data.replace(/\s+/g, "")}`;
+}
 const burstStepSchema = z.discriminatedUnion("action", [
   z.object({
     action: z.literal("read"),
@@ -475,6 +493,36 @@ export function registerTools(server: McpServer, deps: ToolDeps) {
     inputSchema: { tabId: tabIdSchema, ref: z.string().min(1).max(300), value: z.string().max(20000), executionMode: executionModeSchema },
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: true }
   }, ({ tabId, ref, value, executionMode }: TargetTab & { ref: string; value: string; executionMode?: ExecutionMode }) => execute("page.fill", { tabId, ref, value, trusted: true, executionMode: executionMode ?? "background" }, undefined, deviceName, provider));
+
+  server.registerTool("upload_file", {
+    title: "Upload a file into the page",
+    description: "Hand the page a file the caller already holds: base64 in, a real File on the page. With x and y the file is dropped at that viewport point, which is how a Drive folder takes an upload without a native picker; without them it is set on the first file input, or on the one matching selector. Nothing is read from the device's disk. A drop zone with no listener accepts the events silently, so verify the drop by reading the page afterwards.",
+    inputSchema: {
+      tabId: tabIdSchema,
+      filename: z.string().min(1).max(300),
+      data: z.string().min(1).max(2000000)
+        .describe("Base64 bytes, or a full data: URL when the exact type matters."),
+      mime: z.string().min(1).max(200).optional()
+        .describe("Content type for base64 input; guessed from the filename otherwise."),
+      x: z.number().nonnegative().optional(),
+      y: z.number().nonnegative().optional(),
+      selector: z.string().min(1).max(500).optional()
+        .describe("File input to fill when no point is given; defaults to the first one on the page."),
+      executionMode: executionModeSchema,
+      timeoutMs: timeoutSchema
+    },
+    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true }
+  }, ({ tabId, filename, data, mime, x, y, selector, executionMode, timeoutMs }: TargetTab & { filename: string; data: string; mime?: string; x?: number; y?: number; selector?: string; executionMode?: ExecutionMode; timeoutMs?: number }) => {
+    if ((x == null) !== (y == null)) throw new Error("upload_file needs both x and y to drop at a point, or neither to set a file input.");
+    return execute("page.files", {
+      tabId,
+      filename,
+      data: fileDataUrl(filename, data, mime),
+      ...(x != null ? { x, y } : {}),
+      ...(selector != null ? { selector } : {}),
+      executionMode: executionMode ?? "background"
+    }, timeoutMs, deviceName, provider);
+  });
 
   server.registerTool("press_key", {
     title: "Press a key chord or type text",
