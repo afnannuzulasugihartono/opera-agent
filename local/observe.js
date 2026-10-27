@@ -29,11 +29,69 @@
 import { findNode, menuTreeExpression, nearestNames, revealOf, stateOf } from './menu-tree.js';
 import {
   HANDLE_PREFIX,
+  PAGE_STATE_TEXT_EXPRESSION,
   computedExpression,
   imageSize,
   scrollExpression,
   snapshotExpression
 } from './page-expressions.js';
+
+// WHY THE VIEWPORT IS READ FROM THE PAGE AND NOT FROM THE PROTOCOL.
+// The click space is CSS pixels, and the page is the only place that number is true: a protocol read of the same window answers device pixels on a HiDPI screen.
+// Measured live by resizing this machine's window: the viewport moved 1144x714 -> 1186x670 while the capture moved with it, so the two have to be read together or a click aimed at a picture lands a quarter of the way off.
+
+const VIEWPORT_EXPRESSION = `({
+  width: window.innerWidth,
+  height: window.innerHeight,
+  dpr: window.devicePixelRatio
+})`;
+
+// WHY THE FOCUS IS NAMED AND NOT COUNTED.
+// An action's answer has to say whether the page is listening, and "the page holds 4,200 characters" says nothing about that.
+// What an agent needs is which element has focus and whether it takes text, because a keystroke sent to a button goes nowhere and answers ok.
+// The name is trimmed to sixty characters: the point is to recognise the field, not to read its whole label into an answer that already costs tokens.
+
+const PAGE_STATE_EXPRESSION = `(() => {
+  const body = document.body ? document.body.innerText : '';
+  const active = document.activeElement;
+  let focus = null;
+  if (active && active !== document.body) {
+    const name = (active.getAttribute('aria-label')
+      || active.getAttribute('placeholder')
+      || active.getAttribute('title')
+      || active.innerText
+      || active.textContent
+      || '').trim();
+    focus = {
+      tag: active.tagName,
+      role: active.getAttribute('role') || '',
+      name: name.slice(0, 60)
+    };
+  }
+  return { url: location.href, title: document.title, textChars: body.length, focus };
+})()`;
+
+// WHY THE SCROLL'S VERDICT IS A FUNCTION AND NOT A TERNARY.
+// Four questions decide what a scroll has to say for itself, and they are not equally likely: a target that was never found, a page that cannot prove it reached the end, a page that plainly did not move, and the ordinary case where it did.
+// Written as one nested ternary inside the answer object, the ordinary case was the last line of a four-deep expression, so the reader reached it only after parsing the three failures first.
+// Named cases read in the order they are checked, and each one says what the caller should do next.
+
+function scrollWhy({ seen, wanted, end }) {
+  if (wanted && !seen.target?.found) {
+    const named = JSON.stringify(String(wanted).slice(0, 40));
+    return `found nothing on this page for ${named} - read_page() to see what the page holds`;
+  }
+  if (end && !seen.atEnd) {
+    if (seen.exhausted) {
+      return `${seen.root} is as far as it goes, and this page cannot show that its last words are on screen - the text it reports is not the text it draws, so capture_page() or read_page() is the proof`;
+    }
+    return `moved ${seen.movedPx} of the way and the page still has text below`;
+  }
+  if (!seen.movedPx && !seen.target?.visible) {
+    return `nothing moved: ${seen.root} had no room to move (travelPx ${seen.travelPx ?? 'unknown'})`;
+  }
+  return '';
+}
 
 export function createObserveMethods({ cdp, primitives, capped }) {
   const readRows = async (limit) => {
@@ -47,27 +105,11 @@ export function createObserveMethods({ cdp, primitives, capped }) {
 
   const readState = async () => {
     const { result } = await cdp.send('Runtime.evaluate', {
-      expression: '({ title: document.title, url: location.href, text: document.body ? document.body.innerText : "", ready: document.readyState })',
+      expression: PAGE_STATE_TEXT_EXPRESSION,
       returnByValue: true
     });
     return result?.value ?? { title: '', url: '', text: '' };
   };
-
-  const PAGE_STATE_EXPRESSION = `(() => {
-    const body = document.body ? document.body.innerText : '';
-    const active = document.activeElement;
-    let focus = null;
-    if (active && active !== document.body) {
-      const name = (active.getAttribute('aria-label')
-        || active.getAttribute('placeholder')
-        || active.getAttribute('title')
-        || active.innerText
-        || active.textContent
-        || '').trim();
-      focus = { tag: active.tagName, role: active.getAttribute('role') || '', name: name.slice(0, 60) };
-    }
-    return { url: location.href, title: document.title, textChars: body.length, focus };
-  })()`;
 
   const pageState = async () => {
     const { result } = await cdp.send('Runtime.evaluate', {
@@ -79,7 +121,7 @@ export function createObserveMethods({ cdp, primitives, capped }) {
 
   async function viewport() {
     const { result } = await cdp.send('Runtime.evaluate', {
-      expression: '({ width: window.innerWidth, height: window.innerHeight, dpr: window.devicePixelRatio })',
+      expression: VIEWPORT_EXPRESSION,
       returnByValue: true
     });
     return result?.value ?? { width: 0, height: 0, dpr: 1 };
@@ -262,15 +304,7 @@ export function createObserveMethods({ cdp, primitives, capped }) {
       travelPx: seen.travelPx ?? null,
       root: seen.root,
       target: seen.target,
-      why: wanted && !seen.target?.found
-        ? `found nothing on this page for ${JSON.stringify(String(wanted).slice(0, 40))} - read_page() to see what the page holds`
-        : (end && !seen.atEnd
-            ? (seen.exhausted
-                ? `${seen.root} is as far as it goes, and this page cannot show that its last words are on screen - the text it reports is not the text it draws, so capture_page() or read_page() is the proof`
-                : `moved ${seen.movedPx} of the way and the page still has text below`)
-            : (!seen.movedPx && !seen.target?.visible
-                ? `nothing moved: ${seen.root} had no room to move (travelPx ${seen.travelPx ?? 'unknown'})`
-                : ''))
+      why: scrollWhy({ seen, wanted, end })
     };
   }
 

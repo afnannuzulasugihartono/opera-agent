@@ -481,6 +481,17 @@ export const SELECTION_STATE_EXPRESSION = `(() => {
   return richest || caret || nothing;
 })()`;
 
+// WHY THE PAGE'S OWN WORDS ARE READ AS ONE OBJECT.
+// Every read of a page answers with the same four things - what it calls itself, where it is, what it says, and whether it has finished saying it.
+// Written out here, the read is one expression a person can paste into a console and see for themselves, which is the property every expression in this file has.
+
+export const PAGE_STATE_TEXT_EXPRESSION = `({
+  title: document.title,
+  url: location.href,
+  text: document.body ? document.body.innerText : "",
+  ready: document.readyState
+})`;
+
 export function modifierMask(modifiers = []) {
   return modifiers.reduce((mask, name) => {
     const bit = MODIFIER_BITS[name];

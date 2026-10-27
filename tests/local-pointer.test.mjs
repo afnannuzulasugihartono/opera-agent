@@ -153,6 +153,11 @@ test('a hover moves the pointer and stops, because a submenu opens on hover and 
 });
 
 
+// WHY THE MARK IS CHECKED BY ITS AXES AND NOT BY TWO NUMBERS ON A LINE.
+// The claim is that the ring is centred on the point: 13px is half the 26px ring, so left and top are the point minus 13.
+// This used to be asserted as /87px.*87px/, which required both coordinates on one source line - a fact about how the expression was formatted rather than about where the mark landed.
+// Reading each axis by name states the claim, and it survives the expression being written across lines for a person to read.
+
 test('every pointer action marks its spot for the watcher, red for click and blue for hover', async () => {
   const cdp = recordingCdp();
   const p = createPrimitives(cdp);
@@ -163,9 +168,17 @@ test('every pointer action marks its spot for the watcher, red for click and blu
   const marks = cdp.calls.filter((c) => c.method === 'Runtime.evaluate' && c.params.expression.includes('opera-spot'));
   assert.equal(marks.length, 2);
   assert.match(marks[0].params.expression, /66,133,244/);
-  assert.match(marks[0].params.expression, /87px.*87px/);
   assert.match(marks[1].params.expression, /255,60,60/);
-  assert.match(marks[1].params.expression, /187px.*207px/);
+
+  const at = (expression, axis) => {
+    const found = new RegExp(`el\\.style\\.${axis} = '(\\d+)px'`).exec(expression);
+    return found ? Number(found[1]) : null;
+  };
+  assert.equal(at(marks[0].params.expression, 'left'), 87, 'the ring is centred on the hovered point');
+  assert.equal(at(marks[0].params.expression, 'top'), 87);
+  assert.equal(at(marks[1].params.expression, 'left'), 187, 'and on the clicked point');
+  assert.equal(at(marks[1].params.expression, 'top'), 207);
+
   assert.match(marks[1].params.expression, /el\.remove\(\)/, 'and the mark takes itself off the page, because a mark that stays is a ring over the next picture');
 });
 

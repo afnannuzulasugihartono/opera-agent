@@ -43,18 +43,43 @@ export function createPointerMethods({ cdp, primitives }) {
     const px = Math.round(Number(x) || 0);
     const py = Math.round(Number(y) || 0);
     return cdp.send('Runtime.evaluate', {
-      expression: `(() => { const d = document; if (!d || !d.documentElement) return false; let el = d.getElementById('opera-spot'); if (!el) { el = d.createElement('div'); el.id = 'opera-spot'; el.style.cssText = 'position:fixed;z-index:2147483647;pointer-events:none;border:3px solid;border-radius:50%;width:26px;height:26px;margin:0;padding:0;box-sizing:border-box;transition:opacity 120ms linear;'; d.documentElement.appendChild(el); } clearTimeout(d.defaultView.__operaSpot); el.style.opacity = '1'; el.style.left = '${px - 13}px'; el.style.top = '${py - 13}px'; el.style.borderColor = '${color}'; d.defaultView.__operaSpot = d.defaultView.setTimeout(() => { el.remove(); }, ${SPOT_MS}); return true; })()`,
+      expression: `(() => {
+        const d = document;
+        if (!d || !d.documentElement) return false;
+        let el = d.getElementById('opera-spot');
+        if (!el) {
+          el = d.createElement('div');
+          el.id = 'opera-spot';
+          el.style.cssText = 'position:fixed;z-index:2147483647;pointer-events:none;border:3px solid;border-radius:50%;width:26px;height:26px;margin:0;padding:0;box-sizing:border-box;transition:opacity 120ms linear;';
+          d.documentElement.appendChild(el);
+        }
+        clearTimeout(d.defaultView.__operaSpot);
+        el.style.opacity = '1';
+        el.style.left = '${px - 13}px';
+        el.style.top = '${py - 13}px';
+        el.style.borderColor = '${color}';
+        d.defaultView.__operaSpot = d.defaultView.setTimeout(() => { el.remove(); }, ${SPOT_MS});
+        return true;
+      })()`,
       returnByValue: true
     }).catch(() => null);
   };
 
   const hitAt = async (x, y) => {
     try {
-      const { result } = await cdp.send('Runtime.evaluate', { expression: hitExpression(x, y), returnByValue: true });
+      const { result } = await cdp.send('Runtime.evaluate', {
+        expression: hitExpression(x, y),
+        returnByValue: true
+      });
       const el = result?.value;
       if (!el) return null;
       const tag = String(el.tag ?? '');
-      return { tag, role: String(el.role ?? ''), name: String(el.name ?? ''), canvas: tag === 'CANVAS' };
+      return {
+        tag,
+        role: String(el.role ?? ''),
+        name: String(el.name ?? ''),
+        canvas: tag === 'CANVAS'
+      };
     } catch {
       return null;
     }
@@ -102,7 +127,9 @@ export function createPointerMethods({ cdp, primitives }) {
     const view = await primitives.viewport().catch(() => null);
     if (view && view.width > 0 && view.height > 0
       && (px < 0 || py < 0 || px > view.width || py > view.height)) {
-      throw new Error(`click refused: ${Math.round(px)},${Math.round(py)} is outside the ${view.width}x${view.height} viewport - scroll({text}) or scroll({y}) to bring it into view, then click again`);
+      const at = `${Math.round(px)},${Math.round(py)}`;
+      const box = `${view.width}x${view.height}`;
+      throw new Error(`click refused: ${at} is outside the ${box} viewport - scroll({text}) or scroll({y}) to bring it into view, then click again`);
     }
     const common = { x: px, y: py, button: 'left', clickCount: 1, buttons: 1 };
     await Promise.all([
