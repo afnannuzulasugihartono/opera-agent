@@ -122,11 +122,16 @@ const documentRegion = (nodes) => {
     const sum = total(id, new Set());
     if (!here || sum.count > here.sum.count) here = { id, sum };
   }
-  if (!here) return { count: 0, length: 0, parts: [] };
+  if (!here) return { count: 0, length: 0, parts: [], deepest: 0 };
+  // WHY THE DESCENT CARRIES A VISITED SET AND NOT A COUNTER.
+  // A tree that names a node's ancestor as its child makes a cycle, and the descent follows it: a node in the cycle holds as much text as everything beside it, so it keeps winning the comparison against its own siblings.
+  // Measured with a three-node tree hanging off a real root: measureAx never returned, and the hang is synchronous, so read, surface_profile and wait_for_text all stopped with no error and no timeout.
+  // A visited set ends the walk at the first node it has already stood on, which is the answer a depth cap would reach only after walking the same loop.
+  const visited = new Set([here.id]);
   for (;;) {
     const kids = [];
     for (const childId of children.get(here.id) || []) {
-      if (!byId.has(childId)) continue;
+      if (!byId.has(childId) || visited.has(childId)) continue;
       kids.push({ id: childId, sum: total(childId, new Set()) });
     }
     if (!kids.length) break;
@@ -134,15 +139,39 @@ const documentRegion = (nodes) => {
     const siblings = kids.reduce((sum, kid) => sum + kid.sum.count, 0);
     if (kids[0].sum.count * 2 <= siblings) break;
     here = kids[0];
+    visited.add(here.id);
   }
-  return here.sum;
+  // WHY THE DEPTH OF THE WHOLE TREE IS MEASURED AS WELL.
+  // The tree is requested with a depth cap, and a document deeper than the cap comes back cut: its text ends early and nothing in the answer says so.
+  // Reaching the cap is the only evidence available that the text may be incomplete, so it is reported rather than guessed at.
+  let deepest = 0;
+  const walked = new Set(roots);
+  let frontier = roots;
+  while (frontier.length) {
+    const next = [];
+    for (const id of frontier) {
+      for (const childId of children.get(id) || []) {
+        if (!byId.has(childId) || walked.has(childId)) continue;
+        walked.add(childId);
+        next.push(childId);
+      }
+    }
+    if (next.length) deepest += 1;
+    frontier = next;
+  }
+  return { count: here.sum.count, length: here.sum.length, parts: here.sum.parts, deepest };
 };
 
+// WHY THE TREE IS ASKED FOR AT A STATED DEPTH.
+// Chrome truncates an accessibility tree at the depth it was asked for, so the request and the report of it have to agree: a document cut at the cap answers with text that looks complete.
+
+export const MAX_AX_DEPTH = 60;
+
 export async function measureAx({ ask, method = 'Accessibility.getFullAXTree' }) {
-  const empty = { axRich: false, textBoxes: 0, textLength: 0, documentText: '' };
+  const empty = { axRich: false, textBoxes: 0, textLength: 0, documentText: '', truncated: false };
   let tree;
   try {
-    tree = await ask(method, { maxDepth: 60 });
+    tree = await ask(method, { maxDepth: MAX_AX_DEPTH });
   } catch {
     return empty;
   }
@@ -153,12 +182,15 @@ export async function measureAx({ ask, method = 'Accessibility.getFullAXTree' })
   // WHY THE BAR IS TEN TEXT BOXES.
   // Measured on a real Google Doc: the document region carries 155 of them and the chrome around it carries 60, so a document clears this by an order of magnitude.
   // A toolbar alone carries a handful, and reading that first would answer with menu labels - so below this the DOM is the cheaper and the cleaner answer.
+  // The bar decides which read leads.
+  // It does not decide whether the text exists: that is what the region itself says.
   const rich = region.count >= 10;
   return {
     axRich: rich,
     textBoxes: region.count,
     textLength: region.length,
-    documentText: rich ? region.parts.join('') : ''
+    documentText: region.parts.join(''),
+    truncated: region.deepest >= MAX_AX_DEPTH
   };
 }
 
@@ -168,7 +200,22 @@ export function buildProfile({ probe = {}, ax = {} }) {
     canvas: probe.canvas?.value === true,
     editable: probe.editable?.value === true,
     axRich: ax.axRich === true,
-    focused: probe.focused?.value === true
+    truncated: ax.truncated === true,
+    focused: probe.focused?.value === true,
+    // WHY THE NUMBERS RIDE ALONG WITH THE BOOLEANS.
+    // A boolean is the decision; the number is why the decision was made, and the number is what a reader needs when the decision turns out wrong.
+    // Without it a misclassification is silent again, which is the exact thing this profile exists to end.
+    evidence: {
+      textInDom: probe.textInDom?.evidence ?? null,
+      canvas: probe.canvas?.evidence ?? null,
+      editable: probe.editable?.evidence ?? null,
+      focused: probe.focused?.evidence ?? null,
+      ax: {
+        textBoxes: ax.textBoxes ?? 0,
+        textLength: ax.textLength ?? 0,
+        truncated: ax.truncated === true
+      }
+    }
   };
 }
 
@@ -180,6 +227,7 @@ export function describeProfile(profile = {}) {
   parts.push(profile.canvas === true ? 'canvas-rendered' : 'text in the DOM');
   if (profile.editable === true) parts.push('editable');
   if (profile.axRich === true) parts.push('accessibility-rich');
+  if (profile.truncated === true) parts.push('accessibility tree cut at the depth cap');
   parts.push(profile.focused === true ? 'focused' : 'unfocused');
   return parts.join(', ');
 }

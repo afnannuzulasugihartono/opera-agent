@@ -171,9 +171,13 @@ test('a read on a page still filling in says so, and answers with the later samp
 // The behaviour worth pinning is the same for any canvas editor: the DOM around the canvas holds chrome, and the wait must not end on that chrome.
 // So the fake models a canvas surface and the assertion is that the wait reaches past the chrome.
 
+// WHY THE CHROME IS LONGER THAN THE DOM BAR.
+// Measured on a real Google Doc: the chrome around the canvas holds 1,312 characters, so a wait that measures length alone is satisfied by the toolbar and reports found:false for text that is sitting in the document.
+// The fake therefore answers the DOM with a toolbar's worth of words, and only a wait that asks the page what it is can see past them.
+
 test('a text wait on a canvas surface reaches past the chrome in the DOM', async () => {
   const CANVAS_PROBE = {
-    textInDom: { value: false, evidence: 0 },
+    textInDom: { value: true, evidence: 1312 },
     canvas: { value: true, evidence: 0.61 },
     editable: { value: true, evidence: 'true' },
     focused: { value: true, evidence: 'document.hasFocus() is true' }
@@ -188,6 +192,7 @@ test('a text wait on a canvas surface reaches past the chrome in the DOM', async
     texts.forEach((text, i) => nodes.push({ nodeId: `doc${i}`, parentId: 'docRoot', childIds: [], role: { value: 'InlineTextBox' }, name: { value: text } }));
     return { nodes };
   };
+  const chrome = ['Insert', 'Mode tampilan', 'Share', 'Video', 'Banner hidden', 'Caption', 'Screen reader support enabled', 'Terakhir disunting', 'Comment', 'Edit', 'Format', 'Tools', 'Extensions', 'Help', 'History'].join('\n');
   const cdp = {
     calls: [],
     send: async (method, params = {}) => {
@@ -198,7 +203,7 @@ test('a text wait on a canvas surface reaches past the chrome in the DOM', async
       }
       if (method === 'Accessibility.getFullAXTree') return axTree(RICH_AX);
       if (method === 'Runtime.evaluate' && expression.includes('document.title')) {
-        return { result: { value: { title: 'Doc', url: DOC_URL, text: 'chrome' } } };
+        return { result: { value: { title: 'Doc', url: DOC_URL, text: chrome } } };
       }
       if (method === 'Runtime.evaluate' && expression.includes('opera-settle-read')) {
         return { result: { value: { changes: 1, quietMs: 40, elapsedMs: 40, visibility: 'visible' } } };
@@ -211,7 +216,8 @@ test('a text wait on a canvas surface reaches past the chrome in the DOM', async
   const out = await p.waitForText('Second line', { timeoutMs: 200, intervalMs: 10 });
 
   assert.match(out.text, /Second line/, 'the wait ends on the words in the document');
-  assert.ok(!/^chrome$/.test(out.text.trim()), 'and not on the chrome the DOM holds');
+  assert.ok(!out.text.includes('Mode tampilan'), 'and not on the chrome the DOM holds');
+  assert.equal(out.strategy, 'ax', 'the ladder decided which read would reach it');
 });
 
 
@@ -249,7 +255,6 @@ test('createWaits assembles the settle and the shared waits in one place', () =>
     sleep: async () => {},
     readState: async () => ({}),
     readRows: async () => [],
-    isDocsDocument: () => false,
     read: async () => ({}),
     primitives: { settle: async () => ({ why: 'quiet' }), evaluate: async () => 'complete' }
   });

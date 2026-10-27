@@ -40,22 +40,34 @@ test('a canvas caret that is not in the DOM cannot be promised back', () => {
   assert.ok(verdict.why.length > 0);
 });
 
+// WHY THE OFFSET ALONE IS NOT ENOUGH TO SAY A CARET IS BACK.
+// Every node of the same length answers with the same offset, so a caret that moved to a different node of the same length would be reported as restored.
+// Measured on a real page while writing the verdict: two adjacent paragraphs of equal length hold the same anchorOffset, and only the path to the host tells them apart.
+
 test('a DOM selection with a real position is restorable', () => {
-  const mark = rememberedState({ rangeCount: 1, collapsed: true, anchorOffset: 42, hostTextLength: 300 });
+  const mark = rememberedState({ rangeCount: 1, collapsed: true, anchorOffset: 42, hostTextLength: 300, hostPath: '0/3/2:1' });
   assert.equal(mark.restorable, true);
-  const verdict = restoreVerdict({ before: mark, after: { rangeCount: 1, collapsed: true, anchorOffset: 42, hostTextLength: 300 } });
+  const verdict = restoreVerdict({ before: mark, after: { rangeCount: 1, collapsed: true, anchorOffset: 42, hostTextLength: 300, hostPath: '0/3/2:1' } });
   assert.equal(verdict.restored, true);
 });
 
 test('a DOM selection that moved is reported as moved, not as restored', () => {
-  const mark = rememberedState({ rangeCount: 1, collapsed: true, anchorOffset: 42, hostTextLength: 300 });
-  const verdict = restoreVerdict({ before: mark, after: { rangeCount: 1, collapsed: true, anchorOffset: 900, hostTextLength: 300 } });
+  const mark = rememberedState({ rangeCount: 1, collapsed: true, anchorOffset: 42, hostTextLength: 300, hostPath: '0/3/2:1' });
+  const verdict = restoreVerdict({ before: mark, after: { rangeCount: 1, collapsed: true, anchorOffset: 900, hostTextLength: 300, hostPath: '0/3/2:1' } });
   assert.equal(verdict.restored, false);
+});
+
+test('a caret that moved to another node of the same length is reported as moved', () => {
+  const mark = rememberedState({ rangeCount: 1, collapsed: true, anchorOffset: 42, hostTextLength: 300, hostPath: '0/3/2:1' });
+  const verdict = restoreVerdict({ before: mark, after: { rangeCount: 1, collapsed: true, anchorOffset: 42, hostTextLength: 300, hostPath: '0/3/2:5' } });
+  assert.equal(verdict.restored, false, 'the offset and the length matched, and the caret is still somewhere else');
 });
 
 test('the guard remembers a position and reports it back', async () => {
   // The fake evaluate walks the frames the expression names, so the expression itself is what is under test rather than a stubbed answer.
   const evaluate = async () => ({
+    frame: 0,
+    hostPath: '0/3/2:1',
     rangeCount: 1,
     collapsed: true,
     anchorOffset: 42,

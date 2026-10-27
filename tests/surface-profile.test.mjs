@@ -130,24 +130,24 @@ test('the accessibility measurement keeps the subtree that carries the document'
   assert.ok(!ax.documentText.includes('Screen reader'), 'and so do the notices');
 });
 
-test('a tree of pure chrome is not worth reading first', async () => {
+test('a tree of pure chrome is not rich enough to lead', async () => {
   const ask = async (method) => {
     if (method !== 'Accessibility.getFullAXTree') throw new Error(`unexpected ${method}`);
     return axTree({ chrome: ['Mode tampilan', 'Share', 'Video', 'Banner hidden', 'Caption', 'Screen'], document: [] });
   };
   const ax = await measureAx({ ask });
   assert.equal(ax.axRich, false, 'a toolbar alone is not a document');
-  assert.equal(ax.documentText, '');
+  assert.ok(ax.documentText.length > 0, 'and it is still reported as what the tree holds, not as no text at all');
 });
 
-test('a small document falls through to the DOM rather than being read first', async () => {
+test('a small document is not rich enough to lead, and its text is not thrown away', async () => {
   const ask = async (method) => {
     if (method !== 'Accessibility.getFullAXTree') throw new Error(`unexpected ${method}`);
     return axTree({ chrome: ['Insert'], document: ['Hello', 'World'] });
   };
   const ax = await measureAx({ ask });
   assert.equal(ax.axRich, false, 'two text boxes is not enough to lead with');
-  assert.equal(ax.documentText, '');
+  assert.equal(ax.documentText, 'HelloWorld', 'but the text is there for the read that has nowhere else to look');
 });
 
 test('a failed accessibility call answers empty rather than throwing', async () => {
@@ -167,16 +167,74 @@ test('a tree whose nodes carry no ids answers empty rather than looping', async 
   assert.equal(ax.documentText, '');
 });
 
-test('the profile the ladder reads is built from both halves', () => {
+// WHY A CYCLE IS THE ONE TEST WHOSE FAILURE IS A HANG AND NOT AN ASSERTION.
+// A tree whose nodes name each other as parents puts a cycle in the child map, and the descent has no visited set, so it oscillates between two nodes forever.
+// That hang is synchronous, so no timer inside this process can interrupt it - the only evidence of the defect is that the run never returns, which is what a caller would get: read, surface_profile and wait_for_text all stop.
+// The cycle has to hang off a real root to be reached at all: two nodes that name each other as parents are both non-roots, so the descent never enters them and a fixture built that way passes whether or not the defect is there.
+// Measured before the fix: this fixture never returned and the run had to be killed at the command timeout.
+
+test('a tree with a cycle answers instead of hanging', async () => {
+  const ask = async (method) => {
+    if (method !== 'Accessibility.getFullAXTree') throw new Error(`unexpected ${method}`);
+    return { nodes: [
+      { nodeId: 'root', parentId: null, childIds: ['a'], role: { value: 'RootWebArea' }, name: { value: '' } },
+      { nodeId: 'a', parentId: 'b', childIds: ['b'], role: { value: 'InlineTextBox' }, name: { value: 'one' } },
+      { nodeId: 'b', parentId: 'a', childIds: ['a'], role: { value: 'InlineTextBox' }, name: { value: 'two' } }
+    ] };
+  };
+  const ax = await measureAx({ ask });
+  assert.equal(ax.axRich, false, 'two text boxes is not a document');
+  assert.equal(typeof ax.textLength, 'number', 'and the walk ended instead of chasing the cycle');
+});
+
+test('a tree that points a node at itself answers instead of hanging', async () => {
+  const ask = async (method) => {
+    if (method !== 'Accessibility.getFullAXTree') throw new Error(`unexpected ${method}`);
+    return { nodes: [
+      { nodeId: 'root', parentId: null, childIds: ['self'], role: { value: 'RootWebArea' }, name: { value: '' } },
+      { nodeId: 'self', parentId: 'self', childIds: ['self'], role: { value: 'InlineTextBox' }, name: { value: 'loop' } }
+    ] };
+  };
+  const ax = await measureAx({ ask });
+  assert.equal(typeof ax.textLength, 'number');
+});
+
+test('the profile the ladder reads carries the evidence under every claim', () => {
   const probe = {
     textInDom: { value: false, evidence: 0 },
     canvas: { value: true, evidence: 0.61 },
     editable: { value: true, evidence: 'true' },
-    focused: { value: true, evidence: 'focused' }
+    focused: { value: true, evidence: 'document.hasFocus() is true' }
   };
-  const ax = { axRich: true, documentFrameId: 'editor', textBoxes: 215, textLength: 3063, documentText: 'x' };
+  const ax = { axRich: true, textBoxes: 215, textLength: 3063, documentText: 'x', truncated: false };
   const profile = buildProfile({ probe, ax });
-  assert.deepEqual(profile, { textInDom: false, canvas: true, editable: true, axRich: true, focused: true });
+  assert.deepEqual(profile, {
+    textInDom: false,
+    canvas: true,
+    editable: true,
+    axRich: true,
+    truncated: false,
+    focused: true,
+    evidence: {
+      textInDom: 0,
+      canvas: 0.61,
+      editable: 'true',
+      focused: 'document.hasFocus() is true',
+      ax: { textBoxes: 215, textLength: 3063, truncated: false }
+    }
+  });
+});
+
+test('a tree cut at the depth cap says so, so short text is not read as a whole document', async () => {
+  const nodes = [{ nodeId: 'root', parentId: undefined, childIds: ['n1'], role: { value: 'RootWebArea' }, name: { value: '' } }];
+  let parent = 'root';
+  for (let depth = 1; depth <= 60; depth += 1) {
+    nodes.push({ nodeId: `n${depth}`, parentId: parent, childIds: depth === 60 ? [] : [`n${depth + 1}`], role: { value: depth === 60 ? 'InlineTextBox' : 'generic' }, name: { value: depth === 60 ? 'last' : '' } });
+    parent = `n${depth}`;
+  }
+  const ax = await measureAx({ ask: async () => ({ nodes }) });
+  assert.equal(ax.truncated, true, 'a tree exactly as deep as the request may have been cut');
+  assert.ok(describeProfile(buildProfile({ ax })).includes('depth cap'));
 });
 
 test('the description names what was measured, not where it was measured', () => {

@@ -17,6 +17,10 @@
 
 import { HARM_CARET_MOVE, HARM_NONE } from './read-strategy.js';
 
+// WHY THE HOST IS NAMED AND NOT JUST THE OFFSET.
+// An offset and a length are true of every node of that length: a caret that moved to a different node of the same length would read as restored.
+// A path from the host element to the document root names one node in the tree, so the comparison answers whether the caret came back to where it was rather than to a place that looks the same.
+
 const CARET_HOST_EXPRESSION = `(() => {
   const frames = [document, ...[...document.querySelectorAll('iframe')].map((f) => { try { return f.contentDocument; } catch { return null; } }).filter(Boolean)];
   for (const doc of frames) {
@@ -26,14 +30,23 @@ const CARET_HOST_EXPRESSION = `(() => {
     const node = sel.getRangeAt(0).startContainer;
     const host = node.nodeType === 3 ? node.parentElement : node;
     if (!host) continue;
+    const path = [];
+    let here = host;
+    while (here && here.parentElement) {
+      path.push([...here.parentElement.children].indexOf(here));
+      here = here.parentElement;
+    }
+    const textIndex = node.nodeType === 3 && node.parentElement ? [...node.parentElement.childNodes].indexOf(node) : -1;
     return {
+      frame: frames.indexOf(doc),
+      hostPath: path.reverse().join('/') + ':' + textIndex,
       rangeCount: sel.rangeCount,
       collapsed: sel.isCollapsed,
       anchorOffset: sel.anchorOffset,
       hostTextLength: String(node.textContent || '').length
     };
   }
-  return { rangeCount: 0, collapsed: null, anchorOffset: 0, hostTextLength: 0 };
+  return { frame: -1, hostPath: '', rangeCount: 0, collapsed: null, anchorOffset: 0, hostTextLength: 0 };
 })()`;
 
 // WHY A MISSING ANSWER IS A STATE AND NOT A CRASH.
@@ -43,9 +56,11 @@ export function rememberedState(selection) {
   const seen = selection && typeof selection === 'object' ? selection : {};
   const hostTextLength = Number(seen.hostTextLength) || 0;
   const anchorOffset = Number(seen.anchorOffset) || 0;
+  const hostPath = typeof seen.hostPath === 'string' ? seen.hostPath : '';
   const restorable = Number(seen.rangeCount) > 0 && hostTextLength > 0;
   return {
     restorable,
+    hostPath,
     anchorOffset,
     hostTextLength,
     why: restorable
@@ -68,13 +83,19 @@ export function restoreVerdict({ before, after } = {}) {
   if (!before || before.restorable !== true) {
     return { restored: false, why: before?.why || 'there was no restorable position to return to' };
   }
-  const same = before.anchorOffset === after?.anchorOffset && before.hostTextLength === after?.hostTextLength;
+  const same = before.hostPath === after?.hostPath
+    && before.anchorOffset === after?.anchorOffset
+    && before.hostTextLength === after?.hostTextLength;
   return same
     ? { restored: true, why: 'the selection is where it was left' }
     : { restored: false, why: 'the selection is not where it was left, so the restore did not take' };
 }
 
-export function createCaretGuard({ evaluate, key, settle }) {
+// WHY THE DRIVER IS ASKED FOR ONE THING.
+// The guard only ever reads the page: the expression it runs measures the caret and nothing else, and the caller decides what to type.
+// Taking the input primitives here would let a caller believe the guard puts the caret back, which is the claim the measurement already disproved.
+
+export function createCaretGuard({ evaluate }) {
   const remember = async () => {
     const selection = await evaluate(CARET_HOST_EXPRESSION);
     return { ...rememberedState(selection), selection };

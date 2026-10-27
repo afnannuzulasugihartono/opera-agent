@@ -15,7 +15,7 @@ import {
   SETTLE_QUIET_MS,
   SETTLE_READ_EXPRESSION
 } from './page-expressions.js';
-import { MIN_DOM_TEXT } from './surface-profile.js';
+import { MIN_DOM_TEXT, probeSurface } from './surface-profile.js';
 
 export function createWaits({ cdp, sleep, readState, readRows, read, primitives, now = Date.now }) {
   // WHY SETTLE IS A PRIMITIVE AND NOT A TOOL.
@@ -83,17 +83,22 @@ export function createWaits({ cdp, sleep, readState, readRows, read, primitives,
     }
   }
 
-  // WHY THE WAIT ASKS THE PAGE WHETHER IT HOLDS TEXT.
+  // WHY THE WAIT ASKS THE PAGE WHAT IT IS BEFORE IT TRUSTS ITS TEXT.
   // This used to ask the url whether the page was a document editor and then read the document for it, which is the site recognition the drive no longer carries.
-  // A page that holds its own text answers immediately; a canvas page answers empty and the wait falls through to the gated read, so the decision is made by the page rather than by its address.
+  // A length bar is not the decision either: measured on a real Google Doc, the chrome around the canvas holds 1,312 characters of its own, so a wait that only measures length polls the toolbar forever and reports found:false for text that is right there in the document.
+  // So the probe decides once: a page with no canvas takes the cheap DOM answer, and a canvas page is read through the ladder, which reaches past the chrome.
   async function waitForText(text, { timeoutMs = 10000, intervalMs = 100, absent = false, now: clock = now } = {}) {
+    const surface = await probeSurface({ evaluate: primitives.evaluate });
+    const domLeads = surface.canvas.value !== true;
     return waitForMutation(
       async () => {
-        const probe = await readState();
-        if ((probe.text || '').trim().length >= MIN_DOM_TEXT) return probe;
+        if (domLeads) {
+          const state = await readState();
+          if ((state.text || '').trim().length >= MIN_DOM_TEXT) return state;
+        }
         return read();
       },
-      (state) => state.text.includes(text) !== absent,
+      (state) => String(state.text ?? '').includes(text) !== absent,
       { timeoutMs, now: clock }
     );
   }

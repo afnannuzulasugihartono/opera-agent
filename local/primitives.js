@@ -48,11 +48,18 @@ export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Pr
       return cdp.send(method, params);
     },
 
+    // WHY A PAGE EXCEPTION IS AN ERROR AND NOT A MISSING VALUE.
+    // Measured on a real Google Doc: the first probe referenced a constant the page had never heard of, the page threw, and the answer came back undefined - which reads exactly like a page with no canvas, no text and no editor.
+    // A thrown page expression is a fact about the page, so it is raised here rather than flattened into a value the caller cannot tell from a measurement.
     async evaluate(expression) {
-      const { result } = await cdp.send('Runtime.evaluate', {
+      const reply = await cdp.send('Runtime.evaluate', {
         expression, returnByValue: true, awaitPromise: true
       });
-      return result?.value;
+      if (reply?.exceptionDetails) {
+        const detail = reply.exceptionDetails;
+        throw new Error(`the page threw while evaluating: ${detail.text || 'unknown error'}${detail.exception?.description ? ` (${String(detail.exception.description).split('\n')[0]})` : ''}`);
+      }
+      return reply?.result?.value;
     },
 
     // WHY THE PROFILE IS A PRIMITIVE OF ITS OWN.
@@ -132,15 +139,7 @@ export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Pr
   const pointer = createPointerMethods({ cdp, primitives });
   Object.assign(primitives, pointer);
 
-  const canvas = createCanvasMethods({
-    cdp,
-    primitives,
-    readState,
-    readLadder,
-    describeProfile,
-    measureAx,
-    buildProfile
-  });
+  const canvas = createCanvasMethods({ cdp, primitives, readState });
   Object.assign(primitives, canvas);
 
   const waits = createWaits({ cdp, sleep, readState, readRows, read: () => primitives.read(), primitives, now });

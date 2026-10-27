@@ -9,7 +9,7 @@ import assert from 'node:assert/strict';
 import { SETTLE_POLL_MS } from '../local/page-expressions.js';
 import { createPrimitives } from '../local/primitives.js';
 import { createCanvasMethods } from '../local/canvas.js';
-import { DOC_URL, docsCdp } from './helpers/local-page.mjs';
+import { DOC_URL } from './helpers/local-page.mjs';
 
 // A canvas surface: no text in the DOM, a canvas over most of the viewport, an editable host, and the page has focus.
 
@@ -120,6 +120,85 @@ test('a canvas surface no read can answer names the picture instead of returning
   assert.equal(out.text, '');
 });
 
+// WHY A CANVAS WITHOUT AN EDITOR STILL READS THE DOM.
+// The veto used to cover every canvas page, so a chart, a map or a viewer beside a canvas came back with no text at all - the one text the page has is the text around the picture.
+// Measured on a real page while writing this: the same fake, with the editable host removed, returned an empty string before and the page's own words after.
+
+test('a canvas page with no editor reads the text around the picture', async () => {
+  const probe = {
+    textInDom: { value: true, evidence: 38 },
+    canvas: { value: true, evidence: 0.4 },
+    editable: { value: false, evidence: 'no editable host' },
+    focused: { value: false, evidence: 'document.hasFocus() is false' }
+  };
+  const cdp = canvasCdp({ probe, ax: POOR_AX, domText: 'The legend sits under the chart.' });
+  const out = await createPrimitives(cdp, { sleep: async () => {} }).read();
+
+  assert.equal(out.strategy, 'dom');
+  assert.equal(out.text, 'The legend sits under the chart.');
+  assert.equal(out.skipped.length, 0, 'nothing is vetoed on a page whose text is its own');
+});
+
+// WHY AN ORDINARY PAGE NEVER PAYS FOR THE TREE.
+// Measured on the owner's profile: one innerText answers a DOM page in a single call, and a full accessibility tree costs 19-30ms on top of it.
+// The tree can reorder the ladder only where a canvas leads with it, so on any other page it is measured only if the DOM answered nothing.
+
+test('a DOM page is read without paying for an accessibility tree', async () => {
+  const domProbe = {
+    textInDom: { value: true, evidence: 4200 },
+    canvas: { value: false, evidence: 0 },
+    editable: { value: false, evidence: 'no editable host' },
+    focused: { value: false, evidence: 'document.hasFocus() is false' }
+  };
+  const cdp = canvasCdp({ probe: domProbe, ax: [], domText: 'A page that already holds its own words.' });
+  const out = await createPrimitives(cdp, { sleep: async () => {} }).read();
+
+  assert.equal(out.text, 'A page that already holds its own words.');
+  assert.equal(cdp.calls.some((call) => call.method === 'Accessibility.getFullAXTree'), false,
+    'the tree is not measured when the DOM already answered');
+});
+
+test('a page whose DOM is empty is read from the tree it left behind', async () => {
+  const domProbe = {
+    textInDom: { value: false, evidence: 0 },
+    canvas: { value: false, evidence: 0 },
+    editable: { value: false, evidence: 'no editable host' },
+    focused: { value: false, evidence: 'document.hasFocus() is false' }
+  };
+  const cdp = canvasCdp({ probe: domProbe, ax: ['A late dialog', 'with two rows'], domText: '' });
+  const out = await createPrimitives(cdp, { sleep: async () => {} }).read();
+
+  assert.equal(out.strategy, 'ax');
+  assert.equal(out.text, 'A late dialogwith two rows', 'the tree holds the text the DOM has not filled yet');
+});
+
+test('the accessibility answer carries the page it stands on', async () => {
+  const cdp = canvasCdp({ ax: RICH_AX });
+  const out = await createPrimitives(cdp, { sleep: async () => {} }).read();
+
+  assert.equal(out.strategy, 'ax');
+  assert.equal(out.title, 'Doc', 'a read that answers with no title looks like a read that failed');
+  assert.equal(out.url, DOC_URL);
+  assert.equal(out.settled, null, 'one sample of a tree cannot say the text stopped moving');
+  assert.match(out.settledWhy, /wait_still/, 'and the answer names what can');
+});
+
+// WHY AN EMPTY COPY IS NOT AN EMPTY DOCUMENT.
+// A canvas editor that selects and copies nothing either has an empty document or a mirror that did not fill, and the two are not the same thing.
+// Reporting the empty string as the read would call both of them an empty page.
+
+test('a consent that borrows nothing does not come back as an empty document', async () => {
+  const cdp = canvasCdp({ ax: POOR_AX, copy: null });
+  const out = await createPrimitives(cdp, { sleep: async () => {} }).read({ allowCaretMove: true });
+
+  assert.equal(out.strategy, 'vision');
+  assert.equal(out.text, '');
+  assert.equal(out.caretMoved, true, 'the borrow happened, and the answer says so');
+  assert.equal(out.caretRestored, false, 'and the verdict it measured');
+  const skipped = out.skipped.find((entry) => entry.strategy === 'select-all');
+  assert.match(skipped.why, /no text/i, 'the ladder says why it moved on');
+});
+
 test('a page that holds its own text is read through the DOM and nothing is gated', async () => {
   const domProbe = {
     textInDom: { value: true, evidence: 4200 },
@@ -139,12 +218,8 @@ test('a page that holds its own text is read through the DOM and nothing is gate
 test('createCanvasMethods exposes read and caretLine', () => {
   const methods = createCanvasMethods({
     cdp: { send: async () => ({}) },
-    primitives: { evaluate: async () => null, key: async () => ({}), settle: async () => ({}), clickAt: async () => ({}), viewport: async () => ({ width: 1 }) },
-    readState: async () => ({ url: 'https://example.com', title: '', text: '' }),
-    readLadder: () => [],
-    describeProfile: () => '',
-    measureAx: async () => ({ axRich: false }),
-    buildProfile: () => ({})
+    primitives: { evaluate: async () => null, ask: async () => ({ nodes: [] }), key: async () => ({}), settle: async () => ({}) },
+    readState: async () => ({ url: 'https://example.com', title: '', text: '' })
   });
 
   assert.deepEqual(Object.keys(methods).sort(), ['caretLine', 'read']);
