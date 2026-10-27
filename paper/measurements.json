@@ -1,0 +1,54 @@
+{
+ "measuredAt": "2026-10-27T09:57:46Z",
+ "transport": "bridge 127.0.0.1:9451 \u2192 extension bridge-link (chrome.debugger)",
+ "rows": [
+  {
+   "primitive": "ping",
+   "note": "loopback round trip",
+   "n": 5,
+   "median": 1.05,
+   "min": 1.0,
+   "max": 1.14
+  },
+  {
+   "primitive": "tabs.list",
+   "note": "list live tabs",
+   "n": 5,
+   "median": 1.16,
+   "min": 1.1,
+   "max": 1.21
+  },
+  {
+   "primitive": "Runtime.evaluate",
+   "note": "read document title",
+   "n": 5,
+   "median": 1.36,
+   "min": 1.35,
+   "max": 3.02
+  },
+  {
+   "primitive": "Page.captureScreenshot",
+   "note": "viewport PNG",
+   "n": 5,
+   "median": 31.18,
+   "min": 29.66,
+   "max": 47.46
+  },
+  {
+   "primitive": "tabs.open",
+   "note": "new tab, no network",
+   "n": 5,
+   "median": 6.58,
+   "min": 6.3,
+   "max": 8.51
+  },
+  {
+   "primitive": "tabs.navigate",
+   "note": "tab update, no network",
+   "n": 5,
+   "median": 10.55,
+   "min": 7.65,
+   "max": 25.92
+  }
+ ]
+}
