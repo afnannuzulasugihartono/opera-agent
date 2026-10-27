@@ -37,9 +37,11 @@ const axTree = (texts) => {
 };
 
 
-// The caret a canvas editor exposes: offset 0 on a node with no text, which is what the measurement found.
+// WHY THE FAKE ANSWERS ONE SELECTION SHAPE.
+// The copy, the caret mark and the caret verdict all read the same page expression now, so a fake that answers them with different shapes would be testing a page that no longer exists.
+// One answer per fake therefore carries both the text and the caret position, which is what the real page returns.
 
-const CANVAS_CARET = { rangeCount: 1, collapsed: true, anchorOffset: 0, hostTextLength: 0 };
+const CANVAS_CARET = { frame: 0, hostPath: '0/3/2:1', rangeCount: 1, collapsed: true, anchorOffset: 0, text: '', hostTextLength: 0 };
 
 const canvasCdp = ({ probe = CANVAS_PROBE, ax = RICH_AX, copy = null, caret = CANVAS_CARET, domText = '' } = {}) => {
   const calls = [];
@@ -52,11 +54,9 @@ const canvasCdp = ({ probe = CANVAS_PROBE, ax = RICH_AX, copy = null, caret = CA
         return { result: { value: probe } };
       }
       if (method === 'Accessibility.getFullAXTree') return axTree(ax);
-      if (method === 'Runtime.evaluate' && expression.includes('hostTextLength')) {
-        return { result: { value: caret } };
-      }
-      if (method === 'Runtime.evaluate' && expression.includes('best.length')) {
-        return { result: { value: copy } };
+      // The one selection state: the text the copy reads and the caret position the guard measures, from the same frame.
+      if (method === 'Runtime.evaluate' && expression.includes('richest')) {
+        return { result: { value: { ...caret, text: typeof copy === 'string' ? copy : '' } } };
       }
       if (method === 'Runtime.evaluate' && expression.includes('innerText')) {
         return { result: { value: { title: 'Doc', url: DOC_URL, text: domText } } };

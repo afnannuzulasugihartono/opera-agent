@@ -432,12 +432,53 @@ export const UPLOAD_INPUT_EXPRESSION = `(() => {
 // So the read selects its own line — Home, Shift+End — copies, and collapses back to the line end, which is the documented end state: the caret moves within its line and never past it.
 // The steps wait on the settle between them, because injected keys land late and the copy must not run before the selection exists.
 
-export const SELECTION_TEXT_EXPRESSION = `(() => {
-  try {
-    const sel = document.getSelection();
-    if (!sel || sel.rangeCount === 0) return '';
-    return String(sel.toString()).slice(0, 500);
-  } catch { return ''; }
+// WHY THE SELECTION IS READ ONCE, FOR EVERY ASKER.
+// Three expressions used to walk the frames looking for a selection: one returned the text, one returned the caret's position, and one returned the longest text it could find.
+// They did not have to agree, and on a page with two frames holding selections they did not: the copy answered from one frame while the caret verdict measured another, so a restore was reported against a position the borrow never touched.
+// One expression answers every asker from the same frame, which makes that disagreement impossible rather than merely unlikely.
+
+// WHY THE FRAME IS THE ONE HOLDING THE MOST TEXT, AND THE CARET IS THE FALLBACK.
+// A canvas editor holds its document in an iframe, and after a select-all that iframe's selection carries every word in the document, so it is the frame that answers.
+// A collapsed caret holds no text at all, so it can never win on length; the first frame with any selection is kept beside it, and a page whose only selection is a caret is answered by that one.
+
+// WHY THE HOST IS NAMED AS A PATH AND NOT AS AN OFFSET.
+// An offset and a length are true of every node of that length, so a caret that moved to a different node of the same length would read as restored.
+// A path from the host element down from the document root names one node in the tree, and the text node's own index separates two text nodes inside the same element.
+
+export const SELECTION_STATE_EXPRESSION = `(() => {
+  const frames = [document, ...[...document.querySelectorAll('iframe')].map((f) => { try { return f.contentDocument; } catch { return null; } }).filter(Boolean)];
+  const stateOf = (doc, sel, frame) => {
+    const node = sel.getRangeAt(0).startContainer;
+    const host = node.nodeType === 3 ? node.parentElement : node;
+    const path = [];
+    let here = host;
+    while (here && here.parentElement) {
+      path.push([...here.parentElement.children].indexOf(here));
+      here = here.parentElement;
+    }
+    const textIndex = node.nodeType === 3 && node.parentElement ? [...node.parentElement.childNodes].indexOf(node) : -1;
+    return {
+      frame,
+      rangeCount: sel.rangeCount,
+      collapsed: sel.isCollapsed,
+      anchorOffset: sel.anchorOffset,
+      text: String(sel),
+      hostPath: host ? path.reverse().join('/') + ':' + textIndex : '',
+      hostTextLength: host ? String(node.textContent || '').length : 0
+    };
+  };
+  const nothing = { frame: -1, rangeCount: 0, collapsed: null, anchorOffset: 0, text: '', hostPath: '', hostTextLength: 0 };
+  let caret = null;
+  let richest = null;
+  for (let frame = 0; frame < frames.length; frame += 1) {
+    let sel = null;
+    try { sel = frames[frame].getSelection ? frames[frame].getSelection() : null; } catch { continue; }
+    if (!sel || sel.rangeCount === 0) continue;
+    const state = stateOf(frames[frame], sel, frame);
+    if (!caret) caret = state;
+    if (!richest || state.text.length > richest.text.length) richest = state;
+  }
+  return richest || caret || nothing;
 })()`;
 
 export function modifierMask(modifiers = []) {

@@ -1,7 +1,7 @@
 // @last-edited: 2026-10-27 UTC+7.
 // @title: caret-guard — the gate in front of a read that moves a caret, and the verdict that never claims a restore it did not measure.
 // @state: the gate, the restorability rule, the verdict, and one factory that drives the DOM with injected primitives.
-// @dependencies: ./read-strategy.js.
+// @dependencies: ./page-expressions.js, ./read-strategy.js.
 
 // WHY THE GATE AND THE DRIVER ARE THE SAME FILE.
 // They answer one question from two sides: may this read run, and did it leave the page as it found it.
@@ -11,43 +11,13 @@
 // Measured on a real Google Doc through CDP: the editor iframe's selection reads offset 0 on a node with no text, and it reads the same after Home and after End.
 // The application holds the caret in its own model and the DOM does not carry it, so a promise to put it back would be a promise the DOM cannot keep.
 
-// WHY THE SELECTION IS READ THROUGH EVERY FRAME.
+// WHY THE SELECTION IS READ THROUGH EVERY FRAME, BY ONE EXPRESSION.
 // A canvas editor keeps its document in an iframe, and the selection that matters is the one inside it.
 // Reading only the top document is what made the old restore report failure on a page that plainly had a caret.
+// The expression that reads it is shared with the copy, so both answer from the same frame.
 
+import { SELECTION_STATE_EXPRESSION } from './page-expressions.js';
 import { HARM_CARET_MOVE, HARM_NONE } from './read-strategy.js';
-
-// WHY THE HOST IS NAMED AND NOT JUST THE OFFSET.
-// An offset and a length are true of every node of that length: a caret that moved to a different node of the same length would read as restored.
-// A path from the host element to the document root names one node in the tree, so the comparison answers whether the caret came back to where it was rather than to a place that looks the same.
-
-const CARET_HOST_EXPRESSION = `(() => {
-  const frames = [document, ...[...document.querySelectorAll('iframe')].map((f) => { try { return f.contentDocument; } catch { return null; } }).filter(Boolean)];
-  for (const doc of frames) {
-    let sel = null;
-    try { sel = doc.getSelection ? doc.getSelection() : null; } catch { continue; }
-    if (!sel || sel.rangeCount === 0) continue;
-    const node = sel.getRangeAt(0).startContainer;
-    const host = node.nodeType === 3 ? node.parentElement : node;
-    if (!host) continue;
-    const path = [];
-    let here = host;
-    while (here && here.parentElement) {
-      path.push([...here.parentElement.children].indexOf(here));
-      here = here.parentElement;
-    }
-    const textIndex = node.nodeType === 3 && node.parentElement ? [...node.parentElement.childNodes].indexOf(node) : -1;
-    return {
-      frame: frames.indexOf(doc),
-      hostPath: path.reverse().join('/') + ':' + textIndex,
-      rangeCount: sel.rangeCount,
-      collapsed: sel.isCollapsed,
-      anchorOffset: sel.anchorOffset,
-      hostTextLength: String(node.textContent || '').length
-    };
-  }
-  return { frame: -1, hostPath: '', rangeCount: 0, collapsed: null, anchorOffset: 0, hostTextLength: 0 };
-})()`;
 
 // WHY A MISSING ANSWER IS A STATE AND NOT A CRASH.
 // The expression runs in a page that may have navigated, or may refuse the evaluation, and a read that throws on a null answer takes the whole drive down over a question it could have answered with "there was nothing to remember".
@@ -97,12 +67,12 @@ export function restoreVerdict({ before, after } = {}) {
 
 export function createCaretGuard({ evaluate }) {
   const remember = async () => {
-    const selection = await evaluate(CARET_HOST_EXPRESSION);
+    const selection = await evaluate(SELECTION_STATE_EXPRESSION);
     return { ...rememberedState(selection), selection };
   };
 
   const verdict = async (mark) => {
-    const after = await evaluate(CARET_HOST_EXPRESSION);
+    const after = await evaluate(SELECTION_STATE_EXPRESSION);
     return restoreVerdict({ before: mark, after });
   };
 

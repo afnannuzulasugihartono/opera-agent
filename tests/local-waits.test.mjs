@@ -11,7 +11,7 @@ import {
 } from '../local/page-expressions.js';
 import { createPrimitives } from '../local/primitives.js';
 import { createWaits } from '../local/waits.js';
-import { recordingCdp, docsCdp, DOC_URL } from './helpers/local-page.mjs';
+import { recordingCdp, DOC_URL } from './helpers/local-page.mjs';
 
 test('settle watches the page from Node, so a hidden tab cannot clamp its timer', async () => {
   const cdp = recordingCdp();

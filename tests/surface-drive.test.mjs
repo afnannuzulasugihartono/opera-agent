@@ -34,19 +34,12 @@ const fakeCdp = ({ probe, ax = richAx, copy, domText = '', caret = null }) => {
         return { result: { value: probe } };
       }
       if (method === 'Accessibility.getFullAXTree') return axTree(ax);
-      if (method === 'Runtime.evaluate' && expression.includes('document.execCommand')) {
-        return { result: { value: copy } };
-      }
       if (method === 'Runtime.evaluate' && expression.includes('innerText')) {
         return { result: { value: { title: 'Fake', url: 'https://example.invalid/', text: domText, ready: 'complete' } } };
       }
-      // The caret guard's own expression, which walks every frame for a selection.
-      if (method === 'Runtime.evaluate' && expression.includes('hostTextLength')) {
-        return { result: { value: caret } };
-      }
-      // The gated copy, which reads the borrowed selection back from every frame.
-      if (method === 'Runtime.evaluate' && expression.includes('best.length')) {
-        return { result: { value: copy } };
+      // The one selection state, read by both the copy and the caret guard.
+      if (method === 'Runtime.evaluate' && expression.includes('richest')) {
+        return { result: { value: { ...(caret ?? { frame: -1, hostPath: '', rangeCount: 0, collapsed: null, anchorOffset: 0, hostTextLength: 0 }), text: typeof copy === 'string' ? copy : '' } } };
       }
       return { result: { value: null } };
     },

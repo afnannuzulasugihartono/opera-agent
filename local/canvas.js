@@ -35,7 +35,7 @@
 // A canvas editor that selects and copies nothing either has an empty document or a mirror that did not fill, and the two are not the same thing.
 // Reporting the empty string as the read would call both of them an empty page, so the ladder continues to the picture and the caret cost stays in the answer.
 
-import { SELECTION_TEXT_EXPRESSION } from './page-expressions.js';
+import { SELECTION_STATE_EXPRESSION } from './page-expressions.js';
 import { probeSurface, measureAx, buildProfile, describeProfile } from './surface-profile.js';
 import { createCaretGuard, gateRead } from './caret-guard.js';
 import {
@@ -54,27 +54,12 @@ export function createCanvasMethods({ cdp, primitives, readState }) {
   // The expression this replaces found one site's hidden editable frame by name, asked it to fill itself on a copy event, and stripped the invisible characters that site inserts - which is per-site code, and it is gone.
   // What is left is the technique without the site: borrow the selection, then read it back from whichever frame holds it.
   // A surface that mirrors its text through the selection answers; a surface that holds its text as pixels does not, and that is reported rather than papered over.
-  const COPY_SELECTION_EXPRESSION = `(() => {
-    try {
-      const frames = [document, ...[...document.querySelectorAll('iframe')].map((f) => { try { return f.contentDocument; } catch { return null; } }).filter(Boolean)];
-      let best = '';
-      for (const doc of frames) {
-        let sel = null;
-        try { sel = doc.getSelection ? doc.getSelection() : null; } catch { continue; }
-        if (!sel || sel.rangeCount === 0) continue;
-        const text = String(sel);
-        if (text.length > best.length) best = text;
-      }
-      return best.length > 0 ? best : null;
-    } catch { return null; }
-  })()`;
+  // It reads the same expression the caret guard reads, so the text and the caret verdict come from one frame rather than from two that may not be the same.
 
   const copySelection = async () => {
-    const { result } = await cdp.send('Runtime.evaluate', {
-      expression: COPY_SELECTION_EXPRESSION,
-      returnByValue: true
-    });
-    return typeof result?.value === 'string' ? result.value : null;
+    const state = await primitives.evaluate(SELECTION_STATE_EXPRESSION);
+    const text = state && typeof state.text === 'string' ? state.text : '';
+    return text.length > 0 ? text : null;
   };
 
   const guard = createCaretGuard({ evaluate: primitives.evaluate });
@@ -251,8 +236,7 @@ export function createCanvasMethods({ cdp, primitives, readState }) {
     await primitives.settle();
     await primitives.key('End', ['Shift']);
     await primitives.settle();
-    let line = await primitives.evaluate(SELECTION_TEXT_EXPRESSION);
-    if (typeof line !== 'string' || line.length === 0) line = await copySelection();
+    let line = await copySelection();
     await primitives.key('End').catch(() => null);
     const back = await guard.verdict(mark);
     return {

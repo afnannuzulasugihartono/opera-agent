@@ -20,10 +20,9 @@ import { join } from 'node:path';
 import { BROWSERS, detectBrowsers, expandPath, findBrowser, launchArgs } from './browsers.js';
 import { createPrimitives } from './primitives.js';
 import { createCdpClient } from './cdp.js';
-import { attachToPage, connect, discoverPageWebSocket, discoverWebSocket, openTab, pageWebSocketById, waitForPage } from './transport.js';
+import { connect, discoverPageWebSocket, openTab, pageWebSocketById } from './transport.js';
 import {
   bridgeReachable,
-  closeBridgeTarget,
   connectBridgeTarget,
   listBridgeTargets,
   openBridgeTarget,

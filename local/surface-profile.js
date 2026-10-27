@@ -165,7 +165,7 @@ const documentRegion = (nodes) => {
 // WHY THE TREE IS ASKED FOR AT A STATED DEPTH.
 // Chrome truncates an accessibility tree at the depth it was asked for, so the request and the report of it have to agree: a document cut at the cap answers with text that looks complete.
 
-export const MAX_AX_DEPTH = 60;
+const MAX_AX_DEPTH = 60;
 
 export async function measureAx({ ask, method = 'Accessibility.getFullAXTree' }) {
   const empty = { axRich: false, textBoxes: 0, textLength: 0, documentText: '', truncated: false };

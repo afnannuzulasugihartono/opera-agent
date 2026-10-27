@@ -105,7 +105,6 @@ export function createFocusGuard({
   };
 }
 
-// WHY ONE GUARD FOR THE WHOLE PROCESS.
+// WHY ONE GUARD PER SESSION.
 // Two guards would answer differently about the same machine at the same moment - one would have asked the page, the other would still be holding an old shell - and two answers about one window is the kind of thing this product exists to stop.
-
-export const ensureFront = createFocusGuard();
+// The session builds its own, and the page it asks about is the session's, so the guard and the thing it guards are created together in sessions.js.
