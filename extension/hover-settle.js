@@ -1,12 +1,12 @@
-// @last-edited: 2026-10-04 18:25 UTC+7.
+// @last-edited: 2026-10-28 UTC+7.
 // @title: hover-settle — the hover settle policy, as a classic content script.
 // @state: hygiene pass over this file.
 // @dependencies: none.
 
 // Loaded by the manifest BEFORE content.js and published on globalThis, the same pattern as role-reconcile.js: content scripts are classic scripts and cannot import, and this keeps one copy for both contexts.
 
-// Why this exists.
-// Multi-level menus were the most fragile interaction in the live Google Docs test: the caller had to hand-build a burst of hover -> wait -> hover -> wait, because hovering and settling were separate unbounded steps.
+// WHY A HOVER DECIDES WHEN IT HAS LANDED.
+// Multi-level menus were the most fragile interaction in the live Google Docs test, because the caller had to hand-build a burst of hover -> wait -> hover -> wait.
 // This module owns the decision of when a hover has "landed", so one hover per level can be a single step.
 
 // Semantics locked by tests/hover-settle.test.mjs:

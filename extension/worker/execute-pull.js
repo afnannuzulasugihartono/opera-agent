@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-13 UTC+7.
+// @last-edited: 2026-10-28 UTC+7.
 // @title: execute-pull — command execution, pairing and the device socket.
 // @state: owns WAKE_ALARM and socketClient; every statement here that runs at load time is listed in tests/background-load.test.mjs.
 // @dependencies: utils, tab-content, private-tabs, listen, action-focus, watch-registry, capture, serialize, background, log, protocol, options-store, model-client, external-origins, deadline-race, socket-client, socket-protocol.
@@ -145,21 +145,20 @@ async function flushPendingCompletion(cfg) {
   if (sent) await chrome.storage.local.remove('pendingCompletion');
 }
 
-// WHY the poll loop is gone.
+// WHY THE POLL LOOP IS GONE.
 // It asked the bridge whether work existed, then asked again to report the result, and every action paid two round trips plus a blocking wait inside each.
 // Measured here, a six step burst spent 238 ms in the browser and 496 ms in transport.
 // One socket carries work down and completions back up, so nothing on the hot path asks a question.
 
-// WHY there is no poll underneath to fall back to.
+// WHY THERE IS NO POLL UNDERNEATH TO FALL BACK TO.
 // A quiet fallback would restore exactly the latency this replaces while looking perfectly healthy, which is worse than an outage because it is invisible.
 
-// WHY a stored completion is only cleared once the frame is written.
+// WHY A STORED COMPLETION IS ONLY CLEARED ONCE THE FRAME IS WRITTEN.
 // A disconnect between finishing a command and reporting it would otherwise lose the result silently, and the caller would wait out its timeout for a device that had already finished.
 // Reconnecting is also the moment that owed completion is resent.
 
-// WHY there is one way to start, and no generation counter.
+// WHY THERE IS ONE WAY TO START, AND NO GENERATION COUNTER.
 // The old loop was generation guarded so a restart could not fight an in-flight poll, and that guard lost a wake-up: bumping the generation made the in-flight loop exit without connecting and made its own reschedule refuse, so after a pairing nothing ever started.
-// A socket that owns its own reconnect needs no guard, only one true shape: no client, then start one.
 
 async function ensureSocket() {
   if (socketClient) return;
@@ -205,10 +204,9 @@ function restartSocket() {
   ensureSocket().catch((error) => { log.debug('SOCKET_START_FAILED', String(error?.message || error)); });
 }
 
-// WHY the heartbeat no longer reports a connection status.
-// It used to, back when it was the poll loop's status writer as well as its keepalive, and it went on doing that job after the socket took ownership of it: every thirty seconds it stamped lastConnectedAt over the socket's own state, and a heartbeat that failed set the status to reconnecting while the socket was healthy and connected.
-// Observed live against the deployed bridge.
-// The heartbeat's job is to keep the device row's last_seen_at fresh, and that is all it does now.
+// WHY THE HEARTBEAT NO LONGER REPORTS A CONNECTION STATUS.
+// It used to, back when it was the poll loop's status writer as well as its keepalive, and it went on doing that job after the socket took ownership: every thirty seconds it stamped lastConnectedAt over the socket's own state, and a failed heartbeat set the status to reconnecting while the socket was healthy.
+// Observed live against the deployed bridge, so its job now is only to keep the device row's last_seen_at fresh.
 
 async function heartbeat() {
   const cfg = await getConfig();

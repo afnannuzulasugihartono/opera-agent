@@ -1,11 +1,12 @@
-// @last-edited: 2026-10-09 UTC+7.
+// @last-edited: 2026-10-28 UTC+7.
 // @title: options-store — validation and persistence for the Options page.
 // @state: The bridge URL, log level, and the user's own model endpoint, name and key, kept in local storage.
 // @dependencies: endpoints.
 
 // Validation and persistence for the Options page: the bridge URL override and the log level, stored in chrome.storage.local.
 
-// WHY https only: the bridge URL is where the device token is posted, so plain http to a remote host is refused.
+// WHY HTTPS ONLY.
+// The bridge URL is where the device token is posted, so plain http to a remote host is refused.
 // Loopback is served over http and is handled by the caller, not here.
 
 // The model endpoint, key and model name are the user's own, entered here and kept in chrome.storage.local so they never reach our server.

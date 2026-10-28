@@ -17,13 +17,13 @@ The rule in one line: **a dot separates namespaces, an underscore separates word
 
 ## Why the MCP tool names are underscored
 
-The tool name is the product's surface: it is the word a model types and the line a human reads in a tool list. It is underscored for two reasons that are both mechanical rather than aesthetic.
+The tool name is the product's surface: the word a model types, and the line a human reads in a tool list. It is underscored for two mechanical reasons, not an aesthetic one.
 
-**A dot is already taken.** The dot is the namespace separator of the wire protocol underneath, where `page.click` and `tabs.list` name the method a tool ends up calling. A tool named `page.click` would be the transport wearing the product's name, and one line in a log would not say which layer had answered. Two layers need two names.
+Why not a dot: the dot is the namespace separator of the wire protocol underneath, where `page.click` and `tabs.list` name the method a tool ends up calling. A tool named `page.click` would be the transport wearing the product's name, and one log line would not say which layer had answered. Two layers need two names.
 
-**A hyphen is refused by every identifier this tree writes.** The Postgres functions, the workflow names in the migrations, and the plugin manifest's `name_for_model` are all read as bare identifiers, and a hyphen forces quoting in each of them. An underscore survives JavaScript, TypeScript and SQL unquoted, so it is the one separator that never has to be escaped.
+Why an underscore: Postgres functions, the workflow names in the migrations, and the plugin manifest's `name_for_model` are all read as bare identifiers, and a hyphen forces quoting in each of them. An underscore survives JavaScript, TypeScript and SQL unquoted, so it is the one separator that never has to be escaped.
 
-The same reasoning holds one layer down, which is why the wire protocol uses an underscore *inside* a name as well: `page.wait_for`, not `page.waitfor` and not `page.wait-for`.
+The same rule holds one layer down: `page.wait_for`, not `page.waitfor` and not `page.wait-for`.
 
 ## Where each shape lives
 
@@ -53,4 +53,4 @@ A new name belongs to exactly one of the three spaces, and the shape follows fro
 
 A cloud tool that wraps one wire method is named for the job the caller asks for, never for the method it sends: the surface calls it `click_element` while the method underneath is `page.click`, `fill_element` for `page.fill`, and `run_browser_burst` for `browser.burst`. The local surface names the same jobs the same way — `click_row`, `browser_burst`, `read_page` — and it sends no wire method at all, because it drives the browser over CDP directly.
 
-A new wire method is added to `METHOD_SPECS` in `extension/lib/protocol.js` and nowhere else. That file is the one the service worker, the MCP server and the Node tests all read, which is why a second copy of the list has never been allowed to exist.
+A new wire method is added to `METHOD_SPECS` in `extension/lib/protocol.js` and nowhere else. Why there is no second copy: that file is the one the service worker, the MCP server and the Node tests all read.

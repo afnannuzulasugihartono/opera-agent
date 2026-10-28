@@ -1,11 +1,11 @@
-// @last-edited: 2026-10-23 UTC+7.
+// @last-edited: 2026-10-28 UTC+7.
 // @title: latency-benchmark — how long the local driver takes, measured against a real browser.
 // @state: a headless Chromium on a throwaway profile, a 100-row fixture, and the p50/p95 of every primitive and MCP tool.
 // @dependencies: node:child_process, node:http, node:fs, node:os, node:path, driver, sessions, mcp-server.
 
 // WHY THIS IS COMMITTED AND NOT AD-HOC.
 // The latency report quotes numbers, and a number nobody can re-measure is a number nobody can check.
-// This script is the reproduction: it launches its own headless browser on its own profile, serves its own fixture, drives the real driver and the real MCP surface, and prints p50/p95 next to the numbers the report claims.
+// This script is the reproduction: it launches its own headless browser on its own profile, serves its own fixture, and drives the real driver and the real MCP surface.
 // No user tab, profile or credential is touched, and the browser it launches is killed and its profile removed on the way out.
 
 // WHY THE TEXT JOBS FOCUS THE FIELD FIRST.

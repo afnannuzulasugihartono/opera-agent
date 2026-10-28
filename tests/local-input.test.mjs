@@ -9,6 +9,7 @@ import {
   KEY_BEAT_MS,
   modifierMask,
   SETTLE_POLL_MS,
+  SETTLE_QUIET_MS,
   splitText
 } from '../local/page-expressions.js';
 import { createPrimitives } from '../local/primitives.js';
@@ -158,7 +159,7 @@ test('append waits for the page to be quiet, not for a fixed beat', async () => 
 
   await createPrimitives(cdp, { sleep: async (ms) => { slept.push(ms); } }).append('tail text');
 
-  assert.ok(slept.includes(SETTLE_POLL_MS), 'the end key is followed by a settle');
+  assert.ok(slept.includes(SETTLE_POLL_MS) || slept.includes(SETTLE_QUIET_MS), 'the end key is followed by a settle');
   assert.ok(!slept.includes(120), 'and not by the old fixed 120 ms beat');
 });
 
@@ -556,7 +557,7 @@ test('a chord-only stream settles once instead of polling for an edit that never
 
   assert.equal(out.moved, false, 'a menu chord does not move the text signature');
   assert.equal(out.settled, true, 'and it says it already settled, so the page look does not pay twice');
-  assert.deepEqual(slept, [KEY_BEAT_MS, KEY_BEAT_MS, SETTLE_POLL_MS], 'two key beats, then one settle — not twelve 150 ms polls');
+  assert.deepEqual(slept, [KEY_BEAT_MS, KEY_BEAT_MS, SETTLE_QUIET_MS], 'two key beats, then one settle — not twelve 150 ms polls');
 });
 
 test('a text stream with nothing focused fails fast instead of polling for text that cannot land', async () => {

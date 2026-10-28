@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-09 UTC+7.
+// @last-edited: 2026-10-28 UTC+7.
 // @title: capture — debugger attach, frame safety probes, ax summary and the screenshot memo.
 // @state: owns screenshotCache; private-tabs and execute-pull clear it through this import, which is why this module must never import either of them.
 // @dependencies: log, ax-summary, debugger-session.
@@ -59,15 +59,13 @@ export async function assertCaptureFramesSafe(tabId) {
 
 // WHY ATTACH HEALS ITSELF.
 // A detach that throws leaves Chrome holding an attachment the code believes is gone, and every later attach then fails with "already attached" forever: one flaky detach bricks the tab until the extension reloads.
-// Observed live as a capture failing minutes after a timed-out key press on the same tab.
-// Recovery is a detach-then-attach, which is safe because detach only ever releases this extension's own attachment: a debugger held by anyone else survives it, and the re-attach fails again with the truthful error instead of a stale one.
+// Observed live as a capture failing minutes after a timed-out key press on the same tab, so recovery is a detach-then-attach, which is safe because detach only ever releases this extension's own attachment.
 // A failure that is not already-attached propagates untouched and never triggers a detach.
 
 // WHY A SEND-SIDE HEAL EXISTS.
-// Shared sessions cache attached:true so repeat calls skip the attach.
-// Anything else that detaches this tab — the relay road in this same extension, a DevTools window, a browser restart — leaves the cache lying, and every later send then fails "not attached" for good: observed live as one tab permanently dead on the bridge while the relay drove the same tab happily.
-// Healing on attach cannot catch it, because the attach was skipped and the failure belongs to the call itself.
-// So the call heals once: correct the flag, re-attach, and try again; a second failure is the honest answer, and a foreign error never triggers a detach at all.
+// Shared sessions cache attached:true so repeat calls skip the attach, and anything else that detaches the tab leaves the cache lying, so every later send fails "not attached" for good.
+// Observed live as one tab permanently dead on the bridge while the relay drove the same tab happily.
+// Healing on attach cannot catch it because the attach was skipped, so the call heals once: correct the flag, re-attach and try again, and a second failure is the honest answer.
 
 export async function withAttachHeal(tabId, work, heal) {
   try {

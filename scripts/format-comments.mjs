@@ -1,12 +1,11 @@
-// @last-edited: 2026-10-21 UTC+7.
+// @last-edited: 2026-10-28 UTC+7.
 // @title: format-comments — apply the structural comment rule to the tree, and report the files that are not in it.
 // @state: `--write` rewrites every source file to the canonical form, and `--check` exits non-zero when any file is not canonical.
 // @dependencies: node:fs/promises, node:path, node:url, tests/helpers/comment-format.mjs.
 
 // WHY THIS PROGRAM EXISTS.
-// The rule is a formatter, so the gate is an equality: format(file) === file.
-// That is checkable by anyone, and a file the formatter cannot read is a file it does not touch.
-// The list of files it reads is written down here, once, and the hygiene gate calls this program rather than walking the tree a second way.
+// The rule is a formatter, so the gate is an equality: format(file) === file, and a file the formatter cannot read is a file it does not touch.
+// The list of files it reads is written down here once, and the hygiene gate calls this program rather than walking the tree a second way.
 
 import { readFile, writeFile, readdir } from 'node:fs/promises';
 import path from 'node:path';
@@ -32,7 +31,7 @@ const SKIP_DIRS = new Set([
 ]);
 
 // WHY landing/_headers IS NOT HERE.
-// Cloudflare parses that file block by block, and a blank line inside a rule block is the host's business, not ours.
+// Cloudflare parses that file block by block, so a blank line inside a rule block is the host's business, not ours.
 // Its comments are written in the canonical shape by hand, and the file stays out of the formatter's reach.
 
 const SKIP_FILES = new Set(['LICENSE', 'landing/_headers']);

@@ -24,9 +24,9 @@ Gateway base (append the routed paths to this):
 https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-gateway
 ```
 
-- The gateway does not trust the incoming request URL when advertising its own base.
-- The hosted proxy rewrites that URL, so `servers[].url` is derived from the
-  `SUPABASE_URL` environment variable, never from the request.
+- The gateway does not trust the incoming request URL when advertising its own base: the
+  hosted proxy rewrites it, so `servers[].url` is derived from the `SUPABASE_URL`
+  environment variable, never from the request.
 - Callers should always address the base above directly.
 
 ## Authentication
@@ -41,7 +41,7 @@ The gateway accepts the token in three carriers, checked in this order:
    optional and matched case-insensitively, so a bare token is accepted too.
 3. `apiKey` in the JSON request body.
 
-- The body carrier exists because GPT Actions cannot set custom request headers.
+- Why the body carrier: GPT Actions cannot set custom request headers.
 - Prefer header carriers: they keep the token out of request bodies that may be logged.
 
 - A fourth path applies only to per-user callers such as the ChatGPT plugin
@@ -52,8 +52,8 @@ The gateway accepts the token in three carriers, checked in this order:
   never by the fixed name — so one account cannot drive another account's
   browser.
 
-- A `?apiKey=` query parameter is **never** read by the gateway. The three carriers
-  above are the complete list; a token sent as a query parameter is ignored on
+- A `?apiKey=` query parameter is **never** read by the gateway: the three carriers
+  above are the complete list, and a token sent as a query parameter is ignored on
   every route.
 
 - `GET /openapi.json` and `GET /health` require no token at all; both are unauthenticated.
@@ -84,18 +84,18 @@ Frames, in both directions:
 Three rules the transport depends on:
 
 - **The token travels in the first frame, not in a header.** An MV3 service
-  worker cannot set arbitrary headers on a WebSocket handshake. The alternative,
+  worker cannot set arbitrary headers on a WebSocket handshake, and the alternative,
   a query parameter, would put a credential into every access log on the path.
 - **Nothing is executed before `ready`.** An open socket proves the TCP
   connection and nothing about the identity behind it, so `ready` is the only
   thing that unlocks work.
 - **Authentication is not claiming.** The handshake calls `opera_auth_device`,
-  a lookup. The claim RPC is what takes ownership of a queued command, so using
+  a lookup; the claim RPC is what takes ownership of a queued command, so using
   it to authenticate would silently swallow the one command the device was
   waiting for.
 
-There is no polling fallback. A device that cannot connect is a device that is
-down, and says so; a quiet fallback would restore the latency this replaced
+Why there is no polling fallback: a device that cannot connect is a device that is
+down, and says so, because a quiet fallback would restore the latency this replaced
 while looking perfectly healthy.
 
 ### Measured
@@ -117,11 +117,11 @@ gone, and what replaced it is now the cost: roughly 445 ms is the change channel
 delivering the insert event, and roughly 300 ms is the edge round trip out to the
 device and back.
 
-The change channel is therefore the next thing to attack. The enqueue side
+The change channel is therefore the next thing to attack: the enqueue side
 already calls this bridge, so it could push the command directly over the socket
-it already knows about, which would remove the insert-event leg entirely rather
-than make it faster. Until that happens, the honest description of this
-transport is "no polling", not "instant".
+it already knows about, removing the insert-event leg entirely rather than making
+it faster. Until that happens, the honest description of this transport is
+"no polling", not "instant".
 
 ### Broadcast (tried, measured, and removed)
 
@@ -130,32 +130,32 @@ Two event feeds were tried for insert-to-claim. postgres_changes measured
 anywhere between 200 and 1300 ms, because the subscriber websocket held by the
 edge isolate proved flaky — sometimes fast, sometimes silent. Faster signalling
 into an unreliable subscriber does not make anything reliable, so both feeds
-were removed. What replaced them is a 200 ms claim poll in the bridge:
-deterministic where both feeds were not, at four trivial indexed RPCs per
-second per connected device.
+were removed. A 200 ms claim poll in the bridge replaced them: deterministic
+where both feeds were not, at four trivial indexed RPCs per second per connected
+device.
 
 Measured after the change, direct inserts on a stable socket: insert-to-claim
 58, 146, 155, 205, 250, 256, 289, 297 ms. Claim-to-complete on a trivial ping
 runs another ~600 ms on the measured network, most of it the device round trip
 rather than anything the bridge does.
 
-The poll interval was then halved to 100 ms after pg_stat_statements showed the
-claim RPC executes in 0.30 ms server-side: ten trivial indexed RPCs per second
-per connected device cost nothing, and the poll phase averages half the
+Why the poll interval was halved to 100 ms: pg_stat_statements showed the
+claim RPC executes in 0.30 ms server-side, so ten trivial indexed RPCs per
+second per connected device cost nothing, and the poll phase averages half the
 interval. Measured after that: insert-to-claim 24, 43, 84, 146, 160 ms,
 completing in 486-810 ms.
 
-What remains is counted, not guessed. DB execution across all RPCs on the path
-is under 15 ms total with optimal index usage. The await wakes on a 5-50 ms
-ramp. What is left is round trips: five edge-to-database hops and two socket
+What remains is counted, not guessed: DB execution across all RPCs on the path
+is under 15 ms total with optimal index usage, and the await wakes on a 5-50 ms
+ramp. What is left is round trips — five edge-to-database hops and two socket
 traversals per command. Merging verify-plus-enqueue into the await call would
 save one hop (~100 ms) but touches authentication and pinned RPC surfaces for
 a tenth of a second, so it stays unwritten; the device round trip on a slow
-network is the single biggest term and only batching amortizes it.
+network is the biggest term and only batching amortizes it.
 
-An honest footnote on method: one series showed every claim landing 30 seconds
-late in a batch. That was not the transport — ten inserts issued inside one DO
-block share one transaction and stay invisible until it commits.
+One series showed every claim landing 30 seconds late in a batch. That was not
+the transport — ten inserts issued inside one DO block share one transaction
+and stay invisible until it commits.
 
 ## Endpoints
 
@@ -252,6 +252,7 @@ curl "https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-gateway/
 ## If this document disagrees with the gateway
 
 - Fetch `GET /openapi.json` and trust it.
-- Report the drift instead of trusting this file. `[tests/api-docs.test.mjs](../tests/api-docs.test.mjs)` pins only
+- Report the drift instead of trusting this file: `[tests/api-docs.test.mjs](../tests/api-docs.test.mjs)` pins only
   routed paths, error codes, and the base URL, so it cannot catch a changed field
   constraint or a changed response shape.
+int or a changed response shape.

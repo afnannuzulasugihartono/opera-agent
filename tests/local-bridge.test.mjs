@@ -26,8 +26,10 @@ import {
   closeBridge,
   closeBridgeTarget,
   connectBridgeTarget,
+  leaseTab,
   listBridgeTargets,
   openBridgeTarget,
+  releaseTab,
   waitForBridgeLink
 } from '../local/bridge.js';
 import { createCdpClient } from '../local/cdp.js';
@@ -45,7 +47,7 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 // The real client announces itself the moment the socket opens, and the server holds every command until it hears it — which is the whole point, since the device drops anything that arrives before it has been given a `ready`.
 // A device that waited for `ready` before saying hello would wait forever, and every command with it.
 
-function scriptedDevice(url, handle, { answerProof = true, deaf = false } = {}) {
+function scriptedDevice(url, handle, { answerProof = true, deaf = false, delayMs = 0 } = {}) {
   const seen = [];
   let socket = null;
   let open = false;
@@ -82,7 +84,11 @@ function scriptedDevice(url, handle, { answerProof = true, deaf = false } = {}) 
       Promise.resolve()
         .then(() => handle(command))
         .then(
-          (result) => socket.send(completionFrame(command.id, true, result)),
+          (result) => {
+            const frame = completionFrame(command.id, true, result);
+            if (delayMs > 0) setTimeout(() => socket.send(frame), delayMs);
+            else socket.send(frame);
+          },
           (error) => socket.send(completionFrame(command.id, false, null, {
             code: 'BRIDGE_COMMAND_FAILED',
             message: error?.message || String(error)
@@ -221,23 +227,54 @@ test('a call in flight when the device goes is named too', async () => {
   cdp.close();
 });
 
-test('a device that connects but answers nothing fails on the proof, not the command', async () => {
+// WHY THE WAIT IS THE COMMAND'S OWN BUDGET NOW.
+// The first shape rejected the call the moment its proof failed, and it lied: bringing a window forward costs seconds on the compositor, the proof behind it timed out, and a click that had not been sent was answered "no answer for the liveness proof".
+// So a proof that fails marks the link and waits for the command to stand on its own budget, and only then names the link instead of the clock.
+// A socket that is closed rather than frozen is still named in milliseconds, by the link check before any command is sent.
+
+test('a device that connects but answers nothing fails naming the link, at the command own budget', async () => {
   await startDevice(() => [], { deaf: true });
 
   const started = Date.now();
   await assert.rejects(() => listBridgeTargets({ timeoutMs: 30000 }), /liveness proof/);
   const waited = Date.now() - started;
-  assert.ok(waited < 12000, `the proof named it in ${waited} ms, not the 30000 ms command timeout`);
+  assert.ok(waited >= 29000, `the call waited out its own budget rather than being killed early: ${waited} ms`);
+  assert.ok(waited < 34000, `and it did not wait longer than the budget: ${waited} ms`);
 });
 
-test('a CDP call is proved before it is sent, like every other command', async () => {
-  const device = await startDevice(() => ({ value: 1 }));
+// WHY THE CLAIM CHANGED RATHER THAN DISAPPEARED.
+// The proof used to go out before every command, which doubled every primitive over the bridge: a settle's arm, each of its polls and its disarm each carried a ping.
+// The proof guards one failure - a socket still called open behind a device that is gone - and that failure is the slow case by definition, so the command now goes first and the proof rides behind it.
+// A device that answers is its own proof; a command that outlasts the proof delay is proved while it is in flight, and still lands.
+
+test('a fast call is proved by its own answer, and a slow one is proved behind it', async () => {
+  const fast = await startDevice(() => ({ value: 1 }));
+  const quick = createCdpClient(connectBridgeTarget(5));
+  await quick.send('Runtime.evaluate', { expression: '1' });
+  await quick.send('Runtime.evaluate', { expression: '2' });
+  assert.equal(fast.pings(), 0, 'a device that answers is its own proof; no ping rides along');
+  quick.close();
+
+  const slow = await startDevice(() => ({ value: 2 }), { delayMs: 500 });
+  const patient = createCdpClient(connectBridgeTarget(6));
+  const answer = await patient.send('Runtime.evaluate', { expression: '3' });
+  assert.deepEqual(answer, { value: 2 }, 'the slow call still lands');
+  assert.ok(slow.pings() >= 1, 'and it was proved while it was in flight, because it was already slow');
+  patient.close();
+});
+
+// WHY A FAILED PROOF MAY NOT KILL A LIVE COMMAND.
+// Driven live, the first shape rejected the call the moment its proof failed, and it lied: bringing a window forward costs seconds on the compositor, the proof behind it timed out, and a click that had not been sent was answered "no answer for the liveness proof".
+// So the proof collects its answer and waits: a command that lands is answered with its own result, and the proof's verdict only names the link when the command itself never arrives.
+
+test('a command that lands after its proof failed is still answered with its result', async () => {
+  const device = await startDevice(() => ({ value: 41 }), { answerProof: false, delayMs: 2600 });
 
   const cdp = createCdpClient(connectBridgeTarget(5));
-  await cdp.send('Runtime.evaluate', { expression: '1' });
+  const answer = await cdp.send('Runtime.evaluate', { expression: '1' });
 
-  assert.equal(device.seen[0].method, 'ping', 'the liveness proof goes first');
-  assert.equal(device.seen[1].params.method, 'Runtime.evaluate');
+  assert.deepEqual(answer, { value: 41 }, 'the slow command landed, so the failed proof must not have killed it');
+  assert.ok(device.pings() >= 1, 'and the proof did go out behind it');
   cdp.close();
 });
 
@@ -324,21 +361,22 @@ test('a port held by something that is not a bridge is named, and freeing it hea
 // WHY the trust is observed through pings, not time.
 // A clock assertion would be flaky under load; the ping count is exact: one proof costs exactly one ping against a healthy device, and a trusted call costs none.
 
-test('a trusted window skips the proof ping, and zero trust proves every call', async () => {
-  const device = await startDevice(() => [{ id: 7, url: 'https://x/', title: 'X' }]);
+test('a trusted window skips even the lazy proof', async () => {
+  const device = await startDevice(() => [{ id: 7, url: 'https://x/', title: 'X' }], { delayMs: 400 });
   const previous = process.env.OPERA_BRIDGE_TRUST_MS;
   try {
     delete process.env.OPERA_BRIDGE_TRUST_MS;
     await listBridgeTargets();
+    assert.equal(device.pings(), 1, 'without trust a slow call proves behind the command');
+
+    process.env.OPERA_BRIDGE_TRUST_MS = '3000';
     await listBridgeTargets();
-    assert.equal(device.pings(), 2, 'without trust every call proves');
+    assert.equal(device.pings(), 1, 'a trusted call sends no proof at all');
 
     process.env.OPERA_BRIDGE_TRUST_MS = '50';
-    await sleep(80);
+    await sleep(120);
     await listBridgeTargets();
-    assert.equal(device.pings(), 3, 'an expired window proves again');
-    await listBridgeTargets();
-    assert.equal(device.pings(), 3, 'a trusted call sends no ping');
+    assert.equal(device.pings(), 2, 'an expired window proves again');
   } finally {
     if (previous === undefined) delete process.env.OPERA_BRIDGE_TRUST_MS;
     else process.env.OPERA_BRIDGE_TRUST_MS = previous;
@@ -409,5 +447,79 @@ test('a driver that loses the port adopts the bridge that won it', async () => {
     await closeBridge();
     await owner.close();
     process.env.OPERA_BRIDGE_PORT = '0';
+  }
+});
+
+// WHY THE CLAIM IS PROVEN OVER THE REAL DOOR.
+// The table's rules are proven in tests/local-leases.test.mjs and the enforcement in tests/local-mcp-server.test.mjs; what is left is the one thing both of those fake, which is that two driver processes read one table.
+// So the door is driven over HTTP here, the same way a second driver reaches it, and the two exported calls are the ones a driver actually makes.
+
+test('the exported lease calls read the same table the door serves', async () => {
+  process.env.OPERA_BRIDGE_PORT = '0';
+  try {
+    const granted = await leaseTab('12', 'agent-a', 5000);
+    assert.equal(granted.granted, true, 'a free tab is granted to the agent that asked');
+    assert.equal(granted.holder.owner, 'agent-a');
+
+    const refused = await leaseTab('12', 'agent-b');
+    assert.equal(refused.granted, false, 'a second agent is refused');
+    assert.equal(refused.holder.owner, 'agent-a', 'and the refusal names the holder');
+
+    const renewed = await leaseTab('12', 'agent-a');
+    assert.equal(renewed.granted, true, 'the holder asks again and keeps its tab');
+
+    const evicted = await releaseTab('12', 'agent-b');
+    assert.equal(evicted.granted, false, 'another agent cannot release it');
+    assert.equal((await leaseTab('12', 'agent-b')).granted, false, 'and the claim stands');
+
+    const released = await releaseTab('12', 'agent-a');
+    assert.equal(released.granted, true, 'the holder releases');
+    assert.equal((await leaseTab('12', 'agent-b')).granted, true, 'and the tab is free for the next agent');
+  } finally {
+    await closeBridge();
+    process.env.OPERA_BRIDGE_PORT = '0';
+  }
+});
+
+test('the lease door grants a free tab, refuses a held one, and frees it on release', async () => {
+  const owner = createBridgeServer({ port: 0 });
+  const { port } = await owner.listen();
+  const ask = async (body) => {
+    const response = await fetch(`http://127.0.0.1:${port}/lease`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    return response.json();
+  };
+  try {
+    const first = await ask({ action: 'claim', tabId: '12', owner: 'agent-a', ttlMs: 5000 });
+    assert.equal(first.ok, true);
+    assert.equal(first.granted, true, 'a free tab is granted to the agent that asked');
+    assert.equal(first.holder.owner, 'agent-a');
+
+    const second = await ask({ action: 'claim', tabId: '12', owner: 'agent-b' });
+    assert.equal(second.granted, false, 'a held tab is refused');
+    assert.equal(second.holder.owner, 'agent-a', 'and the refusal names the holder');
+
+    const again = await ask({ action: 'claim', tabId: '12', owner: 'agent-a' });
+    assert.equal(again.granted, true, 'the holder renews its own claim');
+
+    const foreign = await ask({ action: 'release', tabId: '12', owner: 'agent-b' });
+    assert.equal(foreign.granted, false, 'another agent cannot evict the holder');
+    assert.equal((await ask({ action: 'claim', tabId: '12', owner: 'agent-b' })).granted, false, 'and the claim stands');
+
+    const released = await ask({ action: 'release', tabId: '12', owner: 'agent-a' });
+    assert.equal(released.granted, true, 'the holder releases');
+    assert.equal((await ask({ action: 'claim', tabId: '12', owner: 'agent-b' })).granted, true, 'and the tab is free');
+
+    const refused = await fetch(`http://127.0.0.1:${port}/lease`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ action: 'claim' })
+    });
+    assert.equal(refused.status, 400, 'a claim with no tab and no owner is a malformed ask');
+  } finally {
+    await owner.close();
   }
 });

@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-13 UTC+7.
+// @last-edited: 2026-10-28 UTC+7.
 // @title: sessions — one cached driver per tab, and the tab the agent touches comes forward.
 // @state: keyed cache, adapter shape, front-on-switch.
 // @dependencies: none.
@@ -46,6 +46,12 @@ import { createFocusGuard } from './focus-guard.js';
 // Anything the click measured now travels with the row it was aimed at.
 
 export function asDriver(session) {
+  // WHY THE DRIVER REPORTS ITS OWN SOCKET.
+  // A tab that went away leaves the cached session holding a closed CDP client, and a call on it fails at the transport instead of naming the tab.
+  // Reading the client's own closed flag costs nothing, so the caller can forget a dead session before it pays that error.
+
+  const alive = () => session.cdp?.closed !== true;
+
   // WHY THE GUARD IS PER SESSION NOW.
   // The machine read used to be one OS shell for the whole process.
   // A CDP session can answer the same question in under a millisecond, so the guard is built over this session's window methods and the OS shell stays only as the fallback inside them.
@@ -104,7 +110,8 @@ export function asDriver(session) {
     download: (options) => session.download(options),
     capture: (options) => session.capture(options),
     front: () => session.front(),
-    close: () => session.close()
+    close: () => session.close(),
+    alive
   };
 }
 

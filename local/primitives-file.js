@@ -1,20 +1,15 @@
-// @last-edited: 2026-10-21 UTC+7.
+// @last-edited: 2026-10-28 UTC+7.
 // @title: primitives-file — the verbs that move a file: upload, drop, and download.
 // @state: the file chooser, the dropped file, and the download that proves itself on disk.
 // @dependencies: node:buffer, ./page-expressions.js.
 
-// WHY THIS FILE EXISTS
-
+// WHY THIS FILE EXISTS.
 // A file is the one thing a browser drive produces that somebody else will open, so the rules around it are stricter than the rules around a click.
-// A file that is still being written is not a file.
-// A file that landed under the portal's own name is not the name the bookkeeper needs.
-// A file that nobody can point at on disk is not proof.
-
-// These four verbs share that weight and nothing else: they speak to the file system, to the file chooser and to the download folder, and they share no state with the page verbs except the driver itself.
-// Keeping them here means the page verbs stay about the page, and a reader who wants to know what happens to a file finds it in one place.
+// A file that is still being written is not a file, one that landed under the portal's own name is not the name the bookkeeper needs, and one nobody can point at on disk is not proof.
+// These four verbs share that weight and nothing else, so the page verbs stay about the page and a reader who wants to know what happens to a file finds it in one place.
 
 // WHY THE VERBS TAKE THE DRIVER AS AN ARGUMENT.
-// A file verb needs the rest of the driver - to resolve a row, to click a handle, to read the page - and the page verbs need the file verbs' expressions.
+// A file verb needs the rest of the driver, to resolve a row, to click a handle, to read the page, and the page verbs need the file verbs' expressions.
 // Passing the driver in keeps one object per driver and no import cycle, and the names inside stay exactly the names they had.
 
 import { Buffer } from 'node:buffer';
@@ -33,7 +28,7 @@ import {
 export function filePrimitives(primitives, { cdp, sleep, fs, os, path, readState }) {
 
   // WHY THE FILE IS PREPARED IN ONE PLACE.
-  // Upload and drop take the same two inputs - a base64 payload or a path - and must answer the same three questions: where the bytes are, how many there are, and how to remove the temporary copy.
+  // Upload and drop take the same two inputs, a base64 payload or a path, and must answer the same three questions: where the bytes are, how many there are, and how to remove the temporary copy.
   // Two copies of that answer drift the moment one gains a guard the other lacks, so it lives here.
 
   const materialize = ({ data, filePath, filename, verb, prefix }) => {
@@ -72,9 +67,8 @@ export function filePrimitives(primitives, { cdp, sleep, fs, os, path, readState
 
       // WHY THE FINDER ASKS CDP BEFORE ASKING THE PAGE, AND SWEEPS THE FRAMES.
       // A page script can only walk shadow roots it is allowed to see, and Google Docs keeps its image input in a closed one inside its picker frame: the script reported no input while the input was demonstrably there.
-      // `DOM.querySelectorAll` with `pierce` answers for a whole document, closed roots included, and returns only the matches — the entire pierced tree fetched at once timed out live on a heavy page.
-      // `pierce` does not cross into a child frame, though, so each frame is asked for its owner, its owner's content document, and then the same pierced query.
-      // The page script stays as the last road: it is the only one that can follow a frame the browser will not describe.
+      // DOM.querySelectorAll with pierce answers for a whole document, closed roots included, and returns only the matches; the entire pierced tree fetched at once timed out live on a heavy page.
+      // Pierce does not cross into a child frame, so each frame is asked for its owner, its owner's content document, then the same pierced query, and the page script stays as the last road because it is the only one that can follow a frame the browser will not describe.
 
       const FILE_INPUT_SELECTOR = 'input[type=file]';
 
@@ -139,6 +133,10 @@ export function filePrimitives(primitives, { cdp, sleep, fs, os, path, readState
       }
     },
 
+    // WHY DRAGS ARE INTERCEPTED FIRST AND RELEASED ON EVERY WAY OUT.
+    // Chrome only accepts a dispatched drag while interception is on, and a page left in that state stops believing real ones, so the pointer would do nothing on this tab until it was released, which is worse than the problem being solved.
+    // The release is in the finally, where a failure still reaches.
+
     async dropFile({ x, y, filename, data = null, path: filePath = null } = {}) {
       if (!Number.isFinite(Number(x)) || !Number.isFinite(Number(y))) {
         throw new Error('drop_file needs x and y in the viewport.');
@@ -154,9 +152,6 @@ export function filePrimitives(primitives, { cdp, sleep, fs, os, path, readState
         dragOperationsMask: 1
       };
 
-      // WHY DRAGS ARE INTERCEPTED FIRST AND RELEASED ON EVERY WAY OUT.
-      // Chrome only accepts a dispatched drag while interception is on, and a page left in that state stops believing real ones — the pointer would do nothing on this tab until it was released, which is worse than the problem being solved.
-      // So the release is in the finally, where a failure still reaches.
       try {
         await cdp.send('Page.bringToFront');
         await sleep(DROP_FRONT_SETTLE_MS);
@@ -179,7 +174,7 @@ export function filePrimitives(primitives, { cdp, sleep, fs, os, path, readState
     },
 
     // WHY THE FILE ON DISK IS THE PROOF, NOT THE PROTOCOL EVENT.
-    // The bridge road forwards commands and not events, so a listener here would fire on a debugging port and stay silent on the signed-in profile - the one road that matters.
+    // The bridge road forwards commands and not events, so a listener here would fire on a debugging port and stay silent on the signed-in profile, the one road that matters.
     // The directory is therefore read until a new file stops growing, which is true on every road and survives a browser that lies about finishing.
 
     // WHY THE DOWNLOAD BEHAVIOR IS ARMED BEFORE THE CLICK AND RESET AFTER IT.
@@ -187,14 +182,14 @@ export function filePrimitives(primitives, { cdp, sleep, fs, os, path, readState
     // The reset is best effort, and it matters: the behavior is browser-wide, so leaving it armed would silently swallow every later download the person makes into this folder.
 
     // WHY A PARTIAL FILE IS NOT A RESULT.
-    // Chrome writes `name.pdf.crdownload` while it works and renames on completion, so a directory scan that accepted either would report a truncated statement as delivered - the exact failure the proof layer exists to prevent.
+    // Chrome writes name.pdf.crdownload while it works and renames on completion, so a directory scan that accepted either would report a truncated statement as delivered, the exact failure the proof layer exists to prevent.
 
     // WHY THE NEW NAME IS A NAME AND NOT A PATH.
-    // A caller that can name the folder already has dir; letting saveAs carry a path would be a second, quieter way to write outside it, and a file name with a slash in it fails at the operating system with a message that says nothing about the rule that was broken.
+    // A caller that can name the folder already has dir; letting saveAs carry a path would be a second, quieter way to write outside it, and a file name with a slash fails at the operating system with a message that says nothing about the rule that was broken.
 
     // WHY THE FILE IS RENAMED ONLY AFTER IT STOPS GROWING.
     // Renaming a download mid-write would leave Chrome writing to a path that no longer exists, so the new name is given at the only moment the file is whole.
-    // The old file goes first because Windows refuses a rename onto an existing file, and pulling the same client-month twice is the normal case - a re-download is a deliberate replace.
+    // The old file goes first because Windows refuses a rename onto an existing file, and pulling the same client-month twice is the normal case, a re-download being a deliberate replace.
     async download({
       handle = null, role = null, name = null, x = null, y = null,
       dir = null, saveAs = null, timeoutMs = 30000, settleMs = 250, intervalMs = 100

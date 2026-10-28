@@ -1,10 +1,11 @@
-// @last-edited: 2026-10-10 UTC+7.
+// @last-edited: 2026-10-28 UTC+7.
 // @title: gates — verify or deliberately re-pin the acceptance surface.
 // @state: reads gates.lock, compares git-blob SHA1s, reports drift; refresh never runs from the gate.
 // @dependencies: node:fs, node:path, node:crypto, node:url.
 
-// WHY this is its own program and not a block inside scripts/check.mjs: the thing that verifies the gates must not be editable by editing the gate it verifies.
-// scripts/check.mjs is itself pinned in gates.lock, so if an agent weakened the rules there, this file would still notice — as long as this file is not touched in the same commit, which is Layer 2's job (.github/CODEOWNERS).
+// WHY THIS IS ITS OWN PROGRAM AND NOT A BLOCK INSIDE scripts/check.mjs.
+// The thing that verifies the gates must not be editable by editing the gate it verifies.
+// scripts/check.mjs is itself pinned in gates.lock, so a weakened rule there is still noticed — as long as this file is not touched in the same commit, which is Layer 2's job (.github/CODEOWNERS).
 
 import fs from 'node:fs';
 import path from 'node:path';

@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-21 UTC+7.
+// @last-edited: 2026-10-28 UTC+7.
 // @title: statements - one client-month, one file, one line of proof.
 // @state: the card names the file before the drive starts; the manifest refuses a file that is not whole.
 // @dependencies: node:fs, node:os, node:path.
@@ -10,7 +10,7 @@
 // WHY THIS IS A CARD AND NOT A SCRIPT.
 // A script that drives a bank portal would have to encode that portal: which link says "Unduh", which frame holds the table, which dialog asks for a month.
 // That knowledge rots, and it is exactly the per-site code the extension is forbidden to carry.
-// So this module produces the part that does not depend on the site - the name, the folder, the period, what must be true before the file counts - and the agent does the part that does: look, decide, click, verify.
+// So this module produces the part that does not depend on the site, the name, the folder, the period and what must be true before the file counts, and the agent does the part that does: look, decide, click, verify.
 
 import fs from 'node:fs';
 import os from 'node:os';
@@ -20,7 +20,7 @@ const PERIOD_SHAPE = /^\d{4}-(0[1-9]|1[0-2])$/;
 const EXT_SHAPE = /^[a-z0-9]{2,5}$/;
 
 // WHY THE SORT IS EXPLICIT.
-// The periods and clients are text, and the default comparison is text too, but an unstated one reads like an accident and would sort a future numeric field as text.
+// The periods and clients are text and the default comparison is text too, but an unstated one reads like an accident and would sort a future numeric field as text.
 // So the comparison is written down, and the order is intended rather than inherited.
 
 const byText = (a, b) => (a < b ? -1 : a > b ? 1 : 0);

@@ -25,6 +25,9 @@ These ride with every job. Read them before acting, not once per session.
 - **Cover every site, Google first.** Google Sheets/Excel, Docs, Maps, and YouTube hold the lead; the rest teach the new functions. Do push past one happy path per site. The site does not ever have to be slow about it: grow server-side primitives, not per-site gadgets, so round trips stay short. What the extension may do: [`extension/lib/protocol.js`](extension/lib/protocol.js) and [`docs/api.md`](docs/api.md).
 - **Be a companion with an AI behind it.** The person talks, the assistant drives, the work lands as a real artefact. Do build it as server-side workflows over the generic primitives in [`docs/api.md`](docs/api.md). The extension may grow as rich as task-based work needs — including local real-time loops — but every primitive in it stays generic: no per-site code and no free `eval` in the extension, ever.
 - **Keep the tree honest.** A dead file, a dead export, a stale scaffold, a shortcut standing where the real code should be — all of it is trash that compounds. Do sweep for it every session and delete what you find.
+- **Work in your own worktree, never in the shared checkout.** Two agents in one tree take turns overwriting each other and the overwrite is silent. Make yours with `node scripts/agent-worktree.mjs create <name> [base] [topic]`; `list` shows them all and `remove` archives the branch before it deletes it.
+- **Claim the tab you drive.** The everyday browser is one shared profile, so a tool call on a tab another agent holds is refused with the claim named: work on separate tabs, and `list_tabs` says which are open. A claim lapses after a minute of silence and `close_tab` releases it.
+- **Do one at a time, from the main checkout, with the others told first:** migrations, edge function deploys, and the signed CRX — a worktree cannot isolate them. See [`docs/concurrent-agents.md`](docs/concurrent-agents.md).
 
 ## Priority order
 

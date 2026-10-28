@@ -1,11 +1,12 @@
-// @last-edited: 2026-10-04 18:25 UTC+7.
+// @last-edited: 2026-10-28 UTC+7.
 // @title: agent-log — the no-export logger that classic scripts and the worker share.
 // @state: level-aware console sink published on globalThis; deliberately has no export so manifest content_scripts can load it as a classic script.
 // @dependencies: none.
 
 // Ring buffer of the last 200 log entries, published on globalThis as OperaAgentLog for the popup's log view.
 
-// WHY a classic script and not a module: the manifest loads this file into both the module service worker and a classic content script, and a classic script cannot import.
+// WHY A CLASSIC SCRIPT AND NOT A MODULE.
+// The manifest loads this file into both the module service worker and a classic content script, and a classic script cannot import.
 // Hence the IIFE and the globalThis publish, and hence the guard below.
 
 (() => {

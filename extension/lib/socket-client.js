@@ -1,43 +1,43 @@
-// @last-edited: 2026-10-21 UTC+7.
+// @last-edited: 2026-10-28 UTC+7.
 // @title: socket-client — one persistent connection to the bridge, reconnected on its own, never polled.
 // @state: the handshake gate, the ordered dispatch, the backoff, the fatal close, and the stored-completion resend.
 // @dependencies: ./socket-protocol.js.
 
-// WHY THIS FILE EXISTS
+// @last-edited: 2026-10-28 UTC+7.
+// @title: socket-client — one persistent connection to the bridge, reconnected on its own, never polled.
+// @state: the handshake gate, the ordered dispatch, the backoff, the fatal close, and the stored-completion resend.
+// @dependencies: ./socket-protocol.js.
 
-// The device used to open an HTTP request every 500 ms to ask whether work existed, and another to report the result.
-// That is two round trips per action and a blocking wait inside each one.
-// Measured on this machine, a six step burst spent 238 ms in the browser and 496 ms in transport.
+// WHY ONE SOCKET INSTEAD OF TWO ROUND TRIPS.
+// Measured on this machine, a six step burst spent 238 ms in the browser and 496 ms in transport across two HTTP requests per action.
+// One socket carries work down and completions back up the same connection, so nothing on the hot path asks a question.
 
-// This holds one socket open instead.
-// The bridge pushes work down it and the device pushes completions back up the same connection, so nothing on the hot path asks a question and nothing waits for an answer it did not request.
-
-// WHY there is no polling underneath.
-// A fallback that quietly resumes polling would restore the exact latency this file exists to remove, and it would do so invisibly: the device would look healthy while running two hundred times slower than it should.
+// WHY THERE IS NO POLLING UNDERNEATH.
+// A fallback that quietly resumed polling would restore the latency this file exists to remove, and it would do so invisibly: the device looks healthy while running two hundred times slower than it should.
 // A transport that cannot connect is a transport that is down, and saying so is worth more than pretending.
 
-// WHY backoff is capped.
+// WHY THE BACKOFF IS CAPPED.
 // A device that reconnects in a tight loop against a bridge that is down turns one outage into two: the outage, and the traffic meant to survive it.
 // The cap is what keeps the second one small.
 
-// WHY send is gated on ready.
-// A completion that was stored and never confirmed has to be able to go out on a reconnected socket, but it must not be written into one whose handshake the bridge has not answered yet.
+// WHY SEND IS GATED ON READY.
+// A stored completion has to be able to go out on a reconnected socket, but it must not be written into one whose handshake the bridge has not answered.
 
-// WHY work runs one command at a time.
+// WHY WORK RUNS ONE COMMAND AT A TIME.
 // An async message handler starts the next command the moment the previous one awaits anything, and two browser actions then fight over the same tab with nothing left to report either result.
 // The old poll loop was sequential by construction; push transport has to be made so.
 
-// WHY the queue survives a dropped socket.
+// WHY THE QUEUE SURVIVES A DROPPED SOCKET.
 // A command already taken off the wire was taken off on purpose; the device owes a completion for it, and that completion still fits on the next connection.
 
-// WHY sending is guarded.
+// WHY SENDING IS GUARDED.
 // A socket can close between the moment a completion is built and the moment it is written, and an unhandled throw inside a drain would reject a promise nobody awaits.
 // The frame is simply lost, which is exactly what the stored-completion resend exists to cover.
 
-// WHY an error frame is reported rather than dropped.
+// WHY AN ERROR FRAME IS REPORTED RATHER THAN DROPPED.
 // The bridge answers a frame it could not handle with an error and nothing else, so ignoring it means a device whose handshake or whose completion was refused looks exactly like one that is working.
 
-// WHY the drain loop does not test a stop flag.
+// WHY THE DRAIN LOOP DOES NOT TEST A STOP FLAG.
 // stop() empties the queue, which ends a drain already in flight; reading a second flag would only obscure why the loop stopped.
 
 import {
@@ -55,32 +55,25 @@ const BASE_RETRY_MS = 500;
 const MAX_RETRY_MS = 30000;
 
 // WHY THE BACKOFF IS RESET WHEN A SOCKET OPENS, AND NOT ONLY ON THE HANDSHAKE.
-// Measured on a flaky connection: the wait doubled 500ms, 1s, 2s, 4s... to the 30s cap and only reset on a full handshake, so a network that came back cost up to thirty seconds to notice.
-// An open socket proves the network is reachable, which is the only thing the backoff is guessing at, so the wait starts over from there.
-// A socket that never opened proves nothing, so the wait keeps growing - which is what stops a downed bridge being hammered.
-// The two are tested separately, because they are two different facts about the same number.
+// Measured on a flaky connection: the wait doubled to the cap and only reset on a full handshake, so a network that came back cost up to thirty seconds to notice.
+// An open socket proves the network is reachable, which is the only thing the backoff is guessing at; a socket that never opened proves nothing, so the wait keeps growing, which is what stops a downed bridge being hammered.
 
 // WHY A CONNECTING SOCKET IS DETACHED RATHER THAN CLOSED.
-// Measured in the console: closing a socket whose readyState is still 0 aborts the TCP handshake Chrome has already begun, before the WebSocket handshake completes, and Chrome reports it as "WebSocket is closed before the connection is established".
-// The abort is not free of consequence either way, so the handlers are detached instead: a detached socket can neither deliver a command nor schedule the retry its close would have scheduled.
-// That is safe here and nowhere else, because the bridge pushes nothing before it has read a hello this socket will never send - verified in bridge-server, which answers false for every push while handshaken is false.
-// A socket that never opened is therefore inert rather than dangerous, and no console error is bought for it.
+// Measured in the console: closing a socket whose readyState is still 0 aborts the TCP handshake Chrome has already begun and is reported as "WebSocket is closed before the connection is established".
+// The handlers are detached instead, so the socket can neither deliver a command nor schedule the retry its close would have scheduled, which is safe here because the bridge pushes nothing before it has read a hello this socket will never send.
 
-// WHY the mapping from socket events to connection state lives here as a pure function instead of inline in the worker.
+// WHY THE CONNECTION PATCH IS A PURE FUNCTION AND NOT INLINE IN THE WORKER.
 // It used to be an object literal inside the onState callback, where a bare `retryMs` with no binding threw a ReferenceError the first time the callback fired.
-// That killed start() before the socket was ever opened, and because the client was already assigned, nothing ever retried: the device sat at "connecting" with no socket and no error, which is exactly what the integration test reported.
-// A function with locks cannot hide a crash the same way.
+// That killed start() before the socket was ever opened and, because the client was already assigned, nothing ever retried: the device sat at "connecting" with no socket and no error.
 
-// WHY an error frame reports only its message.
+// WHY AN ERROR FRAME REPORTS ONLY ITS MESSAGE.
 // It arrives on a live socket, so it says nothing about the connection and must not stamp a fresh lastConnectedAt or clear an unrelated error.
-// The previous inline version did both by accident.
 
-// WHY stale becomes reconnecting.
+// WHY STALE BECOMES RECONNECTING.
 // The watchdog opens a new socket in the same breath, so by the time this patch is read the device is reconnecting, and the popup never has to learn a status that lasts less than a millisecond.
 
-// WHY connecting carries no lastError key at all.
+// WHY CONNECTING CARRIES NO LAST ERROR KEY AT ALL.
 // A fresh attempt does not erase the reason the previous one ended, and merging a null over it did exactly that: observed live, a device cycling ready to connecting every minute with no error anywhere, which made the cycle itself undiagnosable.
-// Only a connection clears the slate.
 
 export function connectionPatch(event, stamp) {
   const status = event?.status;
@@ -118,40 +111,36 @@ export function connectionPatch(event, stamp) {
   };
 }
 
-// WHY the device keeps its own deadline.
-// The bridge pings every twenty seconds, so silence past a bound means the peer is gone even though nothing said so.
-// The case that makes this necessary is a zombie connection: observed live, a device reported ready for nineteen minutes on a socket whose far end had been replaced, because the TCP connection was never closed, no ping ever arrived, and no close ever came.
-// Nothing on that device could tell the difference between a healthy socket and one that would never deliver another command.
+// WHY THE DEVICE KEEPS ITS OWN DEADLINE.
+// Observed live: a device reported ready for nineteen minutes on a socket whose far end had been replaced, because the TCP connection was never closed, no ping ever arrived and no close ever came, and nothing could tell a healthy socket from one that would never deliver another command.
 
-// WHY three intervals.
+// WHY THREE INTERVALS.
 // One interval could be a delayed frame, two could be a busy network, and a false teardown costs a reconnect.
 // Three missing pings is past any delay worth waiting through.
 
-// WHY a close is only ever sent on an open or connecting socket.
-// Closing one the peer already started closing answers nothing, and Chromium reports "Close received after close" on the extension errors page even though the call itself is caught, so every user sees it.
-// Observed live.
+// WHY A CLOSE IS ONLY SENT ON AN OPEN OR CONNECTING SOCKET.
+// Chromium reports "Close received after close" on the extension errors page even though the call itself is caught, so every user sees it; observed live.
 // A socket that is already closing needs no close from us; it only needs to be forgotten.
 
-// WHY the watchdog has its own timer.
+// WHY THE WATCHDOG HAS ITS OWN TIMER.
 // It is a liveness check, not a retry, and it runs for the whole life of the client rather than between attempts.
-// Sharing one timer with the backoff would make every test that drives the backoff also drive the watchdog, which is exactly the kind of coupling that turns a timing change into a mystery failure somewhere else.
+// Sharing one timer with the backoff would make every test that drives the backoff also drive the watchdog, which is the coupling that turns a timing change into a mystery failure somewhere else.
 
 const SILENCE_LIMIT_MS = 60000;
 const WATCHDOG_MS = 10000;
 
-// WHY the socket is recycled before the platform kills it.
-// Edge isolates have a hard wall clock limit — about 150 seconds on this project — and waitUntil only prevents early retirement, never extends it.
-// Observed live as code 1006 at a metronomic 151 seconds after waitUntil fixed the 76-second EarlyDrop deaths.
-// A recycle is the same reconnect the client already does, except it happens on our schedule: only when no command is running, so nothing is ever interrupted, and early enough that the wall clock never fires first.
+// WHY THE SOCKET IS RECYCLED BEFORE THE PLATFORM KILLS IT.
+// Edge isolates have a hard wall clock limit and waitUntil only prevents early retirement, never extends it.
+// Observed live as code 1006 at a metronomic 151 seconds after waitUntil fixed the EarlyDrop deaths, so a recycle is the same reconnect the client already does, on our schedule: only when no command is running, and early enough that the wall clock never fires first.
 
-// WHY 120 seconds.
+// WHY 120 SECONDS.
 // Thirty seconds of margin under the observed limit, and short enough that a command landing in the few seconds of reconnect waits only for the drain that picks it up rather than for a surprise.
 
 const RECYCLE_AGE_MS = 120000;
 
 // WHY A BOUND ON EXECUTION.
 // The drain runs one command at a time, so a CDP call that never settled held the queue for good and no completion ever went out: the caller waited its whole budget and learned nothing.
-// The bound is past any honest browser call, short of the command TTL the server applies, and a function so a test can shorten it instead of waiting a minute.
+// The bound is past any honest browser call and short of the command TTL the server applies, and it is a function so a test can shorten it instead of waiting a minute.
 
 const DEFAULT_EXECUTE_TIMEOUT_MS = 45000;
 

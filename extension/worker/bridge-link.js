@@ -1,32 +1,32 @@
-// @last-edited: 2026-10-14 UTC+7.
+// @last-edited: 2026-10-28 UTC+7.
 // @title: bridge-link — the extension end of the localhost bridge: one socket, pushed.
 // @state: one socket to the local server, CDP routed by tab, one command at a time, traceable.
 // @dependencies: socket-client, capture, debugger-session, log.
 
-// WHY THIS FILE EXISTS
+// @last-edited: 2026-10-28 UTC+7.
+// @title: bridge-link — the extension end of the localhost bridge: one socket, pushed.
+// @state: one socket to the local server, CDP routed by tab, one command at a time, traceable.
+// @dependencies: socket-client, capture, debugger-session, log.
 
-// Chrome refuses a debugging port on the Default profile, and the relay road to this extension costs ~2 s a call through Singapore.
-// The extension can, however, reach this machine over loopback, and a CDP frame fits in one JSON body: method in, result out, debugger calls between them.
-// The local driver speaks identical CDP over that conversation, so the whole MCP surface runs on the everyday profile at localhost milliseconds with no flags and no queue.
+// WHY THIS FILE EXISTS.
+// Chrome refuses a debugging port on the Default profile, and the relay road to this extension costs a Singapore round trip per call.
+// The extension can reach this machine over loopback, where a CDP frame fits in one JSON body, so the whole MCP surface runs on the everyday profile with no flags and no queue.
 
 // WHY A SOCKET NOW, AFTER A HELD POLL.
-// This road was a WebSocket first, and it read as OPEN while it heard nothing; the diagnosis was that this Chrome drops inbound loopback frames, and the replacement was a twenty-second held fetch.
-// Both conclusions were wrong, and the poll it bought cost more than it saved: every command paid a fresh request and a held connection, a hung one wedged the queue for a hundred and forty seconds, and commands went missing without a word.
-// The real rule is narrower and better known: Chrome ends an idle service worker after about thirty seconds and an inbound frame does not wake it.
-// So the socket carries a heartbeat - a frame that asks nothing - and the worker never goes idle in the first place.
-// That heartbeat is not new: the cloud socket client already proved it works on this very worker.
+// This road was a WebSocket first that read as OPEN while it heard nothing, and the held poll that replaced it cost more than it saved: every command paid a fresh request, a hung one wedged the queue, and commands went missing without a word.
+// The real rule is narrower: Chrome ends an idle service worker and an inbound frame does not wake it, so the socket carries a heartbeat and the worker never goes idle.
 
 // WHY IT IS THE SAME CLIENT AS THE CLOUD ROAD.
 // One drain, one queue, one failure story, for a device on loopback and a device on a relay.
 // Two roads meant two sets of wedges, and the second one was always the stranger.
 
-// WHY one command at a time.
+// WHY ONE COMMAND AT A TIME.
 // Two browser actions racing over one tab leave the page in neither of the two states anybody asked for.
 // Commands run in the order they arrived and the socket stays open meanwhile, so a slow command costs the next one its place in line and nothing else.
 
-// WHY the debugger attach is held per tab.
+// WHY THE DEBUGGER ATTACH IS HELD PER TAB.
 // Attaching per message would put a hundred milliseconds on every CDP call; holding it makes the second call as cheap as the twentieth.
-// The shared-session machinery heals both ways this goes stale - a user opening DevTools, another road releasing the tab - and the infobar Chrome pins on an attached tab doubles as the agent-is-here sign.
+// The shared-session machinery heals both ways this goes stale, and the infobar Chrome pins on an attached tab doubles as the agent-is-here sign.
 
 // WHAT IT DELIBERATELY DOES NOT DO.
 // No CDP events ride back: nothing on the local side subscribes to any, so forwarding them would be latency for nobody.
@@ -39,15 +39,15 @@ import { releaseDebuggerSession, releaseIdleDebuggerSessions } from '../lib/debu
 import { withDebugger } from './capture.js';
 
 // WHY THE PORT IS DISCOVERED AND NOT ASSUMED.
-// Measured: a stale extension dialled ws://127.0.0.1:19451 while the local server listened on 9451, the connection was refused, and every command silently took the cloud relay instead - 268 to 797 ms a call where loopback answers in 8 to 13 ms. The port is the one thing a stale build gets wrong, and getting it wrong costs twenty to fifty times the latency with nothing in the answer that says so.
-// So the candidates are probed, the one that answers is used, and the state names the port it found - a reader can see which road is live rather than inferring it from how slow everything is.
+// Measured: a stale extension dialled the wrong port, every command silently took the cloud relay instead, and the answer said nothing about it.
+// So the candidates are probed, the one that answers is used, and the state names the port it found, so a reader can see which road is live rather than inferring it from how slow everything is.
 
 const CONFIGURED_WS = globalThis.OPERA_BRIDGE_WS || 'ws://127.0.0.1:9451';
 const CANDIDATE_PORTS = [9451, 19451, 9333, 9222];
 
 // WHY THE PROBE IS AN HTTP FETCH AND NOT A SOCKET.
 // Opening and closing a WebSocket against the real bridge disturbs it: measured, the server saw the device leave and dropped the command in flight.
-// A fetch to the same port proves something is listening without joining the conversation - the bridge answers 404 to a plain GET, which is exactly the fact being looked for.
+// A fetch to the same port proves something is listening without joining the conversation, because the bridge answers 404 to a plain GET, which is exactly the fact being looked for.
 
 export const probePort = async (port) => {
   try {
@@ -117,10 +117,8 @@ function publicBridgeTab(tab) {
 }
 
 // WHY THE BOUND SITS UNDER THE CALLER'S TIMEOUT.
-// The local side gives a command ten seconds and then stops listening.
-// This side used to hold a command for a minute before giving up on it, so one hung call did not just fail — it kept the worker busy long after the caller had walked away, and every command queued behind it died too.
+// This side used to hold a command for a minute before giving up on it, so one hung call kept the worker busy long after the caller had walked away, and every command queued behind it died too.
 // A loopback round trip has no network in it: a browser that needs eight seconds to answer one call is not slow, it is stuck, and saying so in eight seconds is worth more than being patient for a minute.
-// Raising it back is one environment variable.
 
 function handleTimeoutMs() {
   return Number(globalThis.OPERA_BRIDGE_HANDLE_TIMEOUT_MS ?? 8000);
@@ -248,9 +246,8 @@ chrome.tabs.onActivated.addListener(() => {
   if (!running) ensureBridgeLink();
 });
 
-// WHY a closed tab still costs a line here.
-// The debugger registry is shared and `chrome.debugger.onDetach` already heals the attach flag on the object it finds — but that handler only reaches a session it can look up, and this map is the one place a session for a tab that is gone can still be found.
-// Dropped, it is an entry per closed tab for as long as the worker lives.
+// WHY A CLOSED TAB STILL COSTS A LINE HERE.
+// `chrome.debugger.onDetach` heals the attach flag only on a session it can look up, and this map is the one place a session for a tab that is gone can still be found.
 
 chrome.tabs.onRemoved.addListener((tabId) => {
   const session = debuggerSessions.get(tabId);
@@ -261,10 +258,9 @@ chrome.tabs.onRemoved.addListener((tabId) => {
 chrome.runtime.onStartup.addListener(() => ensureBridgeLink());
 chrome.runtime.onInstalled.addListener(() => ensureBridgeLink());
 
-// WHY the alarm is armed here and not where it is read.
+// WHY THE ALARM IS ARMED HERE AND NOT WHERE IT IS READ.
 // Its handler is the only thing that releases an idle debugger session, and the infobar Chrome pins on an attached tab is the person's evidence of where the agent is.
 // An alarm that is listened for but never created leaves that bar up forever, silently, and nothing else in the worker would ever notice.
-// The same alarm is the beat that brings a link back after Chrome retired the worker.
 
 chrome.alarms.create(BRIDGE_ALARM, { periodInMinutes: 0.5 }).catch(() => {});
 

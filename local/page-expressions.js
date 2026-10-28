@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-21 UTC+7.
+// @last-edited: 2026-10-28 UTC+7.
 // @title: page-expressions — the JavaScript the page runs, and the helpers that build it.
 // @state: the snapshot, focus, caret, scroll, upload and edit expressions, and the pure helpers around them.
 // @dependencies: node:buffer.
@@ -804,8 +804,9 @@ export const EDIT_POLLS = 12;
 // The first shape installed a MutationObserver and resolved from a page-side setTimeout(120).
 // Measured live on a hidden Google Docs tab, that timer was clamped by background-tab throttling: the call took 304ms, and repeated runs reached 1,009ms, while a snapshot of the same page took 4ms.
 // The observer still belongs to the page, but the clock that decides "quiet" now belongs to Node, whose timers are not throttled.
-// The page installs only the watcher; Node waits 8ms, asks the watcher how long the page has been still, and stops after 32ms of quiet or 120ms total.
-// Fifteen asks is the worst case, and four is the common one; no page-side timer is left for a hidden tab to clamp.
+// The page installs only the watcher; Node waits out the quiet window once, asks the watcher how long the page has been still, and stops after 32ms of quiet or 120ms total.
+// Twelve asks is the worst case and one is the common one, because the first ask cannot come before the quiet window has had time to fill; no page-side timer is left for a hidden tab to clamp.
+// The read that finds the page quiet drops the watcher on its way out, so a settle costs one evaluate fewer than arming and disarming as separate asks.
 
 export const SETTLE_QUIET_MS = 32;
 export const SETTLE_MAX_MS = 120;
@@ -828,16 +829,26 @@ export const SETTLE_ARM_EXPRESSION = `(() => {
   return true;
 })() /*opera-settle-arm*/`;
 
+// WHY THE READ THAT ENDS THE SETTLE ALSO ENDS THE WATCHER.
+// Arming, polling and disarming were three round trips' worth of bookkeeping for every action, and the last poll is the one place the answer is already known.
+// A read that finds the page quiet disarms in the same breath, so a settled action pays one evaluate less; a page that never settles still disarms from Node, because only the quiet exit knows it is the exit.
+
 export const SETTLE_READ_EXPRESSION = `(() => {
   const state = window.__operaSettle;
   if (!state) return { missing: true };
   const now = performance.now();
-  return {
+  const answer = {
     changes: state.changes,
     quietMs: Math.max(0, Math.round(now - state.lastChange)),
     elapsedMs: Math.max(0, Math.round(now - state.started)),
     visibility: document.visibilityState
   };
+  if (answer.quietMs >= ${SETTLE_QUIET_MS}) {
+    if (state.observer) { try { state.observer.disconnect(); } catch { /* a page already gone has nothing to disconnect */ } }
+    try { delete window.__operaSettle; } catch { /* a page that froze its globals still loses the observer */ }
+    answer.disarmed = true;
+  }
+  return answer;
 })() /*opera-settle-read*/`;
 
 export const SETTLE_DISARM_EXPRESSION = `(() => {

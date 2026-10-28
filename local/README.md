@@ -119,9 +119,18 @@ Actions answer with where the page stands and the rows that changed; `ax_snapsho
 is the deliberate look at every row.
 
 `download` writes a file to the folder the caller names and proves it by the file on
-disk — a `.crdownload` is not a result. The last two tools are the statement job: a
+disk â€” a `.crdownload` is not a result. The last two tools are the statement job: a
 card that names the file before the drive, and a delivery that verifies it and adds the
 client-month to a manifest. See [`docs/jobs/statements.md`](../docs/jobs/statements.md).
+
+Several agents can drive one browser without colliding. Each call claims the tab it
+names, so two agents never share one caret: a tab another agent holds is refused with
+that claim named - who holds it and until when - and the second agent drives a
+different tab instead. A claim is renewed by every call and lapses on its own after a
+minute of silence, so a crashed agent locks nothing; `OPERA_LEASE_TTL_MS` widens or
+narrows the window and `OPERA_AGENT_LABEL` names the agent in the refusal.
+`close_tab` releases the claim, because closing the tab is the one moment an agent
+gives one up on purpose.
 
 ## Recipes, measured
 

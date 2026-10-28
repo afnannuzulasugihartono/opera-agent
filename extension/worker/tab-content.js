@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-09 UTC+7.
+// @last-edited: 2026-10-28 UTC+7.
 // @title: tab-content — content-script injection and the messaging bridge into a tab.
 // @state: owns HTTP_URL_RE and the ensureContent script list; that list is pinned by manifest.content_scripts[0].js and must not be edited.
 // @dependencies: utils, log, protocol.
@@ -9,7 +9,7 @@ import { clamp } from '../lib/protocol.js';
 
 export const HTTP_URL_RE = /^https?:\/\//i;
 
-// WHY the signal is a parameter.
+// WHY THE SIGNAL IS A PARAMETER.
 // A caller that must be able to walk away from a request it no longer wants has no way to do it otherwise: a held poll kept answering a loop that had already been superseded, and every such request was one more consumer of the single command queue.
 
 export async function fetchJson(url, body, timeoutMs = 30000, signal = undefined) {

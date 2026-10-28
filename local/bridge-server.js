@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-21 UTC+7.
+// @last-edited: 2026-10-28 UTC+7.
 // @title: bridge-server — the loopback command server, speaking the frames the cloud bridge speaks.
 // @state: the heartbeat that keeps the worker alive, the idle reap, and the origin check.
 // @dependencies: none.
@@ -14,6 +14,7 @@ import { EventEmitter } from 'node:events';
 
 import { parseFrame } from '../extension/lib/socket-protocol.js';
 import { BridgeSocket, acceptKey, encodeText, isOriginAllowed, isWebSocketUpgrade } from './ws-server.js';
+import { createLeaseTable } from './leases.js';
 
 const DEVICE_PROTOCOL_VERSION = 1;
 const HEARTBEAT_MS = 20000;
@@ -71,6 +72,10 @@ const BRIDGE_ORIGINS = Object.freeze([
 // A door that re-wrapped `{ ok, result }` inside another `{ ok, result }` made every adopted caller read a proof ping as a failed ping, so a second driver could never talk to a bridge it had reached.
 // Over the door the answer is the answer in process, byte for byte.
 
+// WHY THE TAB CLAIM IS HELD BY THE BRIDGE AND NOT BY A DRIVER.
+// Each agent spawns its own driver process, and two processes have two memories: a claim kept inside one of them lets the other drive straight through it, which is the collision the claim exists to stop.
+// The bridge is the one place both drivers already meet — one of them owns it and the others reach it through the door — so the claim sits beside the port and every driver on the machine reads the same table.
+
 export function createBridgeServer({
   port = 9451,
   host = '127.0.0.1',
@@ -83,6 +88,7 @@ export function createBridgeServer({
   const waiting = new Map();
   const queue = [];
   const attached = new Set();
+  const leases = createLeaseTable();
   let socket = null;
   let handshaken = false;
   let connectedAt = 0;
@@ -226,6 +232,27 @@ export function createBridgeServer({
       })();
       return;
     }
+
+    // The lease door answers one ask per call: a claim, which the table grants or refuses, or a release, which only the owner that holds the tab may make.
+    if (req.method === 'POST' && req.url === '/lease') {
+      void (async () => {
+        const body = await readJson(req);
+        if (!body?.action || !body?.tabId || !body?.owner) {
+          json(res, 400, { ok: false, error: { message: 'a lease needs an action, a tab and an owner' } });
+          return;
+        }
+        try {
+          if (body.action === 'release') {
+            json(res, 200, { ok: true, granted: leases.release(body.tabId, body.owner), released: true });
+            return;
+          }
+          json(res, 200, { ok: true, ...leases.claim(body.tabId, body.owner, body.ttlMs) });
+        } catch (error) {
+          json(res, 200, { ok: false, error: { message: String(error?.message ?? error) } });
+        }
+      })();
+      return;
+    }
     res.writeHead(404);
     res.end();
   });
@@ -277,6 +304,7 @@ export function createBridgeServer({
     linked() {
       return Boolean(socket && !socket.closed);
     },
+    leases,
     send: (method, params, options) => command(method, params, options),
     on: (event, handler) => state.on(event, handler),
     state: () => ({

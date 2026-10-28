@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-21 UTC+7.
+// @last-edited: 2026-10-28 UTC+7.
 // @title: bridge — the local driver's side of the loopback conversation.
 // @state: the transport it hands the driver, so the drive runs the same over CDP and over the extension.
 // @dependencies: none.
@@ -25,6 +25,7 @@ import { createBridgeServer } from './bridge-server.js';
 
 const DEFAULT_BRIDGE_PORT = 9451;
 const PROOF_TIMEOUT_MS = 2000;
+const PROOF_DELAY_MS = 250;
 const REPLY_TIMEOUT_MS = 10000;
 
 // WHY one sentence names the one fix that exists.
@@ -39,10 +40,12 @@ export function bridgePort() {
 let server = null;
 let lastProofAt = 0;
 
-// WHY the proof is trusted on request and never by default.
-// A ping round trip costs about half of a fast call, so bursts pay it over and over for an answer that does not change between one command and the next.
-// Trusting it for a few seconds removes that half, and delays a dead worker's diagnosis by exactly the trust window plus one command timeout.
-// Default zero keeps the safe behavior; whoever sets the window opts into the trade with open eyes.
+// WHY THE PROOF IS LAZY RATHER THAN EAGER.
+// The eager proof doubled every primitive: one CDP command became two bridge hops, so a settle's arm, each of its polls and its disarm each carried a ping of their own, and a burst of eight steps paid sixteen.
+// The proof guards one failure - a socket the machine still calls open behind a device that is gone - and that failure is the slow case by definition, because a live device answers in about a millisecond.
+// So the command goes first and the proof is armed behind it, fired only once the command has already cost more than a proof would have.
+// A healthy device never sees a ping; a dead one is named by its own command budget, with the proof's answer naming the link when the proof is what found it.
+// The trust window still skips even the lazy proof, for a caller that has proved and knows the link is live.
 
 function trustedRecently() {
   const trustMs = Math.max(0, Number(process.env.OPERA_BRIDGE_TRUST_MS || 0));
@@ -140,18 +143,66 @@ async function prove(srv) {
 // A guest asks the owner instead — one round trip on a path that already pays one — and a live owner says yes.
 // The owner's own server keeps its in-process truth.
 
+// WHY THE PROOF RIDES BEHIND THE COMMAND, AND WHY IT NEVER KILLS ONE.
+// A proof that fires while the command is still in flight asks the link a question whose answer only matters if the command never lands, so it collects the answer and lets the command stand on its own.
+// Rejecting on a failed proof was tried and driven, and it lied: bringing a window forward costs seconds on the compositor, the proof behind it timed out, and a call whose click had not even been sent was answered "no answer for the liveness proof".
+// So a proof that fails marks the link and waits; the command's own budget is what ends the call, and the error it ends with names the dead link when the proof already said so, and the command's own honest timeout when it did not.
+// A healthy device answers in about a millisecond, so on the fast path the proof never goes out at all; a dead one is named within the command budget either way, because a closed socket is named by the link check before any command is sent.
+
+// WHY A TIMEOUT IS THE ONLY ANSWER THE PROOF MAY RENAME.
+// A device that answers late can finally answer with a real error of its own, and renaming that would hide the answer the command earned.
+// Only a command that never came back at all is a question about the link, so only a no-answer timeout carries the proof's name.
+
+function noAnswer(error) {
+  return /no answer|still in flight|timed out/i.test(String(error?.message ?? error));
+}
+
+function sendWithLazyProof(srv, method, params, timeoutMs) {
+  return new Promise((resolve, reject) => {
+    const dead = new Error(`bridge: no answer for the liveness proof in ${PROOF_TIMEOUT_MS} ms`);
+    let guard = null;
+    let proved = false;
+    const call = srv.send(method, params, { timeoutMs });
+    const land = (settle) => (value) => {
+      clearTimeout(guard);
+      settle(value);
+    };
+    call.then((answer) => {
+      if (answer?.ok === false && proved && noAnswer(answer.error)) return reject(dead);
+      land(resolve)(answer);
+    }, (error) => {
+      land(reject)(proved && noAnswer(error) ? dead : error);
+    });
+    guard = setTimeout(() => {
+      void prove(srv).then(
+        (alive) => {
+          if (!alive) proved = true;
+        },
+        () => {
+          proved = true;
+        }
+      );
+    }, PROOF_DELAY_MS);
+  });
+}
+
 async function attempt(method, params, timeoutMs, takeover = true) {
   const srv = await ensureServer();
-  if (!srv.linked()) {
-    const alive = srv.adopted ? await srv.probe().catch(() => false) : false;
+
+  // WHY A GUEST ASKS ON EVERY CALL AND AN OWNER TRUSTS ITSELF.
+  // The guest's link flag remembers the last word it heard, so a guest that trusted it would push a command through a door into a bridge whose device has gone, and wait out the whole command budget for an answer nobody will send.
+  // Asking the owner costs one local read and names the real problem now; the owner holds the same truth in process, so its own no-link answer is already the real problem.
+  if (srv.adopted) {
+    const alive = await srv.probe().catch(() => false);
     if (!alive) throw new Error(LINK_ERROR);
-  }
-  if (!trustedRecently() && !(await prove(srv))) {
-    throw new Error(`bridge: no answer for the liveness proof in ${PROOF_TIMEOUT_MS} ms`);
+  } else if (!srv.linked()) {
+    throw new Error(LINK_ERROR);
   }
   let answer;
   try {
-    answer = await srv.send(method, params, { timeoutMs });
+    answer = trustedRecently()
+      ? await srv.send(method, params, { timeoutMs })
+      : await sendWithLazyProof(srv, method, params, timeoutMs);
   } catch (error) {
     if (!srv.adopted || !takeover) throw error;
     server = null;
@@ -222,6 +273,33 @@ export async function openBridgeTarget(url) {
 
 export async function closeBridgeTarget(targetId) {
   return request('tabs.close', { tabId: Number(targetId) });
+}
+
+// WHY THE CLAIM IS READ FROM THE BRIDGE.
+// Each agent spawns its own driver, and two drivers have two memories: a claim kept inside one lets the other drive straight through it.
+// The bridge is where every driver on this machine already meets, so the table lives there and every agent reads the same one.
+
+export async function leaseTab(tabId, owner, ttlMs) {
+  return leaseAsk('claim', tabId, owner, ttlMs);
+}
+
+export async function releaseTab(tabId, owner) {
+  return leaseAsk('release', tabId, owner);
+}
+
+async function leaseAsk(action, tabId, owner, ttlMs) {
+  const srv = await ensureServer();
+  const { port } = srv.address();
+  const response = await fetch(`http://127.0.0.1:${port}/lease`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ action, tabId: String(tabId), owner, ...(ttlMs ? { ttlMs } : {}) }),
+    signal: AbortSignal.timeout(REPLY_TIMEOUT_MS)
+  }).catch(() => null);
+  if (!response) throw new Error('bridge: the lease door did not answer');
+  const body = await response.json().catch(() => null);
+  if (!body?.ok) throw new Error(`bridge: ${body?.error?.message ?? 'the lease door refused'}`);
+  return body;
 }
 
 // WHY the answer is routed by closure.

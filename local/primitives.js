@@ -1,18 +1,16 @@
-// @last-edited: 2026-10-23 UTC+7.
+// @last-edited: 2026-10-28 UTC+7.
 // @title: primitives — the local driver assembled from the modules that each answer one question.
 // @state: navigation, focus and the raw protocol escape hatch, with the typing, pointer, reads, waits, canvas and file verbs assigned from their own modules.
 // @dependencies: ./input.js, ./pointer.js, ./observe.js, ./waits.js, ./canvas.js, ./primitives-file.js, ./window-focus.js.
 
-// WHY THIS FILE EXISTS
-
+// WHY THIS FILE EXISTS.
 // These are the verbs that make the three targets possible: writing a document in Docs, filling a sheet in Sheets, laying out a deck in Slides.
-// Each one is a CDP command underneath, so each inherits the half-millisecond transport measured in local-transport, and each has one rule that is not obvious and not optional.
-// The rules themselves moved to the module that owns the verb they govern: typing and keys to input.js, clicks and hovers to pointer.js, the reads of the page to observe.js, the settle and the waits to waits.js, the canvas read to canvas.js and the file verbs to primitives-file.js.
-// What is left here is the navigation, the window, and the wiring that hands each module the page it drives.
+// Each is a CDP command underneath, so each inherits the half-millisecond transport measured in local-transport and carries one rule that is not obvious and not optional.
+// The rules moved to the module that owns each verb; what is left here is the navigation, the window, and the wiring that hands each module the page it drives.
 
 // Dispatches pipeline.
 // One CDP session answers every request by id, so ten sends without an await between them cost one round trip, not ten, and Chrome still processes them in arrival order.
-// Anything that must wait — a gap for a menu animation, a tree before its boxes — awaits; everything else fires together.
+// Anything that must wait, a gap for a menu animation or a tree before its boxes, awaits; everything else fires together.
 
 import nodeFs from 'node:fs';
 import nodeOs from 'node:os';
@@ -49,7 +47,7 @@ export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Pr
     },
 
     // WHY A PAGE EXCEPTION IS AN ERROR AND NOT A MISSING VALUE.
-    // Measured on a real Google Doc: the first probe referenced a constant the page had never heard of, the page threw, and the answer came back undefined - which reads exactly like a page with no canvas, no text and no editor.
+    // Measured on a real Google Doc: the first probe referenced a constant the page had never heard of, the page threw, and the answer came back undefined, which reads exactly like a page with no canvas, no text and no editor.
     // A thrown page expression is a fact about the page, so it is raised here rather than flattened into a value the caller cannot tell from a measurement.
     async evaluate(expression) {
       const reply = await cdp.send('Runtime.evaluate', {
@@ -89,7 +87,7 @@ export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Pr
     },
 
     // WHY THE WINDOW IS ASKED THROUGH THE BROWSER FIRST.
-    // Measured on this machine: the OS read is a PowerShell enumeration and costs p50 1.14s, while Browser.getWindowForTarget on the same session costs p50 0.35ms and already answers the only question the focus guard has - is the window minimized.
+    // Measured on this machine: the OS read is a PowerShell enumeration and costs p50 1.14s, while Browser.getWindowForTarget on the same session costs p50 0.35ms and already answers the only question the focus guard has, which is whether the window is minimized.
     // The OS read stays as the fallback for a browser or bridge that refuses the Browser domain, because a wrong "background" answer is how text goes nowhere.
     async windowState() {
       try {

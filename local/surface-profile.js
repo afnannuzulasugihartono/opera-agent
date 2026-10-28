@@ -1,11 +1,11 @@
-// @last-edited: 2026-10-27 UTC+7.
+// @last-edited: 2026-10-28 UTC+7.
 // @title: surface-profile — what a surface is, measured in the page and in its accessibility tree, with the evidence for every claim.
 // @state: the in-page probe expression, the accessibility measurement, and the profile both halves build.
 // @dependencies: none.
 
 // WHY EVERY CLAIM CARRIES ITS EVIDENCE.
 // The read this replaces guessed a surface from its URL, so a wrong guess was invisible.
-// A profile that reports the number it measured makes a wrong classification something a reader can see and a test can pin.
+// A reported number makes a wrong classification something a reader can see and a test can pin.
 
 // WHY THE PROBE NAMES NO SITE.
 // A selector or a domain in this file would be the per-site code this change exists to remove.
@@ -13,13 +13,13 @@
 
 // WHY THIS IS A CHEAP PRE-FILTER AND NOT THE DECISION.
 // The wait uses it to avoid paying a full read on every poll of a page that plainly holds its own text.
-// It is deliberately small, because a length bar cannot tell a short page's text from a canvas editor's chrome - the canvas signal in the profile is what makes that call, and this only skips the obvious case.
+// A length bar cannot tell a short page's text from a canvas editor's chrome; the canvas signal decides that, and this only skips the obvious case.
 
 export const MIN_DOM_TEXT = 40;
 
 // WHY THE BAR IS WRITTEN INTO THE EXPRESSION AND NOT IMPORTED INTO IT.
 // A page expression is a string evaluated in a page that knows nothing about this module, so a constant named here is a name the page has never heard of.
-// Measured on a real Google Doc: the first version of this probe referenced the module's own constant inside the string, the page threw a ReferenceError, and the whole profile came back false - which reads exactly like a page with no canvas, no text and no editor.
+// Measured on a real Google Doc: the first probe referenced the module's own constant, the page threw, and the whole profile came back false, which reads exactly like a page with no canvas, no text and no editor.
 
 export const SURFACE_PROBE_EXPRESSION = `(() => {
   const MIN_DOM_TEXT = ${MIN_DOM_TEXT};
@@ -123,10 +123,10 @@ const documentRegion = (nodes) => {
     if (!here || sum.count > here.sum.count) here = { id, sum };
   }
   if (!here) return { count: 0, length: 0, parts: [], deepest: 0 };
-  // WHY THE DESCENT CARRIES A VISITED SET AND NOT A COUNTER.
-  // A tree that names a node's ancestor as its child makes a cycle, and the descent follows it: a node in the cycle holds as much text as everything beside it, so it keeps winning the comparison against its own siblings.
+  // WHY THE DESCENT CARRIES A VISITED SET AND NOT A DEPTH CAP.
+  // A tree that names a node's ancestor as its child makes a cycle, and a node in the cycle holds as much text as everything beside it, so it keeps winning the comparison against its own siblings.
   // Measured with a three-node tree hanging off a real root: measureAx never returned, and the hang is synchronous, so read, surface_profile and wait_for_text all stopped with no error and no timeout.
-  // A visited set ends the walk at the first node it has already stood on, which is the answer a depth cap would reach only after walking the same loop.
+  // A visited set ends the walk at the first node it has already stood on; a depth cap reaches the same answer only after walking the loop.
   const visited = new Set([here.id]);
   for (;;) {
     const kids = [];
@@ -142,8 +142,8 @@ const documentRegion = (nodes) => {
     visited.add(here.id);
   }
   // WHY THE DEPTH OF THE WHOLE TREE IS MEASURED AS WELL.
-  // The tree is requested with a depth cap, and a document deeper than the cap comes back cut: its text ends early and nothing in the answer says so.
-  // Reaching the cap is the only evidence available that the text may be incomplete, so it is reported rather than guessed at.
+  // The tree is requested with a depth cap, and a document deeper than the cap comes back cut with nothing in the answer saying so.
+  // Reaching the cap is the only evidence the text may be incomplete, so it is reported rather than guessed at.
   let deepest = 0;
   const walked = new Set(roots);
   let frontier = roots;
@@ -181,9 +181,8 @@ export async function measureAx({ ask, method = 'Accessibility.getFullAXTree' })
   const region = documentRegion(nodes);
   // WHY THE BAR IS TEN TEXT BOXES.
   // Measured on a real Google Doc: the document region carries 155 of them and the chrome around it carries 60, so a document clears this by an order of magnitude.
-  // A toolbar alone carries a handful, and reading that first would answer with menu labels - so below this the DOM is the cheaper and the cleaner answer.
-  // The bar decides which read leads.
-  // It does not decide whether the text exists: that is what the region itself says.
+  // A toolbar alone carries a handful, and reading that first would answer with menu labels, so below this the DOM is the cheaper and the cleaner answer.
+  // The bar decides which read leads, not whether the text exists: that is what the region itself says.
   const rich = region.count >= 10;
   return {
     axRich: rich,
@@ -194,6 +193,9 @@ export async function measureAx({ ask, method = 'Accessibility.getFullAXTree' })
   };
 }
 
+// WHY THE NUMBERS RIDE ALONG WITH THE BOOLEANS.
+// A boolean is the decision and the number is why it was made, which is what a reader needs when the decision turns out wrong: without it a misclassification is silent again.
+
 export function buildProfile({ probe = {}, ax = {} }) {
   return {
     textInDom: probe.textInDom?.value === true,
@@ -202,9 +204,6 @@ export function buildProfile({ probe = {}, ax = {} }) {
     axRich: ax.axRich === true,
     truncated: ax.truncated === true,
     focused: probe.focused?.value === true,
-    // WHY THE NUMBERS RIDE ALONG WITH THE BOOLEANS.
-    // A boolean is the decision; the number is why the decision was made, and the number is what a reader needs when the decision turns out wrong.
-    // Without it a misclassification is silent again, which is the exact thing this profile exists to end.
     evidence: {
       textInDom: probe.textInDom?.evidence ?? null,
       canvas: probe.canvas?.evidence ?? null,

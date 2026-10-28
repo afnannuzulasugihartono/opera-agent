@@ -1,10 +1,10 @@
-// @last-edited: 2026-10-21 UTC+7.
+// @last-edited: 2026-10-28 UTC+7.
 // @title: statement — the device side of a delivered client-month: the download, the proof, the manifest.
 // @state: owns the per-device manifest and the two commands that fill it and read it.
 // @dependencies: utils, log, tab-content, statement-file.
 
 // WHY THE DEVICE IS THE ONE THAT DELIVERS.
-// A bookkeeper's statements live in the bookkeeper's own browser, and the file has to land in the bookkeeper's own folder: a delivery that is copied somewhere else is a copy, not a delivery.
+// A bookkeeper's statements live in the bookkeeper's own browser, and the file has to land in the bookkeeper's own folder: a delivery copied somewhere else is a copy, not a delivery.
 // So the device downloads the file with the name the card asked for, waits until the browser says it is whole, and writes one line into a manifest that lives on the machine.
 
 // WHY THE MANIFEST IS ON THE DEVICE.
@@ -12,7 +12,7 @@
 // It is stored per device, in the browser's own storage, and it survives a restart.
 
 // WHY THE BYTES ARE READ IN THE PAGE.
-// A service worker cannot read the file it just downloaded, so the page fetches the same URL - with the person's own session - and answers with the kind and the page count, read from the bytes.
+// A service worker cannot read the file it just downloaded, so the page fetches the same URL with the person's own session and answers with the kind and the page count.
 // What the page cannot do is see the disk, so the disk fact comes from the browser's own download record and the byte facts come from the page: two sources, one row.
 
 import { log } from '../lib/log.js';
@@ -32,9 +32,8 @@ const DEFAULT_DOWNLOAD_TIMEOUT_MS = 30000;
 const byText = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
 
 // WHY THE FILE NAME IS CHECKED HERE.
-// The name comes from the caller, and a name with a folder in it would write outside the download folder - which is the one place the device may write.
-// The rule is the operating system's, said out loud.
-// The double quote is written as an escape so the scanners that read this file do not mistake it for the start of a string.
+// The name comes from the caller, and a name with a folder in it would write outside the download folder, which is the one place the device may write.
+// The rule is the operating system's, said out loud, and the double quote is written as an escape so the scanners that read this file do not mistake it for the start of a string.
 
 const FILENAME = /^[^\/:*?<>|\x22]+$/;
 
@@ -102,12 +101,12 @@ async function waitForDownload(downloadId, timeoutMs) {
 }
 
 // WHY THE PAGE IS ASKED FOR THE BYTES.
-// The page is the only side that can read them with the person's own session, so the worker injects the shared helpers and then asks the page to fetch the URL and answer with the kind, the page count and the size.
+// The page is the only side that can read them with the person's own session, so the worker injects the shared helpers and asks the page to fetch the URL and answer with the kind, the page count and the size.
 // The function below is serialised into the page, so it may not close over anything here: it reads the helpers from globalThis.
 
 // WHY THE ANSWER IS UNWRAPPED.
 // Chrome answers executeScript with one InjectionResult per frame, and the value the injected function returned is that result's `result`.
-// Reading the wrapper leaves every fact undefined, which is a delivery that cannot say what it delivered: the fake browser agreed with the bug until a real one was driven.
+// Reading the wrapper leaves every fact undefined, which is a delivery that cannot say what it delivered.
 
 async function verifyInPage(tabId, url) {
   await chrome.scripting.executeScript({ target: { tabId }, files: ['lib/statement-file.js'] });

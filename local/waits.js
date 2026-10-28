@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-23 UTC+7.
+// @last-edited: 2026-10-28 UTC+7.
 // @title: waits — the page's own settle, and the event-driven waits built on it.
 // @state: settle and waitForIdle, then one mutation wait with text, row and stillness on top.
 // @dependencies: ./page-expressions.js.
@@ -21,6 +21,7 @@ export function createWaits({ cdp, sleep, readState, readRows, read, primitives,
   // WHY SETTLE IS A PRIMITIVE AND NOT A TOOL.
   // Every action needs the same short look before the page is read, so the wait belongs beside the actions, not in the surface where a caller has to remember it.
   // The page expression resolves with what it saw, which makes the cost inspectable instead of a blind sleep: quiet means the last change was at least 32ms ago, deadline means the page was still moving when the 120ms cap arrived.
+  // A read that reports quiet has already dropped the watcher on its way out, so the disarm at the end is there for a settle that ran out of budget rather than for a settled one.
   async function settle() {
     const started = Date.now();
     const answer = (why, state, detail) => ({
@@ -41,9 +42,15 @@ export function createWaits({ cdp, sleep, readState, readRows, read, primitives,
         returnByValue: true
       });
       armed = true;
-      const polls = Math.ceil(SETTLE_MAX_MS / SETTLE_POLL_MS);
+
+      // WHY THE FIRST ASK WAITS AS LONG AS THE QUIET WINDOW.
+      // A page cannot have been quiet for thirty-two milliseconds until it has been watched for thirty-two of them, so every ask before that mark answers a question whose answer is already known.
+      // Waiting that long for the first ask, and every eight milliseconds after it, ends the settle at the same moment for every shape of page — a mutation one millisecond in restarts the clock and is caught by the same next ask — with three fewer round trips.
+      // Over the bridge those three asks were three commands on every single action.
+
+      const polls = 1 + Math.ceil((SETTLE_MAX_MS - SETTLE_QUIET_MS) / SETTLE_POLL_MS);
       for (let poll = 0; poll < polls; poll += 1) {
-        await sleep(SETTLE_POLL_MS);
+        await sleep(poll === 0 ? SETTLE_QUIET_MS : SETTLE_POLL_MS);
         const { result } = await cdp.send('Runtime.evaluate', {
           expression: SETTLE_READ_EXPRESSION,
           returnByValue: true
@@ -59,7 +66,7 @@ export function createWaits({ cdp, sleep, readState, readRows, read, primitives,
     } catch (error) {
       return answer('failed', null, error?.message || String(error));
     } finally {
-      if (armed) {
+      if (armed && !last?.disarmed) {
         await cdp.send('Runtime.evaluate', {
           expression: SETTLE_DISARM_EXPRESSION,
           returnByValue: true

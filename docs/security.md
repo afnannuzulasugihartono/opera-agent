@@ -9,12 +9,11 @@ Opera Agent can interact with a local browser and therefore uses a strict allowl
 
 - No arbitrary `eval` or remote code execution.
 - Browser actions must use known, validated primitives.
-- A content script runs in the page's ISOLATED world, so it cannot read page JavaScript
-  and never tries to: every value it uses comes from the DOM the extension itself
-  rendered, or from a bounded accessibility summary built by
-  [`extension/lib/ax-summary.js`](../extension/lib/ax-summary.js). There is no
-  registered reader in the MAIN world, so there is no allowlist of readers to keep
-  reviewed, and no page script is ever consulted.
+- A content script runs in the page's ISOLATED world, so it cannot read page JavaScript:
+  every value it uses comes from the DOM the extension itself rendered, or from a bounded
+  accessibility summary built by [`extension/lib/ax-summary.js`](../extension/lib/ax-summary.js).
+  There is no registered reader in the MAIN world, so there is no allowlist of readers to
+  keep reviewed, and no page script is ever consulted.
 - Passwords, PINs, OTP/2FA codes, CVV/CVC, and security-code fields remain blocked.
 - File uploads remain blocked unless explicitly designed and reviewed later.
 - Private extension signing keys must never be committed to the repository.

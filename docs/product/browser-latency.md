@@ -5,7 +5,10 @@ the read second-sample settle, the shorter key beat, the cheaper text wait, the
 event-driven stillness wait, the CDP window state, the no-double-settle contract,
 the settle-based append/caret/menu gaps, and the settle-based text/row waits are
 in the tree and gated by tests. The OS PowerShell path remains only as a
-fallback; model-turn time is unchanged.
+fallback; model-turn time is unchanged. The bridge proof is now lazy, a tab the
+server already holds is resolved without a listing, the two page reads after an
+action go out together, and the settle asks the page half as often; each is
+gated by a test and measured below.
 
 Measured: 2026-10-22, Windows, Node 22.22.2, headless Chrome 153, local CDP.
 The fixture is a synthetic page with 100 rows; a 5,000-row page is used for scaling.
@@ -231,12 +234,12 @@ to Node is what brought the same page to 46 ms.
 | `session.windowState()` via CDP | 0.35 ms | 3.19 ms | 20 |
 
 `ensureFront` still asks the page first, because that is the cheap answer that
-changes fastest. When the page says no focus, the session now asks the browser
-with `Browser.getWindowForTarget`; the only question the guard needs is whether
-the window is minimized, and the bounds answer it. If the window is minimized,
-`Browser.setWindowBounds` restores it. The PowerShell enumeration remains as the
-fallback for a browser or bridge that refuses the Browser domain, because a
-wrong "background" answer is how text goes nowhere.
+changes fastest. When the page says no focus, the session asks the browser with
+`Browser.getWindowForTarget`: the only question the guard needs is whether the
+window is minimized, and the bounds answer it, so a minimized window is restored
+with `Browser.setWindowBounds`. The PowerShell enumeration remains the fallback
+for a browser or bridge that refuses the Browser domain, because a wrong
+"background" answer is how text goes nowhere.
 
 ### Bridge
 
@@ -250,12 +253,14 @@ device on the same `bridge-server` measured:
 | `tabs.list` round trip | 0.11 ms |
 | `ping + tabs.list` (what `attempt()` does by default) | 0.22 ms |
 
-The loopback frames themselves are not the problem. The production cost is in
-the extension/worker path and in the per-command liveness proof
-(`local/bridge.js:124-168`): `attempt()` sends a `ping` before every command
-unless `OPERA_BRIDGE_TRUST_MS` is set. Each CDP primitive is therefore two
-bridge commands, not one. That is a code-level finding; its real p50/p95 over
-the extension is unverified.
+The loopback frames themselves are not the problem. The production cost is in the
+extension/worker path and in the per-command liveness proof: that proof used to go
+out before every command, so each CDP primitive was two bridge commands, and it is
+now lazy — the command goes first and the proof is armed behind it, fired only once
+the command has already cost more than a proof would have (`local/bridge.js`). A live
+device answers in about a millisecond and never sees a ping; a dead one is still
+named, because the proof is the thing that times out. The trust window still skips
+even the lazy proof for a caller that has proved and knows the link is live.
 
 ## Ranked findings
 
@@ -270,10 +275,10 @@ reached. The 120 ms path remains only as a fallback for a driver with no
 Measured on the same job and machine, MCP `click` fell from **p50 136.82 ms** to
 **p50 46.26 ms**, and MCP `click_row` from **p50 137.78 ms** to **p50 46.06 ms**.
 
-The caveat is the one that matters on real pages: a page-side `setTimeout` is
-not a safe clock for a hidden tab. The first settle shape waited in the page and
-a hidden Google Doc clamped it to **p50 998.93 ms**. The shipped shape keeps the
-observer in the page but reads it from Node; the same hidden Doc settles at
+The caveat that matters on real pages: a page-side `setTimeout` is not a safe
+clock for a hidden tab. The first settle shape waited in the page and a hidden
+Google Doc clamped it to **p50 998.93 ms**; the shipped shape keeps the observer
+in the page but reads it from Node, and the same hidden Doc settles at
 **p50 45.78 ms**. Any future settle must keep its clock off the page.
 
 ### 2. `read_page` always pays 100 ms — fixed
@@ -363,18 +368,18 @@ minimized browser or a tab that lost focus mid-drive; on the CDP path that tail
 is now sub-millisecond. The fallback tail still exists for a browser or bridge
 that refuses the Browser domain.
 
-### 6. Duplicate tab listing and per-switch front
+### 6. Duplicate tab listing and per-switch front — fixed
 
-`resolvedTab()` lists tabs (`local/mcp-server.js:675-684`), then
-`driverFor()` calls `context.resolveTab()` again (`local/mcp-server.js:650-660`).
-On direct CDP this is ~0.2 ms; over the bridge it is two tab-list commands plus
-pings. The session store also calls `front()` on the first touch of every tab
-(`local/sessions.js:104-115`); `Page.bringToFront` is one-time per switch, not
-per action, but it is awaited.
-
-**Expected saving:** small on direct CDP, larger on the bridge and on tab-heavy
-jobs. Fix by passing the resolved tab into the driver lookup and by making
-front optional/background.
+`resolvedTab()` used to list tabs, then `driverFor()` called
+`context.resolveTab()` again, and a named tab was listed a third time inside the
+store to find it. One function now resolves a tab, opens its session and hands
+back both (`local/mcp-server.js`), a named tab costs one listing, and a tab the
+server already holds costs none at all: the cached session is the proof the tab
+exists, and the driver reports its own socket for free so a dead one is
+forgotten instead of driven. On direct CDP the per-call listing was ~0.2 ms; over
+the bridge it was a command, and it is now zero on every call of a drive after
+the first. The session store's `front()` still runs once per switch and is still
+awaited, because the tab has to be in front before a click can land in it.
 
 ### 7. The cloud path is architecturally slower
 
@@ -429,7 +434,10 @@ audit, not for the hot loop.
 6. **Focus query — done on the CDP path.** The page is still asked first; the
    machine question is now `Browser.getWindowForTarget`, with PowerShell only as
    a fallback.
-7. **Bridge trust window during a burst**, and pass the resolved tab once.
+7. **Bridge trust window during a burst** — done as the lazy proof, which needs
+   no window and no configuration: the proof rides behind the command instead of
+   in front of it. **Pass the resolved tab once** — done: one function resolves
+   and opens, and a cached tab costs no listing at all.
 
 Guardrails stay: no raw CDP/eval tool, no stealth or OTP bypass, no credential
 storage, no per-site code in the extension. Every change needs a test and a
@@ -483,6 +491,72 @@ steps, so it pays one settle at the end instead of a key beat plus a settle.
 What the run does not cover: the model turn, the cloud path, the live extension
 bridge, and any real Google Docs or Sheets tab. It is a fixture measurement of
 the local path, and it is reproducible by anyone with a Chromium on the machine.
+
+## Re-measured after the round trips were removed
+
+Measured 2026-10-28, same machine and Node 22.22.2, same 100-row fixture, 10 runs
+each, plus a scripted device on a real bridge socket for the bridge numbers. The
+CDP table is the same job every earlier table used; the bridge numbers are one
+real MCP `click` driven through the real MCP surface over the bridge.
+
+What changed, and why each one is safe:
+
+1. **The bridge proof is lazy.** `attempt()` used to send a `ping` before every
+   command, so a settle's arm, each of its polls and its disarm each carried a
+   second command, and a burst of eight steps paid sixteen. The command now goes
+   first and the proof is armed 250 ms behind it, fired only when the command has
+   already cost more than a proof would have. A live device answers in about a
+   millisecond and never sees a ping; a device that went away is still named,
+   because the proof is the thing that times out. The trust window still skips
+   even the lazy proof for a caller that has proved and knows the link is live.
+2. **A tab the server already holds is not listed again.** One function resolves
+   the tab, opens its session and hands back both, so a named tab costs one
+   listing instead of three, and every later call on that tab costs nothing: the
+   cached session is the proof the tab exists. The driver reports its own socket
+   for free, so a session whose tab went away is forgotten and re-resolved
+   instead of being answered with a transport error.
+3. **The two page reads after an action go out together.** The rows and the page
+   state are two looks at the same settled page and neither answers the other's
+   question, so they are sent as one pair instead of one after the other.
+4. **The settle asks the page half as often.** A page cannot have been quiet for
+   32 ms until it has been watched for 32 of them, so the asks before that mark
+   answered a question whose answer was already known. The first ask now waits
+   the quiet window out and the beat after it stays 8 ms, which ends the settle
+   at the same moment for every shape of page: a mutation that lands after the
+   first ask restarts the clock and is caught by the next one — the missed-menu
+   bug the settle exists to remove. The read that finds the page quiet also drops
+   the watcher, so a settled settle costs one evaluate fewer.
+
+| MCP tool call (CDP) | Before p50 | After p50 | After p95 |
+|---|---:|---:|---:|
+| `click` | 47.03 ms | 47.09 ms | 47.79 ms |
+| `click_row` | 46.96 ms | 47.11 ms | 48.06 ms |
+| `press_key` | 79.16 ms | 78.73 ms | 93.18 ms |
+| `read_page` | 47.07 ms | 46.86 ms | 47.79 ms |
+| `wait_for` (found) | 47.58 ms | 46.86 ms | 48.04 ms |
+| `wait_still` | 140.16 ms | 140.91 ms | 142.76 ms |
+| `caret_line` | 186.93 ms | 186.89 ms | 188.97 ms |
+| `append` | 124.39 ms | 124.97 ms | 125.94 ms |
+| `browser_burst` (3 steps) | 47.56 ms | 46.55 ms | 49.57 ms |
+| `session.settle()` | 46.39 ms | 47.05 ms | 54.46 ms |
+
+| Bridge, scripted device | Before | After |
+|---|---:|---:|
+| proof pings per primitive | 1.03 | 0.00 |
+| primitive p50 | 0.35 ms | 0.21 ms |
+| bridge commands per MCP `click` | 32.9 | 14.3 |
+| MCP `click` p50 (loopback device) | 46.84 ms | 46.62 ms |
+| MCP `click` p95 (loopback device) | 48.15 ms | 47.89 ms |
+
+The CDP wall times are unchanged, and that is the finding rather than a missed
+one: on direct CDP a listing was 0.2 ms and an evaluate 0.3 ms, both inside the
+noise of a 46 ms settle. The round trips that were removed are the ones the
+bridge pays for — a command over the extension costs about 1.875 ms
+([`handoff.md`](../handoff.md)) — so 18.6 fewer commands per click is roughly 35 ms
+off a real tool call. That is a count read off the harness, not an estimate.
+
+What this run still does not cover: the live extension, the model turn, and any
+real Google Docs or Sheets tab.
 
 ## Reproduce
 

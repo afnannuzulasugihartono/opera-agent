@@ -8,12 +8,11 @@
 // A tool is not bought; a result is. The question that decides whether this earns
 // anything is not "what does the browser driver cost" but "what is a delivered client
 // month worth to a bookkeeper, and what may an agent that uses this hand to its own
-// user". Both answers change what gets built next, and both were being answered in
-// chat.
+// user". Both answers change what gets built next.
 //
-// The answers below are the ones this tree can already support. The ones it cannot
-// are named as open, with what would settle them, because a price guessed in advance
-// is a promise made on no evidence.
+// The answers below are the ones this tree can already support. The ones it cannot are
+// named as open, with what would settle them, because a price guessed in advance is a
+// promise made on no evidence.
 
 ## The offer
 

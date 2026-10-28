@@ -37,9 +37,9 @@ re-pins must write in the commit why the criterion did or did not change.
 ### What Layer 1 cannot do
 
 `scripts/gates.mjs` verifies `gates.lock`, and it is deliberately **not** listed inside it.
-A verifier cannot pin its own hash — writing the hash changes it — so listing itself would
-need an exemption, and an exemption is exactly the hole the file exists to close. That is
-the soft spot, and it is written down in `gates.lock` rather than left for someone to find.
+A verifier cannot pin its own hash — writing the hash changes it — and the exemption that
+would need is the hole the file exists to close. That soft spot is written down in
+`gates.lock` rather than left for someone to find.
 
 ## Layer 2 — the part that actually holds
 
@@ -76,8 +76,8 @@ checks.** A compiler and a test qualify. An agent grading its own work does not.
 - **A green suite is necessary, not sufficient.** It proves nothing contradicts the spec.
   It cannot prove the spec is what you wanted.
 - **The gate can still be routed around** by editing the lock and the gate in one commit.
-  That is precisely what Layer 2 exists to catch, and why `tests/` and `scripts/` are
-  named explicitly in `CODEOWNERS` rather than left to the catch-all.
+  That is what Layer 2 exists to catch, which is why `tests/` and `scripts/` are named
+  explicitly in `CODEOWNERS` rather than left to the catch-all.
 - **Provenance is not yet recorded.** Nothing marks which lines an agent wrote. The
   strongest available answer is the review conversation itself: a change nobody can explain
   is a change nobody should approve.

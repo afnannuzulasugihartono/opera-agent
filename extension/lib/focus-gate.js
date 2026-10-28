@@ -1,11 +1,13 @@
-// @last-edited: 2026-10-04 18:25 UTC+7.
+// @last-edited: 2026-10-28 UTC+7.
 // @title: focus-gate — the retry-then-refuse policy for foreground dispatch.
 // @state: pure decision over a focus sample — no chrome, no DOM; three attempts, a satisfied sample dispatches first try, the final refusal carries the last sample.
 // @dependencies: none.
 
 // Pure focus policy — no chrome, no DOM, so the decision is deterministic and testable in Node.
 
-// WHY re-sample at dispatch: the foreground path used to read `tab.active` and `window.focused` once, before a content-script round trip and a debugger attach, then never re-checked, so a window that lost focus in that gap failed with FOREGROUND_REQUIRED right after the user activated the tab.
+// WHY RE-SAMPLE AT DISPATCH.
+// The foreground path used to read `tab.active` and `window.focused` once, before a content-script round trip and a debugger attach, then never re-checked.
+// A window that lost focus in that gap failed with FOREGROUND_REQUIRED right after the user activated the tab.
 
 // Locked by tests/focus-and-keyboard.test.mjs: background always dispatches first try; a satisfied foreground sample adds no latency; lost-then-restored dispatches with recovered; an unsatisfied sample refuses on the final attempt carrying the last state.
 // The gate NEVER activates a tab or focuses a window — that authority stays with the tabs.activate primitive.

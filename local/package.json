@@ -24,6 +24,7 @@
     "driver.js",
     "focus-guard.js",
     "input.js",
+    "leases.js",
     "mcp-server.js",
     "menu-tree.js",
     "observe.js",

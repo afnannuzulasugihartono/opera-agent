@@ -34,8 +34,8 @@ Nearly a fifth of all browser-agent work is a login wall, and the industry's ans
 credential vaults, MFA handling, captcha solving, residential proxies and "digital personas" —
 Notte advertises all five. That is a large, fragile machine built to *become* someone else.
 
-Our browser is already logged in. No vault, no captcha, no persona. That is a structural cost
-and risk advantage, not a feature.
+Why our browser is already logged in: that is a structural cost and risk advantage, not a
+feature. No vault, no captcha, no persona.
 
 ## What buyers complain about
 

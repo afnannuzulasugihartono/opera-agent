@@ -52,8 +52,7 @@ What is true now, and what to do next. Cap 150 lines. Spent detail: git history.
   [`product/first-three-bookkeepers.md`](product/first-three-bookkeepers.md); only a fixture
   bank portal is proven, so a pilot runs on the client's machine.
 - **The bridge is a WebSocket with a heartbeat, not a held `POST /poll`.** Chrome ends an idle
-  service worker after about thirty seconds and an inbound frame does not wake it, so the
-  server pings.
+  service worker after about thirty seconds and an inbound frame does not wake it, so the server pings.
 - **One CORS policy and one credential-shape check.** Every edge function resolves the
   origin through [`_shared/cors.js`](../supabase/functions/_shared/cors.js); six modules
   import [`lib/secret-pattern.js`](../lib/secret-pattern.js), and `check` bars a redeclaration.
@@ -76,19 +75,19 @@ What is true now, and what to do next. Cap 150 lines. Spent detail: git history.
   `vercel.app` stays in CORS. Every `style-src` allows `'self'`, and the features page counts
   34 tools, 31 primitives and six permissions, against the code.
 - **A deploy is a dispatch, not a push.** [`deploy-site.yml`](../.github/workflows/deploy-site.yml)
-  publishes `landing/` with `wrangler pages deploy` after the unit and syntax gates; a push
-  that does not deploy leaves CI green and the old build live. The Vercel CLI cannot deploy.
+  publishes `landing/` with `wrangler pages deploy` after the unit and syntax gates; a push that
+  does not deploy leaves CI green and the old build live. The Vercel CLI cannot deploy.
 - `landing/_headers` restates the `vercel.json` policy per path, with HSTS, a locked-down
   Permissions-Policy, same-origin COOP and CORP, and `X-Frame-Options: DENY`.
 
 ## Measured, not assumed
 
 - **A publish step must fail loudly.** The CRX base64 exceeds the Linux 131,072-byte
-  argument limit, so `node` died and curl sent no body; the run went green having published
-  nothing. `publish-crx.yml` now fails unless the status is 2xx.
-- **Every MCP caller drives the one device named by `DEVICE_NAME`, and sign-up is open**, so
-  the function admits the static token or a named account and nobody else, and a test bars
-  any wider rule.
+   argument limit, so `node` died and curl sent no body; the run went green having published
+   nothing. `publish-crx.yml` now fails unless the status is 2xx.
+
+- **Every MCP caller drives the one device named by `DEVICE_NAME`, and sign-up is open**, so the
+  function admits the static token or a named account and nobody else; a test bars any wider rule.
 
 ## Still open
 

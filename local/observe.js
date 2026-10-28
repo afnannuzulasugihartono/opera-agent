@@ -1,10 +1,9 @@
-// @last-edited: 2026-10-23 UTC+7.
+// @last-edited: 2026-10-28 UTC+7.
 // @title: observe — what the page says about itself, read in as few round trips as it can be read in.
 // @state: snapshot, resolveRow, menuTree, openMenu, computed, scroll, viewport, capture and the two page-state reads.
 // @dependencies: ./menu-tree.js, ./page-expressions.js.
 
-// WHY THIS MODULE EXISTS
-
+// WHY THIS MODULE EXISTS.
 // A canvas page exposes no DOM worth querying, so every fact about it is an expression run inside the page and an answer read back.
 // Keeping those reads together means the round trips they cost are counted in one place, and a read that grows a second job is visible as a file growing a second job.
 
@@ -19,8 +18,7 @@
 // WHY AN ACTION'S PAGE STATE IS MEASURED AND NOT COPIED.
 // Measured on a real job: eight calls spent 34,974 characters, most of it the same sixty rows and the same page text riding along after every click.
 // An agent does not read that; it pays for it in tokens and in attention.
-// So an action reports where the page is and what moved - url, title, how much text it holds, which element has focus - and the rows that changed.
-// The rest stays one deliberate ax_snapshot away.
+// So an action reports where the page is and what moved, url, title, how much text it holds and which element has focus, and the rest stays one deliberate ax_snapshot away.
 
 // WHY THE TEXT IS COUNTED AND NOT RETURNED.
 // The count answers "did this action change what the page says", which is the question an action's answer owes.
@@ -72,8 +70,8 @@ const PAGE_STATE_EXPRESSION = `(() => {
 })()`;
 
 // WHY THE SCROLL'S VERDICT IS A FUNCTION AND NOT A TERNARY.
-// Four questions decide what a scroll has to say for itself, and they are not equally likely: a target that was never found, a page that cannot prove it reached the end, a page that plainly did not move, and the ordinary case where it did.
-// Written as one nested ternary inside the answer object, the ordinary case was the last line of a four-deep expression, so the reader reached it only after parsing the three failures first.
+// Four questions decide what a scroll has to say for itself and they are not equally likely: a target that was never found, a page that cannot prove it reached the end, a page that did not move, and the ordinary case where it did.
+// As one nested ternary the ordinary case was the last line of a four-deep expression, so the reader reached it only after parsing the three failures first.
 // Named cases read in the order they are checked, and each one says what the caller should do next.
 
 function scrollWhy({ seen, wanted, end }) {
@@ -92,6 +90,11 @@ function scrollWhy({ seen, wanted, end }) {
   }
   return '';
 }
+
+// WHY A TOP-LEVEL MENU IS CLICKED AND EVERYTHING BELOW IT IS HOVERED.
+// Measured live on Google Docs: a menu on the bar is a toggle, so hover does nothing and it only opens on a click, while a submenu opens on hover.
+// A leaf that turns out to be a command is never clicked on the way to anywhere else: "Upload from computer" opens the operating system's own file dialog, which nothing here can close again.
+// So a click goes out for the bar item that opens the menu, and for a leaf only when the caller said this item is the command to run.
 
 export function createObserveMethods({ cdp, primitives, capped }) {
   const readRows = async (limit) => {
@@ -240,10 +243,6 @@ export function createObserveMethods({ cdp, primitives, capped }) {
       const alreadyOpen = Boolean(node.expanded) && here.some((r) => r.depth === index + 1);
       let acted = false;
       if (!alreadyOpen) {
-        // WHY A TOP-LEVEL MENU IS CLICKED AND EVERYTHING BELOW IT IS HOVERED.
-        // Measured live on Google Docs: a menu on the bar is a toggle - hover does nothing and it only opens on a click - while a submenu opens on hover.
-        // And a leaf that turns out to be a command is never clicked on the way to anywhere else: "Upload from computer" opens the operating system's own file dialog, which nothing here can close again.
-        // So a click goes out for the bar item that opens the menu, and for a leaf only when the caller said this item is the command to run.
         if (index === 0) {
           await primitives.clickAt(row.x, row.y);
           acted = true;
@@ -272,12 +271,12 @@ export function createObserveMethods({ cdp, primitives, capped }) {
   }
 
   // WHY ONE CALL, AND WHY IT ANSWERS WHAT IT DID.
-  // A scroll that moved the page and a scroll that moved the right thing look identical from outside, so the answer carries the scroller that moved and by how much, and - for a target - whether that target is on screen now.
+  // A scroll that moved the page and a scroll that moved the right thing look identical from outside, so the answer carries the scroller that moved and by how much, and for a target whether it is on screen now.
   // Nothing here is aimed for: every fact is read after the fact.
 
   // WHY "AT THE END" CAN BE FALSE AND MEANS NOTHING MOVED.
   // Measured live on a Google Doc: an end scroll moved the document element 56 pixels and answered atEnd true, because the document is not what scrolls on a canvas editor.
-  // So atEnd is true only when the page reports its last text on screen, and the scroller that answers is named - a refusal to claim an end it did not reach is the whole value here.
+  // So atEnd is true only when the page reports its last text on screen, and the scroller that answers is named: a refusal to claim an end it did not reach is the whole value here.
   async function scroll({ y, end = false, text, selector } = {}) {
     const probe = { y: Number.isFinite(Number(y)) ? Number(y) : undefined, end: end === true, text, selector };
     void end;

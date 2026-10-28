@@ -7,7 +7,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   SETTLE_MAX_MS,
-  SETTLE_POLL_MS
+  SETTLE_POLL_MS,
+  SETTLE_QUIET_MS
 } from '../local/page-expressions.js';
 import { createPrimitives } from '../local/primitives.js';
 import { createWaits } from '../local/waits.js';
@@ -32,7 +33,28 @@ test('settle watches the page from Node, so a hidden tab cannot clamp its timer'
   assert.equal(out.why, 'quiet');
   assert.equal(out.changes, 1);
   assert.equal(out.maxMs, SETTLE_MAX_MS);
-  assert.deepEqual(slept, [SETTLE_POLL_MS]);
+  assert.deepEqual(slept, [SETTLE_QUIET_MS],
+    'the first ask waits out the quiet window, because a page cannot be quiet for thirty-two milliseconds before it has been watched for thirty-two');
+});
+
+
+// WHY THE BEAT AFTER THE FIRST ASK IS THE POLL BEAT.
+// A page that was still moving when the quiet window filled must not end the settle: the clock restarts on every mutation, and the next ask is the one that sees it.
+// Ending at the first ask because the ask was early is exactly the missed-menu bug the settle exists to remove, so the shape is pinned here rather than left to timing.
+
+test('a page still moving when the quiet window fills is asked again, not ended', async () => {
+  const cdp = recordingCdp();
+  const reads = [{ changes: 2, quietMs: 6, elapsedMs: 32, visibility: 'visible' }, { changes: 3, quietMs: 40, elapsedMs: 40, visibility: 'visible' }];
+  cdp.send = async (method, params = {}) => {
+    cdp.calls.push({ method, params });
+    if (params.expression.includes('opera-settle-read')) return { result: { value: reads.shift() ?? reads.at(-1) } };
+    return { result: { value: true } };
+  };
+  const slept = [];
+  const out = await createPrimitives(cdp, { sleep: async (ms) => { slept.push(ms); } }).settle();
+
+  assert.equal(out.why, 'quiet', 'and it ended quiet, on the ask after the beat');
+  assert.deepEqual(slept, [SETTLE_QUIET_MS, SETTLE_POLL_MS], 'the window first, then the eight-millisecond beat');
 });
 
 
@@ -49,8 +71,11 @@ test('settle stops at the cap when the page never goes quiet', async () => {
   const out = await createPrimitives(cdp, { sleep: async (ms) => { slept.push(ms); } }).settle();
 
   assert.equal(out.why, 'deadline');
-  assert.equal(slept.length, SETTLE_MAX_MS / SETTLE_POLL_MS);
-  assert.ok(slept.every((ms) => ms === SETTLE_POLL_MS));
+  assert.equal(slept.length, 1 + (SETTLE_MAX_MS - SETTLE_QUIET_MS) / SETTLE_POLL_MS,
+    'the asks after the first fill the rest of the cap');
+  assert.equal(slept[0], SETTLE_QUIET_MS);
+  assert.ok(slept.slice(1).every((ms) => ms === SETTLE_POLL_MS));
+  assert.equal(slept.reduce((sum, ms) => sum + ms, 0), SETTLE_MAX_MS, 'and they spend the cap exactly');
 });
 
 
@@ -83,7 +108,7 @@ test('a text wait settles the page between checks instead of sleeping a fixed ga
 
   assert.equal(out.text, 'Heading is here');
   assert.ok(cdp.calls.some((call) => call.params?.expression?.includes('opera-settle-arm')), 'the wait waits on a mutation settle');
-  assert.ok(slept.includes(SETTLE_POLL_MS), 'and sleeps the settle beat, not the fixed 100 ms gap');
+  assert.ok(slept.every((ms) => ms === SETTLE_QUIET_MS || ms === SETTLE_POLL_MS), 'and sleeps the settle beat, not the fixed 100 ms gap');
   assert.ok(!slept.includes(100), 'the fixed interval is not the method anymore');
 });
 
@@ -97,7 +122,7 @@ test('a row wait settles the page between checks instead of sleeping a fixed gap
 
   assert.equal(out.found, true);
   assert.ok(cdp.calls.some((call) => call.params?.expression?.includes('opera-settle-arm')), 'the wait waits on a mutation settle');
-  assert.ok(slept.includes(SETTLE_POLL_MS), 'and sleeps the settle beat, not the fixed 100 ms gap');
+  assert.ok(slept.every((ms) => ms === SETTLE_QUIET_MS || ms === SETTLE_POLL_MS), 'and sleeps the settle beat, not the fixed 100 ms gap');
   assert.ok(!slept.includes(100), 'the fixed interval is not the method anymore');
 });
 
@@ -122,7 +147,7 @@ test('a read on a settled page takes two samples and says the text stood still',
   const asks = cdp.calls.filter((c) => c.method === 'Runtime.evaluate').map((c) => c.params.expression);
   assert.ok(asks.some((expression) => expression.includes('opera-settle-arm')), 'the read settles before its second sample');
   assert.ok(asks.some((expression) => expression.includes('opera-settle-read')), 'and asks the page how quiet it is');
-  assert.deepEqual(slept, [SETTLE_POLL_MS], 'the settle is a beat, not a hundred milliseconds');
+  assert.deepEqual(slept, [SETTLE_QUIET_MS], 'the settle waits its quiet window once, not a hundred milliseconds');
 });
 
 // WHY A READ THAT RETURNS A TENTH OF THE PAGE IS THE BUG THIS PINS.
@@ -244,7 +269,7 @@ test('waitForMutation uses the page settle between reads instead of a fixed gap'
   const out = await p.waitForMutation(read, (state) => state.value === 'go', { timeoutMs: 200, intervalMs: 100 });
 
   assert.equal(out.value, 'go');
-  assert.ok(slept.includes(SETTLE_POLL_MS), 'the wait waits on the page settle');
+  assert.ok(slept.every((ms) => ms === SETTLE_QUIET_MS || ms === SETTLE_POLL_MS), 'the wait waits on the page settle');
   assert.ok(!slept.includes(100), 'and not on a fixed gap');
 });
 
@@ -334,7 +359,7 @@ test('stillness ends on two identical reads and names how long it took', async (
   assert.equal(out.still, true);
   assert.equal(out.settled, true, 'the wait already settled, so the page look does not pay twice');
   assert.ok(out.checks >= 2, 'one matching pair is what stillness means');
-  assert.ok(slept.every((ms) => ms === SETTLE_POLL_MS), 'the wait settles on the page instead of sleeping a fixed interval');
+  assert.ok(slept.every((ms) => ms === SETTLE_QUIET_MS || ms === SETTLE_POLL_MS), 'the wait settles on the page instead of sleeping a fixed interval');
   assert.ok(slept.length > 0, 'and it did wait for the page to be quiet');
 });
 

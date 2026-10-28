@@ -86,9 +86,8 @@ The three silences, all fixed today, are the useful part:
 
 Three silences in one day, in a codebase that already had an advice engine and 1,274
 tests. The pattern is not carelessness; it is that `catch { return {} }` looks like
-robustness. It is the single most expensive habit in the codebase for an agent, because
-every silent fallback is a place where the agent cannot tell "nothing happened" from "I
-cannot see".
+robustness. Why it is the most expensive habit for an agent: every silent fallback is a
+place where the agent cannot tell "nothing happened" from "I cannot see".
 
 ## Against my own nine proposals
 

@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-25 UTC+7.
+// @last-edited: 2026-10-28 UTC+7.
 // @title: mcp-server — the stdio MCP surface over the local driver.
 // @state: 8 locks; the handshake, the advertised tools, and every way a call can fail without killing the server.
 // @dependencies: ./statements.js, ./reports.js, ./documents.js, ./burst.js, ./tools.js, ./advice.js.
@@ -30,7 +30,12 @@ const PROTOCOL_VERSION = '2024-11-05';
 import { statementCard, statementDelivered } from './statements.js';
 import { reportFromFile } from './reports.js';
 import { documentFromFile } from './documents.js';
+import { randomUUID } from 'node:crypto';
+
 import { BURST_INPUT_ACTIONS, normalizeBurst, runLocalBurst } from './burst.js';
+
+import { leaseTab, releaseTab } from './bridge.js';
+
 import { TOOLS, ASKABLE, askParams, STRAY_FILE_TAB } from './tools.js';
 
 // The tool table lives in tools.js: the surface is data, and this file is the protocol that answers it.
@@ -166,12 +171,16 @@ const settleForLook = async (driver) => {
 // A wait or a chord-only stream has already watched the page go quiet, so settling again before the snapshot is the same 32ms paid twice.
 // The action's own verdict is the evidence; the page look trusts it.
 
+// WHY THE TWO READS GO OUT TOGETHER.
+// The rows and the page state are two looks at the same settled page, and neither one asks a question the other answers.
+// Sending them one after the other paid the second look's whole round trip for nothing — over the bridge that is a second command on every action.
+
 const afterAction = async (driver, action, limit) => {
   if (!action?.settled) await settleForLook(driver);
-  const seen = await driver.snapshot(limit ?? AUTO_PAGE_LIMIT);
-  const state = typeof driver.pageState === 'function'
-    ? await driver.pageState().catch(() => null)
-    : null;
+  const [seen, state] = await Promise.all([
+    driver.snapshot(limit ?? AUTO_PAGE_LIMIT),
+    typeof driver.pageState === 'function' ? driver.pageState().catch(() => null) : null
+  ]);
   const prev = lastAuto.get(driver) ?? null;
   const prevState = lastPage.get(driver) ?? null;
   lastAuto.set(driver, seen);
@@ -269,45 +278,85 @@ const livePort = (context) => (typeof context.port === 'function' ? context.port
 
 const INPUT_TOOLS = new Set(['click', 'click_row', 'hover', 'type', 'stream_keys', 'press_key', 'upload', 'drop_file', 'open_menu', 'download']);
 
+// WHY THE OWNER IS A LABEL AND A NUMBER.
+// The label is what a refusal reads back to an agent that can go and drive another tab, and the number keeps two agents that share a label from sharing one claim.
+
+const OWNER = `${process.env.OPERA_AGENT_LABEL || 'driver'}-${randomUUID().slice(0, 8)}`;
+
+// WHY THE WINDOW IS TUNABLE AND DEFAULTS TO A MINUTE.
+// A minute outlives any single call and still clears an agent that went quiet; a caller whose agents idle for longer can widen it, and one that wants a fast hand-over can narrow it.
+// The window is read per call rather than held, so a change takes effect on the next claim without a restart.
+
+const leaseWindow = () => {
+  const ttl = Number(process.env.OPERA_LEASE_TTL_MS);
+  return Number.isFinite(ttl) && ttl > 0 ? ttl : undefined;
+};
+
+const bridgeLease = { claim: leaseTab, release: releaseTab };
+
 export function createMcpServer(context) {
   const sessions = new Map();
   const fallback = context.driver ?? null;
+  const titledBy = new Map();
+  const lease = context.lease ?? bridgeLease;
 
-  const driverFor = async (tabId) => {
-    if (!tabId) return fallback;
-    const known = context.resolveTab ? await context.resolveTab() : [];
-    if (known.length && !known.some((id) => String(id) === String(tabId))) {
-      throw new Error(`No page target ${tabId}. Open pages: ${known.join(' | ')}`);
+  // WHY ONE FUNCTION RESOLVES A TAB AND OPENS ITS SESSION.
+  // Resolving and opening used to be two functions that each asked the browser for its pages, so a named tab cost three listings and every later call still paid one to re-check an id the server had already opened a socket for.
+  // One function reads the pages once, remembers the title, and hands back both the driver and the tab it resolved, so the answer still names the tab it hit.
+
+  const namedTab = (wanted, pages) => {
+    const text = String(wanted ?? '').trim().toLowerCase();
+    if (text === '') return null;
+    const hits = pages.filter((page) => String(page.title ?? '').toLowerCase().includes(text)
+      || String(page.url ?? '').toLowerCase().includes(text));
+    if (hits.length === 1) return hits[0];
+    if (hits.length > 1) {
+      throw new Error(`"${wanted}" is ${hits.length} tabs: ${hits.map((page) => `${page.id} ${page.title}`).join(' | ')}. Name it more closely, or use its id.`);
     }
-    if (!sessions.has(tabId)) {
-      sessions.set(tabId, await context.open({ ...(context.sessionOptions ?? {}), targetId: tabId }));
-    }
-    return sessions.get(tabId);
+    return null;
   };
 
-const namedTab = async (wanted) => {
-  const text = String(wanted ?? '').trim().toLowerCase();
-  if (text === '') return null;
-  const pages = await fallback.tabs().catch(() => []);
-  const hits = pages.filter((page) => String(page.title ?? '').toLowerCase().includes(text)
-    || String(page.url ?? '').toLowerCase().includes(text));
-  if (hits.length === 1) return hits[0];
-  if (hits.length > 1) {
-    throw new Error(`"${wanted}" is ${hits.length} tabs: ${hits.map((page) => `${page.id} ${page.title}`).join(' | ')}. Name it more closely, or use its id.`);
-  }
-  return null;
-};
+  const driverFor = async (wanted) => {
+    if (wanted === undefined || wanted === null || wanted === '') return { tab: null, driver: fallback };
+    const asText_ = String(wanted);
 
-const resolvedTab = async (tabId) => {
-  if (tabId === undefined || tabId === null || tabId === '') return null;
-  const asText_ = String(tabId);
-  const pages = await fallback.tabs().catch(() => []);
-  const exact = pages.find((page) => String(page.id) === asText_);
-  if (exact) return { id: asText_, title: String(exact.title ?? ''), named: false };
-  if (/^\d+$/.test(asText_)) return null;
-  const hit = await namedTab(asText_);
-  return hit ? { id: String(hit.id), title: String(hit.title ?? ''), named: true } : null;
-};
+    // WHY THE CLAIM IS ASKED BEFORE ANYTHING IS OPENED.
+    // A tab another agent holds would still take the click, and the answer would land in the wrong document with nothing naming the interference.
+    // Asking first turns that into a sentence the second agent can act on: who holds the tab, until when, and which other tabs are free.
+
+    const held = await lease.claim(asText_, OWNER, leaseWindow());
+    if (!held?.granted) {
+      const until = new Date(Number(held?.holder?.expiresAt) || 0);
+      throw new Error(`tab ${asText_} is driven by ${held?.holder?.owner ?? 'another agent'} until ${until.toISOString()}. Drive another tab, or wait for the claim to lapse.`);
+    }
+
+    // WHY A CACHED TAB COSTS NOTHING.
+    // The server holds the session, so the tab exists as far as this call is concerned; the only question left is whether its socket is still open, and the driver answers that about itself for free.
+    // A dead session is forgotten here, so the next call is answered with the open pages instead of with a transport error about a socket nobody holds.
+
+    const cached = sessions.get(asText_);
+    if (cached) {
+      if (cached.alive?.() !== false) return { tab: { id: asText_, title: titledBy.get(asText_) ?? '', named: false }, driver: cached };
+      sessions.delete(asText_);
+      cached.close?.();
+    }
+
+    const pages = fallback ? await fallback.tabs().catch(() => []) : [];
+    const exact = pages.find((page) => String(page.id) === asText_);
+    const hit = exact ?? (/^\d+$/.test(asText_) ? null : namedTab(asText_, pages));
+    const tab = hit ? { id: String(hit.id), title: String(hit.title ?? ''), named: String(hit.id) !== asText_ } : null;
+
+    const known = context.resolveTab ? await context.resolveTab() : [];
+    const targetId = tab ? tab.id : asText_;
+    if (known.length && !known.some((id) => String(id) === String(targetId))) {
+      throw new Error(`No page target ${wanted}. Open pages: ${known.join(' | ')}`);
+    }
+    if (tab) titledBy.set(tab.id, tab.title);
+    if (!sessions.has(targetId)) {
+      sessions.set(targetId, await context.open({ ...(context.sessionOptions ?? {}), targetId }));
+    }
+    return { tab, driver: sessions.get(targetId) };
+  };
 
 // WHY THE WINDOW MATCH HAS TO BE TEXT.
 // Measured through this server on this machine: the guard turns the match into text to pick a window off the taskbar, and a promise sent as the match became "[object Promise]", so a minimized browser was never brought back.
@@ -366,8 +415,9 @@ const windowMatch = async (tab, driver) => (tab ? String(tab.title ?? '') : page
       }));
     }
 
-    const tab = name === 'close_tab' ? null : await resolvedTab(args?.tabId);
-    const driver = name === 'close_tab' ? fallback : await driverFor(tab ? tab.id : args?.tabId);
+    const resolved = name === 'close_tab' ? { tab: null, driver: fallback } : await driverFor(args?.tabId);
+    const tab = resolved.tab;
+    const driver = resolved.driver;
     const wantsFront = INPUT_TOOLS.has(name)
       || (burst?.steps.some((step) => BURST_INPUT_ACTIONS.includes(step.action)) ?? false);
     const front = wantsFront && typeof driver.ensureFront === 'function'
@@ -411,6 +461,8 @@ const windowMatch = async (tab, driver) => (tab ? String(tab.title ?? '') : page
         const out = await driver.close(args.tabId);
         sessions.get(args.tabId)?.close?.();
         sessions.delete(args.tabId);
+        titledBy.delete(String(args.tabId));
+        await lease.release(args.tabId, OWNER).catch(() => null);
         return asText(out);
       }
       case 'surface_profile':

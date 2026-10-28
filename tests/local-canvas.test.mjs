@@ -6,7 +6,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { SETTLE_POLL_MS } from '../local/page-expressions.js';
+import { SETTLE_POLL_MS, SETTLE_QUIET_MS } from '../local/page-expressions.js';
 import { createPrimitives } from '../local/primitives.js';
 import { createCanvasMethods } from '../local/canvas.js';
 import { DOC_URL } from './helpers/local-page.mjs';
@@ -237,7 +237,7 @@ test('a caret line reads the selection, collapses, and reports its verdict', asy
   assert.deepEqual(keys.map((k) => [k.params.key, k.params.modifiers ?? 0]),
     [['Home', 0], ['Home', 0], ['End', 8], ['End', 8], ['End', 0], ['End', 0]],
     'home, shift-end, then the collapse, each on both edges');
-  assert.ok(slept.filter((ms) => ms === SETTLE_POLL_MS).length >= 2,
+  assert.ok(slept.filter((ms) => ms === SETTLE_QUIET_MS || ms === SETTLE_POLL_MS).length >= 2,
     'a settle after each selection move, not a fixed beat');
 });
 

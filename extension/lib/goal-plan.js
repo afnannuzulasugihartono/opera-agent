@@ -1,11 +1,11 @@
-// @last-edited: 2026-10-05 00:25 UTC+7.
+// @last-edited: 2026-10-28 UTC+7.
 // @title: goal-plan — compiles model text into a program the device may run.
 // @state: The caller owns identity, target and budgets; the model owns the shape, and the prompt names the same allowlist.
 // @dependencies: extension/lib/protocol.
 
-// WHY this exists: a plan is handed over once and executed locally, so the model is not in the step loop.
-// That removes the per-step round trip, and it also means model text becomes an action machine directly.
-// This module is the narrow door between the two, and it is deliberately pure: no network, no DOM, no chrome, so it can be tested exhaustively and run anywhere.
+// WHY THIS EXISTS.
+// A plan is handed over once and executed locally, so the model is not in the step loop and the per-step round trip is gone.
+// This module is the narrow door between model text and an action machine, and it is deliberately pure: no network, no DOM, no chrome.
 
 // The rule it enforces is one sentence: the caller owns who runs, where, and under which budgets.
 // The model only supplies the shape of the task.

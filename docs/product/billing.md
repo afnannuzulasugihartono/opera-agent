@@ -13,8 +13,8 @@ issued only after the firm accepts the first batch, and the proof is the manifes
 ## What makes people actually pay
 
 The search for this turned up vendor pages rather than research, so the claims below
-are marked for what they are. What they agree on is worth more than a study would
-be, because every one of them is a company that gets paid this way.
+are marked for what they are. What they agree on is worth more than a study would be:
+every one of them is a company that gets paid this way.
 
 | What buyers say they pay for | Where it shows | What we do about it |
 |---|---|---|
@@ -254,12 +254,11 @@ The current prices are Rp 99.000 and Rp 249.000; the columns above are measureme
 points, and the QRIS-only rule covers the pilot bill. The conclusion is a rule, not a
 preference: **below Rp 100.000 the checkout offers QRIS only**. A virtual account costs
 Rp 4.000 whether the invoice is Rp 99.000 or Rp 500.000, so on the pilot bill the fixed
-fee is four percent of the money; QRIS is the only method with no fixed fee and every
-Indonesian bank and e-wallet app can scan it.
-Above the threshold a fixed fee is small enough that choice is worth more, and the
-provider's own list is used. The rule lives in `snapPaymentMethods` and is tested at the
-boundary. The withdrawal fee is per transfer, not per invoice, so it is paid once a
-month, never once per customer.
+fee is four percent of the money; QRIS is the only method with no fixed fee that every
+Indonesian bank and e-wallet app can scan. Above the threshold a fixed fee is small enough
+that choice is worth more, and the provider's own list is used. The rule lives in
+`snapPaymentMethods` and is tested at the boundary, and the withdrawal fee is per transfer,
+so it is paid once a month, never once per customer.
 
 ## A client outside Indonesia
 
