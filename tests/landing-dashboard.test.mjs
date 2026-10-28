@@ -1,6 +1,6 @@
 // @last-edited: 2026-10-28 UTC+7.
 // @title: landing-dashboard — the device page shows your devices and your tables, nothing else's.
-// @state: 49 locks, green; the page moved out of akun.html when the two split, grew the read-only #tabel editor, and became an app shell — the hash decides the active view, and the numbers and the status line sit above it so a tab change cannot hide them.
+// @state: 77 locks, green; the page moved out of akun.html when the two split, grew the read-only #tabel editor, and became an app shell — the hash decides the active view, the numbers and the status line sit above it so a tab change cannot hide them, and the shell is squared to the radius and the label scale the benchmarks measure.
 // @dependencies: test, assert, fs.
 
 // The dashboard is the fulcrum of the full-stack site: the one page that reads the user's own device rows and, since the table editor landed, one page of any table the reader owns.
@@ -663,6 +663,10 @@ test('the active rail item is filled, not a shade of paper', () => {
   assert.match(css, /\.rail a\[aria-current="true"\] \{[^}]*color: var\(--on-fill, #fff\)/, 'and reads in an ink that answers the fill — white on paper, dark on the brand green');
 });
 
+test('the row count on a filled rail row is readable', () => {
+  assert.match(css, /\.railList button\[aria-current="true"\] \.meta \{[^}]*color: inherit/, 'the count takes the row\'s own ink, because the muted grey on the brand green is 1.5:1');
+});
+
 test('the table view is one box bounded by the window', () => {
   assert.match(css, /#tabel \{[^}]*display: flex/, 'the view is a column, not a grid with a second sidebar');
   assert.match(css, /#tabel \{[^}]*flex: 1/, 'and it fills the room the shell leaves it');
@@ -774,4 +778,47 @@ test('no white ink sits on a bright fill', () => {
   }
   assert.match(css, /\.checklist li\.done \.box \{[^}]*color: var\(--on-fill, #fff\)/, 'the readiness tick answers the canvas');
   assert.match(css, /\.btn\.danger:hover \{[^}]*color: var\(--on-fill, #fff\)/, 'and so does the destructive hover');
+});
+
+// WHY THE SHELL IS SQUARED AND NOT PILLED.
+// Measured live on the reader's own screen: every control in the console was a 980px pill, and the pill is the consumer shape — Cline's button is 6px, Cohere's control is 0-2px.
+// A pill in a control panel reads as a sticker: it says "look at me", and a console is full of controls that all say it at once.
+// The numbers below are the benchmarks' own, measured in the reader's browser.
+
+test('the shell is squared to the benchmark, not pill-shaped', () => {
+  assert.match(css, /main\.console \{[^}]*--app-radius: 10px/, 'a card is 10px, the radius Cline measures');
+  assert.match(css, /main\.console \{[^}]*--app-radius-sm: 6px/, 'and a control is 6px, the radius Cline measures');
+  assert.match(app, /body\.app-dark \{[^}]*--radius: 10px/, 'the account page answers in the same shape');
+  assert.match(app, /body\.app-dark \{[^}]*--radius-sm: 6px/, 'controls included');
+  assert.match(app, /body\.app-dark \.btn \{[^}]*border-radius: var\(--radius-sm\)/, 'and the shared pill never reaches the shell');
+});
+
+test('the account nav label is a label, and the rule that sets it reaches the page', () => {
+  assert.match(app, /\.appCard\.accountNav h2 \{[^}]*font-size: 11px/, 'the nav label is 11px, the label scale the console uses');
+  assert.match(app, /\.appCard\.accountNav h2 \{[^}]*letter-spacing: \.08em/, 'and it tracks .08em');
+  assert.doesNotMatch(app, /^\.accountNav h2 \{/m, 'the rule that .appCard h2 outranked is gone, not left behind');
+});
+
+test('one label scale in the console: 11px, .08em, 600', () => {
+  for (const selector of ['\\.metrics dt', '\\.railGroup', '\\.railList \\.konsolGroup', '\\.konsolGrid th']) {
+    assert.match(css, new RegExp(`${selector} \\{[^}]*font-size: 11px`), `${selector} is 11px, the size Cline prints its labels in`);
+    assert.match(css, new RegExp(`${selector} \\{[^}]*letter-spacing: \\.08em`), `${selector} tracks .08em, the way Cline tracks`);
+    assert.match(css, new RegExp(`${selector} \\{[^}]*font-weight: 600`), `${selector} carries the same weight`);
+  }
+  assert.match(css, /\.konsolGrid th\.mono \{[^}]*font-family: var\(--font\)/, 'and the band is one band, even over a column of ids');
+});
+
+test('the pager ends on the rail\'s line', () => {
+  assert.match(css, /\.content\.tabbed > section\.active \{[^}]*margin-bottom: 0/, 'the open view has no margin under it');
+  assert.match(css, /\.content\.tabbed \.duo > section\.active \{[^}]*margin-bottom: 0/, 'and neither has the other half of the wrapper');
+  assert.match(css, /\.konsolFoot \{[^}]*margin: 12px 0 0/, 'the pager has none under it either, so it ends where the rail ends');
+});
+
+test('the console\'s spacing sits on one scale', () => {
+  assert.match(css, /main\.console \{[^}]*--app-title: 18px/, 'a view title is 18px, the size Cline prints a panel title in');
+  assert.match(css, /\.contentHead \{[^}]*padding-top: 16px/, 'the head starts on 16');
+  assert.match(css, /\.metrics > div \{[^}]*padding: 12px 16px/, 'a card breathes on 12 and 16');
+  assert.match(css, /section > \.meta \{[^}]*margin: 0 0 16px/, 'a note is followed by 16');
+  assert.match(css, /\.konsolBar \{[^}]*margin: 0 0 8px/, 'a bar is followed by 8');
+  assert.match(css, /\.railHead \{[^}]*min-height: 36px/, 'and the rail head is as tall as the row it shares a line with');
 });
