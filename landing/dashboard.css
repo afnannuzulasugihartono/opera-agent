@@ -539,21 +539,31 @@ table.history {
 
 /* ── read-only table editor ──────────────────────────────────────────────── */
 
+/*
+ * WHY the box is bounded by the window: measured live, the sidebar stood 824px tall beside a 596px pane, so sixteen table names ran 491px past the bottom of a 1148x714 screen and the pagination footer was not on screen at all.
+ * The offset is the shell above the editor — the app bar, the status line, the metric strip, the view title and its note — measured at 381px, and the floor keeps a short window usable instead of crushing the grid to nothing.
+ */
+
 .konsol {
   display: grid;
   grid-template-columns: 200px minmax(0, 1fr);
   gap: 20px;
-  align-items: start;
+  align-items: stretch;
+  height: clamp(360px, calc(100vh - 390px), 620px);
 }
 
 .konsolSide {
   display: grid;
   gap: 1px;
   align-content: start;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: thin;
 }
 
 /*
  * WHY the name ellipsis: a long table name wrapped its row count onto a second line, which doubled every row and made the sidebar look twice as long as it is.
+ * WHY the row carries its own height: an inherited line-height measured 47px on a row whose text is 20px, so sixteen tables became a column nobody could scan.
  */
 
 .konsolSide button {
@@ -562,7 +572,8 @@ table.history {
   justify-content: space-between;
   gap: 8px;
   width: 100%;
-  padding: 6px 9px;
+  height: 30px;
+  padding: 0 9px;
   border: 0;
   border-left: 2px solid transparent;
   border-radius: var(--app-radius-sm);
@@ -603,7 +614,7 @@ table.history {
 
 .konsolSide .konsolGroup:first-child { padding-top: 2px; }
 
-.konsolMain { min-width: 0; }
+.konsolMain { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
 
 .konsolBar {
   display: flex;
@@ -623,7 +634,8 @@ table.history {
 }
 
 .konsolScroll {
-  max-height: 460px;
+  flex: 1 1 auto;
+  min-height: 120px;
   overflow: auto;
   overscroll-behavior: contain;
   border: 1px solid var(--line);
