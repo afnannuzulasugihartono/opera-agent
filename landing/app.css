@@ -1,11 +1,99 @@
 /*
- * @last-edited: 2026-10-26 UTC+7.
+ * @last-edited: 2026-10-28 UTC+7.
  * @title: app.css — the signed-in shell shared by the account page and the dashboard.
- * @state: one page head, one settings grid, one profile card, and the responsive rules both app surfaces use.
+ * @state: one dark scale for both signed-in surfaces, one app bar, one settings grid, one profile card, and the responsive rules both use.
  * @dependencies: site.css.
  *
  * WHY a second shared sheet: the sign-in, account and dashboard pages share a page head and a card rhythm, and copying it into each page is how the old console drifted from the public site.
  */
+
+/*
+ * WHY the console re-points the core tokens: site.css's own components read var(--paper), var(--surface) and var(--ink) directly, so a dark canvas cannot be expressed with new tokens alone.
+ * The site's rule says a page may add a token and never override a core one.
+ * This is the one deliberate, contained exception: it is scoped to the two signed-in surfaces, it reuses the dark language .panelDark already speaks (--ink-panel, --panel-text, the brand green), and every marketing page keeps the paper canvas untouched.
+ *
+ * WHY the accent is the brand green and not a new hue: #3ecf8e is already the fill of the brand mark in the header, so the console's one accent is the site's own, and it reads at 7.4:1 on the canvas instead of the 4.6:1 the deep green managed on paper.
+ */
+
+body.app-dark {
+  --paper: #0c0e11;
+  --surface: #12151a;
+  --surface-soft: #171b21;
+  --surface-strong: #1f242c;
+  --ink: #eef1f4;
+  --muted: #98a1ab;
+  --line: #232830;
+  --line-strong: #323944;
+  --accent: #3ecf8e;
+  --accent-strong: #5fe0a5;
+  --accent-soft: rgba(62, 207, 142, .14);
+  --warn: #e0a45a;
+  --danger: #f08a80;
+  --danger-soft: rgba(240, 138, 128, .14);
+  --shadow: 0 1px 0 rgba(255, 255, 255, .03);
+  --zebra: rgba(255, 255, 255, .028);
+  --lift: 0 1px 2px rgba(0, 0, 0, .45);
+  --on-accent: #06120d;
+}
+
+/* WHY the chrome answers in the canvas: a light header above a dark console reads as a different product, which is the one thing a benchmarked redesign cannot afford. */
+
+body.app-dark { background: var(--paper); color: var(--ink); }
+
+body.app-dark header { background: var(--paper); border-bottom: 1px solid var(--line); }
+
+body.app-dark header nav a:not(.brand):not(.navCta) { color: var(--muted); }
+
+body.app-dark header nav a:not(.brand):not(.navCta):hover { color: var(--ink); }
+
+body.app-dark header nav a[aria-current="page"]:not(.brand):not(.navCta) { color: var(--ink); box-shadow: inset 0 -1px 0 var(--ink); }
+
+body.app-dark .brandMark rect { fill: var(--ink); }
+
+body.app-dark .brandMark path { fill: #06120d; }
+
+body.app-dark footer { border-top: 1px solid var(--line); color: var(--muted); }
+
+body.app-dark footer a { color: var(--muted); }
+
+body.app-dark footer a:hover { color: var(--ink); }
+
+/* WHY the sign-in pill is re-inked: site.css paints it --ink with white text, which on a dark canvas is white ink on a near-white pill. */
+
+body.app-dark header nav .navCta {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #06120d;
+}
+
+body.app-dark header nav .navCta:hover {
+  border-color: var(--accent-strong);
+  background: var(--accent-strong);
+}
+
+/* WHY white ink is re-inked on the filled action: white on the brand green is 1.9:1. */
+
+body.app-dark .btn.primary {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #06120d;
+  box-shadow: none;
+}
+
+body.app-dark .btn.primary:hover {
+  border-color: var(--accent-strong);
+  background: var(--accent-strong);
+  color: #06120d;
+}
+
+/* WHY the one hardcoded tint is re-pointed: site.css paints .chip.warn #f8eee6, which is the only place a shared component names a colour instead of a token. */
+
+body.app-dark .chip.warn { background: rgba(224, 164, 90, .14); }
+
+body.app-dark .chip.good { border-color: rgba(62, 207, 142, .24); }
+
+body.app-dark input::placeholder,
+body.app-dark textarea::placeholder { color: #6f7883; }
 
 main.account,
 main.console { padding-top: 56px; padding-bottom: 80px; }
