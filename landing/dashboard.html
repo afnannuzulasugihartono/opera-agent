@@ -115,8 +115,8 @@
               </thead>
               <tbody id="historyRows"></tbody>
             </table>
-            <div class="empty" id="historyEmpty" hidden><strong>Belum ada riwayat perintah.</strong> Jalankan aksi pertama dari <a href="#aksi">tab Aksi</a>.</div>
-            <div class="empty" id="historyNoMatch" hidden><strong>Tidak ada perintah yang cocok.</strong> <button class="btn ghost sm" type="button" id="historyReset">Hapus filter</button></div>
+            <div class="empty" id="historyEmpty" hidden><strong>Belum ada riwayat perintah.</strong><p>Jalankan aksi pertama dari <a href="#aksi">tab Aksi</a>.</p></div>
+            <div class="empty" id="historyNoMatch" hidden><strong>Tidak ada perintah yang cocok.</strong><p>Longgarkan saringan status atau kata kuncinya.</p><button class="btn ghost sm" type="button" id="historyReset">Hapus filter</button></div>
           </div>
         </section>
 
@@ -642,14 +642,14 @@
               <dt>Segmen</dt><dd>${esc(session.segments ?? 0)} tertranskrip</dd>
             </dl>
           </div>`).join('')
-          : '<div class="empty"><strong>Belum ada sesi dengar.</strong> Mulai dari model dengan media_stream_start.</div>';
+          : '<div class="empty"><strong>Belum ada sesi dengar.</strong><p>Mulai dari model dengan media_stream_start.</p></div>';
       } catch (error) {
         $('listens').innerHTML = '';
       }
       if (!data.devices.length) {
         $('status').textContent = 'Belum ada device terikat ke akun ini.';
         $('status').className = 'status warn';
-        $('devices').innerHTML = '<div class="empty"><strong>Belum ada device.</strong> Pasang Opera Agent di browser ini, lalu buat kode pairing untuk menghubungkannya ke akun ini. <a class="btn ghost sm" href="#pairing">Buat kode pairing</a></div>';
+        $('devices').innerHTML = '<div class="empty"><strong>Belum ada device.</strong><p>Pasang Opera Agent di browser ini, lalu buat kode pairing untuk dihubungkannya ke akun ini.</p><a class="btn ghost sm" href="#pairing">Buat kode pairing</a></div>';
         return;
       }
       const online = data.devices.filter((device) => device.status === 'online').length;

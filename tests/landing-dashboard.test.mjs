@@ -507,6 +507,33 @@ test('an empty view offers the step that fills it', () => {
   assert.match(html, /Belum ada riwayat perintah\.[\s\S]{0,240}?href="#aksi"/, 'the empty history points at the first run');
 });
 
+// WHY THE EMPTY STATE WAS REBUILT.
+// Measured on the reader's own screen: the empty state was a dashed box with a bold sentence and a link inside the sentence.
+// Both benchmarks centre theirs, give the sentence its own line under the title, and mark the surface with the product's own glyph.
+// A dashed box is a form field that was left blank, and it is the first thing every new account sees.
+
+test('an empty view looks like a page, not a dashed box', () => {
+  assert.match(css, /\.empty \{[^}]*text-align: center/, 'the empty state is centred, the way both benchmarks centre theirs');
+  assert.match(css, /\.empty \{[^}]*border: 1px solid var\(--line\)/, 'and its edge is the card edge the whole console uses');
+  assert.doesNotMatch(css, /\.empty \{[^}]*border: 1px dashed/, 'a dashed edge says a field was left blank');
+  assert.match(css, /\.empty::before \{[^}]*mask/, 'the site mark is the watermark on it');
+});
+
+test('the title of an empty view stands on its own line', () => {
+  const html = read('dashboard.html');
+
+  assert.match(html, /<strong>Belum ada riwayat perintah\.<\/strong>\s*<p>/, 'the sentence under the title is a block of its own');
+  assert.match(html, /<strong>Belum ada device\.<\/strong>\s*<p>/, 'and so is the one the device list writes');
+  assert.match(html, /<strong>Belum ada sesi dengar\.<\/strong>\s*<p>/, 'and the one the listen list writes');
+});
+
+test('the numbers are three cards, not one ruled row', () => {
+  assert.match(css, /\.metrics \{[^}]*gap: 12px/, 'the figures stand apart, the way the benchmark stands its cards apart');
+  assert.match(css, /\.metrics > div \{[^}]*border: 1px solid var\(--line\)/, 'and each carries its own edge');
+  assert.doesNotMatch(css, /\.metrics \{[^}]*background: var\(--line\)/, 'the strip is not one table row with hairlines between its cells');
+  assert.doesNotMatch(css, /\.metrics \{[^}]*gap: 1px/, 'and not a grid of hairlines either');
+});
+
 test('the main action follows the state the page already knows', () => {
   const html = read('dashboard.html');
 
