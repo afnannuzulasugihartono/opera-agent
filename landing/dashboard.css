@@ -64,20 +64,22 @@ header nav .navCta[hidden] { display: none; }
 
 .status.appStatus { margin: 10px 0 0; min-height: 18px; }
 
+/*
+ * WHY the figures stand apart: joined by a hairline they read as one table row with three cells.
+ * Both benchmarks set their figures as separate cards, so each number carries its own edge and its own space.
+ */
+
 .metrics {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 1px;
+  gap: 12px;
   margin: 16px 0 24px;
-  padding: 0;
-  border: 1px solid var(--line);
-  border-radius: var(--app-radius);
-  background: var(--line);
-  overflow: hidden;
 }
 
 .metrics > div {
   padding: 13px 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--app-radius);
   background: var(--surface);
 }
 
@@ -496,18 +498,48 @@ dl.facts {
 
 /* ── empty states and command rows ────────────────────────────────────────── */
 
+/*
+ * WHY the empty state is centred and marked: a dashed box with a bold sentence reads as a form field that was left blank, and it is the first thing every new account sees.
+ * Both benchmarks centre theirs, give the sentence its own line under the title, and mark the surface with the product's own glyph.
+ */
+
 .empty {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
   margin: 0 0 16px;
-  padding: 24px;
-  border: 1px dashed var(--line-strong);
+  padding: 28px 24px;
+  border: 1px solid var(--line);
   border-radius: var(--app-radius);
+  background: var(--surface);
   color: var(--muted);
-  font-size: 14px;
+  font-size: 13.5px;
+  text-align: center;
 }
 
-.empty strong { color: var(--ink); }
+.empty::before {
+  content: "";
+  width: 30px;
+  height: 30px;
+  margin-bottom: 6px;
+  background: currentColor;
+  opacity: .45;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M8 5.6v12.8l3.1-2.9 1.9 4.5 2.4-1-2-4.5h3.9L8 5.6Z'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M8 5.6v12.8l3.1-2.9 1.9 4.5 2.4-1-2-4.5h3.9L8 5.6Z'/%3E%3C/svg%3E") center / contain no-repeat;
+}
 
-.empty .btn { margin-top: 12px; }
+.empty strong {
+  color: var(--ink);
+  font-size: 15px;
+  font-weight: 650;
+}
+
+.empty p {
+  margin: 0;
+  max-width: 46ch;
+}
+
+.empty .btn { margin-top: 10px; }
 
 ul.commands {
   margin: 0;
@@ -744,7 +776,18 @@ table.history {
   background: var(--surface);
 }
 
-.konsolScroll .empty { margin: 0; border: 0; border-radius: 0; }
+/* WHY the table keeps its own plain note: inside a grid this is a line under the column names, not a page that has nothing in it. */
+
+.konsolScroll .empty {
+  margin: 0;
+  padding: 18px 16px;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  text-align: left;
+}
+
+.konsolScroll .empty::before { display: none; }
 
 .konsolGrid {
   width: 100%;
