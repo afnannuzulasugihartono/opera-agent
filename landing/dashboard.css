@@ -82,7 +82,7 @@ header nav .navCta[hidden] { display: none; }
   align-items: center;
   justify-content: space-between;
   gap: 12px 20px;
-  padding: 0 0 14px;
+  padding: 0 0 12px;
   border-bottom: 1px solid var(--line);
 }
 
@@ -99,7 +99,7 @@ header nav .navCta[hidden] { display: none; }
  * Above the layout it is visible from every tab.
  */
 
-.status.appStatus { margin: 10px 0 0; min-height: 18px; }
+.status.appStatus { margin: 8px 0 0; min-height: 16px; }
 
 /*
  * WHY the figures stand apart: joined by a hairline they read as one table row with three cells.
@@ -110,11 +110,11 @@ header nav .navCta[hidden] { display: none; }
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
-  margin: 16px 0 24px;
+  margin: 12px 0 16px;
 }
 
 .metrics > div {
-  padding: 13px 16px;
+  padding: 11px 16px;
   border: 1px solid var(--line);
   border-radius: var(--app-radius);
   background: var(--surface);
@@ -273,7 +273,7 @@ header nav .navCta[hidden] { display: none; }
   flex-direction: column;
   min-width: 0;
   min-height: 0;
-  padding: 0 24px 20px;
+  padding: 0 24px;
   overflow: hidden;
 }
 
@@ -281,7 +281,7 @@ header nav .navCta[hidden] { display: none; }
 
 .contentHead {
   flex: 0 0 auto;
-  padding-top: 18px;
+  padding-top: 14px;
 }
 
 /*
@@ -955,6 +955,7 @@ table.history {
   color: inherit;
   font: inherit;
   text-align: left;
+  text-transform: inherit;
   cursor: pointer;
 }
 
