@@ -1,6 +1,6 @@
 // @last-edited: 2026-10-26 UTC+7.
 // @title: landing-visual — the site looks finished on every screen.
-// @state: 20 locks; the page is read with the stylesheets it loads, so the header, nav, pills and footer are judged as rendered.
+// @state: 20 locks; the page is read with the stylesheets it loads, so the header, nav, the pill on the marketing pages, the squared signed-in shell and the footer are judged as rendered.
 // @dependencies: test, assert, fs.
 
 // Company grade is decided in five seconds on a phone: a hero that shows the product, copy without a broken sentence, and nothing spilling out of its box.
@@ -183,11 +183,15 @@ test('display type sets the page apart from its own dashboard', () => {
   assert.match(css, /\.section \{[^}]*padding: 104px 0/, 'and breathe around each idea');
 });
 
-test('buttons are pills on every surface that has them', () => {
+test('buttons are pills on the marketing surfaces, and square on the signed-in shell', () => {
 
-  for (const page of ['beranda.html', 'akun.html', 'dashboard.html', 'unduh.html', 'oauth/consent.html']) {
+  for (const page of ['beranda.html', 'unduh.html', 'oauth/consent.html']) {
     const html = cssOf(page);
     assert.match(html, /\.btn \{[^}]*border-radius: 980px/, `${page} pills its buttons`);
+  }
+  for (const page of ['akun.html', 'dashboard.html']) {
+    const html = cssOf(page);
+    assert.match(html, /body\.app-dark \.btn \{[^}]*border-radius: var\(--radius-sm\)/, `${page} squares its buttons to the radius the benchmarks measure`);
   }
   const auth = cssOf('index.html');
   assert.match(auth, /--pill:\s*980px/, 'one pill token, not a radius per control');

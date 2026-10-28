@@ -10,9 +10,12 @@
 /*
  * WHY the console re-points the core tokens: site.css's own components read var(--paper), var(--surface) and var(--ink) directly, so a dark canvas cannot be expressed with new tokens alone.
  * The site's rule says a page may add a token and never override a core one.
- * This is the one deliberate, contained exception: it is scoped to the two signed-in surfaces, it reuses the dark language .panelDark already speaks (--ink-panel, --panel-text, the brand green), and every marketing page keeps the paper canvas untouched.
+ * This is the one deliberate, contained exception: it is scoped to the two signed-in surfaces, it reuses the dark language .panelDark already speaks (--ink-panel, --panel-text, the brand green), it re-points the radius the benchmarks measure (6px controls, 10px cards), and every marketing page keeps the paper canvas untouched.
  *
  * WHY the accent is the brand green and not a new hue: #3ecf8e is already the fill of the brand mark in the header, so the console's one accent is the site's own, and it reads at 7.4:1 on the canvas instead of the 4.6:1 the deep green managed on paper.
+ *
+ * WHY the radius is re-pointed here too: measured live, a Cline button is 6px and a Cline card 10px, and a Cohere control is 0-2px.
+ * The site's own 22px card and 980px pill are the brochure shape, and in a control panel they made every control read as a sticker instead of a control.
  */
 
 body.app-dark {
@@ -34,6 +37,8 @@ body.app-dark {
   --zebra: rgba(255, 255, 255, .028);
   --lift: 0 1px 2px rgba(0, 0, 0, .45);
   --on-fill: #06120d;
+  --radius: 10px;
+  --radius-sm: 6px;
 }
 
 /* WHY the chrome answers in the canvas: a light header above a dark console reads as a different product, which is the one thing a benchmarked redesign cannot afford. */
@@ -85,6 +90,13 @@ body.app-dark .btn.primary:hover {
   background: var(--accent-strong);
   color: #06120d;
 }
+
+/*
+ * WHY the shell's buttons are not pills: the shared sheet's 980px pill is the consumer shape, and in a console every control read as a sticker.
+ * Cline's button is 6px, Cohere's is 0-2px, and the token says which.
+ */
+
+body.app-dark .btn { border-radius: var(--radius-sm); }
 
 /* WHY the one hardcoded tint is re-pointed: site.css paints .chip.warn #f8eee6, which is the only place a shared component names a colour instead of a token. */
 
@@ -212,19 +224,23 @@ main.console { padding-top: 56px; padding-bottom: 80px; }
 
 .accountNav { padding: 10px; }
 
-.accountNav h2 {
+/*
+ * WHY the selector names both classes: the nav is an .appCard, and .appCard h2 comes later in this sheet, so a plain .accountNav h2 never reached the page and the label printed at 18px.
+ */
+
+.appCard.accountNav h2 {
   margin: 8px 10px 8px;
   color: var(--muted);
   font-size: 11px;
-  font-weight: 650;
-  letter-spacing: .12em;
+  font-weight: 600;
+  letter-spacing: .08em;
   text-transform: uppercase;
 }
 
 .accountNav a {
   display: block;
   padding: 9px 12px;
-  border-radius: 9px;
+  border-radius: 6px;
   color: var(--muted);
   font-size: 13.5px;
   font-weight: 500;
