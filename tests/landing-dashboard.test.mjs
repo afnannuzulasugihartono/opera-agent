@@ -1,6 +1,6 @@
 // @last-edited: 2026-10-10 UTC+7.
 // @title: landing-dashboard — the device page shows your devices and your tables, nothing else's.
-// @state: 39 locks, green; the page moved out of akun.html when the two split, and grew the read-only #tabel editor.
+// @state: 49 locks, green; the page moved out of akun.html when the two split, grew the read-only #tabel editor, and became an app shell — the hash decides the active view, and the numbers and the status line sit above it so a tab change cannot hide them.
 // @dependencies: test, assert, fs.
 
 // The dashboard is the fulcrum of the full-stack site: the one page that reads the user's own device rows and, since the table editor landed, one page of any table the reader owns.
@@ -70,14 +70,17 @@ test('the device card answers "is it reachable" before anything else', () => {
     'the device status is not a fragment of a longer line');
 });
 
-test('the rail marks the section being read', () => {
+test('the hash marks the section being read, and nothing else does', () => {
   const html = read('dashboard.html');
 
-  assert.match(html, /IntersectionObserver/, 'the rail reads which section is in view');
+  assert.match(html, /function showSection\(\)/, 'one function owns which view is open');
+  assert.match(html, /globalThis\.location\.hash/, 'the hash is the source of truth');
+  assert.match(html, /addEventListener\('hashchange', showSection\)/, 'a deep link moves the rail');
   assert.match(html, /link\.setAttribute\('aria-current', 'true'\)/, 'and marks that one');
   assert.match(html, /link\.removeAttribute\('aria-current'\)/, 'and unmarks the rest');
+  assert.match(html, /section\.classList\.toggle\('active'/, 'and shows that section alone');
 
-  assert.match(html, /rootMargin: '-70px 0px -55% 0px'/, 'the sticky header is offset from the reading line');
+  assert.doesNotMatch(html, /IntersectionObserver/, 'no second source of truth competes with the hash');
 });
 
 test('the dashboard re-reads the marker instead of reading it once', () => {
@@ -122,7 +125,7 @@ test('the dashboard is about devices, not a profile page', () => {
   assert.match(html, /Device milik/, 'the page names whose devices these are, in one line');
   assert.match(html, /aria-current="page"/, 'the nav marks this page as the current one');
 
-  assert.match(html, /<h2>Akun ini<\/h2>/, 'the account facts have their own section');
+  assert.match(html, /<h1>Akun ini<\/h1>/, 'the account facts have their own section');
   assert.doesNotMatch(html, /<input[^>]*id="(fullName|accountName|email)"/i, 'and nothing on this page edits the account');
 });
 
@@ -138,7 +141,7 @@ test('the dashboard has a rail, because it has five jobs and no divider', () => 
   assert.match(html, /aria-label="Bagian dashboard"/, 'and it is labelled, so a screen reader announces what it is');
 
   for (const heading of ['Ringkasan', 'Device', 'Sesi dengar', 'Pairing manual', 'Jalankan aksi', 'Akun ini']) {
-    assert.ok(html.includes(`<h2>${heading}</h2>`), `${heading} has a heading of its own`);
+    assert.ok(html.includes(`<h1>${heading}</h1>`), `${heading} has a heading of its own`);
   }
 
   assert.match(css, /@media \(max-width: 760px\)[\s\S]*?\.rail \{[^}]*grid-auto-flow: column/s, 'the rail has a narrow-screen form, and becomes a horizontal strip below 760px');
@@ -362,16 +365,17 @@ test('a device card leads with its state, not its name alone', () => {
   assert.match(html, /class="chip"/, 'and the build rides beside it, not rows down');
 });
 
-test('pairing and run sit side by side on a wide screen', () => {
+test('pairing and run share one wrapper, and one verb at a time takes the row', () => {
 
   const html = read('dashboard.html');
   assert.match(html, /class="duo"/, 'one wrapper holds both verbs');
-  assert.match(css, /\.duo \{[^}]*grid-template-columns: 1fr 1fr/, 'and the wrapper splits in two');
+  assert.match(css, /\.duo \{[^}]*grid-template-columns: 1fr 1fr/, 'the wrapper knows its two-column form');
 
   const splitAt = css.indexOf('\n.duo {');
   const queryAt = css.indexOf('@media (max-width: 640px)', splitAt);
   const collapseAt = css.indexOf('.duo { grid-template-columns: 1fr; }', queryAt);
   assert.ok(splitAt > -1 && queryAt > splitAt && collapseAt > queryAt, 'collapsing under it');
+  assert.match(css, /\.tabbed \.duo \{[^}]*display: block/, 'and the console shows one verb at a time, so the card takes the row');
 });
 
 test('the rail counts what it links to', () => {
@@ -407,7 +411,7 @@ test('the console uses the screen, the prose keeps its measure', () => {
   const html = read('dashboard.html');
   assert.match(html, /wrap wide/, 'the console breaks out of the prose column');
   assert.match(css, /\.wrap\.wide \{[^}]*max-width: 1200px/, 'to a named twelve-hundred measure, not infinity');
-  assert.match(css, /#devices \{[^}]*grid-template-columns: 1fr 1fr/, 'two cards share a row on desktop');
+  assert.match(css, /#devices \{[^}]*grid-template-columns: repeat\(auto-fill, minmax\(340px, 1fr\)\)/, 'cards share a row, and one card does not leave half the page empty');
   const gridAt = css.indexOf('#devices {');
   const queryAt = css.indexOf('@media (max-width: 860px)', gridAt);
   const collapseAt = css.indexOf('#devices { grid-template-columns: 1fr; }', queryAt);
@@ -421,7 +425,7 @@ test('the history section lists every command newest first', () => {
   for (const head of ['Waktu', 'Status', 'Metode', 'Device', 'Durasi']) {
     assert.ok(html.includes(`<th>${head}</th>`), `the history table heads ${head}`);
   }
-  assert.match(html, /<h2>Riwayat<\/h2>/, 'the section names itself');
+  assert.match(html, /<h1>Riwayat<\/h1>/, 'the section names itself');
   assert.match(html, /href="#riwayat"/, 'and the rail links to it');
   assert.match(html, /id="historyRows"/, 'the rows have a body of their own');
   assert.match(html, /renderHistory\(data\.devices\)/, 'and the refresh feeds it the loaded devices');
@@ -436,4 +440,87 @@ test('the history table carries metadata only, like the device cards', () => {
   const html = read('dashboard.html');
   assert.doesNotMatch(html, /command\s*\.\s*(params|value|content|text|result)\b/, 'no payload field is read from a command');
   assert.doesNotMatch(html, /row\s*\.\s*(params|value|content|text|result)\b/, 'neither under its flattened name');
+});
+
+test('the console opens with an app bar, not a marketing hero', () => {
+  const html = read('dashboard.html');
+
+  assert.match(html, /class="appBar"/, 'the page opens with a bar that carries state and actions');
+  assert.doesNotMatch(html, /class="eyebrow"/, 'no eyebrow announces a release on the console');
+  assert.doesNotMatch(html, /<h1>Dashboard<\/h1>/, 'the product name is not the page title');
+  assert.match(html, /id="primaryCta"/, 'one action is marked as the next step');
+});
+
+test('each view is a page of its own, with one visible title', () => {
+  const html = read('dashboard.html');
+
+  for (const id of ['ringkasan', 'device', 'riwayat', 'tabel', 'dengar', 'pairing', 'aksi', 'akun']) {
+    assert.match(html, new RegExp(`<section id="${id}"[^>]*>[\\s\\S]{0,160}?<h1>`), `${id} opens with its own h1`);
+  }
+  assert.equal((html.match(/class="active"/g) || []).length, 1, 'exactly one view is open on load');
+  assert.match(css, /section h1 \{/, 'and that title has a rule of its own');
+});
+
+test('a tab change never hides the status line or the numbers', () => {
+  const html = read('dashboard.html');
+  const firstSection = html.indexOf('<section id="ringkasan"');
+  assert.ok(firstSection > 0, 'the first view exists');
+
+  for (const id of ['status', 'metrics', 'statDevices', 'statOnline', 'statCommands']) {
+    const at = html.indexOf(`id="${id}"`);
+    assert.ok(at > 0 && at < firstSection, `#${id} sits above the views, so switching tabs cannot hide it`);
+  }
+});
+
+test('the rail groups its links instead of listing eight equals', () => {
+  const html = read('dashboard.html');
+  const groups = [...html.matchAll(/<p class="railGroup">([^<]+)<\/p>/g)].map((match) => match[1]);
+
+  assert.deepEqual(groups, ['Pantau', 'Kelola', 'Akun'], 'three named groups, in reading order');
+  assert.match(css, /\.railGroup \{/, 'and a rule that sets them apart from the links');
+});
+
+test('the browser tab names the view being read', () => {
+  const html = read('dashboard.html');
+
+  assert.match(html, /document\.title = `\$\{heading\} — Opera Agent`/, 'the title is written by the tab controller, from the view it opened');
+});
+
+test('the history can be narrowed without reading every command', () => {
+  const html = read('dashboard.html');
+
+  assert.match(html, /id="historySearch"/, 'a search box narrows the list');
+  assert.match(html, /data-filter="failed"/, 'and a status filter names the failing rows');
+  assert.match(html, /id="historyCount"/, 'the count says how many rows the filter left');
+  assert.match(html, /function paintHistory\(\)/, 'one function repaints from the rows already loaded');
+  assert.match(css, /\.history th \{[^}]*position: sticky/, 'the head holds while the list scrolls');
+});
+
+test('an empty view offers the step that fills it', () => {
+  const html = read('dashboard.html');
+
+  assert.match(html, /Belum ada device\.<\/strong>[\s\S]{0,240}?href="#pairing"/, 'the empty device list points at pairing');
+  assert.match(html, /Belum ada riwayat perintah\.[\s\S]{0,240}?href="#aksi"/, 'the empty history points at the first run');
+});
+
+test('the main action follows the state the page already knows', () => {
+  const html = read('dashboard.html');
+
+  assert.match(html, /function paintPrimaryAction\(\)/, 'one function decides the next step');
+  assert.match(html, /if \(!lastSeen\.installed\)/, 'a missing extension is offered the download');
+  assert.match(html, /cta\.textContent = 'Pair device'/, 'an installed browser with no device is offered pairing');
+  assert.match(html, /cta\.textContent = 'Jalankan aksi'/, 'a live device is offered a run');
+});
+
+test('the console keeps its own scale without redefining a shared token', () => {
+  assert.match(css, /--app-radius:/, 'the page adds a token of its own');
+  assert.doesNotMatch(css, /:root\s*\{/, 'and never opens the shared token block');
+  for (const token of ['--paper', '--surface', '--ink', '--accent', '--radius', '--shadow']) {
+    assert.doesNotMatch(css, new RegExp(`${token}\\s*:`), `the page does not restate ${token}`);
+  }
+});
+
+test('the table editor keeps its row rhythm and its first column in view', () => {
+  assert.match(css, /\.konsolSide button \{[^}]*white-space: nowrap/, 'one sidebar row stays one row high');
+  assert.match(css, /\.konsolGrid tbody td:first-child \{[^}]*position: sticky/, 'the first column stays put while the grid scrolls sideways');
 });

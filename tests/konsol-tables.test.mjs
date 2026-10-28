@@ -144,7 +144,7 @@ test('the tautology is gone and workflow runs stay owned', () => {
 
 test('the dashboard section exists, is reachable, and reads through the readers', () => {
   assert.match(html, /<section id="tabel">/, 'the console has its own section');
-  assert.match(html, /<h2>Tabel<\/h2>/, 'the section names itself');
+  assert.match(html, /<h1>Tabel<\/h1>/, 'the section names itself');
   assert.equal((html.match(/<a href="#tabel">Tabel<\/a>/g) || []).length, 1, 'the one rail leads to it, instead of a second strip repeating the same names');
   assert.match(html, /if \(target === 'tabel'\) konsolInit\(\);/, 'the console initialises on first visit, not on page load');
   assert.match(html, /konsolRpc\('opera_konsol_tables'/, 'the sidebar lists through the table reader');
