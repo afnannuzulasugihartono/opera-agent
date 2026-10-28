@@ -15,13 +15,50 @@
 
 /* ── the page's own scale ─────────────────────────────────────────────────── */
 
+/*
+ * WHY the console is the window and not a column inside it: the reader asked twice — the table was still raw, and the sidebar was not where a sidebar belongs.
+ * Measured in their own browser: the console was a 1200px column floating in a 1455px window, so the rail sat 160px in from the edge, and the table pane stood 148px tall while the window had room for twice that.
+ * Cline and OpenCode, measured side by side in Chrome, are both an app shell: the sidebar is the window's left column, flush to the edge and full height, and the content beside it takes what is left.
+ * The page is the window now.
+ * Everything below divides it, and nothing measures the window in pixels.
+ */
+
+body:has(main.console) {
+  height: 100dvh;
+  overflow: hidden;
+}
+
 main.console {
   --app-radius: 12px;
   --app-radius-sm: 8px;
   --app-title: clamp(20px, 2vw, 24px);
   --app-pad: 20px;
-  padding-top: 28px;
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 0;
 }
+
+/* WHY the console runs edge to edge while the other wide pages keep their measure: a console is the window, and a reader who widens the window expects the sidebar to follow it to the edge. */
+
+main.console.wide {
+  width: 100%;
+  max-width: none;
+  margin-inline: 0;
+}
+
+/*
+ * WHY the footer is a bar here: the console owns the window, and a 140px marketing block under the shell is a third of the screen the reader came to work in.
+ * Every door stays; the block goes.
+ */
+
+main.console ~ footer {
+  padding: 12px 0;
+  font-size: 12.5px;
+}
+
+main.console ~ footer .cols { gap: 8px; }
 
 /*
  * WHY a smaller radius and no shadow here: a console is a surface you work on, and the brochure radius made every card look like it was selling something.
@@ -107,11 +144,18 @@ header nav .navCta[hidden] { display: none; }
 
 /* ── the rail ─────────────────────────────────────────────────────────────── */
 
+/*
+ * WHY the two columns touch: a gap between the rail and the content reads as a page with a floating sidebar in it, which is the shape the reader asked to leave behind.
+ * WHY the row is one fraction of the shell: the rail is bounded by the window it lives in, so a list of twenty-seven tables scrolls inside it instead of deciding how tall the page is.
+ */
+
 .layout {
   display: grid;
-  grid-template-columns: 196px minmax(0, 1fr);
-  gap: 40px;
-  align-items: start;
+  grid-template-columns: 220px minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+  gap: 0;
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 /*
@@ -122,15 +166,16 @@ header nav .navCta[hidden] { display: none; }
 /*
  * WHY the rail scrolls itself: with the table list in it, the column holds twenty-seven items, which is longer than most windows.
  * A column that cannot scroll is a column whose last entries nobody can reach.
+ * WHY it carries its own edge and its own space: the rail is a column of the window now, not a block floating in the content.
  */
 
 .rail {
-  position: sticky;
-  top: 92px;
   display: grid;
   gap: 1px;
   align-content: start;
-  max-height: calc(100vh - 108px);
+  min-height: 0;
+  padding: 16px 12px;
+  border-right: 1px solid var(--line);
   overflow-y: auto;
   scrollbar-width: thin;
 }
@@ -218,14 +263,33 @@ header nav .navCta[hidden] { display: none; }
   font-weight: 600;
 }
 
-.content { min-width: 0; }
+/*
+ * WHY the content column is its own scroll container: the page is the window, so the window must not scroll.
+ * The view beside the rail scrolls, and the head above it does not move.
+ */
+
+.content {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  padding: 0 24px 20px;
+  overflow: hidden;
+}
+
+/* WHY a head of its own: the numbers and the status line belong to the console, not to one view, so they sit above the views and stay there while a view scrolls. */
+
+.contentHead {
+  flex: 0 0 auto;
+  padding-top: 18px;
+}
 
 /*
  * WHY collapsed keeps the marks: a rail with no labels and no marks is a rail nobody can read, and the marks are the one thing that survives at 56px.
  * The contextual list has no marks, so it is the one part that goes away entirely until the rail comes back.
  */
 
-body.rail-collapsed .layout { grid-template-columns: 56px minmax(0, 1fr); gap: 20px; }
+body.rail-collapsed .layout { grid-template-columns: 56px minmax(0, 1fr); gap: 0; }
 
 body.rail-collapsed .railTitle,
 body.rail-collapsed .railGroup,
@@ -249,7 +313,20 @@ body.rail-collapsed .railCollapse .railIcon { transform: rotate(180deg); }
 
 .content.tabbed > section:not(.active) { display: none; }
 
-.content.tabbed > section.active { display: block; }
+/* WHY the open view takes the room and scrolls inside it: a view that is taller than the window scrolls itself, so the pager of the table and the last card of a device list are both reachable. */
+
+.content.tabbed > section.active {
+  display: block;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.content.tabbed > .duo {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
 
 .content.tabbed .duo > section:not(.active) { display: none; }
 
@@ -278,19 +355,32 @@ section > .meta {
 }
 
 @media (max-width: 980px) {
-  .layout { grid-template-columns: 168px minmax(0, 1fr); gap: 26px; }
+  .layout { grid-template-columns: 190px minmax(0, 1fr); gap: 0; }
 }
 
+/*
+ * WHY the phone scrolls the page again: a shell that owns the window has no room for a keyboard, and a phone has none of the room a window has.
+ * The rail becomes a strip, the views take the height their content needs, and the page scrolls the way a page does.
+ * WHY the shell keeps the header's own offset: the page scrolls again on a phone, and the header is sticky, so the console needs the room site.css gives every other page.
+ */
+
 @media (max-width: 760px) {
-  main.console { padding-top: 20px; }
-  .layout { grid-template-columns: 1fr; gap: 16px; }
+  body:has(main.console) { height: auto; overflow: visible; }
+  main.console { padding: 92px 0 40px; }
+  .layout { grid-template-columns: 1fr; grid-template-rows: auto auto; gap: 16px; }
+  .content { overflow: visible; padding: 0 16px 24px; }
+  .content.tabbed > section.active,
+  .content.tabbed > .duo { flex: 0 0 auto; overflow: visible; }
+  #tabel { flex: 0 0 auto; }
+  .konsolScroll { max-height: 70vh; }
   .rail {
-    position: static;
     grid-auto-flow: column;
     grid-auto-columns: max-content;
     gap: 4px;
     overflow-x: auto;
     padding: 4px;
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
     scrollbar-width: none;
   }
   .rail::-webkit-scrollbar { display: none; }
@@ -301,13 +391,13 @@ section > .meta {
 
   /*
    * WHY the exception: the horizontal strip is right for eleven view names and wrong for twenty-seven of them, so the rail that carries the table list stays a vertical column the reader scrolls.
+   * WHY a share of the window and not an offset from it: a phone has no window to subtract a header from, and the list still has to end somewhere.
    */
 
   .rail:has(> .railContext:not([hidden])) {
-    position: static;
     grid-auto-flow: row;
     grid-auto-columns: auto;
-    max-height: calc(100vh - 108px);
+    max-height: 55vh;
     overflow-y: auto;
     padding: 0;
     scrollbar-width: thin;
@@ -675,15 +765,15 @@ table.history {
 /* ── read-only table editor ──────────────────────────────────────────────── */
 
 /*
- * WHY the view is bounded by the window: measured live, the editor's own sidebar stood 824px tall beside a 596px pane, so sixteen table names ran 491px past the bottom of a 1148x714 screen and the pagination footer was not on screen at all.
- * The offset is the shell above the view — the app bar, the status line, the metric strip, the view title and its note — measured at 381px, and the floor keeps a short window usable instead of crushing the grid to nothing.
+ * WHY the view fills the shell: the grid is what grows, and the pager under it stays on screen.
+ * The old rule measured the window in pixels — a clamp between 360px and 620px against the window height less 390px — which is a number of pixels pretending to be a layout, and it left the grid 148px tall in a window with room for twice that.
  */
 
 #tabel {
   display: flex;
   flex-direction: column;
+  flex: 1;
   min-height: 0;
-  height: clamp(360px, calc(100vh - 390px), 620px);
 }
 
 /*
@@ -768,7 +858,7 @@ table.history {
 
 .konsolScroll {
   flex: 1 1 auto;
-  min-height: 120px;
+  min-height: 140px;
   overflow: auto;
   overscroll-behavior: contain;
   border: 1px solid var(--line);
@@ -789,10 +879,23 @@ table.history {
 
 .konsolScroll .empty::before { display: none; }
 
+/*
+ * WHY the interface font and not the mono face: a grid where every character is the same width reads as a terminal dump, not as data.
+ * The mono face stays for the columns where the shape of the glyph carries meaning — the ids — and the rest of the grid wears the interface font, the way every production table prints it.
+ */
+
 .konsolGrid {
   width: 100%;
   border-collapse: collapse;
-  font: 12.5px/1.55 var(--mono);
+  font-family: var(--font);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.konsolGrid td.mono,
+.konsolGrid th.mono {
+  font-family: var(--mono);
+  font-size: 12.5px;
 }
 
 .konsolGrid th,
@@ -806,13 +909,20 @@ table.history {
   white-space: nowrap;
 }
 
+/* WHY the header is a band: uppercase, small and muted is how a column name steps back so the values under it lead. */
+
 .konsolGrid th {
   position: sticky;
   top: 0;
   z-index: 1;
+  padding: 9px 12px;
   border-bottom: 1px solid var(--line-strong);
   background: var(--surface-soft);
-  font-weight: 600;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: .06em;
+  text-transform: uppercase;
 }
 
 /*
