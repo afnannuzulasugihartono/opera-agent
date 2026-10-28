@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-10 UTC+7.
+// @last-edited: 2026-10-28 UTC+7.
 // @title: landing-dashboard — the device page shows your devices and your tables, nothing else's.
 // @state: 49 locks, green; the page moved out of akun.html when the two split, grew the read-only #tabel editor, and became an app shell — the hash decides the active view, and the numbers and the status line sit above it so a tab change cannot hide them.
 // @dependencies: test, assert, fs.
@@ -570,6 +570,24 @@ test('a rail that carries a table list stays vertical on a phone', () => {
   assert.match(css, /\.rail:has\(> \.railContext:not\(\[hidden\]\)\)/, 'twenty-seven items in a horizontal strip is a strip nobody can use');
 });
 
+// MEASURED LIVE ON THE #DENGAR VIEW, IN THE READER'S OWN BROWSER.
+// #tabel is an id and the rule that hides a view that is not active is a class rule, so the id outranked it: the table editor was still on screen, 376px tall, above the view the reader had chosen.
+// The table was on every page of the console, and the reader named it before I did.
+
+test('the table view is a view, not a fixture on every page', () => {
+  const html = read('dashboard.html');
+
+  assert.match(css, /#tabel:not\(\.active\) \{ display: none; \}/, 'the table editor leaves the screen the moment another view is chosen');
+
+  const sections = [...html.matchAll(/<section id="([a-z]+)"/g)].map((match) => match[1]);
+  assert.ok(sections.length >= 8, `the console has eight views, found ${sections.length}`);
+
+  for (const id of sections) {
+    if (!new RegExp(`^#${id}\\s*\\{[^}]*display:`, 'm').test(css)) continue;
+    assert.match(css, new RegExp(`^#${id}:not\\(\\.active\\)\\s*\\{[^}]*display: none;`, 'm'), `#${id} owns its own display, so it needs the hidden state too — an id outranks the class rule`);
+  }
+});
+
 test('the rail opens with a head, and it can be put away', () => {
   const html = read('dashboard.html');
 
@@ -602,8 +620,9 @@ test('the rail count cannot wipe the mark it rides beside', () => {
   assert.doesNotMatch(html, /querySelector\('\.rail a\[href="#device"\]'\)\.textContent/, 'writing the link itself would delete the mark');
 });
 
-// WHY the console re-points the core tokens at all: the shared sheet's components read var(--paper), var(--surface) and var(--ink) directly, so a dark canvas cannot be expressed with new tokens alone.
-// The site's rule says a page may add a token and never override a core one; this is the one deliberate, contained exception, scoped to the two signed-in surfaces and reusing the dark language .panelDark already speaks.
+// WHY THE CONSOLE RE-POINTS THE CORE TOKENS AT ALL.
+// The shared sheet's components read var(--paper), var(--surface) and var(--ink) directly, so a dark canvas cannot be expressed with new tokens alone.
+// The site's rule says a page may add a token and never override a core one, so this is the one deliberate exception, scoped to the two signed-in surfaces.
 
 test('the console declares its own dark scale, and the site keeps its own', () => {
   assert.match(app, /body\.app-dark \{/, 'the app pages name the dark scale');
