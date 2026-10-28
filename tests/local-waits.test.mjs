@@ -141,6 +141,21 @@ test('a read on a page still filling in says so, and answers with the later samp
     calls: [],
     send: async (method, params = {}) => {
       cdp.calls.push({ method, params });
+      // The read asks one question of the page and gets the surface signals and its own text together.
+      // That text is the DOM step's first sample, so it advances the counter and the second read is the one that shows the page grew.
+      if (method === 'Runtime.evaluate' && String(params.expression).includes('window.innerHeight')) {
+        const sample = samples[Math.min(ask++, samples.length - 1)];
+        return { result: { value: {
+          textInDom: { value: true, evidence: sample.text.length },
+          canvas: { value: false, evidence: 0 },
+          editable: { value: false, evidence: 'no editable host' },
+          focused: { value: false, evidence: 'document.hasFocus() is false' },
+          title: sample.title,
+          url: sample.url,
+          text: sample.text,
+          ready: sample.ready
+        } } };
+      }
       if (method === 'Runtime.evaluate' && String(params.expression).includes('document.title')) {
         return { result: { value: samples[Math.min(ask++, samples.length - 1)] } };
       }
