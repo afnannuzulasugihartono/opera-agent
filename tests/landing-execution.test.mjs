@@ -189,7 +189,7 @@ test('the dashboard renders a device card for a paired device', async () => {
   assert.equal(nodes.statDevices.textContent, 1, 'the device count is computed, not written');
   assert.equal(nodes.statOnline.textContent, 1, 'and so is the online count');
   assert.match(nodes.statCommands.textContent, /8970 dari 9000/, 'and the command tally');
-  assert.equal(nodes['qs:.rail a[href="#device"]'].textContent, 'Device (1)', 'the rail counts what it links to');
+  assert.equal(nodes.railDeviceLabel.textContent, 'Device (1)', 'the rail counts what it links to');
 });
 
 test('the dashboard names the extension when the browser does not have it', async () => {

@@ -54,17 +54,23 @@
 
     <div class="layout">
       <nav class="rail" aria-label="Bagian dashboard">
+        <div class="railHead">
+          <p class="railTitle">Konsol</p>
+          <button class="railCollapse" id="railCollapse" type="button" aria-expanded="true" title="Sembunyikan navigasi" aria-label="Sembunyikan navigasi">
+            <svg class="railIcon" viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3 5 8l5 5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" /></svg>
+          </button>
+        </div>
         <p class="railGroup">Pantau</p>
-        <a href="#ringkasan" aria-current="true">Ringkasan</a>
-        <a href="#device">Device</a>
-        <a href="#riwayat">Riwayat</a>
-        <a href="#dengar">Dengar</a>
+        <a href="#ringkasan" aria-current="true"><svg class="railIcon" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 13a6 6 0 1 1 11 0" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" /><path d="M8 13 11 7" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" /></svg><span>Ringkasan</span></a>
+        <a href="#device"><svg class="railIcon" viewBox="0 0 16 16" aria-hidden="true"><rect x="2" y="3" width="12" height="8.5" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.5" /><path d="M6 14h4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" /></svg><span id="railDeviceLabel">Device</span></a>
+        <a href="#riwayat"><svg class="railIcon" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="5.75" fill="none" stroke="currentColor" stroke-width="1.5" /><path d="M8 4.75V8l2.5 1.75" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" /></svg><span>Riwayat</span></a>
+        <a href="#dengar"><svg class="railIcon" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 8h2M6 4.5v7M9.5 2.5v11M13 6.5v3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" /></svg><span>Dengar</span></a>
         <p class="railGroup">Kelola</p>
-        <a href="#tabel">Tabel</a>
-        <a href="#pairing">Pairing</a>
-        <a href="#aksi">Aksi</a>
+        <a href="#tabel"><svg class="railIcon" viewBox="0 0 16 16" aria-hidden="true"><rect x="2" y="2.5" width="12" height="11" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.5" /><path d="M2 6.25h12M6.25 6.25V13.5" fill="none" stroke="currentColor" stroke-width="1.5" /></svg><span>Tabel</span></a>
+        <a href="#pairing"><svg class="railIcon" viewBox="0 0 16 16" aria-hidden="true"><path d="M6.5 9.5a3 3 0 0 1 0-4.2l1.4-1.4a3 3 0 0 1 4.2 4.2l-.7.7" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" /><path d="M9.5 6.5a3 3 0 0 1 0 4.2L8.1 12.1a3 3 0 0 1-4.2-4.2l.7-.7" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" /></svg><span>Pairing</span></a>
+        <a href="#aksi"><svg class="railIcon" viewBox="0 0 16 16" aria-hidden="true"><path d="M5.5 3.75 12 8l-6.5 4.25z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" /></svg><span>Aksi</span></a>
         <p class="railGroup">Akun</p>
-        <a href="#akun">Akun</a>
+        <a href="#akun"><svg class="railIcon" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="5.75" r="2.75" fill="none" stroke="currentColor" stroke-width="1.5" /><path d="M3 13.25a5 5 0 0 1 10 0" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" /></svg><span>Akun</span></a>
 
         <!-- WHY a contextual part: the object of the Tabel view is a list of tables, and a second sidebar inside the content made the one view with two left columns. -->
         <div class="railContext" id="railTables" hidden>
@@ -615,7 +621,7 @@
       lastSeen.total = all;
       renderChecklist();
       paintPrimaryAction();
-      document.querySelector('.rail a[href="#device"]').textContent = `Device (${total})`;
+      $('railDeviceLabel').textContent = `Device (${total})`;
       renderHistory(data.devices);
 
       // WHY metadata only: a screenshot of this page must not leak speech, so the section names sessions without quoting them.
@@ -1102,6 +1108,17 @@
       if (target === 'tabel') konsolInit();
     }
     if (typeof globalThis.addEventListener === 'function') globalThis.addEventListener('hashchange', showSection);
+
+    // WHY the rail can be put away: the table grid is the widest thing on the console, and a 196px column of navigation is 196px it cannot spend.
+    // The label goes and the mark stays, so a collapsed rail is still navigable — which is also why the count writes the label and never the link.
+    const collapse = $('railCollapse');
+    if (collapse) {
+      collapse.addEventListener('click', () => {
+        const collapsed = document.body.classList.toggle('rail-collapsed');
+        collapse.setAttribute('aria-expanded', String(!collapsed));
+        collapse.title = collapsed ? 'Tampilkan navigasi' : 'Sembunyikan navigasi';
+      });
+    }
 
     showSection();
     load();
