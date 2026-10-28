@@ -65,6 +65,12 @@
         <a href="#aksi">Aksi</a>
         <p class="railGroup">Akun</p>
         <a href="#akun">Akun</a>
+
+        <!-- WHY a contextual part: the object of the Tabel view is a list of tables, and a second sidebar inside the content made the one view with two left columns. -->
+        <div class="railContext" id="railTables" hidden>
+          <p class="railGroup">Tabel data</p>
+          <div class="railList" id="konsolList" role="group" aria-label="Daftar tabel"></div>
+        </div>
       </nav>
 
       <div class="content tabbed">
@@ -111,29 +117,24 @@
         <section id="tabel">
           <h1>Tabel</h1>
           <p class="meta">Data proyek, hanya-baca: baris sudah disaring server untuk akun ini, dan kolom rahasia disamarkan sebelum keluar dari database.</p>
-          <div class="konsol">
-            <div class="konsolSide" id="konsolList" role="group" aria-label="Daftar tabel"></div>
-            <div class="konsolMain">
-              <div class="konsolBar">
-                <input id="konsolSearch" type="search" placeholder="Cari di tabel ini…" autocomplete="off" spellcheck="false" maxlength="64" aria-label="Cari baris di tabel ini" />
-                <button class="btn ghost" id="konsolCsv" type="button" title="Unduh hingga 5.000 baris sesuai filter saat ini">Ekspor CSV</button>
-              </div>
-              <p class="status" id="konsolStatus" role="status" aria-live="polite">&nbsp;</p>
-              <div class="konsolScroll">
-                <table class="konsolGrid">
-                  <thead id="konsolHead"><tr><th scope="col">Memuat…</th></tr></thead>
-                  <tbody id="konsolRows"></tbody>
-                </table>
-                <div class="empty" id="konsolEmpty" hidden><strong>Tabel ini kosong.</strong> Tidak ada baris yang cocok dengan akun dan filter ini.</div>
-              </div>
-              <div class="konsolBar konsolFoot">
-                <button class="btn ghost" id="konsolPrev" type="button">‹ Sebelumnya</button>
-                <span class="meta" id="konsolPage">–</span>
-                <button class="btn ghost" id="konsolNext" type="button">Berikutnya ›</button>
-              </div>
-              <pre class="konsolJson" id="konsolJson" hidden></pre>
-            </div>
+          <div class="konsolBar">
+            <input id="konsolSearch" type="search" placeholder="Cari di tabel ini…" autocomplete="off" spellcheck="false" maxlength="64" aria-label="Cari baris di tabel ini" />
+            <button class="btn ghost" id="konsolCsv" type="button" title="Unduh hingga 5.000 baris sesuai filter saat ini">Ekspor CSV</button>
           </div>
+          <p class="status" id="konsolStatus" role="status" aria-live="polite">&nbsp;</p>
+          <div class="konsolScroll">
+            <table class="konsolGrid">
+              <thead id="konsolHead"><tr><th scope="col">Memuat…</th></tr></thead>
+              <tbody id="konsolRows"></tbody>
+            </table>
+            <div class="empty" id="konsolEmpty" hidden><strong>Tabel ini kosong.</strong> Tidak ada baris yang cocok dengan akun dan filter ini.</div>
+          </div>
+          <div class="konsolBar konsolFoot">
+            <button class="btn ghost" id="konsolPrev" type="button">‹ Sebelumnya</button>
+            <span class="meta" id="konsolPage">–</span>
+            <button class="btn ghost" id="konsolNext" type="button">Berikutnya ›</button>
+          </div>
+          <pre class="konsolJson" id="konsolJson" hidden></pre>
         </section>
 
         <section id="dengar">
@@ -1090,6 +1091,11 @@
         if (link.getAttribute('href') === `#${target}`) link.setAttribute('aria-current', 'true');
         else link.removeAttribute('aria-current');
       }
+
+      // WHY the rail carries the view's own list: the object of the Tabel view is a table, and a second sidebar inside the content gave that one view two left columns.
+      // The list is loaded once and kept, so moving between views costs no request.
+      const context = $('railTables');
+      if (context) context.hidden = target !== 'tabel';
 
       // WHY lazy: the sidebar is sixteen counts over tables nobody who opens #riwayat asked about.
       // The editor pays for them once, on first visit, and the rest of the session is local state plus one page per click.
