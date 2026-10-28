@@ -524,3 +524,20 @@ test('the table editor keeps its row rhythm and its first column in view', () =>
   assert.match(css, /\.konsolSide button \{[^}]*white-space: nowrap/, 'one sidebar row stays one row high');
   assert.match(css, /\.konsolGrid tbody td:first-child \{[^}]*position: sticky/, 'the first column stays put while the grid scrolls sideways');
 });
+
+// Measured live on a 1148x714 window: the sidebar stood 824px tall beside a 596px pane, so sixteen tables ran 491px past the bottom of the screen and the pagination footer was not on screen at all.
+// A pane nobody bounded is a pane nobody can use.
+
+test('the table editor is one box, and its two columns end together', () => {
+  assert.match(css, /\.konsol \{[^}]*align-items: stretch/, 'both columns share the box height');
+  assert.match(css, /\.konsol \{[^}]*height: clamp\(/, 'and the box is bounded by the window, with a floor for a short one');
+  assert.match(css, /\.konsolSide \{[^}]*overflow-y: auto/, 'a long list of tables scrolls inside its own column');
+  assert.match(css, /\.konsolMain \{[^}]*min-height: 0/, 'the main column may shrink inside the box');
+  assert.match(css, /\.konsolScroll \{[^}]*flex: 1/, 'the grid takes the space the bar and the footer leave, so the footer stays on screen');
+  assert.doesNotMatch(css, /\.konsolScroll \{[^}]*max-height: 460px/, 'no fixed pixel height decides what the reader can see');
+});
+
+test('a sidebar row is one row high, not two', () => {
+  assert.match(css, /\.konsolSide button \{[^}]*height: 30px/, 'the row carries its own height, so an inherited line-height cannot double it');
+  assert.match(css, /\.konsolSide button \{[^}]*padding: 0 9px/, 'and no padding adds to it');
+});
