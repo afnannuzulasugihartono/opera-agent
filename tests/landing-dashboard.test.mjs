@@ -376,7 +376,16 @@ test('pairing and run share one wrapper, and one verb at a time takes the row', 
   const queryAt = css.indexOf('@media (max-width: 640px)', splitAt);
   const collapseAt = css.indexOf('.duo { grid-template-columns: 1fr; }', queryAt);
   assert.ok(splitAt > -1 && queryAt > splitAt && collapseAt > queryAt, 'collapsing under it');
-  assert.match(css, /\.tabbed \.duo \{[^}]*display: block/, 'and the console shows one verb at a time, so the card takes the row');
+  assert.match(css, /\.content\.tabbed > \.duo:has\(> section\.active\) \{[^}]*display: block/, 'and the console shows one verb at a time, so the card takes the row');
+});
+
+// WHY THE WRAPPER WAITS FOR ITS OWN VIEW.
+// Measured live in the reader's own browser after the shell landed: the table pane was 204px tall in a 650px shell, and the grid sat on its 140px floor while a third of the window stood empty.
+// A flex column gives every child room, and the wrapper was a child that was always there: the pairing card nobody opened was taking the table's space.
+
+test('a view nobody opened takes no room from the view that is open', () => {
+  assert.match(css, /\.content\.tabbed > \.duo \{ display: none; \}/, 'the wrapper is out of the column until one of its views is open');
+  assert.match(css, /\.content\.tabbed > \.duo:has\(> section\.active\)/, 'and it comes back with the view that asks for it');
 });
 
 test('the rail counts what it links to', () => {

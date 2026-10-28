@@ -322,19 +322,25 @@ body.rail-collapsed .railCollapse .railIcon { transform: rotate(180deg); }
   overflow-y: auto;
 }
 
-.content.tabbed > .duo {
+/*
+ * WHY the wrapper waits for its own view: a flex column gives every child room, and a pairing card nobody opened would take a third of the shell away from the table the reader did open.
+ * Measured live: with the wrapper always present, the table pane was 204px tall in a 650px shell, and the grid sat on its 140px floor.
+ */
+
+.content.tabbed > .duo { display: none; }
+
+.content.tabbed > .duo:has(> section.active) {
+  display: block;
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
 }
 
+/* WHY one verb at a time: the console is a set of views, and two cards in one row would leave the second one empty for every reader who opened only one of them. */
+
 .content.tabbed .duo > section:not(.active) { display: none; }
 
 .content.tabbed .duo > section.active { display: block; }
-
-/* WHY block and not one grid track: only one of the two verbs is visible at a time, so a grid would leave an empty second column beside it. */
-
-.tabbed .duo { display: block; }
 
 section {
   margin: 0 0 8px;
@@ -370,7 +376,7 @@ section > .meta {
   .layout { grid-template-columns: 1fr; grid-template-rows: auto auto; gap: 16px; }
   .content { overflow: visible; padding: 0 16px 24px; }
   .content.tabbed > section.active,
-  .content.tabbed > .duo { flex: 0 0 auto; overflow: visible; }
+  .content.tabbed > .duo:has(> section.active) { flex: 0 0 auto; overflow: visible; }
   #tabel { flex: 0 0 auto; }
   .konsolScroll { max-height: 70vh; }
   .rail {
