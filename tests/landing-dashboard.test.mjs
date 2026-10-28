@@ -17,6 +17,7 @@ import fs from 'node:fs';
 const root = new URL('..', import.meta.url);
 const read = (name) => fs.readFileSync(new URL(`landing/${name}`, root), 'utf8');
 const css = read('dashboard.css');
+const app = read('app.css');
 const vercel = JSON.parse(fs.readFileSync(new URL('landing/vercel.json', root), 'utf8'));
 const bySource = Object.fromEntries(vercel.headers.map((h) => [h.source, h.headers]));
 
@@ -550,7 +551,7 @@ test('the rail scrolls itself, because a list of tables is longer than a window'
 
 test('the active rail item is filled, not a shade of paper', () => {
   assert.match(css, /\.rail a\[aria-current="true"\] \{[^}]*background: var\(--accent\)/, 'the current item carries the accent');
-  assert.match(css, /\.rail a\[aria-current="true"\] \{[^}]*color: #fff/, 'and reads in white on it');
+  assert.match(css, /\.rail a\[aria-current="true"\] \{[^}]*color: var\(--on-accent, #fff\)/, 'and reads in an ink that answers the accent — white on paper, dark on the brand green');
 });
 
 test('the table view is one box bounded by the window', () => {
@@ -567,4 +568,38 @@ test('a table row in the rail is one row high, not two', () => {
 
 test('a rail that carries a table list stays vertical on a phone', () => {
   assert.match(css, /\.rail:has\(> \.railContext:not\(\[hidden\]\)\)/, 'twenty-seven items in a horizontal strip is a strip nobody can use');
+});
+
+// WHY the console re-points the core tokens at all: the shared sheet's components read var(--paper), var(--surface) and var(--ink) directly, so a dark canvas cannot be expressed with new tokens alone.
+// The site's rule says a page may add a token and never override a core one; this is the one deliberate, contained exception, scoped to the two signed-in surfaces and reusing the dark language .panelDark already speaks.
+
+test('the console declares its own dark scale, and the site keeps its own', () => {
+  assert.match(app, /body\.app-dark \{/, 'the app pages name the dark scale');
+
+  for (const token of ['--paper', '--surface', '--ink', '--muted', '--line', '--accent']) {
+    assert.match(app, new RegExp(`body\\.app-dark \\{[^}]*${token}\\s*:`), `${token} is re-pointed for the console, and nowhere else`);
+  }
+  assert.match(app, /--ink-panel|--panel-text/, 'and the dark scale reuses the language .panelDark already speaks');
+  assert.match(app, /--accent:\s*#3ecf8e|--accent:\s*var\(--brand\)/, 'the accent is the site\'s own brand green, which reads on a dark canvas');
+
+  assert.doesNotMatch(css, /:root\s*\{/, 'the page sheet still never opens the shared block');
+  for (const token of ['--paper', '--surface', '--ink', '--line', '--accent', '--radius', '--shadow']) {
+    assert.doesNotMatch(css, new RegExp(`${token}\\s*:`), `dashboard.css restates no core token, ${token} least of all`);
+  }
+  assert.doesNotMatch(app, /:root\s*\{/, 'and neither does the shared app sheet');
+});
+
+test('the chrome of an app page answers in the same ink as its canvas', () => {
+  const html = read('dashboard.html');
+  assert.match(html, /<body class="app-dark">/, 'the console names itself dark');
+  assert.match(app, /body\.app-dark header/, 'the shared header answers in it');
+  assert.match(app, /body\.app-dark footer/, 'and so does the footer');
+  assert.match(app, /body\.app-dark header nav \.navCta \{/, 'the sign-in pill cannot stay white ink on a dark canvas');
+  assert.match(app, /body\.app-dark \.brandMark rect \{/, 'and the brand mark answers in light, not in the canvas it sits on');
+  assert.match(app, /body\.app-dark \.chip\.warn \{/, 'the one tint site.css hardcodes is re-pointed too');
+});
+
+test('a primary action on a dark canvas carries dark ink', () => {
+  assert.match(app, /body\.app-dark \.btn\.primary \{/, 'the filled action is re-inked');
+  assert.match(app, /body\.app-dark \.btn\.primary \{[^}]*color: #06120d/, 'white on the brand green is 1.9:1, so the console inks it dark');
 });
