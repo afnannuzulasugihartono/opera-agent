@@ -27,10 +27,12 @@ const PROTOCOL_VERSION = '2024-11-05';
 // Asking a driver for them would mean a statement job fails on a machine where the browser is closed, which is exactly when a bookkeeper wants to see what was delivered last month.
 // For the same reason the statement, report and document calls answer before a tab is resolved inside run(): opening a session would touch a browser the job does not need.
 
+import { randomUUID } from 'node:crypto';
 import { statementCard, statementDelivered } from './statements.js';
 import { reportFromFile } from './reports.js';
 import { documentFromFile } from './documents.js';
 import { BURST_INPUT_ACTIONS, normalizeBurst, runLocalBurst } from './burst.js';
+import { leaseTab, releaseTab } from './bridge.js';
 import { TOOLS, ASKABLE, askParams, STRAY_FILE_TAB } from './tools.js';
 
 // The tool table lives in tools.js: the surface is data, and this file is the protocol that answers it.
@@ -269,12 +271,42 @@ const livePort = (context) => (typeof context.port === 'function' ? context.port
 
 const INPUT_TOOLS = new Set(['click', 'click_row', 'hover', 'type', 'stream_keys', 'press_key', 'upload', 'drop_file', 'open_menu', 'download']);
 
+// WHY THE OWNER IS A LABEL AND A NUMBER.
+// The label is what a refusal reads back to an agent that can go and drive another tab, and the number keeps two agents that share a label from sharing one claim.
+
+const OWNER = `${process.env.OPERA_AGENT_LABEL || 'driver'}-${randomUUID().slice(0, 8)}`;
+
+// WHY THE WINDOW IS TUNABLE AND DEFAULTS TO A MINUTE.
+// A minute outlives any single call and still clears an agent that went quiet; a caller whose agents idle for longer can widen it, and one that wants a fast hand-over can narrow it.
+// The window is read per call rather than held, so a change takes effect on the next claim without a restart.
+
+const leaseWindow = () => {
+  const ttl = Number(process.env.OPERA_LEASE_TTL_MS);
+  return Number.isFinite(ttl) && ttl > 0 ? ttl : undefined;
+};
+
+const bridgeLease = { claim: leaseTab, release: releaseTab };
+
 export function createMcpServer(context) {
   const sessions = new Map();
   const fallback = context.driver ?? null;
+  const lease = context.lease ?? bridgeLease;
 
   const driverFor = async (tabId) => {
     if (!tabId) return fallback;
+
+    // WHY THE CLAIM IS ASKED BEFORE ANYTHING IS OPENED.
+    // A tab another agent holds would still take the click, and the answer would land in the wrong document with nothing naming the interference.
+    // Asking first turns that into a sentence the second agent can act on: who holds the tab, until when, and which other tabs are free.
+    // WHY THE KEY IS THE RESOLVED TAB ID AND NOT THE TEXT THE CALLER TYPED: one agent naming a tab by its title and another naming the same tab by its id are one tab, and a claim keyed by the text let both hold it at once.
+    // WHY THE CLAIM IS ASKED EVEN FOR A CACHED SESSION: a cached session is a socket, not a permission.
+
+    const held = await lease.claim(String(tabId), OWNER, leaseWindow());
+    if (!held?.granted) {
+      const until = new Date(Number(held?.holder?.expiresAt) || 0);
+      throw new Error(`tab ${tabId} is driven by ${held?.holder?.owner ?? 'another agent'} until ${until.toISOString()}. Drive another tab, or wait for the claim to lapse.`);
+    }
+
     const known = context.resolveTab ? await context.resolveTab() : [];
     if (known.length && !known.some((id) => String(id) === String(tabId))) {
       throw new Error(`No page target ${tabId}. Open pages: ${known.join(' | ')}`);
@@ -411,6 +443,7 @@ const windowMatch = async (tab, driver) => (tab ? String(tab.title ?? '') : page
         const out = await driver.close(args.tabId);
         sessions.get(args.tabId)?.close?.();
         sessions.delete(args.tabId);
+        await lease.release(args.tabId, OWNER).catch(() => null);
         return asText(out);
       }
       case 'surface_profile':

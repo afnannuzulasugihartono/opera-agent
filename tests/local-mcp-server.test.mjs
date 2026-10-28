@@ -65,10 +65,30 @@ function fakeDriver() {
   };
 }
 
-const ctx = (driver = fakeDriver()) => ({
+// WHY THE TEST SERVER GETS A LEASE OF ITS OWN.
+// The real lease lives in the bridge, and binding a bridge from a unit test would ask this machine's browser for a table it does not have.
+// The table itself is proven over HTTP in tests/local-bridge.test.mjs; here a lease that grants is enough, because what is under test is what the server does with the answer.
+
+const openLease = () => {
+  const claims = [];
+  return {
+    claims,
+    claim: async (tabId, owner, ttlMs) => {
+      claims.push([String(tabId), owner, ttlMs]);
+      return { granted: true, holder: { owner, expiresAt: Date.now() + (ttlMs ?? 60000) } };
+    },
+    release: async (tabId, owner) => {
+      claims.push(['release', String(tabId), owner]);
+      return true;
+    }
+  };
+};
+
+const ctx = (driver = fakeDriver(), lease = openLease()) => ({
   driver,
   browsers: [{ id: 'chrome', binary: 'C:/chrome.exe' }],
-  port: 9450
+  port: 9450,
+  lease
 });
 
 test('initialize answers with a protocol version and who this server is', async () => {
@@ -466,7 +486,8 @@ const namedCtx = (tabs) => {
     browsers: [{ id: 'chrome', name: 'Google Chrome' }],
     port: 9450,
     resolveTab: async () => tabs.map((page) => page.id),
-    open: async () => driver
+    open: async () => driver,
+    lease: openLease()
   };
 };
 
@@ -760,6 +781,60 @@ test('a notification is answered with nothing at all, because JSON-RPC says so',
 // WHY THIS CLAIM EXISTS.
 // A Chrome tab id is a number, the tool schema says string, and an agent copies the id straight out of the tab list it was just handed.
 // Comparing with === refused the id the product itself printed — so a drive that could see six tabs decided none of them was real.
+
+// WHY THE COVER IS PROVEN WITH A LEASE THAT REFUSES.
+// A grant-only lease shows the claim is asked; only a refusal shows the server stops the call instead of driving a tab it was told it cannot have.
+// The claim must be asked even when the session is cached: a cached session is a socket, not a permission.
+
+test('a tab another agent holds is refused, with the holder and the expiry named', async () => {
+  const c = ctx();
+  c.lease = {
+    claim: async () => ({ granted: false, holder: { owner: 'agent-b', expiresAt: Date.now() + 5000 } }),
+    release: async () => true
+  };
+  const server = createMcpServer(c);
+
+  const res = await server.handle({
+    jsonrpc: '2.0', id: 31, method: 'tools/call',
+    params: { name: 'ax_snapshot', arguments: { tabId: 't1' } }
+  });
+
+  assert.match(res.error.message, /agent-b/, 'the refusal names who holds the tab');
+  assert.match(res.error.message, /T\d\d:\d\d:\d\d/, 'and until when');
+  assert.equal(c.driver.calls.length, 0, 'and nothing was driven on that tab');
+});
+
+test('the claim is renewed by every call, and released when the tab is closed', async () => {
+  const c = ctx();
+  const server = createMcpServer(c);
+
+  await server.handle({ jsonrpc: '2.0', id: 32, method: 'tools/call', params: { name: 'ax_snapshot', arguments: { tabId: 't1' } } });
+  await server.handle({ jsonrpc: '2.0', id: 33, method: 'tools/call', params: { name: 'ax_snapshot', arguments: { tabId: 't1' } } });
+
+  assert.deepEqual(c.lease.claims.map((entry) => entry[0]), ['t1', 't1'], 'each call asks again, which is the renewal');
+  assert.ok(c.lease.claims.every((entry) => /^driver-/.test(entry[1])), 'and names this agent, by label and number');
+  assert.ok(c.lease.claims.every((entry) => entry[2] === undefined), 'and asks for the default window unless one was configured');
+
+  await server.handle({ jsonrpc: '2.0', id: 34, method: 'tools/call', params: { name: 'close_tab', arguments: { tabId: 't1' } } });
+  assert.equal(c.lease.claims.at(-1)[0], 'release', 'and closing the tab gives it up');
+  assert.equal(c.lease.claims.at(-1)[1], 't1');
+});
+
+test('a configured window is the one the claim asks for', async () => {
+  const previous = process.env.OPERA_LEASE_TTL_MS;
+  try {
+    process.env.OPERA_LEASE_TTL_MS = '1234';
+    const c = ctx();
+    const server = createMcpServer(c);
+
+    await server.handle({ jsonrpc: '2.0', id: 35, method: 'tools/call', params: { name: 'ax_snapshot', arguments: { tabId: 't1' } } });
+
+    assert.equal(c.lease.claims[0][2], 1234, 'the claim carries the configured window');
+  } finally {
+    if (previous === undefined) delete process.env.OPERA_LEASE_TTL_MS;
+    else process.env.OPERA_LEASE_TTL_MS = previous;
+  }
+});
 
 test('a tab id is found whether the caller sends a number or a string', async () => {
   for (const tabId of ['1', 1]) {
