@@ -654,6 +654,14 @@ table.history {
   height: clamp(360px, calc(100vh - 390px), 620px);
 }
 
+/*
+ * WHY the table view needs a rule of its own: #tabel is an id, and an id outranks the class rule that hides the view that is not active.
+ * Measured live in the reader's own browser on the #dengar view: the table editor was still on screen at 376px tall, sitting above the view that had been chosen.
+ * A view that owns its display owns the hidden state as well.
+ */
+
+#tabel:not(.active) { display: none; }
+
 .railContext[hidden] { display: none; }
 
 /*
