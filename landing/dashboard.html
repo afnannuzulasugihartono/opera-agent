@@ -1,6 +1,7 @@
-<!-- @last-edited: 2026-10-26 UTC+7. -->
+<!-- @last-edited: 2026-10-28 UTC+7. -->
 <!-- @title: dashboard — the control panel: devices, history, the project's tables, pairing, and one command. -->
-<!-- @state: console shell with a command-history table and a read-only table editor; reads only through opera_my_devices and the opera_konsol_* reader RPCs — never a raw table path; reads the content script's DOM marker to say whether the extension is installed here. -->
+<!-- @state: an app shell, not a brochure: an app bar with the live status line and the next action, a metric strip above the views, one rail with three named groups, and one visible view at a time chosen by the hash. -->
+<!-- Reads only through opera_my_devices and the opera_konsol_* reader RPCs — never a raw table path; reads the content script's DOM marker to say whether the extension is installed here. -->
 <!-- @dependencies: site.css, app.css, dashboard.css, i18n.js. -->
 
 <!doctype html>
@@ -35,55 +36,66 @@
   </header>
 
   <main class="wrap wide console">
-    <div class="appHead">
-      <div>
-        <p class="eyebrow">Konsol</p>
-        <h1>Dashboard</h1>
-        <p id="whoami">Memeriksa sesi…</p>
-      </div>
-      <div class="row">
-        <a class="btn primary" href="./unduh.html">Pasang extension</a>
-        <a class="btn" href="./akun.html">Kelola akun</a>
+    <div class="appBar">
+      <p class="appWho" id="whoami">Memeriksa sesi…</p>
+      <div class="appActions">
+        <a class="btn ghost sm" href="./unduh.html" id="primaryCta">Pasang extension</a>
+        <a class="btn ghost sm" href="./akun.html">Kelola akun</a>
       </div>
     </div>
 
+    <p class="status appStatus" id="status" role="status" aria-live="polite">&nbsp;</p>
+
+    <dl class="metrics" id="metrics">
+      <div><dt>Device ter-pairing</dt><dd id="statDevices">–</dd></div>
+      <div><dt>Daring sekarang</dt><dd id="statOnline">–</dd></div>
+      <div><dt>Perintah selesai</dt><dd id="statCommands">–</dd></div>
+    </dl>
+
     <div class="layout">
       <nav class="rail" aria-label="Bagian dashboard">
+        <p class="railGroup">Pantau</p>
         <a href="#ringkasan" aria-current="true">Ringkasan</a>
         <a href="#device">Device</a>
         <a href="#riwayat">Riwayat</a>
-        <a href="#tabel">Tabel</a>
         <a href="#dengar">Dengar</a>
+        <p class="railGroup">Kelola</p>
+        <a href="#tabel">Tabel</a>
         <a href="#pairing">Pairing</a>
         <a href="#aksi">Aksi</a>
+        <p class="railGroup">Akun</p>
         <a href="#akun">Akun</a>
-        <p class="railNote">Isi halaman tidak pernah keluar dari relay. Yang tampil di sini hanya method dan status.</p>
       </nav>
 
       <div class="content tabbed">
         <section id="ringkasan" class="active">
-          <h2>Ringkasan</h2>
+          <h1>Ringkasan</h1>
+          <p class="meta">Kesiapan akun ini: extension di browser, device yang ter-pairing, dan langkah berikutnya.</p>
           <div class="card">
             <p class="tone" id="installState" role="status" aria-live="polite">&nbsp;</p>
             <ol class="checklist" id="checklist"></ol>
-            <dl class="stats">
-              <div><dt>Device</dt><dd id="statDevices">–</dd></div>
-              <div><dt>Daring</dt><dd id="statOnline">–</dd></div>
-              <div><dt>Perintah selesai</dt><dd id="statCommands">–</dd></div>
-            </dl>
-            <p class="status" id="status" role="status" aria-live="polite">&nbsp;</p>
           </div>
         </section>
 
         <section id="device">
-          <h2>Device</h2>
+          <h1>Device</h1>
           <p class="meta">Device yang ter-pairing ke akun ini, beserta sepuluh perintah terakhirnya.</p>
           <div id="devices"></div>
         </section>
 
         <section id="riwayat">
-          <h2>Riwayat</h2>
+          <h1>Riwayat</h1>
           <p class="meta">Perintah terbaru di semua device, terbaru dulu. Hanya method dan status — tanpa isi perintah.</p>
+          <div class="toolbar">
+            <div class="segmented" role="group" aria-label="Saring status">
+              <button type="button" data-filter="" aria-pressed="true">Semua</button>
+              <button type="button" data-filter="completed" aria-pressed="false">Selesai</button>
+              <button type="button" data-filter="failed" aria-pressed="false">Gagal</button>
+              <button type="button" data-filter="pending" aria-pressed="false">Antrean</button>
+            </div>
+            <input id="historySearch" type="search" placeholder="Cari metode atau device…" autocomplete="off" spellcheck="false" maxlength="64" aria-label="Cari di riwayat" />
+            <span class="meta" id="historyCount">–</span>
+          </div>
           <div class="card tableCard">
             <table class="history">
               <thead>
@@ -92,11 +104,12 @@
               <tbody id="historyRows"></tbody>
             </table>
             <div class="empty" id="historyEmpty" hidden><strong>Belum ada riwayat perintah.</strong> Jalankan aksi pertama dari <a href="#aksi">tab Aksi</a>.</div>
+            <div class="empty" id="historyNoMatch" hidden><strong>Tidak ada perintah yang cocok.</strong> <button class="btn ghost sm" type="button" id="historyReset">Hapus filter</button></div>
           </div>
         </section>
 
         <section id="tabel">
-          <h2>Tabel</h2>
+          <h1>Tabel</h1>
           <p class="meta">Data proyek, hanya-baca: baris sudah disaring server untuk akun ini, dan kolom rahasia disamarkan sebelum keluar dari database.</p>
           <div class="konsol">
             <div class="konsolSide" id="konsolList" role="group" aria-label="Daftar tabel"></div>
@@ -124,14 +137,14 @@
         </section>
 
         <section id="dengar">
-          <h2>Sesi dengar</h2>
+          <h1>Sesi dengar</h1>
           <p class="meta">Sesi dengar audio ke akun ini: metadata saja, tanpa isi pembicaraan. Isi transkrip hanya ada di hasil tool model.</p>
           <div id="listens"></div>
         </section>
 
       <div class="duo">
         <section id="pairing">
-          <h2>Pairing manual</h2>
+          <h1>Pairing manual</h1>
           <div class="card">
             <p class="meta">Kode sekali pakai, berlaku 10 menit, terikat ke akun ini. Tempel di popup extension
               pada device yang ingin kamu hubungkan.</p>
@@ -152,7 +165,7 @@
         </section>
 
         <section id="aksi">
-          <h2>Jalankan aksi</h2>
+          <h1>Jalankan aksi</h1>
           <div class="card">
             <p class="meta">Perintah dikirim ke device milikmu sendiri. Device menolak halaman yang
               menampilkan password, kode sekali pakai, atau pembayaran.</p>
@@ -167,7 +180,7 @@
       </div>
 
         <section id="akun">
-          <h2>Akun ini</h2>
+          <h1>Akun ini</h1>
           <div class="card">
             <dl class="facts" id="accountFacts"></dl>
             <div class="row">
@@ -264,25 +277,6 @@
       }
     })();
 
-    // WHY the rail follows the scroll: a reader who jumped to "Pairing manual" and then scrolled to the device list should not still be told they are on pairing.
-    // IntersectionObserver rather than a scroll handler because this fires once per section change instead of once per pixel.
-    function markRail() {
-      const links = [...document.querySelectorAll('.rail a')];
-      const seen = new Map();
-      const observer = new IntersectionObserver((entries) => {
-        for (const entry of entries) seen.set(entry.target.id, entry.intersectionRatio);
-        let best = null;
-        let bestRatio = 0;
-        for (const [id, ratio] of seen) if (ratio > bestRatio) { best = id; bestRatio = ratio; }
-        if (!best) return;
-        for (const link of links) {
-          if (link.getAttribute('href') === `#${best}`) link.setAttribute('aria-current', 'true');
-          else link.removeAttribute('aria-current');
-        }
-      }, { rootMargin: '-70px 0px -55% 0px', threshold: [0, 0.25, 0.5, 1] });
-      for (const section of document.querySelectorAll('main section[id]')) observer.observe(section);
-    }
-
     // WHY the session is read here and not shown: this page is about devices, and the account itself lives on its own page.
     // Only the address is echoed, so the reader can tell which account's devices they are looking at.
     async function currentSession() {
@@ -375,9 +369,37 @@
         $('checklist').innerHTML = '<li class="done"><span class="box">✓</span><span>Semua langkah selesai. Konsol ini memantau device Anda.</span></li>';
         return;
       }
-      $('checklist').innerHTML = steps.map((step) =>
-        `<li class="${step.done ? 'done' : ''}"><span class="box">${step.done ? '✓' : ''}</span><span>${esc(step.text)}</span></li>`
+      $('checklist').innerHTML = steps.map((step, index) =>
+        `<li class="${step.done ? 'done' : ''}"><span class="box">${step.done ? '✓' : index + 1}</span><span>${esc(step.text)}</span></li>`
       ).join('');
+    }
+
+    // WHY the action follows the state: the biggest button on a finished install was still "Pasang extension", so the page offered work the reader had already done.
+    // The next real step is the one thing the page already knows from the same payload the metrics sum.
+    function paintPrimaryAction() {
+      const cta = $('primaryCta');
+      if (!cta) return;
+      const devices = lastSeen.devices.length;
+      const online = lastSeen.devices.filter((device) => device.status === 'online').length;
+      if (!lastSeen.installed) {
+        cta.href = './unduh.html';
+        cta.textContent = 'Pasang extension';
+        cta.className = 'btn primary sm';
+        return;
+      }
+      cta.className = 'btn sm';
+      if (!devices) {
+        cta.href = '#pairing';
+        cta.textContent = 'Pair device';
+        return;
+      }
+      if (!online) {
+        cta.href = '#device';
+        cta.textContent = 'Cek device';
+        return;
+      }
+      cta.href = '#aksi';
+      cta.textContent = 'Jalankan aksi';
     }
 
     let pairTimer = null;
@@ -425,6 +447,10 @@
       liveUser = user;
       $('whoami').textContent = `Device milik ${user.email}.`;
 
+      // WHY the sign-in link leaves a signed-in page: "Masuk" beside a live session is a contradiction the reader has to resolve, and the app bar already offers the account.
+      const navCta = document.querySelector('header .navCta');
+      if (navCta) navCta.hidden = true;
+
       // WHY the marker is read before the device list, not after: the reader who has not installed anything should learn that first, and the device list alone cannot say it, because an empty list looks identical whether the extension is missing or merely not paired yet.
       // WHY this is a function and not a single read: the content script runs at document_idle, so the marker can land after this module has already read the document.
       // Reading once would show "not installed" on a browser that has it, and the reader would go and install a second copy.
@@ -438,6 +464,7 @@
         lastSeen.installed = installed;
         lastSeen.browser = document.documentElement.dataset.operaAgentBrowser || '';
         renderChecklist();
+        paintPrimaryAction();
       };
       reportInstallState();
       if (!installObserved) {
@@ -475,37 +502,86 @@
       return `${Math.floor(minutes / 60)} jam ${minutes % 60} mnt`;
     }
 
-    // WHY the history flattens per-device lists: each device carries its ten latest, but the operator asks "what ran last" across all devices, newest first.
+    // WHY the history keeps its rows in memory and paints from them: the filter and the search box both narrow one list, and refetching on every keystroke would make a local question wait on the network.
     // Method, status and timestamps only — never a payload field.
+    let historyAll = [];
+    let historyFilter = '';
+    let historyQuery = '';
+
+    const absoluteTime = (iso) => {
+      const ms = new Date(iso).getTime();
+      if (!Number.isFinite(ms)) return '';
+      return new Intl.DateTimeFormat('id', { dateStyle: 'medium', timeStyle: 'short' }).format(ms);
+    };
+
     function renderHistory(devices) {
-      const rows = [];
+      historyAll = [];
       for (const device of devices || []) {
         for (const command of device.commands || []) {
-          rows.push({ device: device.name, method: command.method, status: command.status, createdAt: command.createdAt, completedAt: command.completedAt });
+          historyAll.push({ device: device.name, method: command.method, status: command.status, createdAt: command.createdAt, completedAt: command.completedAt });
         }
       }
       const timeOf = (iso) => { const ms = new Date(iso).getTime(); return Number.isFinite(ms) ? ms : 0; };
-      rows.sort((a, b) => timeOf(b.createdAt) - timeOf(a.createdAt));
+      historyAll.sort((a, b) => timeOf(b.createdAt) - timeOf(a.createdAt));
+      paintHistory();
+    }
+
+    function paintHistory() {
+      const rows = historyAll.filter((row) => {
+        if (historyFilter && row.status !== historyFilter) return false;
+        if (!historyQuery) return true;
+        return `${row.method} ${row.device} ${row.status}`.toLowerCase().includes(historyQuery);
+      });
+      $('historyCount').textContent = `${rows.length} dari ${historyAll.length} perintah`;
+      $('historyEmpty').hidden = historyAll.length > 0;
+      $('historyNoMatch').hidden = rows.length > 0 || historyAll.length === 0;
       if (!rows.length) {
         $('historyRows').innerHTML = '';
-        $('historyEmpty').hidden = false;
         return;
       }
-      $('historyEmpty').hidden = true;
       $('historyRows').innerHTML = rows.map((row) => {
         const dotTone = row.status === 'completed' ? ' online' : row.status === 'failed' ? ' offline' : '';
         const ink = commandInk(row.status);
         const status = ink ? `<span class="${ink}">${esc(row.status)}</span>` : `<span>${esc(row.status)}</span>`;
+
+        // WHY the relative time keeps the absolute one in its title: "15 jam yang lalu" answers "how fresh", and the exact minute is what a support thread asks for next.
         return `
         <tr>
-          <td>${esc(relativeTime(row.createdAt))}</td>
+          <td title="${esc(absoluteTime(row.createdAt))}">${esc(relativeTime(row.createdAt))}</td>
           <td><span class="dot${dotTone}" aria-hidden="true"></span>${status}</td>
           <td><code>${esc(row.method)}</code></td>
           <td>${esc(row.device)}</td>
-          <td>${esc(formatDuration(row.createdAt, row.completedAt))}</td>
+          <td class="num">${esc(formatDuration(row.createdAt, row.completedAt))}</td>
         </tr>`;
       }).join('');
     }
+
+    const paintFilters = () => {
+      for (const button of document.querySelectorAll('.segmented [data-filter]')) {
+        button.setAttribute('aria-pressed', String(button.dataset.filter === historyFilter));
+      }
+    };
+
+    for (const button of document.querySelectorAll('.segmented [data-filter]')) {
+      button.addEventListener('click', () => {
+        historyFilter = button.dataset.filter;
+        paintFilters();
+        paintHistory();
+      });
+    }
+
+    $('historySearch').addEventListener('input', () => {
+      historyQuery = $('historySearch').value.trim().toLowerCase();
+      paintHistory();
+    });
+
+    $('historyReset').addEventListener('click', () => {
+      historyFilter = '';
+      historyQuery = '';
+      $('historySearch').value = '';
+      paintFilters();
+      paintHistory();
+    });
 
     async function refreshDevices() {
       if (!liveToken) return;
@@ -537,6 +613,7 @@
       lastSeen.devices = data.devices;
       lastSeen.total = all;
       renderChecklist();
+      paintPrimaryAction();
       document.querySelector('.rail a[href="#device"]').textContent = `Device (${total})`;
       renderHistory(data.devices);
 
@@ -565,7 +642,7 @@
       if (!data.devices.length) {
         $('status').textContent = 'Belum ada device terikat ke akun ini.';
         $('status').className = 'status warn';
-        $('devices').innerHTML = '<div class="empty"><strong>Belum ada device.</strong> Pasang Opera Agent di browser ini, lalu buat kode pairing di bagian Pairing manual.</div>';
+        $('devices').innerHTML = '<div class="empty"><strong>Belum ada device.</strong> Pasang Opera Agent di browser ini, lalu buat kode pairing untuk menghubungkannya ke akun ini. <a class="btn ghost sm" href="#pairing">Buat kode pairing</a></div>';
         return;
       }
       const online = data.devices.filter((device) => device.status === 'online').length;
@@ -1005,6 +1082,10 @@
       const wanted = (globalThis.location.hash || '#ringkasan').slice(1);
       const target = sections.some((section) => section.id === wanted) ? wanted : 'ringkasan';
       for (const section of sections) section.classList.toggle('active', section.id === target);
+
+      // WHY the document title follows the view: eight views share one URL, so the tab strip is the only place a reader with several tabs open can tell them apart.
+      const heading = sections.find((section) => section.id === target)?.querySelector('h1')?.textContent?.trim();
+      if (heading) document.title = `${heading} — Opera Agent`;
       for (const link of document.querySelectorAll('.rail a, .tabs a')) {
         if (link.getAttribute('href') === `#${target}`) link.setAttribute('aria-current', 'true');
         else link.removeAttribute('aria-current');
@@ -1017,7 +1098,6 @@
     if (typeof globalThis.addEventListener === 'function') globalThis.addEventListener('hashchange', showSection);
 
     showSection();
-    markRail();
     load();
   </script>
 </body>

@@ -1,43 +1,147 @@
 /*
- * @last-edited: 2026-10-26 UTC+7.
- * @title: dashboard.css — the console shell, the device cards, the history table, and the read-only grid.
- * @state: one rail, one visible section at a time, and the app surface at the full 1200px measure.
+ * @last-edited: 2026-10-28 UTC+7.
+ * @title: dashboard.css — the app shell: the app bar, the metric strip, the rail, the device cards, the history table and the read-only grid.
+ * @state: one rail with three named groups, one visible view at a time, and the numbers and the status line above the views so a tab change never hides them.
  * @dependencies: site.css, app.css.
  *
- * WHY a page sheet: the console's rail, device cards and table editor are used nowhere else.
+ * WHY a page sheet: the console's rail, app bar, metric strip, device cards and table editor are used nowhere else.
  * The shell and controls come from site.css, so the console cannot drift into a second design system.
+ *
+ * WHY page-scoped tokens instead of new globals: the console reads as a control panel, not a brochure, so it needs a tighter radius and a smaller title than the marketing pages.
+ * Those are page decisions, so they are declared on main.console and every core token in site.css stays exactly as it is.
  */
 
 .wrap.wide { max-width: 1200px; }
 
-/* ── page head and rail ─────────────────────────────────────────────────── */
+/* ── the page's own scale ─────────────────────────────────────────────────── */
 
-main.console { padding-top: 48px; }
+main.console {
+  --app-radius: 12px;
+  --app-radius-sm: 8px;
+  --app-title: clamp(20px, 2vw, 24px);
+  --app-pad: 20px;
+  padding-top: 28px;
+}
+
+/*
+ * WHY a smaller radius and no shadow here: a console is a surface you work on, and the brochure radius made every card look like it was selling something.
+ */
+
+main.console .card {
+  padding: var(--app-pad);
+  border-radius: var(--app-radius);
+  box-shadow: none;
+}
+
+/* ── the app bar, the status line and the metric strip ─────────────────────── */
+
+/* WHY the page may hide the shared nav's pill: site.css keeps its own display rule for .navCta, which the bare [hidden] attribute cannot beat on its own. */
+
+header nav .navCta[hidden] { display: none; }
+
+.appBar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 20px;
+  padding: 0 0 14px;
+  border-bottom: 1px solid var(--line);
+}
+
+.appWho {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13.5px;
+}
+
+.appActions { display: flex; flex-wrap: wrap; gap: 8px; }
+
+/*
+ * WHY the strip sits above the layout: feedback for a copy, a revoke or a failed refresh used to be written into a status line inside the Ringkasan card, which is not on screen while the reader is using the Device view.
+ * Above the layout it is visible from every tab.
+ */
+
+.status.appStatus { margin: 10px 0 0; min-height: 18px; }
+
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1px;
+  margin: 16px 0 24px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--app-radius);
+  background: var(--line);
+  overflow: hidden;
+}
+
+.metrics > div {
+  padding: 13px 16px;
+  background: var(--surface);
+}
+
+.metrics dt {
+  color: var(--muted);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+}
+
+.metrics dd {
+  margin: 4px 0 0;
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -.03em;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 520px) {
+  .metrics dd { font-size: 18px; }
+  .metrics > div { padding: 11px 12px; }
+}
+
+/* ── the rail ─────────────────────────────────────────────────────────────── */
 
 .layout {
   display: grid;
-  grid-template-columns: 218px minmax(0, 1fr);
-  gap: 34px;
+  grid-template-columns: 196px minmax(0, 1fr);
+  gap: 40px;
   align-items: start;
 }
 
+/*
+ * WHY the rail is flat: a bordered white card inside the content area made the navigation compete with the content it navigates.
+ * Chrome sits on the canvas.
+ */
+
 .rail {
   position: sticky;
-  top: 96px;
+  top: 92px;
   display: grid;
-  gap: 2px;
-  padding: 6px;
-  border: 1px solid var(--line);
-  border-radius: 16px;
-  background: rgba(255, 255, 255, .5);
+  gap: 1px;
 }
+
+.railGroup {
+  margin: 14px 0 4px;
+  padding: 0 10px;
+  color: var(--muted);
+  font-size: 10.5px;
+  font-weight: 650;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+
+.railGroup:first-child { margin-top: 0; }
 
 .rail a {
   display: flex;
   align-items: center;
   gap: 9px;
-  padding: 9px 11px;
-  border-radius: 9px;
+  padding: 7px 10px;
+  border-radius: var(--app-radius-sm);
   color: var(--muted);
   font-size: 13.5px;
   font-weight: 500;
@@ -45,33 +149,12 @@ main.console { padding-top: 48px; }
   transition: background .18s var(--ease), color .18s var(--ease);
 }
 
-.rail a:hover {
-  background: var(--surface);
-  color: var(--ink);
-}
+.rail a:hover { background: var(--surface-soft); color: var(--ink); }
 
 .rail a[aria-current="true"] {
-  background: var(--surface);
+  background: var(--surface-strong);
   color: var(--ink);
-  box-shadow: 0 1px 2px rgba(22, 21, 19, .05);
-}
-
-.rail a[aria-current="true"]::before {
-  content: "";
-  width: 4px;
-  height: 4px;
-  margin-left: -5px;
-  border-radius: 50%;
-  background: var(--accent);
-}
-
-.rail .railNote {
-  margin: 8px 4px 2px;
-  padding: 12px 8px 4px;
-  border-top: 1px solid var(--line);
-  color: var(--muted);
-  font-size: 11.5px;
-  line-height: 1.5;
+  font-weight: 600;
 }
 
 .content { min-width: 0; }
@@ -89,50 +172,51 @@ main.console { padding-top: 48px; }
 .tabbed .duo { display: block; }
 
 section {
-  margin: 0 0 28px;
+  margin: 0 0 8px;
   scroll-margin-top: 96px;
 }
 
-section h2 {
-  margin: 0 0 6px;
-  font-size: 24px;
-  letter-spacing: -.03em;
+section h1 {
+  margin: 0 0 4px;
+  font-size: var(--app-title);
+  letter-spacing: -.025em;
 }
 
 section > .meta {
-  max-width: 72ch;
+  max-width: 68ch;
   margin: 0 0 18px;
   color: var(--muted);
   font-size: 13.5px;
 }
 
 @media (max-width: 980px) {
-  .layout { grid-template-columns: 190px minmax(0, 1fr); gap: 24px; }
+  .layout { grid-template-columns: 168px minmax(0, 1fr); gap: 26px; }
 }
 
 @media (max-width: 760px) {
-  main.console { padding-top: 36px; }
-  .layout { grid-template-columns: 1fr; gap: 18px; }
+  main.console { padding-top: 20px; }
+  .layout { grid-template-columns: 1fr; gap: 16px; }
   .rail {
     position: static;
     grid-auto-flow: column;
     grid-auto-columns: max-content;
     gap: 4px;
     overflow-x: auto;
-    padding: 5px;
+    padding: 4px;
     scrollbar-width: none;
   }
   .rail::-webkit-scrollbar { display: none; }
   .rail a { white-space: nowrap; }
-  .rail a[aria-current="true"]::before { display: none; }
-  .rail .railNote { display: none; }
+  .railGroup { margin: 0 6px 0 2px; padding: 0; align-self: center; }
+  .railGroup::after { content: "·"; margin-left: 8px; }
+  .railGroup:last-of-type::after { content: none; }
 }
 
-/* ── summary ────────────────────────────────────────────────────────────── */
+/* ── the readiness checklist ──────────────────────────────────────────────── */
 
 .checklist {
   display: grid;
-  gap: 8px;
+  gap: 0;
   margin: 14px 0 0;
   padding: 0;
   list-style: none;
@@ -140,25 +224,34 @@ section > .meta {
 }
 
 .checklist li {
-  display: flex;
-  gap: 9px;
-  align-items: flex-start;
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+  padding: 10px 0;
   color: var(--muted);
 }
 
+.checklist li + li { border-top: 1px solid var(--line); }
+
 .checklist li.done { color: var(--ink); }
+
+/*
+ * WHY the number rides the box: an empty circle said nothing about what was still owed, and "3 of 3 steps left" read as no steps at all.
+ */
 
 .checklist .box {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  flex: 0 0 auto;
-  width: 17px;
-  height: 17px;
-  margin-top: 2px;
+  width: 22px;
+  height: 22px;
   border: 1px solid var(--line-strong);
   border-radius: 50%;
-  font-size: 10px;
+  color: var(--muted);
+  font-size: 11.5px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
 }
 
 .checklist li.done .box {
@@ -167,60 +260,36 @@ section > .meta {
   color: #fff;
 }
 
-.stats {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
-  margin: 22px 0 0;
-  padding: 0;
-}
+/* ── device cards ─────────────────────────────────────────────────────────── */
 
-.stats div {
-  margin: 0;
-  padding: 14px 16px;
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  background: var(--surface-soft);
-}
-
-.stats dt {
-  color: var(--muted);
-  font-size: 11.5px;
-  font-weight: 600;
-  letter-spacing: .06em;
-  text-transform: uppercase;
-}
-
-.stats dd {
-  margin: 6px 0 0;
-  color: var(--ink);
-  font-size: 26px;
-  font-weight: 600;
-  letter-spacing: -.04em;
-  line-height: 1;
-  font-variant-numeric: tabular-nums;
-}
-
-@media (max-width: 480px) {
-  .stats { grid-template-columns: 1fr; }
-  .stats dd { font-size: 22px; }
-}
-
-/* ── device cards ───────────────────────────────────────────────────────── */
+/*
+ * WHY auto-fill and a floor: two cards on a grid of 1fr 1fr leaves the right half of the page empty for every account with one device, which is the common case.
+ */
 
 #devices {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
   gap: 16px;
-  align-items: start;
+  align-items: stretch;
 }
 
-#devices .card { margin: 0; }
+#devices .card { display: flex; flex-direction: column; margin: 0; }
 
 #devices .empty { grid-column: 1 / -1; }
 
 @media (max-width: 860px) {
   #devices { grid-template-columns: 1fr; }
+}
+
+/*
+ * WHY the actions ride the bottom: two cards in one row used to end at different heights, so the revoke button on the shorter card sat beside nothing.
+ */
+
+#devices .card .row {
+  margin: auto 0 0;
+  padding-top: 14px;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 .cardHead {
@@ -269,7 +338,7 @@ dl.facts {
 .tone.warn { color: var(--warn); }
 .tone.warn::before { background: var(--warn); }
 
-/* ── pairing and run ────────────────────────────────────────────────────── */
+/* ── pairing and run ──────────────────────────────────────────────────────── */
 
 .duo {
   display: grid;
@@ -322,18 +391,20 @@ dl.facts {
 
 #pairCountdown { margin: 0; }
 
-/* ── empty states and command rows ──────────────────────────────────────── */
+/* ── empty states and command rows ────────────────────────────────────────── */
 
 .empty {
   margin: 0 0 16px;
   padding: 24px;
   border: 1px dashed var(--line-strong);
-  border-radius: 16px;
+  border-radius: var(--app-radius);
   color: var(--muted);
   font-size: 14px;
 }
 
 .empty strong { color: var(--ink); }
+
+.empty .btn { margin-top: 12px; }
 
 ul.commands {
   margin: 0;
@@ -356,10 +427,64 @@ ul.commands li:first-child { border-top: 0; }
 .commands li .online { color: var(--accent); }
 .commands li .offline { color: var(--warn); }
 
-/* ── history ────────────────────────────────────────────────────────────── */
+/* ── history ──────────────────────────────────────────────────────────────── */
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 12px;
+}
+
+.segmented {
+  display: inline-flex;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid var(--line);
+  border-radius: var(--app-radius-sm);
+  background: var(--surface-soft);
+}
+
+.segmented button {
+  min-height: 28px;
+  padding: 0 11px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .18s var(--ease), color .18s var(--ease);
+}
+
+.segmented button:hover { color: var(--ink); }
+
+.segmented button[aria-pressed="true"] {
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: 0 1px 2px rgba(22, 21, 19, .06);
+}
+
+.toolbar input {
+  flex: 1;
+  min-width: 180px;
+  min-height: 34px;
+  margin: 0;
+  padding: 6px 11px;
+  font-size: 13px;
+}
+
+.toolbar .meta {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
 
 .tableCard {
-  padding: 10px;
+  padding: 4px;
   overflow-x: auto;
 }
 
@@ -369,76 +494,106 @@ table.history {
   font-size: 13px;
 }
 
+/*
+ * WHY the head sticks: a list that scrolls past its own column names stops being readable, and the history is the one view that can grow past the fold.
+ */
+
 .history th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
   padding: 9px 11px;
   border-bottom: 1px solid var(--line-strong);
+  background: var(--surface);
   color: var(--muted);
-  font-size: 11.5px;
+  font-size: 11px;
   font-weight: 600;
-  letter-spacing: .04em;
+  letter-spacing: .05em;
   text-align: left;
   text-transform: uppercase;
   white-space: nowrap;
 }
 
 .history td {
-  padding: 9px 11px;
+  padding: 8px 11px;
   border-bottom: 1px solid var(--line);
   vertical-align: middle;
 }
 
-.history tr:last-child td { border-bottom: 0; }
 .history tbody tr:nth-child(even) { background: rgba(22, 21, 19, .018); }
+.history tr:last-child td { border-bottom: 0; }
 .history td .dot { display: inline-block; margin-right: 7px; vertical-align: 1px; }
 .history td .online { color: var(--accent); }
 .history td .offline { color: var(--warn); }
+.history td code { font-size: 12.5px; }
 
-/* ── read-only table editor ─────────────────────────────────────────────── */
+/*
+ * WHY right-aligned: durations read down their right edge the way every other figure in the console does, and tabular figures keep the column from shifting.
+ */
+
+.history td.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* ── read-only table editor ──────────────────────────────────────────────── */
 
 .konsol {
   display: grid;
-  grid-template-columns: 190px minmax(0, 1fr);
+  grid-template-columns: 200px minmax(0, 1fr);
   gap: 20px;
   align-items: start;
 }
 
 .konsolSide {
   display: grid;
-  gap: 2px;
+  gap: 1px;
   align-content: start;
 }
 
+/*
+ * WHY the name ellipsis: a long table name wrapped its row count onto a second line, which doubled every row and made the sidebar look twice as long as it is.
+ */
+
 .konsolSide button {
   display: flex;
+  align-items: center;
   justify-content: space-between;
   gap: 8px;
   width: 100%;
-  padding: 7px 10px;
+  padding: 6px 9px;
   border: 0;
   border-left: 2px solid transparent;
-  border-radius: 8px;
+  border-radius: var(--app-radius-sm);
   background: none;
   color: var(--muted);
   font: inherit;
-  font-size: 13px;
+  font-size: 12.5px;
   text-align: left;
+  white-space: nowrap;
   cursor: pointer;
 }
 
-.konsolSide button:hover:not(:disabled) { background: var(--surface); color: var(--ink); }
+.konsolSide button > span:first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.konsolSide button:hover:not(:disabled) { background: var(--surface-soft); color: var(--ink); }
 
 .konsolSide button[aria-current="true"] {
   border-left-color: var(--accent);
-  background: var(--surface);
+  background: var(--surface-strong);
   color: var(--ink);
 }
 
 .konsolSide button:disabled { opacity: .55; cursor: not-allowed; }
 
-.konsolSide .meta { font-variant-numeric: tabular-nums; }
+.konsolSide .meta { flex: 0 0 auto; font-variant-numeric: tabular-nums; }
 
 .konsolSide .konsolGroup {
-  padding: 12px 10px 4px;
+  padding: 12px 9px 4px;
   color: var(--muted);
   font-size: 10.5px;
   font-weight: 650;
@@ -472,7 +627,7 @@ table.history {
   overflow: auto;
   overscroll-behavior: contain;
   border: 1px solid var(--line);
-  border-radius: 14px;
+  border-radius: var(--app-radius);
   background: var(--surface);
 }
 
@@ -503,6 +658,21 @@ table.history {
   background: var(--surface-soft);
   font-weight: 600;
 }
+
+/*
+ * WHY the first column stays: the grid scrolls sideways over a wide table, and once command_id has gone off the left edge a row of ellipses answers nothing.
+ */
+
+.konsolGrid thead th:first-child,
+.konsolGrid tbody td:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  background: var(--surface);
+  box-shadow: 1px 0 0 var(--line);
+}
+
+.konsolGrid thead th:first-child { z-index: 3; background: var(--surface-soft); }
 
 .konsolGrid th button {
   display: block;
@@ -535,7 +705,7 @@ table.history {
   padding: 14px;
   overflow: auto;
   border: 1px solid var(--line);
-  border-radius: 14px;
+  border-radius: var(--app-radius);
   background: var(--surface-soft);
   font: 12.5px/1.55 var(--mono);
   white-space: pre-wrap;
