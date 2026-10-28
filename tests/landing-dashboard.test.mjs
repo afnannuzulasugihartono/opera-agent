@@ -410,14 +410,71 @@ test('the pairing code is shown, not told', () => {
 test('the console uses the screen, the prose keeps its measure', () => {
 
   const html = read('dashboard.html');
-  assert.match(html, /wrap wide/, 'the console breaks out of the prose column');
-  assert.match(css, /\.wrap\.wide \{[^}]*max-width: 1200px/, 'to a named twelve-hundred measure, not infinity');
+  assert.match(html, /class="wrap wide console"/, 'the console breaks out of the prose column');
+  assert.match(css, /\.wrap\.wide \{[^}]*max-width: 1200px/, 'the other wide pages keep the named twelve-hundred measure');
+  assert.match(css, /main\.console\.wide \{[^}]*width: 100%/, 'and the console itself runs edge to edge');
+  assert.match(css, /main\.console\.wide \{[^}]*max-width: none/, 'because a reader who resizes the window expects the console to follow it');
   assert.match(css, /#devices \{[^}]*grid-template-columns: repeat\(auto-fill, minmax\(340px, 1fr\)\)/, 'cards share a row, and one card does not leave half the page empty');
   const gridAt = css.indexOf('#devices {');
   const queryAt = css.indexOf('@media (max-width: 860px)', gridAt);
   const collapseAt = css.indexOf('#devices { grid-template-columns: 1fr; }', queryAt);
   assert.ok(gridAt > -1 && queryAt > gridAt && collapseAt > queryAt, 'and one column on a phone');
   assert.match(css, /\.duo \{[^}]*grid-template-columns: 1fr 1fr/, 'the verbs keep their shared row');
+  assert.match(css, /section > \.meta \{[^}]*max-width: 68ch/, 'while the prose inside keeps a readable measure');
+});
+
+// WHY THE CONSOLE BECAME AN APP SHELL.
+// The reader asked for it twice: the table was still raw, and the sidebar was not where a sidebar belongs.
+// Measured in their own browser: the console was a 1200px column floating in a 1455px window, so the rail sat 160px in from the edge, and the table pane stood 148px tall while the window had room for twice that.
+// Cline and OpenCode, measured side by side in Chrome, are both an app shell: the sidebar is the window's left column, flush to the edge and full height, and the content beside it takes what is left.
+
+test('the sidebar is the window\'s left column, not a column in the middle of it', () => {
+  assert.match(css, /\.layout \{[^}]*grid-template-columns: 220px minmax\(0, 1fr\)/, 'the rail is the first column and the content takes the rest');
+  assert.match(css, /\.layout \{[^}]*gap: 0/, 'the two columns touch, the way an app shell has them');
+  assert.match(css, /\.rail \{[^}]*border-right: 1px solid var\(--line\)/, 'the rail carries its own edge');
+  assert.match(css, /\.rail \{[^}]*padding: 16px 12px/, 'and its own space, so the items are not flush against the window');
+  assert.match(css, /\.content \{[^}]*padding: 0 24px 20px/, 'while the content keeps the measure it reads well at');
+});
+
+test('the shell is sized by the window, not by a number of pixels', () => {
+  assert.match(css, /body:has\(main\.console\) \{[^}]*height: 100dvh/, 'the page is the window');
+  assert.match(css, /main\.console \{[^}]*flex: 1/, 'the console takes the space the chrome leaves');
+  assert.match(css, /main\.console \{[^}]*min-height: 0/, 'and can shrink to nothing when the window does');
+  assert.match(css, /\.layout \{[^}]*min-height: 0/, 'the layout can shrink, so the grid inside it can too');
+  assert.match(css, /\.layout \{[^}]*grid-template-rows: minmax\(0, 1fr\)/, 'and the rail is bounded by the shell, not by its longest list');
+  assert.match(css, /\.content \{[^}]*overflow: hidden/, 'the content column does not scroll the page; the view inside it does');
+  assert.doesNotMatch(css, /calc\(100vh/, 'no view height is written as an offset from the window');
+  assert.doesNotMatch(css, /height: clamp\(/, 'and none is clamped to a fixed measure');
+});
+
+test('the table pane takes the room the window leaves', () => {
+  assert.match(css, /#tabel \{[^}]*flex: 1/, 'the view fills the content column');
+  assert.match(css, /#tabel \{[^}]*min-height: 0/, 'and can shrink when the window does');
+  assert.match(css, /\.konsolScroll \{[^}]*flex: 1 1 auto/, 'so the grid is what grows');
+  assert.match(css, /\.konsolScroll \{[^}]*min-height: 140px/, 'and what keeps a floor for a short window');
+});
+
+test('the numbers and the status line sit in a head of their own', () => {
+  const html = read('dashboard.html');
+
+  assert.match(html, /class="contentHead"/, 'the head is one element, so it cannot scroll away from the views');
+  assert.match(html, /class="contentHead"[\s\S]{0,900}?id="status"/, 'and the status line is in it');
+  assert.match(html, /class="contentHead"[\s\S]{0,900}?id="metrics"/, 'and so are the numbers');
+});
+
+// WHY THE GRID WAS REBUILT.
+// Measured live: the table editor was one block of monospace on the canvas, with no head band and no rule about which values are ids.
+// A grid where every character is the same width reads as a terminal dump, not as data, and the reader named it before I did.
+
+test('the grid reads like a table, not a terminal dump', () => {
+  const html = read('dashboard.html');
+
+  assert.match(css, /\.konsolGrid \{[^}]*font-family: var\(--font\)/, 'the cells wear the interface font');
+  assert.doesNotMatch(css, /\.konsolGrid \{[^}]*font: 12\.5px\/1\.55 var\(--mono\)/, 'a whole grid in mono is a dump');
+  assert.match(css, /\.konsolGrid th \{[^}]*text-transform: uppercase/, 'the header is a band, the way every production table prints it');
+  assert.match(css, /\.konsolGrid th \{[^}]*color: var\(--muted\)/, 'and it steps back so the values lead');
+  assert.match(css, /\.konsolGrid td\.mono,/, 'only the id-like columns keep the mono face');
+  assert.match(html, /const konsolMono = \(name\) =>/, 'and the choice comes from the column name, never from the shape of one value');
 });
 
 test('the history section lists every command newest first', () => {
@@ -478,10 +535,24 @@ test('the rail groups its links instead of listing eight equals', () => {
   const rail = html.slice(html.indexOf('<nav class="rail"'), html.indexOf('</nav>', html.indexOf('<nav class="rail"')));
   const groups = [...rail.matchAll(/<p class="railGroup">([^<]+)<\/p>/g)].map((match) => match[1]);
 
-  assert.deepEqual(groups.slice(0, 3), ['Pantau', 'Kelola', 'Akun'], 'three named view groups, in reading order');
+  assert.deepEqual(groups.filter((group) => group !== 'Tabel data'), ['Pantau', 'Kelola', 'Akun'], 'three named view groups, in reading order');
   assert.equal(groups.length, 4, 'and one contextual group, which only the view that needs it asks for');
   assert.match(rail, /<p class="railGroup">Tabel data<\/p>/, 'that group names the tables, so views and objects never read as one list');
   assert.match(css, /\.railGroup \{/, 'and a rule that sets them apart from the links');
+});
+
+// WHY THE TABLE LIST MOVED UNDER THE ITEM THAT ASKS FOR IT.
+// Measured against Cline: the list of objects of a view opens directly under that view's item, not at the far end of the rail.
+// The reader arrived at Tabel and found its list of tables below "Akun", at the end of a column they had to scroll to find.
+
+test('the table list opens under the item that asks for it', () => {
+  const html = read('dashboard.html');
+  const rail = html.slice(html.indexOf('<nav class="rail"'), html.indexOf('</nav>', html.indexOf('<nav class="rail"')));
+
+  const tabelAt = rail.indexOf('href="#tabel"');
+  const listAt = rail.indexOf('id="railTables"');
+  const pairingAt = rail.indexOf('href="#pairing"');
+  assert.ok(tabelAt > -1 && listAt > tabelAt && pairingAt > listAt, 'Tabel, then its own list, then the next item — the way the benchmarks place it');
 });
 
 test('the browser tab names the view being read', () => {
@@ -573,7 +644,8 @@ test('the table list lives in the rail, so a view has one left column', () => {
 
 test('the rail scrolls itself, because a list of tables is longer than a window', () => {
   assert.match(css, /\.rail \{[^}]*overflow-y: auto/, 'the rail is its own scroll container');
-  assert.match(css, /\.rail \{[^}]*max-height: calc\(100vh/, 'bounded by the window, not by its longest list');
+  assert.match(css, /\.rail \{[^}]*min-height: 0/, 'and it can shrink inside the shell');
+  assert.match(css, /\.layout \{[^}]*grid-template-rows: minmax\(0, 1fr\)/, 'bounded by the shell, not by its longest list');
 });
 
 test('the active rail item is filled, not a shade of paper', () => {
@@ -583,7 +655,7 @@ test('the active rail item is filled, not a shade of paper', () => {
 
 test('the table view is one box bounded by the window', () => {
   assert.match(css, /#tabel \{[^}]*display: flex/, 'the view is a column, not a grid with a second sidebar');
-  assert.match(css, /#tabel \{[^}]*height: clamp\(/, 'bounded by the window, with a floor for a short one');
+  assert.match(css, /#tabel \{[^}]*flex: 1/, 'and it fills the room the shell leaves it');
   assert.match(css, /\.konsolScroll \{[^}]*flex: 1/, 'the grid takes the space the bar and the pager leave, so the pager stays on screen');
   assert.doesNotMatch(css, /\.konsolScroll \{[^}]*max-height: 460px/, 'no fixed pixel height decides what the reader can see');
 });
