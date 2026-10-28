@@ -117,11 +117,20 @@ header nav .navCta[hidden] { display: none; }
  * Chrome sits on the canvas.
  */
 
+/*
+ * WHY the rail scrolls itself: with the table list in it, the column holds twenty-seven items, which is longer than most windows.
+ * A column that cannot scroll is a column whose last entries nobody can reach.
+ */
+
 .rail {
   position: sticky;
   top: 92px;
   display: grid;
   gap: 1px;
+  align-content: start;
+  max-height: calc(100vh - 108px);
+  overflow-y: auto;
+  scrollbar-width: thin;
 }
 
 .railGroup {
@@ -151,9 +160,14 @@ header nav .navCta[hidden] { display: none; }
 
 .rail a:hover { background: var(--surface-soft); color: var(--ink); }
 
+/*
+ * WHY the current item is filled: measured on the paper canvas, the old chip sat at 1.1:1 against it — the signal was carried almost entirely by the text colour, which is not something a reader scanning a column catches.
+ * The accent fill reads at 4.6:1, the same ink the site already gives its one filled action.
+ */
+
 .rail a[aria-current="true"] {
-  background: var(--surface-strong);
-  color: var(--ink);
+  background: var(--accent);
+  color: #fff;
   font-weight: 600;
 }
 
@@ -210,6 +224,23 @@ section > .meta {
   .railGroup { margin: 0 6px 0 2px; padding: 0; align-self: center; }
   .railGroup::after { content: "·"; margin-left: 8px; }
   .railGroup:last-of-type::after { content: none; }
+
+  /*
+   * WHY the exception: the horizontal strip is right for eleven view names and wrong for twenty-seven of them, so the rail that carries the table list stays a vertical column the reader scrolls.
+   */
+
+  .rail:has(> .railContext:not([hidden])) {
+    position: static;
+    grid-auto-flow: row;
+    grid-auto-columns: auto;
+    max-height: calc(100vh - 108px);
+    overflow-y: auto;
+    padding: 0;
+    scrollbar-width: thin;
+  }
+  .rail:has(> .railContext:not([hidden]))::-webkit-scrollbar { display: block; }
+  .rail:has(> .railContext:not([hidden])) .railGroup { margin: 14px 0 4px; padding: 0 10px; }
+  .rail:has(> .railContext:not([hidden])) .railGroup::after { content: none; }
 }
 
 /* ── the readiness checklist ──────────────────────────────────────────────── */
@@ -540,33 +571,25 @@ table.history {
 /* ── read-only table editor ──────────────────────────────────────────────── */
 
 /*
- * WHY the box is bounded by the window: measured live, the sidebar stood 824px tall beside a 596px pane, so sixteen table names ran 491px past the bottom of a 1148x714 screen and the pagination footer was not on screen at all.
- * The offset is the shell above the editor — the app bar, the status line, the metric strip, the view title and its note — measured at 381px, and the floor keeps a short window usable instead of crushing the grid to nothing.
+ * WHY the view is bounded by the window: measured live, the editor's own sidebar stood 824px tall beside a 596px pane, so sixteen table names ran 491px past the bottom of a 1148x714 screen and the pagination footer was not on screen at all.
+ * The offset is the shell above the view — the app bar, the status line, the metric strip, the view title and its note — measured at 381px, and the floor keeps a short window usable instead of crushing the grid to nothing.
  */
 
-.konsol {
-  display: grid;
-  grid-template-columns: 200px minmax(0, 1fr);
-  gap: 20px;
-  align-items: stretch;
+#tabel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
   height: clamp(360px, calc(100vh - 390px), 620px);
 }
 
-.konsolSide {
-  display: grid;
-  gap: 1px;
-  align-content: start;
-  min-height: 0;
-  overflow-y: auto;
-  scrollbar-width: thin;
-}
+.railContext[hidden] { display: none; }
 
 /*
- * WHY the name ellipsis: a long table name wrapped its row count onto a second line, which doubled every row and made the sidebar look twice as long as it is.
+ * WHY the name ellipsis: a long table name wrapped its row count onto a second line, which doubled every row and made the column look twice as long as it is.
  * WHY the row carries its own height: an inherited line-height measured 47px on a row whose text is 20px, so sixteen tables became a column nobody could scan.
  */
 
-.konsolSide button {
+.railList button {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -586,24 +609,24 @@ table.history {
   cursor: pointer;
 }
 
-.konsolSide button > span:first-child {
+.railList button > span:first-child {
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.konsolSide button:hover:not(:disabled) { background: var(--surface-soft); color: var(--ink); }
+.railList button:hover:not(:disabled) { background: var(--surface-soft); color: var(--ink); }
 
-.konsolSide button[aria-current="true"] {
+.railList button[aria-current="true"] {
   border-left-color: var(--accent);
-  background: var(--surface-strong);
-  color: var(--ink);
+  background: var(--accent);
+  color: #fff;
 }
 
-.konsolSide button:disabled { opacity: .55; cursor: not-allowed; }
+.railList button:disabled { opacity: .55; cursor: not-allowed; }
 
-.konsolSide .meta { flex: 0 0 auto; font-variant-numeric: tabular-nums; }
+.railList .meta { flex: 0 0 auto; font-variant-numeric: tabular-nums; }
 
-.konsolSide .konsolGroup {
+.railList .konsolGroup {
   padding: 12px 9px 4px;
   color: var(--muted);
   font-size: 10.5px;
@@ -612,9 +635,7 @@ table.history {
   text-transform: uppercase;
 }
 
-.konsolSide .konsolGroup:first-child { padding-top: 2px; }
-
-.konsolMain { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+.railList .konsolGroup:first-child { padding-top: 2px; }
 
 .konsolBar {
   display: flex;
@@ -727,15 +748,14 @@ table.history {
 .konsolJson[hidden] { display: none; }
 
 @media (max-width: 900px) {
-  .konsol { grid-template-columns: 1fr; }
-  .konsolSide {
+  .railList {
     grid-auto-flow: column;
     grid-auto-columns: max-content;
     gap: 6px;
     overflow-x: auto;
     padding-bottom: 4px;
   }
-  .konsolSide .konsolGroup { padding: 0 6px; align-self: center; }
-  .konsolSide button { border-left: 0; border-bottom: 2px solid transparent; white-space: nowrap; }
-  .konsolSide button[aria-current="true"] { border-left: 0; border-bottom-color: var(--accent); }
+  .railList .konsolGroup { padding: 0 6px; align-self: center; }
+  .railList button { border-left: 0; border-bottom: 2px solid transparent; white-space: nowrap; }
+  .railList button[aria-current="true"] { border-left: 0; border-bottom-color: var(--accent); }
 }

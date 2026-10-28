@@ -474,9 +474,12 @@ test('a tab change never hides the status line or the numbers', () => {
 
 test('the rail groups its links instead of listing eight equals', () => {
   const html = read('dashboard.html');
-  const groups = [...html.matchAll(/<p class="railGroup">([^<]+)<\/p>/g)].map((match) => match[1]);
+  const rail = html.slice(html.indexOf('<nav class="rail"'), html.indexOf('</nav>', html.indexOf('<nav class="rail"')));
+  const groups = [...rail.matchAll(/<p class="railGroup">([^<]+)<\/p>/g)].map((match) => match[1]);
 
-  assert.deepEqual(groups, ['Pantau', 'Kelola', 'Akun'], 'three named groups, in reading order');
+  assert.deepEqual(groups.slice(0, 3), ['Pantau', 'Kelola', 'Akun'], 'three named view groups, in reading order');
+  assert.equal(groups.length, 4, 'and one contextual group, which only the view that needs it asks for');
+  assert.match(rail, /<p class="railGroup">Tabel data<\/p>/, 'that group names the tables, so views and objects never read as one list');
   assert.match(css, /\.railGroup \{/, 'and a rule that sets them apart from the links');
 });
 
@@ -521,23 +524,47 @@ test('the console keeps its own scale without redefining a shared token', () => 
 });
 
 test('the table editor keeps its row rhythm and its first column in view', () => {
-  assert.match(css, /\.konsolSide button \{[^}]*white-space: nowrap/, 'one sidebar row stays one row high');
+  assert.match(css, /\.railList button \{[^}]*white-space: nowrap/, 'one sidebar row stays one row high');
   assert.match(css, /\.konsolGrid tbody td:first-child \{[^}]*position: sticky/, 'the first column stays put while the grid scrolls sideways');
 });
 
-// Measured live on a 1148x714 window: the sidebar stood 824px tall beside a 596px pane, so sixteen tables ran 491px past the bottom of the screen and the pagination footer was not on screen at all.
-// A pane nobody bounded is a pane nobody can use.
+// Measured live: the Tabel view stacked two left columns — the rail, and the editor's own list of tables — and the second one decided the height of the page.
+// A view whose object is a list belongs to one column, and that column is the rail.
 
-test('the table editor is one box, and its two columns end together', () => {
-  assert.match(css, /\.konsol \{[^}]*align-items: stretch/, 'both columns share the box height');
-  assert.match(css, /\.konsol \{[^}]*height: clamp\(/, 'and the box is bounded by the window, with a floor for a short one');
-  assert.match(css, /\.konsolSide \{[^}]*overflow-y: auto/, 'a long list of tables scrolls inside its own column');
-  assert.match(css, /\.konsolMain \{[^}]*min-height: 0/, 'the main column may shrink inside the box');
-  assert.match(css, /\.konsolScroll \{[^}]*flex: 1/, 'the grid takes the space the bar and the footer leave, so the footer stays on screen');
+test('the table list lives in the rail, so a view has one left column', () => {
+  const html = read('dashboard.html');
+
+  assert.match(html, /<div class="railContext" id="railTables" hidden>/, 'the rail has a contextual part, empty until a view needs it');
+  assert.match(html, /<div class="railList" id="konsolList" role="group" aria-label="Daftar tabel"><\/div>/, 'and the table list is what fills it');
+
+  const from = html.indexOf('<section id="tabel"');
+  const section = html.slice(from, html.indexOf('</section>', from));
+  assert.doesNotMatch(section, /railList|konsolSide/, 'the view itself carries no second sidebar');
+  assert.match(section, /class="konsolScroll"/, 'the grid is the view, from the search bar to the pager');
+});
+
+test('the rail scrolls itself, because a list of tables is longer than a window', () => {
+  assert.match(css, /\.rail \{[^}]*overflow-y: auto/, 'the rail is its own scroll container');
+  assert.match(css, /\.rail \{[^}]*max-height: calc\(100vh/, 'bounded by the window, not by its longest list');
+});
+
+test('the active rail item is filled, not a shade of paper', () => {
+  assert.match(css, /\.rail a\[aria-current="true"\] \{[^}]*background: var\(--accent\)/, 'the current item carries the accent');
+  assert.match(css, /\.rail a\[aria-current="true"\] \{[^}]*color: #fff/, 'and reads in white on it');
+});
+
+test('the table view is one box bounded by the window', () => {
+  assert.match(css, /#tabel \{[^}]*display: flex/, 'the view is a column, not a grid with a second sidebar');
+  assert.match(css, /#tabel \{[^}]*height: clamp\(/, 'bounded by the window, with a floor for a short one');
+  assert.match(css, /\.konsolScroll \{[^}]*flex: 1/, 'the grid takes the space the bar and the pager leave, so the pager stays on screen');
   assert.doesNotMatch(css, /\.konsolScroll \{[^}]*max-height: 460px/, 'no fixed pixel height decides what the reader can see');
 });
 
-test('a sidebar row is one row high, not two', () => {
-  assert.match(css, /\.konsolSide button \{[^}]*height: 30px/, 'the row carries its own height, so an inherited line-height cannot double it');
-  assert.match(css, /\.konsolSide button \{[^}]*padding: 0 9px/, 'and no padding adds to it');
+test('a table row in the rail is one row high, not two', () => {
+  assert.match(css, /\.railList button \{[^}]*height: 30px/, 'the row carries its own height, so an inherited line-height cannot double it');
+  assert.match(css, /\.railList button \{[^}]*white-space: nowrap/, 'and stays one row high');
+});
+
+test('a rail that carries a table list stays vertical on a phone', () => {
+  assert.match(css, /\.rail:has\(> \.railContext:not\(\[hidden\]\)\)/, 'twenty-seven items in a horizontal strip is a strip nobody can use');
 });
