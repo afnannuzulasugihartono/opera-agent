@@ -33,7 +33,7 @@ body.app-dark {
   --shadow: 0 1px 0 rgba(255, 255, 255, .03);
   --zebra: rgba(255, 255, 255, .028);
   --lift: 0 1px 2px rgba(0, 0, 0, .45);
-  --on-accent: #06120d;
+  --on-fill: #06120d;
 }
 
 /* WHY the chrome answers in the canvas: a light header above a dark console reads as a different product, which is the one thing a benchmarked redesign cannot afford. */
@@ -166,7 +166,7 @@ main.console { padding-top: 56px; padding-bottom: 80px; }
   height: 50px;
   border-radius: 16px;
   background: var(--accent);
-  color: #fff;
+  color: var(--on-fill, #fff);
   font-size: 17px;
   font-weight: 650;
   letter-spacing: -.03em;

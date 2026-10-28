@@ -551,7 +551,7 @@ test('the rail scrolls itself, because a list of tables is longer than a window'
 
 test('the active rail item is filled, not a shade of paper', () => {
   assert.match(css, /\.rail a\[aria-current="true"\] \{[^}]*background: var\(--accent\)/, 'the current item carries the accent');
-  assert.match(css, /\.rail a\[aria-current="true"\] \{[^}]*color: var\(--on-accent, #fff\)/, 'and reads in an ink that answers the accent — white on paper, dark on the brand green');
+  assert.match(css, /\.rail a\[aria-current="true"\] \{[^}]*color: var\(--on-fill, #fff\)/, 'and reads in an ink that answers the fill — white on paper, dark on the brand green');
 });
 
 test('the table view is one box bounded by the window', () => {
@@ -568,6 +568,38 @@ test('a table row in the rail is one row high, not two', () => {
 
 test('a rail that carries a table list stays vertical on a phone', () => {
   assert.match(css, /\.rail:has\(> \.railContext:not\(\[hidden\]\)\)/, 'twenty-seven items in a horizontal strip is a strip nobody can use');
+});
+
+test('the rail opens with a head, and it can be put away', () => {
+  const html = read('dashboard.html');
+
+  assert.match(html, /class="railHead"/, 'the rail opens with a head, the way every app shell does');
+  assert.match(html, /id="railCollapse"/, 'with one control that puts it away');
+  assert.match(html, /classList\.toggle\('rail-collapsed'\)/, 'and a state that control writes');
+  assert.match(css, /\.railHead \{/, 'the head has a rule of its own');
+  assert.match(css, /body\.rail-collapsed \.layout/, 'collapsed, the column gives its width back to the content');
+  assert.match(css, /\.railIcon/, 'and each item carries a mark');
+});
+
+test('every view is named by a mark, not by a word alone', () => {
+  const html = read('dashboard.html');
+
+  for (const href of ['#ringkasan', '#device', '#riwayat', '#dengar', '#tabel', '#pairing', '#aksi', '#akun']) {
+    assert.match(html, new RegExp(`href="${href}"[^>]*>[\\s\\S]{0,240}?<svg class="railIcon"`), `${href} carries its mark`);
+  }
+  const marks = html.match(/<svg class="railIcon"/g) || [];
+  assert.ok(marks.length >= 9, `the marks are written once per item, found ${marks.length}`);
+  for (const mark of html.matchAll(/<svg class="railIcon"[^>]*>/g)) {
+    assert.match(mark[0], /aria-hidden="true"/, 'and every mark is decorative, so the accessible name stays the word beside it');
+  }
+});
+
+test('the rail count cannot wipe the mark it rides beside', () => {
+  const html = read('dashboard.html');
+
+  assert.match(html, /id="railDeviceLabel"/, 'the device count has a label of its own to write into');
+  assert.match(html, /\$\('railDeviceLabel'\)\.textContent = `Device \(/, 'and the count writes the label, never the link that holds the mark');
+  assert.doesNotMatch(html, /querySelector\('\.rail a\[href="#device"\]'\)\.textContent/, 'writing the link itself would delete the mark');
 });
 
 // WHY the console re-points the core tokens at all: the shared sheet's components read var(--paper), var(--surface) and var(--ink) directly, so a dark canvas cannot be expressed with new tokens alone.
@@ -602,4 +634,16 @@ test('the chrome of an app page answers in the same ink as its canvas', () => {
 test('a primary action on a dark canvas carries dark ink', () => {
   assert.match(app, /body\.app-dark \.btn\.primary \{/, 'the filled action is re-inked');
   assert.match(app, /body\.app-dark \.btn\.primary \{[^}]*color: #06120d/, 'white on the brand green is 1.9:1, so the console inks it dark');
+});
+
+// Measured live on the dark canvas: the checklist tick still painted #fff on the brand green, and the danger button painted it on the light salmon.
+// Both read at under 2.4:1, which is a tick nobody can see.
+
+test('no white ink sits on a bright fill', () => {
+  for (const sheet of [css, app]) {
+    assert.doesNotMatch(sheet, /background: var\(--(?:accent|danger)\)[^}]*color: #fff/, 'a bright fill takes the ink its canvas asks for');
+    assert.doesNotMatch(sheet, /background: var\(--accent\)[^}]*color: #fff/, 'and the accent fill least of all');
+  }
+  assert.match(css, /\.checklist li\.done \.box \{[^}]*color: var\(--on-fill, #fff\)/, 'the readiness tick answers the canvas');
+  assert.match(css, /\.btn\.danger:hover \{[^}]*color: var\(--on-fill, #fff\)/, 'and so does the destructive hover');
 });

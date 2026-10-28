@@ -133,6 +133,51 @@ header nav .navCta[hidden] { display: none; }
   scrollbar-width: thin;
 }
 
+/*
+ * WHY the head: a column of eleven links with no owner reads as a menu, and a menu has no account in it.
+ * The head names the console and carries the one control that puts the whole column away.
+ */
+
+.railHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 0 0 10px;
+  padding: 0 10px;
+}
+
+.railTitle {
+  margin: 0;
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 650;
+  letter-spacing: -.01em;
+}
+
+.railCollapse {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: var(--app-radius-sm);
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+  transition: background .18s var(--ease), color .18s var(--ease);
+}
+
+.railCollapse:hover { background: var(--surface-soft); color: var(--ink); }
+
+.railIcon {
+  flex: 0 0 auto;
+  width: 15px;
+  height: 15px;
+}
+
 .railGroup {
   margin: 14px 0 4px;
   padding: 0 10px;
@@ -167,11 +212,38 @@ header nav .navCta[hidden] { display: none; }
 
 .rail a[aria-current="true"] {
   background: var(--accent);
-  color: var(--on-accent, #fff);
+  color: var(--on-fill, #fff);
   font-weight: 600;
 }
 
 .content { min-width: 0; }
+
+/*
+ * WHY collapsed keeps the marks: a rail with no labels and no marks is a rail nobody can read, and the marks are the one thing that survives at 56px.
+ * The contextual list has no marks, so it is the one part that goes away entirely until the rail comes back.
+ */
+
+body.rail-collapsed .layout { grid-template-columns: 56px minmax(0, 1fr); gap: 20px; }
+
+body.rail-collapsed .railTitle,
+body.rail-collapsed .railGroup,
+body.rail-collapsed .rail a span,
+body.rail-collapsed .railContext { display: none; }
+
+body.rail-collapsed .railHead { justify-content: center; padding: 0; }
+
+body.rail-collapsed .rail a { justify-content: center; padding: 7px 0; }
+
+body.rail-collapsed .railCollapse .railIcon { transform: rotate(180deg); }
+
+@media (max-width: 760px) {
+  body.rail-collapsed .layout { grid-template-columns: 1fr; }
+  body.rail-collapsed .railTitle,
+  body.rail-collapsed .railGroup,
+  body.rail-collapsed .rail a span,
+  body.rail-collapsed .railContext { display: revert; }
+  body.rail-collapsed .rail a { justify-content: flex-start; padding: 7px 10px; }
+}
 
 .content.tabbed > section:not(.active) { display: none; }
 
@@ -288,7 +360,7 @@ section > .meta {
 .checklist li.done .box {
   border-color: var(--accent);
   background: var(--accent);
-  color: #fff;
+  color: var(--on-fill, #fff);
 }
 
 /* ── device cards ─────────────────────────────────────────────────────────── */
@@ -390,7 +462,7 @@ dl.facts {
 .btn.danger:hover {
   border-color: var(--danger);
   background: var(--danger);
-  color: #fff;
+  color: var(--on-fill, #fff);
 }
 
 @media (max-width: 640px) {
@@ -619,7 +691,7 @@ table.history {
 .railList button[aria-current="true"] {
   border-left-color: var(--accent);
   background: var(--accent);
-  color: var(--on-accent, #fff);
+  color: var(--on-fill, #fff);
 }
 
 .railList button:disabled { opacity: .55; cursor: not-allowed; }
