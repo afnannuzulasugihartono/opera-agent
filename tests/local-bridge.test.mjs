@@ -26,8 +26,10 @@ import {
   closeBridge,
   closeBridgeTarget,
   connectBridgeTarget,
+  leaseTab,
   listBridgeTargets,
   openBridgeTarget,
+  releaseTab,
   waitForBridgeLink
 } from '../local/bridge.js';
 import { createCdpClient } from '../local/cdp.js';
@@ -409,5 +411,79 @@ test('a driver that loses the port adopts the bridge that won it', async () => {
     await closeBridge();
     await owner.close();
     process.env.OPERA_BRIDGE_PORT = '0';
+  }
+});
+
+// WHY THE CLAIM IS PROVEN OVER THE REAL DOOR.
+// The table's rules are proven in tests/local-leases.test.mjs and the enforcement in tests/local-mcp-server.test.mjs; what is left is the one thing both of those fake, which is that two driver processes read one table.
+// So the door is driven over HTTP here, the same way a second driver reaches it, and the two exported calls are the ones a driver actually makes.
+
+test('the exported lease calls read the same table the door serves', async () => {
+  process.env.OPERA_BRIDGE_PORT = '0';
+  try {
+    const granted = await leaseTab('12', 'agent-a', 5000);
+    assert.equal(granted.granted, true, 'a free tab is granted to the agent that asked');
+    assert.equal(granted.holder.owner, 'agent-a');
+
+    const refused = await leaseTab('12', 'agent-b');
+    assert.equal(refused.granted, false, 'a second agent is refused');
+    assert.equal(refused.holder.owner, 'agent-a', 'and the refusal names the holder');
+
+    const renewed = await leaseTab('12', 'agent-a');
+    assert.equal(renewed.granted, true, 'the holder asks again and keeps its tab');
+
+    const evicted = await releaseTab('12', 'agent-b');
+    assert.equal(evicted.granted, false, 'another agent cannot release it');
+    assert.equal((await leaseTab('12', 'agent-b')).granted, false, 'and the claim stands');
+
+    const released = await releaseTab('12', 'agent-a');
+    assert.equal(released.granted, true, 'the holder releases');
+    assert.equal((await leaseTab('12', 'agent-b')).granted, true, 'and the tab is free for the next agent');
+  } finally {
+    await closeBridge();
+    process.env.OPERA_BRIDGE_PORT = '0';
+  }
+});
+
+test('the lease door grants a free tab, refuses a held one, and frees it on release', async () => {
+  const owner = createBridgeServer({ port: 0 });
+  const { port } = await owner.listen();
+  const ask = async (body) => {
+    const response = await fetch(`http://127.0.0.1:${port}/lease`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    return response.json();
+  };
+  try {
+    const first = await ask({ action: 'claim', tabId: '12', owner: 'agent-a', ttlMs: 5000 });
+    assert.equal(first.ok, true);
+    assert.equal(first.granted, true, 'a free tab is granted to the agent that asked');
+    assert.equal(first.holder.owner, 'agent-a');
+
+    const second = await ask({ action: 'claim', tabId: '12', owner: 'agent-b' });
+    assert.equal(second.granted, false, 'a held tab is refused');
+    assert.equal(second.holder.owner, 'agent-a', 'and the refusal names the holder');
+
+    const again = await ask({ action: 'claim', tabId: '12', owner: 'agent-a' });
+    assert.equal(again.granted, true, 'the holder renews its own claim');
+
+    const foreign = await ask({ action: 'release', tabId: '12', owner: 'agent-b' });
+    assert.equal(foreign.granted, false, 'another agent cannot evict the holder');
+    assert.equal((await ask({ action: 'claim', tabId: '12', owner: 'agent-b' })).granted, false, 'and the claim stands');
+
+    const released = await ask({ action: 'release', tabId: '12', owner: 'agent-a' });
+    assert.equal(released.granted, true, 'the holder releases');
+    assert.equal((await ask({ action: 'claim', tabId: '12', owner: 'agent-b' })).granted, true, 'and the tab is free');
+
+    const refused = await fetch(`http://127.0.0.1:${port}/lease`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ action: 'claim' })
+    });
+    assert.equal(refused.status, 400, 'a claim with no tab and no owner is a malformed ask');
+  } finally {
+    await owner.close();
   }
 });

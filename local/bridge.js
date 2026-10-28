@@ -224,6 +224,33 @@ export async function closeBridgeTarget(targetId) {
   return request('tabs.close', { tabId: Number(targetId) });
 }
 
+// WHY THE CLAIM IS READ FROM THE BRIDGE.
+// Each agent spawns its own driver, and two drivers have two memories: a claim kept inside one lets the other drive straight through it.
+// The bridge is where every driver on this machine already meets, so the table lives there and every agent reads the same one.
+
+export async function leaseTab(tabId, owner, ttlMs) {
+  return leaseAsk('claim', tabId, owner, ttlMs);
+}
+
+export async function releaseTab(tabId, owner) {
+  return leaseAsk('release', tabId, owner);
+}
+
+async function leaseAsk(action, tabId, owner, ttlMs) {
+  const srv = await ensureServer();
+  const { port } = srv.address();
+  const response = await fetch(`http://127.0.0.1:${port}/lease`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ action, tabId: String(tabId), owner, ...(ttlMs ? { ttlMs } : {}) }),
+    signal: AbortSignal.timeout(REPLY_TIMEOUT_MS)
+  }).catch(() => null);
+  if (!response) throw new Error('bridge: the lease door did not answer');
+  const body = await response.json().catch(() => null);
+  if (!body?.ok) throw new Error(`bridge: ${body?.error?.message ?? 'the lease door refused'}`);
+  return body;
+}
+
 // WHY the answer is routed by closure.
 // It used to sit in a Map keyed by tab id, which meant two sessions on one tab overwrote each other's router and the loser watched its own replies go to a stranger.
 // One transport, one router: the closure cannot be reached by anything but its own client.
