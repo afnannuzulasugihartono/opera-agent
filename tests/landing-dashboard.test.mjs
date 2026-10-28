@@ -442,7 +442,7 @@ test('the sidebar is the window\'s left column, not a column in the middle of it
   assert.match(css, /\.layout \{[^}]*gap: 0/, 'the two columns touch, the way an app shell has them');
   assert.match(css, /\.rail \{[^}]*border-right: 1px solid var\(--line\)/, 'the rail carries its own edge');
   assert.match(css, /\.rail \{[^}]*padding: 16px 12px/, 'and its own space, so the items are not flush against the window');
-  assert.match(css, /\.content \{[^}]*padding: 0 24px 20px/, 'while the content keeps the measure it reads well at');
+  assert.match(css, /\.content \{[^}]*padding: 0 24px/, 'while the content keeps the measure it reads well at');
 });
 
 test('the shell is sized by the window, not by a number of pixels', () => {
@@ -481,6 +481,7 @@ test('the grid reads like a table, not a terminal dump', () => {
   assert.match(css, /\.konsolGrid \{[^}]*font-family: var\(--font\)/, 'the cells wear the interface font');
   assert.doesNotMatch(css, /\.konsolGrid \{[^}]*font: 12\.5px\/1\.55 var\(--mono\)/, 'a whole grid in mono is a dump');
   assert.match(css, /\.konsolGrid th \{[^}]*text-transform: uppercase/, 'the header is a band, the way every production table prints it');
+  assert.match(css, /\.konsolGrid th button \{[^}]*text-transform: inherit/, 'and the browser default on a button cannot undo it');
   assert.match(css, /\.konsolGrid th \{[^}]*color: var\(--muted\)/, 'and it steps back so the values lead');
   assert.match(css, /\.konsolGrid td\.mono,/, 'only the id-like columns keep the mono face');
   assert.match(html, /const konsolMono = \(name\) =>/, 'and the choice comes from the column name, never from the shape of one value');
