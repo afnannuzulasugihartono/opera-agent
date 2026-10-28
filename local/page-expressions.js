@@ -1,7 +1,7 @@
 // @last-edited: 2026-10-21 UTC+7.
 // @title: page-expressions — the JavaScript the page runs, and the helpers that build it.
 // @state: the snapshot, focus, caret, scroll, upload and edit expressions, and the pure helpers around them.
-// @dependencies: node:buffer.
+// @dependencies: node:buffer, ./surface-profile.js.
 
 // WHY THIS FILE EXISTS
 
@@ -18,6 +18,7 @@
 // Written out, it can be pasted into a console and run by hand.
 
 import { Buffer } from 'node:buffer';
+import { MIN_DOM_TEXT } from './surface-profile.js';
 
 const KEY_CODES = Object.freeze({
   Enter: { windowsVirtualKeyCode: 13, code: 'Enter', key: 'Enter', text: '\r' },
@@ -491,6 +492,35 @@ export const PAGE_STATE_TEXT_EXPRESSION = `({
   text: document.body ? document.body.innerText : "",
   ready: document.readyState
 })`;
+
+// WHY THE SURFACE AND THE PAGE ARE READ IN ONE EXPRESSION.
+// A read used to ask two questions of the page in two round trips: what this surface is, and then what it calls itself and where it is.
+// Measured on a canvas document: the second call bought nothing the first could not have carried, and every round trip on this road is 3 to 8 ms of the answer.
+// The surface signals are the ones the probe already computes, so they are computed once and the page's own four facts ride along in the same body.
+// surface_profile deliberately does not use this: it promises to read no document text, and text is what makes this expression bigger than the probe.
+
+export const PAGE_SURFACE_EXPRESSION = `(() => {
+  const MIN_DOM_TEXT = ${MIN_DOM_TEXT};
+  const body = document.body;
+  const text = body ? String(body.innerText || '') : '';
+  const canvases = [...document.querySelectorAll('canvas')];
+  const viewport = Math.max(1, window.innerWidth * window.innerHeight);
+  const covered = canvases.reduce((sum, el) => {
+    const box = el.getBoundingClientRect();
+    return sum + Math.max(0, box.width) * Math.max(0, box.height);
+  }, 0);
+  const editableHost = document.querySelector('[contenteditable=""], [contenteditable="true"], [role="textbox"]');
+  return {
+    textInDom: { value: text.trim().length >= MIN_DOM_TEXT, evidence: text.trim().length },
+    canvas: { value: canvases.length > 0 && covered / viewport >= 0.2, evidence: Math.round((covered / viewport) * 100) / 100 },
+    editable: { value: Boolean(editableHost), evidence: editableHost ? (editableHost.getAttribute('contenteditable') || editableHost.getAttribute('role')) : 'no editable host' },
+    focused: { value: document.hasFocus() === true, evidence: 'document.hasFocus() is ' + String(document.hasFocus()) },
+    title: document.title,
+    url: location.href,
+    text: text,
+    ready: document.readyState
+  };
+})()`;
 
 export function modifierMask(modifiers = []) {
   return modifiers.reduce((mask, name) => {

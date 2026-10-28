@@ -50,8 +50,9 @@ const canvasCdp = ({ probe = CANVAS_PROBE, ax = RICH_AX, copy = null, caret = CA
     send: async (method, params = {}) => {
       calls.push({ method, params });
       const expression = String(params.expression ?? '');
+      // The read asks one question and the page answers with the surface signals, its own identity and its text together.
       if (method === 'Runtime.evaluate' && expression.includes('window.innerHeight')) {
-        return { result: { value: probe } };
+        return { result: { value: { ...probe, title: 'Doc', url: DOC_URL, text: domText, ready: 'complete' } } };
       }
       if (method === 'Accessibility.getFullAXTree') return axTree(ax);
       // The one selection state: the text the copy reads and the caret position the guard measures, from the same frame.
