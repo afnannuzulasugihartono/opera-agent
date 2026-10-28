@@ -96,7 +96,7 @@ tiap fungsi ditetapkan saat pemindahan, bukan di spec: yang dikunci spec adalah
 | `disposed`, `mutationVersion`, `mutationObserver` | 64-67 | `content.js` | siklus hidup halaman |
 | `NAV_KEYS` | 73 | `page-wait.js` | hanya dipakai `key` |
 | `SENSITIVE_RE` | 78 | `element-facts.js` | hanya dipakai `sensitiveDescriptor` |
-| `PUA_GLYPH_RE`, `VISITED_SUFFIX_RE` | 90-91 | `semantic-page.js` | hanya dipakai pencarian teks |
+| `PUA_GLYPH_RE`, `VISITED_SUFFIX_RE` | 90-91 | `page-kit.js` | hanya dipakai `normalizeObservableText` (2 pemakaian masing-masing: deklarasi + satu call), yang ikut ke `page-kit` |
 | `GEOMETRY_DRIFT_TOLERANCE_PX` | 153 | `element-facts.js` | hanya dipakai pencocokan geometri |
 | `lastUserInputAt` | 521 | `element-facts.js` | hanya dipakai `userInputState` |
 | `INTERACTIVE_SELECTOR`, `MAX_SHADOW_ROOTS`, `MAX_COLLECTED_NODES` | 615-622 | `semantic-page.js` | hanya dipakai `collectInteractiveNodes` |
@@ -155,8 +155,23 @@ Delapan modul baru diletakkan **flat di `extension/`**, bukan di `extension/lib/
 empat dari enam content script yang ada sudah flat (`semantic-identity`,
 `semantic-views`, `role-reconcile`, `hover-settle`), dan mereka dimuat oleh entri
 manifest yang sama. `lib/agent-log.js` adalah pengecualian yang sudah ada, bukan
-pola yang perlu ditiru. Semua delapan modul bebas `chrome.*` sebagai kode — diverifikasi
-selama pemindahan, bukan diasumsikan.
+pola yang perlu ditiru.
+
+**Tujuh modul bebas `chrome.*` sebagai kode; `page-media` bukan.** Seluruh
+`extension/content.js` hari ini memakai `chrome.*` di tiga tempat, dan ketiganya
+terpetik ke region yang sudah dipetakan:
+
+| baris | pemakaian | region | ikut ke |
+|---|---|---|---|
+| 1646 | `chrome.runtime.sendMessage` (chunk listen) | media | `page-media.js` |
+| 1854 | `chrome.runtime.sendMessage` (watch.facts) | watch | `page-media.js` |
+| 1932 | `chrome.runtime.onMessage.addListener` | dispatcher | `content.js` |
+
+Jadi gerbang "bebas `chrome.*`" harus memuat **satu kecualian tertulis** untuk
+`page-media.js`, dengan alasan yang sama seperti `debugger-session.js` dan `burst.js`
+di gerbang yang sudah ada: file itu memang berbicara ke service worker. Mengecualikannya
+secara tertulis lebih jujur daripada memindahkan dua pemanggilan itu ke modul kesembilan
+— yang akan mencampur "pindah" dengan "rombak", dan itu yang ditolak spec ini.
 
 ### Namespace per modul
 
@@ -182,13 +197,15 @@ dikunci `tests/efficiency.test.mjs` dan tidak boleh hilang.
 Ini cara repo menjaga injeksi tetap benar, dan spec ini tidak mengubah mekanismenya:
 
 ```
-manifest.json                     content_scripts[0].js  (6 → 14 file)
-extension/background.js:232       files: [...]          (dipakai ensureContent saat runtime)
+manifest.json                          content_scripts[0].js  (6 → 14 file)
+extension/worker/tab-content.js:92     files: [...]          (dipakai ensureContent saat runtime)
 ```
+
+Lokasi daftar runtime itu **bukan** `background.js:232` seperti dicatat spec 2026-10-09: daftar tersebut ikut pindah ke `worker/tab-content.js` saat `background.js` dipecah. Diverifikasi hari ini — `extension/worker/tab-content.js:92` adalah satu-satunya tempat di `extension/` yang menuliskan keenam path itu.
 
 `tests/extension-source.test.mjs` — *the ensureContent script list still matches the
 manifest* — memaksa kedua daftar itu **identik byte-per-byte**. Jadi menambah path di
-manifest **wajib** disertai di `background.js`, dan tes itu yang membuktikannya, bukan
+manifest **wajib** disertai di `worker/tab-content.js:92`, dan tes itu yang membuktikannya, bukan
 ingatan. **Isi daftar tidak boleh disentuh selain menambah path baru di posisi yang
 benar** — kalau urutan salah, modul dipanggil sebelum namespace-nya ada.
 
@@ -243,8 +260,10 @@ memverifikasi semua langkah berikutnya.
 Urutannya urutan topologis (lihat *Urutan muat*): tiap langkah hanya membaca modul yang
 sudah pindah, jadi setiap langkah menghasilkan pohon yang masih utuh.
 
-1. `page-kit.js` — 6 fungsi murni + 4 batas. Tidak ada dependensi. `content.js`
-   mengganti enam definisi dengan satu pembacaan namespace.
+1. `page-kit.js` — 5 fungsi murni (`clamp`, `clean`, `normalizeObservableText`,
+   `normalizeText`, `currentRouteKey`) + 4 batas + 2 regex. Tidak ada dependensi.
+   `content.js` mengganti sebelas definisi dengan satu baris destructuring.
+   `markInstalled` **tetap** di `content.js` — ia bagian dari bootstrap, bukan helper.
 2. `action-refs.js` — region refs (11 fungsi) + 4 state. Hanya membaca `page-kit`.
 3. `element-facts.js` — region fakta elemen (17 fungsi) + state-nya. Membaca
    `action-refs` (pencocokan descriptor) dan `page-kit`.
@@ -260,7 +279,7 @@ sudah pindah, jadi setiap langkah menghasilkan pohon yang masih utuh.
 
 ### Penutup
 
-Setiap pemindahan menambah path ke `manifest.json` **dan** ke `background.js:232`, dan
+Setiap pemindahan menambah path ke `manifest.json` **dan** ke `worker/tab-content.js:92`, dan
 tes byte-identity di atas membuktikan keduanya cocok. `py tests/browser_extension_test.py`
 dijalankan setelah langkah 3 dan setelah langkah 8 — dua titik di mana halaman sungguhan
 bekerja atau tidak: setelah seluruh lapisan fakta elemen pindah, dan setelah modul
@@ -296,7 +315,8 @@ fase, bukan cuma di akhir.
 - Gerbang ukuran: `extension/content.js` di bawah 300 baris, dan delapan modul baru
   masing-masing di bawah 550 — plafon yang repo sudah tetapkan untuk worker, dipakai
   juga di sini.
-- Bukti bebas `chrome.*` untuk kedelapan modul baru, dihitung, bukan dijanjikan.
+- Bukti bebas `chrome.*` untuk tujuh modul baru, dengan satu kecualian tertulis untuk
+  `page-media.js` — dihitung, bukan dijanjikan.
 
 ### Yang tidak berubah
 
