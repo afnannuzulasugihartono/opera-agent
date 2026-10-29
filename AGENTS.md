@@ -15,6 +15,7 @@ These ride with every job. Read them before acting, not once per session.
 
 - Simplify first, code second, comment third: cut the file to its smallest true shape, then ship the code that works, then say why — in that order.
 - Write lists vertically, two spaces per level: an array, object literal, destructuring pattern, parameter list, or import/export list with two or more items puts each item on its own line, indented two spaces per level, so the structure reads as a list top to bottom. `tests/helpers/vertical-lists.mjs` measures the lists and the indentation, `npm run check` enforces both, and `scripts/vertical-lists-baseline.mjs` holds the files still to sweep — that list may only shrink.
+- Write prose the way a human writes it: a document is paragraphs and lists, and a code comment is one sentence per line — `node scripts/format-comments.mjs --check` holds that half — so a comment reads as a list of reasons and a paragraph reads as a paragraph.
 - Focus on real code: judge a change by the behaviour it produces when driven, never by prose, plans, or a stub that only looks green.
 - Work the Plan → Execute → Fix loop, and repeat it: each round ends with a fresh run against the artefact, not a restated intention. The runs are `npm test` and `npm run check`, plus `py tests/browser_extension_test.py` for anything the extension does inside a page.
 - Audit everything, delete the trash, simplify the program: sweep for dead files, dead exports, and stale scaffolds, remove what you find, and leave the tree simpler than you met it.
