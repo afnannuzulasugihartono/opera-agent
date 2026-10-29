@@ -22,16 +22,16 @@
 
 export const PUBLIC_SURFACE_LOCKS = Object.freeze([
   ['../extension/content.js', 'dfba81adb9994856ffa073171f3961a24db5c15e'],
-  ['../extension/page-kit.js', '0fe5db89332069ee6f115a6306a94213d4791267'],
+  ['../extension/page-kit.js', 'afa5bc3f7916ba1b9f49a39fa1cc78d16015813d'],
   ['../extension/background.js', 'da44f1ed773c985cb6ad74c62d5e732d2fe2afee'],
   ['../extension/manifest.json', '39d65cb3c5b1c2262b58dc5d8bab57c673f15650'],
-  ['../supabase/functions/opera-agent-mcp/index.ts', 'b66ebb0f6c5f3f692fa6b6e5adad01a7f0e2c6bf'],
+  ['../supabase/functions/opera-agent-mcp/index.ts', '69b1b38e7679a5ded86e3cdcfff0df0d4428f340'],
   ['../supabase/functions/opera-agent-mcp/tools.ts', '3e6c05dc9a610752b481951303f998e045c55baf'],
 ]);
 
 export const OBSERVATION_STACK_LOCKS = Object.freeze([
   ['../lib/reactive-vm.js', 'adb646c71fd033593bdbef264179b9877d569371'],
-  ['../lib/reactive-vm-control-flow.js', '266dbfb47714b8cdc913410ac94402482def5dfe'],
+  ['../lib/reactive-vm-control-flow.js', '5014d8d7338c23f51fd8ae39c54ffea8ce24599b'],
   ['../lib/reactive-vm-collect.js', 'f687f4cd3088788b02291c64a12860d0fa5742e1'],
 ]);
 

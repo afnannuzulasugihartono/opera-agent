@@ -19,17 +19,28 @@
   const PUA_GLYPH_RE = /[\uE000-\uF8FF\u200B\u200C\uFEFF]|\u200D/g;
   const VISITED_SUFFIX_RE = /\s*visited link\s*$/i;
 
-  function clamp(value, min, max, fallback = min) {
+  function clamp(
+    value,
+    min,
+    max,
+    fallback = min
+  ) {
     const n = Number(value);
     if (!Number.isFinite(n)) return fallback;
     return Math.min(max, Math.max(min, n));
   }
 
-  function clean(value, max = 500) {
+  function clean(
+    value,
+    max = 500
+  ) {
     return String(value ?? '').replace(/\s+/g, ' ').trim().slice(0, max);
   }
 
-  function normalizeObservableText(value, max = 500) {
+  function normalizeObservableText(
+    value,
+    max = 500
+  ) {
     const text = clean(value, max + 40).replace(PUA_GLYPH_RE, ' ').replace(/\s+/g, ' ').trim();
     const untagged = VISITED_SUFFIX_RE.test(text) ? text.replace(VISITED_SUFFIX_RE, '').trim() : text;
     return untagged.slice(0, max);

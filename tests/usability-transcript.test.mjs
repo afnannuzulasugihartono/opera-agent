@@ -91,20 +91,20 @@ test('structural cost reduction is deterministic: commands and payload (T037)', 
 
   const v5 =
     1
- + 1
- + 1
- +
+    + 1
+    + 1
+    +
     6
- +
+    +
     1
- + 1
- + 1
-;
+    + 1
+    + 1
+  ;
 
   for (const rounds of [1, 5, 10, 12]) {
     const v4 = v5 - 1
- + 1
- + rounds;
+      + 1
+      + rounds;
     if (rounds === 1) {
 
       assert.ok(v4 === v5 + 1);

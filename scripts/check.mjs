@@ -1,7 +1,7 @@
-// @last-edited: 2026-10-21 UTC+7.
+// @last-edited: 2026-10-29 UTC+7.
 // @title: check — the gate that runs before anything is shipped.
-// @state: the version, the primitive allowlist, the runtime safety scan and the secret-pattern check, in one verdict.
-// @dependencies: node:fs, node:path, node:crypto, node:url, strict, node:child_process, protocol, extension-source.
+// @state: the version, the primitive allowlist, the runtime safety scan, the secret-pattern check and the vertical-list rule, in one verdict.
+// @dependencies: node:fs, node:path, node:crypto, node:url, strict, node:child_process, protocol, extension-source, content-source, vertical-lists, vertical-lists-baseline.
 
 import fs from 'node:fs';
 import path from 'node:path';
@@ -12,6 +12,8 @@ import { execFileSync, spawnSync } from 'node:child_process';
 import { ALLOWED_METHODS, PRODUCT_VERSION } from '../extension/lib/protocol.js';
 import { extensionSource } from '../tests/helpers/extension-source.mjs';
 import { contentSource } from '../tests/helpers/content-source.mjs';
+import { indentViolations, listViolations } from '../tests/helpers/vertical-lists.mjs';
+import { VERTICAL_LIST_BASELINE, VERTICAL_LIST_PENDING } from './vertical-lists-baseline.mjs';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 
@@ -147,4 +149,34 @@ for (const marker of ['capturePage', 'Page.captureScreenshot', 'page.capture_pol
 const burstMigration = fs.readFileSync(path.join(root, 'supabase/migrations/20260910024820_opera_agent_bounded_browser_burst.sql'), 'utf8');
 assert.match(burstMigration, /browser\.burst/);
 for (const marker of ['BURST_MAX_STEPS', 'BURST_MAX_TIMEOUT_MS', 'runBurst', 'MAX_BURST_RESULT_BYTES']) assert.ok(`${fs.readFileSync(path.join(root, 'extension/lib/protocol.js'), 'utf8')}\n${background}`.includes(marker), marker);
-console.log(`check ok: ${ALLOWED_METHODS.length} allowlisted browser primitives, ${files.length} runtime safety files, version ${manifest.version}`);
+
+// WHY THE VERTICAL-LIST RULE IS MEASURED HERE AND NOT IN A TEST.
+// The rule is about the shape of every source file, so it runs with the other whole-tree checks rather than inside one test file.
+// The pending set is the debt: a file leaves it when it conforms, a new file is never allowed in, and the count may only fall.
+
+const codeFiles = [...new Set([
+  ...execFileSync('git', ['ls-files'], { cwd: root, encoding: 'utf8' }).split('\n'),
+  ...execFileSync('git', ['ls-files', '--others', '--exclude-standard'], { cwd: root, encoding: 'utf8' }).split('\n')
+])].filter((file) => file && /\.(?:js|mjs|cjs|ts|jsx|tsx)$/.test(file));
+const verticalPending = new Set(VERTICAL_LIST_PENDING);
+for (const file of verticalPending) {
+  assert.ok(fs.existsSync(path.join(root, file)), `the vertical-list baseline names a file that exists: ${file}`);
+}
+assert.ok(verticalPending.size <= VERTICAL_LIST_BASELINE,
+  `the vertical-list baseline grew from ${VERTICAL_LIST_BASELINE} to ${verticalPending.size}; it may only shrink`);
+const flatLists = [];
+const badIndent = [];
+for (const file of codeFiles) {
+  const text = fs.readFileSync(path.join(root, file), 'utf8');
+  const indents = indentViolations(text);
+  if (indents.length) badIndent.push(`${file}:${indents[0].line} (${indents.length})`);
+  if (verticalPending.has(file)) continue;
+  const hits = listViolations(text);
+  if (hits.length) flatLists.push(`${file}:${hits[0].line} (${hits.length} list${hits.length === 1 ? '' : 's'})`);
+}
+assert.deepEqual(badIndent, [],
+  `every level is two spaces, and a line is indented with spaces, never a tab:\n${badIndent.join('\n')}`);
+assert.deepEqual(flatLists, [],
+  `a list must announce its length before it is read; one item per line:\n${flatLists.join('\n')}`);
+
+console.log(`check ok: ${ALLOWED_METHODS.length} allowlisted browser primitives, ${files.length} runtime safety files, version ${manifest.version}, vertical lists enforced for ${codeFiles.length - verticalPending.size} of ${codeFiles.length} source files, indentation clean in all ${codeFiles.length}`);

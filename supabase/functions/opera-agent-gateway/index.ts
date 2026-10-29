@@ -71,7 +71,7 @@ async function readBoundedBody(req: Request, maxBytes: number): Promise<string |
     total += value.byteLength;
     if (total > maxBytes) {
       try { await reader.cancel(); } catch {
- }
+      }
       return null;
     }
     chunks.push(value);
@@ -135,7 +135,7 @@ async function command(req: Request, _url: URL) {
         const payload = JSON.parse(atob(token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")));
         if (typeof payload.client_id === "string") tokenClientId = payload.client_id;
       } catch {
- }
+      }
       const { data: device } = await supabase.from("opera_devices")
         .select("device_name, last_seen_at")
         .eq("user_id", userId).neq("status", "disabled")
@@ -178,7 +178,7 @@ async function command(req: Request, _url: URL) {
       }
       if (provider) await supabase.from("opera_commands").update({ provider }).eq("id", String(result.commandId));
     } catch {
- }
+    }
   }
   if (result?.ok === true) {
     const commandId = result.commandId;

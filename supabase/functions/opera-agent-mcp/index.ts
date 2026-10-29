@@ -142,7 +142,7 @@ async function resolveProvider(req: Request, auth?: AuthContext | null): Promise
         if (slug) return slug;
       }
     } catch {
- }
+    }
   }
   return "unknown";
 }
@@ -479,7 +479,7 @@ async function runWorkflow(name: string, input: Record<string, unknown>, waitTim
       const supabase = await db();
       await supabase.from("opera_workflow_runs").update({ provider }).eq("id", runId);
     } catch {
- }
+    }
   }
   const startedAt = Date.now();
   let last: Record<string, unknown> | null = null;
@@ -534,7 +534,7 @@ async function runAdhoc(
   try {
     await rpc("opera_sweep_ephemeral_workflows", {});
   } catch {
- }
+  }
   const registered = await rpc("opera_register_ephemeral_workflow", {
     p_request_id: requestId,
     p_definition: compiled.definition,
@@ -561,7 +561,7 @@ async function runAdhoc(
       const supabase = await db();
       await supabase.from("opera_workflow_runs").update({ provider }).eq("id", runId);
     } catch {
- }
+    }
   }
   const startedAt = Date.now();
   let last: Record<string, unknown> | null = null;

@@ -230,7 +230,7 @@ async function readBoundedBody(req: Request, maxBytes: number): Promise<string |
     total += value.byteLength;
     if (total > maxBytes) {
       try { await reader.cancel(); } catch {
- }
+      }
       return null;
     }
     chunks.push(value);

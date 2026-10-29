@@ -156,12 +156,12 @@
 #    tests/helpers/canonical-source-hash.mjs strips the comment lines and collapses
 #    the whitespace before hashing a tool schema, so the pin holds the tool's
 #    contract and not its indentation.
-scripts/check.mjs 381a64e5e61803c848400a453989298172a0e348
+scripts/check.mjs 9956a22ad675b3907659725f7d3fab509cfbe03c
 scripts/scope.mjs 2293857de17bf0077a368729555f3af5a13a6ff5
 scripts/scope-check.mjs d6359cc409244f0fdc13cc7ef496daddd5981910
 
 # --- the pins themselves: editing these is how a drift goes unnoticed ---
-tests/helpers/boundary-locks.mjs 4b35baa317c3e56225f5f8247720c2f5a206cd8e
+tests/helpers/boundary-locks.mjs 3bcb76fadb3740a6e0e7cf17d33133a8b908a0a8
 tests/helpers/canonical-source-hash.mjs a4ebaa0d40122afce47a52cba39309d7dfdb1af1
 tests/helpers/comment-format.mjs bced9e4c9b7a58b56e3317067d5e6717dd2040bf
 tests/comment-format.test.mjs 0231619043033b07c22f725feee511d6ebb34bd4
