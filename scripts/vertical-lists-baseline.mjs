@@ -45,7 +45,6 @@ export const VERTICAL_LIST_PENDING = new Set([
   'extension/worker/listen.js',
   'extension/worker/private-tabs.js',
   'extension/worker/statement.js',
-  'extension/worker/tab-content.js',
   'extension/worker/utils.js',
   'extension/worker/watch-registry.js',
   'landing/_worker.js',
@@ -268,4 +267,4 @@ export const VERTICAL_LIST_PENDING = new Set([
   'tests/youtube-workflows.test.mjs',
 ]);
 
-export const VERTICAL_LIST_BASELINE = 258;
+export const VERTICAL_LIST_BASELINE = 257;

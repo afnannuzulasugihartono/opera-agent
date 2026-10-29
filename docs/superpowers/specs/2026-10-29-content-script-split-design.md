@@ -209,14 +209,14 @@ Ini cara repo menjaga injeksi tetap benar, dan spec ini tidak mengubah mekanisme
 
 ```
 manifest.json                          content_scripts[0].js  (6 → 14 file)
-extension/worker/tab-content.js:92     files: [...]          (dipakai ensureContent saat runtime)
+extension/worker/tab-content.js         files: [...]          (dipakai ensureContent saat runtime)
 ```
 
-Lokasi daftar runtime itu **bukan** `background.js:232` seperti dicatat spec 2026-10-09: daftar tersebut ikut pindah ke `worker/tab-content.js` saat `background.js` dipecah. Diverifikasi hari ini — `extension/worker/tab-content.js:92` adalah satu-satunya tempat di `extension/` yang menuliskan keenam path itu.
+Lokasi daftar runtime itu **bukan** `background.js:232` seperti dicatat spec 2026-10-09: daftar tersebut ikut pindah ke `worker/tab-content.js` saat `background.js` dipecah. Diverifikasi hari ini — `extension/worker/tab-content.js` adalah satu-satunya tempat di `extension/` yang menuliskan keenam path itu.
 
 `tests/extension-source.test.mjs` — *the ensureContent script list still matches the
-manifest* — memaksa kedua daftar itu **identik byte-per-byte**. Jadi menambah path di
-manifest **wajib** disertai di `worker/tab-content.js:92`, dan tes itu yang membuktikannya, bukan
+manifest* — memaksa kedua daftar itu **identik: isi dan urutannya sama**. Jadi menambah path di
+manifest **wajib** disertai di `worker/tab-content.js`, dan tes itu yang membuktikannya, bukan
 ingatan. **Isi daftar tidak boleh disentuh selain menambah path baru di posisi yang
 benar** — kalau urutan salah, modul dipanggil sebelum namespace-nya ada.
 
@@ -291,7 +291,7 @@ sudah pindah, jadi setiap langkah menghasilkan pohon yang masih utuh.
 
 ### Penutup
 
-Setiap pemindahan menambah path ke `manifest.json` **dan** ke `worker/tab-content.js:92`, dan
+Setiap pemindahan menambah path ke `manifest.json` **dan** ke `worker/tab-content.js`, dan
 tes byte-identity di atas membuktikan keduanya cocok. `py tests/browser_extension_test.py`
 dijalankan setelah langkah 3 dan setelah langkah 8 — dua titik di mana halaman sungguhan
 bekerja atau tidak: setelah seluruh lapisan fakta elemen pindah, dan setelah modul

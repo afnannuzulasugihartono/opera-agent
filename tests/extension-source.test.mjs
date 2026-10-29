@@ -171,10 +171,12 @@ test('every cross-module name is imported where it is used', async () => {
 test('the ensureContent script list still matches the manifest', async () => {
   const manifest = JSON.parse(await readFile(new URL('../extension/manifest.json', import.meta.url), 'utf8'));
   const expected = manifest.content_scripts[0].js;
-  const src = await extensionSource();
-  const literal = `files: [${expected.map((f) => `'${f}'`).join(', ')}]`;
-  assert.ok(src.includes(literal),
-    `the runtime injection list must stay byte-identical to manifest.content_scripts[0].js:\n  ${literal}`);
+  const src = await readFile(new URL('../extension/worker/tab-content.js', import.meta.url), 'utf8');
+  const literal = /files:\s*\[([\s\S]*?)\]/.exec(src);
+  assert.ok(literal, 'the runtime injection list must still be written in the source');
+  const found = [...literal[1].matchAll(/'([^']+)'/g)].map((match) => match[1]);
+  assert.deepEqual(found, expected,
+    'the runtime injection list must stay identical to manifest.content_scripts[0].js, in the same order');
 });
 
 test('capture never imports private-tabs, so the split cannot close a fifth cycle', async () => {

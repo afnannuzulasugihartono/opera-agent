@@ -15,7 +15,7 @@
 - `extension/content.js` harus berakhir di bawah **300 baris**.
 - Delapan modul baru masing-masing di bawah **550 baris** (plafon worker yang sudah ada).
 - Urutan muat dikunci persis: `lib/agent-log.js, semantic-identity.js, semantic-views.js, role-reconcile.js, hover-settle.js, page-kit.js, action-refs.js, element-facts.js, page-wait.js, semantic-page.js, page-actions.js, page-scroll.js, page-media.js, content.js`.
-- `manifest.json` `content_scripts[0].js` dan `extension/worker/tab-content.js:92` wajib identik byte-per-byte — dijaga tes `the ensureContent script list still matches the manifest`.
+- `manifest.json` `content_scripts[0].js` dan daftar `files:` di `extension/worker/tab-content.js` wajib identik — isi dan urutan sama — dijaga tes `the ensureContent script list still matches the manifest`.
 - Nol fungsi di-rename. Nol asersi tes dihapus. Fungsi dipindah **verbatim**.
 - Tujuh modul baru bebas `chrome.*` sebagai kode; `page-media.js` adalah kecualian tertulis (dua `chrome.runtime.sendMessage`: chunk listen dan watch.facts).
 - Setiap berkas baru memakai header empat field: `@last-edited`, `@title`, `@state`, `@dependencies`.
@@ -106,7 +106,7 @@ Lima masukan yang paling mungkin menggigit orang yang memakai perangkat lunak in
 | `extension/page-scroll.js` | **baru** — pointer target, capture policy, scroll |
 | `extension/page-media.js` | **baru** — listen, media, watch (kecualian `chrome.*` tertulis) |
 | `extension/manifest.json` | `content_scripts[0].js` bertambah 8 path |
-| `extension/worker/tab-content.js:92` | daftar injeksi runtime, identik byte-per-byte dengan manifest |
+| `extension/worker/tab-content.js` | daftar injeksi runtime, identik (isi dan urutan) dengan manifest |
 | `tests/helpers/content-source.mjs` | **baru** — bundel semua content script, sumber kebenarannya manifest |
 | `tests/code-standard.test.mjs` | gate baru: plafon entry, plafon modul, urutan muat, namespace terpasang, state tak terduplikasi |
 | `tests/structure-gates.test.mjs` | gate baru: content script module bebas `chrome.*` (satu kecualian tertulis) |
@@ -466,7 +466,7 @@ satu-satunya yang berbicara ke service worker)."
 **Files:**
 - Create: `extension/page-kit.js`
 - Modify: `extension/content.js` (hapus 6 fungsi + 6 konstanta, tambah 1 baris destructuring)
-- Modify: `extension/worker/tab-content.js:92` (tambah `'page-kit.js',` sebelum `'content.js'`)
+- Modify: `extension/worker/tab-content.js` (tambah `'page-kit.js',` sebelum `'content.js'`)
 - Modify: `extension/manifest.json` (`content_scripts[0].js`)
 
 **Interfaces:**
@@ -560,16 +560,31 @@ Kenapa destructuring dan bukan rename call site: tidak ada satu pun call site ya
 
 `extension/manifest.json`, `content_scripts[0].js`: sisipkan `"page-kit.js",` setelah `"hover-settle.js"`.
 
-`extension/worker/tab-content.js:92`: ganti
+`extension/worker/tab-content.js`: ganti
 
 ```js
-files: ['lib/agent-log.js', 'semantic-identity.js', 'semantic-views.js', 'role-reconcile.js', 'hover-settle.js', 'content.js']
+    files: [
+      'lib/agent-log.js',
+      'semantic-identity.js',
+      'semantic-views.js',
+      'role-reconcile.js',
+      'hover-settle.js',
+      'content.js'
+    ]
 ```
 
 menjadi
 
 ```js
-files: ['lib/agent-log.js', 'semantic-identity.js', 'semantic-views.js', 'role-reconcile.js', 'hover-settle.js', 'page-kit.js', 'content.js']
+    files: [
+      'lib/agent-log.js',
+      'semantic-identity.js',
+      'semantic-views.js',
+      'role-reconcile.js',
+      'hover-settle.js',
+      'page-kit.js',
+      'content.js'
+    ]
 ```
 
 - [ ] **Step 4: Jalankan**
@@ -604,7 +619,7 @@ sudah terbukti di role-reconcile.js."
 **Files:**
 - Create: `extension/action-refs.js`
 - Modify: `extension/content.js`
-- Modify: `extension/worker/tab-content.js:92`, `extension/manifest.json`
+- Modify: `extension/worker/tab-content.js`, `extension/manifest.json`
 
 **Interfaces:**
 - Consumes: `globalThis.OperaAgentPageKit` (clamp, clean, normalizeObservableText).
@@ -690,7 +705,7 @@ Hapus kesebelas fungsi dan empat state itu. Tambahkan setelah baris destructurin
 
 - [ ] **Step 3: Daftarkan ke kedua daftar injeksi**
 
-Sisipkan `"action-refs.js",` setelah `"page-kit.js"` di `extension/manifest.json`, dan `'action-refs.js',` setelah `'page-kit.js',` di `extension/worker/tab-content.js:92`.
+Sisipkan `"action-refs.js",` setelah `"page-kit.js"` di `extension/manifest.json`, dan `'action-refs.js',` setelah `'page-kit.js',` di `extension/worker/tab-content.js`.
 
 - [ ] **Step 4: Jalankan**
 
