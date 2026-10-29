@@ -6,7 +6,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { extensionSource, extensionSourceFiles } from './helpers/extension-source.mjs';
+import {
+  extensionSource,
+  extensionSourceFiles
+} from './helpers/extension-source.mjs';
 
 test('the helper reads background.js itself, and lists it first', async () => {
   const raw = await readFile(new URL('../extension/background.js', import.meta.url), 'utf8');
@@ -72,9 +75,15 @@ test('no state is declared twice across the bundle', async () => {
       names.push(m[1]);
     }
 
-    for (const name of names) decls.set(name, [...(decls.get(name) || []), rel]);
+    for (const name of names) decls.set(name, [
+      ...(decls.get(name) || []),
+      rel
+    ]);
   }
-  const duplicated = [...decls].filter(([, where]) => where.length > 1);
+  const duplicated = [...decls].filter(([
+    ,
+    where
+  ]) => where.length > 1);
   assert.deepEqual(duplicated, [], 'a state declared in two files will silently diverge');
 });
 
@@ -87,11 +96,17 @@ test('every cross-module name is imported where it is used', async () => {
     const keep = (s) => (s.match(/\n/g) || ['']).join('');
     while (i < text.length) {
       const c = text[i], c2 = text.slice(i, i + 2);
-      if (c2 === '//') { const s = i; while (i < text.length && text[i] !== '\n') i++; out += keep(text.slice(s, i)); continue; }
-      if (c2 === '/*') { const s = i; i += 2; while (i < text.length && text.slice(i, i + 2) !== '*/') i++; i += 2; out += keep(text.slice(s, i)); continue; }
+      if (c2 === '//') {
+        const s = i; while (i < text.length && text[i] !== '\n') i++; out += keep(text.slice(s, i)); continue;
+      }
+      if (c2 === '/*') {
+        const s = i; i += 2; while (i < text.length && text.slice(i, i + 2) !== '*/') i++; i += 2; out += keep(text.slice(s, i)); continue;
+      }
       if (c === '"' || c === "'" || c === '`') {
         const q = c, s = i; i++;
-        while (i < text.length && text[i] !== q) { if (text[i] === '\\') i++; i++; }
+        while (i < text.length && text[i] !== q) {
+          if (text[i] === '\\') i++; i++;
+        }
         i++; out += '""' + keep(text.slice(s, i)); continue;
       }
       out += c; i++;

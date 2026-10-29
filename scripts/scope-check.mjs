@@ -6,7 +6,10 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import {
+  fileURLToPath,
+  pathToFileURL
+} from 'node:url';
 
 const DEFAULT_SIDE_EFFECTS = ['tests/helpers/boundary-locks.mjs'];
 
@@ -25,20 +28,25 @@ export function parseBrief(text) {
   let unparseable = false;
   let bullet = null;
 
-  const push = (file, bucket) => {
+  const push = (
+    file,
+    bucket
+  ) => {
     if (!file || seen.has(file)) return;
     seen.add(file);
     bucket.push(file);
   };
 
-  const consume = (bucket, line) => {
+  const consume = (
+    bucket,
+    line
+  ) => {
     let found = null;
     let last = null;
 
     for (const [, span] of line.matchAll(BACKTICKS)) {
       const value = span.trim();
       if (value.startsWith(':')) {
-
         if (last) found = last;
         continue;
       }
@@ -90,18 +98,32 @@ export function parseBrief(text) {
   }
   flush();
 
-  return { declared, sideEffects, unparseable };
+  return {
+    declared,
+    sideEffects,
+    unparseable
+  };
 }
 
-export function classify(brief, actualFiles, sideEffects = DEFAULT_SIDE_EFFECTS) {
+export function classify(
+  brief,
+  actualFiles,
+  sideEffects = DEFAULT_SIDE_EFFECTS
+) {
   const declared = new Set(brief.declared);
-  const allowedSideEffects = new Set([...sideEffects, ...brief.sideEffects]);
+  const allowedSideEffects = new Set([
+    ...sideEffects,
+    ...brief.sideEffects
+  ]);
   const moved = new Set(actualFiles);
   const reliable = brief.unparseable !== true;
   const rows = [];
   const escalations = [];
 
-  const declares = (entries, file) => {
+  const declares = (
+    entries,
+    file
+  ) => {
     if (entries.has(file)) return true;
     for (const entry of entries) {
       if (entry.endsWith('/') && file.startsWith(entry)) return true;
@@ -116,7 +138,11 @@ export function classify(brief, actualFiles, sideEffects = DEFAULT_SIDE_EFFECTS)
 
     const escalate = reliable && status === 'undeclared' && file.startsWith('tests/');
     if (escalate) escalations.push(file);
-    rows.push({ file, status, escalate });
+    rows.push({
+      file,
+      status,
+      escalate
+    });
   }
 
   const satisfied = (entry) => {
@@ -140,11 +166,24 @@ export function classify(brief, actualFiles, sideEffects = DEFAULT_SIDE_EFFECTS)
 }
 
 const SYSTEM_PATH = process.platform === 'win32'
-  ? [path.join(process.env.SystemRoot || 'C:\\Windows', 'System32'), process.env.SystemRoot || 'C:\\Windows'].join(';')
-  : ['/usr/local/sbin', '/usr/local/bin', '/usr/sbin', '/usr/bin', '/sbin', '/bin'].join(':');
+  ? [
+    path.join(process.env.SystemRoot || 'C:\\Windows', 'System32'),
+    process.env.SystemRoot || 'C:\\Windows'
+  ].join(';')
+  : [
+    '/usr/local/sbin',
+    '/usr/local/bin',
+    '/usr/sbin',
+    '/usr/bin',
+    '/sbin',
+    '/bin'
+  ].join(':');
 
 function locateGit() {
-  const names = process.platform === 'win32' ? ['git.exe', 'git.cmd'] : ['git'];
+  const names = process.platform === 'win32' ? [
+    'git.exe',
+    'git.cmd'
+  ] : ['git'];
   for (const dir of (process.env.PATH || '').split(path.delimiter)) {
     if (!dir) continue;
     for (const name of names) {
@@ -155,11 +194,22 @@ function locateGit() {
   return 'git';
 }
 
-function changedFiles(root, base, head) {
-  const out = execFileSync(locateGit(), ['diff', '--name-only', `${base}..${head}`], {
+function changedFiles(
+  root,
+  base,
+  head
+) {
+  const out = execFileSync(locateGit(), [
+    'diff',
+    '--name-only',
+    `${base}..${head}`
+  ], {
     cwd: root,
     encoding: 'utf8',
-    env: { ...process.env, PATH: SYSTEM_PATH },
+    env: {
+      ...process.env,
+      PATH: SYSTEM_PATH
+    },
   });
   return out.split(/\r?\n/).filter(Boolean);
 }
@@ -177,7 +227,6 @@ export function format(result) {
   });
   lines.push('');
   if (!result.reliable) {
-
     lines.push('⚠ DEKLARASI TIDAK BISA DIBACA MESIN — hasil di atas bersifat sementara.');
     lines.push(`   ${result.undeclared.length} file terlihat di luar deklarasi, tapi tidak bisa dituduh: brief menyebut jumlahnya tanpa menyebut isinya.`);
     lines.push('   Minta brief menuliskan path satu per satu, baru hasil ini bisa dipercaya.');
@@ -191,7 +240,10 @@ export function format(result) {
   return lines.join('\n');
 }
 
-function flag(args, name) {
+function flag(
+  args,
+  name
+) {
   const index = args.indexOf(name);
   return index >= 0 ? args[index + 1] : undefined;
 }

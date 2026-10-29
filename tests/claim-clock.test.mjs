@@ -38,7 +38,6 @@ const body = migration.slice(open + 2, close).split('\n')
   .filter((l) => !l.trimStart().startsWith('--')).join('\n');
 
 test('the long-poll claim reads a clock that moves, never the one frozen at BEGIN', () => {
-
   assert.doesNotMatch(body, /now\(\)/,
     'no executable now() survives in the claim function');
 
@@ -53,7 +52,6 @@ test('the long-poll claim reads a clock that moves, never the one frozen at BEGI
 });
 
 test('exactly one overload of the claim function can exist', () => {
-
   const wrong = /drop function if exists public\.opera_claim_next_wait\(text, text, integer, text, integer, jsonb\);/;
   assert.match(migration, wrong,
     'the overload that a wrong parameter order would create is dropped explicitly');
@@ -63,12 +61,18 @@ test('exactly one overload of the claim function can exist', () => {
 
   const signature = /create or replace function public\.opera_claim_next_wait\(([^)]*)\)/.exec(migration)[1];
   const types = signature.split(',').map((s) => s.trim().split(/\s+/)[1]);
-  assert.deepEqual(types, ['text', 'text', 'text', 'integer', 'jsonb', 'integer'],
+  assert.deepEqual(types, [
+    'text',
+    'text',
+    'text',
+    'integer',
+    'jsonb',
+    'integer'
+  ],
     'and its parameter types are the ones the database already holds');
 });
 
 test('the signature the migration writes is the signature the bridge calls', () => {
-
   const bridge = read('supabase/functions/opera-agent-bridge/index.ts');
   assert.match(bridge, /rpc\("opera_claim_next_wait", \{/,
     'the bridge still calls the long-poll claim');
@@ -77,7 +81,14 @@ test('the signature the migration writes is the signature the bridge calls', () 
   assert.ok(call, 'the bridge calls the long-poll claim with a named-argument object');
   const named = [...call[1].matchAll(/^\s*(p_[a-z_]+):/gm)].map((m) => m[1]);
   assert.deepEqual(named,
-    ['p_device_name', 'p_token_hash', 'p_extension_version', 'p_protocol_version', 'p_capabilities', 'p_wait_ms'],
+    [
+      'p_device_name',
+      'p_token_hash',
+      'p_extension_version',
+      'p_protocol_version',
+      'p_capabilities',
+      'p_wait_ms'
+    ],
     'and it sends exactly the parameters the function declares, in the declared order, so no overload is ambiguous');
 
   const declared = /create or replace function public\.opera_claim_next_wait\(([^)]*)\)/.exec(migration)[1];
@@ -87,7 +98,6 @@ test('the signature the migration writes is the signature the bridge calls', () 
 });
 
 test('the claim stays callable by exactly the role that runs it', () => {
-
   assert.match(migration,
     /revoke all on function public\.opera_claim_next_wait\(text, text, text, integer, jsonb, integer\) from public, anon, authenticated;/,
     'the queue is not readable by an anonymous or signed-in browser');

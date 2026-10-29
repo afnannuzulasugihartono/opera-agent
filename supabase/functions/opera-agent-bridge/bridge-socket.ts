@@ -43,7 +43,10 @@ const GZIP_FRAME_VERSION = 1;
 // On garbage input the reader rejects, and if the writer already threw first nothing awaits the pump anymore — leaving that rejection unhandled, which outlives the test and fails the file.
 // The catch marks it handled; the await below still surfaces whatever the pump decided whenever it is reached.
 
-async function gunzipCapped(bytes, maxBytes) {
+async function gunzipCapped(
+  bytes,
+  maxBytes
+) {
   const stream = new DecompressionStream('gzip');
   const writer = stream.writable.getWriter();
   const reader = stream.readable.getReader();
@@ -51,7 +54,10 @@ async function gunzipCapped(bytes, maxBytes) {
   let total = 0;
   const pump = (async () => {
     for (;;) {
-      const { done, value } = await reader.read();
+      const {
+        done,
+        value
+      } = await reader.read();
       if (done) return true;
       total += value.length;
       if (total > maxBytes) return false;
@@ -81,26 +87,48 @@ async function bytesOf(raw) {
   return null;
 }
 
-export async function parseDeviceFrame(raw, maxBytes = MAX_FRAME_BYTES, maxDecompressed = MAX_DECOMPRESSED_BYTES) {
+export async function parseDeviceFrame(
+  raw,
+  maxBytes = MAX_FRAME_BYTES,
+  maxDecompressed = MAX_DECOMPRESSED_BYTES
+) {
   if (typeof raw === 'string') {
-    if (raw.length > maxBytes) return { ok: false, error: 'Frame too large.' };
+    if (raw.length > maxBytes) return {
+      ok: false,
+      error: 'Frame too large.'
+    };
     return parseTextFrame(raw);
   }
 
   const bytes = await bytesOf(raw);
-  if (!bytes) return { ok: false, error: 'Frame must be text or binary.' };
-  if (bytes.length > maxBytes + 1) return { ok: false, error: 'Frame too large.' };
+  if (!bytes) return {
+    ok: false,
+    error: 'Frame must be text or binary.'
+  };
+  if (bytes.length > maxBytes + 1) return {
+    ok: false,
+    error: 'Frame too large.'
+  };
   if (bytes.length < 2 || bytes[0] !== GZIP_FRAME_VERSION) {
-    return { ok: false, error: 'Unknown binary frame.' };
+    return {
+      ok: false,
+      error: 'Unknown binary frame.'
+    };
   }
 
   let text;
   try {
     text = await gunzipCapped(bytes.slice(1), maxDecompressed);
   } catch {
-    return { ok: false, error: 'Frame is not valid gzip.' };
+    return {
+      ok: false,
+      error: 'Frame is not valid gzip.'
+    };
   }
-  if (text === null) return { ok: false, error: 'Frame too large.' };
+  if (text === null) return {
+    ok: false,
+    error: 'Frame too large.'
+  };
   return parseTextFrame(text);
 }
 
@@ -109,10 +137,19 @@ function parseTextFrame(raw) {
   try {
     message = JSON.parse(raw);
   } catch {
-    return { ok: false, error: 'Frame must be JSON.' };
+    return {
+      ok: false,
+      error: 'Frame must be JSON.'
+    };
   }
-  if (!message || typeof message.type !== 'string') return { ok: false, error: 'Frame needs a type.' };
-  return { ok: true, message };
+  if (!message || typeof message.type !== 'string') return {
+    ok: false,
+    error: 'Frame needs a type.'
+  };
+  return {
+    ok: true,
+    message
+  };
 }
 export const KEEPALIVE_MS = 20000;
 
@@ -128,7 +165,10 @@ export const KEEPALIVE_MS = 20000;
 // The worker dies at thirty, so the interval has to be comfortably inside it; twenty leaves a full missed frame of slack before a slow or delayed delivery is enough to lose the device.
 
 export function frameForKeepalive(serverTime) {
-  return JSON.stringify({ type: "ping", serverTime });
+  return JSON.stringify({
+    type: "ping",
+    serverTime
+  });
 }
 
 // WHY an unanswered ping closes the socket rather than being retried.
@@ -161,10 +201,16 @@ export function handshakePayload(message) {
   const token = typeof message.token === "string" ? message.token.trim() : "";
   const deviceName = typeof message.deviceName === "string" ? message.deviceName.trim() : "";
   if (!token || !deviceName) return null;
-  return { token, deviceName };
+  return {
+    token,
+    deviceName
+  };
 }
 
-export function frameForCommand(command, serverTime) {
+export function frameForCommand(
+  command,
+  serverTime
+) {
   return JSON.stringify({
     type: "command",
     command: {
@@ -189,19 +235,43 @@ export function frameForCommand(command, serverTime) {
 // Deno closes a socket whose peer misses a protocol-level pong, and not every client answers those: observed live, a healthy probe was closed with "No response from ping frame".
 // Liveness here is decided one layer up, where an unanswered application ping closes the socket with 4003 — a verdict with a reason, rather than a transport guess.
 
-export function serveDeviceSocket(req, { verifyDevice, complete, subscribe, log, handshakeTimeoutMs = HANDSHAKE_TIMEOUT_MS, verifyTimeoutMs = VERIFY_TIMEOUT_MS }) {
+export function serveDeviceSocket(
+  req,
+  {
+    verifyDevice,
+    complete,
+    subscribe,
+    log,
+    handshakeTimeoutMs = HANDSHAKE_TIMEOUT_MS,
+    verifyTimeoutMs = VERIFY_TIMEOUT_MS
+  }
+) {
   const upgrade = isUpgradeRequest(req);
-  if (!upgrade) return { upgraded: false, response: null };
+  if (!upgrade) return {
+    upgraded: false,
+    response: null
+  };
 
-  const { socket, response } = Deno.upgradeWebSocket(req, { idleTimeout: 0 });
+  const {
+    socket,
+    response
+  } = Deno.upgradeWebSocket(req, { idleTimeout: 0 });
 
-  const state = { ready: false, identity: null };
-  const counts = { pings: 0, pongs: 0 };
+  const state = {
+    ready: false,
+    identity: null
+  };
+  const counts = {
+    pings: 0,
+    pongs: 0
+  };
   let unsubscribe = null;
 
   let resolveClosed = null;
   if (typeof EdgeRuntime !== "undefined" && typeof EdgeRuntime.waitUntil === "function") {
-    const closed = new Promise((resolve) => { resolveClosed = resolve; });
+    const closed = new Promise((resolve) => {
+      resolveClosed = resolve;
+    });
     EdgeRuntime.waitUntil(closed);
   }
   let handshakeTimer = null;
@@ -214,7 +284,10 @@ export function serveDeviceSocket(req, { verifyDevice, complete, subscribe, log,
 
   const timeOutHandshake = () => {
     if (!state.ready) {
-      socket.send(JSON.stringify({ type: "error", error: "Handshake timeout." }));
+      socket.send(JSON.stringify({
+        type: "error",
+        error: "Handshake timeout."
+      }));
       socket.close(4002, "handshake timeout");
     }
   };
@@ -224,7 +297,9 @@ export function serveDeviceSocket(req, { verifyDevice, complete, subscribe, log,
     if (keepaliveTimer) clearInterval(keepaliveTimer);
     keepaliveTimer = null;
     if (typeof unsubscribe === "function") {
-      try { unsubscribe(); } catch { }
+      try {
+        unsubscribe();
+      } catch {}
       unsubscribe = null;
     }
     if (resolveClosed) {
@@ -249,7 +324,10 @@ export function serveDeviceSocket(req, { verifyDevice, complete, subscribe, log,
       disarmHandshake();
       const identity = handshakePayload(message);
       if (!identity) {
-        socket.send(JSON.stringify({ type: "error", error: "Handshake needs token and deviceName." }));
+        socket.send(JSON.stringify({
+          type: "error",
+          error: "Handshake needs token and deviceName."
+        }));
         socket.close(4001, "unauthorized");
         return;
       }
@@ -257,14 +335,20 @@ export function serveDeviceSocket(req, { verifyDevice, complete, subscribe, log,
       const verified = await verifyDevice(identity);
       if (!verified?.ok) {
         disarmHandshake();
-        socket.send(JSON.stringify({ type: "error", error: "Unauthorized device." }));
+        socket.send(JSON.stringify({
+          type: "error",
+          error: "Unauthorized device."
+        }));
         socket.close(4001, "unauthorized");
         return;
       }
       disarmHandshake();
       state.ready = true;
       state.identity = identity;
-      socket.send(JSON.stringify({ type: "ready", serverTime: new Date().toISOString() }));
+      socket.send(JSON.stringify({
+        type: "ready",
+        serverTime: new Date().toISOString()
+      }));
       log?.info?.("bridge socket ready", identity.deviceName);
 
       unsubscribe = subscribe(identity, sendCommand);
@@ -291,11 +375,21 @@ export function serveDeviceSocket(req, { verifyDevice, complete, subscribe, log,
 
     if (message.type === "complete") {
       if (!state.ready) {
-        socket.send(JSON.stringify({ type: "error", error: "Handshake first." }));
+        socket.send(JSON.stringify({
+          type: "error",
+          error: "Handshake first."
+        }));
         return;
       }
-      const result = await complete({ ...state.identity, ...message });
-      socket.send(JSON.stringify({ type: "ack", commandId: message.commandId ?? null, result }));
+      const result = await complete({
+        ...state.identity,
+        ...message
+      });
+      socket.send(JSON.stringify({
+        type: "ack",
+        commandId: message.commandId ?? null,
+        result
+      }));
     }
   };
 
@@ -306,14 +400,20 @@ export function serveDeviceSocket(req, { verifyDevice, complete, subscribe, log,
   socket.onmessage = async (event) => {
     const parsed = await parseDeviceFrame(event.data);
     if (!parsed.ok) {
-      socket.send(JSON.stringify({ type: "error", error: parsed.error }));
+      socket.send(JSON.stringify({
+        type: "error",
+        error: parsed.error
+      }));
       return;
     }
     try {
       await dispatch(parsed.message);
     } catch (error) {
       log?.error?.("bridge socket dispatch failed", String(error?.message || error));
-      socket.send(JSON.stringify({ type: "error", error: "Dispatch failed." }));
+      socket.send(JSON.stringify({
+        type: "error",
+        error: "Dispatch failed."
+      }));
     }
   };
 
@@ -324,5 +424,9 @@ export function serveDeviceSocket(req, { verifyDevice, complete, subscribe, log,
     teardown();
   };
 
-  return { upgraded: true, response, socket };
+  return {
+    upgraded: true,
+    response,
+    socket
+  };
 }

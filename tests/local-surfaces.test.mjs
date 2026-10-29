@@ -24,10 +24,20 @@ import {
 } from '../local/page-expressions.js';
 import { filePrimitives } from '../local/primitives-file.js';
 import { statementCard } from '../local/statements.js';
-import { bridgePort, LINK_ERROR } from '../local/bridge.js';
+import {
+  bridgePort,
+  LINK_ERROR
+} from '../local/bridge.js';
 import { installedBrowsers } from '../local/driver.js';
-import { attachToPage, discoverPageWebSocket, waitForPage } from '../local/transport.js';
-import { BridgeSocket, isOriginAllowed } from '../local/ws-server.js';
+import {
+  attachToPage,
+  discoverPageWebSocket,
+  waitForPage
+} from '../local/transport.js';
+import {
+  BridgeSocket,
+  isOriginAllowed
+} from '../local/ws-server.js';
 import { startStdio } from '../local/mcp-server.js';
 
 test('a key is described the way the protocol sends it', () => {
@@ -48,15 +58,36 @@ test('a key is described the way the protocol sends it', () => {
 });
 
 test('the centre of a box is the point a click should aim at', () => {
-  assert.deepEqual(centreOf([0, 0, 10, 0, 10, 20, 0, 20]), { x: 5, y: 10 });
-  assert.deepEqual(centreOf([4, 6]), { x: 4, y: 6 }, 'a point is its own centre');
+  assert.deepEqual(centreOf([
+    0,
+    0,
+    10,
+    0,
+    10,
+    20,
+    0,
+    20
+  ]), {
+    x: 5,
+    y: 10
+  });
+  assert.deepEqual(centreOf([
+    4,
+    6
+  ]), {
+    x: 4,
+    y: 6
+  }, 'a point is its own centre');
 });
 
 test('an image is measured from its own bytes, not from a viewer', async () => {
   const png = Buffer.alloc(32);
   png.writeUInt32BE(640, 16);
   png.writeUInt32BE(480, 20);
-  assert.deepEqual(await imageSize(png.toString('base64'), 'png'), { width: 640, height: 480 });
+  assert.deepEqual(await imageSize(png.toString('base64'), 'png'), {
+    width: 640,
+    height: 480
+  });
 });
 
 test('the page expressions carry the probe they were built for', () => {
@@ -66,7 +97,10 @@ test('the page expressions carry the probe they were built for', () => {
   assert.match(hitExpression(3.4, 5.6), /elementFromPoint\(3, 6\)/, 'the point is rounded to whole pixels');
 
   assert.match(computedExpression({ selector: '#total' }), /"selector":"#total"/);
-  assert.match(computedExpression({ x: 10, y: 20 }), /"x":10,"y":20/, 'the point travels as a literal');
+  assert.match(computedExpression({
+    x: 10,
+    y: 20
+  }), /"x":10,"y":20/, 'the point travels as a literal');
 });
 
 test('the file verbs are a driver of their own', () => {
@@ -84,7 +118,11 @@ test('the file verbs are a driver of their own', () => {
 });
 
 test('the statements root is a folder the person already knows', () => {
-  const card = statementCard({ client: 'Toko Sinar Jaya', portal: 'BCA', period: '2026-09' });
+  const card = statementCard({
+    client: 'Toko Sinar Jaya',
+    portal: 'BCA',
+    period: '2026-09'
+  });
   assert.ok(card.dir.includes(path.join('Downloads', 'opera-statements')),
     `the default folder must sit under Downloads: ${card.dir}`);
   assert.ok(path.isAbsolute(card.dir), 'the root is absolute, so a job does not depend on the working directory');
@@ -104,7 +142,11 @@ test('the bridge port is the one the environment names', () => {
 });
 
 test('the installed browsers are listed, and a missing binary is named as missing', () => {
-  const none = installedBrowsers({ platform: 'linux', exists: () => false, env: {} });
+  const none = installedBrowsers({
+    platform: 'linux',
+    exists: () => false,
+    env: {}
+  });
   assert.ok(Array.isArray(none));
 
   const one = installedBrowsers({
@@ -129,9 +171,25 @@ test('a page is found on the port, and a browser that answers with no page gets 
   const fetch = async (url) => {
     calls.push(url);
     if (String(url).includes('/json/list')) {
-      return { ok: true, json: async () => [{ type: 'page', id: 'A', url: 'https://a.test/', webSocketDebuggerUrl: 'ws://a.test/devtools' }] };
+      return {
+        ok: true,
+        json: async () => [{
+          type: 'page',
+          id: 'A',
+          url: 'https://a.test/',
+          webSocketDebuggerUrl: 'ws://a.test/devtools'
+        }]
+      };
     }
-    return { ok: true, json: async () => ({ type: 'page', id: 'B', url: 'https://b.test/', webSocketDebuggerUrl: 'ws://b.test/devtools' }) };
+    return {
+      ok: true,
+      json: async () => ({
+        type: 'page',
+        id: 'B',
+        url: 'https://b.test/',
+        webSocketDebuggerUrl: 'ws://b.test/devtools'
+      })
+    };
   };
   const url = await discoverPageWebSocket(9333, { fetch });
   assert.equal(url, 'ws://a.test/devtools', 'the caller gets the websocket url of a page it may drive');
@@ -139,16 +197,34 @@ test('a page is found on the port, and a browser that answers with no page gets 
 
   const created = await discoverPageWebSocket(9333, {
     fetch: async (url) => (String(url).includes('/json/list')
-      ? { ok: true, json: async () => [] }
-      : { ok: true, json: async () => ({ type: 'page', id: 'B', url: 'https://b.test/', webSocketDebuggerUrl: 'ws://b.test/devtools' }) })
+      ? {
+        ok: true,
+        json: async () => []
+      }
+      : {
+        ok: true,
+        json: async () => ({
+          type: 'page',
+          id: 'B',
+          url: 'https://b.test/',
+          webSocketDebuggerUrl: 'ws://b.test/devtools'
+        })
+      })
   });
   assert.equal(created, 'ws://b.test/devtools', 'a browser with no page is given one');
 });
 
 test('a browser that never answers is named, not waited on forever', async () => {
-  const failing = async () => { throw new Error('connection refused'); };
+  const failing = async () => {
+    throw new Error('connection refused');
+  };
   await assert.rejects(
-    () => waitForPage(9333, { fetch: failing, timeoutMs: 0, now: () => 0, sleep: async () => {} }),
+    () => waitForPage(9333, {
+      fetch: failing,
+      timeoutMs: 0,
+      now: () => 0,
+      sleep: async () => {}
+    }),
     /not reachable/
   );
 });
@@ -161,12 +237,24 @@ test('attaching to a page returns the page and the transport it opened', async (
       this.closed = false;
       setTimeout(() => this.onopen?.(), 0);
     }
-    send(raw) { this.sent.push(raw); }
-    close() { this.closed = true; }
+    send(raw) {
+      this.sent.push(raw);
+    }
+    close() {
+      this.closed = true;
+    }
   }
   const attached = await attachToPage(9333, {
     Socket: FakeSocket,
-    fetch: async () => ({ ok: true, json: async () => [{ type: 'page', id: 'A', url: 'https://a.test/', webSocketDebuggerUrl: 'ws://a.test/devtools' }] })
+    fetch: async () => ({
+      ok: true,
+      json: async () => [{
+        type: 'page',
+        id: 'A',
+        url: 'https://a.test/',
+        webSocketDebuggerUrl: 'ws://a.test/devtools'
+      }]
+    })
   });
   assert.equal(attached.url, 'ws://a.test/devtools');
   assert.equal(typeof attached.transport.send, 'function', 'the caller gets a transport it can send on');
@@ -175,7 +263,10 @@ test('attaching to a page returns the page and the transport it opened', async (
 });
 
 test('an origin is allowed only when it is on the list', () => {
-  const allowed = ['http://127.0.0.1:9451', 'chrome-extension://abc'];
+  const allowed = [
+    'http://127.0.0.1:9451',
+    'chrome-extension://abc'
+  ];
   assert.equal(isOriginAllowed('http://127.0.0.1:9451', allowed), true);
   assert.equal(isOriginAllowed('chrome-extension://abc', allowed), true);
   assert.equal(isOriginAllowed('http://evil.test', allowed), false);
@@ -189,7 +280,11 @@ test('a bridge socket carries a request and answers with a frame', () => {
   socket.write = (text) => sent.push(text);
   socket.destroyed = false;
   socket.close = () => {};
-  const bridge = new BridgeSocket(socket, { id: 'r1', method: 'browser.ping', params: {} });
+  const bridge = new BridgeSocket(socket, {
+    id: 'r1',
+    method: 'browser.ping',
+    params: {}
+  });
   assert.ok(bridge.id, 'every socket carries an id');
   bridge.send('hello');
   assert.equal(sent.length, 1, 'a message reaches the socket');
@@ -204,7 +299,10 @@ test('the stdio server answers a request and refuses a broken one', async () => 
   const context = {
     driver: {
       tabs: async () => [],
-      open: async () => ({ url: 'https://x.test/', id: 'tab-1' }),
+      open: async () => ({
+        url: 'https://x.test/',
+        id: 'tab-1'
+      }),
       close: async () => {},
       ask: async () => ({}),
       guide: () => ({ tasks: [] })
@@ -214,7 +312,11 @@ test('the stdio server answers a request and refuses a broken one', async () => 
     sessionOptions: {}
   };
 
-  startStdio({ input, output, context });
+  startStdio({
+    input,
+    output,
+    context
+  });
   input.emit('data', `${JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'initialize', params: {} })}\n`);
   input.emit('data', 'not json\n');
 

@@ -44,29 +44,87 @@ export const BURST_INPUT_ACTIONS = Object.freeze([
 ]);
 
 const STEP_KEYS = Object.freeze({
-  click: ['action', 'x', 'y', 'handle', 'refFromStep'],
-  click_row: ['action', 'role', 'name'],
-  hover: ['action', 'x', 'y', 'refFromStep'],
-  press_key: ['action', 'key', 'modifiers'],
-  type: ['action', 'text'],
-  append: ['action', 'text'],
-  scroll: ['action', 'y', 'end', 'text', 'selector'],
-  stream_keys: ['action', 'events'],
-  resolve: ['action', 'role', 'name'],
-  wait: ['action', 'text', 'role', 'name', 'absent', 'timeoutMs', 'intervalMs']
+  click: [
+    'action',
+    'x',
+    'y',
+    'handle',
+    'refFromStep'
+  ],
+  click_row: [
+    'action',
+    'role',
+    'name'
+  ],
+  hover: [
+    'action',
+    'x',
+    'y',
+    'refFromStep'
+  ],
+  press_key: [
+    'action',
+    'key',
+    'modifiers'
+  ],
+  type: [
+    'action',
+    'text'
+  ],
+  append: [
+    'action',
+    'text'
+  ],
+  scroll: [
+    'action',
+    'y',
+    'end',
+    'text',
+    'selector'
+  ],
+  stream_keys: [
+    'action',
+    'events'
+  ],
+  resolve: [
+    'action',
+    'role',
+    'name'
+  ],
+  wait: [
+    'action',
+    'text',
+    'role',
+    'name',
+    'absent',
+    'timeoutMs',
+    'intervalMs'
+  ]
 });
 
-const MODIFIERS = new Set(['Control', 'Alt', 'Shift', 'Meta']);
+const MODIFIERS = new Set([
+  'Control',
+  'Alt',
+  'Shift',
+  'Meta'
+]);
 
 const isObject = (value) => Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 
-function onlyKeys(value, allowed, where) {
+function onlyKeys(
+  value,
+  allowed,
+  where
+) {
   for (const key of Object.keys(value)) {
     if (!allowed.includes(key)) throw new Error(`${where} has unknown key "${key}"`);
   }
 }
 
-function textOf(value, label) {
+function textOf(
+  value,
+  label
+) {
   if (typeof value !== 'string' || value.trim() === '') throw new Error(`${label} must be a non-empty string`);
   return value;
 }
@@ -80,16 +138,26 @@ function modifiersOf(value) {
   return value;
 }
 
-function pointOf(step, where) {
+function pointOf(
+  step,
+  where
+) {
   if (step.x === undefined && step.y === undefined) return null;
   if (step.x === undefined || step.y === undefined) throw new Error(`${where} needs both x and y`);
   const x = Number(step.x);
   const y = Number(step.y);
   if (!Number.isFinite(x) || !Number.isFinite(y)) throw new Error(`${where} needs finite x and y`);
-  return { x, y };
+  return {
+    x,
+    y
+  };
 }
 
-function refOf(step, index, where) {
+function refOf(
+  step,
+  index,
+  where
+) {
   if (step.refFromStep === undefined) return null;
   const ref = Number(step.refFromStep);
   if (!Number.isInteger(ref) || ref < 0 || ref >= index) {
@@ -98,7 +166,12 @@ function refOf(step, index, where) {
   return ref;
 }
 
-function targetOf(step, index, where, { handle = false } = {}) {
+function targetOf(
+  step,
+  index,
+  where,
+  { handle = false } = {}
+) {
   const point = pointOf(step, where);
   const ref = refOf(step, index, where);
   const named = step.handle === undefined ? null : textOf(step.handle, `${where} handle`);
@@ -107,17 +180,32 @@ function targetOf(step, index, where, { handle = false } = {}) {
     throw new Error(`${where} needs exactly one of ${handle ? 'x/y, handle, or refFromStep' : 'x/y or refFromStep'}`);
   }
   if (named !== null && !handle) throw new Error(`${where} does not take a handle`);
-  return { point, ref, handle: named };
+  return {
+    point,
+    ref,
+    handle: named
+  };
 }
 
-function streamEvents(events, where) {
+function streamEvents(
+  events,
+  where
+) {
   if (!Array.isArray(events) || events.length < 1 || events.length > 100) {
     throw new Error(`${where} needs 1-100 events`);
   }
-  return events.map((event, index) => {
+  return events.map((
+    event,
+    index
+  ) => {
     const at = `${where} event ${index}`;
     if (!isObject(event)) throw new Error(`${at} must be an object`);
-    onlyKeys(event, ['key', 'modifiers', 'text', 'gapMs'], at);
+    onlyKeys(event, [
+      'key',
+      'modifiers',
+      'text',
+      'gapMs'
+    ], at);
     if (event.key === undefined && event.text === undefined) throw new Error(`${at} needs key or text`);
     if (event.key !== undefined && event.text !== undefined) throw new Error(`${at} has both key and text`);
     if (event.key !== undefined) textOf(event.key, `${at} key`);
@@ -128,7 +216,10 @@ function streamEvents(events, where) {
   });
 }
 
-function waitStep(step, where) {
+function waitStep(
+  step,
+  where
+) {
   const hasText = step.text !== undefined;
   const hasRow = step.role !== undefined || step.name !== undefined;
   if (hasText === hasRow) throw new Error(`${where} needs text or role and name, not both`);
@@ -153,7 +244,10 @@ function waitStep(step, where) {
   return out;
 }
 
-function normalizeStep(step, index) {
+function normalizeStep(
+  step,
+  index
+) {
   const where = `step ${index}`;
   if (!isObject(step)) throw new Error(`${where} must be an object`);
   const action = String(step.action ?? '');
@@ -166,7 +260,10 @@ function normalizeStep(step, index) {
     const target = targetOf(step, index, where, { handle: action === 'click' });
     return {
       action,
-      ...(target.point ? { x: target.point.x, y: target.point.y } : {}),
+      ...(target.point ? {
+        x: target.point.x,
+        y: target.point.y
+      } : {}),
       ...(target.handle ? { handle: target.handle } : {}),
       ...(target.ref !== null ? { refFromStep: target.ref } : {})
     };
@@ -179,14 +276,24 @@ function normalizeStep(step, index) {
     };
   }
   if (action === 'press_key') {
-    return { action, key: textOf(step.key, `${where} key`), modifiers: modifiersOf(step.modifiers) };
+    return {
+      action,
+      key: textOf(step.key, `${where} key`),
+      modifiers: modifiersOf(step.modifiers)
+    };
   }
   if (action === 'type' || action === 'append') {
     if (typeof step.text !== 'string') throw new Error(`${where} text must be a string`);
-    return { action, text: step.text };
+    return {
+      action,
+      text: step.text
+    };
   }
   if (action === 'stream_keys') {
-    return { action, events: streamEvents(step.events, where) };
+    return {
+      action,
+      events: streamEvents(step.events, where)
+    };
   }
   if (action === 'wait') return waitStep(step, where);
 
@@ -216,17 +323,28 @@ export function normalizeBurst(args) {
   const timeoutMs = Number.isFinite(asked)
     ? Math.min(BURST_MAX_TIMEOUT_MS, Math.max(500, Math.round(asked)))
     : BURST_MAX_TIMEOUT_MS;
-  return { steps: args.steps.map(normalizeStep), timeoutMs };
+  return {
+    steps: args.steps.map(normalizeStep),
+    timeoutMs
+  };
 }
 
-function refAt(step, results) {
+function refAt(
+  step,
+  results
+) {
   if (step.refFromStep === undefined) return null;
   const found = results[step.refFromStep];
   if (!found) throw new Error(`refFromStep ${step.refFromStep} has no completed step behind it`);
   return found.result;
 }
 
-async function runStep(driver, step, results, remaining) {
+async function runStep(
+  driver,
+  step,
+  results,
+  remaining
+) {
   if (step.action === 'click') {
     const ref = refAt(step, results);
     if (!ref) return driver.click(step.x, step.y, step.handle ?? null);
@@ -264,7 +382,10 @@ async function runStep(driver, step, results, remaining) {
   };
   if (step.text !== undefined) {
     if (typeof driver.waitForText !== 'function') throw new Error('this driver cannot wait for text');
-    const state = await driver.waitForText(step.text, { ...options, absent });
+    const state = await driver.waitForText(step.text, {
+      ...options,
+      absent
+    });
     const present = String(state?.text ?? '').includes(step.text);
     if (present === absent) {
       throw new Error(`wait for "${step.text}" to ${absent ? 'leave' : 'appear'} timed out`);
@@ -292,13 +413,23 @@ async function runStep(driver, step, results, remaining) {
   return waited;
 }
 
-export async function runLocalBurst({ driver, steps, timeoutMs = BURST_MAX_TIMEOUT_MS, now = Date.now }) {
+export async function runLocalBurst({
+  driver,
+  steps,
+  timeoutMs = BURST_MAX_TIMEOUT_MS,
+  now = Date.now
+}) {
   const clock = typeof now === 'function' ? now : Date.now;
   const started = clock();
   const deadline = started + timeoutMs;
   const results = [];
 
-  const failure = (index, step, error, timedOut = false) => ({
+  const failure = (
+    index,
+    step,
+    error,
+    timedOut = false
+  ) => ({
     ok: false,
     timedOut,
     completedSteps: results.length,
@@ -318,11 +449,22 @@ export async function runLocalBurst({ driver, steps, timeoutMs = BURST_MAX_TIMEO
     const stepStarted = clock();
     try {
       const result = await runStep(driver, step, results, remaining);
-      results.push({ index, action: step.action, ok: true, timingMs: Math.max(0, clock() - stepStarted), result });
+      results.push({
+        index,
+        action: step.action,
+        ok: true,
+        timingMs: Math.max(0, clock() - stepStarted),
+        result
+      });
     } catch (error) {
       return failure(index, step, error);
     }
   }
 
-  return { ok: true, completedSteps: results.length, results, timingMs: Math.max(0, clock() - started) };
+  return {
+    ok: true,
+    completedSteps: results.length,
+    results,
+    timingMs: Math.max(0, clock() - started)
+  };
 }

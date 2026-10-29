@@ -14,7 +14,10 @@
 
 const VERSION_PATH = '/json/version';
 
-export async function discoverWebSocket(port, { fetch = globalThis.fetch } = {}) {
+export async function discoverWebSocket(
+  port,
+  { fetch = globalThis.fetch } = {}
+) {
   let response;
   try {
     response = await fetch(`http://127.0.0.1:${port}${VERSION_PATH}`);
@@ -37,7 +40,10 @@ export async function discoverWebSocket(port, { fetch = globalThis.fetch } = {})
 // That is how a latency test once left a run of x characters in the title of an unrelated document.
 // A tab is therefore chosen by id, or by asking, never by position.
 
-export async function listPageWebSockets(port, { fetch = globalThis.fetch } = {}) {
+export async function listPageWebSockets(
+  port,
+  { fetch = globalThis.fetch } = {}
+) {
   let list = [];
   try {
     const response = await fetch(`http://127.0.0.1:${port}/json/list`);
@@ -56,11 +62,19 @@ export async function listPageWebSockets(port, { fetch = globalThis.fetch } = {}
     }));
 }
 
-export async function pageWebSocketById(port, targetId, options = {}) {
+export async function pageWebSocketById(
+  port,
+  targetId,
+  options = {}
+) {
   const pages = await listPageWebSockets(port, options);
   if (!pages.length) throw new Error(`Browser on port ${port} has no page target to drive.`);
   if (targetId === undefined || targetId === null || targetId === '') {
-    return { url: pages[0].webSocketDebuggerUrl, targetId: pages[0].id, pages };
+    return {
+      url: pages[0].webSocketDebuggerUrl,
+      targetId: pages[0].id,
+      pages
+    };
   }
 
   const match = pages.find((page) => page.id === targetId);
@@ -68,16 +82,23 @@ export async function pageWebSocketById(port, targetId, options = {}) {
     const known = pages.map((page) => `${page.id} ${page.title ?? ''}`.trim()).join(' | ');
     throw new Error(`No page target ${targetId}. Open pages: ${known}`);
   }
-  return { url: match.webSocketDebuggerUrl, targetId: match.id, pages };
+  return {
+    url: match.webSocketDebuggerUrl,
+    targetId: match.id,
+    pages
+  };
 }
 
-export async function waitForBrowser(port, {
-  timeoutMs = 10000,
-  intervalMs = 100,
-  now = Date.now,
-  sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
-  fetch
-} = {}) {
+export async function waitForBrowser(
+  port,
+  {
+    timeoutMs = 10000,
+    intervalMs = 100,
+    now = Date.now,
+    sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+    fetch
+  } = {}
+) {
   const deadline = now() + timeoutMs;
   let lastError = null;
 
@@ -94,15 +115,26 @@ export async function waitForBrowser(port, {
   }
 }
 
-export function connect(url, { Socket = globalThis.WebSocket, timeoutMs = 10000 } = {}) {
-  return new Promise((resolve, reject) => {
+export function connect(
+  url,
+  {
+    Socket = globalThis.WebSocket,
+    timeoutMs = 10000
+  } = {}
+) {
+  return new Promise((
+    resolve,
+    reject
+  ) => {
     const socket = new Socket(url);
     let settled = false;
 
     const timer = setTimeout(() => {
       if (settled) return;
       settled = true;
-      try { socket.close(); } catch {}
+      try {
+        socket.close();
+      } catch {}
       reject(new Error(`Could not connect to ${url} within ${timeoutMs}ms.`));
     }, timeoutMs);
 
@@ -120,7 +152,9 @@ export function connect(url, { Socket = globalThis.WebSocket, timeoutMs = 10000 
 
       const transport = {
         send: (raw) => socket.send(raw),
-        onMessage: (fn) => { socket.onmessage = (event) => fn(event?.data ?? event); },
+        onMessage: (fn) => {
+          socket.onmessage = (event) => fn(event?.data ?? event);
+        },
         close: () => socket.close()
       };
       resolve(transport);
@@ -128,7 +162,10 @@ export function connect(url, { Socket = globalThis.WebSocket, timeoutMs = 10000 
   });
 }
 
-export async function discoverPageWebSocket(port, { fetch = globalThis.fetch } = {}) {
+export async function discoverPageWebSocket(
+  port,
+  { fetch = globalThis.fetch } = {}
+) {
   let list = [];
   try {
     const response = await fetch(`http://127.0.0.1:${port}/json/list`);
@@ -154,7 +191,11 @@ export async function discoverPageWebSocket(port, { fetch = globalThis.fetch } =
 // A new target leaves that page alone.
 // The endpoint takes PUT and refuses GET, so a driver built on GET reports every open as a failure.
 
-export async function openTab(port, url, { fetch = globalThis.fetch } = {}) {
+export async function openTab(
+  port,
+  url,
+  { fetch = globalThis.fetch } = {}
+) {
   let created;
   try {
     created = await fetch(`http://127.0.0.1:${port}/json/new?${encodeURIComponent(url)}`, { method: 'PUT' });
@@ -169,10 +210,17 @@ export async function openTab(port, url, { fetch = globalThis.fetch } = {}) {
   if (!page?.webSocketDebuggerUrl || !page?.id) {
     throw new Error(`Browser on port ${port} opened a tab without an addressable target.`);
   }
-  return { id: page.id, webSocketDebuggerUrl: page.webSocketDebuggerUrl };
+  return {
+    id: page.id,
+    webSocketDebuggerUrl: page.webSocketDebuggerUrl
+  };
 }
 
-export async function closeTab(port, targetId, { fetch = globalThis.fetch } = {}) {
+export async function closeTab(
+  port,
+  targetId,
+  { fetch = globalThis.fetch } = {}
+) {
   let closed;
   try {
     closed = await fetch(`http://127.0.0.1:${port}/json/close/${encodeURIComponent(targetId)}`, { method: 'PUT' });
@@ -182,11 +230,23 @@ export async function closeTab(port, targetId, { fetch = globalThis.fetch } = {}
   if (!closed?.ok) {
     throw new Error(`Browser on port ${port} would not close tab ${targetId}: HTTP ${closed?.status ?? 'none'}.`);
   }
-  return { id: targetId, closed: true };
+  return {
+    id: targetId,
+    closed: true
+  };
 }
 
-export async function waitForPage(port, options = {}) {
-  const { timeoutMs = 10000, intervalMs = 100, now = Date.now, sleep = (ms) => new Promise((r) => setTimeout(r, ms)), fetch } = options;
+export async function waitForPage(
+  port,
+  options = {}
+) {
+  const {
+    timeoutMs = 10000,
+    intervalMs = 100,
+    now = Date.now,
+    sleep = (ms) => new Promise((r) => setTimeout(r, ms)),
+    fetch
+  } = options;
   const deadline = now() + timeoutMs;
   let lastError = null;
 
@@ -203,8 +263,21 @@ export async function waitForPage(port, options = {}) {
   }
 }
 
-export async function attachToPage(port, { timeoutMs = 10000, Socket, fetch } = {}) {
-  const url = await waitForPage(port, { timeoutMs, fetch });
+export async function attachToPage(
+  port,
+  {
+    timeoutMs = 10000,
+    Socket,
+    fetch
+  } = {}
+) {
+  const url = await waitForPage(port, {
+    timeoutMs,
+    fetch
+  });
   const transport = await connect(url, { Socket });
-  return { url, transport };
+  return {
+    url,
+    transport
+  };
 }

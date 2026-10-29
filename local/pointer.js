@@ -36,10 +36,17 @@ import {
   hitExpression
 } from './page-expressions.js';
 
-export function createPointerMethods({ cdp, primitives }) {
+export function createPointerMethods({
+  cdp,
+  primitives
+}) {
   const SPOT_MS = 700;
 
-  const spot = (x, y, color) => {
+  const spot = (
+    x,
+    y,
+    color
+  ) => {
     const px = Math.round(Number(x) || 0);
     const py = Math.round(Number(y) || 0);
     return cdp.send('Runtime.evaluate', {
@@ -65,7 +72,10 @@ export function createPointerMethods({ cdp, primitives }) {
     }).catch(() => null);
   };
 
-  const hitAt = async (x, y) => {
+  const hitAt = async (
+    x,
+    y
+  ) => {
     try {
       const { result } = await cdp.send('Runtime.evaluate', {
         expression: hitExpression(x, y),
@@ -85,7 +95,10 @@ export function createPointerMethods({ cdp, primitives }) {
     }
   };
 
-  const ownershipAt = async (handle, point) => {
+  const ownershipAt = async (
+    handle,
+    point
+  ) => {
     const raw = String(handle ?? '');
     if (!raw.startsWith(HANDLE_PREFIX)) return {};
     const backendNodeId = Number(raw.slice(HANDLE_PREFIX.length));
@@ -112,7 +125,10 @@ export function createPointerMethods({ cdp, primitives }) {
             coveredText: label
           };
         }`,
-        arguments: [{ value: Number(point.x) }, { value: Number(point.y) }],
+        arguments: [
+          { value: Number(point.x) },
+          { value: Number(point.y) }
+        ],
         returnByValue: true
       });
       return result?.value ?? {};
@@ -121,7 +137,10 @@ export function createPointerMethods({ cdp, primitives }) {
     }
   };
 
-  async function clickAt(x, y) {
+  async function clickAt(
+    x,
+    y
+  ) {
     const px = Number(x);
     const py = Number(y);
     const view = await primitives.viewport().catch(() => null);
@@ -131,14 +150,35 @@ export function createPointerMethods({ cdp, primitives }) {
       const box = `${view.width}x${view.height}`;
       throw new Error(`click refused: ${at} is outside the ${box} viewport - scroll({text}) or scroll({y}) to bring it into view, then click again`);
     }
-    const common = { x: px, y: py, button: 'left', clickCount: 1, buttons: 1 };
+    const common = {
+      x: px,
+      y: py,
+      button: 'left',
+      clickCount: 1,
+      buttons: 1
+    };
     await Promise.all([
       spot(x, y, 'rgb(255,60,60)'),
-      cdp.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x, y, buttons: 0 }),
-      cdp.send('Input.dispatchMouseEvent', { type: 'mousePressed', ...common }),
-      cdp.send('Input.dispatchMouseEvent', { type: 'mouseReleased', ...common })
+      cdp.send('Input.dispatchMouseEvent', {
+        type: 'mouseMoved',
+        x,
+        y,
+        buttons: 0
+      }),
+      cdp.send('Input.dispatchMouseEvent', {
+        type: 'mousePressed',
+        ...common
+      }),
+      cdp.send('Input.dispatchMouseEvent', {
+        type: 'mouseReleased',
+        ...common
+      })
     ]);
-    return { x, y, hit: await hitAt(x, y) };
+    return {
+      x,
+      y,
+      hit: await hitAt(x, y)
+    };
   }
 
   // WHY A CLICK TAKES A FRACTION AS WELL AS A PIXEL.
@@ -146,18 +186,44 @@ export function createPointerMethods({ cdp, primitives }) {
   // A fraction is resolved against the viewport as it is at the moment of the click, which survives that, and the answer says which pixels it became and in what space - so a caller that meant a fixed pixel still gets the truth about the space it landed in.
   async function clickFraction(at) {
     const view = await primitives.viewport();
-    const asked = { x: Number(at?.x) || 0, y: Number(at?.y) || 0 };
+    const asked = {
+      x: Number(at?.x) || 0,
+      y: Number(at?.y) || 0
+    };
     const x = Math.round(Math.min(1, Math.max(0, asked.x)) * view.width);
     const y = Math.round(Math.min(1, Math.max(0, asked.y)) * view.height);
     await clickAt(x, y);
-    return { x, y, of: asked, viewport: { width: view.width, height: view.height }, dpr: view.dpr };
+    return {
+      x,
+      y,
+      of: asked,
+      viewport: {
+        width: view.width,
+        height: view.height
+      },
+      dpr: view.dpr
+    };
   }
 
-  async function hover(x, y) {
+  async function hover(
+    x,
+    y
+  ) {
     const mark = spot(x, y, 'rgb(66,133,244)');
-    const moved = cdp.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x, y, buttons: 0 });
-    await Promise.all([mark, moved]);
-    return { x, y };
+    const moved = cdp.send('Input.dispatchMouseEvent', {
+      type: 'mouseMoved',
+      x,
+      y,
+      buttons: 0
+    });
+    await Promise.all([
+      mark,
+      moved
+    ]);
+    return {
+      x,
+      y
+    };
   }
 
   // WHY A SUBMENU IS HOVERED AND NOT CLICKED.
@@ -168,7 +234,10 @@ export function createPointerMethods({ cdp, primitives }) {
   // Measured live: a submenu that would not open on hover opened once the pointer was sent somewhere else first and came back.
   // A menu that has never seen the pointer arrive from outside does not treat the hover as entering it, so the away-and-back is not politeness, it is the enter transition the menu is waiting for.
   async function hoverRow(row) {
-    const away = { x: Math.max(2, row.x - 80), y: Math.max(2, row.y - 80) };
+    const away = {
+      x: Math.max(2, row.x - 80),
+      y: Math.max(2, row.y - 80)
+    };
     await hover(away.x, away.y);
     await primitives.settle();
     const here = await primitives.handleBox(row.handle);
@@ -188,7 +257,10 @@ export function createPointerMethods({ cdp, primitives }) {
     if (!result?.objectId) return row;
     const described = await cdp.send('DOM.describeNode', { objectId: result.objectId });
     const backendNodeId = described?.node?.backendNodeId;
-    return backendNodeId ? { ...row, handle: HANDLE_PREFIX + backendNodeId } : row;
+    return backendNodeId ? {
+      ...row,
+      handle: HANDLE_PREFIX + backendNodeId
+    } : row;
   }
 
   async function handleBox(handle) {
@@ -206,8 +278,20 @@ export function createPointerMethods({ cdp, primitives }) {
     const at = await handleBox(handle);
     const owner = await ownershipAt(handle, at);
     await clickAt(at.x, at.y);
-    return { ...at, handle: String(handle), ...owner };
+    return {
+      ...at,
+      handle: String(handle),
+      ...owner
+    };
   }
 
-  return { clickAt, clickFraction, hover, hoverRow, resolveHandle, handleBox, clickHandle };
+  return {
+    clickAt,
+    clickFraction,
+    hover,
+    hoverRow,
+    resolveHandle,
+    handleBox,
+    clickHandle
+  };
 }

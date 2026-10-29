@@ -5,7 +5,10 @@
 
 import { clamp } from '../lib/protocol.js';
 import { nowIso } from './utils.js';
-import { contentCall, HTTP_URL_RE } from './tab-content.js';
+import {
+  contentCall,
+  HTTP_URL_RE
+} from './tab-content.js';
 import { isPrivateTab } from './private-tabs.js';
 import {
   assertCaptureFramesSafe,
@@ -20,11 +23,21 @@ import {
 
 const MAX_SCREENSHOT_BYTES = 220 * 1024;
 
-export async function capturePage(tabId, params, context) {
+export async function capturePage(
+  tabId,
+  params,
+  context
+) {
   const tab = await chrome.tabs.get(tabId);
   if (!HTTP_URL_RE.test(tab.url || '')) throw codedError('CAPTURE_BLOCKED', 'Screenshots only support HTTP/HTTPS tabs.', { tabId });
-  if (tab.incognito) throw codedError('CAPTURE_BLOCKED', 'Screenshots are blocked in incognito tabs.', { tabId, reason: 'INCOGNITO' });
-  if (await isPrivateTab(tabId)) throw codedError('CAPTURE_BLOCKED', 'This tab was marked private in the Opera Agent popup.', { tabId, reason: 'USER_PRIVATE' });
+  if (tab.incognito) throw codedError('CAPTURE_BLOCKED', 'Screenshots are blocked in incognito tabs.', {
+    tabId,
+    reason: 'INCOGNITO'
+  });
+  if (await isPrivateTab(tabId)) throw codedError('CAPTURE_BLOCKED', 'This tab was marked private in the Opera Agent popup.', {
+    tabId,
+    reason: 'USER_PRIVATE'
+  });
 
   const policy = await contentCall(tabId, 'page.capture_policy', {});
   if (!policy.allowed) {
@@ -42,7 +55,9 @@ export async function capturePage(tabId, params, context) {
   if (fullPage && params.crop != null) {
     throw codedError('INVALID_CAPTURE_REGION', 'Capture fullPage and crop are exclusive: pick one.', { tabId });
   }
-  const crop = params.crop || { x: 0, y: 0, width: viewportWidth, height: viewportHeight };
+  const crop = params.crop || {
+    x: 0, y: 0, width: viewportWidth, height: viewportHeight
+  };
   const x = Number(crop.x);
   const y = Number(crop.y);
   const width = Number(crop.width);
@@ -50,7 +65,10 @@ export async function capturePage(tabId, params, context) {
   if (!fullPage && (x < 0 || y < 0 || width <= 0 || height <= 0 || x + width > viewportWidth + 0.5 || y + height > viewportHeight + 0.5)) {
     throw codedError('INVALID_CAPTURE_REGION', 'Capture crop must stay inside the visible viewport.', {
       tabId,
-      viewport: { width: viewportWidth, height: viewportHeight }
+      viewport: {
+        width: viewportWidth,
+        height: viewportHeight
+      }
     });
   }
 
@@ -58,9 +76,28 @@ export async function capturePage(tabId, params, context) {
   const maxWidth = clamp(params.maxWidth, 320, 1600, 1280);
   const maxHeight = clamp(params.maxHeight, 240, 1200, 900);
   const previousHash = typeof params.previousHash === 'string' ? params.previousHash.toLowerCase() : '';
-  const cacheKey = JSON.stringify([policy.documentId, fullPage ? 'full' : [x, y, width, height], quality, maxWidth, maxHeight]);
+  const cacheKey = JSON.stringify([
+    policy.documentId,
+    fullPage ? 'full' : [
+      x,
+      y,
+      width,
+      height
+    ],
+    quality,
+    maxWidth,
+    maxHeight
+  ]);
   const cached = cachedScreenshot(tabId, cacheKey, previousHash);
-  if (cached) return { ok: true, tabId, page: { title: tab.title || '', url: tab.url || '' }, screenshot: cached };
+  if (cached) return {
+    ok: true,
+    tabId,
+    page: {
+      title: tab.title || '',
+      url: tab.url || ''
+    },
+    screenshot: cached
+  };
 
   const screenshot = await withDebugger(tabId, context, async (target) => {
     const metrics = await chrome.debugger.sendCommand(target, 'Page.getLayoutMetrics');
@@ -83,11 +120,27 @@ export async function capturePage(tabId, params, context) {
     }
     const baseScale = Math.min(1, maxWidth / clipW, maxHeight / clipH);
     const attempts = [
-      { quality, scale: baseScale },
-      { quality: 40, scale: baseScale },
-      { quality: 40, scale: baseScale * 0.75 },
-      { quality: 40, scale: baseScale * 0.55 }
-    ].filter((attempt, index, all) => index === all.findIndex((item) => item.quality === attempt.quality && item.scale === attempt.scale));
+      {
+        quality,
+        scale: baseScale
+      },
+      {
+        quality: 40,
+        scale: baseScale
+      },
+      {
+        quality: 40,
+        scale: baseScale * 0.75
+      },
+      {
+        quality: 40,
+        scale: baseScale * 0.55
+      }
+    ].filter((
+      attempt,
+      index,
+      all
+    ) => index === all.findIndex((item) => item.quality === attempt.quality && item.scale === attempt.scale));
     let chosen = null;
     let sawTooLarge = false;
     let sawTooSmall = false;
@@ -99,7 +152,13 @@ export async function capturePage(tabId, params, context) {
         fromSurface: true,
         captureBeyondViewport: beyond,
         optimizeForSpeed: true,
-        clip: { x: clipX, y: clipY, width: clipW, height: clipH, scale: attempt.scale }
+        clip: {
+          x: clipX,
+          y: clipY,
+          width: clipW,
+          height: clipH,
+          scale: attempt.scale
+        }
       });
       const data = String(response?.data || '');
       const bytes = screenshotBytes(data);
@@ -112,13 +171,27 @@ export async function capturePage(tabId, params, context) {
         sawTooLarge = true;
         continue;
       }
-      chosen = { data, bytes, quality: attempt.quality, scale: attempt.scale };
+      chosen = {
+        data,
+        bytes,
+        quality: attempt.quality,
+        scale: attempt.scale
+      };
       break;
     }
     if (!chosen) {
-      if (sawTooLarge) throw codedError('SCREENSHOT_TOO_LARGE', `Screenshot could not be reduced below ${MAX_SCREENSHOT_BYTES} bytes.`, { tabId, maxBytes: MAX_SCREENSHOT_BYTES });
-      if (sawTooSmall) throw codedError('SCREENSHOT_TOO_SMALL', 'Screenshot capture produced no usable image data; the page may not have rendered yet.', { tabId, minBytes: 512 });
-      throw codedError('SCREENSHOT_TOO_LARGE', `Screenshot could not be reduced below ${MAX_SCREENSHOT_BYTES} bytes.`, { tabId, maxBytes: MAX_SCREENSHOT_BYTES });
+      if (sawTooLarge) throw codedError('SCREENSHOT_TOO_LARGE', `Screenshot could not be reduced below ${MAX_SCREENSHOT_BYTES} bytes.`, {
+        tabId,
+        maxBytes: MAX_SCREENSHOT_BYTES
+      });
+      if (sawTooSmall) throw codedError('SCREENSHOT_TOO_SMALL', 'Screenshot capture produced no usable image data; the page may not have rendered yet.', {
+        tabId,
+        minBytes: 512
+      });
+      throw codedError('SCREENSHOT_TOO_LARGE', `Screenshot could not be reduced below ${MAX_SCREENSHOT_BYTES} bytes.`, {
+        tabId,
+        maxBytes: MAX_SCREENSHOT_BYTES
+      });
     }
     const blank = await screenshotLooksBlank(chosen.data);
     if (blank.blank) throw codedError('BLANK_SCREENSHOT', 'The captured frame appears blank; wait for the page to render and try again.', { tabId });
@@ -132,7 +205,12 @@ export async function capturePage(tabId, params, context) {
       height: Math.max(1, Math.round(height * chosen.scale)),
       sourceWidth: width,
       sourceHeight: height,
-      crop: { x, y, width, height },
+      crop: {
+        x,
+        y,
+        width,
+        height
+      },
       quality: chosen.quality,
       blankChecked: blank.checked,
       unchanged: false,
@@ -147,5 +225,13 @@ export async function capturePage(tabId, params, context) {
     delete responseScreenshot.data;
     responseScreenshot.unchanged = true;
   }
-  return { ok: true, tabId, page: { title: tab.title || '', url: tab.url || '' }, screenshot: responseScreenshot };
+  return {
+    ok: true,
+    tabId,
+    page: {
+      title: tab.title || '',
+      url: tab.url || ''
+    },
+    screenshot: responseScreenshot
+  };
 }

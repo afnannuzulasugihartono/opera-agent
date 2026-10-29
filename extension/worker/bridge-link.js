@@ -35,7 +35,10 @@
 
 import { log } from '../lib/log.js';
 import { createSocketClient } from '../lib/socket-client.js';
-import { releaseDebuggerSession, releaseIdleDebuggerSessions } from '../lib/debugger-session.js';
+import {
+  releaseDebuggerSession,
+  releaseIdleDebuggerSessions
+} from '../lib/debugger-session.js';
 import { withDebugger } from './capture.js';
 
 // WHY THE PORT IS DISCOVERED AND NOT ASSUMED.
@@ -43,7 +46,12 @@ import { withDebugger } from './capture.js';
 // So the candidates are probed, the one that answers is used, and the state names the port it found - a reader can see which road is live rather than inferring it from how slow everything is.
 
 const CONFIGURED_WS = globalThis.OPERA_BRIDGE_WS || 'ws://127.0.0.1:9451';
-const CANDIDATE_PORTS = [9451, 19451, 9333, 9222];
+const CANDIDATE_PORTS = [
+  9451,
+  19451,
+  9333,
+  9222
+];
 
 // WHY THE PROBE IS AN HTTP FETCH AND NOT A SOCKET.
 // Opening and closing a WebSocket against the real bridge disturbs it: measured, the server saw the device leave and dropped the command in flight.
@@ -51,7 +59,10 @@ const CANDIDATE_PORTS = [9451, 19451, 9333, 9222];
 
 export const probePort = async (port) => {
   try {
-    await fetch(`http://127.0.0.1:${port}/`, { method: 'GET', cache: 'no-store' });
+    await fetch(`http://127.0.0.1:${port}/`, {
+      method: 'GET',
+      cache: 'no-store'
+    });
     return true;
   } catch {
     return false;
@@ -63,11 +74,22 @@ export const probePort = async (port) => {
 
 export async function discoverBridge() {
   const configured = /^ws:\/\/127\.0\.0\.1:(\d+)/.exec(CONFIGURED_WS);
-  const order = configured ? [Number(configured[1]), ...CANDIDATE_PORTS.filter((p) => p !== Number(configured[1]))] : CANDIDATE_PORTS;
+  const order = configured ? [
+    Number(configured[1]),
+    ...CANDIDATE_PORTS.filter((p) => p !== Number(configured[1]))
+  ] : CANDIDATE_PORTS;
   for (const port of order) {
-    if (await probePort(port)) return { url: `ws://127.0.0.1:${port}`, port, discovered: port !== Number(configured?.[1] ?? -1) };
+    if (await probePort(port)) return {
+      url: `ws://127.0.0.1:${port}`,
+      port,
+      discovered: port !== Number(configured?.[1] ?? -1)
+    };
   }
-  return { url: CONFIGURED_WS, port: Number(configured?.[1] ?? 0), discovered: false };
+  return {
+    url: CONFIGURED_WS,
+    port: Number(configured?.[1] ?? 0),
+    discovered: false
+  };
 }
 
 const BRIDGE_ALARM = 'opera-bridge-link';
@@ -79,7 +101,13 @@ let client = null;
 let bridgePort = 0;
 let bridgeUrl = '';
 
-const stats = { commands: 0, replies: 0, alarms: 0, failures: 0, lastError: null };
+const stats = {
+  commands: 0,
+  replies: 0,
+  alarms: 0,
+  failures: 0,
+  lastError: null
+};
 let trace = [];
 let startedAt = Date.now();
 
@@ -88,14 +116,23 @@ const debuggerSessions = new Map();
 function sessionFor(tabId) {
   let session = debuggerSessions.get(tabId);
   if (!session) {
-    session = { tabId, attached: false };
+    session = {
+      tabId,
+      attached: false
+    };
     debuggerSessions.set(tabId, session);
   }
   return session;
 }
 
 function note(event) {
-  trace = [...trace.slice(-11), { at: Date.now(), event }];
+  trace = [
+    ...trace.slice(-11),
+    {
+      at: Date.now(),
+      event
+    }
+  ];
 }
 
 // WHY THE PORT IS IN THE ANSWER.
@@ -108,12 +145,19 @@ export function bridgeLinkState() {
     linked: client ? client.isReady() : false,
     port: bridgePort,
     url: bridgeUrl,
-    trace: trace.map((entry) => ({ ms: entry.at - startedAt, event: entry.event }))
+    trace: trace.map((entry) => ({
+      ms: entry.at - startedAt,
+      event: entry.event
+    }))
   };
 }
 
 function publicBridgeTab(tab) {
-  return { id: tab.id, url: tab.url ?? '', title: tab.title ?? '' };
+  return {
+    id: tab.id,
+    url: tab.url ?? '',
+    title: tab.title ?? ''
+  };
 }
 
 // WHY THE BOUND SITS UNDER THE CALLER'S TIMEOUT.
@@ -128,10 +172,16 @@ function handleTimeoutMs() {
 
 function withHandleTimeout(promise) {
   let timer = null;
-  const timeout = new Promise((_, reject) => {
+  const timeout = new Promise((
+    _,
+    reject
+  ) => {
     timer = setTimeout(() => reject(new Error(`bridge: no answer from the tab within ${handleTimeoutMs()} ms`)), handleTimeoutMs());
   });
-  return Promise.race([promise.finally(() => clearTimeout(timer)), timeout]);
+  return Promise.race([
+    promise.finally(() => clearTimeout(timer)),
+    timeout
+  ]);
 }
 
 // The wire shape is the socket protocol's own: a method name and a params object.
@@ -148,13 +198,19 @@ async function runCommand(command) {
     return all.map(publicBridgeTab);
   }
   if (method === 'tabs.open') {
-    const created = await chrome.tabs.create({ url: String(params.url || 'about:blank'), active: params.active === true });
+    const created = await chrome.tabs.create({
+      url: String(params.url || 'about:blank'),
+      active: params.active === true
+    });
     return publicBridgeTab(created);
   }
   if (method === 'tabs.close') {
     const tabId = Number(params.tabId);
     await chrome.tabs.remove(tabId);
-    return { id: tabId, closed: true };
+    return {
+      id: tabId,
+      closed: true
+    };
   }
   if (method === 'tabs.activate') {
     const tabId = Number(params.tabId);
@@ -177,18 +233,33 @@ async function runCommand(command) {
 }
 
 async function execute(command) {
-  if (!command || typeof command !== 'object') return { ok: false, error: { code: 'BRIDGE_COMMAND_INVALID', message: 'Command was not an object.' } };
+  if (!command || typeof command !== 'object') return {
+    ok: false,
+    error: {
+      code: 'BRIDGE_COMMAND_INVALID',
+      message: 'Command was not an object.'
+    }
+  };
   stats.commands += 1;
   note(`in ${command.id}`);
   try {
     const result = await withHandleTimeout(runCommand(command));
     stats.replies += 1;
-    return { ok: true, result };
+    return {
+      ok: true,
+      result
+    };
   } catch (error) {
     stats.lastError = String(error?.message || error).slice(0, 300);
     stats.failures += 1;
     note(`fail ${command.id} ${stats.lastError.slice(0, 80)}`);
-    return { ok: false, error: { code: 'BRIDGE_COMMAND_FAILED', message: String(error?.message || error).slice(0, 300) } };
+    return {
+      ok: false,
+      error: {
+        code: 'BRIDGE_COMMAND_FAILED',
+        message: String(error?.message || error).slice(0, 300)
+      }
+    };
   }
 }
 

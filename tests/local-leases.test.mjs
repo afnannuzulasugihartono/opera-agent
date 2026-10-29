@@ -4,13 +4,24 @@
 // @dependencies: ../local/leases.js.
 
 import assert from 'node:assert/strict';
-import { describe, test } from 'node:test';
+import {
+  describe,
+  test
+} from 'node:test';
 
-import { createLeaseTable, DEFAULT_TTL_MS } from '../local/leases.js';
+import {
+  createLeaseTable,
+  DEFAULT_TTL_MS
+} from '../local/leases.js';
 
 const clock = () => {
   let at = 1000;
-  return { now: () => at, advance: (ms) => { at += ms; } };
+  return {
+    now: () => at,
+    advance: (ms) => {
+      at += ms;
+    }
+  };
 };
 
 describe('the tab claim', () => {
@@ -36,8 +47,14 @@ describe('the tab claim', () => {
   });
 
   test('the same agent claiming again is a renewal, not a refusal', () => {
-    const { now, advance } = clock();
-    const leases = createLeaseTable({ ttlMs: 1000, now });
+    const {
+      now,
+      advance
+    } = clock();
+    const leases = createLeaseTable({
+      ttlMs: 1000,
+      now
+    });
     const first = leases.claim('7', 'agent-a');
     advance(900);
     const second = leases.claim('7', 'agent-a');
@@ -47,8 +64,14 @@ describe('the tab claim', () => {
   });
 
   test('a claim past its window is gone, so the next agent gets the tab', () => {
-    const { now, advance } = clock();
-    const leases = createLeaseTable({ ttlMs: 1000, now });
+    const {
+      now,
+      advance
+    } = clock();
+    const leases = createLeaseTable({
+      ttlMs: 1000,
+      now
+    });
     leases.claim('7', 'agent-a');
     advance(1000);
 

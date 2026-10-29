@@ -17,7 +17,14 @@ const TARGET = process.env.OPERA_DRILL_TARGET || '';
 const skip = TARGET === '' ? 'set OPERA_DRILL_TARGET to a page target from http://127.0.0.1:9333/json/list to run this drill' : false;
 
 test('the profile answers a real surface and moves nothing', { skip }, async () => {
-  const session = await openSession({ id: 'brave', port: PORT, targetId: TARGET, viaBridge: false, launch: false, timeoutMs: 20000 });
+  const session = await openSession({
+    id: 'brave',
+    port: PORT,
+    targetId: TARGET,
+    viaBridge: false,
+    launch: false,
+    timeoutMs: 20000
+  });
   try {
     const started = Date.now();
     const profile = await session.surfaceProfile();
@@ -39,7 +46,14 @@ test('the profile answers a real surface and moves nothing', { skip }, async () 
 });
 
 test('a read without consent moves no caret and names what it skipped', { skip }, async () => {
-  const session = await openSession({ id: 'brave', port: PORT, targetId: TARGET, viaBridge: false, launch: false, timeoutMs: 20000 });
+  const session = await openSession({
+    id: 'brave',
+    port: PORT,
+    targetId: TARGET,
+    viaBridge: false,
+    launch: false,
+    timeoutMs: 20000
+  });
   try {
     const started = Date.now();
     const read = await session.read({ allowCaretMove: false });
@@ -60,7 +74,14 @@ test('a read without consent moves no caret and names what it skipped', { skip }
 // The gate itself is pinned by tests/surface-drive.test.mjs against a fake, where the accessibility tree can be made poor on purpose; what this drill proves is that the ladder really does answer a real canvas page before the borrow is ever considered.
 
 test('a read with consent answers, and the verdict is honest whatever ran', { skip }, async () => {
-  const session = await openSession({ id: 'brave', port: PORT, targetId: TARGET, viaBridge: false, launch: false, timeoutMs: 20000 });
+  const session = await openSession({
+    id: 'brave',
+    port: PORT,
+    targetId: TARGET,
+    viaBridge: false,
+    launch: false,
+    timeoutMs: 20000
+  });
   try {
     const started = Date.now();
     const read = await session.read({ allowCaretMove: true });

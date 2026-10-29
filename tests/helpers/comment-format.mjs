@@ -7,34 +7,112 @@
 // @dependencies: none.
 
 const LINE_MARKERS = {
-  '.js': ['//', '/*'],
-  '.mjs': ['//', '/*'],
-  '.cjs': ['//', '/*'],
-  '.ts': ['//', '/*'],
-  '.jsx': ['//', '/*'],
-  '.tsx': ['//', '/*'],
-  '.sql': ['--', '/*'],
+  '.js': [
+    '//',
+    '/*'
+  ],
+  '.mjs': [
+    '//',
+    '/*'
+  ],
+  '.cjs': [
+    '//',
+    '/*'
+  ],
+  '.ts': [
+    '//',
+    '/*'
+  ],
+  '.jsx': [
+    '//',
+    '/*'
+  ],
+  '.tsx': [
+    '//',
+    '/*'
+  ],
+  '.sql': [
+    '--',
+    '/*'
+  ],
   '.css': ['/*'],
-  '.html': ['<!--', '//', '/*'],
-  '.htm': ['<!--', '//', '/*'],
+  '.html': [
+    '<!--',
+    '//',
+    '/*'
+  ],
+  '.htm': [
+    '<!--',
+    '//',
+    '/*'
+  ],
   '.py': ['#'],
-  '.yml': ['#', '//'],
-  '.yaml': ['#', '//'],
+  '.yml': [
+    '#',
+    '//'
+  ],
+  '.yaml': [
+    '#',
+    '//'
+  ],
   '.toml': ['#'],
   '.example': ['#'],
-  '.cmd': ['REM', '::'],
-  '.bat': ['REM', '::'],
+  '.cmd': [
+    'REM',
+    '::'
+  ],
+  '.bat': [
+    'REM',
+    '::'
+  ],
   '': ['#'],
 };
 
-const JS_EXTENSIONS = new Set(['.js', '.mjs', '.cjs', '.ts', '.jsx', '.tsx', '.html', '.htm']);
-const HTML_EXTENSIONS = new Set(['.html', '.htm']);
+const JS_EXTENSIONS = new Set([
+  '.js',
+  '.mjs',
+  '.cjs',
+  '.ts',
+  '.jsx',
+  '.tsx',
+  '.html',
+  '.htm'
+]);
+const HTML_EXTENSIONS = new Set([
+  '.html',
+  '.htm'
+]);
 
 const DIRECTIVE = /^(?:eslint\b|@ts-[a-z-]+|prettier-ignore\b|#region\b|#endregion\b|istanbul\b|c8\b|v8\b|webpack\b|@flow\b|jshint\b|global\b|exported\b|sourceMappingURL\b|sourceURL\b|yaml-language-server\b|type:\s|pragma:\s|shellcheck\b|vim?:\s|fmt:\s|noqa\b|nosec\b|kics-scan\b|trivy\b|hadolint\b|pylint:\s|mypy:\s|ruff:\s|biome-ignore\b|rome-ignore\b|deno-(?:lint|fmt)\b)/;
 const ABBREVIATIONS = new Set([
-  'e.g', 'i.e', 'etc', 'vs', 'cf', 'approx', 'resp', 'al',
-  'dr', 'mr', 'mrs', 'ms', 'st', 'no', 'fig', 'eq', 'sec', 'ch',
-  'vol', 'pp', 'ed', 'trans', 'rev', 'u.s', 'u.k', 'e.u', 'a.m', 'p.m',
+  'e.g',
+  'i.e',
+  'etc',
+  'vs',
+  'cf',
+  'approx',
+  'resp',
+  'al',
+  'dr',
+  'mr',
+  'mrs',
+  'ms',
+  'st',
+  'no',
+  'fig',
+  'eq',
+  'sec',
+  'ch',
+  'vol',
+  'pp',
+  'ed',
+  'trans',
+  'rev',
+  'u.s',
+  'u.k',
+  'e.u',
+  'a.m',
+  'p.m',
 ]);
 
 function indentOf(line) {
@@ -57,12 +135,18 @@ function yamlScalarRanges(lines) {
     let node = false;
     for (let j = i + 1; j < lines.length; j += 1) {
       const line = lines[j];
-      if (line.trim() === '') { end = j; continue; }
+      if (line.trim() === '') {
+        end = j; continue;
+      }
       if (indentOf(line) <= keyIndent) break;
       if (/node\s+-e\s*"/.test(line)) node = true;
       end = j;
     }
-    ranges.push({ start: i + 1, end, node });
+    ranges.push({
+      start: i + 1,
+      end,
+      node
+    });
     i = end;
   }
   return ranges;
@@ -81,25 +165,39 @@ function pythonStringMask(lines) {
     if (line.trimStart().startsWith('#')) continue;
     for (const quote of ['"""', "'''"]) {
       const count = line.split(quote).length - 1;
-      if (count % 2 === 1) { triple = quote; mask[i] = true; break; }
+      if (count % 2 === 1) {
+        triple = quote; mask[i] = true; break;
+      }
     }
   }
   return mask;
 }
 
-function regexEnd(line, start) {
+function regexEnd(
+  line,
+  start
+) {
   let inClass = false;
   for (let i = start + 1; i < line.length; i += 1) {
     const c = line[i];
-    if (c === '\\') { i += 1; continue; }
-    if (c === '[') { inClass = true; continue; }
-    if (c === ']') { inClass = false; continue; }
+    if (c === '\\') {
+      i += 1; continue;
+    }
+    if (c === '[') {
+      inClass = true; continue;
+    }
+    if (c === ']') {
+      inClass = false; continue;
+    }
     if (c === '/' && !inClass) return i;
   }
   return -1;
 }
 
-function regexAllowed(line, index) {
+function regexAllowed(
+  line,
+  index
+) {
   let i = index - 1;
   while (i >= 0 && /\s/.test(line[i])) i -= 1;
   if (i < 0) return true;
@@ -108,7 +206,10 @@ function regexAllowed(line, index) {
   return /(?:^|[^\w$])(?:return|typeof|case|in|of|new|delete|void|instanceof|yield|await|else|do)$/.test(before);
 }
 
-function templateAfter(line, inTemplate) {
+function templateAfter(
+  line,
+  inTemplate
+) {
   let state = inTemplate ? 'template' : 'code';
   for (let i = 0; i < line.length; i += 1) {
     const c = line[i];
@@ -123,28 +224,41 @@ function templateAfter(line, inTemplate) {
       }
       if (c === '/' && regexAllowed(line, i)) {
         const end = regexEnd(line, i);
-        if (end !== -1) { i = end; continue; }
+        if (end !== -1) {
+          i = end; continue;
+        }
       }
       if (c === "'" || c === '"') {
         const quote = c;
         i += 1;
         while (i < line.length) {
-          if (line[i] === '\\') { i += 2; continue; }
+          if (line[i] === '\\') {
+            i += 2; continue;
+          }
           if (line[i] === quote) break;
           i += 1;
         }
         continue;
       }
-      if (c === '`') { state = 'template'; continue; }
+      if (c === '`') {
+        state = 'template'; continue;
+      }
     } else {
-      if (c === '\\') { i += 1; continue; }
-      if (c === '`') { state = 'code'; continue; }
+      if (c === '\\') {
+        i += 1; continue;
+      }
+      if (c === '`') {
+        state = 'code'; continue;
+      }
     }
   }
   return state === 'template';
 }
 
-function markerOf(trimmed, ext) {
+function markerOf(
+  trimmed,
+  ext
+) {
   for (const marker of LINE_MARKERS[ext] || []) {
     if (marker === 'REM') {
       if (/^@?rem(?:\s|$)/i.test(trimmed)) return 'REM';
@@ -156,7 +270,10 @@ function markerOf(trimmed, ext) {
   return null;
 }
 
-function record(text, ext) {
+function record(
+  text,
+  ext
+) {
   const lines = text.split('\n');
   const records = new Array(lines.length).fill(null);
   const isYaml = ext === '.yml' || ext === '.yaml';
@@ -261,7 +378,11 @@ function record(text, ext) {
           raw: line,
           jsdoc,
         };
-        block = { family, id, indent };
+        block = {
+          family,
+          id,
+          indent
+        };
       }
       continue;
     }
@@ -305,7 +426,12 @@ function groupsOf(records) {
         && records[end + 1].kind === 'line'
         && records[end + 1].marker === current.marker
         && records[end + 1].indent === current.indent) end += 1;
-      groups.push({ kind: 'line', start: i, end, records: records.slice(i, end + 1) });
+      groups.push({
+        kind: 'line',
+        start: i,
+        end,
+        records: records.slice(i, end + 1)
+      });
       i = end;
       continue;
     }
@@ -314,7 +440,12 @@ function groupsOf(records) {
       && records[end + 1]
       && records[end + 1].kind === 'block'
       && records[end + 1].id === current.id) end += 1;
-    groups.push({ kind: 'block', start: i, end, records: records.slice(i, end + 1) });
+    groups.push({
+      kind: 'block',
+      start: i,
+      end,
+      records: records.slice(i, end + 1)
+    });
     i = end;
   }
   return groups;
@@ -346,7 +477,10 @@ function nonProse(texts) {
 
 function codeSpans(text) {
   const spans = [];
-  for (const match of text.matchAll(/`[^`]*`/g)) spans.push([match.index, match.index + match[0].length]);
+  for (const match of text.matchAll(/`[^`]*`/g)) spans.push([
+    match.index,
+    match.index + match[0].length
+  ]);
   return spans;
 }
 
@@ -354,16 +488,29 @@ function quotedSpans(text) {
   const spans = [];
   let start = -1;
   for (let i = 0; i < text.length; i += 1) {
-    if (text[i] === '\\') { i += 1; continue; }
+    if (text[i] === '\\') {
+      i += 1; continue;
+    }
     if (text[i] !== '"') continue;
     if (start === -1) start = i;
-    else { spans.push([start, i + 1]); start = -1; }
+    else {
+      spans.push([
+        start,
+        i + 1
+      ]); start = -1;
+    }
   }
   return spans;
 }
 
-function inSpans(index, spans) {
-  return spans.some(([start, end]) => index >= start && index < end);
+function inSpans(
+  index,
+  spans
+) {
+  return spans.some(([
+    start,
+    end
+  ]) => index >= start && index < end);
 }
 
 function sentenceCuts(text) {
@@ -436,17 +583,23 @@ function reflowTexts(texts) {
   let listIndent = null;
   let afterBlank = true;
   for (const text of texts) {
-    if (text.trim() === '') { afterBlank = true; listIndent = null; continue; }
+    if (text.trim() === '') {
+      afterBlank = true; listIndent = null; continue;
+    }
     const match = /^(\s*)(?:[-*+]|\d+[.)]|[A-Za-z][.)])\s/.exec(text);
     if (!match) continue;
     const indent = match[1].length;
-    if (afterBlank || listIndent === null) { listIndent = indent; afterBlank = false; continue; }
+    if (afterBlank || listIndent === null) {
+      listIndent = indent; afterBlank = false; continue;
+    }
     if (indent > listIndent) return null;
   }
   const paragraphs = paragraphsOf(texts);
   const out = [];
   for (const paragraph of paragraphs) {
-    if (paragraph === null) { out.push(null); continue; }
+    if (paragraph === null) {
+      out.push(null); continue;
+    }
     const joined = paragraph.map((text) => text.trim()).filter(Boolean).join(' ');
     if (!joined) continue;
     const list = /^([-*+]|\d+[.)]|[A-Za-z][.)])\s+/.exec(joined);
@@ -477,7 +630,9 @@ function formatLineGroup(group) {
     const merged = [];
     for (const line of group.records) {
       const text = line.text.trim();
-      if (!text) { merged.push(null); continue; }
+      if (!text) {
+        merged.push(null); continue;
+      }
       const previous = merged[merged.length - 1];
       const continuation = typeof previous === 'string'
         && previous.split(/\s+/).length >= 3
@@ -491,7 +646,9 @@ function formatLineGroup(group) {
     if (merged.length === 0) return [''];
     const out = [];
     for (const text of merged) {
-      if (text === null) { out.push(''); continue; }
+      if (text === null) {
+        out.push(''); continue;
+      }
       for (const sentence of splitSentences(text)) out.push(`${prefix}${sentence}`);
     }
     return out;
@@ -547,14 +704,22 @@ function formatBlockGroup(group) {
   return out;
 }
 
-function formatSentences(text, ext) {
+function formatSentences(
+  text,
+  ext
+) {
   const lines = text.split('\n');
   const groups = groupsOf(record(text, ext));
-  const byStart = new Map(groups.map((group) => [group.start, group]));
+  const byStart = new Map(groups.map((group) => [
+    group.start,
+    group
+  ]));
   const out = [];
   for (let i = 0; i < lines.length; i += 1) {
     const group = byStart.get(i);
-    if (!group) { out.push(lines[i]); continue; }
+    if (!group) {
+      out.push(lines[i]); continue;
+    }
     const formatted = group.kind === 'line' ? formatLineGroup(group) : formatBlockGroup(group);
     out.push(...formatted);
     i = group.end;
@@ -562,15 +727,23 @@ function formatSentences(text, ext) {
   return out.join('\n');
 }
 
-function addSpacing(text, ext) {
+function addSpacing(
+  text,
+  ext
+) {
   const lines = text.split('\n');
   const records = record(text, ext);
   const groups = groupsOf(records);
-  const byStart = new Map(groups.map((group) => [group.start, group]));
+  const byStart = new Map(groups.map((group) => [
+    group.start,
+    group
+  ]));
   const out = [];
   for (let i = 0; i < lines.length; i += 1) {
     const group = byStart.get(i);
-    if (!group) { out.push(lines[i]); continue; }
+    if (!group) {
+      out.push(lines[i]); continue;
+    }
 
     const first = group.records[0];
     const header = first.indent === '' && !directiveTexts(group.records.map((line) => line.text));
@@ -589,7 +762,10 @@ function addSpacing(text, ext) {
   return out.join('\n');
 }
 
-export function formatComments(text, ext = '') {
+export function formatComments(
+  text,
+  ext = ''
+) {
   const eol = text.includes('\r\n') ? '\r\n' : '\n';
   const normalized = eol === '\n' ? text : text.split('\r\n').join('\n');
   const sentences = formatSentences(normalized, ext);
@@ -597,6 +773,9 @@ export function formatComments(text, ext = '') {
   return eol === '\n' ? spaced : spaced.split('\n').join('\r\n');
 }
 
-export function commentLineMask(text, ext = '') {
+export function commentLineMask(
+  text,
+  ext = ''
+) {
   return record(text, ext).map(Boolean);
 }

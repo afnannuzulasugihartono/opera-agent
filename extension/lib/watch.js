@@ -19,7 +19,13 @@ export const TRIGGER_KINDS = new Set([
   'navigation'
 ]);
 
-const ACTION_TYPES = new Set(['report', 'click', 'burst', 'workflow', 'confirm']);
+const ACTION_TYPES = new Set([
+  'report',
+  'click',
+  'burst',
+  'workflow',
+  'confirm'
+]);
 const RULE_ID_RE = /^[A-Za-z0-9_-]{1,64}$/;
 const LIMITS = {
   selectorMax: 500,
@@ -35,7 +41,10 @@ const LIMITS = {
 };
 
 function fail(reason) {
-  return { ok: false, reason };
+  return {
+    ok: false,
+    reason
+  };
 }
 
 export function validateRule(rule) {
@@ -56,11 +65,18 @@ export function validateRule(rule) {
     if (typeof t.text !== 'string' || !t.text.trim() || t.text.length > LIMITS.textMax) {
       return fail('textMatch needs non-empty text (<= 500 chars).');
     }
-    if (t.mode !== undefined && !['contains', 'exact'].includes(t.mode)) {
+    if (t.mode !== undefined && ![
+      'contains',
+      'exact'
+    ].includes(t.mode)) {
       return fail('textMatch.mode must be "contains" or "exact" (regex is intentionally not supported).');
     }
   }
-  if (t.kind === 'adState' && t.state !== undefined && !['on', 'off', 'any'].includes(t.state)) {
+  if (t.kind === 'adState' && t.state !== undefined && ![
+    'on',
+    'off',
+    'any'
+  ].includes(t.state)) {
     return fail('adState.state must be "on", "off" or "any".');
   }
   if (t.kind === 'mediaTime') {
@@ -91,7 +107,10 @@ export function validateRule(rule) {
   if (a.type === 'confirm' && (typeof a.message !== 'string' || a.message.length > 500)) {
     return fail('confirm action needs a short message.');
   }
-  if (rule.mode !== undefined && !['once', 'repeat'].includes(rule.mode)) {
+  if (rule.mode !== undefined && ![
+    'once',
+    'repeat'
+  ].includes(rule.mode)) {
     return fail('mode must be "once" or "repeat".');
   }
   const deadline = rule.deadlineMs ?? 60000;
@@ -109,7 +128,11 @@ export function validateRule(rule) {
   return { ok: true };
 }
 
-function matchesTrigger(rule, snapshot, rs) {
+function matchesTrigger(
+  rule,
+  snapshot,
+  rs
+) {
   const t = rule.trigger;
   switch (t.kind) {
     case 'selectorPresence':
@@ -152,7 +175,12 @@ function matchesTrigger(rule, snapshot, rs) {
   }
 }
 
-export function evaluateRules(rules, snapshot, state, now) {
+export function evaluateRules(
+  rules,
+  snapshot,
+  state,
+  now
+) {
   const next = { ...(state || {}) };
   const fired = [];
   for (const rule of rules) {
@@ -179,7 +207,15 @@ export function evaluateRules(rules, snapshot, state, now) {
     if (rule.mode === 'repeat' && (rule.trigger.kind === 'urlChange' || rule.trigger.kind === 'navigation')) {
       rs.baselineUrl = snapshot.url;
     }
-    fired.push({ ruleId: rule.ruleId, action: rule.action, atMs: now, fireCount: rs.fireCount });
+    fired.push({
+      ruleId: rule.ruleId,
+      action: rule.action,
+      atMs: now,
+      fireCount: rs.fireCount
+    });
   }
-  return { fired, state: next };
+  return {
+    fired,
+    state: next
+  };
 }

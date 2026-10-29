@@ -12,7 +12,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fsSync from 'node:fs';
 import path from 'node:path';
-import { readFile, readdir } from 'node:fs/promises';
+import {
+  readFile,
+  readdir
+} from 'node:fs/promises';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { FOCUS_GATE_ATTEMPTS } from '../extension/lib/focus-gate.js';
@@ -36,11 +39,43 @@ const collectTests = async (dir) => {
 await import('../extension/role-reconcile.js');
 await import('../extension/hover-settle.js');
 
+// WHY THE TREE WALK IS ONE HELPER.
+// Two tests each carried their own copy of the same walk, and written one item per line the copies came out identical, which is exactly what the duplication gate exists to catch.
+
+const SKIP_DIRS = new Set([
+  '.git',
+  'node_modules',
+  '.kilo',
+  'dist',
+  'build',
+  'tmp',
+  'coverage',
+  '__pycache__',
+  '.vercel',
+  '.next',
+  '.temp'
+]);
+
+const repoRoot = fileURLToPath(new URL('..', import.meta.url));
+
+const walkTree = (relative) => {
+  const out = [];
+  for (const entry of fsSync.readdirSync(path.join(repoRoot, relative), { withFileTypes: true })) {
+    if (SKIP_DIRS.has(entry.name)) continue;
+    const next = relative ? `${relative}/${entry.name}` : entry.name;
+    if (entry.isDirectory()) out.push(...walkTree(next));
+    else out.push(next);
+  }
+  return out;
+};
+
 const background = await extensionSource();
 
 test('every comment in the tree is in the canonical form the formatter writes', async () => {
-
-  const { total, changed } = await checkFormat();
+  const {
+    total,
+    changed
+  } = await checkFormat();
   assert.ok(total > 300, `the gate read ${total} files, so it is not reading the tree`);
   assert.deepEqual(changed, [], `${changed.length} files are not canonical:\n${changed.slice(0, 12).join('\n')}`);
 });
@@ -58,7 +93,10 @@ test('no document says Do X and another says Don\'t X', async () => {
     const body = fsSync.readFileSync(path.join(dir, file), 'utf8');
     const dos = new Set();
     const donts = new Map();
-    body.split('\n').forEach((line, i) => {
+    body.split('\n').forEach((
+      line,
+      i
+    ) => {
       const key = line
         .replace(/^\s*[-*]?\s*/, '')
         .replace(/^(?:Do|Don't)\s+/, '')
@@ -72,7 +110,10 @@ test('no document says Do X and another says Don\'t X', async () => {
     });
     for (const [key, line] of donts) if (dos.has(key)) commands.set(`${file}:${line}`, key);
   };
-  for (const file of execFileSync('git', ['ls-files'], { cwd: dir, encoding: 'utf8' })
+  for (const file of execFileSync('git', ['ls-files'], {
+    cwd: dir,
+    encoding: 'utf8'
+  })
     .split('\n')
     .filter((f) => f.endsWith('.md'))) {
     collect(file);
@@ -80,19 +121,32 @@ test('no document says Do X and another says Don\'t X', async () => {
   assert.deepEqual([...commands.keys()], []);
 });
 
-const REQUIRED_SECTIONS = ['Always', 'Goals', 'Priority order'];
+const REQUIRED_SECTIONS = [
+  'Always',
+  'Goals',
+  'Priority order'
+];
 
 test('the three sections an agent reads every turn exist, in order', async () => {
   const body = await readFile(new URL('../AGENTS.md', import.meta.url), 'utf8');
-  const headings = [...body.matchAll(/^## (.+)$/gm)].map((m) => ({ name: m[1].trim(), at: m.index }));
+  const headings = [...body.matchAll(/^## (.+)$/gm)].map((m) => ({
+    name: m[1].trim(),
+    at: m.index
+  }));
   const found = REQUIRED_SECTIONS.map((name) => headings.find((h) => h.name === name));
-  const missing = REQUIRED_SECTIONS.filter((name, i) => !found[i]);
+  const missing = REQUIRED_SECTIONS.filter((
+    name,
+    i
+  ) => !found[i]);
   assert.deepEqual(missing, [], `AGENTS.md is missing: ${missing.join(', ')}`);
   assert.deepEqual(headings.map((h) => h.name), REQUIRED_SECTIONS, 'nothing rides beside the three');
   for (let i = 1; i < found.length; i += 1) {
     assert.ok(found[i].at > found[i - 1].at, `${found[i].name} must come after ${found[i - 1].name}`);
   }
-  for (const { name, at } of found) {
+  for (const {
+    name,
+    at
+  } of found) {
     const section = body.slice(at).split('\n## ')[0];
 
     const bullets = (section.match(/^(?:- |\d+\. )/gm) || []).length;
@@ -104,7 +158,11 @@ test('every section the rules point at exists', async () => {
   const body = await readFile(new URL('../AGENTS.md', import.meta.url), 'utf8');
   const headings = new Set([...body.matchAll(/^## (.+)$/gm)].map((m) => m[1].trim()));
 
-  const referenced = new Set(['Always', 'Goals', 'Priority order']);
+  const referenced = new Set([
+    'Always',
+    'Goals',
+    'Priority order'
+  ]);
   const dangling = [...referenced].filter((name) => !headings.has(name));
   assert.deepEqual(dangling, []);
 });
@@ -114,11 +172,17 @@ const DUPLICATE_OVERLAP = 0.6;
 test('no rule is stated twice in two forms', async () => {
   const dir = fileURLToPath(new URL('..', import.meta.url));
   const rules = [];
-  for (const file of execFileSync('git', ['ls-files'], { cwd: dir, encoding: 'utf8' })
+  for (const file of execFileSync('git', ['ls-files'], {
+    cwd: dir,
+    encoding: 'utf8'
+  })
     .split('\n')
     .filter((f) => f.endsWith('.md'))) {
     const body = fsSync.readFileSync(path.join(dir, file), 'utf8');
-    body.split('\n').forEach((line, i) => {
+    body.split('\n').forEach((
+      line,
+      i
+    ) => {
       const match = line.match(/^\s*[-*]?\s*Do(?:n't)?\s+(.+?)\.?\s*$/);
       if (!match) return;
       const tokens = new Set(match[1].toLowerCase()
@@ -127,7 +191,11 @@ test('no rule is stated twice in two forms', async () => {
         .replace(/[^a-z0-9\s-]/g, ' ')
         .split(/\s+/)
         .filter(Boolean));
-      if (tokens.size >= 4) rules.push({ file, line: i + 1, tokens });
+      if (tokens.size >= 4) rules.push({
+        file,
+        line: i + 1,
+        tokens
+      });
     });
   }
   assert.ok(rules.length > 0, 'the gate looked at a rule set');
@@ -159,9 +227,14 @@ test('the logic gate actually inspected the rule set', async () => {
 });
 
 test('every relative link in a document resolves to a file in the tree', async () => {
-
   const dir = fileURLToPath(new URL('..', import.meta.url));
-  const tracked = execFileSync('git', ['ls-files', '*.md'], { cwd: dir, encoding: 'utf8' })
+  const tracked = execFileSync('git', [
+    'ls-files',
+    '*.md'
+  ], {
+    cwd: dir,
+    encoding: 'utf8'
+  })
     .split('\n')
     .filter(Boolean);
   const dead = [];
@@ -179,7 +252,10 @@ test('every relative link in a document resolves to a file in the tree', async (
 
 test('every gitleaks allowlist path still names a file in the tree', async () => {
   const root = new URL('..', import.meta.url);
-  const tracked = new Set(execFileSync('git', ['ls-files'], { cwd: fileURLToPath(root), encoding: 'utf8' })
+  const tracked = new Set(execFileSync('git', ['ls-files'], {
+    cwd: fileURLToPath(root),
+    encoding: 'utf8'
+  })
     .split('\n')
     .filter(Boolean));
   const config = await readFile(new URL('../.gitleaks.toml', import.meta.url), 'utf8');
@@ -188,7 +264,6 @@ test('every gitleaks allowlist path still names a file in the tree', async () =>
     .flatMap((m) => [...m[1].matchAll(/'''([^']+)'''/g)].map((n) => n[1]));
   const stale = [];
   for (const pattern of patterns) {
-
     const glob = pattern
       .replace(/^\^/, '')
       .replace(/\$$/, '')
@@ -205,7 +280,6 @@ test('every gitleaks allowlist path still names a file in the tree', async () =>
 });
 
 test('a read is serialized once, not once per size check', () => {
-
   const block = background.slice(
     background.indexOf('function boundedResult'),
     background.indexOf('function clearSerializedResult() {')
@@ -226,11 +300,13 @@ test('a read is serialized once, not once per size check', () => {
 });
 
 test('the memo cannot retain a large result between commands', () => {
-
-  assert.match(background, /let serializedResult = \{ value: null, text: '' \};/);
+  assert.match(background, /let serializedResult = \{\s*value: null,\s*text: ''\s*\};/);
   const executor = background.slice(background.indexOf('async function executeCommand'));
   assert.match(executor.slice(0, 900), /clearSerializedResult\(\);/);
 });
+
+// WHY THE WINDOW IS SIXTY LINES AND NOT FORTY.
+// The function's parameter list is written one parameter per line now, so the same function takes more lines than it did; the window counts the block, and the block has not grown.
 
 test('the focus-gate slice is a real block, not the whole file', () => {
   const start = background.indexOf('async function withForegroundFocusGate');
@@ -238,12 +314,11 @@ test('the focus-gate slice is a real block, not the whole file', () => {
   assert.ok(start > 0, 'withForegroundFocusGate must exist');
   assert.ok(end > start, 'the next top-level constant must come after the function');
   const block = background.slice(start, end);
-  assert.ok(block.split('\n').length >= 30 && block.split('\n').length <= 40,
+  assert.ok(block.split('\n').length >= 30 && block.split('\n').length <= 60,
     `expected a single function, got ${block.split('\n').length} lines`);
 });
 
 test('the focus gate loop is bounded by construction', () => {
-
   const gate = background.slice(
     background.indexOf('async function withForegroundFocusGate'),
     background.indexOf('const UV_WAIT_FLOOR_MS')
@@ -262,9 +337,13 @@ test('the shared runtimes are frozen, so a sibling script cannot mutate them', (
 
   assert.equal(Array.isArray(roles.GENERIC_ROLES), true, 'GENERIC_ROLES must be an array, not a Set');
   assert.equal(Object.isFrozen(roles.GENERIC_ROLES), true);
-  assert.throws(() => { roles.GENERIC_ROLES.push('button'); }, TypeError);
+  assert.throws(() => {
+    roles.GENERIC_ROLES.push('button');
+  }, TypeError);
   assert.equal(roles.isGenericRole('button'), false, 'a rejected mutation must not take effect');
-  assert.throws(() => { hover.DEFAULTS.timeoutMs = 99999; }, TypeError);
+  assert.throws(() => {
+    hover.DEFAULTS.timeoutMs = 99999;
+  }, TypeError);
   assert.equal(hover.DEFAULTS.timeoutMs, 1500, 'the settle budget must be unchanged');
 });
 
@@ -275,7 +354,6 @@ test('the role gap sample is a positive integer, not an accidental truthy value'
 });
 
 test('the R9 modules expose no unused surface', async () => {
-
   const keyboard = await readFile(new URL('../extension/lib/keyboard.js', import.meta.url), 'utf8');
   const uses = keyboard.match(/keyNames/g) || [];
   assert.equal(uses.length, 2, 'keyNames must be referenced only by its declaration and its one caller');
@@ -290,9 +368,14 @@ test('the R9 modules expose no unused surface', async () => {
 });
 
 test('no module under extension/, lib/, scripts/ or supabase/functions/ exports a symbol nothing reaches', async () => {
-
-  const runtimeRoots = ['../extension', '../lib'];
-  const collect = async (dir, match) => {
+  const runtimeRoots = [
+    '../extension',
+    '../lib'
+  ];
+  const collect = async (
+    dir,
+    match
+  ) => {
     const out = [];
     for (const entry of await readdir(new URL(dir, import.meta.url), { withFileTypes: true })) {
       const p = `${dir}/${entry.name}`;
@@ -306,7 +389,11 @@ test('no module under extension/, lib/, scripts/ or supabase/functions/ exports 
 
   const edgeModules = (await Promise.all(['../supabase/functions'].map((d) => collect(d, jsFiles)))).flat();
   const scriptModules = await collect('../scripts', /\.mjs$/);
-  const modules = [...runtimeModules, ...edgeModules, ...scriptModules];
+  const modules = [
+    ...runtimeModules,
+    ...edgeModules,
+    ...scriptModules
+  ];
 
   const testDir = await collectTests('../tests');
   const edgeDir = await collectTests('../supabase/functions');
@@ -315,21 +402,42 @@ test('no module under extension/, lib/, scripts/ or supabase/functions/ exports 
     .map((n) => `../scripts/${n}`);
 
   const consumers = await Promise.all(
-    [...new Set([...modules, ...testDir, ...edgeDir, ...scripts])]
-      .map(async (p) => ({ p, text: await readFile(new URL(p, import.meta.url), 'utf8') }))
+    [...new Set([
+      ...modules,
+      ...testDir,
+      ...edgeDir,
+      ...scripts
+    ])]
+      .map(async (p) => ({
+        p,
+        text: await readFile(new URL(p, import.meta.url), 'utf8')
+      }))
   );
 
   const pattern = (name) => `\\b${name.replace(/\$/g, '\\$')}\\b`;
   const dead = [];
   const noCaller = [];
 
-  const callerText = new Map(consumers.map(({ p, text }) => [
+  const callerText = new Map(consumers.map(({
+    p,
+    text
+  }) => [
     p,
     text.split('\n').filter((line) => !/^\s*export\b/.test(line)).join('\n'),
   ]));
-  const textByPath = new Map(consumers.map(({ p, text }) => [p, text]));
+  const textByPath = new Map(consumers.map(({
+    p,
+    text
+  }) => [
+    p,
+    text
+  ]));
 
-  const collectExports = (p, text, visited) => {
+  const collectExports = (
+    p,
+    text,
+    visited
+  ) => {
     if (visited.has(p)) return [];
     visited.add(p);
     const names = [...text.matchAll(
@@ -353,7 +461,10 @@ test('no module under extension/, lib/, scripts/ or supabase/functions/ exports 
     }
     return [...new Set(names)];
   };
-  for (const { p, text } of consumers.filter(({ p }) => modules.includes(p))) {
+  for (const {
+    p,
+    text
+  } of consumers.filter(({ p }) => modules.includes(p))) {
     const names = collectExports(p, text, new Set());
     for (const name of names) {
       const usedElsewhere = consumers.some(
@@ -376,29 +487,38 @@ test('no module under extension/, lib/, scripts/ or supabase/functions/ exports 
 // One module is staged for the one open task of the paper plan, and it is named here with that reason.
 
 const STAGED_FOR_THE_OPEN_TASK = new Map([
-  ['lib/ax-menu.js', 'Task 9 of docs/superpowers/plans/2026-10-14-docs-paper-plan.md: the AX road reads live row names to compare against the label map'],
-  ['supabase/functions/_shared/docs-ui-map.js', 'Task 9 of docs/superpowers/plans/2026-10-14-docs-paper-plan.md: the map the AX road is compared against'],
+  [
+    'lib/ax-menu.js',
+    'Task 9 of docs/superpowers/plans/2026-10-14-docs-paper-plan.md: the AX road reads live row names to compare against the label map'
+  ],
+  [
+    'supabase/functions/_shared/docs-ui-map.js',
+    'Task 9 of docs/superpowers/plans/2026-10-14-docs-paper-plan.md: the map the AX road is compared against'
+  ],
 ]);
 
 test('a module with its own code is reached by the product, not only by its own test', async () => {
   const dir = fileURLToPath(new URL('..', import.meta.url));
-  const skipDirs = new Set(['.git', 'node_modules', '.kilo', 'dist', 'build', 'tmp', 'coverage', '__pycache__', '.vercel', '.next']);
-  const walk = (relative) => {
-    const out = [];
-    for (const entry of fsSync.readdirSync(path.join(dir, relative), { withFileTypes: true })) {
-      if (skipDirs.has(entry.name)) continue;
-      const next = relative ? `${relative}/${entry.name}` : entry.name;
-      if (entry.isDirectory()) out.push(...walk(next));
-      else out.push(next);
-    }
-    return out;
-  };
-  const present = ['extension', 'lib', 'local', 'scripts', 'supabase', 'tests', 'landing'].flatMap(walk);
+  const present = [
+    'extension',
+    'lib',
+    'local',
+    'scripts',
+    'supabase',
+    'tests',
+    'landing'
+  ].flatMap(walkTree);
   const codeFiles = present.filter((file) => /\.(js|mjs|cjs|ts)$/.test(file));
   const edgeFiles = present.filter((file) => /\.(js|mjs|cjs|ts|html)$/.test(file));
-  const textOf = new Map(edgeFiles.map((file) => [file, fsSync.readFileSync(path.join(dir, file), 'utf8')]));
+  const textOf = new Map(edgeFiles.map((file) => [
+    file,
+    fsSync.readFileSync(path.join(dir, file), 'utf8')
+  ]));
 
-  const resolve = (from, spec) => {
+  const resolve = (
+    from,
+    spec
+  ) => {
     if (!spec.startsWith('.')) return null;
     const base = path.posix.normalize(path.posix.join(path.posix.dirname(from), spec));
     for (const candidate of [base, `${base}.js`, `${base}.mjs`, `${base}.ts`, `${base}/index.js`]) {
@@ -501,19 +621,17 @@ const CHANGELOG_STATE = /^(?:fix|feat|refactor|chore|perf|test|docs|build|ci)\(|
 
 test('every source file carries a header that says what the file is and what it holds', async () => {
   const dir = fileURLToPath(new URL('..', import.meta.url));
-  const skipDirs = new Set(['.git', 'node_modules', '.kilo', 'dist', 'build', 'tmp', 'coverage', '__pycache__', '.vercel', '.next', '.temp']);
-  const walk = (relative) => {
-    const out = [];
-    for (const entry of fsSync.readdirSync(path.join(dir, relative), { withFileTypes: true })) {
-      if (skipDirs.has(entry.name)) continue;
-      const next = relative ? `${relative}/${entry.name}` : entry.name;
-      if (entry.isDirectory()) out.push(...walk(next));
-      else out.push(next);
-    }
-    return out;
-  };
-  const roots = ['extension', 'lib', 'local', 'scripts', 'supabase', 'tests', 'landing', '.github'];
-  const files = roots.flatMap(walk)
+  const roots = [
+    'extension',
+    'lib',
+    'local',
+    'scripts',
+    'supabase',
+    'tests',
+    'landing',
+    '.github'
+  ];
+  const files = roots.flatMap(walkTree)
     .filter((file) => /\.(?:js|mjs|cjs|ts|py|html|css|yml|yaml|toml|cmd|example)$/.test(file))
     .filter((file) => !file.startsWith('supabase/migrations/'));
 

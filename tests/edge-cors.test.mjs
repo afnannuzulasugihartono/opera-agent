@@ -8,13 +8,18 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { stripTypeScriptTypes } from 'node:module';
 import vm from 'node:vm';
-import { CORS_DEFAULT_ORIGINS, resolveAllowedOrigin } from '../supabase/functions/_shared/cors.js';
-import { isUpgradeRequest, serveDeviceSocket } from '../supabase/functions/opera-agent-bridge/bridge-socket.ts';
+import {
+  CORS_DEFAULT_ORIGINS,
+  resolveAllowedOrigin
+} from '../supabase/functions/_shared/cors.js';
+import {
+  isUpgradeRequest,
+  serveDeviceSocket
+} from '../supabase/functions/opera-agent-bridge/bridge-socket.ts';
 
 const req = (origin) => ({ headers: { get: (name) => (name.toLowerCase() === 'origin' ? origin : null) } });
 
 test('default origins are exactly the extension and the site', () => {
-
   assert.deepEqual(CORS_DEFAULT_ORIGINS, [
     'chrome-extension://ofgemipoobcnbjkfanmofjbdonjapmgl',
     'chrome-extension://ohbbpamcljckmjhcpkcmefdobkoeaick',
@@ -64,27 +69,48 @@ test('no edge function answers a wildcard origin any more', () => {
 });
 
 test('the config endpoint is not a publicly cacheable copy of the anon key', () => {
-
   const source = readFileSync(new URL('../supabase/functions/opera-agent-auth/index.ts', import.meta.url), 'utf8');
   assert.doesNotMatch(source, /"Cache-Control":\s*"public/);
   assert.match(source, /"Cache-Control":\s*"no-store"/);
 });
 
+// WHY THE IMPORT STRIP SPANS LINES.
+// A list of specifiers is written one per line, so the statement begins with `import {` and ends with `} from '...';` on a line of its own.
+// Matching only a one-line import left the statement in the harness, and the vm refuses it as an import outside a module.
+
 function loadBridge() {
   const source = stripTypeScriptTypes(readFileSync(new URL('../supabase/functions/opera-agent-bridge/index.ts', import.meta.url), 'utf8')
-    .replace(/^import .*;\r?\n/gm, ''));
+    .replace(/^import [\s\S]*?;\r?\n/gm, ''));
   let handler;
   vm.runInNewContext(source, {
-    createClient: () => ({ async rpc() { return { data: { ok: false } }; } }),
+    createClient: () => ({ async rpc() {
+      return { data: { ok: false } };
+    } }),
     createEdgeLog: () => ({ error() {} }),
-    CORS_DEFAULT_ORIGINS, resolveAllowedOrigin,
-    isUpgradeRequest, serveDeviceSocket,
-    Deno: { env: { get: () => 'test' }, serve: (fn) => { handler = fn; } },
-    Request, Response, Headers, URL, TextEncoder, TextDecoder, crypto
+    CORS_DEFAULT_ORIGINS,
+    resolveAllowedOrigin,
+    isUpgradeRequest,
+    serveDeviceSocket,
+    Deno: {
+      env: { get: () => 'test' },
+      serve: (fn) => {
+        handler = fn;
+      }
+    },
+    Request,
+    Response,
+    Headers,
+    URL,
+    TextEncoder,
+    TextDecoder,
+    crypto
   });
   return (origin) => handler(new Request('https://example.test/functions/v1/opera-agent-bridge', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...(origin ? { Origin: origin } : {}) },
+    headers: {
+      'Content-Type': 'application/json',
+      ...(origin ? { Origin: origin } : {})
+    },
     body: '{"action":"unknown"}'
   }));
 }

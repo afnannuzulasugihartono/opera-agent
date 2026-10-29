@@ -39,24 +39,72 @@
   const ROLE_GAP_SAMPLE_SIZE = 3;
 
   const GENERIC_ROLES = new Set([
-    '', 'generic', 'presentation', 'none', 'div', 'span', 'text', 'statictext',
-    'paragraph', 'group', 'region', 'section', 'figure', 'blockquote', 'label',
-    'list', 'listitem', 'emphasis', 'strong', 'insertion', 'deletion', 'time',
-    'definition', 'term', 'caption', 'code', 'subscript', 'superscript', 'abbr'
+    '',
+    'generic',
+    'presentation',
+    'none',
+    'div',
+    'span',
+    'text',
+    'statictext',
+    'paragraph',
+    'group',
+    'region',
+    'section',
+    'figure',
+    'blockquote',
+    'label',
+    'list',
+    'listitem',
+    'emphasis',
+    'strong',
+    'insertion',
+    'deletion',
+    'time',
+    'definition',
+    'term',
+    'caption',
+    'code',
+    'subscript',
+    'superscript',
+    'abbr'
   ]);
 
   const INPUT_TYPE_ROLES = {
-    button: 'button', checkbox: 'checkbox', radio: 'radio', range: 'slider',
-    number: 'spinbutton', search: 'searchbox', submit: 'button', reset: 'button',
-    image: 'button', color: 'button', file: 'button'
+    button: 'button',
+    checkbox: 'checkbox',
+    radio: 'radio',
+    range: 'slider',
+    number: 'spinbutton',
+    search: 'searchbox',
+    submit: 'button',
+    reset: 'button',
+    image: 'button',
+    color: 'button',
+    file: 'button'
   };
 
   const TAG_ROLES = {
-    button: 'button', textarea: 'textbox', select: 'combobox', option: 'option',
-    optgroup: 'group', progress: 'progressbar', meter: 'meter', summary: 'button',
-    details: 'group', legend: 'legend', fieldset: 'group', form: 'form',
-    img: 'img', table: 'table', ul: 'list', ol: 'list', li: 'listitem',
-    dialog: 'dialog', menu: 'list', hr: 'separator'
+    button: 'button',
+    textarea: 'textbox',
+    select: 'combobox',
+    option: 'option',
+    optgroup: 'group',
+    progress: 'progressbar',
+    meter: 'meter',
+    summary: 'button',
+    details: 'group',
+    legend: 'legend',
+    fieldset: 'group',
+    form: 'form',
+    img: 'img',
+    table: 'table',
+    ul: 'list',
+    ol: 'list',
+    li: 'listitem',
+    dialog: 'dialog',
+    menu: 'list',
+    hr: 'separator'
   };
 
   function isGenericRole(role) {
@@ -76,7 +124,6 @@
       return String(input.href || '').trim() ? 'link' : '';
     }
     if (tag === 'input') {
-
       return INPUT_TYPE_ROLES[type] || 'textbox';
     }
     if (input.contenteditable === true) return 'textbox';
@@ -103,7 +150,10 @@
       candidates.set(name, seen);
     }
     const resolved = new Map();
-    candidates.forEach((roles, name) => {
+    candidates.forEach((
+      roles,
+      name
+    ) => {
       if (roles.size === 1) resolved.set(name, [...roles][0]);
     });
     return resolved;
@@ -113,7 +163,10 @@
     return String(item.accessibleName || item.label || item.text || '').trim().toLowerCase();
   }
 
-  function reconcileElementRole(item, index) {
+  function reconcileElementRole(
+    item,
+    index
+  ) {
     if (!item || typeof item !== 'object') return item;
     if (!index || typeof index.get !== 'function') return item;
     if (item.sensitive === true) return item;
@@ -122,7 +175,11 @@
     if (!name) return item;
     const role = index.get(name);
     if (!role) return item;
-    return { ...item, role, roleSource: 'ax-reconciled' };
+    return {
+      ...item,
+      role,
+      roleSource: 'ax-reconciled'
+    };
   }
 
   function hasRoleGap(elements) {
@@ -138,13 +195,15 @@
     return false;
   }
 
-  function reconcileElements(items, index) {
+  function reconcileElements(
+    items,
+    index
+  ) {
     if (!Array.isArray(items) || !index || typeof index.get !== 'function') return items;
     return items.map((item) => reconcileElementRole(item, index));
   }
 
   globalThis.OperaAgentRoleReconcile = Object.freeze({
-
     GENERIC_ROLES: Object.freeze([...GENERIC_ROLES]),
     ROLE_GAP_SAMPLE_SIZE,
     isGenericRole,

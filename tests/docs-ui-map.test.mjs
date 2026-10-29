@@ -23,9 +23,21 @@ test('every menu label the workflows use exists in the map', () => {
 });
 
 test('resolveMenuTarget serves both locales with verify selectors', () => {
-  const en = resolveMenuTarget(['Insert', 'Table'], 'en');
-  assert.deepEqual(en.labels, ['Insert', 'Table']);
+  const en = resolveMenuTarget([
+    'Insert',
+    'Table'
+  ], 'en');
+  assert.deepEqual(en.labels, [
+    'Insert',
+    'Table'
+  ]);
   assert.ok(en.verify && en.verify.selector.includes('menu'));
-  const id = resolveMenuTarget(['Insert', 'Table'], 'id');
-  assert.deepEqual(id.labels, ['Sisipkan', 'Tabel']);
+  const id = resolveMenuTarget([
+    'Insert',
+    'Table'
+  ], 'id');
+  assert.deepEqual(id.labels, [
+    'Sisipkan',
+    'Tabel'
+  ]);
 });

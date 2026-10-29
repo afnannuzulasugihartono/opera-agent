@@ -4,7 +4,14 @@
 // @dependencies: endpoints, options-store, error-messages, protocol.
 
 import { DEFAULT_BRIDGE_URL } from './lib/endpoints.js';
-import { loadOptions, saveBridgeUrl, saveLogLevel, saveModelEndpoint, saveModelName, MODEL_PROVIDERS } from './lib/options-store.js';
+import {
+  loadOptions,
+  saveBridgeUrl,
+  saveLogLevel,
+  saveModelEndpoint,
+  saveModelName,
+  MODEL_PROVIDERS
+} from './lib/options-store.js';
 import { userErrorMessage } from './lib/error-messages.js';
 import { PROTOCOL_VERSION } from './lib/protocol.js';
 
@@ -40,7 +47,10 @@ function showProbeStatus(text) {
 
 const providerOf = (id) => MODEL_PROVIDERS.find((provider) => provider.id === id);
 
-function matchProvider(endpoint, model) {
+function matchProvider(
+  endpoint,
+  model
+) {
   const known = MODEL_PROVIDERS.find((provider) =>
     provider.id !== 'custom'
     && provider.endpoint !== ''
@@ -108,7 +118,10 @@ function init() {
     const probe = $('modelProbe');
     probe.disabled = true;
     try {
-      const reply = await chrome.runtime.sendMessage({ scope: 'opera-agent-options', action: 'testModel' });
+      const reply = await chrome.runtime.sendMessage({
+        scope: 'opera-agent-options',
+        action: 'testModel'
+      });
       showProbeStatus(reply && reply.ok ? 'Tersambung.' : String(reply?.message || reply?.error || 'Gagal tersambung.'));
     } catch (error) {
       showProbeStatus(userErrorMessage(error?.message || error));

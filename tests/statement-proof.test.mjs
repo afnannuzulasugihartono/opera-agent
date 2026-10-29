@@ -37,7 +37,12 @@ const CHECKS = {
     assert.ok(!Number.isNaN(Date.parse(value)), 'expected a date the machine can read');
   },
   'pdf|zip|ole|other': (value) => {
-    assert.ok(['pdf', 'zip', 'ole', 'other'].includes(value), `unexpected kind: ${value}`);
+    assert.ok([
+      'pdf',
+      'zip',
+      'ole',
+      'other'
+    ].includes(value), `unexpected kind: ${value}`);
   },
   'YYYY-MM': (value) => {
     assert.match(String(value), /^\d{4}-(0[1-9]|1[0-2])$/, 'expected a month');
@@ -49,7 +54,11 @@ const CHECKS = {
   }
 };
 
-function check(shape, value, where) {
+function check(
+  shape,
+  value,
+  where
+) {
   const check_ = CHECKS[shape];
   assert.ok(check_, `the contract names a shape no test knows: ${shape} (${where})`);
   check_(value);
@@ -109,10 +118,25 @@ test('a workbook is proved as a workbook, and a missing balance is proved as mis
   const dir = path.join(root, '2026-09', 'a');
   fs.mkdirSync(dir, { recursive: true });
   const file = path.join(dir, 'a-b-2026-09.xlsx');
-  fs.writeFileSync(file, Buffer.from([0x50, 0x4b, 0x03, 0x04, 1, 2, 3, 4]));
+  fs.writeFileSync(file, Buffer.from([
+    0x50,
+    0x4b,
+    0x03,
+    0x04,
+    1,
+    2,
+    3,
+    4
+  ]));
   const manifest = path.join(root, '2026-09', 'manifest.json');
 
-  const out = statementDelivered({ client: 'A', portal: 'B', period: '2026-09', path: file, manifest });
+  const out = statementDelivered({
+    client: 'A',
+    portal: 'B',
+    period: '2026-09',
+    path: file,
+    manifest
+  });
 
   assert.equal(out.record.kind, 'zip');
   assert.equal(out.record.pages, null, 'a workbook has no pages to count');
@@ -129,7 +153,14 @@ test('the manifest on disk carries the same proof as the answer', () => {
   fs.writeFileSync(file, PDF);
   const manifest = path.join(root, '2026-09', 'manifest.json');
 
-  statementDelivered({ client: 'A', portal: 'B', period: '2026-09', path: file, balance: 'Rp 1.000', manifest });
+  statementDelivered({
+    client: 'A',
+    portal: 'B',
+    period: '2026-09',
+    path: file,
+    balance: 'Rp 1.000',
+    manifest
+  });
   const rows = JSON.parse(fs.readFileSync(manifest, 'utf8'));
 
   assert.equal(rows.length, 1);

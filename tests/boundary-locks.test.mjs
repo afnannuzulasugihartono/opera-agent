@@ -14,15 +14,26 @@ import {
 } from './helpers/boundary-locks.mjs';
 
 function sha1Blob(bytes) {
-
   const content = Buffer.from(bytes.toString('utf8').replace(/\r\n/g, '\n'), 'utf8');
   return createHash('sha1').update(Buffer.from(`blob ${content.length}\0`)).update(content).digest('hex');
 }
 
 for (const [label, locks, expectedSize] of [
-  ['public surface', PUBLIC_SURFACE_LOCKS, 6],
-  ['observation stack', OBSERVATION_STACK_LOCKS, 3],
-  ['relevance stack', RELEVANCE_STACK_LOCKS, 2],
+  [
+    'public surface',
+    PUBLIC_SURFACE_LOCKS,
+    6
+  ],
+  [
+    'observation stack',
+    OBSERVATION_STACK_LOCKS,
+    3
+  ],
+  [
+    'relevance stack',
+    RELEVANCE_STACK_LOCKS,
+    2
+  ],
 ]) {
   test(`${label} pins stay byte-for-byte unchanged`, async () => {
     assert.equal(locks.length, expectedSize,

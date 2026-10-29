@@ -13,8 +13,23 @@ const read = (name) => fs.readFileSync(new URL(name, root), 'utf8');
 
 const TOGGLE = '<span class="lang" data-lang-toggle></span>';
 
-const DICT_PAGES = ['beranda.html', 'unduh.html', 'unduh-berkas.html', 'fitur.html', 'dukungan.html', '404.html', 'privasi.html', 'syarat.html', 'index.html'];
-const TOGGLE_PAGES = [...DICT_PAGES, 'akun.html', 'dashboard.html', 'oauth/consent.html'];
+const DICT_PAGES = [
+  'beranda.html',
+  'unduh.html',
+  'unduh-berkas.html',
+  'fitur.html',
+  'dukungan.html',
+  '404.html',
+  'privasi.html',
+  'syarat.html',
+  'index.html'
+];
+const TOGGLE_PAGES = [
+  ...DICT_PAGES,
+  'akun.html',
+  'dashboard.html',
+  'oauth/consent.html'
+];
 
 function attrKeys(page) {
   const html = read(`landing/${page}`);
@@ -54,7 +69,6 @@ test('every marked string has English, and no dict carries a string nothing mark
 });
 
 test('the pages without a dict mark nothing, so no toggle promises what is not there', () => {
-
   for (const page of ['akun.html', 'dashboard.html', 'oauth/consent.html']) {
     assert.doesNotMatch(read(`landing/${page}`), /i18n-dict/, `${page} carries no dict`);
     assert.deepEqual(attrKeys(page), [], `${page} marks no string without a dict to translate it`);
@@ -75,7 +89,6 @@ test('the toggle is one identical mount on every page that may carry it', () => 
 });
 
 test('the toggle announces the text it shows, so the eye and the ear hear the same control', () => {
-
   // WHY THE VISIBLE TEXT MUST SIT INSIDE THE ACCESSIBLE NAME.
   // Lighthouse measured label-content-name-mismatch on 2026-10-26: the ID button's name was "Bahasa Indonesia" while its face says "ID", so a screen reader announced a different control from the one on screen.
   // The rule is a substring rule, and it also makes voice control work: "click ID" only lands if "ID" is part of the name.
@@ -113,46 +126,110 @@ test('the mechanism phones nowhere, ever', () => {
 });
 
 test('the authored Indonesian stands byte-for-byte where the pins read it', () => {
-
   const sentinels = [
-    ['landing/beranda.html', 'Hak cipta dilindungi'],
-    ['landing/beranda.html', 'Jembatan MCP aman'],
-    ['landing/beranda.html', 'Bawa model Anda'],
-    ['landing/unduh-berkas.html', 'Kalau kebijakan ditolak'],
-    ['landing/404.html', 'Lima jalan keluar'],
-    ['landing/dukungan.html', 'Menghubungkan AI harness (OpenCode, Kilo, ChatGPT, Claude)'],
-    ['landing/fitur.html', 'Companion dengan AI di belakangnya'],
+    [
+      'landing/beranda.html',
+      'Hak cipta dilindungi'
+    ],
+    [
+      'landing/beranda.html',
+      'Jembatan MCP aman'
+    ],
+    [
+      'landing/beranda.html',
+      'Bawa model Anda'
+    ],
+    [
+      'landing/unduh-berkas.html',
+      'Kalau kebijakan ditolak'
+    ],
+    [
+      'landing/404.html',
+      'Lima jalan keluar'
+    ],
+    [
+      'landing/dukungan.html',
+      'Menghubungkan AI harness (OpenCode, Kilo, ChatGPT, Claude)'
+    ],
+    [
+      'landing/fitur.html',
+      'Companion dengan AI di belakangnya'
+    ],
   ];
   for (const [page, sentinel] of sentinels) {
     assert.ok(read(page).includes(sentinel), `${page} still carries ${JSON.stringify(sentinel)}`);
   }
 });
 
-function runMechanism({ stored = null, dict = { en: { greeting: 'Hello', ph: 'Write here' } }, readyState = 'complete', storageThrows = false, withHead = false } = {}) {
+function runMechanism({
+  stored = null,
+  dict = { en: {
+    greeting: 'Hello',
+    ph: 'Write here'
+  } },
+  readyState = 'complete',
+  storageThrows = false,
+  withHead = false
+} = {}) {
   const store = stored === null ? {} : { 'oa-lang': stored };
   const listeners = {};
-  const element = (tag, attrs, textContent) => ({
+  const element = (
+    tag,
+    attrs,
+    textContent
+  ) => ({
     tag,
     textContent,
     innerHTML: textContent,
     attrs: { ...attrs },
     handlers: {},
     children: [],
-    getAttribute(key) { return this.attrs[key]; },
-    setAttribute(key, value) { this.attrs[key] = String(value); },
-    addEventListener(event, handler) { this.handlers[event] = handler; },
-    appendChild(child) { this.children.push(child); },
+    getAttribute(key) {
+      return this.attrs[key];
+    },
+    setAttribute(
+      key,
+      value
+    ) {
+      this.attrs[key] = String(value);
+    },
+    addEventListener(
+      event,
+      handler
+    ) {
+      this.handlers[event] = handler;
+    },
+    appendChild(child) {
+      this.children.push(child);
+    },
   });
-  const nodes = [element('p', { 'data-i18n': 'greeting' }, 'Halo'), element('p', { 'data-i18n': 'missing' }, 'Tetap')];
+  const nodes = [
+    element('p', { 'data-i18n': 'greeting' }, 'Halo'),
+    element('p', { 'data-i18n': 'missing' }, 'Tetap')
+  ];
   const rich = [element('p', { 'data-i18n-html': 'rich' }, 'Baca <a href="./x.html">panduan</a> dulu.')];
   const attributed = [
-    element('input', { 'data-i18n-attr': 'placeholder:ph', placeholder: 'Tulis di sini' }, ''),
-    element('input', { 'data-i18n-attr': 'placeholder:missing', placeholder: 'Tetap di sini' }, ''),
+    element('input', {
+      'data-i18n-attr': 'placeholder:ph',
+      placeholder: 'Tulis di sini'
+    }, ''),
+    element('input', {
+      'data-i18n-attr': 'placeholder:missing',
+      placeholder: 'Tetap di sini'
+    }, ''),
   ];
-  const mount = element('span', { class: 'lang', 'data-lang-toggle': '' }, '');
+  const mount = element('span', {
+    class: 'lang',
+    'data-lang-toggle': ''
+  }, '');
   const buttons = () => mount.children.filter((child) => child.attrs['data-lang']);
   const dictNode = { textContent: JSON.stringify(dict) };
-  const head = { children: [], appendChild(child) { this.children.push(child); } };
+  const head = {
+    children: [],
+    appendChild(child) {
+      this.children.push(child);
+    }
+  };
   const documentStub = {
     readyState,
     documentElement: { lang: 'id' },
@@ -166,26 +243,55 @@ function runMechanism({ stored = null, dict = { en: { greeting: 'Hello', ph: 'Wr
       if (selector === 'button[data-lang]') return buttons();
       return [];
     },
-    addEventListener: (event, handler) => { listeners[event] = handler; },
+    addEventListener: (
+      event,
+      handler
+    ) => {
+      listeners[event] = handler;
+    },
   };
   if (withHead) {
     documentStub.head = head;
   }
   const context = vm.createContext({
-    console, JSON, Map,
+    console,
+    JSON,
+    Map,
     localStorage: storageThrows
-      ? { getItem() { throw new Error('denied'); }, setItem() { throw new Error('denied'); } }
+      ? {
+        getItem() {
+          throw new Error('denied');
+        },
+        setItem() {
+          throw new Error('denied');
+        }
+      }
       : {
         getItem: (key) => (key in store ? store[key] : null),
-        setItem: (key, value) => { store[key] = String(value); },
+        setItem: (
+          key,
+          value
+        ) => {
+          store[key] = String(value);
+        },
       },
     document: documentStub,
     window: {},
   });
   vm.runInContext(read('landing/i18n.js'), context, { filename: 'i18n.js' });
   return {
-    api: context.window.OperaAgentI18n, nodes, rich, attributed, mount, store, listeners, head, document: context.document,
-    get buttons() { return buttons(); },
+    api: context.window.OperaAgentI18n,
+    nodes,
+    rich,
+    attributed,
+    mount,
+    store,
+    listeners,
+    head,
+    document: context.document,
+    get buttons() {
+      return buttons();
+    },
     click: (button) => button.handlers.click.call(button),
   };
 }
@@ -221,7 +327,10 @@ test('without a stored choice the page renders Indonesian, even with storage den
   assert.equal(fresh.buttons[0].attrs['aria-pressed'], 'true', 'Indonesian presses by default');
   assert.equal(fresh.api.getLang(), 'id');
 
-  const denied = runMechanism({ stored: 'en', storageThrows: true });
+  const denied = runMechanism({
+    stored: 'en',
+    storageThrows: true
+  });
   assert.equal(denied.nodes[0].textContent, 'Halo', 'a denied read falls back instead of throwing');
   assert.equal(denied.api.getLang(), 'id');
 
@@ -232,7 +341,10 @@ test('without a stored choice the page renders Indonesian, even with storage den
 });
 
 test('while the document still parses, the helper exists and the swap waits for it', () => {
-  const run = runMechanism({ stored: 'en', readyState: 'loading' });
+  const run = runMechanism({
+    stored: 'en',
+    readyState: 'loading'
+  });
   assert.ok(run.api, 'modules can call the helper before the document finishes');
   assert.equal(run.nodes[0].textContent, 'Halo', 'nothing swaps against a half-parsed page');
 
@@ -246,7 +358,13 @@ test('while the document still parses, the helper exists and the swap waits for 
 
 test('a mixed paragraph swaps its markup and swaps it back, never blanking', () => {
   const authored = 'Baca <a href="./x.html">panduan</a> dulu.';
-  const run = runMechanism({ stored: 'en', dict: { en: { greeting: 'Hello', rich: 'Read the <a href="./x.html">guide</a> first.' } } });
+  const run = runMechanism({
+    stored: 'en',
+    dict: { en: {
+      greeting: 'Hello',
+      rich: 'Read the <a href="./x.html">guide</a> first.'
+    } }
+  });
   assert.equal(run.rich[0].innerHTML, 'Read the <a href="./x.html">guide</a> first.', 'the markup swaps with its links intact');
 
   run.click(run.buttons[0]);
@@ -269,7 +387,10 @@ test('a placeholder swaps through its attribute and swaps back, never blanking',
 });
 
 test('the toggle paints itself once, stays reachable, and presses the active language', () => {
-  const run = runMechanism({ stored: 'en', withHead: true });
+  const run = runMechanism({
+    stored: 'en',
+    withHead: true
+  });
   assert.equal(run.head.children.length, 1, 'one stylesheet is injected');
   const paint = run.head.children[0];
   assert.equal(paint.tag, 'style', 'it is a style element');

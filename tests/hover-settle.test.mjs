@@ -11,52 +11,95 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { BURST_ACTION_METHODS, BURST_STEP_KEYS, validateBurst } from '../extension/lib/protocol.js';
+import {
+  BURST_ACTION_METHODS,
+  BURST_STEP_KEYS,
+  validateBurst
+} from '../extension/lib/protocol.js';
 import { extensionSource } from './helpers/extension-source.mjs';
 import { contentSource } from './helpers/content-source.mjs';
 import { mcpSurfaceSource } from './helpers/mcp-surface-source.mjs';
 
 await import('../extension/hover-settle.js');
-const { DEFAULTS, normalize, plan } = globalThis.OperaAgentHoverSettle;
+const {
+  DEFAULTS,
+  normalize,
+  plan
+} = globalThis.OperaAgentHoverSettle;
 
 test('a hover with an expected submenu name settles only when it is observed', () => {
-  const waiting = plan({ text: 'page numbers', observedText: 'insert', timeoutMs: 1500, elapsedMs: 10 });
+  const waiting = plan({
+    text: 'page numbers',
+    observedText: 'insert',
+    timeoutMs: 1500,
+    elapsedMs: 10
+  });
   assert.equal(waiting.done, false);
   assert.equal(waiting.reason, 'awaiting_text');
 
-  const seen = plan({ text: 'page numbers', observedText: 'Page Numbers', timeoutMs: 1500, elapsedMs: 120 });
+  const seen = plan({
+    text: 'page numbers',
+    observedText: 'Page Numbers',
+    timeoutMs: 1500,
+    elapsedMs: 120
+  });
   assert.equal(seen.done, true);
   assert.equal(seen.reason, 'text_appeared');
   assert.equal(seen.expectedText, 'page numbers');
 });
 
 test('an unmet submenu expectation terminates with a reason, never an exception', () => {
-  const expired = plan({ text: 'page numbers', observedText: '', timeoutMs: 1500, elapsedMs: 1500 });
+  const expired = plan({
+    text: 'page numbers',
+    observedText: '',
+    timeoutMs: 1500,
+    elapsedMs: 1500
+  });
   assert.equal(expired.done, true);
   assert.equal(expired.reason, 'text_timeout');
   assert.equal(expired.expectedText, 'page numbers');
 });
 
 test('without an expectation, stability or an expansion flip settles the hover', () => {
-  const stable = plan({ mutationVersion: 7, previousMutationVersion: 7, stableRounds: 2, elapsedMs: 50, timeoutMs: 1500 });
+  const stable = plan({
+    mutationVersion: 7,
+    previousMutationVersion: 7,
+    stableRounds: 2,
+    elapsedMs: 50,
+    timeoutMs: 1500
+  });
   assert.equal(stable.done, true);
   assert.equal(stable.reason, 'dom_stable');
 
   const flipped = plan({
-    ariaExpanded: 'true', previousAriaExpanded: 'false',
-    mutationVersion: 9, previousMutationVersion: 9, elapsedMs: 20, timeoutMs: 1500
+    ariaExpanded: 'true',
+    previousAriaExpanded: 'false',
+    mutationVersion: 9,
+    previousMutationVersion: 9,
+    elapsedMs: 20,
+    timeoutMs: 1500
   });
   assert.equal(flipped.done, true);
 
   assert.equal(flipped.reason, 'aria_expanded_changed');
 
-  const mutating = plan({ mutationVersion: 9, previousMutationVersion: 8, elapsedMs: 20, timeoutMs: 1500 });
+  const mutating = plan({
+    mutationVersion: 9,
+    previousMutationVersion: 8,
+    elapsedMs: 20,
+    timeoutMs: 1500
+  });
   assert.equal(mutating.done, false);
   assert.equal(mutating.reason, 'mutating');
 });
 
 test('a still-mutating page terminates on the timeout instead of hanging', () => {
-  const expired = plan({ mutationVersion: 12, previousMutationVersion: 11, elapsedMs: 1500, timeoutMs: 1500 });
+  const expired = plan({
+    mutationVersion: 12,
+    previousMutationVersion: 11,
+    elapsedMs: 1500,
+    timeoutMs: 1500
+  });
   assert.equal(expired.done, true);
   assert.equal(expired.reason, 'timeout');
 });
@@ -80,27 +123,60 @@ test('settle bounds are clamped so a caller cannot ask for an unbounded wait', (
 test('the hover burst step exists and requires a ref target', () => {
   assert.equal(BURST_ACTION_METHODS.hover, 'page.hover');
 
-  assert.deepEqual(BURST_STEP_KEYS.hover, ['action', 'ref', 'refFromStep', 'refIndex', 'text', 'timeoutMs', 'tabId']);
+  assert.deepEqual(BURST_STEP_KEYS.hover, [
+    'action',
+    'ref',
+    'refFromStep',
+    'refIndex',
+    'text',
+    'timeoutMs',
+    'tabId'
+  ]);
 
-  assert.equal(validateBurst({ steps: [{ action: 'hover', ref: 'oa-1' }] }).ok, true);
+  assert.equal(validateBurst({ steps: [{
+    action: 'hover',
+    ref: 'oa-1'
+  }] }).ok, true);
 
   assert.deepEqual(
-    validateBurst({ steps: [{ action: 'find', text: 'Insert' }, { action: 'hover', refFromStep: 0, text: 'Page numbers' }] }),
+    validateBurst({ steps: [
+      {
+        action: 'find',
+        text: 'Insert'
+      },
+      {
+        action: 'hover',
+        refFromStep: 0,
+        text: 'Page numbers'
+      }
+    ] }),
     { ok: true }
   );
 
-  assert.equal(validateBurst({ steps: [{ action: 'hover', refFromStep: 0 }] }).ok, false);
+  assert.equal(validateBurst({ steps: [{
+    action: 'hover',
+    refFromStep: 0
+  }] }).ok, false);
   assert.equal(validateBurst({ steps: [{ action: 'hover' }] }).ok, false);
-  assert.equal(validateBurst({ steps: [{ action: 'hover', text: 'Insert' }] }).ok, false);
+  assert.equal(validateBurst({ steps: [{
+    action: 'hover',
+    text: 'Insert'
+  }] }).ok, false);
 
-  assert.equal(validateBurst({ steps: [{ action: 'hover', ref: 'oa-1', click: true }] }).ok, false);
+  assert.equal(validateBurst({ steps: [{
+    action: 'hover',
+    ref: 'oa-1',
+    click: true
+  }] }).ok, false);
   assert.equal(validateBurst({
-    steps: Array.from({ length: 9 }, () => ({ action: 'hover', ref: 'oa-1' }))
+    steps: Array.from({ length: 9 }, () => ({
+      action: 'hover',
+      ref: 'oa-1'
+    }))
   }).ok, false);
 });
 
 test('page.hover stays a burst-internal action, not a new public primitive', async () => {
-
   const protocol = await readFile(new URL('../extension/lib/protocol.js', import.meta.url), 'utf8');
   const allowlist = protocol.match(/export const ALLOWED_METHODS = Object\.freeze\(\[([\s\S]*?)\]\)/)?.[1] ?? '';
   assert.doesNotMatch(allowlist, /page\.hover/);

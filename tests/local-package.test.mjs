@@ -10,9 +10,16 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, readdirSync } from 'node:fs';
+import {
+  readFileSync,
+  readdirSync
+} from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { dirname, join, resolve } from 'node:path';
+import {
+  dirname,
+  join,
+  resolve
+} from 'node:path';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const local = resolve(here, '..', 'local');
@@ -42,7 +49,10 @@ const reachable = (entry) => {
 test('every module the bin can reach is inside the published files', () => {
   const bins = readdirSync(join(local, 'bin')).filter((name) => name.endsWith('.js'));
   const entries = bins.map((name) => `bin/${name.replace(/\.js$/, '')}`);
-  const needed = [...entries.flatMap((entry) => [...reachable(entry)]), ...reachable('mcp-server')].map((name) => `${name}.js`);
+  const needed = [
+    ...entries.flatMap((entry) => [...reachable(entry)]),
+    ...reachable('mcp-server')
+  ].map((name) => `${name}.js`);
 
   // An entry point is carried by the "bin" directory itself rather than by a module name, so a file sitting directly in bin/ is exempt and nothing under it is.
   const missing = needed.filter((name) => !shipped.includes(name) && !(name.startsWith('bin/') && shipped.includes('bin')));

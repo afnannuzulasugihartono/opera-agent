@@ -13,16 +13,28 @@
 // A hyphen is refused by every identifier this tree writes - Postgres function names, workflow names in the migrations, and the plugin manifest's name_for_model are all read as bare identifiers, and a hyphen forces quoting in every one of them.
 // An underscore survives JavaScript, TypeScript and SQL unquoted, so it is the one separator that never has to be escaped, and the wire protocol uses it the same way inside a name: page.wait_for.
 
-import { BURST_ACTIONS, BURST_MAX_STEPS } from './burst.js';
+import {
+  BURST_ACTIONS,
+  BURST_MAX_STEPS
+} from './burst.js';
 
-const stringArg = (name) => ({ type: 'string', description: name });
-const numberArg = (name) => ({ type: 'number', description: name });
+const stringArg = (name) => ({
+  type: 'string',
+  description: name
+});
+const numberArg = (name) => ({
+  type: 'number',
+  description: name
+});
 
 // The surface is only what the driver does well.
 // It has a local burst for dependent moves on one tab, but no reusable element refs beyond a handle that a resolve step hands to a later step, and no cross-tab steps: those are the cloud server's affordances, and pretending a local stdio process has them would advertise something it cannot honour.
 // Coordinates and a fresh read per action stay honest; the burst is the one call that spends its page read once, at the end, instead of after every step.
 
-const tabArg = { type: 'string', description: 'which tab to drive, from list_tabs. Required for anything that writes. A chrome:// page (extensions, settings) refuses every move - name a tab the bridge can drive instead.' };
+const tabArg = {
+  type: 'string',
+  description: 'which tab to drive, from list_tabs. Required for anything that writes. A chrome:// page (extensions, settings) refuses every move - name a tab the bridge can drive instead.'
+};
 
 // WHY THIS SURFACE IS ALLOWLISTED AND READ-ONLY.
 // An agent's fastest route from confused to knowing is asking the browser a structured question: which frames exist, which node is behind a row, what is in a frame's document.
@@ -53,7 +65,10 @@ export const ASKABLE = Object.freeze([
 
 export const askParams = (args) => {
   const params = args.params && typeof args.params === 'object' ? args.params : {};
-  if (args.method === 'Page.captureScreenshot') return { format: 'png', ...params };
+  if (args.method === 'Page.captureScreenshot') return {
+    format: 'png',
+    ...params
+  };
   return params;
 };
 
@@ -63,47 +78,82 @@ export const TOOLS = Object.freeze([
   {
     name: 'browser_status',
     description: 'Report which Chromium browsers are installed, which debugging port is live, and whether a browser window is in front on this machine. A page cannot see whether the window in front of it is the one the operating system has in front, so when clicks and keys go nowhere this is the call that says why.',
-    inputSchema: { type: 'object', properties: {}, required: [] }
+    inputSchema: {
+      type: 'object',
+      properties: {},
+      required: []
+    }
   },
   {
     name: 'focus_window',
     description: 'Bring a browser window to the front of the machine, so the page can take clicks and keys. Give the piece of the window title to bring forward ("Google Docs", "Google Chrome"). With no match, this answers the window state without moving anything — pass a piece of the title to bring one forward. Answers the title it brought, and whether the operating system let it.',
-    inputSchema: { type: 'object', properties: { match: stringArg('piece of the window title to bring forward') } }
+    inputSchema: {
+      type: 'object',
+      properties: { match: stringArg('piece of the window title to bring forward') }
+    }
   },
   {
     name: 'dialog_state',
     description: "Report the operating system's own dialog if one is open - its title, its buttons, and the text in its field. A file picker opened by a page lives outside the browser: no capture, no snapshot and no tab sees it, so this is the only way to know what it is asking for.",
-    inputSchema: { type: 'object', properties: {}, required: [] }
+    inputSchema: {
+      type: 'object',
+      properties: {},
+      required: []
+    }
   },
   {
     name: 'dialog_type',
     description: 'Type text into the open operating system dialog\'s field - a full path into a file picker is the one that matters. This is outside the browser: the text goes to the dialog itself, not to a page.',
-    inputSchema: { type: 'object', properties: { text: stringArg('text to put in the dialog field, usually a full path') }, required: ['text'] }
+    inputSchema: {
+      type: 'object',
+      properties: { text: stringArg('text to put in the dialog field, usually a full path') },
+      required: ['text']
+    }
   },
   {
     name: 'dialog_press',
     description: "Press a button on the open operating system dialog by name - \"Open\", \"Save\", \"Cancel\". A page that opened a file picker cannot be answered from the browser; this answers it from the machine. Answer with the button it found, so a call that pressed the wrong thing says so.",
-    inputSchema: { type: 'object', properties: { name: stringArg('button on the dialog, e.g. Open or Cancel') }, required: ['name'] }
+    inputSchema: {
+      type: 'object',
+      properties: { name: stringArg('button on the dialog, e.g. Open or Cancel') },
+      required: ['name']
+    }
   },
   {
     name: 'list_tabs',
     description: 'List the page targets the browser currently has open, each with an id. Pass that id as tabId to drive a specific tab.',
-    inputSchema: { type: 'object', properties: {}, required: [] }
+    inputSchema: {
+      type: 'object',
+      properties: {},
+      required: []
+    }
   },
   {
     name: 'open_url',
     description: 'Open a url in its own tab and return its id. Never navigates a tab that is already open, so a drive cannot destroy what the user was reading.',
-    inputSchema: { type: 'object', properties: { url: stringArg('absolute url to open') }, required: ['url'] }
+    inputSchema: {
+      type: 'object',
+      properties: { url: stringArg('absolute url to open') },
+      required: ['url']
+    }
   },
   {
     name: 'close_tab',
     description: 'Close one tab by id and drop its cached session, so mapping runs and abandoned drives do not pile up tabs in the browser.',
-    inputSchema: { type: 'object', properties: { tabId: stringArg('which tab to close, from list_tabs') }, required: ['tabId'] }
+    inputSchema: {
+      type: 'object',
+      properties: { tabId: stringArg('which tab to close, from list_tabs') },
+      required: ['tabId']
+    }
   },
   {
     name: 'surface_profile',
     description: 'Report what a surface is, measured, before reading it: whether its text lives in the DOM and how many characters, how much of the viewport a canvas covers, whether an editable host exists, whether the page has focus, and which accessibility subtree carries the document. Every claim carries the number it was measured from, and no site is named anywhere in the answer. truncated is true when the accessibility tree came back as deep as it was asked for, so its text may be cut. It reads no document text and moves no caret, so it is the one call that is always safe. Use it first on a site you have not seen, and read the strategy it returns to know what a read will cost.',
-    inputSchema: { type: 'object', properties: { tabId: tabArg }, required: [] }
+    inputSchema: {
+      type: 'object',
+      properties: { tabId: tabArg },
+      required: []
+    }
   },
   {
     name: 'read_page',
@@ -112,14 +162,24 @@ export const TOOLS = Object.freeze([
       type: 'object',
       properties: {
         tabId: tabArg,
-        allowCaretMove: { type: 'boolean', description: 'consent, recorded on this call only, for a read that borrows the selection on a canvas editor. Without it that step is skipped and the reason is reported, because a canvas caret is not in the DOM and cannot be promised back.' }
+        allowCaretMove: {
+          type: 'boolean',
+          description: 'consent, recorded on this call only, for a read that borrows the selection on a canvas editor. Without it that step is skipped and the reason is reported, because a canvas caret is not in the DOM and cannot be promised back.'
+        }
       }
     }
   },
   {
     name: 'find_elements',
     description: 'Find visible text on the page and return each match with a viewport rect. Coordinates are in the same space capture_page returns, so a rect here can be clicked directly.',
-    inputSchema: { type: 'object', properties: { tabId: tabArg, query: stringArg('text to look for') }, required: ['query'] }
+    inputSchema: {
+      type: 'object',
+      properties: {
+        tabId: tabArg,
+        query: stringArg('text to look for')
+      },
+      required: ['query']
+    }
   },
   {
     name: 'click',
@@ -130,7 +190,10 @@ export const TOOLS = Object.freeze([
         tabId: tabArg,
         x: numberArg('viewport x'),
         y: numberArg('viewport y'),
-        handle: { type: 'string', description: 'element handle from resolve_row or click_row, instead of x and y' }
+        handle: {
+          type: 'string',
+          description: 'element handle from resolve_row or click_row, instead of x and y'
+        }
       }
     }
   },
@@ -139,8 +202,15 @@ export const TOOLS = Object.freeze([
     description: 'Find a row by role and name in a fresh snapshot and hold on to the element itself, without clicking it. Returns the handle, the row, and where it stands right now — for when the gap between looking and acting is longer than one tool call: hover a submenu, wait for a dialog, then click the thing you already chose. The name matches exactly first and as a substring after.',
     inputSchema: {
       type: 'object',
-      properties: { tabId: tabArg, role: stringArg('row role, e.g. menuitem'), name: stringArg('row name') },
-      required: ['role', 'name']
+      properties: {
+        tabId: tabArg,
+        role: stringArg('row role, e.g. menuitem'),
+        name: stringArg('row name')
+      },
+      required: [
+        'role',
+        'name'
+      ]
     }
   },
   {
@@ -148,8 +218,15 @@ export const TOOLS = Object.freeze([
     description: 'Find a row by role and name in a fresh snapshot and click its center in one round trip: no stale coordinates, no separate snapshot call. The name matches case-insensitively as a substring; the first match wins.',
     inputSchema: {
       type: 'object',
-      properties: { tabId: tabArg, role: stringArg('menuitem, button, option, link, textbox, ...'), name: stringArg('substring of the visible name') },
-      required: ['role', 'name']
+      properties: {
+        tabId: tabArg,
+        role: stringArg('menuitem, button, option, link, textbox, ...'),
+        name: stringArg('substring of the visible name')
+      },
+      required: [
+        'role',
+        'name'
+      ]
     }
   },
   {
@@ -157,8 +234,15 @@ export const TOOLS = Object.freeze([
     description: 'Move the pointer over a coordinate without pressing, and mark the spot blue. Dropdown menus and submenus open on hover and close on click, so hover first — the page comes back with the reply, showing what appeared. Waits for the move it dispatched. A move to a window that is not in front costs about five seconds on the compositor; press and release stay at milliseconds.',
     inputSchema: {
       type: 'object',
-      properties: { tabId: tabArg, x: numberArg('viewport x'), y: numberArg('viewport y') },
-      required: ['x', 'y']
+      properties: {
+        tabId: tabArg,
+        x: numberArg('viewport x'),
+        y: numberArg('viewport y')
+      },
+      required: [
+        'x',
+        'y'
+      ]
     }
   },
   {
@@ -166,14 +250,37 @@ export const TOOLS = Object.freeze([
     description: 'Send a key with optional modifiers to the focused element of one tab, for example a chord or an arrow. Returns where the page now stands and what changed, so what the key did is visible without a second call.',
     inputSchema: {
       type: 'object',
-      properties: { tabId: tabArg, key: stringArg('Enter, Tab, Escape, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Home, End, Space, Backspace, Delete, or a single printable ASCII character'), modifiers: { type: 'array', items: { type: 'string', enum: ['Control', 'Alt', 'Shift', 'Meta'] }, description: 'held while the key goes down' } },
+      properties: {
+        tabId: tabArg,
+        key: stringArg('Enter, Tab, Escape, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Home, End, Space, Backspace, Delete, or a single printable ASCII character'),
+        modifiers: {
+          type: 'array',
+          items: {
+            type: 'string',
+            enum: [
+              'Control',
+              'Alt',
+              'Shift',
+              'Meta'
+            ]
+          },
+          description: 'held while the key goes down'
+        }
+      },
       required: ['key']
     }
   },
   {
     name: 'type',
     description: 'Insert text into the focused surface of one tab, including newlines as real paragraph breaks in a rich editor. Returns where the page now stands and what changed, plus where the text landed: placed carries the index and neighbours of the inserted words on DOM pages, and found:false on canvas pages where the mirror lags - there read_page() is the proof, and a failure always deserves a read before any retry, because a slow mirror looks exactly like a dead page.',
-    inputSchema: { type: 'object', properties: { tabId: tabArg, text: stringArg('text to insert') }, required: ['text'] }
+    inputSchema: {
+      type: 'object',
+      properties: {
+        tabId: tabArg,
+        text: stringArg('text to insert')
+      },
+      required: ['text']
+    }
   },
   {
     name: 'get_computed',
@@ -182,9 +289,18 @@ export const TOOLS = Object.freeze([
       type: 'object',
       properties: {
         tabId: tabArg,
-        selector: { type: 'string', description: 'CSS selector for the element' },
-        x: { type: 'number', description: 'x inside the viewport, with y' },
-        y: { type: 'number', description: 'y inside the viewport, with x' }
+        selector: {
+          type: 'string',
+          description: 'CSS selector for the element'
+        },
+        x: {
+          type: 'number',
+          description: 'x inside the viewport, with y'
+        },
+        y: {
+          type: 'number',
+          description: 'y inside the viewport, with x'
+        }
       }
     }
   },
@@ -195,17 +311,36 @@ export const TOOLS = Object.freeze([
       type: 'object',
       properties: {
         tabId: tabArg,
-        y: { type: 'number', description: 'pixels to move the view; negative moves up' },
-        end: { type: 'boolean', description: 'scroll to the bottom of the page or panel' },
-        text: { type: 'string', description: 'scroll the text named here into view' },
-        selector: { type: 'string', description: 'scroll the element matching this CSS selector into view' }
+        y: {
+          type: 'number',
+          description: 'pixels to move the view; negative moves up'
+        },
+        end: {
+          type: 'boolean',
+          description: 'scroll to the bottom of the page or panel'
+        },
+        text: {
+          type: 'string',
+          description: 'scroll the text named here into view'
+        },
+        selector: {
+          type: 'string',
+          description: 'scroll the element matching this CSS selector into view'
+        }
       }
     }
   },
   {
     name: 'append',
     description: 'Add text at the very end of one tab: the caret is asked for the end, the text goes in, and the answer says whether anything follows it. atEnd is measured, not assumed - it is true only when the page shows no text after what was inserted, and it is found:false on canvas pages that mirror late, where read_page() is the proof. Use this instead of clicking and pressing End yourself: that road put a whole batch inside a table cell once, measured live. On a canvas editor atEnd is usually false for a good reason - the text the page reports ends with the editor chrome rather than with the document - so atEndWhy names what followed, and read_page() is the proof that the append reached the end of the document.',
-    inputSchema: { type: 'object', properties: { tabId: tabArg, text: stringArg('text to add at the end') }, required: ['text'] }
+    inputSchema: {
+      type: 'object',
+      properties: {
+        tabId: tabArg,
+        text: stringArg('text to add at the end')
+      },
+      required: ['text']
+    }
   },
   {
     name: 'stream_keys',
@@ -214,7 +349,33 @@ export const TOOLS = Object.freeze([
       type: 'object',
       properties: {
         tabId: tabArg,
-        events: { type: 'array', items: { type: 'object', properties: { key: { type: 'string', description: 'a named key or a single printable ASCII character' }, modifiers: { type: 'array', items: { type: 'string', enum: ['Control', 'Alt', 'Shift', 'Meta'] } }, text: { type: 'string' }, gapMs: { type: 'number' } } }, description: 'in order: { key, modifiers?, gapMs? } or { text, gapMs? }' }
+        events: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              key: {
+                type: 'string',
+                description: 'a named key or a single printable ASCII character'
+              },
+              modifiers: {
+                type: 'array',
+                items: {
+                  type: 'string',
+                  enum: [
+                    'Control',
+                    'Alt',
+                    'Shift',
+                    'Meta'
+                  ]
+                }
+              },
+              text: { type: 'string' },
+              gapMs: { type: 'number' }
+            }
+          },
+          description: 'in order: { key, modifiers?, gapMs? } or { text, gapMs? }'
+        }
       },
       required: ['events']
     }
@@ -226,7 +387,10 @@ export const TOOLS = Object.freeze([
       type: 'object',
       properties: {
         tabId: tabArg,
-        timeoutMs: { type: 'number', description: 'budget for the whole burst, default 12000, capped at 12000' },
+        timeoutMs: {
+          type: 'number',
+          description: 'budget for the whole burst, default 12000, capped at 12000'
+        },
         steps: {
           type: 'array',
           minItems: 1,
@@ -235,21 +399,76 @@ export const TOOLS = Object.freeze([
           items: {
             type: 'object',
             properties: {
-              action: { type: 'string', enum: [...BURST_ACTIONS], description: 'what this step does' },
-              x: { type: 'number', description: 'viewport x for click or hover' },
-              y: { type: 'number', description: 'viewport y for click or hover' },
-              handle: { type: 'string', description: 'element handle for click, instead of x/y' },
-              refFromStep: { type: 'number', description: 'earlier step whose handle or point this step uses' },
-              role: { type: 'string', description: 'row role for click_row, resolve, or a row wait' },
-              name: { type: 'string', description: 'row name for click_row, resolve, or a row wait' },
-              key: { type: 'string', description: 'key for press_key' },
-              modifiers: { type: 'array', items: { type: 'string', enum: ['Control', 'Alt', 'Shift', 'Meta'] } },
-              text: { type: 'string', description: 'text for type or append, or the text a wait looks for' },
-              events: { type: 'array', items: { type: 'object' }, description: 'events for stream_keys' },
-              end: { type: 'boolean', description: 'scroll to the end' },
-              selector: { type: 'string', description: 'scroll this selector into view' },
-              absent: { type: 'boolean', description: 'wait for the text or row to leave' },
-              intervalMs: { type: 'number', description: 'gap between wait checks' }
+              action: {
+                type: 'string',
+                enum: [...BURST_ACTIONS],
+                description: 'what this step does'
+              },
+              x: {
+                type: 'number',
+                description: 'viewport x for click or hover'
+              },
+              y: {
+                type: 'number',
+                description: 'viewport y for click or hover'
+              },
+              handle: {
+                type: 'string',
+                description: 'element handle for click, instead of x/y'
+              },
+              refFromStep: {
+                type: 'number',
+                description: 'earlier step whose handle or point this step uses'
+              },
+              role: {
+                type: 'string',
+                description: 'row role for click_row, resolve, or a row wait'
+              },
+              name: {
+                type: 'string',
+                description: 'row name for click_row, resolve, or a row wait'
+              },
+              key: {
+                type: 'string',
+                description: 'key for press_key'
+              },
+              modifiers: {
+                type: 'array',
+                items: {
+                  type: 'string',
+                  enum: [
+                    'Control',
+                    'Alt',
+                    'Shift',
+                    'Meta'
+                  ]
+                }
+              },
+              text: {
+                type: 'string',
+                description: 'text for type or append, or the text a wait looks for'
+              },
+              events: {
+                type: 'array',
+                items: { type: 'object' },
+                description: 'events for stream_keys'
+              },
+              end: {
+                type: 'boolean',
+                description: 'scroll to the end'
+              },
+              selector: {
+                type: 'string',
+                description: 'scroll this selector into view'
+              },
+              absent: {
+                type: 'boolean',
+                description: 'wait for the text or row to leave'
+              },
+              intervalMs: {
+                type: 'number',
+                description: 'gap between wait checks'
+              }
             },
             required: ['action']
           }
@@ -266,8 +485,14 @@ export const TOOLS = Object.freeze([
       properties: {
         tabId: tabArg,
         text: stringArg('text to wait for'),
-        timeoutMs: { type: 'number', description: 'budget, default 8000, capped at 30000' },
-        intervalMs: { type: 'number', description: 'kept for compatibility; the wait now settles on the page instead of sleeping a fixed gap' }
+        timeoutMs: {
+          type: 'number',
+          description: 'budget, default 8000, capped at 30000'
+        },
+        intervalMs: {
+          type: 'number',
+          description: 'kept for compatibility; the wait now settles on the page instead of sleeping a fixed gap'
+        }
       },
       required: ['text']
     }
@@ -279,8 +504,15 @@ export const TOOLS = Object.freeze([
       type: 'object',
       properties: {
         tabId: tabArg,
-        method: { type: 'string', enum: [...ASKABLE], description: 'one of the read-only CDP methods' },
-        params: { type: 'object', description: 'the method\'s own parameters, passed through' }
+        method: {
+          type: 'string',
+          enum: [...ASKABLE],
+          description: 'one of the read-only CDP methods'
+        },
+        params: {
+          type: 'object',
+          description: 'the method\'s own parameters, passed through'
+        }
       },
       required: ['method']
     }
@@ -294,11 +526,23 @@ export const TOOLS = Object.freeze([
         tabId: tabArg,
         role: stringArg('row role, e.g. menuitem'),
         name: stringArg('row name, matched exactly first and as a substring after'),
-        absent: { type: 'boolean', description: 'wait for the row to go away instead of to arrive' },
-        timeoutMs: { type: 'number', description: 'budget, default 10000' },
-        intervalMs: { type: 'number', description: 'kept for compatibility; the wait now settles on the page instead of sleeping a fixed gap' }
+        absent: {
+          type: 'boolean',
+          description: 'wait for the row to go away instead of to arrive'
+        },
+        timeoutMs: {
+          type: 'number',
+          description: 'budget, default 10000'
+        },
+        intervalMs: {
+          type: 'number',
+          description: 'kept for compatibility; the wait now settles on the page instead of sleeping a fixed gap'
+        }
       },
-      required: ['role', 'name']
+      required: [
+        'role',
+        'name'
+      ]
     }
   },
   {
@@ -308,16 +552,28 @@ export const TOOLS = Object.freeze([
       type: 'object',
       properties: {
         tabId: tabArg,
-        timeoutMs: { type: 'number', description: 'budget, default 8000' },
-        quietMs: { type: 'number', description: 'how long the page must hold still, default 120' },
-        intervalMs: { type: 'number', description: 'kept for compatibility; the wait now settles on the page instead of sleeping a fixed gap' }
+        timeoutMs: {
+          type: 'number',
+          description: 'budget, default 8000'
+        },
+        quietMs: {
+          type: 'number',
+          description: 'how long the page must hold still, default 120'
+        },
+        intervalMs: {
+          type: 'number',
+          description: 'kept for compatibility; the wait now settles on the page instead of sleeping a fixed gap'
+        }
       }
     }
   },
   {
     name: 'caret_line',
     description: 'Report the text of the line the caret stands on. Selects its own line to read it, then answers caretRestored as what was measured rather than what was hoped: on a page whose caret lives in its own model rather than in the DOM, this is reported as not restored and never as restored. It also leaves the view scrolled to the end of the line, so viewRestored is false and the read is gated like the selection copy is - Dismiss any menu first; with one open the keys walk the menu instead of the text.',
-    inputSchema: { type: 'object', properties: { tabId: tabArg } }
+    inputSchema: {
+      type: 'object',
+      properties: { tabId: tabArg }
+    }
   },
   {
     name: 'upload',
@@ -327,7 +583,10 @@ export const TOOLS = Object.freeze([
       properties: {
         tabId: tabArg,
         filename: stringArg('file name'),
-        data: { type: 'string', description: 'base64 file bytes' },
+        data: {
+          type: 'string',
+          description: 'base64 file bytes'
+        },
         path: stringArg('absolute local path instead of bytes')
       },
       required: ['filename']
@@ -340,13 +599,26 @@ export const TOOLS = Object.freeze([
       type: 'object',
       properties: {
         tabId: tabArg,
-        x: { type: 'number', description: 'viewport x to drop on' },
-        y: { type: 'number', description: 'viewport y to drop on' },
+        x: {
+          type: 'number',
+          description: 'viewport x to drop on'
+        },
+        y: {
+          type: 'number',
+          description: 'viewport y to drop on'
+        },
         filename: stringArg('file name, which also decides the dropped type'),
-        data: { type: 'string', description: 'base64 file bytes' },
+        data: {
+          type: 'string',
+          description: 'base64 file bytes'
+        },
         path: stringArg('absolute local path instead of bytes')
       },
-      required: ['x', 'y', 'filename']
+      required: [
+        'x',
+        'y',
+        'filename'
+      ]
     }
   },
   {
@@ -356,7 +628,10 @@ export const TOOLS = Object.freeze([
       type: 'object',
       properties: {
         tabId: tabArg,
-        enabled: { type: 'boolean', description: 'true to suppress the picker, false to restore it' }
+        enabled: {
+          type: 'boolean',
+          description: 'true to suppress the picker, false to restore it'
+        }
       },
       required: ['enabled']
     }
@@ -368,7 +643,10 @@ export const TOOLS = Object.freeze([
       type: 'object',
       properties: {
         tabId: tabArg,
-        handle: { type: 'string', description: 'element handle from resolve_row or click_row' },
+        handle: {
+          type: 'string',
+          description: 'element handle from resolve_row or click_row'
+        },
         role: stringArg('row role to click, e.g. link or button'),
         name: stringArg('row name for that role'),
         x: numberArg('viewport x, instead of a handle or a row'),
@@ -384,7 +662,10 @@ export const TOOLS = Object.freeze([
     description: "Read what this page's application can do, from its own menu markup, without clicking anything. Every node carries its state - leaf, branch, disabled, or unrevealed - and an unrevealed node carries how it would be revealed, so a command one hover away is never reported as one that does not exist. Read this before guessing at a menu.",
     inputSchema: {
       type: 'object',
-      properties: { tabId: tabArg, limit: numberArg('most rows to return, default 200') }
+      properties: {
+        tabId: tabArg,
+        limit: numberArg('most rows to return, default 200')
+      }
     }
   },
   {
@@ -394,8 +675,15 @@ export const TOOLS = Object.freeze([
       type: 'object',
       properties: {
         tabId: tabArg,
-        path: { type: 'array', items: { type: 'string' }, description: 'menu names from the bar down, e.g. ["Insert","Image"]' },
-        clickLeaf: { type: 'boolean', description: 'also activate the last item, default false' },
+        path: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'menu names from the bar down, e.g. ["Insert","Image"]'
+        },
+        clickLeaf: {
+          type: 'boolean',
+          description: 'also activate the last item, default false'
+        },
         limit: numberArg('most rows to read per level, default 200')
       },
       required: ['path']
@@ -412,12 +700,30 @@ export const TOOLS = Object.freeze([
   {
     name: 'capture_page',
     description: 'Capture one tab as a JPEG image, and say what space it is in: the viewport size, the device scale factor, and the image size read from the picture itself. The picture is the viewport times that factor, and both move when a window is resized or dragged to a monitor with another scale - measured live, the viewport went 1144x714 to 1186x670 with the scale steady at 1.25 - so convert through the numbers returned here rather than by dividing pixels by eye. Pass fullPage to span the whole document instead; then the picture is the page, not the window, and the answer says so. On canvas-rendered pages (Google Docs is one) fullPage still stops at the viewport - measured live, an 18-page document answered 2000x937 pixels - so page through with End/PageDown and capture again rather than expecting the whole document at once.',
-    inputSchema: { type: 'object', properties: { tabId: tabArg, fullPage: { type: 'boolean', description: 'capture the whole page past the viewport' } } }
+    inputSchema: {
+      type: 'object',
+      properties: {
+        tabId: tabArg,
+        fullPage: {
+          type: 'boolean',
+          description: 'capture the whole page past the viewport'
+        }
+      }
+    }
   },
   {
     name: 'ax_snapshot',
     description: 'Map one tab to clickable coordinates with names: role, name, x, y for every button, link, menu row and field, plus the current value where a field carries one (formula bar, name box, toolbar inputs). Call it when you want to study the whole page: an action answers with where the page stands and the rows that changed, not all of them. The text caret rides as a final caret row when visible; read its line with caret_line.',
-    inputSchema: { type: 'object', properties: { tabId: tabArg, limit: { type: 'number', description: 'max rows, default 120, capped at 500' } } }
+    inputSchema: {
+      type: 'object',
+      properties: {
+        tabId: tabArg,
+        limit: {
+          type: 'number',
+          description: 'max rows, default 120, capped at 500'
+        }
+      }
+    }
   },
   {
     name: 'statement_card',
@@ -432,7 +738,11 @@ export const TOOLS = Object.freeze([
         root: stringArg('folder that holds the job; defaults to Downloads/opera-statements'),
         ext: stringArg('file extension, default pdf')
       },
-      required: ['client', 'portal', 'period']
+      required: [
+        'client',
+        'portal',
+        'period'
+      ]
     }
   },
   {
@@ -447,9 +757,17 @@ export const TOOLS = Object.freeze([
         path: stringArg('the path download answered with'),
         balance: stringArg('the closing balance, as the page printed it'),
         manifest: stringArg('manifest file; defaults to one beside the statement'),
-        replace: { type: 'boolean', description: 'replace an existing record for this client-month' }
+        replace: {
+          type: 'boolean',
+          description: 'replace an existing record for this client-month'
+        }
       },
-      required: ['client', 'portal', 'period', 'path']
+      required: [
+        'client',
+        'portal',
+        'period',
+        'path'
+      ]
     }
   },
   {
@@ -479,7 +797,14 @@ export const TOOLS = Object.freeze([
         valueColumn: stringArg('the money column that is summed'),
         out: stringArg('where to write the report; defaults beside the source')
       },
-      required: ['source', 'client', 'title', 'period', 'groupBy', 'valueColumn']
+      required: [
+        'source',
+        'client',
+        'title',
+        'period',
+        'groupBy',
+        'valueColumn'
+      ]
     }
   }
 ]);

@@ -20,11 +20,17 @@ function tableCells(row) {
   return row.split('|').slice(1, -1).map((cell) => cell.trim());
 }
 
-function hasTableRow(doc, firstCell) {
+function hasTableRow(
+  doc,
+  firstCell
+) {
   return tableRows(doc).some((row) => tableCells(row)[0] === firstCell);
 }
 
-function section(doc, heading) {
+function section(
+  doc,
+  heading
+) {
   const start = doc.indexOf(heading);
   assert.notEqual(start, -1, `docs/api.md has a "${heading}" section`);
   const rest = doc.slice(start + heading.length);
@@ -40,7 +46,11 @@ test('api.md documents every path the gateway routes', async () => {
   const gateway = await readFile(gatewayPath, 'utf8');
   const doc = await readFile(docPath, 'utf8');
   const routed = routedPaths(gateway);
-  assert.deepEqual([...routed].sort(), ['/command', '/health', '/openapi.json']);
+  assert.deepEqual([...routed].sort(), [
+    '/command',
+    '/health',
+    '/openapi.json'
+  ]);
   for (const path of routed) {
     assert.ok(doc.includes(`\`${path}\``), `docs/api.md documents ${path}`);
     assert.ok(hasTableRow(doc, `\`${path}\``), `docs/api.md lists ${path} in the endpoint table`);
@@ -48,7 +58,6 @@ test('api.md documents every path the gateway routes', async () => {
 });
 
 test('api.md documents no path the gateway stopped serving', async () => {
-
   const gateway = await readFile(gatewayPath, 'utf8');
   const doc = await readFile(docPath, 'utf8');
 
@@ -76,7 +85,6 @@ test('api.md documents every error code the gateway emits', async () => {
 });
 
 test('extractToken accepts exactly the three documented carriers', async () => {
-
   const gateway = await readFile(gatewayPath, 'utf8');
   const code = stripComments(gateway, 'javascript');
 
@@ -102,7 +110,6 @@ test('extractToken accepts exactly the three documented carriers', async () => {
 });
 
 test('command resolves a user JWT to the caller-owned first device, never the fixed name', async () => {
-
   const gateway = await readFile(gatewayPath, 'utf8');
   const code = stripComments(gateway, 'javascript');
   assert.match(code, /supabase\.auth\.getUser\(token\)/, 'the gateway verifies a user JWT when the device token fails');
@@ -112,7 +119,6 @@ test('command resolves a user JWT to the caller-owned first device, never the fi
 });
 
 test('the security policy states the true carrier set and nothing else', async () => {
-
   const security = await readFile(new URL('../docs/security.md', import.meta.url), 'utf8');
   assert.doesNotMatch(
     security,

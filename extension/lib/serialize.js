@@ -17,19 +17,31 @@ function oversized(value) {
   return serializeResult(value).length > MAX_RESULT_BYTES;
 }
 
-let serializedResult = { value: null, text: '' };
+let serializedResult = {
+  value: null,
+  text: ''
+};
 
 function serializeResult(value) {
   if (serializedResult.value === value) return serializedResult.text;
   let text;
-  try { text = JSON.stringify(value); } catch { throw new Error('Result is not serializable.'); }
-  serializedResult = { value, text };
+  try {
+    text = JSON.stringify(value);
+  } catch {
+    throw new Error('Result is not serializable.');
+  }
+  serializedResult = {
+    value,
+    text
+  };
   return text;
 }
 
 function clearSerializedResult() {
-
-  serializedResult = { value: null, text: '' };
+  serializedResult = {
+    value: null,
+    text: ''
+  };
 }
 
 export {

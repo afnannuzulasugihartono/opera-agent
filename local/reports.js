@@ -56,7 +56,10 @@ function rowsOf(text) {
     if (char === '\r' || char === '\n') {
       if (char === '\r' && text[index + 1] === '\n') index += 1;
       cells.push(field);
-      records.push({ cells, line: rowLine });
+      records.push({
+        cells,
+        line: rowLine
+      });
       cells = [];
       field = '';
       line += 1;
@@ -68,7 +71,10 @@ function rowsOf(text) {
 
   if (field !== '' || cells.length > 0) {
     cells.push(field);
-    records.push({ cells, line: rowLine });
+    records.push({
+      cells,
+      line: rowLine
+    });
   }
   return records;
 }
@@ -76,16 +82,25 @@ function rowsOf(text) {
 export function parseDelimited(text) {
   const clean = String(text ?? '').replace(/^\uFEFF/, '');
   const records = rowsOf(clean).filter((record) => record.cells.some((cell) => cell.trim() !== ''));
-  if (records.length === 0) return { headers: [], rows: [] };
+  if (records.length === 0) return {
+    headers: [],
+    rows: []
+  };
   const headers = records[0].cells.map((header) => header.trim());
   const rows = records.slice(1).map((record) => {
     const row = { __line: record.line };
-    headers.forEach((header, index) => {
+    headers.forEach((
+      header,
+      index
+    ) => {
       row[header] = record.cells[index] ?? '';
     });
     return row;
   });
-  return { headers, rows };
+  return {
+    headers,
+    rows
+  };
 }
 
 // WHY A DOT IS ALWAYS A THOUSANDS GROUP.
@@ -121,14 +136,20 @@ function formatMoney(cents) {
   return `${cents < 0 ? '-' : ''}Rp ${value.toLocaleString('id-ID', { maximumFractionDigits: 0 })}`;
 }
 
-function need(value, what) {
+function need(
+  value,
+  what
+) {
   if (value === null || value === undefined || String(value).trim() === '') {
     throw new Error(`the report spec needs ${what}; a report without one is a document nobody can check.`);
   }
   return String(value).trim();
 }
 
-export function buildReport({ table, spec } = {}) {
+export function buildReport({
+  table,
+  spec
+} = {}) {
   if (!table || !Array.isArray(table.headers) || !Array.isArray(table.rows)) {
     throw new Error('buildReport needs a parsed table: headers and rows.');
   }
@@ -171,7 +192,10 @@ export function buildReport({ table, spec } = {}) {
     }
     total += cents;
     totalRows.push(line);
-    const bucket = groups.get(group) ?? { cents: 0, rows: [] };
+    const bucket = groups.get(group) ?? {
+      cents: 0,
+      rows: []
+    };
     bucket.cents += cents;
     bucket.rows.push(line);
     groups.set(group, bucket);
@@ -183,20 +207,34 @@ export function buildReport({ table, spec } = {}) {
     cents: total,
     display: formatMoney(total),
     formula: 'sum',
-    source: { column: valueColumn, header: valueColumn, rows: totalRows }
+    source: {
+      column: valueColumn,
+      header: valueColumn,
+      rows: totalRows
+    }
   }];
-  for (const [group, bucket] of [...groups.entries()].sort(([left], [right]) => (left < right ? -1 : left > right ? 1 : 0))) {
+  for (const [group, bucket] of [...groups.entries()].sort((
+    [left],
+    [right]
+  ) => (left < right ? -1 : left > right ? 1 : 0))) {
     figures.push({
       id: `group:${group}`,
       label: group,
       cents: bucket.cents,
       display: formatMoney(bucket.cents),
       formula: 'sum',
-      source: { column: valueColumn, header: valueColumn, rows: bucket.rows }
+      source: {
+        column: valueColumn,
+        header: valueColumn,
+        rows: bucket.rows
+      }
     });
   }
 
-  const groupSum = [...groups.values()].reduce((sum, bucket) => sum + bucket.cents, 0);
+  const groupSum = [...groups.values()].reduce((
+    sum,
+    bucket
+  ) => sum + bucket.cents, 0);
   if (groupSum !== total) {
     throw new Error(`the group totals (${groupSum}) do not add up to the total (${total}); the report would carry a number its own lines deny.`);
   }
@@ -211,21 +249,48 @@ export function buildReport({ table, spec } = {}) {
       client,
       period,
       blocks: [
-        { kind: 'heading', level: 1, text: title },
-        { kind: 'paragraph', text: `Klien: ${client} · Periode: ${period}` },
+        {
+          kind: 'heading',
+          level: 1,
+          text: title
+        },
+        {
+          kind: 'paragraph',
+          text: `Klien: ${client} · Periode: ${period}`
+        },
         {
           kind: 'table',
-          headers: [groupBy, 'Total'],
+          headers: [
+            groupBy,
+            'Total'
+          ],
           rows: [...groups.entries()]
-            .sort(([left], [right]) => (left < right ? -1 : left > right ? 1 : 0))
-            .map(([group, bucket]) => [group, formatMoney(bucket.cents)])
+            .sort((
+              [left],
+              [right]
+            ) => (left < right ? -1 : left > right ? 1 : 0))
+            .map(([
+              group,
+              bucket
+            ]) => [
+              group,
+              formatMoney(bucket.cents)
+            ])
         },
-        { kind: 'paragraph', id: 'total', text: `Total: ${formatMoney(total)}` }
+        {
+          kind: 'paragraph',
+          id: 'total',
+          text: `Total: ${formatMoney(total)}`
+        }
       ]
     },
     check: {
       rows: table.rows.length,
-      columns: { groupBy, valueColumn, periodColumn: spec?.periodColumn ?? null }
+      columns: {
+        groupBy,
+        valueColumn,
+        periodColumn: spec?.periodColumn ?? null
+      }
     }
   };
 }
@@ -234,21 +299,32 @@ export function buildReport({ table, spec } = {}) {
 // Building trusts the table once; the recheck trusts nothing and recomputes every figure from the rows the figure names.
 // That is the difference between a plan that was right when it was made and a plan that is still right now.
 
-export function verifyReport({ report, table } = {}) {
+export function verifyReport({
+  report,
+  table
+} = {}) {
   if (!report || !Array.isArray(report.figures)) {
     throw new Error('verifyReport needs a report with figures.');
   }
   if (!table || !Array.isArray(table.rows)) {
     throw new Error('verifyReport needs the table the report was built from.');
   }
-  const byLine = new Map(table.rows.map((row) => [row.__line, row]));
+  const byLine = new Map(table.rows.map((row) => [
+    row.__line,
+    row
+  ]));
   const mismatches = [];
 
   for (const figure of report.figures) {
     const rows = figure?.source?.rows;
     const column = figure?.source?.column;
     if (!Array.isArray(rows) || !column) {
-      mismatches.push({ id: figure?.id ?? null, expected: figure?.cents ?? null, actual: null, why: 'the figure names no source, so it cannot be checked' });
+      mismatches.push({
+        id: figure?.id ?? null,
+        expected: figure?.cents ?? null,
+        actual: null,
+        why: 'the figure names no source, so it cannot be checked'
+      });
       continue;
     }
     let actual = 0;
@@ -267,11 +343,20 @@ export function verifyReport({ report, table } = {}) {
       actual += cents;
     }
     if (why || actual !== figure.cents) {
-      mismatches.push({ id: figure.id, expected: figure.cents, actual: why ? null : actual, why: why ?? 'the figure and its source disagree' });
+      mismatches.push({
+        id: figure.id,
+        expected: figure.cents,
+        actual: why ? null : actual,
+        why: why ?? 'the figure and its source disagree'
+      });
     }
   }
 
-  return { ok: mismatches.length === 0, checked: report.figures.length, mismatches };
+  return {
+    ok: mismatches.length === 0,
+    checked: report.figures.length,
+    mismatches
+  };
 }
 
 // WHY THE JOB READS THE FILE ITSELF.
@@ -279,7 +364,14 @@ export function verifyReport({ report, table } = {}) {
 // Reading, building and rechecking in one place is what makes the written artifact trustworthy: it was verified before it existed as a file.
 
 export function reportFromFile({
-  source, client, title, period, periodColumn = null, groupBy, valueColumn, out = null
+  source,
+  client,
+  title,
+  period,
+  periodColumn = null,
+  groupBy,
+  valueColumn,
+  out = null
 } = {}) {
   if (source === null || source === undefined || String(source).trim() === '') {
     throw new Error('report_build needs source: the CSV exported from the workbook.');
@@ -297,9 +389,19 @@ export function reportFromFile({
   const table = parseDelimited(fs.readFileSync(from, 'utf8'));
   const report = buildReport({
     table,
-    spec: { client, title, period, periodColumn, groupBy, valueColumn }
+    spec: {
+      client,
+      title,
+      period,
+      periodColumn,
+      groupBy,
+      valueColumn
+    }
   });
-  const verified = verifyReport({ report, table });
+  const verified = verifyReport({
+    report,
+    table
+  });
   if (!verified.ok) {
     throw new Error(`the report failed its own recheck: ${verified.mismatches.map((miss) => miss.why ?? miss.id).join('; ')}`);
   }
@@ -319,5 +421,10 @@ export function reportFromFile({
   fs.rmSync(outPath, { force: true });
   fs.renameSync(tmp, outPath);
 
-  return { source: from, out: outPath, verified, report };
+  return {
+    source: from,
+    out: outPath,
+    verified,
+    report
+  };
 }

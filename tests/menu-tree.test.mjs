@@ -22,21 +22,33 @@ import {
 // A two-state tree cannot tell those apart, so the states are pinned here against the three facts that decide them: a popup, a disabled flag, and whether it has been rendered.
 
 test('a plain command is a leaf and reveals nothing', () => {
-  const node = { branch: false, expanded: false, disabled: false };
+  const node = {
+    branch: false,
+    expanded: false,
+    disabled: false
+  };
 
   assert.equal(stateOf(node), 'leaf');
   assert.equal(revealOf(node), null);
 });
 
 test('a command with a closed popup is unrevealed, and says how it opens', () => {
-  const node = { branch: true, expanded: false, disabled: false };
+  const node = {
+    branch: true,
+    expanded: false,
+    disabled: false
+  };
 
   assert.equal(stateOf(node), 'unrevealed');
   assert.match(revealOf(node), /hover the parent/);
 });
 
 test('an open popup is a branch whose children are readable', () => {
-  const node = { branch: true, expanded: true, disabled: false };
+  const node = {
+    branch: true,
+    expanded: true,
+    disabled: false
+  };
 
   assert.equal(stateOf(node), 'branch');
   assert.match(revealOf(node), /children are open/);
@@ -46,8 +58,16 @@ test('an open popup is a branch whose children are readable', () => {
 // A greyed row looks exactly like a live one to a snapshot and costs a wasted click to discover, so it is named.
 
 test('a disabled row is disabled whatever else it is', () => {
-  assert.equal(stateOf({ branch: false, expanded: false, disabled: true }), 'disabled');
-  assert.equal(stateOf({ branch: true, expanded: true, disabled: true }), 'disabled');
+  assert.equal(stateOf({
+    branch: false,
+    expanded: false,
+    disabled: true
+  }), 'disabled');
+  assert.equal(stateOf({
+    branch: true,
+    expanded: true,
+    disabled: true
+  }), 'disabled');
 });
 
 // WHY THE EXACT ROW WINS.
@@ -55,15 +75,24 @@ test('a disabled row is disabled whatever else it is', () => {
 
 test('an exact row beats a container carrying the same names', () => {
   const rows = [
-    { name: 'Upload from computer\nSearch the web\nDrive', depth: 1 },
-    { name: 'Upload from computer', depth: 2 }
+    {
+      name: 'Upload from computer\nSearch the web\nDrive',
+      depth: 1
+    },
+    {
+      name: 'Upload from computer',
+      depth: 2
+    }
   ];
 
   assert.equal(findNode('Upload from computer', rows).depth, 2, 'the row, not the menu around it');
 });
 
 test('a name that is only part of a row still finds it', () => {
-  const rows = [{ name: 'Upload from computer\nSearch the web', depth: 2 }];
+  const rows = [{
+    name: 'Upload from computer\nSearch the web',
+    depth: 2
+  }];
 
   assert.equal(looseMatch('upload from comp', rows).depth, 2);
   assert.equal(exactMatch('upload from comp', rows), null, 'exact stays exact');
@@ -74,7 +103,12 @@ test('a name that is only part of a row still finds it', () => {
 // "Break" is many words away and must not be offered first.
 
 test('the nearest name is the caller word with more detail, not the closest by letters', () => {
-  const offered = ['Break', 'Upload from computer', 'Bookmark', 'Table'];
+  const offered = [
+    'Break',
+    'Upload from computer',
+    'Bookmark',
+    'Table'
+  ];
 
   assert.equal(nearestNames('Upload', offered)[0], 'Upload from computer');
   assert.equal(nearestNames('Upload from computr', offered)[0], 'Upload from computer',

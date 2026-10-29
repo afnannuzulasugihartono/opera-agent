@@ -25,16 +25,32 @@ export const FRAME_MAX_BYTES = 1024 * 1024;
 
 export const DEVICE_PROTOCOL_VERSION = 2;
 
-export function handshakeFrame(token, deviceName) {
-  return JSON.stringify({ type: 'hello', token, deviceName, protocolVersion: DEVICE_PROTOCOL_VERSION });
+export function handshakeFrame(
+  token,
+  deviceName
+) {
+  return JSON.stringify({
+    type: 'hello',
+    token,
+    deviceName,
+    protocolVersion: DEVICE_PROTOCOL_VERSION
+  });
 }
 
-export function completionFrame(commandId, ok, result, error) {
+export function completionFrame(
+  commandId,
+  ok,
+  result,
+  error
+) {
   return JSON.stringify({
     type: 'complete',
     commandId,
     ok: ok === true,
-    ...(ok === true ? { result: result ?? {} } : { error: error ?? { code: 'EXECUTION_ERROR', message: 'Command failed.' } })
+    ...(ok === true ? { result: result ?? {} } : { error: error ?? {
+      code: 'EXECUTION_ERROR',
+      message: 'Command failed.'
+    } })
   });
 }
 
@@ -54,7 +70,10 @@ async function gzipBytes(text) {
   const chunks = [];
   const pump = (async () => {
     for (;;) {
-      const { done, value } = await reader.read();
+      const {
+        done,
+        value
+      } = await reader.read();
       if (done) return;
       chunks.push(value);
     }
@@ -63,7 +82,10 @@ async function gzipBytes(text) {
   await writer.write(new TextEncoder().encode(text));
   await writer.close();
   await pump;
-  const total = chunks.reduce((n, c) => n + c.length, 0);
+  const total = chunks.reduce((
+    n,
+    c
+  ) => n + c.length, 0);
   const out = new Uint8Array(total);
   let offset = 0;
   for (const chunk of chunks) {
@@ -73,7 +95,12 @@ async function gzipBytes(text) {
   return out;
 }
 
-export async function encodeCompletionFrame(commandId, ok, result, error) {
+export async function encodeCompletionFrame(
+  commandId,
+  ok,
+  result,
+  error
+) {
   const text = completionFrame(commandId, ok, result, error);
   if (text.length <= GZIP_THRESHOLD_BYTES) return text;
   if (typeof CompressionStream === 'undefined') return text;
@@ -88,19 +115,37 @@ export async function encodeCompletionFrame(commandId, ok, result, error) {
   }
 }
 
-export function parseFrame(raw, maxBytes = FRAME_MAX_BYTES) {
-  if (typeof raw !== 'string') return { ok: false, error: 'Frame must be text.' };
-  if (raw.length > maxBytes) return { ok: false, error: 'Frame too large.' };
+export function parseFrame(
+  raw,
+  maxBytes = FRAME_MAX_BYTES
+) {
+  if (typeof raw !== 'string') return {
+    ok: false,
+    error: 'Frame must be text.'
+  };
+  if (raw.length > maxBytes) return {
+    ok: false,
+    error: 'Frame too large.'
+  };
 
   let message;
   try {
     message = JSON.parse(raw);
   } catch {
-    return { ok: false, error: 'Frame must be JSON.' };
+    return {
+      ok: false,
+      error: 'Frame must be JSON.'
+    };
   }
 
-  if (!message || typeof message.type !== 'string') return { ok: false, error: 'Frame needs a type.' };
-  return { ok: true, message };
+  if (!message || typeof message.type !== 'string') return {
+    ok: false,
+    error: 'Frame needs a type.'
+  };
+  return {
+    ok: true,
+    message
+  };
 }
 
 export function pongFrame() {

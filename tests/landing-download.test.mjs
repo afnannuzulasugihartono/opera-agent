@@ -38,7 +38,10 @@ function zipEntryNames(buffer) {
   return names.map((n) => n.replace(/\\/g, '/'));
 }
 
-function zipEntryText(buffer, wanted) {
+function zipEntryText(
+  buffer,
+  wanted
+) {
   const EOCD = 0x06054b50;
   let eocd = -1;
   for (let at = buffer.length - 22; at >= 0; at -= 1) {
@@ -117,7 +120,11 @@ function zipOfTree() {
   eocd.writeUInt16LE(walk().length, 10);
   eocd.writeUInt32LE(directory.length, 12);
   eocd.writeUInt32LE(offset, 16);
-  return Buffer.concat([...locals, directory, eocd]);
+  return Buffer.concat([
+    ...locals,
+    directory,
+    eocd
+  ]);
 }
 
 const CRC_TABLE = (() => {
@@ -137,7 +144,12 @@ function crc32(buffer) {
 }
 
 function buildCrxAround(payload) {
-  const header = Buffer.from([0x12, 0x02, 0x01, 0x02]);
+  const header = Buffer.from([
+    0x12,
+    0x02,
+    0x01,
+    0x02
+  ]);
   const crx = Buffer.alloc(12 + header.length + payload.length);
   crx.write('Cr24', 0, 'utf8');
   crx.writeUInt32LE(3, 4);
@@ -148,7 +160,6 @@ function buildCrxAround(payload) {
 }
 
 test('the download page names no version, because a named version goes stale', () => {
-
   const html = read('unduh.html');
   assert.doesNotMatch(html.replace(/<!--[\s\S]*?-->/g, ''), /\b\d+\.\d+\.\d+\b/,
     'no version appears in the copy a reader sees');
@@ -165,7 +176,6 @@ test('the download page offers one archive and says how to verify it', () => {
 });
 
 test('the endpoint serves the newest build, so a release needs no edit to the site', () => {
-
   const src = fs.readFileSync(new URL('supabase/functions/opera-agent-update/index.ts', root), 'utf8');
   assert.match(src, /\/download\/opera-agent\.crx/, 'a version-less CRX path exists');
   assert.match(src, /\/download\/opera-agent\.zip/, 'and a version-less archive path exists');
@@ -180,7 +190,13 @@ test('the download page links the paths that never change', () => {
   const berkas = read('unduh-berkas.html');
   const hub = read('unduh.html');
 
-  for (const [page, html] of [['unduh.html', hub], ['unduh-berkas.html', berkas]]) {
+  for (const [page, html] of [[
+    'unduh.html',
+    hub
+  ], [
+    'unduh-berkas.html',
+    berkas
+  ]]) {
     assert.doesNotMatch(html, /opera-agent-\d+\.\d+\.\d+\.(zip|crx)/,
       `${page}: no download link carries a version, so no release can leave the page behind`);
   }
@@ -204,7 +220,6 @@ test('both formats share one page, reached from the hub and back', () => {
 });
 
 test('the payload of a CRX is already the tree, so the archive needs no second build', () => {
-
   const manifest = JSON.parse(fs.readFileSync(new URL('extension/manifest.json', root), 'utf8'));
   const payload = buildCrxAround(zipOfTree());
   const headerLength = payload.readUInt32LE(8);
@@ -232,16 +247,35 @@ test('the download page names every browser it supports and why one is not', () 
 
   const rows = [...html.matchAll(/<tr><td>(\w+)<\/td>((?:<td\b[^>]*class="\w+"[^>]*>[^<]*<\/td>){2,4})<\/tr>/g)];
   assert.ok(rows.length >= 6, `the table has a row per browser, found ${rows.length}`);
-  const cells = rows.map(([, name, body]) => [
+  const cells = rows.map(([
+    ,
     name,
-    ...[...body.matchAll(/<td\b[^>]*class="(\w+)"[^>]*>([^<]*)<\/td>/g)].map((m) => [m[1], m[2].trim()])
+    body
+  ]) => [
+    name,
+    ...[...body.matchAll(/<td\b[^>]*class="(\w+)"[^>]*>([^<]*)<\/td>/g)].map((m) => [
+      m[1],
+      m[2].trim()
+    ])
   ]);
   for (const [name, ...answers] of cells) {
     assert.ok(answers.length >= 2, `${name} answers every path the table names`);
   }
-  const archive = cells.map(([name, ...answers]) => [name, answers[answers.length - 1]]);
+  const archive = cells.map(([
+    name,
+    ...answers
+  ]) => [
+    name,
+    answers[answers.length - 1]
+  ]);
   const chromium = archive.filter(([name]) => name !== 'Firefox');
-  assert.ok(chromium.every(([, [, verdict]]) => verdict === 'berjalan'),
+  assert.ok(chromium.every(([
+    ,
+    [
+      ,
+      verdict
+    ]
+  ]) => verdict === 'berjalan'),
     'every Chromium browser loads the archive');
   assert.equal(archive.find(([name]) => name === 'Firefox')?.[1][1], 'tidak',
     'Firefox cannot load it, and the table says so rather than omitting it');
@@ -254,7 +288,6 @@ test('the install section links the download page instead of dead-ending', () =>
 });
 
 test('the archive the endpoint serves is not an empty placeholder', () => {
-
   const payload = buildCrxAround(zipOfTree());
   const archive = payload.subarray(12 + payload.readUInt32LE(8));
   assert.ok(archive.length > 1024, 'the payload is not an empty placeholder');
@@ -262,7 +295,6 @@ test('the archive the endpoint serves is not an empty placeholder', () => {
 });
 
 test('the archive carries the manifest key, so an unpacked install can update', () => {
-
   const manifest = JSON.parse(fs.readFileSync(new URL('extension/manifest.json', root), 'utf8'));
   const payload = buildCrxAround(zipOfTree());
   const archive = payload.subarray(12 + payload.readUInt32LE(8));

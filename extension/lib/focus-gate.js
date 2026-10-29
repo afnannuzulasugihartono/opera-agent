@@ -13,17 +13,38 @@
 export const FOCUS_GATE_ATTEMPTS = 3;
 export const FOCUS_GATE_SETTLE_MS = 100;
 
-export function focusSampleSatisfied(mode, sample) {
+export function focusSampleSatisfied(
+  mode,
+  sample
+) {
   if (mode !== 'foreground') return true;
   return sample?.tabActive === true && sample?.windowFocused === true;
 }
 
-export function decideFocusGate({ mode, sample, attempt = 1, maxAttempts = FOCUS_GATE_ATTEMPTS } = {}) {
+export function decideFocusGate({
+  mode,
+  sample,
+  attempt = 1,
+  maxAttempts = FOCUS_GATE_ATTEMPTS
+} = {}) {
   const at = Math.max(1, Math.floor(Number(attempt) || 1));
   const max = Math.max(1, Math.floor(Number(maxAttempts) || FOCUS_GATE_ATTEMPTS));
   if (focusSampleSatisfied(mode, sample)) {
-    return { outcome: 'dispatch', attempt: at, recovered: at > 1, sample };
+    return {
+      outcome: 'dispatch',
+      attempt: at,
+      recovered: at > 1,
+      sample
+    };
   }
-  if (at >= max) return { outcome: 'refuse', attempt: at, sample };
-  return { outcome: 'retry', attempt: at, sample };
+  if (at >= max) return {
+    outcome: 'refuse',
+    attempt: at,
+    sample
+  };
+  return {
+    outcome: 'retry',
+    attempt: at,
+    sample
+  };
 }

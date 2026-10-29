@@ -23,13 +23,19 @@ function fakeChild() {
       }
     },
     stdout: {
-      on: (event, fn) => {
+      on: (
+        event,
+        fn
+      ) => {
         listeners[event] = listeners[event] ?? [];
         listeners[event].push(fn);
       },
       setEncoding: () => {}
     },
-    on: (event, fn) => {
+    on: (
+      event,
+      fn
+    ) => {
       listeners[event] = listeners[event] ?? [];
       listeners[event].push(fn);
     },
@@ -51,7 +57,10 @@ function fakePipe() {
   const listeners = {};
   const pipe = {
     written: [],
-    on: (event, fn) => {
+    on: (
+      event,
+      fn
+    ) => {
       listeners[event] = listeners[event] ?? [];
       listeners[event].push(fn);
     },
@@ -90,7 +99,15 @@ function harness(options = {}) {
     ...options
   });
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-  return { children, input, output, logs, fireWatch: () => fireWatch(), server, sleep };
+  return {
+    children,
+    input,
+    output,
+    logs,
+    fireWatch: () => fireWatch(),
+    server,
+    sleep
+  };
 }
 
 const frame = (object) => `${JSON.stringify(object)}\n`;
@@ -98,8 +115,17 @@ const bodies = (pipe) => pipe.written.join('').split('\n').filter((line) => line
 
 test('a round trip crosses the proxy untouched in both directions', async () => {
   const h = harness();
-  const call = { jsonrpc: '2.0', id: 1, method: 'tools/call', params: { name: 'list_tabs' } };
-  const answer = { jsonrpc: '2.0', id: 1, result: [] };
+  const call = {
+    jsonrpc: '2.0',
+    id: 1,
+    method: 'tools/call',
+    params: { name: 'list_tabs' }
+  };
+  const answer = {
+    jsonrpc: '2.0',
+    id: 1,
+    result: []
+  };
 
   h.input.emit(frame(call));
   assert.deepEqual(bodies({ written: h.children[0].written })[0], call);
@@ -110,16 +136,29 @@ test('a round trip crosses the proxy untouched in both directions', async () => 
 
 test('a reload replays the handshake to the new worker and swallows its answer', async () => {
   const h = harness();
-  const init = { jsonrpc: '2.0', id: 0, method: 'initialize', params: {} };
+  const init = {
+    jsonrpc: '2.0',
+    id: 0,
+    method: 'initialize',
+    params: {}
+  };
   h.input.emit(frame(init));
-  h.children[0].emitStdout(frame({ jsonrpc: '2.0', id: 0, result: { ok: true } }));
+  h.children[0].emitStdout(frame({
+    jsonrpc: '2.0',
+    id: 0,
+    result: { ok: true }
+  }));
 
   h.fireWatch();
   await h.sleep(80);
 
   assert.equal(h.children.length, 2, 'the old worker is replaced');
   assert.deepEqual(bodies({ written: h.children[1].written })[0], init, 'the new worker is shaken hands');
-  h.children[1].emitStdout(frame({ jsonrpc: '2.0', id: 0, result: { ok: true } }));
+  h.children[1].emitStdout(frame({
+    jsonrpc: '2.0',
+    id: 0,
+    result: { ok: true }
+  }));
   const seen = bodies(h.output);
   assert.equal(seen.filter((line) => line.id === 0).length, 1, 'the client sees the first hello once, never a second');
   assert.ok(seen.some((line) => line.method === 'notifications/tools/list_changed'),
@@ -130,11 +169,26 @@ test('a reload replays the handshake to the new worker and swallows its answer',
 
 test('calls placed mid-swap queue in order and the stranded fail by name', async () => {
   const h = harness();
-  h.input.emit(frame({ jsonrpc: '2.0', id: 0, method: 'initialize', params: {} }));
-  h.input.emit(frame({ jsonrpc: '2.0', id: 9, method: 'tools/call', params: {} }));
+  h.input.emit(frame({
+    jsonrpc: '2.0',
+    id: 0,
+    method: 'initialize',
+    params: {}
+  }));
+  h.input.emit(frame({
+    jsonrpc: '2.0',
+    id: 9,
+    method: 'tools/call',
+    params: {}
+  }));
   h.fireWatch();
   await h.sleep(25);
-  h.input.emit(frame({ jsonrpc: '2.0', id: 10, method: 'tools/call', params: {} }));
+  h.input.emit(frame({
+    jsonrpc: '2.0',
+    id: 10,
+    method: 'tools/call',
+    params: {}
+  }));
   await h.sleep(120);
 
   const out = bodies(h.output);
@@ -142,7 +196,10 @@ test('calls placed mid-swap queue in order and the stranded fail by name', async
   assert.equal(failed.error.code, -32000);
   assert.match(failed.error.message, /reloaded, retry/);
   const replayed = bodies({ written: h.children[1].written });
-  assert.deepEqual(replayed.map((message) => message.id ?? message.method), [0, 10], 'handshake first, then the queued call');
+  assert.deepEqual(replayed.map((message) => message.id ?? message.method), [
+    0,
+    10
+  ], 'handshake first, then the queued call');
   await h.server.stop();
 });
 
@@ -159,8 +216,18 @@ test('garbage forwards blind in both directions instead of breaking the pipe', a
 
 test('an unexpected death fails the in-flight by name and rebuilds', async () => {
   const h = harness();
-  h.input.emit(frame({ jsonrpc: '2.0', id: 0, method: 'initialize', params: {} }));
-  h.input.emit(frame({ jsonrpc: '2.0', id: 11, method: 'tools/call', params: {} }));
+  h.input.emit(frame({
+    jsonrpc: '2.0',
+    id: 0,
+    method: 'initialize',
+    params: {}
+  }));
+  h.input.emit(frame({
+    jsonrpc: '2.0',
+    id: 11,
+    method: 'tools/call',
+    params: {}
+  }));
   h.children[0].exit(1);
   await h.sleep(20);
 
@@ -179,7 +246,12 @@ test('a worker that keeps dying names itself on every call and a save rebuilds i
   let at = 0;
   const h = harness({ now: () => at });
 
-  h.input.emit(frame({ jsonrpc: '2.0', id: 0, method: 'initialize', params: {} }));
+  h.input.emit(frame({
+    jsonrpc: '2.0',
+    id: 0,
+    method: 'initialize',
+    params: {}
+  }));
   for (let round = 0; round < 4; round++) {
     h.children.at(-1).exit(1);
     at += 1000;
@@ -187,7 +259,12 @@ test('a worker that keeps dying names itself on every call and a save rebuilds i
   }
 
   assert.equal(h.children.length, 4, 'three rebuilds, then it stops spending processes');
-  h.input.emit(frame({ jsonrpc: '2.0', id: 7, method: 'tools/call', params: { name: 'list_tabs' } }));
+  h.input.emit(frame({
+    jsonrpc: '2.0',
+    id: 7,
+    method: 'tools/call',
+    params: { name: 'list_tabs' }
+  }));
   const answered = bodies(h.output).filter((line) => line.id === 7);
   assert.equal(answered.length, 1, 'the client still gets an answer');
   assert.match(answered[0].error?.message ?? '', /keeps dying/);
@@ -197,7 +274,12 @@ test('a worker that keeps dying names itself on every call and a save rebuilds i
   h.fireWatch();
   await h.sleep(80);
   assert.equal(h.children.length, 5, 'saving the fix rebuilds the worker');
-  h.input.emit(frame({ jsonrpc: '2.0', id: 8, method: 'tools/call', params: { name: 'list_tabs' } }));
+  h.input.emit(frame({
+    jsonrpc: '2.0',
+    id: 8,
+    method: 'tools/call',
+    params: { name: 'list_tabs' }
+  }));
   assert.equal(bodies({ written: h.children[4].written }).some((line) => line.id === 8), true,
     'and the tools work again without a toggle');
   at += 31000;

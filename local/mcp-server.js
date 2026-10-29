@@ -28,18 +28,36 @@ const PROTOCOL_VERSION = '2024-11-05';
 // For the same reason the statement, report and document calls answer before a tab is resolved inside run(): opening a session would touch a browser the job does not need.
 
 import { randomUUID } from 'node:crypto';
-import { statementCard, statementDelivered } from './statements.js';
+import {
+  statementCard,
+  statementDelivered
+} from './statements.js';
 import { reportFromFile } from './reports.js';
 import { documentFromFile } from './documents.js';
-import { BURST_INPUT_ACTIONS, normalizeBurst, runLocalBurst } from './burst.js';
-import { leaseTab, releaseTab } from './bridge.js';
-import { TOOLS, ASKABLE, askParams, STRAY_FILE_TAB } from './tools.js';
+import {
+  BURST_INPUT_ACTIONS,
+  normalizeBurst,
+  runLocalBurst
+} from './burst.js';
+import {
+  leaseTab,
+  releaseTab
+} from './bridge.js';
+import {
+  TOOLS,
+  ASKABLE,
+  askParams,
+  STRAY_FILE_TAB
+} from './tools.js';
 
 // The tool table lives in tools.js: the surface is data, and this file is the protocol that answers it.
 
 export { TOOLS };
 
-function requireArguments(args, required) {
+function requireArguments(
+  args,
+  required
+) {
   for (const name of required) {
     if (args?.[name] === undefined || args?.[name] === null || args?.[name] === '') {
       throw new Error(`${name} is required`);
@@ -50,7 +68,10 @@ function requireArguments(args, required) {
 // A browser that closed mid-call must not take the server with it, because the next tool call is still worth trying.
 
 function asText(value) {
-  return { content: [{ type: 'text', text: typeof value === 'string' ? value : JSON.stringify(value, null, 1) }] };
+  return { content: [{
+    type: 'text',
+    text: typeof value === 'string' ? value : JSON.stringify(value, null, 1)
+  }] };
 }
 
 // WHY THE AUTO PAGE IS A STATE LINE AND NOT THE ROWS.
@@ -91,7 +112,10 @@ const SETTLE_FALLBACK_MS = 120;
 // Node waits 8ms, asks how quiet the page has been, and stops after 32ms of quiet or 120ms total, so a background tab cannot turn the settle into a multi-second stall.
 // Settling is still part of seeing, but it is measured instead of assumed.
 
-function diffElements(prev, curr) {
+function diffElements(
+  prev,
+  curr
+) {
   const key = (r) => `${r.role}|${r.name}|${r.x}|${r.y}`;
   const name = (r) => `${r.role}|${r.name}`;
   const prevExact = new Set(prev.map(key));
@@ -101,12 +125,27 @@ function diffElements(prev, curr) {
   const addedAll = curr.filter((r) => !prevExact.has(key(r)) && !prevNames.has(name(r)));
   const movedAll = curr.filter((r) => !prevExact.has(key(r)) && prevNames.has(name(r)));
   const removed = prev.filter((r) => !currExact.has(key(r)) && !currNames.has(name(r))).length;
-  if (prev.length === 0) return { added: curr.slice(0, 20), moved: [], removed: 0, reshaped: false };
+  if (prev.length === 0) return {
+    added: curr.slice(0, 20),
+    moved: [],
+    removed: 0,
+    reshaped: false
+  };
   const total = Math.max(prev.length, curr.length);
   if ((addedAll.length + removed) / total > 0.5) {
-    return { added: [], moved: [], removed, reshaped: true };
+    return {
+      added: [],
+      moved: [],
+      removed,
+      reshaped: true
+    };
   }
-  return { added: addedAll.slice(0, 20), moved: movedAll.slice(0, 20), removed, reshaped: false };
+  return {
+    added: addedAll.slice(0, 20),
+    moved: movedAll.slice(0, 20),
+    removed,
+    reshaped: false
+  };
 }
 
 import { withAdvice } from './advice.js';
@@ -139,17 +178,27 @@ let lastSeen = [];
 // A wait that is asked for in milliseconds and a wait that is asked for in hours both have to come back: an agent that asks for a minute and waits ten is not measuring the page, it is measuring its own typing.
 // Bounds keep a wait a wait.
 
-const budgetOf = (value, fallback) => {
+const budgetOf = (
+  value,
+  fallback
+) => {
   const asked = Number(value ?? fallback);
   return Number.isFinite(asked) ? Math.min(30000, Math.max(500, asked)) : fallback;
 };
 
-const gapOf = (value, fallback, min = 100) => {
+const gapOf = (
+  value,
+  fallback,
+  min = 100
+) => {
   const asked = Number(value ?? fallback);
   return Number.isFinite(asked) ? Math.min(5000, Math.max(min, asked)) : fallback;
 };
 
-const quietOf = (value, fallback) => {
+const quietOf = (
+  value,
+  fallback
+) => {
   const asked = Number(value ?? fallback);
   return Number.isFinite(asked) ? Math.min(5000, Math.max(50, asked)) : fallback;
 };
@@ -168,7 +217,11 @@ const settleForLook = async (driver) => {
 // A wait or a chord-only stream has already watched the page go quiet, so settling again before the snapshot is the same 32ms paid twice.
 // The action's own verdict is the evidence; the page look trusts it.
 
-const afterAction = async (driver, action, limit) => {
+const afterAction = async (
+  driver,
+  action,
+  limit
+) => {
   if (!action?.settled) await settleForLook(driver);
   const seen = await driver.snapshot(limit ?? AUTO_PAGE_LIMIT);
   const state = typeof driver.pageState === 'function'
@@ -214,7 +267,11 @@ const afterAction = async (driver, action, limit) => {
 // Nothing in the bridge says which browser a tab belongs to, but the window in front carries the title of the page in it, and the tabs we drive carry their titles too.
 // The one case this cannot tell is two windows showing the same page title, and it answers that with what it knows - the browser in front - rather than a yes it cannot back.
 
-const windowTruth = (window, browsers, tabs = []) => {
+const windowTruth = (
+  window,
+  browsers,
+  tabs = []
+) => {
   const foreground = String(window?.foreground ?? '');
   const lower = foreground.toLowerCase();
   const browser = browsers.find((entry) => lower.endsWith(`- ${String(entry.name).toLowerCase()}`))?.name ?? '';
@@ -225,7 +282,9 @@ const windowTruth = (window, browsers, tabs = []) => {
     title: ours ? foreground : '',
     why: window?.why || (foreground === ''
       ? 'the machine did not say which window is in front'
-      : ours ? '' : `${browser || 'another window'} is in front${browser ? `, and this tab is not in ${browser}` : ''}`)
+      : ours ? '' : `${browser || 'another window'} is in front${browser ? `, and this tab is not in ${
+        browser
+      }` : ''}`)
   };
 };
 
@@ -269,7 +328,18 @@ const livePort = (context) => (typeof context.port === 'function' ? context.port
 // Measured live on this product's own author: an agent that copies an eight-digit id wrong is told "No page target", and the number is the one thing it cannot check - it cannot read a digit back off a screenshot, but it can read a title.
 // So a tabId that is not a number is looked for by title or address, and a name that fits two tabs is refused with both of them, because picking one and saying nothing is how a drive ends up typing into the wrong document.
 
-const INPUT_TOOLS = new Set(['click', 'click_row', 'hover', 'type', 'stream_keys', 'press_key', 'upload', 'drop_file', 'open_menu', 'download']);
+const INPUT_TOOLS = new Set([
+  'click',
+  'click_row',
+  'hover',
+  'type',
+  'stream_keys',
+  'press_key',
+  'upload',
+  'drop_file',
+  'open_menu',
+  'download'
+]);
 
 // WHY THE OWNER IS A LABEL AND A NUMBER.
 // The label is what a refusal reads back to an agent that can go and drive another tab, and the number keeps two agents that share a label from sharing one claim.
@@ -285,7 +355,10 @@ const leaseWindow = () => {
   return Number.isFinite(ttl) && ttl > 0 ? ttl : undefined;
 };
 
-const bridgeLease = { claim: leaseTab, release: releaseTab };
+const bridgeLease = {
+  claim: leaseTab,
+  release: releaseTab
+};
 
 export function createMcpServer(context) {
   const sessions = new Map();
@@ -312,7 +385,10 @@ export function createMcpServer(context) {
       throw new Error(`No page target ${tabId}. Open pages: ${known.join(' | ')}`);
     }
     if (!sessions.has(tabId)) {
-      sessions.set(tabId, await context.open({ ...(context.sessionOptions ?? {}), targetId: tabId }));
+      sessions.set(tabId, await context.open({
+        ...(context.sessionOptions ?? {}),
+        targetId: tabId
+      }));
     }
     return sessions.get(tabId);
   };
@@ -325,7 +401,11 @@ const namedTab = async (wanted) => {
     || String(page.url ?? '').toLowerCase().includes(text));
   if (hits.length === 1) return hits[0];
   if (hits.length > 1) {
-    throw new Error(`"${wanted}" is ${hits.length} tabs: ${hits.map((page) => `${page.id} ${page.title}`).join(' | ')}. Name it more closely, or use its id.`);
+    throw new Error(`"${wanted}" is ${hits.length} tabs: ${hits.map((page) => `${
+      page.id
+    } ${
+      page.title
+    }`).join(' | ')}. Name it more closely, or use its id.`);
   }
   return null;
 };
@@ -335,10 +415,18 @@ const resolvedTab = async (tabId) => {
   const asText_ = String(tabId);
   const pages = await fallback.tabs().catch(() => []);
   const exact = pages.find((page) => String(page.id) === asText_);
-  if (exact) return { id: asText_, title: String(exact.title ?? ''), named: false };
+  if (exact) return {
+    id: asText_,
+    title: String(exact.title ?? ''),
+    named: false
+  };
   if (/^\d+$/.test(asText_)) return null;
   const hit = await namedTab(asText_);
-  return hit ? { id: String(hit.id), title: String(hit.title ?? ''), named: true } : null;
+  return hit ? {
+    id: String(hit.id),
+    title: String(hit.title ?? ''),
+    named: true
+  } : null;
 };
 
 // WHY THE WINDOW MATCH HAS TO BE TEXT.
@@ -350,9 +438,15 @@ const pageTitle = async (driver) => {
   return String(state?.title ?? '');
 };
 
-const windowMatch = async (tab, driver) => (tab ? String(tab.title ?? '') : pageTitle(driver));
+const windowMatch = async (
+  tab,
+  driver
+) => (tab ? String(tab.title ?? '') : pageTitle(driver));
 
-  const run = async (name, args) => {
+  const run = async (
+    name,
+    args
+  ) => {
     requireArguments(args, TOOLS.find((t) => t.name === name)?.inputSchema.required ?? []);
 
     // The burst is checked before a tab is resolved, so a malformed step list cannot touch a browser, and a caller learns which step was wrong before any page is changed.
@@ -437,7 +531,10 @@ const windowMatch = async (tab, driver) => (tab ? String(tab.title ?? '') : page
         return asText(await driver.tabs());
       case 'open_url':
         return afterAction(driver, tab
-          ? { navigated: await driver.navigate(args.url), tab: args.tabId }
+          ? {
+            navigated: await driver.navigate(args.url),
+            tab: args.tabId
+          }
           : await driver.open(args.url));
       case 'close_tab': {
         const out = await driver.close(args.tabId);
@@ -469,7 +566,11 @@ const windowMatch = async (tab, driver) => (tab ? String(tab.title ?? '') : page
       case 'append':
         return afterAction(driver, await driver.append(args.text));
       case 'get_computed':
-        return asText(await driver.computed({ x: args.x, y: args.y, selector: args.selector }));
+        return asText(await driver.computed({
+          x: args.x,
+          y: args.y,
+          selector: args.selector
+        }));
       case 'scroll':
         return afterAction(driver, await driver.scroll({
           y: args.y,
@@ -491,15 +592,24 @@ const windowMatch = async (tab, driver) => (tab ? String(tab.title ?? '') : page
         const timeoutMs = Number.isFinite(rawTimeout) ? Math.min(30000, Math.max(500, rawTimeout)) : 8000;
         const rawGap = Number(args.intervalMs ?? 100);
         const intervalMs = Number.isFinite(rawGap) ? Math.min(5000, Math.max(50, rawGap)) : 100;
-        const state = await driver.waitForText(args.text, { timeoutMs, intervalMs });
-        return afterAction(driver, { found: (state.text || '').includes(args.text), ms: Date.now() - started });
+        const state = await driver.waitForText(args.text, {
+          timeoutMs,
+          intervalMs
+        });
+        return afterAction(driver, {
+          found: (state.text || '').includes(args.text),
+          ms: Date.now() - started
+        });
       }
       case 'ask_page': {
         const method = String(args.method ?? '');
         if (!ASKABLE.includes(method)) {
           throw new Error(`ask_page is read-only. Allowed: ${ASKABLE.join(', ')}. Asked for: ${method || '(none)'}`);
         }
-        return asText({ method, result: await driver.ask(method, askParams(args)) });
+        return asText({
+          method,
+          result: await driver.ask(method, askParams(args))
+        });
       }
       case 'wait_for_row':
         return afterAction(driver, await driver.waitForRow({
@@ -532,7 +642,11 @@ const windowMatch = async (tab, driver) => (tab ? String(tab.title ?? '') : page
       case 'caret_line':
         return asText(await driver.caretLine());
       case 'upload': {
-        const uploaded = await driver.upload({ filename: args.filename, data: args.data ?? null, path: args.path ?? null });
+        const uploaded = await driver.upload({
+          filename: args.filename,
+          data: args.data ?? null,
+          path: args.path ?? null
+        });
         if (uploaded && uploaded.inputFound === false) {
           throw new Error(`upload: inputFound: false - ${args.filename} went nowhere: the page has no file input to fill`);
         }
@@ -554,7 +668,10 @@ const windowMatch = async (tab, driver) => (tab ? String(tab.title ?? '') : page
           openedInstead = true;
           await fallback.close(String(tab.id)).catch(() => null);
         }
-        return afterAction(driver, { ...dropped, openedInstead });
+        return afterAction(driver, {
+          ...dropped,
+          openedInstead
+        });
       }
       case 'intercept_file_chooser':
         return asText(await driver.interceptFileChooser(args.enabled === true));
@@ -573,8 +690,20 @@ const windowMatch = async (tab, driver) => (tab ? String(tab.title ?? '') : page
         const shot = await driver.captureSized(args.fullPage === true ? { fullPage: true } : {});
         return {
           content: [
-            { type: 'image', data: shot.data, mimeType: 'image/jpeg' },
-            { type: 'text', text: JSON.stringify({ viewport: shot.viewport, dpr: shot.dpr, image: shot.image, note: shot.note }) }
+            {
+              type: 'image',
+              data: shot.data,
+              mimeType: 'image/jpeg'
+            },
+            {
+              type: 'text',
+              text: JSON.stringify({
+                viewport: shot.viewport,
+                dpr: shot.dpr,
+                image: shot.image,
+                note: shot.note
+              })
+            }
           ]
         };
       }
@@ -589,23 +718,44 @@ const windowMatch = async (tab, driver) => (tab ? String(tab.title ?? '') : page
       sessions.clear();
     },
     async handle(request) {
-      const { id, method, params } = request ?? {};
-      const reply = (result) => ({ jsonrpc: '2.0', id, result });
-      const fail = (message) => ({ jsonrpc: '2.0', id, error: { code: -32000, message } });
+      const {
+        id,
+        method,
+        params
+      } = request ?? {};
+      const reply = (result) => ({
+        jsonrpc: '2.0',
+        id,
+        result
+      });
+      const fail = (message) => ({
+        jsonrpc: '2.0',
+        id,
+        error: {
+          code: -32000,
+          message
+        }
+      });
 
       try {
         if (method === 'initialize') {
           return reply({
             protocolVersion: PROTOCOL_VERSION,
             capabilities: { tools: {} },
-            serverInfo: { name: 'opera-local', version: context.version ?? '0.0.0' }
+            serverInfo: {
+              name: 'opera-local',
+              version: context.version ?? '0.0.0'
+            }
           });
         }
         if (method === 'tools/list') return reply({ tools: TOOLS });
         if (method === 'tools/call') {
           const started = Date.now();
           const out = await run(params?.name, params?.arguments ?? {});
-          out.content.push({ type: 'text', text: `${Date.now() - started} ms` });
+          out.content.push({
+            type: 'text',
+            text: `${Date.now() - started} ms`
+          });
           return reply(out);
         }
 
@@ -626,7 +776,11 @@ const windowMatch = async (tab, driver) => (tab ? String(tab.title ?? '') : page
 // SonarCloud caught that on this file and it was right: the handler is not decoration.
 // The void then says the reply is deliberately not awaited, because an event loop has nothing else to wait for.
 
-export function startStdio({ input = process.stdin, output = process.stdout, context }) {
+export function startStdio({
+  input = process.stdin,
+  output = process.stdout,
+  context
+}) {
   const server = createMcpServer(context);
   let buffer = '';
 
@@ -647,7 +801,14 @@ export function startStdio({ input = process.stdin, output = process.stdout, con
         continue;
       }
       void Promise.resolve(server.handle(request))
-        .catch((error) => ({ jsonrpc: '2.0', id: request.id ?? null, error: { code: -32603, message: error.message } }))
+        .catch((error) => ({
+          jsonrpc: '2.0',
+          id: request.id ?? null,
+          error: {
+            code: -32603,
+            message: error.message
+          }
+        }))
         .then((response) => {
           if (response) output.write(`${JSON.stringify(response)}\n`);
         });

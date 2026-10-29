@@ -9,18 +9,30 @@ import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
-const RUNTIME_DIRS = ['extension', 'lib', 'supabase/functions'];
+const RUNTIME_DIRS = [
+  'extension',
+  'lib',
+  'supabase/functions'
+];
 const RUNTIME_EXT = /\.(js|ts)$/;
 const LARGE_FILE_LINES = 500;
 const CHARS_PER_TOKEN = 4;
 
-function readFlag(args, name, fallback) {
+function readFlag(
+  args,
+  name,
+  fallback
+) {
   const index = args.indexOf(name);
   return index >= 0 && args[index + 1] !== undefined ? args[index + 1] : fallback;
 }
 
 function runtimeFiles() {
-  const listed = execFileSync('git', ['ls-files', ...RUNTIME_DIRS.map((d) => `${d}/**/*.js`), ...RUNTIME_DIRS.map((d) => `${d}/**/*.ts`)], {
+  const listed = execFileSync('git', [
+    'ls-files',
+    ...RUNTIME_DIRS.map((d) => `${d}/**/*.js`),
+    ...RUNTIME_DIRS.map((d) => `${d}/**/*.ts`)
+  ], {
     cwd: root,
     encoding: 'utf8',
   });
@@ -31,16 +43,29 @@ function terms(task) {
   return task
     .toLowerCase()
     .split(/[^a-z0-9_.]+/)
-    .filter((t) => t.length > 2 && !['the', 'and', 'for', 'with', 'that', 'this'].includes(t));
+    .filter((t) => t.length > 2 && ![
+      'the',
+      'and',
+      'for',
+      'with',
+      'that',
+      'this'
+    ].includes(t));
 }
 
 function measure(relativePath) {
   const text = fs.readFileSync(path.join(root, relativePath), 'utf8');
   const lines = text.split('\n').length;
-  return { lines, tokens: Math.round(text.length / CHARS_PER_TOKEN) };
+  return {
+    lines,
+    tokens: Math.round(text.length / CHARS_PER_TOKEN)
+  };
 }
 
-function score(text, words) {
+function score(
+  text,
+  words
+) {
   const haystack = text.toLowerCase();
   let total = 0;
   for (const word of words) {
@@ -75,41 +100,63 @@ function run(argv) {
   }
 
   const task = argv
-    .filter((item, index) => !item.startsWith('--') && !(limitIndex >= 0 && index === limitIndex + 1))
+    .filter((
+      item,
+      index
+    ) => !item.startsWith('--') && !(limitIndex >= 0 && index === limitIndex + 1))
     .join(' ');
   const words = terms(task);
 
   const all = runtimeFiles();
   const whole = all.map((f) => measure(f));
-  const runtimeTokens = whole.reduce((sum, m) => sum + m.tokens, 0);
+  const runtimeTokens = whole.reduce((
+    sum,
+    m
+  ) => sum + m.tokens, 0);
 
-  const tracked = execFileSync('git', ['ls-files'], { cwd: root, encoding: 'utf8' })
+  const tracked = execFileSync('git', ['ls-files'], {
+    cwd: root,
+    encoding: 'utf8'
+  })
     .split('\n')
     .filter(Boolean);
   let wholeRepoTokens = 0;
   for (const f of tracked) {
     try {
       wholeRepoTokens += measure(f).tokens;
-    } catch {
-
-    }
+    } catch {}
   }
 
   const ranked = all
     .map((file) => {
       const text = fs.readFileSync(path.join(root, file), 'utf8');
-      const { lines, tokens } = measure(file);
-      return { path: file, lines, tokens, matches: score(text, words), readWhole: lines <= LARGE_FILE_LINES };
+      const {
+        lines,
+        tokens
+      } = measure(file);
+      return {
+        path: file,
+        lines,
+        tokens,
+        matches: score(text, words),
+        readWhole: lines <= LARGE_FILE_LINES
+      };
     })
     .filter((f) => f.matches > 0)
-    .sort((a, b) => b.matches - a.matches || a.tokens - b.tokens)
+    .sort((
+      a,
+      b
+    ) => b.matches - a.matches || a.tokens - b.tokens)
     .slice(0, limit)
     .map((f) => ({
       ...f,
       hint: f.lines > LARGE_FILE_LINES ? `grep -n '<term>' ${f.path} — then read with offset/limit` : ''
     }));
 
-  const totalTokens = ranked.reduce((sum, f) => sum + f.tokens, 0);
+  const totalTokens = ranked.reduce((
+    sum,
+    f
+  ) => sum + f.tokens, 0);
   const result = {
     task,
     terms: words,
@@ -134,7 +181,9 @@ function run(argv) {
     `whole repo: ${tracked.length} tracked files, ${wholeRepoTokens} tokens (${result.savedRatio}% of it saved)`
   ];
   for (const f of ranked) {
-    lines.push(`  ${f.matches.toString().padStart(4)}  ${String(f.lines).padStart(5)}L  ${String(f.tokens).padStart(6)}tok  ${f.path}${f.hint ? `  <- ${f.hint}` : ''}`);
+    lines.push(`  ${f.matches.toString().padStart(4)}  ${String(f.lines).padStart(5)}L  ${String(f.tokens).padStart(6)}tok  ${f.path}${f.hint ? `  <- ${
+      f.hint
+    }` : ''}`);
   }
   if (!ranked.length) lines.push('  (no matches — narrow the task or read the area AGENTS.md)');
   process.stdout.write(`${lines.join('\n')}\n`);

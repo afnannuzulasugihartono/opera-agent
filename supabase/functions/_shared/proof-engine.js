@@ -23,14 +23,34 @@ const UTC_TIMESTAMP = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?Z$/;
 const SECRET_FIELD = /(?:password|passcode|otp|secret|credential|private.?key|access.?token|refresh.?token|card.?number|cvv)/i;
 
 const EVIDENCE_FIELDS = new Set([
-  'schemaVersion', 'evidenceId', 'category', 'tenantId', 'goalId', 'goalRevision',
-  'ledgerDigest', 'claimId', 'scopeId', 'observedAt', 'trust', 'predicate',
-  'supports', 'exhaustive', 'dependencies', 'evidenceDigest',
+  'schemaVersion',
+  'evidenceId',
+  'category',
+  'tenantId',
+  'goalId',
+  'goalRevision',
+  'ledgerDigest',
+  'claimId',
+  'scopeId',
+  'observedAt',
+  'trust',
+  'predicate',
+  'supports',
+  'exhaustive',
+  'dependencies',
+  'evidenceDigest',
 ]);
-const DEPENDENCY_FIELDS = new Set(['evidenceId', 'evidenceDigest']);
+const DEPENDENCY_FIELDS = new Set([
+  'evidenceId',
+  'evidenceDigest'
+]);
 const EVIDENCE_CATEGORIES = new Set([
-  'USER_ASSERTION', 'USER_AUTHORIZATION', 'DIRECT_OBSERVATION',
-  'DERIVED_OBSERVATION', 'ACTION_RECEIPT', 'BOUNDARY_OBSERVATION',
+  'USER_ASSERTION',
+  'USER_AUTHORIZATION',
+  'DIRECT_OBSERVATION',
+  'DERIVED_OBSERVATION',
+  'ACTION_RECEIPT',
+  'BOUNDARY_OBSERVATION',
   'EXTERNAL_ATTESTATION',
 ]);
 const EXPECTED_TRUST = Object.freeze({
@@ -45,7 +65,11 @@ const EXPECTED_TRUST = Object.freeze({
 const VALIDATED_EVIDENCE = Symbol('validatedEvidenceDigest');
 
 class ProofError extends Error {
-  constructor(code, message, details = undefined) {
+  constructor(
+    code,
+    message,
+    details = undefined
+  ) {
     super(message);
     this.name = 'ProofError';
     this.code = code;
@@ -53,7 +77,11 @@ class ProofError extends Error {
   }
 }
 
-function fail(code, message, details) {
+function fail(
+  code,
+  message,
+  details
+) {
   throw new ProofError(code, message, details);
 }
 
@@ -63,7 +91,11 @@ function isPlainObject(value) {
   return prototype === Object.prototype || prototype === null;
 }
 
-function allowedFields(value, fields, path) {
+function allowedFields(
+  value,
+  fields,
+  path
+) {
   if (!isPlainObject(value)) fail('INVALID_TYPE', `${path} must be a plain object.`);
   for (const key of Object.keys(value)) {
     if (SECRET_FIELD.test(key)) fail('SECRET_LIKE_VALUE', `${path}.${key} is forbidden.`);
@@ -71,7 +103,14 @@ function allowedFields(value, fields, path) {
   }
 }
 
-function stringValue(value, path, { maxBytes = 256, pattern } = {}) {
+function stringValue(
+  value,
+  path,
+  {
+    maxBytes = 256,
+    pattern
+  } = {}
+) {
   if (typeof value !== 'string') fail('INVALID_TYPE', `${path} must be a string.`);
   const normalized = value.normalize('NFC');
   if (!normalized || new TextEncoder().encode(normalized).length > maxBytes) fail('OVER_LIMIT', `${path} exceeds its bounds.`);
@@ -80,25 +119,48 @@ function stringValue(value, path, { maxBytes = 256, pattern } = {}) {
   return normalized;
 }
 
-function idValue(value, path) {
-  return stringValue(value, path, { maxBytes: 128, pattern: ID_PATTERN });
+function idValue(
+  value,
+  path
+) {
+  return stringValue(value, path, {
+    maxBytes: 128,
+    pattern: ID_PATTERN
+  });
 }
 
-function timestampValue(value, path) {
-  const normalized = stringValue(value, path, { maxBytes: 32, pattern: UTC_TIMESTAMP });
+function timestampValue(
+  value,
+  path
+) {
+  const normalized = stringValue(value, path, {
+    maxBytes: 32,
+    pattern: UTC_TIMESTAMP
+  });
   if (!Number.isFinite(Date.parse(normalized))) fail('INVALID_VALUE', `${path} is not a valid UTC timestamp.`);
   return normalized;
 }
 
-function digestValue(value, path) {
+function digestValue(
+  value,
+  path
+) {
   if (typeof value !== 'string' || !SHA256_HEX.test(value)) fail('INVALID_DIGEST', `${path} is invalid.`);
   return value;
 }
 
-function arrayValue(value, path, maximum, mapper) {
+function arrayValue(
+  value,
+  path,
+  maximum,
+  mapper
+) {
   if (!Array.isArray(value)) fail('INVALID_TYPE', `${path} must be an array.`);
   if (value.length > maximum) fail('OVER_LIMIT', `${path} exceeds its item limit.`);
-  return value.map((item, index) => mapper(item, `${path}[${index}]`));
+  return value.map((
+    item,
+    index
+  ) => mapper(item, `${path}[${index}]`));
 }
 
 function deepFreeze(value) {
@@ -117,7 +179,10 @@ function freezeEvidence(value) {
   return deepFreeze(value);
 }
 
-function normalizeDependency(value, path) {
+function normalizeDependency(
+  value,
+  path
+) {
   allowedFields(value, DEPENDENCY_FIELDS, path);
   return {
     evidenceId: idValue(value.evidenceId, `${path}.evidenceId`),
@@ -128,9 +193,15 @@ function normalizeDependency(value, path) {
 function normalizeEvidence(input) {
   allowedFields(input, EVIDENCE_FIELDS, 'evidence');
   if (input.schemaVersion !== SCHEMA_VERSION) fail('INVALID_VALUE', 'evidence.schemaVersion is unsupported.');
-  const category = stringValue(input.category, 'evidence.category', { maxBytes: 64, pattern: SYMBOL_PATTERN });
+  const category = stringValue(input.category, 'evidence.category', {
+    maxBytes: 64,
+    pattern: SYMBOL_PATTERN
+  });
   if (!EVIDENCE_CATEGORIES.has(category)) fail('INVALID_VALUE', 'evidence.category is unsupported.');
-  const trust = stringValue(input.trust, 'evidence.trust', { maxBytes: 64, pattern: SYMBOL_PATTERN });
+  const trust = stringValue(input.trust, 'evidence.trust', {
+    maxBytes: 64,
+    pattern: SYMBOL_PATTERN
+  });
   if (trust !== EXPECTED_TRUST[category]) fail('UNTRUSTED_EVIDENCE', 'Evidence trust does not match its category.');
   if (!Number.isSafeInteger(input.goalRevision) || input.goalRevision < 1 || input.goalRevision > LEDGER_LIMITS.maximumRevision) {
     fail('INVALID_VALUE', 'evidence.goalRevision is invalid.');
@@ -155,7 +226,10 @@ function normalizeEvidence(input) {
     scopeId: idValue(input.scopeId, 'evidence.scopeId'),
     observedAt: timestampValue(input.observedAt, 'evidence.observedAt'),
     trust,
-    predicate: stringValue(input.predicate, 'evidence.predicate', { maxBytes: 256, pattern: SYMBOL_PATTERN }),
+    predicate: stringValue(input.predicate, 'evidence.predicate', {
+      maxBytes: 256,
+      pattern: SYMBOL_PATTERN
+    }),
     supports: input.supports,
     exhaustive: input.exhaustive,
     dependencies,
@@ -165,7 +239,10 @@ function normalizeEvidence(input) {
 export async function createEvidence(input) {
   const normalized = normalizeEvidence(input);
   const evidenceDigest = await digestCanonical(normalized);
-  return freezeEvidence({ ...normalized, evidenceDigest });
+  return freezeEvidence({
+    ...normalized,
+    evidenceDigest
+  });
 }
 
 async function validateEvidence(input) {
@@ -174,7 +251,10 @@ async function validateEvidence(input) {
   const normalized = normalizeEvidence(input);
   const expected = await digestCanonical(normalized);
   if (expected !== input.evidenceDigest) fail('INVALID_DIGEST', 'Evidence digest does not match canonical content.');
-  return freezeEvidence({ ...normalized, evidenceDigest: expected });
+  return freezeEvidence({
+    ...normalized,
+    evidenceDigest: expected
+  });
 }
 
 function rejectionCode(error) {
@@ -182,23 +262,36 @@ function rejectionCode(error) {
   return 'INVALID_DIGEST';
 }
 
-function evidenceIdFor(input, index) {
+function evidenceIdFor(
+  input,
+  index
+) {
   return typeof input?.evidenceId === 'string' && ID_PATTERN.test(input.evidenceId)
     ? input.evidenceId
     : `invalid_evidence_${index}`;
 }
 
-function requirementAge(claim, requirements, category) {
+function requirementAge(
+  claim,
+  requirements,
+  category
+) {
   const ids = new Set(claim.evidenceRequirementIds);
   const matching = requirements.filter((item) => ids.has(item.requirementId) && item.categories.includes(category));
   return matching.length ? Math.max(...matching.map((item) => item.maximumAgeSeconds)) : 0;
 }
 
-function compareEvidence(left, right) {
+function compareEvidence(
+  left,
+  right
+) {
   return left.evidenceId.localeCompare(right.evidenceId, 'en');
 }
 
-function compareRejection(left, right) {
+function compareRejection(
+  left,
+  right
+) {
   return left.index - right.index;
 }
 
@@ -206,7 +299,12 @@ function proofBytes(value) {
   return new TextEncoder().encode(canonicalJson(value)).length;
 }
 
-export async function evaluateProof(ledgerInput, claimIdInput, evidenceInput, options = {}) {
+export async function evaluateProof(
+  ledgerInput,
+  claimIdInput,
+  evidenceInput,
+  options = {}
+) {
   const ledger = await validateLedger(ledgerInput, { now: options.now });
   const claimId = idValue(claimIdInput, 'claimId');
   const claim = ledger.claims.find((item) => item.claimId === claimId);
@@ -217,17 +315,36 @@ export async function evaluateProof(ledgerInput, claimIdInput, evidenceInput, op
   const dependencyInput = options.dependencyEvidence ?? [];
   if (!Array.isArray(dependencyInput) || dependencyInput.length > MAX_EVIDENCE_ITEMS) fail('OVER_LIMIT', 'Dependency evidence exceeds the evaluation limit.');
 
-  const validated = await Promise.all(evidenceInput.map(async (item, index) => {
+  const validated = await Promise.all(evidenceInput.map(async (
+    item,
+    index
+  ) => {
     try {
-      return { index, evidence: await validateEvidence(item) };
+      return {
+        index,
+        evidence: await validateEvidence(item)
+      };
     } catch (error) {
-      return { index, rejection: { evidenceId: evidenceIdFor(item, index), reason: rejectionCode(error) } };
+      return {
+        index,
+        rejection: {
+          evidenceId: evidenceIdFor(item, index),
+          reason: rejectionCode(error)
+        }
+      };
     }
   }));
   const dependencyValidated = await Promise.all(dependencyInput.map(async (item) => {
-    try { return await validateEvidence(item); } catch { return null; }
+    try {
+      return await validateEvidence(item);
+    } catch {
+      return null;
+    }
   }));
-  const dependencyHeads = new Map(dependencyValidated.filter(Boolean).map((item) => [item.evidenceId, item]));
+  const dependencyHeads = new Map(dependencyValidated.filter(Boolean).map((item) => [
+    item.evidenceId,
+    item
+  ]));
   for (const item of validated) if (item.evidence) dependencyHeads.set(item.evidence.evidenceId, item.evidence);
 
   const accepted = [];
@@ -277,7 +394,13 @@ export async function evaluateProof(ledgerInput, claimIdInput, evidenceInput, op
         if (ageSeconds < 0 || maximumAge === 0 || ageSeconds > maximumAge) reason = 'EXPIRED';
       }
     }
-    if (reason) rejected.push({ index: item.index, rejection: { evidenceId: evidence.evidenceId, reason } });
+    if (reason) rejected.push({
+      index: item.index,
+      rejection: {
+        evidenceId: evidence.evidenceId,
+        reason
+      }
+    });
     else accepted.push(evidence);
   }
 
@@ -285,21 +408,42 @@ export async function evaluateProof(ledgerInput, claimIdInput, evidenceInput, op
   rejected.sort(compareRejection);
   const contradictionGroups = new Map();
   for (const evidence of accepted) {
-    const group = contradictionGroups.get(evidence.predicate) ?? { yes: [], no: [] };
+    const group = contradictionGroups.get(evidence.predicate) ?? {
+      yes: [],
+      no: []
+    };
     group[evidence.supports ? 'yes' : 'no'].push(evidence.evidenceId);
     contradictionGroups.set(evidence.predicate, group);
   }
   const contradictions = [];
   for (const [predicate, group] of contradictionGroups) {
     if (group.yes.length && group.no.length) {
-      const evidenceRefs = [...group.yes, ...group.no].sort(codeUnitCompare);
-      contradictions.push({ predicate, evidenceRefs });
-      for (const evidenceId of evidenceRefs) rejected.push({ index: Number.MAX_SAFE_INTEGER, rejection: { evidenceId, reason: 'CONTRADICTION_UNRESOLVED' } });
+      const evidenceRefs = [
+        ...group.yes,
+        ...group.no
+      ].sort(codeUnitCompare);
+      contradictions.push({
+        predicate,
+        evidenceRefs
+      });
+      for (const evidenceId of evidenceRefs) rejected.push({
+        index: Number.MAX_SAFE_INTEGER,
+        rejection: {
+          evidenceId,
+          reason: 'CONTRADICTION_UNRESOLVED'
+        }
+      });
     }
   }
-  contradictions.sort((left, right) => left.predicate.localeCompare(right.predicate, 'en'));
+  contradictions.sort((
+    left,
+    right
+  ) => left.predicate.localeCompare(right.predicate, 'en'));
 
-  const requirementById = new Map(ledger.evidenceRequirements.map((item) => [item.requirementId, item]));
+  const requirementById = new Map(ledger.evidenceRequirements.map((item) => [
+    item.requirementId,
+    item
+  ]));
   const unresolved = [];
   for (const requirementId of claim.evidenceRequirementIds) {
     const requirement = requirementById.get(requirementId);
@@ -345,5 +489,8 @@ export async function evaluateProof(ledgerInput, claimIdInput, evidenceInput, op
   };
   if (proofBytes(receipt) > LEDGER_LIMITS.proofResponseBytes) fail('OVER_LIMIT', 'Proof response exceeds its size cap.');
   const proofDigest = await digestCanonical(receipt);
-  return deepFreeze({ ...receipt, proofDigest });
+  return deepFreeze({
+    ...receipt,
+    proofDigest
+  });
 }

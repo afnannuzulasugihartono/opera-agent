@@ -13,17 +13,40 @@ import {
 import { validateRule } from './lib/watch.js';
 
 import './role-reconcile.js';
-const { axRoleIndex, reconcileElements, hasRoleGap } = globalThis.OperaAgentRoleReconcile || {};
+const {
+  axRoleIndex,
+  reconcileElements,
+  hasRoleGap
+} = globalThis.OperaAgentRoleReconcile || {};
 
 import { log } from './lib/log.js';
 import { popupsSince } from './lib/popup-events.js';
-import { windowUpdateFor, windowUpdateCase } from './lib/window-restore.js';
+import {
+  windowUpdateFor,
+  windowUpdateCase
+} from './lib/window-restore.js';
 import { handleDebuggerDetach } from './lib/debugger-session.js';
-import { oversized, MAX_RESULT_BYTES } from './lib/serialize.js';
-import { mutateTabs, nowIso, getConfig } from './worker/utils.js';
+import {
+  oversized,
+  MAX_RESULT_BYTES
+} from './lib/serialize.js';
+import {
+  mutateTabs,
+  nowIso,
+  getConfig
+} from './worker/utils.js';
 import { collectAxSummary } from './worker/capture.js';
-import { publicTab, requireTabId, resolveTabId, waitTabReady, contentCall } from './worker/tab-content.js';
-import { listenStart, listenStop } from './worker/listen.js';
+import {
+  publicTab,
+  requireTabId,
+  resolveTabId,
+  waitTabReady,
+  contentCall
+} from './worker/tab-content.js';
+import {
+  listenStart,
+  listenStop
+} from './worker/listen.js';
 import { capturePage } from './worker/capture-page.js';
 import {
   executionMode,
@@ -49,8 +72,14 @@ import {
   MAX_WATCHERS_GLOBAL,
 } from './worker/watch-registry.js';
 import './worker/execute-pull.js';
-import { bridgeLinkState, ensureBridgeLink } from './worker/bridge-link.js';
-import { statementDownload, statementManifest } from './worker/statement.js';
+import {
+  bridgeLinkState,
+  ensureBridgeLink
+} from './worker/bridge-link.js';
+import {
+  statementDownload,
+  statementManifest
+} from './worker/statement.js';
 
 chrome.debugger.onDetach.addListener(handleDebuggerDetach);
 
@@ -58,7 +87,11 @@ const SEMANTIC_RUNTIME_EPOCH = crypto.randomUUID();
 
 const AX_SUMMARY_TEXT_POVERTY_CHARS = 400;
 
-export async function dispatch(method, params = {}, context = {}) {
+export async function dispatch(
+  method,
+  params = {},
+  context = {}
+) {
   ensureBridgeLink();
   switch (method) {
     case 'browser.ping': {
@@ -86,17 +119,32 @@ export async function dispatch(method, params = {}, context = {}) {
       const globalCount = w.watchers.length;
       if (globalCount >= MAX_WATCHERS_GLOBAL) throw new Error(`Watcher cap reached (${MAX_WATCHERS_GLOBAL} global).`);
       if (tabCount >= MAX_WATCHERS_PER_TAB) throw new Error(`Watcher cap reached (${MAX_WATCHERS_PER_TAB} per tab).`);
-      const candidate = { ...params.rule, ruleId: params.rule?.ruleId || watchRuleId('w') };
+      const candidate = {
+        ...params.rule,
+        ruleId: params.rule?.ruleId || watchRuleId('w')
+      };
       const v = validateRule(candidate);
       if (!v.ok) throw new Error(v.reason);
 
       if (candidate.deadlineMs == null) candidate.deadlineMs = 60000;
-      const entry = { id: candidate.ruleId, tabId, rule: candidate, createdAt: Date.now(), runtime: {} };
+      const entry = {
+        id: candidate.ruleId,
+        tabId,
+        rule: candidate,
+        createdAt: Date.now(),
+        runtime: {}
+      };
       w.watchers.push(entry);
       (w.byTab[tabId] ||= []).push(entry.id);
       await saveWatchers(w);
       const arm = await armWatchersForTab(tabId);
-      return { ok: true, watcherId: entry.id, tabId, armed: arm.armed, ...(!arm.armed && arm.error ? { warning: arm.error } : {}) };
+      return {
+        ok: true,
+        watcherId: entry.id,
+        tabId,
+        armed: arm.armed,
+        ...(!arm.armed && arm.error ? { warning: arm.error } : {})
+      };
     }
     case 'watch.stop': {
       const { watcherId } = params;
@@ -106,27 +154,53 @@ export async function dispatch(method, params = {}, context = {}) {
       for (const ids of Object.values(w.byTab)) {
         const i = ids.indexOf(watcherId); if (i >= 0) ids.splice(i, 1);
       }
-      w.byTab = Object.fromEntries(Object.entries(w.byTab).filter(([, ids]) => ids.length));
+      w.byTab = Object.fromEntries(Object.entries(w.byTab).filter(([
+        ,
+        ids
+      ]) => ids.length));
       await saveWatchers(w);
-      return { ok: true, removed: before - w.watchers.length };
+      return {
+        ok: true,
+        removed: before - w.watchers.length
+      };
     }
     case 'watch.stop_all': {
       const w = await pruneWatchers();
       const removed = w.watchers.length;
-      await saveWatchers({ watchers: [], byTab: {} });
-      return { ok: true, removed };
+      await saveWatchers({
+        watchers: [],
+        byTab: {}
+      });
+      return {
+        ok: true,
+        removed
+      };
     }
     case 'watch.list': {
       const w = await pruneWatchers();
-      return { ok: true, watchers: w.watchers.map((e) => ({ id: e.id, tabId: e.tabId, rule: e.rule, fireCount: e.runtime?.fireCount || 0 })) };
+      return {
+        ok: true,
+        watchers: w.watchers.map((e) => ({
+          id: e.id,
+          tabId: e.tabId,
+          rule: e.rule,
+          fireCount: e.runtime?.fireCount || 0
+        }))
+      };
     }
     case 'tabs.list': {
       const tabs = await chrome.tabs.query(params.currentWindow ? { currentWindow: true } : {});
-      return { ok: true, tabs: tabs.map(publicTab) };
+      return {
+        ok: true,
+        tabs: tabs.map(publicTab)
+      };
     }
     case 'tabs.get': {
       const tabId = await resolveTabId(params);
-      return { ok: true, tab: publicTab(await chrome.tabs.get(tabId)) };
+      return {
+        ok: true,
+        tab: publicTab(await chrome.tabs.get(tabId))
+      };
     }
     case 'tabs.find': {
       const tabs = await chrome.tabs.query({});
@@ -139,14 +213,25 @@ export async function dispatch(method, params = {}, context = {}) {
         return true;
       }).map(publicTab);
       const index = Number.isInteger(params.index) ? params.index : 0;
-      return { ok: true, count: matches.length, tab: matches[index] || null, tabs: matches.slice(0, clamp(params.limit, 1, 100, 20)) };
+      return {
+        ok: true,
+        count: matches.length,
+        tab: matches[index] || null,
+        tabs: matches.slice(0, clamp(params.limit, 1, 100, 20))
+      };
     }
     case 'tabs.open': {
       const url = safeUrl(params.url || 'https://www.google.com/');
       if (!url) throw new Error('Only http/https URLs are allowed.');
-      const tab = await mutateTabs(() => chrome.tabs.create({ url, active: params.active !== false }));
+      const tab = await mutateTabs(() => chrome.tabs.create({
+        url,
+        active: params.active !== false
+      }));
       const ready = params.wait === false ? publicTab(tab) : await waitTabReady(tab.id, params.waitTimeoutMs);
-      return { ok: true, tab: ready };
+      return {
+        ok: true,
+        tab: ready
+      };
     }
     case 'tabs.activate': {
       const tabId = requireTabId(params.tabId);
@@ -171,12 +256,20 @@ export async function dispatch(method, params = {}, context = {}) {
         }
         windowUpdate = windowUpdateCase(update);
       }
-      return { ok: true, tab: publicTab(tab), reused, windowUpdate };
+      return {
+        ok: true,
+        tab: publicTab(tab),
+        reused,
+        windowUpdate
+      };
     }
     case 'tabs.close': {
       const tabId = requireTabId(params.tabId);
       await mutateTabs(() => chrome.tabs.remove(tabId));
-      return { ok: true, tabId };
+      return {
+        ok: true,
+        tabId
+      };
     }
     case 'tabs.navigate': {
       const tabId = await resolveTabId(params);
@@ -185,24 +278,41 @@ export async function dispatch(method, params = {}, context = {}) {
       const current = await chrome.tabs.get(tabId);
       if (safeUrl(current.url) === url) {
         const ready = params.wait === false ? publicTab(current) : await waitTabReady(tabId, params.waitTimeoutMs);
-        return { ok: true, tab: ready, reused: true };
+        return {
+          ok: true,
+          tab: ready,
+          reused: true
+        };
       }
       const tab = await mutateTabs(() => chrome.tabs.update(tabId, { url }));
       const ready = params.wait === false ? publicTab(tab) : await waitTabReady(tabId, params.waitTimeoutMs);
-      return { ok: true, tab: ready, reused: false };
+      return {
+        ok: true,
+        tab: ready,
+        reused: false
+      };
     }
     case 'tabs.reload': {
       const tabId = await resolveTabId(params);
       await chrome.tabs.reload(tabId, { bypassCache: !!params.bypassCache });
       const ready = params.wait === false ? publicTab(await chrome.tabs.get(tabId)) : await waitTabReady(tabId, params.waitTimeoutMs);
-      return { ok: true, tab: ready };
+      return {
+        ok: true,
+        tab: ready
+      };
     }
     case 'page.read': {
       const tabId = await resolveTabId(params);
-      let result = await contentCall(tabId, method, { ...params, __semanticRuntimeEpoch: SEMANTIC_RUNTIME_EPOCH });
+      let result = await contentCall(tabId, method, {
+        ...params,
+        __semanticRuntimeEpoch: SEMANTIC_RUNTIME_EPOCH
+      });
 
       if (result?.page && oversized(result)) {
-        const { elements, ...withoutElements } = result.page;
+        const {
+          elements,
+          ...withoutElements
+        } = result.page;
         result = {
           ...result,
           page: {
@@ -214,7 +324,11 @@ export async function dispatch(method, params = {}, context = {}) {
         };
       }
       if (result?.page?.viewport) {
-        try { result.page.viewport.zoomFactor = await chrome.tabs.getZoom(tabId); } catch (error) { log.warn('TAB_ZOOM_PROBE_FAILED', error?.message || String(error)); }
+        try {
+          result.page.viewport.zoomFactor = await chrome.tabs.getZoom(tabId);
+        } catch (error) {
+          log.warn('TAB_ZOOM_PROBE_FAILED', error?.message || String(error));
+        }
       }
 
       const r9SemanticGap = hasRoleGap(result?.page?.elements);
@@ -234,7 +348,10 @@ export async function dispatch(method, params = {}, context = {}) {
 
       if (result?.page) {
         try {
-          const { tabActive, windowFocused } = await sampleTabFocus(tabId);
+          const {
+            tabActive,
+            windowFocused
+          } = await sampleTabFocus(tabId);
           result.page.userState = {
             tabActive,
             windowFocused,
@@ -245,7 +362,10 @@ export async function dispatch(method, params = {}, context = {}) {
           log.warn('USER_STATE_PROBE_FAILED', error?.message || String(error));
         }
       }
-      return { ...result, tabId };
+      return {
+        ...result,
+        tabId
+      };
     }
     case 'page.query':
     case 'page.find':
@@ -259,7 +379,10 @@ export async function dispatch(method, params = {}, context = {}) {
     case 'media.seek': {
       const tabId = await resolveTabId(params);
       const result = await contentCall(tabId, method, params);
-      return { ...result, tabId };
+      return {
+        ...result,
+        tabId
+      };
     }
     case 'media.stream_start': {
       const tabId = await resolveTabId(params);
@@ -269,19 +392,39 @@ export async function dispatch(method, params = {}, context = {}) {
       return listenStop();
     case 'page.fill': {
       const tabId = await resolveTabId(params);
-      const fillOptions = { expect: params.expect, attempts: params.retry?.attempts };
+      const fillOptions = {
+        expect: params.expect,
+        attempts: params.retry?.attempts
+      };
       const actionStart = Date.now();
-      const result = await withActionPopupTracking(tabId, () => runActionPipeline(tabId, 'page.fill', params, context, (ref) => (params.trusted ? trustedFill(tabId, ref, params.value, context, executionMode(params), fillOptions) : contentCall(tabId, 'page.fill', { ...params, ref }))));
+      const result = await withActionPopupTracking(tabId, () => runActionPipeline(tabId, 'page.fill', params, context, (ref) => (params.trusted ? trustedFill(tabId, ref, params.value, context, executionMode(params), fillOptions) : contentCall(tabId, 'page.fill', {
+        ...params,
+        ref
+      }))));
       const openedTabs = popupsSince(popupLog, tabId, actionStart);
-      return { ...result, tabId, ...(openedTabs.length ? { openedTabs } : {}) };
+      return {
+        ...result,
+        tabId,
+        ...(openedTabs.length ? { openedTabs } : {})
+      };
     }
     case 'page.click': {
       const tabId = await resolveTabId(params);
-      const clickOptions = { expect: params.expect, attempts: params.retry?.attempts };
+      const clickOptions = {
+        expect: params.expect,
+        attempts: params.retry?.attempts
+      };
       const actionStart = Date.now();
-      const result = await withActionPopupTracking(tabId, () => runActionPipeline(tabId, 'page.click', params, context, (ref) => (params.trusted ? trustedClick(tabId, ref, context, executionMode(params), clickOptions) : contentCall(tabId, 'page.click', { ...params, ref }))));
+      const result = await withActionPopupTracking(tabId, () => runActionPipeline(tabId, 'page.click', params, context, (ref) => (params.trusted ? trustedClick(tabId, ref, context, executionMode(params), clickOptions) : contentCall(tabId, 'page.click', {
+        ...params,
+        ref
+      }))));
       const openedTabs = popupsSince(popupLog, tabId, actionStart);
-      return { ...result, tabId, ...(openedTabs.length ? { openedTabs } : {}) };
+      return {
+        ...result,
+        tabId,
+        ...(openedTabs.length ? { openedTabs } : {})
+      };
     }
     case 'page.pointer': {
       const tabId = await resolveTabId(params);
@@ -290,12 +433,18 @@ export async function dispatch(method, params = {}, context = {}) {
       }
       const runPointer = String(params.action || '') === 'hover' ? trustedHover : trustedPointer;
       const result = await runActionPipeline(tabId, 'page.pointer', params, context, () => runPointer(tabId, params, context));
-      return { ...result, tabId };
+      return {
+        ...result,
+        tabId
+      };
     }
     case 'page.hover': {
       const tabId = await resolveTabId(params);
       const result = await runActionPipeline(tabId, 'page.hover', params, context, () => trustedHover(tabId, params, context));
-      return { ...result, tabId };
+      return {
+        ...result,
+        tabId
+      };
     }
     case 'page.capture': {
       const tabId = await resolveTabId(params);
@@ -304,16 +453,28 @@ export async function dispatch(method, params = {}, context = {}) {
     case 'page.key': {
       const tabId = await resolveTabId(params);
       const result = await runActionPipeline(tabId, 'page.key', params, context, () => (params.trusted ? trustedKey(tabId, params, context, executionMode(params)) : contentCall(tabId, 'page.key', params)));
-      return { ...result, tabId };
+      return {
+        ...result,
+        tabId
+      };
     }
     case 'page.stream': {
       const tabId = await resolveTabId(params);
       const result = await runActionPipeline(tabId, 'page.stream', params, context, () => trustedKeyStream(tabId, params, context, executionMode(params)));
-      return { ...result, tabId };
+      return {
+        ...result,
+        tabId
+      };
     }
     case 'statement.download': {
       const tabId = await resolveTabId(params);
-      return { ...(await statementDownload({ ...params, tabId })), tabId };
+      return {
+        ...(await statementDownload({
+          ...params,
+          tabId
+        })),
+        tabId
+      };
     }
     case 'statement.manifest':
       return statementManifest();

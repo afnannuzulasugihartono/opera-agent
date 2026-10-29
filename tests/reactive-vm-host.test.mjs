@@ -19,8 +19,12 @@ const OTHER = `sha256:${'b'.repeat(64)}`;
 const source = () => fs.readFileSync(new URL('../lib/reactive-vm-host.js', import.meta.url), 'utf8');
 
 const idempotency = (over = {}) => ({
-  tenantId: 'tenant-1', runId: 'run-1', programDigest: DIGEST,
-  requestDigest: OTHER, attemptClass: 'FIRST_ATTEMPT', ...over
+  tenantId: 'tenant-1',
+  runId: 'run-1',
+  programDigest: DIGEST,
+  requestDigest: OTHER,
+  attemptClass: 'FIRST_ATTEMPT',
+  ...over
 });
 
 // Assembled at runtime: no credential-shaped literal appears in this file, so gitleaks has nothing to object to, and each sample stays exactly the string the runtime scan must recognise.
@@ -33,18 +37,38 @@ const TAIL2 = 'SyA0123456789abcdefghijklmnopqrstuvw';
 const JWT_HEADER = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9';
 const JWT_BODY = 'eyJzdWIiOiIxMjM0NTY3ODkwIn0';
 const SECRET_SHAPES = [
-  ['a PEM private key', '-----BEGIN RSA PRIVATE KEY-----\nMIIEow=='],
-  ['a JWT', `${JWT_HEADER}.${JWT_BODY}.abc`],
-  ['a Supabase key', `sb_secret_${BODY}`],
-  ['a sk- key', `sk-${BODY}`]
+  [
+    'a PEM private key',
+    '-----BEGIN RSA PRIVATE KEY-----\nMIIEow=='
+  ],
+  [
+    'a JWT',
+    `${JWT_HEADER}.${JWT_BODY}.abc`
+  ],
+  [
+    'a Supabase key',
+    `sb_secret_${BODY}`
+  ],
+  [
+    'a sk- key',
+    `sk-${BODY}`
+  ]
 ];
 
 const codeOf = async (fn) => {
-  try { await fn(); return null; } catch (error) { return error.code ?? error.message; }
+  try {
+    await fn(); return null;
+  } catch (error) {
+    return error.code ?? error.message;
+  }
 };
 
 const codeOfSync = (fn) => {
-  try { fn(); return null; } catch (error) { return error.code ?? error.message; }
+  try {
+    fn(); return null;
+  } catch (error) {
+    return error.code ?? error.message;
+  }
 };
 
 test('the secret scan covers four families, and the gap is named rather than assumed', async () => {
@@ -98,8 +122,10 @@ test('the idempotency key is a digest of exactly the five fields', async () => {
     'the same input gives the same key, which is what makes a retry safe');
 
   const CHANGED = {
-    tenantId: 'tenant-2', runId: 'run-2',
-    programDigest: `sha256:${'c'.repeat(64)}`, requestDigest: `sha256:${'d'.repeat(64)}`,
+    tenantId: 'tenant-2',
+    runId: 'run-2',
+    programDigest: `sha256:${'c'.repeat(64)}`,
+    requestDigest: `sha256:${'d'.repeat(64)}`,
     attemptClass: 'SECOND_ATTEMPT'
   };
   for (const [field, value] of Object.entries(CHANGED)) {
@@ -108,17 +134,50 @@ test('the idempotency key is a digest of exactly the five fields', async () => {
   }
 
   for (const [label, over] of [
-    ['an empty tenantId', { tenantId: '' }],
-    ['a 129-character tenantId', { tenantId: 't'.repeat(129) }],
-    ['an empty runId', { runId: '' }],
-    ['a 129-character runId', { runId: 'r'.repeat(129) }],
-    ['a lowercase attemptClass', { attemptClass: 'first_attempt' }],
-    ['a numeric-leading attemptClass', { attemptClass: '1ST' }],
-    ['a 33-character attemptClass', { attemptClass: 'A'.repeat(33) }],
-    ['a non-string attemptClass', { attemptClass: 1 }],
-    ['a non-digest programDigest', { programDigest: 'not-a-digest' }],
-    ['a 63-character digest', { programDigest: `sha256:${'a'.repeat(63)}` }],
-    ['an uppercase digest', { programDigest: `sha256:${'A'.repeat(64)}` }]
+    [
+      'an empty tenantId',
+      { tenantId: '' }
+    ],
+    [
+      'a 129-character tenantId',
+      { tenantId: 't'.repeat(129) }
+    ],
+    [
+      'an empty runId',
+      { runId: '' }
+    ],
+    [
+      'a 129-character runId',
+      { runId: 'r'.repeat(129) }
+    ],
+    [
+      'a lowercase attemptClass',
+      { attemptClass: 'first_attempt' }
+    ],
+    [
+      'a numeric-leading attemptClass',
+      { attemptClass: '1ST' }
+    ],
+    [
+      'a 33-character attemptClass',
+      { attemptClass: 'A'.repeat(33) }
+    ],
+    [
+      'a non-string attemptClass',
+      { attemptClass: 1 }
+    ],
+    [
+      'a non-digest programDigest',
+      { programDigest: 'not-a-digest' }
+    ],
+    [
+      'a 63-character digest',
+      { programDigest: `sha256:${'a'.repeat(63)}` }
+    ],
+    [
+      'an uppercase digest',
+      { programDigest: `sha256:${'A'.repeat(64)}` }
+    ]
   ]) {
     assert.equal(await codeOf(() => deriveVmEffectIdempotencyKey(idempotency(over))), 'INVALID_HOST_STATE', label);
   }
@@ -129,13 +188,34 @@ test('the idempotency key is a digest of exactly the five fields', async () => {
 
 test('an unexpected or missing field is refused, so nothing is smuggled past a check', async () => {
   for (const [label, value] of [
-    ['an extra field', { surprise: 'value' }],
-    ['a prototype key', { constructor: 'x' }],
-    ['an undefined required field', { tenantId: undefined }],
-    ['an array', []],
-    ['null', null],
-    ['a string', 'x'],
-    ['a number', 7]
+    [
+      'an extra field',
+      { surprise: 'value' }
+    ],
+    [
+      'a prototype key',
+      { constructor: 'x' }
+    ],
+    [
+      'an undefined required field',
+      { tenantId: undefined }
+    ],
+    [
+      'an array',
+      []
+    ],
+    [
+      'null',
+      null
+    ],
+    [
+      'a string',
+      'x'
+    ],
+    [
+      'a number',
+      7
+    ]
   ]) {
     assert.equal(await codeOf(() => deriveVmEffectIdempotencyKey(value)), 'INVALID_HOST_STATE', label);
   }
@@ -152,7 +232,11 @@ test('an unexpected or missing field is refused, so nothing is smuggled past a c
   delete deleted.tenantId;
   assert.equal(await codeOf(() => deriveVmEffectIdempotencyKey(deleted)), 'INVALID_HOST_STATE', 'a deleted key');
 
-  class Complete { constructor() { Object.assign(this, idempotency()); } }
+  class Complete {
+    constructor() {
+      Object.assign(this, idempotency());
+    }
+  }
   const spoof = new Complete();
   Object.setPrototypeOf(spoof, { tenantId: 'from-the-prototype' });
   assert.equal(await codeOf(() => deriveVmEffectIdempotencyKey(spoof)), 'INVALID_HOST_STATE',
@@ -164,7 +248,10 @@ test('an unexpected or missing field is refused, so nothing is smuggled past a c
 
 test('a secret is refused, and a cycle is refused rather than walked', async () => {
   for (const [label, sample] of SECRET_SHAPES) {
-    assert.equal(await codeOf(() => deriveVmEffectIdempotencyKey(idempotency({ tenantId: sample, runId: sample }))),
+    assert.equal(await codeOf(() => deriveVmEffectIdempotencyKey(idempotency({
+      tenantId: sample,
+      runId: sample
+    }))),
       'SENSITIVE_VALUE', `${label} is refused`);
   }
 
@@ -181,34 +268,94 @@ test('persistence is classified from the state, and the clock never runs backwar
   const NOW = 1_700_000_000_000;
 
   for (const status of ['SUSPENDED', 'RETURNED', 'LIMIT_REACHED', 'FAILED', 'CANCELLED', 'EXPIRED']) {
-    const result = classifyVmPersistence({ status }, { kind: 'WAITING_EVENT', nextPollAtMs: NOW + 60_000 }, NOW);
-    assert.deepEqual(result, { status, availableAtMs: null, terminal: true },
+    const result = classifyVmPersistence({ status }, {
+      kind: 'WAITING_EVENT',
+      nextPollAtMs: NOW + 60_000
+    }, NOW);
+    assert.deepEqual(result, {
+      status,
+      availableAtMs: null,
+      terminal: true
+    },
       `${status} is terminal whatever the transition asks for`);
     assert.equal(Object.isFrozen(result), true);
   }
 
   assert.deepEqual(classifyVmPersistence({ status: 'RUNNING' }, { kind: 'IDLE' }, NOW),
-    { status: 'QUEUED', availableAtMs: NOW, terminal: false });
+    {
+      status: 'QUEUED',
+      availableAtMs: NOW,
+      terminal: false
+    });
 
-  assert.equal(classifyVmPersistence({ status: 'RUNNING' }, { kind: 'WAITING_EVENT', nextPollAtMs: NOW + 5_000 }, NOW).availableAtMs,
+  assert.equal(classifyVmPersistence({ status: 'RUNNING' }, {
+    kind: 'WAITING_EVENT',
+    nextPollAtMs: NOW + 5_000
+  }, NOW).availableAtMs,
     NOW + 5_000, 'a future poll time is honoured');
 
   for (const kind of ['WAITING_EVENT', 'WAITING_RETRY', 'RETRY_SCHEDULED']) {
-    assert.equal(classifyVmPersistence({ status: 'RUNNING' }, { kind, nextPollAtMs: NOW - 5_000, notBeforeMs: NOW - 5_000 }, NOW).availableAtMs,
+    assert.equal(classifyVmPersistence({ status: 'RUNNING' }, {
+      kind,
+      nextPollAtMs: NOW - 5_000,
+      notBeforeMs: NOW - 5_000
+    }, NOW).availableAtMs,
       NOW, `${kind} with a past time is clamped to now`);
-    assert.equal(classifyVmPersistence({ status: 'RUNNING' }, { kind, nextPollAtMs: NOW + 5_000, notBeforeMs: NOW + 5_000 }, NOW).availableAtMs,
+    assert.equal(classifyVmPersistence({ status: 'RUNNING' }, {
+      kind,
+      nextPollAtMs: NOW + 5_000,
+      notBeforeMs: NOW + 5_000
+    }, NOW).availableAtMs,
       NOW + 5_000, `${kind} with a future time is honoured`);
   }
 
-  assert.equal(classifyVmPersistence({ status: 'RUNNING' }, { kind: 'WAITING_EVENT', nextPollAtMs: NOW + 1.5 }, NOW).availableAtMs,
+  assert.equal(classifyVmPersistence({ status: 'RUNNING' }, {
+    kind: 'WAITING_EVENT',
+    nextPollAtMs: NOW + 1.5
+  }, NOW).availableAtMs,
     NOW, 'a fractional poll time is ignored');
 
   for (const [label, args] of [
-    ['a non-object state', ['x', { kind: 'IDLE' }, NOW]],
-    ['a non-object transition', [{ status: 'RUNNING' }, 'x', NOW]],
-    ['a negative clock', [{ status: 'RUNNING' }, { kind: 'IDLE' }, -1]],
-    ['a fractional clock', [{ status: 'RUNNING' }, { kind: 'IDLE' }, NOW + 0.5]],
-    ['a string clock', [{ status: 'RUNNING' }, { kind: 'IDLE' }, String(NOW)]]
+    [
+      'a non-object state',
+      [
+        'x',
+        { kind: 'IDLE' },
+        NOW
+      ]
+    ],
+    [
+      'a non-object transition',
+      [
+        { status: 'RUNNING' },
+        'x',
+        NOW
+      ]
+    ],
+    [
+      'a negative clock',
+      [
+        { status: 'RUNNING' },
+        { kind: 'IDLE' },
+        -1
+      ]
+    ],
+    [
+      'a fractional clock',
+      [
+        { status: 'RUNNING' },
+        { kind: 'IDLE' },
+        NOW + 0.5
+      ]
+    ],
+    [
+      'a string clock',
+      [
+        { status: 'RUNNING' },
+        { kind: 'IDLE' },
+        String(NOW)
+      ]
+    ]
   ]) {
     assert.equal(codeOfSync(() => classifyVmPersistence(...args)), 'INVALID_HOST_STATE', label);
   }
@@ -221,24 +368,43 @@ test('the limits are frozen, and an observation reconcile returns a frozen recor
   assert.ok(LIMITS.retryDelayMsBase < LIMITS.retryDelayMsMax);
   assert.ok(LIMITS.tenantRunningRuns < LIMITS.tenantOutstandingRuns);
 
-  assert.throws(() => { 'use strict'; LIMITS.requestBytes = 1; }, TypeError);
+  assert.throws(() => {
+    'use strict'; LIMITS.requestBytes = 1;
+  }, TypeError);
   assert.equal(LIMITS.requestBytes, 196608);
 
-  const observation = { kind: 'ELEMENT_SETTLED', ref: 'e1' };
+  const observation = {
+    kind: 'ELEMENT_SETTLED',
+    ref: 'e1'
+  };
   const result = reconcileVmEffectObservation(
-    { tenantId: 'tenant-1', deviceId: 'device-1', tabId: 7, documentGeneration: 3, runtimeEpoch: 'epoch-1' },
+    {
+      tenantId: 'tenant-1',
+      deviceId: 'device-1',
+      tabId: 7,
+      documentGeneration: 3,
+      runtimeEpoch: 'epoch-1'
+    },
     observation
   );
 
   assert.equal(Object.isFrozen(result), true);
   assert.equal(result.observation, observation);
   assert.deepEqual(result.identity, {
-    tenantId: 'tenant-1', deviceId: 'device-1', tabId: 7, documentGeneration: 3, runtimeEpoch: 'epoch-1'
+    tenantId: 'tenant-1',
+    deviceId: 'device-1',
+    tabId: 7,
+    documentGeneration: 3,
+    runtimeEpoch: 'epoch-1'
   });
   assert.equal(result.canonicalState, result.relevance.canonicalState);
 
   const sparse = reconcileVmEffectObservation({}, observation);
   assert.deepEqual(sparse.identity, {
-    tenantId: '', deviceId: '', tabId: 0, documentGeneration: 1, runtimeEpoch: ''
+    tenantId: '',
+    deviceId: '',
+    tabId: 0,
+    documentGeneration: 1,
+    runtimeEpoch: ''
   });
 });

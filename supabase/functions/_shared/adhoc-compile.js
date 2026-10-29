@@ -24,15 +24,34 @@ const READ_METHODS = new Set([
   'media.state',
 ]);
 
-const WRITE_METHODS = new Set(['page.click', 'page.fill', 'page.key', 'page.focus']);
+const WRITE_METHODS = new Set([
+  'page.click',
+  'page.fill',
+  'page.key',
+  'page.focus'
+]);
 
-const ALLOWED_METHODS = new Set([...READ_METHODS, ...WRITE_METHODS]);
+const ALLOWED_METHODS = new Set([
+  ...READ_METHODS,
+  ...WRITE_METHODS
+]);
 
-const LABEL_METHODS = new Set(['page.click', 'page.fill']);
+const LABEL_METHODS = new Set([
+  'page.click',
+  'page.fill'
+]);
 
 const CONSEQUENTIAL_LABEL = /pay|buy|checkout|submit|delete|remove|send|publish|subscribe|transfer|password|passcode|otp|2fa|card|cvv/i;
 
-const NODE_TYPES = new Set(['command', 'if', 'repeat', 'foreach', 'set', 'wait', 'fail']);
+const NODE_TYPES = new Set([
+  'command',
+  'if',
+  'repeat',
+  'foreach',
+  'set',
+  'wait',
+  'fail'
+]);
 
 function isPlainObject(value) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
@@ -45,31 +64,63 @@ function utf8Bytes(text) {
   return text.length;
 }
 
-function fail(code, message) {
-  return { ok: false, code, message };
+function fail(
+  code,
+  message
+) {
+  return {
+    ok: false,
+    code,
+    message
+  };
 }
 
-function compileList(nodes, path, state) {
+function compileList(
+  nodes,
+  path,
+  state
+) {
   const steps = [];
   for (let index = 0; index < nodes.length; index += 1) {
     const out = compileNode(nodes[index], `${path}[${index}]`, state);
     if (!out.ok) return out;
     steps.push(out.step);
   }
-  return { ok: true, steps };
+  return {
+    ok: true,
+    steps
+  };
 }
 
-function branchList(node, field, path) {
-  if (node[field] === undefined) return { ok: true, nodes: [] };
+function branchList(
+  node,
+  field,
+  path
+) {
+  if (node[field] === undefined) return {
+    ok: true,
+    nodes: []
+  };
   if (!Array.isArray(node[field])) return fail('UNKNOWN_NODE_TYPE', `${path}: ${field} must be an array.`);
-  return { ok: true, nodes: node[field] };
+  return {
+    ok: true,
+    nodes: node[field]
+  };
 }
 
-function compileCommand(node, path, state) {
+function compileCommand(
+  node,
+  path,
+  state
+) {
   if (typeof node.method !== 'string' || !ALLOWED_METHODS.has(node.method)) {
     return fail('METHOD_NOT_ALLOWED', `${path}: method ${String(node.method)} is not allowlisted.`);
   }
-  const step = { type: 'command', method: node.method, params: node.params === undefined ? {} : node.params };
+  const step = {
+    type: 'command',
+    method: node.method,
+    params: node.params === undefined ? {} : node.params
+  };
   if (typeof node.id === 'string' && node.id.length > 0) step.id = node.id;
   if (LABEL_METHODS.has(node.method)) {
     if (typeof node.declaredLabel !== 'string' || node.declaredLabel.trim().length === 0) {
@@ -84,10 +135,17 @@ function compileCommand(node, path, state) {
     if (match) step.confirmPattern = match[0];
   } else if (node.confirm === true) step.confirmed = true;
   state.commands += 1;
-  return { ok: true, step };
+  return {
+    ok: true,
+    step
+  };
 }
 
-function compileIf(node, path, state) {
+function compileIf(
+  node,
+  path,
+  state
+) {
   const thenRaw = branchList(node, 'then', path);
   if (!thenRaw.ok) return thenRaw;
   const elseRaw = branchList(node, 'else', path);
@@ -96,12 +154,24 @@ function compileIf(node, path, state) {
   if (!thenOut.ok) return thenOut;
   const elseOut = compileList(elseRaw.nodes, `${path}.else`, state);
   if (!elseOut.ok) return elseOut;
-  const step = { type: 'if', then: thenOut.steps, else: elseOut.steps };
+  const step = {
+    type: 'if',
+    then: thenOut.steps,
+    else: elseOut.steps
+  };
   if (node.condition !== undefined) step.condition = node.condition;
-  return { ok: true, step };
+  return {
+    ok: true,
+    step
+  };
 }
 
-function compileLoop(kind, node, path, state) {
+function compileLoop(
+  kind,
+  node,
+  path,
+  state
+) {
   const raw = branchList(node, 'steps', path);
   if (!raw.ok) return raw;
   if (kind === 'repeat') {
@@ -113,7 +183,10 @@ function compileLoop(kind, node, path, state) {
   }
   const out = compileList(raw.nodes, `${path}.steps`, state);
   if (!out.ok) return out;
-  const step = { type: kind, steps: out.steps };
+  const step = {
+    type: kind,
+    steps: out.steps
+  };
   if (kind === 'repeat') {
     step.maxIterations = node.maxIterations;
     if (node.until !== undefined) step.until = node.until;
@@ -125,10 +198,17 @@ function compileLoop(kind, node, path, state) {
     if (node.collectVar !== undefined) step.collectVar = node.collectVar;
     if (node.collect !== undefined) step.collect = node.collect;
   }
-  return { ok: true, step };
+  return {
+    ok: true,
+    step
+  };
 }
 
-function compileNode(node, path, state) {
+function compileNode(
+  node,
+  path,
+  state
+) {
   if (!isPlainObject(node) || typeof node.type !== 'string' || !NODE_TYPES.has(node.type)) {
     return fail('UNKNOWN_NODE_TYPE', `${path}: unknown node type.`);
   }
@@ -139,7 +219,10 @@ function compileNode(node, path, state) {
     const step = { type: 'set' };
     if (node.name !== undefined) step.name = node.name;
     if (node.value !== undefined) step.value = node.value;
-    return { ok: true, step };
+    return {
+      ok: true,
+      step
+    };
   }
   if (node.type === 'wait') {
     if (typeof node.ms === 'number' && node.ms > WAIT_MAX_MS) {
@@ -147,12 +230,18 @@ function compileNode(node, path, state) {
     }
     const step = { type: 'wait' };
     if (node.ms !== undefined) step.ms = node.ms;
-    return { ok: true, step };
+    return {
+      ok: true,
+      step
+    };
   }
   const step = { type: 'fail' };
   if (node.code !== undefined) step.code = node.code;
   if (node.message !== undefined) step.message = node.message;
-  return { ok: true, step };
+  return {
+    ok: true,
+    step
+  };
 }
 
 export function compileAdhocGraph(graph) {
@@ -174,9 +263,18 @@ export function compileAdhocGraph(graph) {
   if (state.commands > MAX_COMMAND_NODES) {
     return fail('BUDGET_EXCEEDED', `graph has ${state.commands} command nodes; the cap is ${MAX_COMMAND_NODES}.`);
   }
-  const definition = { steps: out.steps, output: { result: { $ref: 'steps' }, status: 'completed' } };
+  const definition = {
+    steps: out.steps,
+    output: {
+      result: { $ref: 'steps' },
+      status: 'completed'
+    }
+  };
   if (utf8Bytes(JSON.stringify(definition)) > MAX_DEFINITION_BYTES) {
     return fail('GRAPH_TOO_LARGE', `definition exceeds ${MAX_DEFINITION_BYTES} bytes.`);
   }
-  return { ok: true, definition };
+  return {
+    ok: true,
+    definition
+  };
 }

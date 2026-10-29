@@ -29,7 +29,10 @@ const DEFAULT_DOWNLOAD_TIMEOUT_MS = 30000;
 // The client and period lists are text, and the default comparison is text too, but an unstated one reads like an accident and would sort a future numeric field as text.
 // So the comparison is written down, and the order is intended rather than inherited.
 
-const byText = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
+const byText = (
+  a,
+  b
+) => (a < b ? -1 : a > b ? 1 : 0);
 
 // WHY THE FILE NAME IS CHECKED HERE.
 // The name comes from the caller, and a name with a folder in it would write outside the download folder - which is the one place the device may write.
@@ -83,8 +86,10 @@ export async function statementManifest() {
 // chrome.downloads reports a download through a change event, and a service worker can be asleep when it fires.
 // Polling the browser's own record asks the one authority that cannot be asleep, and the cost is a quarter of a second.
 
-async function waitForDownload(downloadId, timeoutMs) {
-
+async function waitForDownload(
+  downloadId,
+  timeoutMs
+) {
   const deadline = Date.now() + timeoutMs;
   for (;;) {
     const [item] = await chrome.downloads.search({ id: downloadId });
@@ -109,24 +114,48 @@ async function waitForDownload(downloadId, timeoutMs) {
 // Chrome answers executeScript with one InjectionResult per frame, and the value the injected function returned is that result's `result`.
 // Reading the wrapper leaves every fact undefined, which is a delivery that cannot say what it delivered: the fake browser agreed with the bug until a real one was driven.
 
-async function verifyInPage(tabId, url) {
-  await chrome.scripting.executeScript({ target: { tabId }, files: ['lib/statement-file.js'] });
+async function verifyInPage(
+  tabId,
+  url
+) {
+  await chrome.scripting.executeScript({
+    target: { tabId },
+    files: ['lib/statement-file.js']
+  });
   const [injection] = await chrome.scripting.executeScript({
     target: { tabId },
     func: async (target) => {
       const helpers = globalThis.OperaAgentStatementFile;
-      if (!helpers) return { ok: false, error: 'the statement helpers were not injected into the page.' };
+      if (!helpers) return {
+        ok: false,
+        error: 'the statement helpers were not injected into the page.'
+      };
       let response;
       try {
-        response = await fetch(target, { credentials: 'include', cache: 'no-store' });
+        response = await fetch(target, {
+          credentials: 'include',
+          cache: 'no-store'
+        });
       } catch (error) {
-        return { ok: false, error: `the page could not fetch the file: ${error?.message || String(error)}` };
+        return {
+          ok: false,
+          error: `the page could not fetch the file: ${error?.message || String(error)}`
+        };
       }
-      if (!response.ok) return { ok: false, error: `the page fetched HTTP ${response.status} for the file.` };
+      if (!response.ok) return {
+        ok: false,
+        error: `the page fetched HTTP ${response.status} for the file.`
+      };
       const bytes = new Uint8Array(await response.arrayBuffer());
       const kind = helpers.kindOf(bytes);
       const pages = kind === 'pdf' ? helpers.countPages(bytes) : null;
-      return { ok: true, bytes: bytes.length, kind, pages, pagesFrom: helpers.pagesFrom(kind, pages || 0) };
+      return {
+        ok: true,
+        bytes: bytes.length,
+        kind,
+        pages,
+        pagesFrom: helpers.pagesFrom(kind, pages || 0)
+      };
     },
     args: [url]
   });
@@ -166,7 +195,10 @@ export async function statementDownload(params = {}) {
     pages: proof.pages ?? null,
     pagesFrom: proof.pagesFrom,
     balance: params.balance
-      ? { raw: String(params.balance), digits: globalThis.OperaAgentStatementFile.balanceDigits(params.balance) }
+      ? {
+        raw: String(params.balance),
+        digits: globalThis.OperaAgentStatementFile.balanceDigits(params.balance)
+      }
       : null,
     balanceFrom: params.balance ? String(params.balanceFrom || 'the page the statement was downloaded from') : null,
     deliveredAt: new Date().toISOString()
@@ -186,7 +218,10 @@ export async function statementDownload(params = {}) {
   }
   const rows = existing
     ? manifest.rows.map((entry) => (same(entry) ? row : entry))
-    : [...manifest.rows, row];
+    : [
+      ...manifest.rows,
+      row
+    ];
   const saved = await saveManifest({ rows });
   log.debug('STATEMENT_DELIVERED', `${row.client} ${row.period} ${row.kind} ${row.bytes}B`);
   return {

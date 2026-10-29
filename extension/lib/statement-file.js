@@ -17,11 +17,30 @@
 
   if (globalThis.OperaAgentStatementFile) return;
 
-  const PDF_HEAD = [0x25, 0x50, 0x44, 0x46, 0x2d]; // %PDF-
-  const ZIP_HEAD = [0x50, 0x4b, 0x03, 0x04];
-  const OLE_HEAD = [0xd0, 0xcf, 0x11, 0xe0];
+  const PDF_HEAD = [
+    0x25,
+    0x50,
+    0x44,
+    0x46,
+    0x2d
+  ]; // %PDF-
+  const ZIP_HEAD = [
+    0x50,
+    0x4b,
+    0x03,
+    0x04
+  ];
+  const OLE_HEAD = [
+    0xd0,
+    0xcf,
+    0x11,
+    0xe0
+  ];
 
-  const startsWith = (bytes, head) => {
+  const startsWith = (
+    bytes,
+    head
+  ) => {
     if (!bytes || bytes.length < head.length) return false;
     for (let i = 0; i < head.length; i += 1) {
       if (bytes[i] !== head[i]) return false;
@@ -57,7 +76,10 @@
 
   // WHY THE REASON IS PART OF THE ANSWER.
   // "Two pages" and "the file packs its pages into a compressed stream" are different facts, and only one of them tells a bookkeeper that the statement is short.
-  const pagesFrom = (kind, pages) => {
+  const pagesFrom = (
+    kind,
+    pages
+  ) => {
     if (kind !== 'pdf') return `not a PDF: sniffed as ${kind}`;
     if (!pages) return 'the file packs its pages into a compressed stream, so the count is not visible';
     return 'counted from the file structure';
@@ -76,5 +98,10 @@
     return digits ? `${negative ? '-' : ''}${digits}` : null;
   };
 
-  globalThis.OperaAgentStatementFile = { kindOf, countPages, pagesFrom, balanceDigits };
+  globalThis.OperaAgentStatementFile = {
+    kindOf,
+    countPages,
+    pagesFrom,
+    balanceDigits
+  };
 })();

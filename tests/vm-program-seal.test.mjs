@@ -26,12 +26,25 @@ function validProgram(overrides = {}) {
     programId: 'program-1',
     goalId: 'goal-1',
     goalRevision: 1,
-    target: { deviceId: 'opera', tabId: 1 },
+    target: {
+      deviceId: 'opera',
+      tabId: 1
+    },
     root: {
       type: 'SEQUENCE',
       children: [
-        { type: 'COMMAND', method: 'page.find', arguments: { text: 'Skip' }, resultBinding: 'hit' },
-        { type: 'COMMAND', method: 'page.read', arguments: {}, resultBinding: 'text' }
+        {
+          type: 'COMMAND',
+          method: 'page.find',
+          arguments: { text: 'Skip' },
+          resultBinding: 'hit'
+        },
+        {
+          type: 'COMMAND',
+          method: 'page.read',
+          arguments: {},
+          resultBinding: 'text'
+        }
       ]
     },
     budgets: {},
@@ -41,7 +54,10 @@ function validProgram(overrides = {}) {
   };
 }
 
-async function refusal(promise, code) {
+async function refusal(
+  promise,
+  code
+) {
   try {
     await promise;
   } catch (error) {
@@ -60,7 +76,10 @@ test('a smuggled tenantId is overwritten with the caller', async () => {
 test('an attacker digest is stripped and the seal matches independent recomputation', async () => {
   const sealed = await sealVmProgram(validProgram(), caller);
   assert.notEqual(sealed.programDigest, `sha256:${'0'.repeat(64)}`);
-  const { programDigest, ...body } = sealed;
+  const {
+    programDigest,
+    ...body
+  } = sealed;
   assert.equal(programDigest, await digestCanonical(body));
 });
 
@@ -109,12 +128,20 @@ test('a wrong schemaVersion is refused', async () => {
 
 test('a root carrying steps is refused; a command root without children is refused', async () => {
   await refusal(
-    sealVmProgram(validProgram({ root: { type: 'COMMAND', method: 'page.read', arguments: {} } }), caller),
+    sealVmProgram(validProgram({ root: {
+      type: 'COMMAND',
+      method: 'page.read',
+      arguments: {}
+    } }), caller),
     'INVALID_PROGRAM'
   );
   await refusal(
     sealVmProgram(
-      validProgram({ root: { type: 'SEQUENCE', children: [], steps: [] } }),
+      validProgram({ root: {
+        type: 'SEQUENCE',
+        children: [],
+        steps: []
+      } }),
       caller
     ),
     'INVALID_PROGRAM'
@@ -127,7 +154,14 @@ test('a write method is refused; the allowlist stays read-only', async () => {
   assert.ok(!VM_READ_ONLY_METHODS.has('page.click'));
   await refusal(
     sealVmProgram(
-      validProgram({ root: { type: 'SEQUENCE', children: [{ type: 'COMMAND', method: 'page.click', arguments: {} }] } }),
+      validProgram({ root: {
+        type: 'SEQUENCE',
+        children: [{
+          type: 'COMMAND',
+          method: 'page.click',
+          arguments: {}
+        }]
+      } }),
       caller
     ),
     'DISALLOWED_COMMAND'
@@ -140,7 +174,11 @@ test('a burst step outside read/find/wait is refused; the three actions seal', a
     validProgram({
       root: {
         type: 'SEQUENCE',
-        children: [{ type: 'COMMAND', method: 'browser.burst', arguments: { steps } }]
+        children: [{
+          type: 'COMMAND',
+          method: 'browser.burst',
+          arguments: { steps }
+        }]
       }
     }),
     caller
@@ -152,7 +190,11 @@ test('a burst step outside read/find/wait is refused; the three actions seal', a
       validProgram({
         root: {
           type: 'SEQUENCE',
-          children: [{ type: 'COMMAND', method: 'browser.burst', arguments: { steps: [{ action: 'click' }] } }]
+          children: [{
+            type: 'COMMAND',
+            method: 'browser.burst',
+            arguments: { steps: [{ action: 'click' }] }
+          }]
         }
       }),
       caller
@@ -169,7 +211,10 @@ test('a wait observation outside the read-only set is refused', async () => {
       validProgram({
         root: {
           type: 'SEQUENCE',
-          children: [{ type: 'WAIT_EVENT', observation: { method: 'page.click' } }]
+          children: [{
+            type: 'WAIT_EVENT',
+            observation: { method: 'page.click' }
+          }]
         }
       }),
       caller
@@ -180,7 +225,10 @@ test('a wait observation outside the read-only set is refused', async () => {
     validProgram({
       root: {
         type: 'SEQUENCE',
-        children: [{ type: 'WAIT_EVENT', observation: { method: 'page.read' } }]
+        children: [{
+          type: 'WAIT_EVENT',
+          observation: { method: 'page.read' }
+        }]
       }
     }),
     caller
@@ -189,7 +237,10 @@ test('a wait observation outside the read-only set is refused', async () => {
 });
 
 test('a missing goalId and a non-object program are refused', async () => {
-  const { goalId: _dropped, ...noGoal } = validProgram();
+  const {
+    goalId: _dropped,
+    ...noGoal
+  } = validProgram();
   await refusal(sealVmProgram(noGoal, caller), 'INVALID_PROGRAM');
   await refusal(sealVmProgram(null, caller), 'INVALID_PROGRAM');
   await refusal(sealVmProgram([validProgram()], caller), 'INVALID_PROGRAM');

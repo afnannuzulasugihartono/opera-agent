@@ -29,10 +29,30 @@ test('find_in_list checks first, crawls bounded, reports honestly', () => {
 
 test('find_in_list uses only known runner step types and methods', () => {
   const def = definition();
-  const types = new Set(['command', 'if', 'set', 'repeat', 'foreach', 'wait', 'fail']);
+  const types = new Set([
+    'command',
+    'if',
+    'set',
+    'repeat',
+    'foreach',
+    'wait',
+    'fail'
+  ]);
   const methods = new Set([
-    'tabs.open', 'tabs.get', 'tabs.find', 'tabs.activate',
-    'page.wait_for', 'page.query', 'page.find', 'page.click', 'page.key', 'page.pointer', 'page.read', 'page.scroll', 'page.capture', 'media.state'
+    'tabs.open',
+    'tabs.get',
+    'tabs.find',
+    'tabs.activate',
+    'page.wait_for',
+    'page.query',
+    'page.find',
+    'page.click',
+    'page.key',
+    'page.pointer',
+    'page.read',
+    'page.scroll',
+    'page.capture',
+    'media.state'
   ]);
   const walk = (steps) => {
     for (const step of steps || []) {

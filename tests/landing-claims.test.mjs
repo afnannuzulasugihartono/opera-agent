@@ -16,7 +16,20 @@ import { mcpSurfaceSourceSync } from './helpers/mcp-surface-source.mjs';
 const root = new URL('..', import.meta.url);
 const read = (name) => fs.readFileSync(new URL(name, root), 'utf8');
 
-const site = ['landing/beranda.html', 'landing/index.html', 'landing/akun.html', 'landing/privasi.html', 'landing/syarat.html', 'landing/unduh.html', 'landing/unduh-berkas.html', 'landing/404.html', 'landing/fitur.html', 'landing/dukungan.html', 'landing/dashboard.html', 'landing/oauth/consent.html']
+const site = [
+  'landing/beranda.html',
+  'landing/index.html',
+  'landing/akun.html',
+  'landing/privasi.html',
+  'landing/syarat.html',
+  'landing/unduh.html',
+  'landing/unduh-berkas.html',
+  'landing/404.html',
+  'landing/fitur.html',
+  'landing/dukungan.html',
+  'landing/dashboard.html',
+  'landing/oauth/consent.html'
+]
   .map(read).join('\n');
 
 const manifest = JSON.parse(read('extension/manifest.json'));
@@ -25,7 +38,6 @@ const content = contentSource();
 const background = await extensionSource();
 
 test('no page states a version, because a stated version is a promise nothing keeps', () => {
-
   const copy = site.replace(/<!--[\s\S]*?-->/g, '')
     .replace(/Opera Agent\s*\d+\.\d+\.\d+/g, 'Opera Agent VERSION')
     .replace(/opera-agent-\d+\.\d+\.\d+/g, 'opera-agent-VERSION');
@@ -51,7 +63,19 @@ test('the primitive count on the site equals the allowlist the extension enforce
 
 test('the site names the permission count it asks the reader to accept', () => {
   const count = manifest.permissions.length;
-  const words = ['nol', 'satu', 'dua', 'tiga', 'empat', 'lima', 'enam', 'tujuh', 'delapan', 'sembilan', 'sepuluh'];
+  const words = [
+    'nol',
+    'satu',
+    'dua',
+    'tiga',
+    'empat',
+    'lima',
+    'enam',
+    'tujuh',
+    'delapan',
+    'sembilan',
+    'sepuluh'
+  ];
   assert.ok(count > 0 && count < words.length, 'the manifest declares a count this test can spell');
   assert.match(site, new RegExp(`\\b(${count}|${words[count]})\\s+izin`, 'i'),
     `the permission count is stated as ${count} or ${words[count]}`);
@@ -60,7 +84,6 @@ test('the site names the permission count it asks the reader to accept', () => {
 });
 
 test('the site promises no speed the runtime has not measured', () => {
-
   const MODEL_IDS = ['llama-3.1-8b-instant'];
   let text = site;
   for (const id of MODEL_IDS) text = text.split(id).join('');
@@ -73,12 +96,27 @@ test('the site does not claim a store listing that does not exist', () => {
 });
 
 test('the refusals the site advertises are the refusals the runtime enforces', () => {
-
   const guards = [
-    ['password', content, /type === 'password'/],
-    ['kode sekali pakai', content, /one-time-code/],
-    ['pembayaran', content, /cvv|cvc/],
-    ['private', background, /tab\.incognito/],
+    [
+      'password',
+      content,
+      /type === 'password'/
+    ],
+    [
+      'kode sekali pakai',
+      content,
+      /one-time-code/
+    ],
+    [
+      'pembayaran',
+      content,
+      /cvv|cvc/
+    ],
+    [
+      'private',
+      background,
+      /tab\.incognito/
+    ],
   ];
   for (const [phrase, source, guard] of guards) {
     assert.ok(site.includes(phrase), `the site must state the ${phrase} refusal`);
@@ -87,7 +125,6 @@ test('the refusals the site advertises are the refusals the runtime enforces', (
 });
 
 test('the shared-key rule is stated as a refusal, not as a promise', () => {
-
   assert.match(site, /tidak pernah menerbitkan kunci bersama/, 'the terms refuse a shared key');
   assert.doesNotMatch(site, /kunci API kami|api key kami|shared (model )?key/i, 'no page offers a key of ours');
 });

@@ -12,8 +12,15 @@ const $ = (id) => document.getElementById(id);
 let currentTabId = null;
 let currentTabPrivate = false;
 
-async function call(action, extra = {}) {
-  return chrome.runtime.sendMessage({ scope: 'opera-agent-popup', action, ...extra });
+async function call(
+  action,
+  extra = {}
+) {
+  return chrome.runtime.sendMessage({
+    scope: 'opera-agent-popup',
+    action,
+    ...extra
+  });
 }
 
 function friendlyTime(value) {
@@ -40,7 +47,10 @@ function friendlyStatus(status) {
   return labels[status] || status.replace(/\b\w/g, (character) => character.toUpperCase());
 }
 
-function setBusy(button, busy) {
+function setBusy(
+  button,
+  busy
+) {
   button.disabled = busy;
 }
 
@@ -121,7 +131,10 @@ $('privateTabButton').addEventListener('click', async () => {
   if (currentTabId == null) return;
   setBusy($('privateTabButton'), true);
   try {
-    const result = await call('toggle-private-tab', { tabId: currentTabId, private: !currentTabPrivate });
+    const result = await call('toggle-private-tab', {
+      tabId: currentTabId,
+      private: !currentTabPrivate
+    });
     if (!result?.ok) throw new Error(result?.error || 'Unable to update tab privacy.');
     await refresh();
   } catch (error) {
@@ -132,7 +145,9 @@ $('privateTabButton').addEventListener('click', async () => {
   }
 });
 
-const refreshQuietly = () => { refresh().catch(() => {}) };
+const refreshQuietly = () => {
+  refresh().catch(() => {})
+};
 
 refreshQuietly();
 setInterval(refreshQuietly, 1500);

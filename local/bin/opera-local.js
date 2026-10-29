@@ -18,14 +18,37 @@
 // npx must work without a config file, so the two things a user may need to override, which port and which browser, are environment variables rather than arguments a client would have to know about.
 
 import { createRequire } from 'node:module';
-import { dirname, join } from 'node:path';
+import {
+  dirname,
+  join
+} from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { openSession, installedBrowsers } from '../driver.js';
-import { windowState, focusWindow } from '../window-focus.js';
-import { dialogState, dialogType, dialogPress } from '../dialog.js';
+import {
+  openSession,
+  installedBrowsers
+} from '../driver.js';
+import {
+  windowState,
+  focusWindow
+} from '../window-focus.js';
+import {
+  dialogState,
+  dialogType,
+  dialogPress
+} from '../dialog.js';
 import { createSessionStore } from '../sessions.js';
-import { listPageWebSockets, openTab, closeTab } from '../transport.js';
-import { bridgePort, bridgeReachable, closeBridgeTarget, listBridgeTargets, openBridgeTarget } from '../bridge.js';
+import {
+  listPageWebSockets,
+  openTab,
+  closeTab
+} from '../transport.js';
+import {
+  bridgePort,
+  bridgeReachable,
+  closeBridgeTarget,
+  listBridgeTargets,
+  openBridgeTarget
+} from '../bridge.js';
 import { guide } from '../agent-guide.js';
 import { startStdio } from '../mcp-server.js';
 
@@ -43,7 +66,12 @@ async function bridged() {
   return process.env.OPERA_LOCAL_TRANSPORT !== 'cdp' && await bridgeReachable();
 }
 
-const store = createSessionStore({ openSession, port: PORT, browserId: BROWSER, viaBridge: null });
+const store = createSessionStore({
+  openSession,
+  port: PORT,
+  browserId: BROWSER,
+  viaBridge: null
+});
 const open = (options) => store.open(options);
 const attach = () => store.attach();
 
@@ -65,150 +93,153 @@ async function reachable() {
 const driver = {
   async tabs() {
     if (await bridged()) return listBridgeTargets();
-    return (await listPageWebSockets(PORT)).map(({ id, url, title }) => ({ id, url, title }));
+    return (await listPageWebSockets(PORT)).map(({
+      id,
+      url,
+      title
+    }) => ({
+      id,
+      url,
+      title
+    }));
   },
-
   async open(url) {
     if (await bridged()) {
       const tab = await openBridgeTarget(url);
-      return { url, id: tab.id, port: bridgePort() };
+      return {
+        url,
+        id: tab.id,
+        port: bridgePort()
+      };
     }
     const tab = await openTab(PORT, url);
-    return { url, id: tab.id, port: PORT };
+    return {
+      url,
+      id: tab.id,
+      port: PORT
+    };
   },
-
   async close(tabId) {
     return store.closeTab(tabId, async (id) => await bridged() ? closeBridgeTarget(id) : closeTab(PORT, id));
   },
-
-  async ask(method, params) {
+  async ask(
+    method,
+    params
+  ) {
     return (await attach()).ask(method, params);
   },
-
   async guide(topic) {
     return guide(topic);
   },
-
   async menuTree(options) {
     return (await attach()).menuTree(options);
   },
-
   async openMenu(options) {
     return (await attach()).openMenu(options);
   },
-
   async read() {
     return (await attach()).read();
   },
-
   async settle() {
     return (await attach()).settle();
   },
-
   async find(query) {
     return (await attach()).find(query);
   },
-
   async clickFraction(at) {
     return (await attach()).clickFraction(at);
   },
-
-  async click(x, y, handle) {
+  async click(
+    x,
+    y,
+    handle
+  ) {
     return (await attach()).click(x, y, handle);
   },
-
-  async resolve(role, name) {
+  async resolve(
+    role,
+    name
+  ) {
     return (await attach()).resolve(role, name);
   },
-
-  async hover(x, y) {
+  async hover(
+    x,
+    y
+  ) {
     return (await attach()).hover(x, y);
   },
-
-  async clickRow(role, name) {
+  async clickRow(
+    role,
+    name
+  ) {
     return (await attach()).clickRow(role, name);
   },
-
-  async key(name, modifiers) {
+  async key(
+    name,
+    modifiers
+  ) {
     return (await attach()).key(name, modifiers);
   },
-
   async type(text) {
     return (await attach()).type(text);
   },
-
   async keys(events) {
     return (await attach()).keys(events);
   },
-
   async snapshot(limit) {
     return (await attach()).snapshot(limit);
   },
-
   async caretLine() {
     return (await attach()).caretLine();
   },
-
   async windowState() {
     return windowState();
   },
-
   async focusWindow(match) {
     return focusWindow(match);
   },
-
   async ensureFront(options) {
     return (await attach()).ensureFront(options);
   },
-
   async captureSized(options) {
     return (await attach()).captureSized(options);
   },
-
   async dialogState() {
     return dialogState();
   },
-
   async dialogType(text) {
     return dialogType(text);
   },
-
   async dialogPress(name) {
     return dialogPress(name);
   },
-
   async waitForRow(options) {
     return (await attach()).waitForRow(options);
   },
-
-  async waitForText(text, options) {
+  async waitForText(
+    text,
+    options
+  ) {
     return (await attach()).waitForText(text, options);
   },
-
   async waitForStill(options) {
     return (await attach()).waitForStill(options);
   },
-
   async upload(options) {
     return (await attach()).upload(options);
   },
-
   async dropFile(options) {
     return (await attach()).dropFile(options);
   },
-
   async interceptFileChooser(enabled) {
     return (await attach()).interceptFileChooser(enabled);
   },
-
   async download(options) {
     return (await attach()).download(options);
   },
-
   async pageState() {
     return (await attach()).pageState();
   },
-
   async capture(options) {
     return (await attach()).capture(options);
   }

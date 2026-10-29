@@ -6,7 +6,11 @@
 import { digestCanonical } from './goal-ledger.js';
 
 export class CommandFailure extends Error {
-  constructor(code, message, details) {
+  constructor(
+    code,
+    message,
+    details
+  ) {
     super(message);
     this.name = 'CommandFailure';
     this.code = code;
@@ -17,17 +21,35 @@ export class CommandFailure extends Error {
 export const VM_PROGRAM_VERSION = 'OA_REACTIVE_VM_V1';
 
 export const VM_READ_ONLY_METHODS = new Set([
-  'browser.ping', 'browser.burst', 'tabs.list', 'tabs.get', 'tabs.find',
-  'page.read', 'page.query', 'page.find', 'page.collect_links', 'page.capture',
-  'page.wait_for', 'media.state'
+  'browser.ping',
+  'browser.burst',
+  'tabs.list',
+  'tabs.get',
+  'tabs.find',
+  'page.read',
+  'page.query',
+  'page.find',
+  'page.collect_links',
+  'page.capture',
+  'page.wait_for',
+  'media.state'
 ]);
 
 export const VM_OBSERVATION_METHODS = new Set([
-  'page.read', 'page.query', 'page.find', 'page.collect_links', 'page.capture',
-  'page.wait_for', 'media.state'
+  'page.read',
+  'page.query',
+  'page.find',
+  'page.collect_links',
+  'page.capture',
+  'page.wait_for',
+  'media.state'
 ]);
 
-export const VM_BURST_STEP_ACTIONS = new Set(['read', 'find', 'wait']);
+export const VM_BURST_STEP_ACTIONS = new Set([
+  'read',
+  'find',
+  'wait'
+]);
 
 export const VM_BUDGET_MAXIMA = {
   serializedProgramBytes: 131072,
@@ -75,7 +97,11 @@ function isVmRecord(value) {
   return proto === Object.prototype || proto === null;
 }
 
-function assertSealableNode(node, path, depth = 1) {
+function assertSealableNode(
+  node,
+  path,
+  depth = 1
+) {
   if (depth > 64) throw new CommandFailure('INVALID_PROGRAM', `${path} nests deeper than the sealing walk.`);
   if (!isVmRecord(node)) throw new CommandFailure('INVALID_PROGRAM', `${path} must be an object.`);
   if (Object.hasOwn(node, 'steps')) {
@@ -84,7 +110,10 @@ function assertSealableNode(node, path, depth = 1) {
   switch (node.type) {
     case 'SEQUENCE': {
       if (!Array.isArray(node.children)) throw new CommandFailure('INVALID_PROGRAM', `${path}.children must be an array.`);
-      node.children.forEach((child, index) => assertSealableNode(child, `${path}.children[${index}]`, depth + 1));
+      node.children.forEach((
+        child,
+        index
+      ) => assertSealableNode(child, `${path}.children[${index}]`, depth + 1));
       return;
     }
     case 'IF': {
@@ -129,7 +158,10 @@ function assertSealableNode(node, path, depth = 1) {
   }
 }
 
-export async function sealVmProgram(programInput, caller) {
+export async function sealVmProgram(
+  programInput,
+  caller
+) {
   if (!caller || typeof caller.userId !== 'string' || !caller.userId) {
     throw new CommandFailure('UNAUTHORIZED', 'run_program needs a user access token; the static token names no tenant, so the VM host could not scope the run.');
   }
@@ -171,8 +203,15 @@ export async function sealVmProgram(programInput, caller) {
   for (const key of Object.keys(provided)) {
     if (!Object.hasOwn(VM_BUDGET_MAXIMA, key)) throw new CommandFailure('INVALID_SCHEMA', `program.budgets.${key} is not a VM budget.`);
   }
-  const { programDigest: _ignored, ...body } = programInput;
-  const sealed = { ...body, budgets, tenantId: caller.userId };
+  const {
+    programDigest: _ignored,
+    ...body
+  } = programInput;
+  const sealed = {
+    ...body,
+    budgets,
+    tenantId: caller.userId
+  };
   sealed.programDigest = await digestCanonical(sealed);
   return sealed;
 }

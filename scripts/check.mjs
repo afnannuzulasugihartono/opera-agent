@@ -8,17 +8,30 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import assert from 'node:assert/strict';
-import { execFileSync, spawnSync } from 'node:child_process';
-import { ALLOWED_METHODS, PRODUCT_VERSION } from '../extension/lib/protocol.js';
+import {
+  execFileSync,
+  spawnSync
+} from 'node:child_process';
+import {
+  ALLOWED_METHODS,
+  PRODUCT_VERSION
+} from '../extension/lib/protocol.js';
 import { extensionSource } from '../tests/helpers/extension-source.mjs';
 import { contentSource } from '../tests/helpers/content-source.mjs';
-import { indentViolations, listViolations } from '../tests/helpers/vertical-lists.mjs';
-import { VERTICAL_LIST_BASELINE, VERTICAL_LIST_PENDING } from './vertical-lists-baseline.mjs';
+import {
+  indentViolations,
+  listViolations
+} from '../tests/helpers/vertical-lists.mjs';
+import {
+  VERTICAL_LIST_BASELINE,
+  VERTICAL_LIST_PENDING
+} from './vertical-lists-baseline.mjs';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 
 const gateVerdict = spawnSync(process.execPath, [path.join(root, 'scripts/gates.mjs')], {
-  encoding: 'utf8', stdio: 'pipe'
+  encoding: 'utf8',
+  stdio: 'pipe'
 });
 if (gateVerdict.status !== 0) {
   console.error(gateVerdict.stderr || gateVerdict.stdout || 'gates: verification failed');
@@ -42,7 +55,10 @@ const extensionId = [...identityDigest].map((byte) => `${String.fromCharCode(97 
 
 assert.equal(extensionId, 'ofgemipoobcnbjkfanmofjbdonjapmgl');
 
-function collectRuntimeFiles(relativeDir, extensions) {
+function collectRuntimeFiles(
+  relativeDir,
+  extensions
+) {
   const absoluteDir = path.join(root, relativeDir);
   return fs.readdirSync(absoluteDir, { withFileTypes: true }).flatMap((entry) => {
     const relativePath = path.join(relativeDir, entry.name);
@@ -54,9 +70,15 @@ function collectRuntimeFiles(relativeDir, extensions) {
 const files = [
   ...collectRuntimeFiles('extension', new Set(['.js'])),
   ...collectRuntimeFiles('lib', new Set(['.js'])),
-  ...collectRuntimeFiles('supabase/functions', new Set(['.js', '.ts'])),
+  ...collectRuntimeFiles('supabase/functions', new Set([
+    '.js',
+    '.ts'
+  ])),
   ...collectRuntimeFiles('supabase/migrations', new Set(['.sql'])),
-].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+].sort((
+  a,
+  b
+) => (a < b ? -1 : a > b ? 1 : 0));
 
 for (const file of files) {
   const text = fs.readFileSync(path.join(root, file), 'utf8');
@@ -65,7 +87,10 @@ for (const file of files) {
 
   if (file.endsWith('.js') && !file.startsWith('supabase' + path.sep)) {
     try {
-      execFileSync(process.execPath, ['--check', path.join(root, file)], { stdio: 'pipe' });
+      execFileSync(process.execPath, [
+        '--check',
+        path.join(root, file)
+      ], { stdio: 'pipe' });
     } catch (error) {
       assert.fail(`${file} must parse as standalone JavaScript: ${String(error.stderr || error.message).slice(0, 300)}`);
     }
@@ -110,7 +135,12 @@ const mcp = fs.readFileSync(path.join(root, 'supabase/functions/opera-agent-mcp/
 const mcpVersion = /const SERVER_VERSION = "([0-9]+\.[0-9]+\.[0-9]+)"/.exec(mcp);
 assert.ok(mcpVersion, 'the MCP server must declare a three-part version it can be compared on');
 assert.equal(mcpVersion[1], manifest.version, 'the version the MCP server reports must be the released one');
-assert.match(mcp, /\{ name: "opera-agent", version: SERVER_VERSION \}/, 'the declared version must be the one handed to the MCP server');
+
+// WHY THESE MATCH ACROSS LINES.
+// A list of properties is written one per line, so the two facts a check cares about may sit on two lines instead of one.
+// The pattern allows the whitespace between them, because what is being asserted is which version is handed to the server, not how the object is laid out.
+
+assert.match(mcp, /\{\s*name: "opera-agent",\s*version: SERVER_VERSION\s*\}/, 'the declared version must be the one handed to the MCP server');
 
 const secretLiteral = /const SECRET_VALUE = \/\(\?:-----BEGIN/;
 for (const file of files) {
@@ -155,8 +185,18 @@ for (const marker of ['BURST_MAX_STEPS', 'BURST_MAX_TIMEOUT_MS', 'runBurst', 'MA
 // The pending set is the debt: a file leaves it when it conforms, a new file is never allowed in, and the count may only fall.
 
 const codeFiles = [...new Set([
-  ...execFileSync('git', ['ls-files'], { cwd: root, encoding: 'utf8' }).split('\n'),
-  ...execFileSync('git', ['ls-files', '--others', '--exclude-standard'], { cwd: root, encoding: 'utf8' }).split('\n')
+  ...execFileSync('git', ['ls-files'], {
+    cwd: root,
+    encoding: 'utf8'
+  }).split('\n'),
+  ...execFileSync('git', [
+    'ls-files',
+    '--others',
+    '--exclude-standard'
+  ], {
+    cwd: root,
+    encoding: 'utf8'
+  }).split('\n')
 ])].filter((file) => file && /\.(?:js|mjs|cjs|ts|jsx|tsx)$/.test(file));
 const verticalPending = new Set(VERTICAL_LIST_PENDING);
 for (const file of verticalPending) {

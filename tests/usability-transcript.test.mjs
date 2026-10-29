@@ -18,12 +18,34 @@ const workflow = JSON.parse(
     .match(/\$wf\$([\s\S]*?)\$wf\$::jsonb/)[1]
 );
 
-const walk = (steps, visit, parents = []) => {
+const walk = (
+  steps,
+  visit,
+  parents = []
+) => {
   for (const step of steps || []) {
     visit(step, parents);
-    if (Array.isArray(step?.then)) walk(step.then, visit, [...parents, { via: 'then', step }]);
-    if (Array.isArray(step?.else)) walk(step.else, visit, [...parents, { via: 'else', step }]);
-    if (Array.isArray(step?.steps)) walk(step.steps, visit, [...parents, { via: 'loop', step }]);
+    if (Array.isArray(step?.then)) walk(step.then, visit, [
+      ...parents,
+      {
+        via: 'then',
+        step
+      }
+    ]);
+    if (Array.isArray(step?.else)) walk(step.else, visit, [
+      ...parents,
+      {
+        via: 'else',
+        step
+      }
+    ]);
+    if (Array.isArray(step?.steps)) walk(step.steps, visit, [
+      ...parents,
+      {
+        via: 'loop',
+        step
+      }
+    ]);
   }
 };
 
@@ -32,7 +54,14 @@ test('v5 registers a parseable youtube.get_transcript workflow with clean output
   assert.equal(workflow.steps[0].id, 'yt');
   assert.deepEqual(
     Object.keys(workflow.output).sort(),
-    ['activatedForRender', 'openMethod', 'panelWasOpen', 'segmentCount', 'segments', 'tab']
+    [
+      'activatedForRender',
+      'openMethod',
+      'panelWasOpen',
+      'segmentCount',
+      'segments',
+      'tab'
+    ]
   );
   assert.deepEqual(workflow.output.segments, { $ref: 'steps.segments.result.items' });
   assert.deepEqual(workflow.output.segmentCount, { $ref: 'steps.segments.result.count' });
@@ -41,7 +70,9 @@ test('v5 registers a parseable youtube.get_transcript workflow with clean output
 test('primary collection is transcript-scoped, bounded, and includes hidden segments (T036)', () => {
   const [segments] = (() => {
     const found = [];
-    walk(workflow.steps, (step) => { if (step.id === 'segments') found.push(step); });
+    walk(workflow.steps, (step) => {
+      if (step.id === 'segments') found.push(step);
+    });
     return found;
   })();
   assert.equal(segments.method, 'page.query');
@@ -60,8 +91,14 @@ test('removes the unconditional previousActive read; activation branch owns it (
   const topLevel = workflow.steps.map((step) => step.id);
   assert.ok(!topLevel.includes('previousActive'), 'previousActive must not run unconditionally');
   const prevActive = [];
-  walk(workflow.steps, (step, parents) => {
-    if (step.id === 'prevActive') prevActive.push({ step, parents });
+  walk(workflow.steps, (
+    step,
+    parents
+  ) => {
+    if (step.id === 'prevActive') prevActive.push({
+      step,
+      parents
+    });
   });
   assert.equal(prevActive.length, 1);
   const guard = prevActive[0].parents.find(
@@ -69,15 +106,23 @@ test('removes the unconditional previousActive read; activation branch owns it (
   );
   assert.ok(guard, 'prevActive must sit inside the activation fallback branch (the if owning activateForRender)');
   const restore = [];
-  walk(workflow.steps, (step) => { if (step.id === 'restoreActive') restore.push(step); });
+  walk(workflow.steps, (step) => {
+    if (step.id === 'restoreActive') restore.push(step);
+  });
   assert.equal(restore.length, 1);
   assert.deepEqual(restore[0].params.tabId, { $ref: 'vars.prevActiveId' });
 });
 
 test('keeps exactly one chunked reader, only as the segment-query fallback (compatibility)', () => {
   const chunks = [];
-  walk(workflow.steps, (step, parents) => {
-    if (step.id === 'chunks') chunks.push({ step, parents });
+  walk(workflow.steps, (
+    step,
+    parents
+  ) => {
+    if (step.id === 'chunks') chunks.push({
+      step,
+      parents
+    });
   });
   assert.equal(chunks.length, 1);
   const segGuard = chunks[0].parents.find((entry) => entry.step.id === 'segmentsAvailable');
@@ -86,7 +131,6 @@ test('keeps exactly one chunked reader, only as the segment-query fallback (comp
 });
 
 test('structural cost reduction is deterministic: commands and payload (T037)', () => {
-
   const isCommand = (step) => step?.type === 'command';
 
   const v5 =
@@ -106,10 +150,8 @@ test('structural cost reduction is deterministic: commands and payload (T037)', 
       + 1
       + rounds;
     if (rounds === 1) {
-
       assert.ok(v4 === v5 + 1);
     } else if (rounds >= 12) {
-
       assert.ok(v4 >= 2 * v5, `at ${rounds} rounds v4 (${v4}) must cost >= 2x v5 (${v5}) commands`);
     }
   }
@@ -121,7 +163,6 @@ test('structural cost reduction is deterministic: commands and payload (T037)', 
 });
 
 test('records the honest T037 boundary: single-run baseline is non-distributional', () => {
-
   const migrationSql = fs.readFileSync(
     new URL(`../supabase/migrations/${r7MigrationName}`, import.meta.url), 'utf8'
   );

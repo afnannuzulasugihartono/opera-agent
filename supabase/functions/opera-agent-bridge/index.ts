@@ -6,13 +6,22 @@
 import "@supabase/edge-runtime";
 import { createClient } from "@supabase/supabase-js";
 import { createEdgeLog } from "../_shared/edge-log.js";
-import { CORS_DEFAULT_ORIGINS, resolveAllowedOrigin } from "../_shared/cors.js";
-import { isUpgradeRequest, serveDeviceSocket } from "./bridge-socket.ts";
+import {
+  CORS_DEFAULT_ORIGINS,
+  resolveAllowedOrigin
+} from "../_shared/cors.js";
+import {
+  isUpgradeRequest,
+  serveDeviceSocket
+} from "./bridge-socket.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
-  auth: { persistSession: false, autoRefreshToken: false }
+  auth: {
+    persistSession: false,
+    autoRefreshToken: false
+  }
 });
 
 const cors = {
@@ -26,19 +35,34 @@ function withCors(req: Request, res: Response): Response {
   const headers = new Headers(res.headers);
   if (origin === null) headers.delete("Access-Control-Allow-Origin");
   else headers.set("Access-Control-Allow-Origin", origin);
-  return new Response(res.body, { status: res.status, statusText: res.statusText, headers });
+  return new Response(res.body, {
+    status: res.status,
+    statusText: res.statusText,
+    headers
+  });
 }
 
 const MAX_BODY = 1024 * 1024;
 
-function json(data: unknown, status = 200) {
+function json(
+  data: unknown,
+  status = 200
+) {
   return new Response(JSON.stringify(data), {
     status,
-    headers: { ...cors, "Content-Type": "application/json; charset=utf-8" }
+    headers: {
+      ...cors,
+      "Content-Type": "application/json; charset=utf-8"
+    }
   });
 }
 
-function clamp(value: unknown, min: number, max: number, fallback: number) {
+function clamp(
+  value: unknown,
+  min: number,
+  max: number,
+  fallback: number
+) {
   const n = Number(value);
   return Number.isFinite(n) ? Math.min(max, Math.max(min, n)) : fallback;
 }
@@ -57,7 +81,11 @@ function validDeviceName(value: unknown): value is string {
   return typeof value === "string" && value.trim().length >= 1 && value.trim().length <= 64;
 }
 
-async function rpc(name: string, args: Record<string, unknown>) {
+async function rpc(
+  name: string,
+  args: Record<string,
+  unknown>
+) {
   if (directDb) {
     try {
       return await rpcViaDirect(name, args);
@@ -65,7 +93,10 @@ async function rpc(name: string, args: Record<string, unknown>) {
       directDb = null;
     }
   }
-  const { data, error } = await supabase.rpc(name, args);
+  const {
+    data,
+    error
+  } = await supabase.rpc(name, args);
   if (error) throw new Error(`${name}: ${error.message}`);
   return data as Record<string, unknown> | null;
 }
@@ -76,18 +107,29 @@ async function rpc(name: string, args: Record<string, unknown>) {
 // A socket holds its isolate open for as long as the device stays connected, so the first completion pays the handshake once and every completion after it skips the gateway.
 // The function invoked and its return shape are identical either way, and a direct call that fails falls back rather than failing the completion.
 
-let directDb: { sql: (...args: unknown[]) => Promise<unknown[]> } | null = null;
+let directDb: {
+  sql: (...args: unknown[]) => Promise<unknown[]>
+} | null = null;
 
-async function rpcViaDirect(name: string, args: Record<string, unknown>) {
+async function rpcViaDirect(
+  name: string,
+  args: Record<string,
+  unknown>
+) {
   if (!directDb) throw new Error("no direct connection");
   if (!/^[a-z_][a-z0-9_]*$/.test(name)) throw new Error(`refused function name: ${name}`);
   const keys = Object.keys(args);
   const values = keys.map((k) => args[k] === undefined ? null : args[k]);
-  const placeholders = keys.map((k, i) => {
+  const placeholders = keys.map((
+    k,
+    i
+  ) => {
     if (!/^[a-z_][a-z0-9_]*$/.test(k)) throw new Error(`refused argument name: ${k}`);
     return `${k} := $${i + 1}`;
   }).join(", ");
-  const rows = await directDb.sql(`select public."${name}"(${placeholders}) as data`, values) as Array<{ data: unknown }>;
+  const rows = await directDb.sql(`select public."${name}"(${placeholders}) as data`, values) as Array<{
+    data: unknown
+  }>;
   if (!rows.length) return null;
   return rows[0].data as Record<string, unknown> | null;
 }
@@ -97,17 +139,33 @@ async function connectDirectDb(): Promise<void> {
   const url = Deno.env.get("SUPABASE_DB_URL") ?? "";
   if (!url) throw new Error("No direct database url is configured.");
   const { default: postgres } = await import("postgres");
-  const pg = postgres(url, { max: 3, connect_timeout: 10, idle_timeout: 30 });
+  const pg = postgres(url, {
+    max: 3,
+    connect_timeout: 10,
+    idle_timeout: 30
+  });
   await pg`select 1`;
-  directDb = { sql: (text: unknown, values: unknown) => pg.unsafe(text as string, values as unknown[], { prepare: true }) as unknown as Promise<unknown[]> };
+  directDb = { sql: (
+    text: unknown,
+    values: unknown
+  ) => pg.unsafe(text as string, values as unknown[], { prepare: true }) as unknown as Promise<unknown[]> };
 }
 
-async function pair(body: Record<string, unknown>) {
+async function pair(
+  body: Record<string,
+  unknown>
+) {
   if (typeof body.code !== "string" || body.code.trim().length < 8 || body.code.length > 64) {
-    return json({ ok: false, error: "Invalid pairing code." }, 400);
+    return json({
+      ok: false,
+      error: "Invalid pairing code."
+    }, 400);
   }
   if (!validToken(body.token) || !validDeviceName(body.deviceName)) {
-    return json({ ok: false, error: "Invalid pairing request." }, 400);
+    return json({
+      ok: false,
+      error: "Invalid pairing request."
+    }, 400);
   }
   const browserName = typeof body.browserName === "string" ? body.browserName.trim().slice(0, 64) : "";
   const result = await rpc("opera_pair_device", {
@@ -119,12 +177,20 @@ async function pair(body: Record<string, unknown>) {
     p_capabilities: Array.isArray(body.capabilities) ? body.capabilities.slice(0, 100) : [],
     p_browser_name: browserName
   });
-  return json(result || { ok: false, error: "Pairing failed." }, result?.ok ? 200 : 401);
+  return json(result || {
+    ok: false, error: "Pairing failed."
+  }, result?.ok ? 200 : 401);
 }
 
-async function heartbeat(body: Record<string, unknown>) {
+async function heartbeat(
+  body: Record<string,
+  unknown>
+) {
   if (!validToken(body.token) || !validDeviceName(body.deviceName)) {
-    return json({ ok: false, error: "Unauthorized device." }, 401);
+    return json({
+      ok: false,
+      error: "Unauthorized device."
+    }, 401);
   }
   const result = await rpc("opera_heartbeat", {
     p_device_name: body.deviceName.trim(),
@@ -133,16 +199,24 @@ async function heartbeat(body: Record<string, unknown>) {
     p_protocol_version: clamp(body.protocolVersion, 1, 1000, 1),
     p_capabilities: Array.isArray(body.capabilities) ? body.capabilities.slice(0, 100) : []
   });
-  return json(result || { ok: false }, result?.ok ? 200 : 401);
+  return json(result || {
+    ok: false
+  }, result?.ok ? 200 : 401);
 }
 
 // WHY completion is a socket call, not an HTTP action.
 // The pull client is gone — the device learns work over its socket and answers over the same one — so the HTTP pull and complete actions were deleted with it.
 // This function stays because the socket still needs exactly what it does.
 
-async function complete(body: Record<string, unknown>) {
+async function complete(
+  body: Record<string,
+  unknown>
+) {
   if (!validToken(body.token) || !validDeviceName(body.deviceName) || typeof body.commandId !== "string") {
-    return json({ ok: false, error: "Unauthorized or invalid completion request." }, 401);
+    return json({
+      ok: false,
+      error: "Unauthorized or invalid completion request."
+    }, 401);
   }
   const result = await rpc("opera_complete_command", {
     p_device_name: body.deviceName.trim(),
@@ -150,19 +224,33 @@ async function complete(body: Record<string, unknown>) {
     p_command_id: body.commandId,
     p_ok: body.ok === true,
     p_result: body.ok === true ? (body.result ?? {}) : null,
-    p_error: body.ok === true ? null : (body.error ?? { code: "EXECUTION_ERROR", message: "Command failed." })
+    p_error: body.ok === true ? null : (body.error ?? {
+      code: "EXECUTION_ERROR",
+      message: "Command failed."
+    })
   });
-  return json(result || { ok: false }, result?.ok ? 200 : 400);
+  return json(result || {
+    ok: false
+  }, result?.ok ? 200 : 400);
 }
 
-async function watchEvent(body: Record<string, unknown>) {
+async function watchEvent(
+  body: Record<string,
+  unknown>
+) {
   if (!validToken(body.token) || !validDeviceName(body.deviceName)) {
-    return json({ ok: false, error: "Unauthorized device." }, 401);
+    return json({
+      ok: false,
+      error: "Unauthorized device."
+    }, 401);
   }
   const tokenHash = await sha256(body.token.toLowerCase());
   const env = (body.envelope && typeof body.envelope === "object") ? body.envelope as Record<string, unknown> : null;
   if (!env || typeof env.watcherId !== "string" || env.watcherId.length > 64) {
-    return json({ ok: false, error: "Invalid watch event envelope." }, 400);
+    return json({
+      ok: false,
+      error: "Invalid watch event envelope."
+    }, 400);
   }
   const result = await rpc("opera_watch_event_ingest", {
     p_device_name: body.deviceName.trim(),
@@ -170,28 +258,51 @@ async function watchEvent(body: Record<string, unknown>) {
     p_watcher_id: env.watcherId,
     p_envelope: env
   });
-  return json(result || { ok: false }, result?.ok ? 200 : 400);
+  return json(result || {
+    ok: false
+  }, result?.ok ? 200 : 400);
 }
 
-const COMMAND_EVENT_KINDS = ["received", "step", "observation", "note", "done"];
+const COMMAND_EVENT_KINDS = [
+  "received",
+  "step",
+  "observation",
+  "note",
+  "done"
+];
 const COMMAND_EVENT_ENVELOPE_MAX = 16 * 1024;
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-async function commandEvent(body: Record<string, unknown>) {
+async function commandEvent(
+  body: Record<string,
+  unknown>
+) {
   if (!validToken(body.token) || !validDeviceName(body.deviceName)) {
-    return json({ ok: false, error: "Unauthorized device." }, 401);
+    return json({
+      ok: false,
+      error: "Unauthorized device."
+    }, 401);
   }
   const commandId = String(body.commandId || "").trim();
   if (!UUID_RE.test(commandId)) {
-    return json({ ok: false, error: "Invalid command id." }, 400);
+    return json({
+      ok: false,
+      error: "Invalid command id."
+    }, 400);
   }
   const kind = String(body.kind || "").trim();
   if (!COMMAND_EVENT_KINDS.includes(kind)) {
-    return json({ ok: false, error: "Unknown event kind." }, 400);
+    return json({
+      ok: false,
+      error: "Unknown event kind."
+    }, 400);
   }
   const envelope = (body.envelope && typeof body.envelope === "object") ? body.envelope as Record<string, unknown> : {};
   if (JSON.stringify(envelope).length > COMMAND_EVENT_ENVELOPE_MAX) {
-    return json({ ok: false, error: "Event envelope too large." }, 400);
+    return json({
+      ok: false,
+      error: "Event envelope too large."
+    }, 400);
   }
   const result = await rpc("opera_emit_command_event", {
     p_device_name: String(body.deviceName).trim(),
@@ -200,37 +311,53 @@ async function commandEvent(body: Record<string, unknown>) {
     p_kind: kind,
     p_envelope: envelope
   });
-  return json(result || { ok: false }, result?.ok ? 200 : 400);
+  return json(result || {
+    ok: false
+  }, result?.ok ? 200 : 400);
 }
 
-async function startWorkflow(body: Record<string, unknown>) {
+async function startWorkflow(
+  body: Record<string,
+  unknown>
+) {
   if (!validToken(body.token) || !validDeviceName(body.deviceName)) {
-    return json({ ok: false, error: "Unauthorized device." }, 401);
+    return json({
+      ok: false,
+      error: "Unauthorized device."
+    }, 401);
   }
   const name = typeof body.name === "string" ? body.name.trim().slice(0, 100) : "";
-  if (!name) return json({ ok: false, error: "Invalid workflow name." }, 400);
+  if (!name) return json({
+    ok: false,
+    error: "Invalid workflow name."
+  }, 400);
   const result = await rpc("opera_start_workflow", {
     p_name: name,
     p_input: (body.params && typeof body.params === "object") ? body.params : {},
     p_timeout_ms: clamp(body.timeoutMs, 5000, 300000, 60000),
     p_device_name: body.deviceName.trim()
   });
-  return json(result || { ok: false }, result?.ok ? 200 : 400);
+  return json(result || {
+    ok: false
+  }, result?.ok ? 200 : 400);
 }
 
 async function readBoundedBody(req: Request, maxBytes: number): Promise<string | null> {
-
   if (!req.body) return "";
   const reader = req.body.getReader();
   const chunks: Uint8Array[] = [];
   let total = 0;
   for (;;) {
-    const { done, value } = await reader.read();
+    const {
+      done,
+      value
+    } = await reader.read();
     if (done) break;
     total += value.byteLength;
     if (total > maxBytes) {
-      try { await reader.cancel(); } catch {
-      }
+      try {
+        await reader.cancel();
+      } catch {}
       return null;
     }
     chunks.push(value);
@@ -245,16 +372,27 @@ async function readBoundedBody(req: Request, maxBytes: number): Promise<string |
 }
 
 async function handle(req: Request) {
-  if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: cors });
-  if (req.method !== "POST") return json({ ok: false, error: "POST required." }, 405);
+  if (req.method === "OPTIONS") return new Response(null, {
+    status: 204,
+    headers: cors
+  });
+  if (req.method !== "POST") return json({
+    ok: false,
+    error: "POST required."
+  }, 405);
   const length = Number(req.headers.get("content-length") || 0);
-  if (length > MAX_BODY) return json({ ok: false, error: "Request too large." }, 413);
+  if (length > MAX_BODY) return json({
+    ok: false,
+    error: "Request too large."
+  }, 413);
 
   try {
-
     const raw = await readBoundedBody(req, MAX_BODY);
     if (raw === null) {
-      return json({ ok: false, error: "Request too large." }, 413);
+      return json({
+        ok: false,
+        error: "Request too large."
+      }, 413);
     }
     const body = JSON.parse(raw) as Record<string, unknown>;
     const action = String(body.action || "");
@@ -263,14 +401,23 @@ async function handle(req: Request) {
     if (action === "watch_event") return await watchEvent(body);
     if (action === "command_event") return await commandEvent(body);
     if (action === "start_workflow") return await startWorkflow(body);
-    return json({ ok: false, error: "Unknown action." }, 400);
+    return json({
+      ok: false,
+      error: "Unknown action."
+    }, 400);
   } catch (error) {
     if (error instanceof SyntaxError) {
-      return json({ ok: false, error: "Body must be JSON." }, 400);
+      return json({
+        ok: false,
+        error: "Body must be JSON."
+      }, 400);
     }
     const message = error instanceof Error ? error.message : String(error);
     createEdgeLog({}).error("opera-agent-bridge error", message);
-    return json({ ok: false, error: "Bridge request failed." }, 500);
+    return json({
+      ok: false,
+      error: "Bridge request failed."
+    }, 500);
   }
 }
 
@@ -295,8 +442,12 @@ async function handle(req: Request) {
 // A claim is a claim no matter who asked, so both paths go through here now.
 
 async function claimForDevice(
-  identity: { deviceName: string; token: string },
-  detail: { extensionVersion?: unknown; protocolVersion?: unknown; capabilities?: unknown; waitMs?: unknown } = {}
+  identity: {
+    deviceName: string; token: string
+  },
+  detail: {
+    extensionVersion?: unknown; protocolVersion?: unknown; capabilities?: unknown; waitMs?: unknown
+  } = {}
 ) {
   const claimed = await rpc("opera_claim_next_wait", {
     p_device_name: identity.deviceName.trim(),
@@ -308,7 +459,10 @@ async function claimForDevice(
   });
 
   if (!claimed?.ok) return null;
-  return { command: claimed.command ?? null, raw: claimed };
+  return {
+    command: claimed.command ?? null,
+    raw: claimed
+  };
 }
 
 // WHY the bridge claims on an interval instead of listening.
@@ -335,7 +489,12 @@ async function claimForDevice(
 const DRAIN_POLL_MS = 100;
 const DRAIN_WAIT_MS = 10000;
 
-function subscribe(identity: { deviceName: string; token: string }, onCommand: (command: unknown) => void) {
+function subscribe(
+  identity: {
+    deviceName: string; token: string
+  },
+  onCommand: (command: unknown) => void
+) {
   let draining = false;
 
   const drain = async () => {
@@ -358,7 +517,9 @@ function subscribe(identity: { deviceName: string; token: string }, onCommand: (
   };
 
   void drain();
-  const timer = setInterval(() => { void drain(); }, DRAIN_POLL_MS);
+  const timer = setInterval(() => {
+    void drain();
+  }, DRAIN_POLL_MS);
 
   return () => {
     clearInterval(timer);
@@ -375,7 +536,9 @@ function subscribe(identity: { deviceName: string; token: string }, onCommand: (
 // Loading the driver plus a TCP connect and a round trip costs hundreds of milliseconds on a cold isolate, and the handshake does not need any of it: the verify already answered over HTTPS, and a completion that arrives before the warm finishes simply takes the same HTTPS road.
 // Warming only starts after the token verified, so a guess never buys a connection.
 
-async function verifyDeviceSocket(identity: { token: string; deviceName: string }) {
+async function verifyDeviceSocket(identity: {
+  token: string; deviceName: string
+}) {
   if (!validToken(identity.token) || !validDeviceName(identity.deviceName)) {
     return { ok: false };
   }
@@ -384,8 +547,13 @@ async function verifyDeviceSocket(identity: { token: string; deviceName: string 
     p_token_hash: await sha256(identity.token.toLowerCase())
   });
   if (!deviceId) return { ok: false };
-  connectDirectDb().catch(() => { directDb = null; });
-  return { ok: true, deviceId };
+  connectDirectDb().catch(() => {
+    directDb = null;
+  });
+  return {
+    ok: true,
+    deviceId
+  };
 }
 
 Deno.serve((req: Request) => {

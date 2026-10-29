@@ -10,11 +10,18 @@ import { extensionSource } from './helpers/extension-source.mjs';
 import { mcpSurfaceSourceSync } from './helpers/mcp-surface-source.mjs';
 
 const read = (p) => fs.readFileSync(new URL(`../${p}`, import.meta.url), 'utf8');
-const { validateRule, evaluateRules, TRIGGER_KINDS } = await import('../extension/lib/watch.js');
+const {
+  validateRule,
+  evaluateRules,
+  TRIGGER_KINDS
+} = await import('../extension/lib/watch.js');
 
 const rule = (over = {}) => ({
   ruleId: 'r1',
-  trigger: { kind: 'selectorPresence', selector: '.skip' },
+  trigger: {
+    kind: 'selectorPresence',
+    selector: '.skip'
+  },
   action: { type: 'report' },
   mode: 'once',
   maxEvents: 1,
@@ -24,7 +31,15 @@ const rule = (over = {}) => ({
 });
 
 test('trigger kinds are the documented set (fail-closed for unknown kinds)', () => {
-  assert.deepEqual([...TRIGGER_KINDS].sort(), ['adState', 'mediaTime', 'navigation', 'selectorGone', 'selectorPresence', 'textMatch', 'urlChange'].sort());
+  assert.deepEqual([...TRIGGER_KINDS].sort(), [
+    'adState',
+    'mediaTime',
+    'navigation',
+    'selectorGone',
+    'selectorPresence',
+    'textMatch',
+    'urlChange'
+  ].sort());
   assert.equal(validateRule(rule({ trigger: { kind: 'mindReading' } })).ok, false);
   assert.equal(validateRule(rule()).ok, true);
   assert.equal(validateRule(rule({ deadlineMs: 10_000_000 })).ok, false, 'deadline is bounded');
@@ -34,7 +49,12 @@ test('trigger kinds are the documented set (fail-closed for unknown kinds)', () 
 
 test('selectorPresence fires and once-rules retire; gone fires only after presence', () => {
   let now = 1000;
-  const snap = (present) => ({ facts: { r1: { present } }, url: 'https://x/', adState: false, mediaTime: 0 });
+  const snap = (present) => ({
+    facts: { r1: { present } },
+    url: 'https://x/',
+    adState: false,
+    mediaTime: 0
+  });
   let st = {};
   const r1 = rule();
   let out = evaluateRules([r1], snap(false), st, now);
@@ -46,68 +66,166 @@ test('selectorPresence fires and once-rules retire; gone fires only after presen
   const again = evaluateRules([r1], snap(true), st, now += 10);
   assert.equal(again.fired.length, 0, 'once-rule retires after firing');
 
-  const g = rule({ ruleId: 'g1', trigger: { kind: 'selectorGone', selector: '.x' } });
+  const g = rule({
+    ruleId: 'g1',
+    trigger: {
+      kind: 'selectorGone',
+      selector: '.x'
+    }
+  });
   let s2 = {};
-  const absent = { facts: { g1: { present: false } }, url: '', adState: false, mediaTime: 0 };
+  const absent = {
+    facts: { g1: { present: false } },
+    url: '',
+    adState: false,
+    mediaTime: 0
+  };
   s2 = evaluateRules([g], absent, s2, now).state;
   s2 = evaluateRules([g], absent, s2, now += 10).state;
   const noFire = evaluateRules([g], absent, s2, now += 10);
   assert.equal(noFire.fired.length, 0, 'no gone-fire without prior presence');
   s2 = noFire.state;
-  s2 = evaluateRules([g], { ...absent, facts: { g1: { present: true } } }, s2, now).state;
+  s2 = evaluateRules([g], {
+    ...absent,
+    facts: { g1: { present: true } }
+  }, s2, now).state;
   const last = evaluateRules([g], absent, s2, now += 10);
   assert.equal(last.fired.length, 1, 'fires when present->absent');
 });
 
 test('composition any/all + textMatch + urlChange + adState + mediaTime', () => {
-  const snap = (o) => ({ facts: {}, url: o.url ?? 'https://x/', adState: !!o.ad, mediaTime: o.t ?? 0, text: o.text });
+  const snap = (o) => ({
+    facts: {},
+    url: o.url ?? 'https://x/',
+    adState: !!o.ad,
+    mediaTime: o.t ?? 0,
+    text: o.text
+  });
   let st = {};
   const rules = [
-    rule({ ruleId: 'a1', trigger: { kind: 'textMatch', text: 'Skip', mode: 'contains' } }),
-    rule({ ruleId: 'a2', trigger: { kind: 'urlChange' } }),
-    rule({ ruleId: 'a3', trigger: { kind: 'adState', state: 'on' }, mode: 'repeat', maxEvents: 5 }),
-    rule({ ruleId: 'a4', trigger: { kind: 'mediaTime', atSeconds: 30 } })
+    rule({
+      ruleId: 'a1',
+      trigger: {
+        kind: 'textMatch',
+        text: 'Skip',
+        mode: 'contains'
+      }
+    }),
+    rule({
+      ruleId: 'a2',
+      trigger: { kind: 'urlChange' }
+    }),
+    rule({
+      ruleId: 'a3',
+      trigger: {
+        kind: 'adState',
+        state: 'on'
+      },
+      mode: 'repeat',
+      maxEvents: 5
+    }),
+    rule({
+      ruleId: 'a4',
+      trigger: {
+        kind: 'mediaTime',
+        atSeconds: 30
+      }
+    })
   ];
-  st = evaluateRules(rules, snap({ url: 'https://x/', text: 'nope' }), st, 1000).state;
+  st = evaluateRules(rules, snap({
+    url: 'https://x/',
+    text: 'nope'
+  }), st, 1000).state;
   const urlChanged = st.a2.baselineUrl ?? '';
   assert.notEqual(urlChanged, undefined, 'urlChange arms a baseline');
-  const out = evaluateRules(rules, snap({ url: 'https://x/watch?v=1', text: 'Skip Ad now', ad: true, t: 31 }), st, 1100);
+  const out = evaluateRules(rules, snap({
+    url: 'https://x/watch?v=1',
+    text: 'Skip Ad now',
+    ad: true,
+    t: 31
+  }), st, 1100);
   const ids = out.fired.map((f) => f.ruleId).sort();
-  assert.deepEqual(ids, ['a1', 'a2', 'a3', 'a4']);
+  assert.deepEqual(ids, [
+    'a1',
+    'a2',
+    'a3',
+    'a4'
+  ]);
 });
 
 test('already-true at arm fires immediately (the T041 lesson); debounce then throttles', () => {
   let st = {};
-  const d = rule({ ruleId: 'd1', mode: 'repeat', maxEvents: 10, debounceMs: 500, deadlineMs: 5000 });
+  const d = rule({
+    ruleId: 'd1',
+    mode: 'repeat',
+    maxEvents: 10,
+    debounceMs: 500,
+    deadlineMs: 5000
+  });
 
-  const first = evaluateRules([d], { facts: { d1: { present: true } }, url: '', adState: false, mediaTime: 0 }, st, 100);
+  const first = evaluateRules([d], {
+    facts: { d1: { present: true } },
+    url: '',
+    adState: false,
+    mediaTime: 0
+  }, st, 100);
   assert.equal(first.fired.length, 1, 'already-true must not be swallowed');
   st = first.state;
-  const throttled = evaluateRules([d], { facts: { d1: { present: true } }, url: '', adState: false, mediaTime: 0 }, st, 300);
+  const throttled = evaluateRules([d], {
+    facts: { d1: { present: true } },
+    url: '',
+    adState: false,
+    mediaTime: 0
+  }, st, 300);
   assert.equal(throttled.fired.length, 0, 'inside debounce window');
-  const ok = evaluateRules([d], { facts: { d1: { present: true } }, url: '', adState: false, mediaTime: 0 }, throttled.state, 700);
+  const ok = evaluateRules([d], {
+    facts: { d1: { present: true } },
+    url: '',
+    adState: false,
+    mediaTime: 0
+  }, throttled.state, 700);
   assert.equal(ok.fired.length, 1);
-  const dead = evaluateRules([d], { facts: { d1: { present: true } }, url: '', adState: false, mediaTime: 0 }, ok.state, 6000);
+  const dead = evaluateRules([d], {
+    facts: { d1: { present: true } },
+    url: '',
+    adState: false,
+    mediaTime: 0
+  }, ok.state, 6000);
   assert.equal(dead.fired.length, 0, 'past deadline the rule never fires again');
   assert.equal(dead.state.d1.retired, true);
 });
 
 test('evaluateRules state threads across evaluations (the watch round-trip)', () => {
-  const r = rule({ ruleId: 'rt1', trigger: { kind: 'urlChange' }, mode: 'repeat', maxEvents: 10 });
-  const first = evaluateRules([r], { facts: {}, url: 'https://x/a', adState: false, mediaTime: 0 }, {}, 1000);
+  const r = rule({
+    ruleId: 'rt1',
+    trigger: { kind: 'urlChange' },
+    mode: 'repeat',
+    maxEvents: 10
+  });
+  const first = evaluateRules([r], {
+    facts: {},
+    url: 'https://x/a',
+    adState: false,
+    mediaTime: 0
+  }, {}, 1000);
   assert.equal(first.fired.length, 0, 'first sight only arms the baseline');
   assert.ok(first.state.rt1.baselineUrl, 'engine state carries the baseline');
-  const second = evaluateRules([r], { facts: {}, url: 'https://x/b', adState: false, mediaTime: 0 }, first.state, 1100);
+  const second = evaluateRules([r], {
+    facts: {},
+    url: 'https://x/b',
+    adState: false,
+    mediaTime: 0
+  }, first.state, 1100);
   assert.equal(second.fired.length, 1, 'the threaded baseline is what the change is detected against');
 });
 
 test('background returns engine state in the facts reply and arms the documented deadline default', async () => {
   const bg = await extensionSource();
-  assert.match(bg, /return \{ fired: out\.fired\.length, state: out\.state \}/, 'facts reply must carry engine state for the content echo');
+  assert.match(bg, /return \{\s*fired: out\.fired\.length,\s*state: out\.state\s*\}/, 'facts reply must carry engine state for the content echo');
   assert.match(bg, /candidate\.deadlineMs = 60000/, 'arm path must persist the documented deadline default');
   assert.match(bg, /candidate\.deadlineMs == null/, 'arm default must also cover an explicit null');
   assert.match(bg, /deadlineMs == null \|\| now - entry\.createdAt/, 'prune must treat a missing deadline as expired');
-  assert.match(bg, /if \(!entries\.length\) return \{ fired: 0, state:/, 'no-entries reply must carry state so content never holds a stale one');
+  assert.match(bg, /if \(!entries\.length\) return \{\s*fired: 0,\s*state:/, 'no-entries reply must carry state so content never holds a stale one');
 });
 
 test('dead set-bridge-url popup action is gone (options saves via storage directly)', async () => {
@@ -158,13 +276,11 @@ test('MCP gains start_watch/wait_events/stop_watch wired to the device path', ()
 });
 
 test('MCP start_watch schema preserves adSelectors for adState rules', () => {
-
   const src = mcpSurfaceSourceSync();
   assert.match(src, /adSelectors:\s*z\.array\(z\.string\(\)\.min\(1\)\.max\(500\)\)\.max\(8\)\.optional\(\)/, 'trigger schema must carry adSelectors');
 });
 
 test('migration seeds watch methods into the opera_methods enqueue allowlist', () => {
-
   const src = read('supabase/migrations/20260923010000_opera_agent_watch_methods.sql');
   assert.match(src, /insert into public\.opera_methods/i);
   for (const method of ['watch.start', 'watch.stop', 'watch.stop_all']) {

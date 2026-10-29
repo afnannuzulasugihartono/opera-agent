@@ -171,24 +171,44 @@ if ($mode -eq 'press') {
 ConvertTo-Json @{ open = $true; platform = 'win32'; why = ('unknown mode ' + $mode) } -Compress
 `;
 
-const powershell = (mode, ...rest) => run('powershell', [
+const powershell = (
+  mode,
+  ...rest
+) => run('powershell', [
   '-NoProfile',
   '-NonInteractive',
   '-Command',
-  `& { ${SCRIPT} } ${mode} ${rest.map((one) => `'${String(one).replace(/'/g, "''")}'`).join(' ')}`
+  `& { ${SCRIPT} } ${mode} ${rest.map((one) => `'${String(one).replace(/'/g,
+  "''"
+)}'`).join(' ')}`
 ]);
 
-const parse = async (mode, ...rest) => {
+const parse = async (
+  mode,
+  ...rest
+) => {
   const platform = process.platform;
   if (platform !== 'win32') {
-    return { open: false, platform, why: `operating system dialogs are not driven on ${platform} yet` };
+    return {
+      open: false,
+      platform,
+      why: `operating system dialogs are not driven on ${platform} yet`
+    };
   }
   try {
     const { stdout } = await powershell(mode, ...rest);
     const parsed = JSON.parse(String(stdout).trim().split('\n').pop());
-    return { ...parsed, mode };
+    return {
+      ...parsed,
+      mode
+    };
   } catch (error) {
-    return { open: false, platform, mode, why: String(error?.message ?? error).split('\n')[0] };
+    return {
+      open: false,
+      platform,
+      mode,
+      why: String(error?.message ?? error).split('\n')[0]
+    };
   }
 };
 

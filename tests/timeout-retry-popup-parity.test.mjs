@@ -5,23 +5,42 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { recordPopup, popupsSince, resolvePopupOpener } from '../extension/lib/popup-events.js';
+import {
+  recordPopup,
+  popupsSince,
+  resolvePopupOpener
+} from '../extension/lib/popup-events.js';
 import { PRODUCT_VERSION } from '../extension/lib/protocol.js';
 import { extensionSource } from './helpers/extension-source.mjs';
 import { contentSource } from './helpers/content-source.mjs';
 
 test('popup event log records opener-tab creations', () => {
   const log = new Map();
-  recordPopup(log, { openerTabId: 7, id: 42, pendingUrl: 'https://oauth.example.com/auth' }, 1_000);
-  recordPopup(log, { openerTabId: 7, id: 43, url: 'https://a.example.com' }, 2_000);
+  recordPopup(log, {
+    openerTabId: 7,
+    id: 42,
+    pendingUrl: 'https://oauth.example.com/auth'
+  }, 1_000);
+  recordPopup(log, {
+    openerTabId: 7,
+    id: 43,
+    url: 'https://a.example.com'
+  }, 2_000);
   const since = popupsSince(log, 7, 0);
-  assert.deepEqual(since.map((e) => e.tabId), [42, 43]);
+  assert.deepEqual(since.map((e) => e.tabId), [
+    42,
+    43
+  ]);
   assert.equal(since[0].url, 'https://oauth.example.com/auth');
 });
 
 test('popup event log is bounded per opener', () => {
   const log = new Map();
-  for (let i = 0; i < 12; i += 1) recordPopup(log, { openerTabId: 3, id: i, url: `u${i}` }, i * 10);
+  for (let i = 0; i < 12; i += 1) recordPopup(log, {
+    openerTabId: 3,
+    id: i,
+    url: `u${i}`
+  }, i * 10);
   const list = popupsSince(log, 3, 0);
   assert.equal(list.length, 8);
   assert.equal(list[0].url, 'u4');
@@ -29,8 +48,16 @@ test('popup event log is bounded per opener', () => {
 
 test('popupsSince filters by timestamp', () => {
   const log = new Map();
-  recordPopup(log, { openerTabId: 5, id: 1, url: 'old' }, 1_000);
-  recordPopup(log, { openerTabId: 5, id: 2, url: 'new' }, 5_000);
+  recordPopup(log, {
+    openerTabId: 5,
+    id: 1,
+    url: 'old'
+  }, 1_000);
+  recordPopup(log, {
+    openerTabId: 5,
+    id: 2,
+    url: 'new'
+  }, 5_000);
   assert.deepEqual(popupsSince(log, 5, 2_000).map((e) => e.url), ['new']);
   assert.deepEqual(popupsSince(log, 5, 6_000), []);
 });

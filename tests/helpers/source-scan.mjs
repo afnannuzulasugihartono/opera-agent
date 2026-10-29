@@ -25,7 +25,10 @@
  * @returns {string} the source with comments blanked, same length and line count
  */
 
-export function stripComments(src, kind) {
+export function stripComments(
+  src,
+  kind
+) {
   const out = [];
   let i = 0;
 
@@ -116,8 +119,14 @@ export function stripComments(src, kind) {
   return out.join('');
 }
 
-async function collectSources(dir, extensions) {
-  const { readdir, readFile } = await import('node:fs/promises');
+async function collectSources(
+  dir,
+  extensions
+) {
+  const {
+    readdir,
+    readFile
+  } = await import('node:fs/promises');
   const out = [];
   for (const entry of await readdir(dir, { withFileTypes: true })) {
     const url = new URL(`${entry.name}${entry.isDirectory() ? '/' : ''}`, dir);
@@ -126,7 +135,11 @@ async function collectSources(dir, extensions) {
       continue;
     }
     if (extensions.some((ext) => entry.name.endsWith(ext))) {
-      out.push({ name: entry.name, url, src: await readFile(url, 'utf8') });
+      out.push({
+        name: entry.name,
+        url,
+        src: await readFile(url, 'utf8')
+      });
     }
   }
   return out;

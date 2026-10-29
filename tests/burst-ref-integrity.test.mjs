@@ -10,7 +10,10 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFile, readdir } from 'node:fs/promises';
+import {
+  readFile,
+  readdir
+} from 'node:fs/promises';
 
 const DIR = new URL('../supabase/migrations/', import.meta.url);
 
@@ -19,7 +22,10 @@ async function workflowMigrations() {
   return files.filter((file) => file.endsWith('.sql'));
 }
 
-function collectBursts(node, found = []) {
+function collectBursts(
+  node,
+  found = []
+) {
   if (Array.isArray(node)) {
     for (const item of node) collectBursts(item, found);
     return found;
@@ -39,7 +45,10 @@ test('every burst step references an earlier step in the same burst', async () =
     for (const block of blocks) {
       const definition = JSON.parse(block);
       for (const steps of collectBursts(definition)) {
-        steps.forEach((step, index) => {
+        steps.forEach((
+          step,
+          index
+        ) => {
           const from = step?.refFromStep;
           if (from === undefined || from === null) return;
           if (!Number.isInteger(from) || from < 0 || from >= index) {

@@ -5,12 +5,18 @@
 
 import "@supabase/edge-runtime";
 import { createClient } from "@supabase/supabase-js";
-import { CORS_DEFAULT_ORIGINS, resolveAllowedOrigin } from "../_shared/cors.js";
+import {
+  CORS_DEFAULT_ORIGINS,
+  resolveAllowedOrigin
+} from "../_shared/cors.js";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
-  auth: { persistSession: false, autoRefreshToken: false }
+  auth: {
+    persistSession: false,
+    autoRefreshToken: false
+  }
 });
 
 const LEGACY_EXTENSION_ID = "pagjlnohdemoohcncicjmaejedcmcocm";
@@ -21,8 +27,13 @@ const EXTENSION_ID_PATTERN = /^[a-p]{32}$/;
 const CRX_MAGIC = "Cr24";
 const CRX_PREFIX_BYTES = 12;
 
-function response(req: Request, body: BodyInit | null, status: number, headers: Record<string,string>) {
-
+function response(
+  req: Request,
+  body: BodyInit | null,
+  status: number,
+  headers: Record<string,
+  string>
+) {
   const origin = resolveAllowedOrigin(req, CORS_DEFAULT_ORIGINS);
   return new Response(body, {
     status,
@@ -60,7 +71,6 @@ function zipPayloadOf(crx: Uint8Array): Uint8Array | null {
 }
 
 function requestedExtensionId(url: URL) {
-
   const nested = new URLSearchParams(url.searchParams.get("x") ?? "");
   const candidate = nested.get("id") ?? url.searchParams.get("id");
   if (candidate === null) return LEGACY_EXTENSION_ID;
@@ -68,7 +78,10 @@ function requestedExtensionId(url: URL) {
 }
 
 async function activeRelease(extensionId: string) {
-  const { data, error } = await supabase
+  const {
+    data,
+    error
+  } = await supabase
     .from("opera_releases")
     .select("version, extension_id, crx_base64, sha256")
     .eq("active", true)
@@ -82,7 +95,9 @@ async function activeRelease(extensionId: string) {
 async function logUpdateEvent(
   requestKind: "update_xml" | "crx",
   req: Request,
-  release: { version: string; sha256: string },
+  release: {
+    version: string; sha256: string
+  },
   url: URL
 ) {
   const userAgent = req.headers.get("user-agent");
@@ -123,12 +138,9 @@ Deno.serve(async (req: Request) => {
       return response(req, req.method === "HEAD" ? null : new Uint8Array(bytes).buffer, 200, {
         "Content-Type": wantsZip ? "application/zip" : "application/x-chrome-extension",
         "Content-Length": String(bytes.byteLength),
-
         "Cache-Control": "no-store, max-age=0",
-
         "Content-Disposition": `attachment; filename="${filename}"`,
         "X-Opera-Version": current.version,
-
         "X-Opera-Sha256": await sha256Hex(bytes)
       });
     }

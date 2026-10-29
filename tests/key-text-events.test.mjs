@@ -17,10 +17,34 @@ import { BURST_STEP_KEYS } from '../extension/lib/protocol.js';
 test('lowercase, upper, digit, and space map to US key events', () => {
   const [a, bigA, one, space] = resolveTextKeys('aA1 ');
 
-  assert.deepEqual(a, { key: 'a', code: 'KeyA', vk: 65, shift: false, text: 'a' });
-  assert.deepEqual(bigA, { key: 'A', code: 'KeyA', vk: 65, shift: true, text: 'A' });
-  assert.deepEqual(one, { key: '1', code: 'Digit1', vk: 49, shift: false, text: '1' });
-  assert.deepEqual(space, { key: ' ', code: 'Space', vk: 32, shift: false, text: ' ' });
+  assert.deepEqual(a, {
+    key: 'a',
+    code: 'KeyA',
+    vk: 65,
+    shift: false,
+    text: 'a'
+  });
+  assert.deepEqual(bigA, {
+    key: 'A',
+    code: 'KeyA',
+    vk: 65,
+    shift: true,
+    text: 'A'
+  });
+  assert.deepEqual(one, {
+    key: '1',
+    code: 'Digit1',
+    vk: 49,
+    shift: false,
+    text: '1'
+  });
+  assert.deepEqual(space, {
+    key: ' ',
+    code: 'Space',
+    vk: 32,
+    shift: false,
+    text: ' '
+  });
 });
 
 test('punctuation maps with its shift state', () => {
@@ -28,14 +52,32 @@ test('punctuation maps with its shift state', () => {
 
   assert.equal(period.shift, false);
   assert.equal(comma.code, 'Comma');
-  assert.deepEqual([bang.key, bang.shift], ['!', true]);
-  assert.deepEqual([colon.key, colon.shift], [':', true]);
+  assert.deepEqual([
+    bang.key,
+    bang.shift
+  ], [
+    '!',
+    true
+  ]);
+  assert.deepEqual([
+    colon.key,
+    colon.shift
+  ], [
+    ':',
+    true
+  ]);
 });
 
 test('a newline becomes Enter carrying carriage return', () => {
   const [enter] = resolveTextKeys('\n');
 
-  assert.deepEqual(enter, { key: 'Enter', code: 'Enter', vk: 13, shift: false, text: '\r' });
+  assert.deepEqual(enter, {
+    key: 'Enter',
+    code: 'Enter',
+    vk: 13,
+    shift: false,
+    text: '\r'
+  });
 });
 
 test('unmapped characters fail naming the code point', () => {

@@ -50,11 +50,19 @@ import {
   splitText
 } from './page-expressions.js';
 
-export function createInputMethods({ cdp, primitives, sleep, chunkSize = 2000 }) {
+export function createInputMethods({
+  cdp,
+  primitives,
+  sleep,
+  chunkSize = 2000
+}) {
   const insertText = async (text) => {
     const parts = splitText(text, chunkSize);
     await Promise.all(parts.map((part) => cdp.send('Input.insertText', { text: part })));
-    return { chunks: parts.length, chars: String(text ?? '').length };
+    return {
+      chunks: parts.length,
+      chars: String(text ?? '').length
+    };
   };
 
   const editSignature = async () => {
@@ -62,20 +70,40 @@ export function createInputMethods({ cdp, primitives, sleep, chunkSize = 2000 })
       expression: EDIT_SIGNATURE_EXPRESSION,
       returnByValue: true
     });
-    return result?.value ?? { body: '', value: '', holds: false };
+    return result?.value ?? {
+      body: '',
+      value: '',
+      holds: false
+    };
   };
 
-  const moved = (before, after) => after.body !== before.body || after.value !== before.value;
+  const moved = (
+    before,
+    after
+  ) => after.body !== before.body || after.value !== before.value;
 
   const sigLen = (sig) => Number(String(sig ?? '').split(':')[0]) || 0;
 
   const probeOf = (text) => String(text ?? '').replace(/^\s+/, '').slice(0, 32);
 
-  const locateInsertion = async (text, before, after) => {
+  const locateInsertion = async (
+    text,
+    before,
+    after
+  ) => {
     const delta = (sigLen(after?.body) - sigLen(before?.body)) + (sigLen(after?.value) - sigLen(before?.value));
-    const missed = { found: false, index: -1, field: false, delta };
+    const missed = {
+      found: false,
+      index: -1,
+      field: false,
+      delta
+    };
     const probe = probeOf(text);
-    if (!probe) return { ...missed, before: '', after: '' };
+    if (!probe) return {
+      ...missed,
+      before: '',
+      after: ''
+    };
     try {
       const { result } = await cdp.send('Runtime.evaluate', {
         expression: locateExpression(probe),
@@ -83,7 +111,11 @@ export function createInputMethods({ cdp, primitives, sleep, chunkSize = 2000 })
       });
       const at = result?.value;
       if (!at || typeof at.index !== 'number' || at.index < 0) {
-        return { ...missed, before: String(at?.before ?? ''), after: '' };
+        return {
+          ...missed,
+          before: String(at?.before ?? ''),
+          after: ''
+        };
       }
       return {
         found: true,
@@ -94,7 +126,11 @@ export function createInputMethods({ cdp, primitives, sleep, chunkSize = 2000 })
         delta
       };
     } catch {
-      return { ...missed, before: '', after: '' };
+      return {
+        ...missed,
+        before: '',
+        after: ''
+      };
     }
   };
 
@@ -102,9 +138,15 @@ export function createInputMethods({ cdp, primitives, sleep, chunkSize = 2000 })
     for (let ask = 0; ask < EDIT_POLLS; ask += 1) {
       if (ask > 0) await sleep(EDIT_POLL_MS);
       const now = await editSignature();
-      if (moved(before, now)) return { moved: true, after: now };
+      if (moved(before, now)) return {
+        moved: true,
+        after: now
+      };
     }
-    return { moved: false, after: await editSignature() };
+    return {
+      moved: false,
+      after: await editSignature()
+    };
   };
 
   const focusNow = async () => {
@@ -133,7 +175,11 @@ export function createInputMethods({ cdp, primitives, sleep, chunkSize = 2000 })
         ? `${typed} and nothing on the page changed: ${where} - click_row the field that should receive it, or press Escape if a dialog is over it`
         : `${typed} into a page that holds no text and no field to receive them`);
     }
-    return { ...out, landed: true, placed: await locateInsertion(text, before, seen.after) };
+    return {
+      ...out,
+      landed: true,
+      placed: await locateInsertion(text, before, seen.after)
+    };
   }
 
   // WHY AN APPEND AND NOT A TYPE.
@@ -163,7 +209,10 @@ export function createInputMethods({ cdp, primitives, sleep, chunkSize = 2000 })
     };
   }
 
-  async function key(name, modifiers = []) {
+  async function key(
+    name,
+    modifiers = []
+  ) {
     const mask = modifierMask(modifiers);
     const descriptor = describeKey(name);
     const virtual = {
@@ -175,20 +224,46 @@ export function createInputMethods({ cdp, primitives, sleep, chunkSize = 2000 })
 
     // A chord is exactly two events, with no modifier press around them: the six-event frame leaked its character into a canvas under rapid fire.
     if (mask !== 0) {
-      await cdp.send('Input.dispatchKeyEvent', { type: 'rawKeyDown', modifiers: mask, ...virtual });
+      await cdp.send('Input.dispatchKeyEvent', {
+        type: 'rawKeyDown',
+        modifiers: mask,
+        ...virtual
+      });
       await sleep(KEY_BEAT_MS);
-      await cdp.send('Input.dispatchKeyEvent', { type: 'keyUp', modifiers: mask, ...virtual });
-      return { key: name, modifiers: mask };
+      await cdp.send('Input.dispatchKeyEvent', {
+        type: 'keyUp',
+        modifiers: mask,
+        ...virtual
+      });
+      return {
+        key: name,
+        modifiers: mask
+      };
     }
 
     const printable = Object.prototype.hasOwnProperty.call(descriptor, 'text');
     await cdp.send('Input.dispatchKeyEvent', printable
-      ? { type: 'keyDown', modifiers: mask, ...descriptor }
-      : { type: 'rawKeyDown', modifiers: mask, ...virtual });
+      ? {
+        type: 'keyDown',
+        modifiers: mask,
+        ...descriptor
+      }
+      : {
+        type: 'rawKeyDown',
+        modifiers: mask,
+        ...virtual
+      });
     await sleep(KEY_BEAT_MS);
-    await cdp.send('Input.dispatchKeyEvent', { type: 'keyUp', modifiers: mask, ...virtual });
+    await cdp.send('Input.dispatchKeyEvent', {
+      type: 'keyUp',
+      modifiers: mask,
+      ...virtual
+    });
 
-    return { key: name, modifiers: mask };
+    return {
+      key: name,
+      modifiers: mask
+    };
   }
 
   // WHY A STREAM REPORTS THE COMPARISON INSTEAD OF A VERDICT.
@@ -234,15 +309,28 @@ export function createInputMethods({ cdp, primitives, sleep, chunkSize = 2000 })
       run = [];
     };
     for (const event of events) {
-      if (event.text != null) run.push({ kind: 'text', go: () => insertText(String(event.text)) });
-      else run.push({ kind: 'chord', go: () => key(event.key, event.modifiers ?? []) });
+      if (event.text != null) run.push({
+        kind: 'text',
+        go: () => insertText(String(event.text))
+      });
+      else run.push({
+        kind: 'chord',
+        go: () => key(event.key, event.modifiers ?? [])
+      });
       if ((event.gapMs ?? 0) > 0) {
         await flush();
         await sleep(event.gapMs);
       }
     }
     await flush();
-    return { events: events.length, chords, chars, moved: await reportMoved(), settled, execMs: Date.now() - started };
+    return {
+      events: events.length,
+      chords,
+      chars,
+      moved: await reportMoved(),
+      settled,
+      execMs: Date.now() - started
+    };
   }
 
   async function selectAll() {
@@ -254,5 +342,12 @@ export function createInputMethods({ cdp, primitives, sleep, chunkSize = 2000 })
     await key('Delete');
   }
 
-  return { type, append, key, keys, selectAll, clear };
+  return {
+    type,
+    append,
+    key,
+    keys,
+    selectAll,
+    clear
+  };
 }

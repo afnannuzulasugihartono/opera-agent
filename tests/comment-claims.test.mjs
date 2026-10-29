@@ -24,7 +24,19 @@ import { commentLineMask } from './helpers/comment-format.mjs';
 const root = new URL('..', import.meta.url);
 const repo = (p) => new URL(p, root);
 
-const skipDirs = new Set(['.git', 'node_modules', '.kilo', 'dist', 'build', 'tmp', 'coverage', '__pycache__', '.vercel', '.next', '.temp']);
+const skipDirs = new Set([
+  '.git',
+  'node_modules',
+  '.kilo',
+  'dist',
+  'build',
+  'tmp',
+  'coverage',
+  '__pycache__',
+  '.vercel',
+  '.next',
+  '.temp'
+]);
 const SOURCE_EXT = /\.(?:js|mjs|cjs|ts|jsx|tsx|py|html|htm|css|sql|yml|yaml|toml|cmd|bat|example)$/;
 
 const walk = (relative) => {
@@ -39,7 +51,10 @@ const walk = (relative) => {
 };
 
 const files = walk('.').filter((file) => SOURCE_EXT.test(file));
-const tracked = execFileSync('git', ['ls-files'], { cwd: repo('.'), encoding: 'utf8' }).split('\n').filter(Boolean);
+const tracked = execFileSync('git', ['ls-files'], {
+  cwd: repo('.'),
+  encoding: 'utf8'
+}).split('\n').filter(Boolean);
 const treeText = files.map((file) => fs.readFileSync(repo(file), 'utf8')).join('\n');
 const nameText = tracked.join('\n');
 
@@ -56,7 +71,10 @@ const numbersIn = (text) => [...text.matchAll(/(?<![\w.])(\d[\d_]*)(?![\w.])/g)]
   .map((match) => match[1].replace(/_/g, ''))
   .filter((number) => number.length >= 3);
 
-export function unsupportedNumbers(text, ext) {
+export function unsupportedNumbers(
+  text,
+  ext
+) {
   const mask = commentLineMask(text, ext);
   const lines = text.split('\n');
   const found = [];
@@ -67,7 +85,11 @@ export function unsupportedNumbers(text, ext) {
     for (const number of numbersIn(body)) {
       if (treeText.includes(number) || nameText.includes(number)) continue;
       if (MEASURED.test(body) && SOURCE.test(body)) continue;
-      found.push({ line: index + 1, number, body: body.slice(0, 110) });
+      found.push({
+        line: index + 1,
+        number,
+        body: body.slice(0, 110)
+      });
       break;
     }
   }

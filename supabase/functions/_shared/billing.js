@@ -57,13 +57,22 @@
 // Sending 500000 for a Rp 5.000 invoice would ask the customer for Rp 500.000, so the conversion happens at the provider boundary in both directions: out to the charge, and back from the notification before it is compared.
 // A notification for Rp 500.000 therefore cannot close a Rp 5.000 invoice.
 
-import { createHash, createHmac } from 'node:crypto';
+import {
+  createHash,
+  createHmac
+} from 'node:crypto';
 
-function hmacSha512(secret, payload) {
+function hmacSha512(
+  secret,
+  payload
+) {
   return createHmac('sha512', secret).update(payload).digest('hex');
 }
 
-function sameText(expected, given) {
+function sameText(
+  expected,
+  given
+) {
   if (typeof expected !== 'string' || typeof given !== 'string') return false;
   if (expected.length !== given.length) return false;
   let difference = 0;
@@ -73,23 +82,41 @@ function sameText(expected, given) {
   return difference === 0;
 }
 
-export function invoiceToken(invoiceId, secret) {
+export function invoiceToken(
+  invoiceId,
+  secret
+) {
   return hmacSha512(secret, `invoice:${invoiceId}`).slice(0, 32);
 }
 
-export function verifyInvoiceToken(invoiceId, token, secret) {
+export function verifyInvoiceToken(
+  invoiceId,
+  token,
+  secret
+) {
   if (!invoiceId || !token || !secret) return false;
   const expected = invoiceToken(invoiceId, secret);
   return sameText(expected, token);
 }
 
-export function priceFor(priceList, kind) {
+export function priceFor(
+  priceList,
+  kind
+) {
   const entry = (priceList || []).find((row) => row.kind === kind && row.active !== false);
   if (!entry) return null;
-  return { kind: entry.kind, unit: entry.unit, amountCents: Number(entry.amount_cents), currency: entry.currency || 'IDR' };
+  return {
+    kind: entry.kind,
+    unit: entry.unit,
+    amountCents: Number(entry.amount_cents),
+    currency: entry.currency || 'IDR'
+  };
 }
 
-export function amountFor(lines, priceList) {
+export function amountFor(
+  lines,
+  priceList
+) {
   const priced = [];
   const unpriced = [];
   let amountCents = 0;
@@ -97,7 +124,10 @@ export function amountFor(lines, priceList) {
   for (const line of lines || []) {
     const price = priceFor(priceList, line.kind);
     if (!price) {
-      unpriced.push({ ...line, reason: 'no price for this kind' });
+      unpriced.push({
+        ...line,
+        reason: 'no price for this kind'
+      });
       continue;
     }
     const quantity = Math.max(0, Number(line.quantity) || 0);
@@ -112,17 +142,28 @@ export function amountFor(lines, priceList) {
       description: line.description || null
     });
   }
-  return { amountCents, currency, priced, unpriced };
+  return {
+    amountCents,
+    currency,
+    priced,
+    unpriced
+  };
 }
 
-export function providerAmount(amountCents, currency = 'IDR') {
+export function providerAmount(
+  amountCents,
+  currency = 'IDR'
+) {
   if (String(currency || '').toUpperCase() !== 'IDR') return null;
   const cents = Number(amountCents);
   if (!Number.isFinite(cents) || cents < 100) return null;
   return Math.round(cents / 100);
 }
 
-export function paidAmountCents(grossAmount, currency = 'IDR') {
+export function paidAmountCents(
+  grossAmount,
+  currency = 'IDR'
+) {
   const value = Number(grossAmount);
   if (!Number.isFinite(value)) return null;
   const unit = String(currency || '').toUpperCase();
@@ -130,7 +171,12 @@ export function paidAmountCents(grossAmount, currency = 'IDR') {
   return Math.round(value * 100);
 }
 
-export function providerOrderId(invoiceId, amountCents, currency = 'IDR', attempt = 1) {
+export function providerOrderId(
+  invoiceId,
+  amountCents,
+  currency = 'IDR',
+  attempt = 1
+) {
   const counted = Math.trunc(Number(attempt));
   const number = Number.isFinite(counted) && counted > 1 ? counted : 1;
   const retry = number > 1 ? `\u0000${number}` : '';
@@ -150,9 +196,17 @@ export function providerOrderId(invoiceId, amountCents, currency = 'IDR', attemp
 // Midtrans accepts a duration from minutes to seven days, so a day is inside the range, and it accepts the unit in the singular or the plural.
 // The deadline is computed from this constant instead of read back from the provider, because the charge answer carries no expiry field and the clock starts when the charge is created.
 
-export const PAY_LINK_EXPIRY = Object.freeze({ unit: 'hour', duration: 24 });
+export const PAY_LINK_EXPIRY = Object.freeze({
+  unit: 'hour',
+  duration: 24
+});
 
-const EXPIRY_MS = Object.freeze({ second: 1000, minute: 60_000, hour: 3_600_000, day: 86_400_000 });
+const EXPIRY_MS = Object.freeze({
+  second: 1000,
+  minute: 60_000,
+  hour: 3_600_000,
+  day: 86_400_000
+});
 
 export function payLinkDeadline(now = Date.now()) {
   const start = Number(now);
@@ -165,7 +219,10 @@ export function payLinkDeadline(now = Date.now()) {
 // So the state is computed here from the link and its deadline: nothing to pay, a deadline nobody knows, a deadline still ahead, or one that has passed.
 // A deadline that cannot be parsed is "unknown" rather than "expired": an honest page shows the link and says it does not know when it stops working.
 
-export function payLinkState(invoice, now = Date.now()) {
+export function payLinkState(
+  invoice,
+  now = Date.now()
+) {
   if (!invoice || !invoice.pay_url) return 'none';
   const deadline = Date.parse(String(invoice.pay_url_expires_at || ''));
   if (!Number.isFinite(deadline)) return 'unknown';
@@ -176,7 +233,10 @@ export function payLinkState(invoice, now = Date.now()) {
 
 export const SNAP_QRIS_ONLY_BELOW_CENTS = 10_000_000;
 
-export function snapPaymentMethods(amountCents, currency = 'IDR') {
+export function snapPaymentMethods(
+  amountCents,
+  currency = 'IDR'
+) {
   const amount = Number(amountCents);
   if (String(currency || '').toUpperCase() !== 'IDR') {
     return {
@@ -186,7 +246,11 @@ export function snapPaymentMethods(amountCents, currency = 'IDR') {
     };
   }
   if (!(amount >= 100)) {
-    return { chargeable: false, enabled: null, why: 'a rupiah charge needs at least one whole rupiah' };
+    return {
+      chargeable: false,
+      enabled: null,
+      why: 'a rupiah charge needs at least one whole rupiah'
+    };
   }
   if (amount < SNAP_QRIS_ONLY_BELOW_CENTS) {
     return {
@@ -195,7 +259,11 @@ export function snapPaymentMethods(amountCents, currency = 'IDR') {
       why: 'QRIS is the only method with no fixed fee, and a fixed fee would eat a small invoice'
     };
   }
-  return { chargeable: true, enabled: null, why: 'the amount can carry a fixed fee, so the provider lists the methods' };
+  return {
+    chargeable: true,
+    enabled: null,
+    why: 'the amount can carry a fixed fee, so the provider lists the methods'
+  };
 }
 
 // WHY THE SNAP REQUEST IS A FUNCTION AND NOT AN INLINE FETCH.
@@ -223,11 +291,23 @@ export function snapUrlFor(environment) {
 // So the caller passes one expiry - the same constant the stored deadline is computed from - and this function only carries it in the body.
 // A request without one keeps the provider's own default, which is what an invoice written before a stored deadline already has.
 
-export function snapChargeRequest({ orderId, amountCents, currency = 'IDR', customerId = '', enabled = null, serverKey = '', environment = 'production', expiry = null }) {
+export function snapChargeRequest({
+  orderId,
+  amountCents,
+  currency = 'IDR',
+  customerId = '',
+  enabled = null,
+  serverKey = '',
+  environment = 'production',
+  expiry = null
+}) {
   const gross = providerAmount(amountCents, currency);
   if (gross === null) return null;
   const request = {
-    transaction_details: { order_id: String(orderId), gross_amount: gross },
+    transaction_details: {
+      order_id: String(orderId),
+      gross_amount: gross
+    },
     customer_details: { first_name: String(customerId || '').slice(0, 50) }
   };
   if (enabled) request.enabled_payments = enabled;
@@ -236,7 +316,9 @@ export function snapChargeRequest({ orderId, amountCents, currency = 'IDR', cust
     url: snapUrlFor(environment),
     method: 'POST',
     headers: {
-      Authorization: `Basic ${btoa(`${serverKey}:`)}`,
+      Authorization: `Basic ${btoa(`${
+        serverKey
+      }:`)}`,
       'Content-Type': 'application/json'
     },
     body: JSON.stringify(request)
@@ -254,23 +336,35 @@ export const SNAP_STATUS = Object.freeze({
   sandbox: 'https://api.sandbox.midtrans.com/v2'
 });
 
-export function snapStatusUrl(environment, orderId) {
+export function snapStatusUrl(
+  environment,
+  orderId
+) {
   const base = SNAP_STATUS[String(environment || 'production')] || SNAP_STATUS.production;
   return `${base}/${encodeURIComponent(String(orderId || ''))}/status`;
 }
 
-export function snapExpireUrl(environment, orderId) {
+export function snapExpireUrl(
+  environment,
+  orderId
+) {
   const base = SNAP_STATUS[String(environment || 'production')] || SNAP_STATUS.production;
   return `${base}/${encodeURIComponent(String(orderId || ''))}/expire`;
 }
 
-export function snapStatusRequest({ orderId, serverKey = '', environment = 'production' }) {
+export function snapStatusRequest({
+  orderId,
+  serverKey = '',
+  environment = 'production'
+}) {
   if (!orderId) return null;
   return {
     url: snapStatusUrl(environment, orderId),
     method: 'GET',
     headers: {
-      Authorization: `Basic ${btoa(`${serverKey}:`)}`,
+      Authorization: `Basic ${btoa(`${
+        serverKey
+      }:`)}`,
       Accept: 'application/json'
     }
   };
@@ -291,13 +385,19 @@ export function providerSaysMissing(payload) {
 // The provider accepts an expire call while the transaction is still pending, and answers with that transaction's own status, so the answer says whether the first attempt is dead.
 // The path sits beside the status path on the host the stated environment names; only POST is accepted there, and the key never travels in the URL.
 
-export function snapExpireRequest({ orderId, serverKey = '', environment = 'production' }) {
+export function snapExpireRequest({
+  orderId,
+  serverKey = '',
+  environment = 'production'
+}) {
   if (!orderId) return null;
   return {
     url: snapExpireUrl(environment, orderId),
     method: 'POST',
     headers: {
-      Authorization: `Basic ${btoa(`${serverKey}:`)}`,
+      Authorization: `Basic ${btoa(`${
+        serverKey
+      }:`)}`,
       Accept: 'application/json'
     }
   };
@@ -309,7 +409,13 @@ export function snapExpireRequest({ orderId, serverKey = '', environment = 'prod
 // An absent field is an empty string rather than undefined, so a caller never has to tell "missing" from "not read".
 
 export function providerSettlement(payload) {
-  if (!payload || typeof payload !== 'object') return { settled: false, status: '', grossAmount: '', paymentType: '', transactionId: '' };
+  if (!payload || typeof payload !== 'object') return {
+    settled: false,
+    status: '',
+    grossAmount: '',
+    paymentType: '',
+    transactionId: ''
+  };
   const status = String(payload.transaction_status || '');
   const fraud = String(payload.fraud_status === undefined ? 'accept' : payload.fraud_status);
   const settled = status === 'settlement' || (status === 'capture' && (fraud === 'accept' || fraud === ''));
@@ -331,10 +437,16 @@ export function snapRedirect(response) {
   const url = typeof response.redirect_url === 'string' ? response.redirect_url : '';
   const token = typeof response.token === 'string' ? response.token : '';
   if (!url || !token) return null;
-  return { payUrl: url, token };
+  return {
+    payUrl: url,
+    token
+  };
 }
 
-export function linesFromDeliveries(deliveries, kind = 'statement.client_month') {
+export function linesFromDeliveries(
+  deliveries,
+  kind = 'statement.client_month'
+) {
   const seen = new Set();
   const lines = [];
   const refused = [];
@@ -343,12 +455,18 @@ export function linesFromDeliveries(deliveries, kind = 'statement.client_month')
     const period = String(row?.period || '').trim();
     const portal = String(row?.portal || '').trim();
     if (!client || !period) {
-      refused.push({ row, reason: 'a delivery without a client and a month cannot be billed' });
+      refused.push({
+        row,
+        reason: 'a delivery without a client and a month cannot be billed'
+      });
       continue;
     }
     const key = `${client}\u0000${portal}\u0000${period}`;
     if (seen.has(key)) {
-      refused.push({ row, reason: `${client} ${period} is in the list twice; one client-month is one line` });
+      refused.push({
+        row,
+        reason: `${client} ${period} is in the list twice; one client-month is one line`
+      });
       continue;
     }
     seen.add(key);
@@ -359,23 +477,47 @@ export function linesFromDeliveries(deliveries, kind = 'statement.client_month')
       description: pages > 0 ? `${client} — ${period} (${pages} pages)` : `${client} — ${period}`
     });
   }
-  return { lines, refused };
+  return {
+    lines,
+    refused
+  };
 }
 
 // WHY A TRANSFER IS THE FIRST ROAD AND NOT A SPECIAL CASE.
 // The first customer pays before a provider account exists, and an invoice that cannot record that money is a page that lies.
 // So a transfer follows the same rules the provider does: only an open invoice, only the amount it says, and a note that names who confirmed it, because the ledger has to be checkable a year later.
 
-export function manualSettlement(invoice, { amountCents = null, note = '' } = {}) {
-  if (!invoice) return { ok: false, why: 'no invoice to settle' };
+export function manualSettlement(
+  invoice,
+  {
+    amountCents = null,
+    note = ''
+  } = {}
+) {
+  if (!invoice) return {
+    ok: false,
+    why: 'no invoice to settle'
+  };
   const status = String(invoice.status || '').toLowerCase();
-  if (status === 'paid') return { ok: false, why: 'this invoice is already paid, and a paid invoice is terminal' };
-  if (status !== 'open') return { ok: false, why: `only an open invoice can be settled, and this one is ${status || 'stateless'}` };
+  if (status === 'paid') return {
+    ok: false,
+    why: 'this invoice is already paid, and a paid invoice is terminal'
+  };
+  if (status !== 'open') return {
+    ok: false,
+    why: `only an open invoice can be settled, and this one is ${status || 'stateless'}`
+  };
   if (amountCents !== null && amountCents !== undefined && Number(amountCents) !== Number(invoice.amount_cents)) {
-    return { ok: false, why: `the amount does not match the invoice: expected ${invoice.amount_cents}, got ${amountCents}` };
+    return {
+      ok: false,
+      why: `the amount does not match the invoice: expected ${invoice.amount_cents}, got ${amountCents}`
+    };
   }
   const text = String(note || '').trim();
-  if (text.length < 3) return { ok: false, why: 'a manual settlement needs a note, so the ledger can be checked later' };
+  if (text.length < 3) return {
+    ok: false,
+    why: 'a manual settlement needs a note, so the ledger can be checked later'
+  };
   return { ok: true };
 }
 
@@ -383,15 +525,28 @@ export function manualSettlement(invoice, { amountCents = null, note = '' } = {}
 // The offer is one number a firm compares with the hours it saves, so the plan is its own kind of line.
 // The clients the plan includes are not lines at all, and only the clients above the cap are: a discount line would make the invoice say two numbers for one agreement, and the customer would have to trust the arithmetic.
 
-export const PLAN_INCLUDED = { 'plan.pilot': 15, 'plan.firm': 50 };
+export const PLAN_INCLUDED = {
+  'plan.pilot': 15,
+  'plan.firm': 50
+};
 
-export function planInvoiceLines(deliveries, plan, period) {
+export function planInvoiceLines(
+  deliveries,
+  plan,
+  period
+) {
   const included = PLAN_INCLUDED[plan];
   if (!included) {
-    return { lines: [], refused: [{ reason: `no plan named ${plan || 'nothing'} in the price list` }] };
+    return {
+      lines: [],
+      refused: [{ reason: `no plan named ${plan || 'nothing'} in the price list` }]
+    };
   }
   const derived = linesFromDeliveries(deliveries);
-  if (derived.refused.length) return { lines: [], refused: derived.refused };
+  if (derived.refused.length) return {
+    lines: [],
+    refused: derived.refused
+  };
   const label = plan === 'plan.pilot' ? 'Pilot' : 'Firm';
   const lines = [{
     kind: plan,
@@ -399,9 +554,17 @@ export function planInvoiceLines(deliveries, plan, period) {
     description: `${label} — up to ${included} client-months, ${period}`
   }];
   for (const row of derived.lines.slice(included)) {
-    lines.push({ ...row, kind: 'statement.client_month', description: `${row.description} (above plan)` });
+    lines.push({
+      ...row,
+      kind: 'statement.client_month',
+      description: `${row.description} (above plan)`
+    });
   }
-  return { lines, refused: [], included: Math.min(derived.lines.length, included) };
+  return {
+    lines,
+    refused: [],
+    included: Math.min(derived.lines.length, included)
+  };
 }
 
 // WHY THE FIELD IS signature_key AND NOT signature.
@@ -417,7 +580,10 @@ export function planInvoiceLines(deliveries, plan, period) {
 export function secretShape(secret) {
   const raw = secret === undefined || secret === null ? '' : String(secret);
   const outside = raw.replace(/[A-Za-z0-9_-]/g, '').length;
-  const prefix = ['SB-Mid-server-', 'Mid-server-'].find((known) => raw.startsWith(known)) || 'not a provider key';
+  const prefix = [
+    'SB-Mid-server-',
+    'Mid-server-'
+  ].find((known) => raw.startsWith(known)) || 'not a provider key';
   return `${raw.length} chars, prefix ${prefix}, ${outside} outside the key alphabet`;
 }
 
@@ -428,7 +594,10 @@ export function secretShape(secret) {
 // That combination is what a wrong formula looks like, because a wrong key cannot open a charge.
 // The test agreed with the code because it was written from the same belief, so the vector below was produced by another implementation and the retired rule is asserted to fail.
 
-export function providerSignature(notification, serverKey) {
+export function providerSignature(
+  notification,
+  serverKey
+) {
   if (!notification || !serverKey) return '';
   const orderId = String(notification.order_id || '');
   const statusCode = String(notification.status_code || '');
@@ -437,7 +606,10 @@ export function providerSignature(notification, serverKey) {
   return createHash('sha512').update(`${orderId}${statusCode}${grossAmount}${serverKey}`).digest('hex');
 }
 
-export function notificationSignatureValid(notification, serverKey) {
+export function notificationSignatureValid(
+  notification,
+  serverKey
+) {
   if (!notification || !serverKey) return false;
   const given = notification.signature_key ?? notification.signature;
   if (!given) return false;

@@ -11,11 +11,17 @@ import { commentLineMask } from './comment-format.mjs';
 // The tool names and their schemas are the contract, so the digest is taken over the code with the comment lines removed and the whitespace collapsed.
 // The mask is the tree's one answer to "is this line a comment", so the digest and the formatter cannot disagree about it.
 
-export function sha256ContractSource(input, ext = '.ts') {
+export function sha256ContractSource(
+  input,
+  ext = '.ts'
+) {
   const text = (Buffer.isBuffer(input) ? input.toString('utf8') : String(input)).replace(/\r\n/g, '\n');
   const mask = commentLineMask(text, ext);
   const code = text.split('\n')
-    .filter((line, index) => !mask[index])
+    .filter((
+      line,
+      index
+    ) => !mask[index])
     .join('\n')
     .replace(/\s+/g, ' ')
     .trim();

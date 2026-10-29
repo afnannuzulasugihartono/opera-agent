@@ -10,17 +10,34 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { acceptKey, encodeText, createFrameReader, isWebSocketUpgrade } from '../local/ws-server.js';
+import {
+  acceptKey,
+  encodeText,
+  createFrameReader,
+  isWebSocketUpgrade
+} from '../local/ws-server.js';
 
-function maskedFrame(opcode, text, { fin = true } = {}) {
+function maskedFrame(
+  opcode,
+  text,
+  { fin = true } = {}
+) {
   const payload = Buffer.from(text, 'utf8');
-  const mask = Buffer.from([0x12, 0x34, 0x56, 0x78]);
+  const mask = Buffer.from([
+    0x12,
+    0x34,
+    0x56,
+    0x78
+  ]);
   const masked = Buffer.from(payload);
   for (let i = 0; i < masked.length; i += 1) masked[i] ^= mask[i % 4];
   const first = (fin ? 0x80 : 0x00) | opcode;
   let header;
   if (payload.length < 126) {
-    header = Buffer.from([first, 0x80 | payload.length]);
+    header = Buffer.from([
+      first,
+      0x80 | payload.length
+    ]);
   } else if (payload.length < 65536) {
     header = Buffer.alloc(4);
     header[0] = first;
@@ -32,7 +49,11 @@ function maskedFrame(opcode, text, { fin = true } = {}) {
     header[1] = 0x80 | 127;
     header.writeBigUInt64BE(BigInt(payload.length), 2);
   }
-  return Buffer.concat([header, mask, masked]);
+  return Buffer.concat([
+    header,
+    mask,
+    masked
+  ]);
 }
 
 test('the handshake answers the RFC key the browser will verify', () => {
@@ -40,8 +61,14 @@ test('the handshake answers the RFC key the browser will verify', () => {
 });
 
 test('an upgrade is recognised only with both headers', () => {
-  assert.equal(isWebSocketUpgrade({ headers: { upgrade: 'websocket', connection: 'Upgrade' } }), true);
-  assert.equal(isWebSocketUpgrade({ headers: { upgrade: 'websocket', connection: 'keep-alive' } }), false);
+  assert.equal(isWebSocketUpgrade({ headers: {
+    upgrade: 'websocket',
+    connection: 'Upgrade'
+  } }), true);
+  assert.equal(isWebSocketUpgrade({ headers: {
+    upgrade: 'websocket',
+    connection: 'keep-alive'
+  } }), false);
   assert.equal(isWebSocketUpgrade({ headers: { connection: 'Upgrade' } }), false);
 });
 
@@ -61,8 +88,14 @@ test('text encodes in all three length forms the device can produce', () => {
 
 test('a masked client frame decodes to its text', () => {
   const seen = [];
-  createFrameReader((text) => seen.push(text))(maskedFrame(0x1, JSON.stringify({ type: 'hello', deviceName: 'opera' })));
-  assert.deepEqual(JSON.parse(seen[0]), { type: 'hello', deviceName: 'opera' });
+  createFrameReader((text) => seen.push(text))(maskedFrame(0x1, JSON.stringify({
+    type: 'hello',
+    deviceName: 'opera'
+  })));
+  assert.deepEqual(JSON.parse(seen[0]), {
+    type: 'hello',
+    deviceName: 'opera'
+  });
 });
 
 test('a frame split across reads decodes once, not twice', () => {
@@ -79,8 +112,14 @@ test('a frame split across reads decodes once, not twice', () => {
 test('two frames in one read decode in order', () => {
   const seen = [];
   const read = createFrameReader((text) => seen.push(text));
-  read(Buffer.concat([maskedFrame(0x1, 'first'), maskedFrame(0x1, 'second')]));
-  assert.deepEqual(seen, ['first', 'second']);
+  read(Buffer.concat([
+    maskedFrame(0x1, 'first'),
+    maskedFrame(0x1, 'second')
+  ]));
+  assert.deepEqual(seen, [
+    'first',
+    'second'
+  ]);
 });
 
 test('a ping is answered and a close ends the reader', () => {
@@ -113,7 +152,11 @@ test('a message in three fragments arrives whole', () => {
   assert.deepEqual(seen, [], 'nor is a middle one');
   read(maskedFrame(0x0, '"c":3}', { fin: true }));
 
-  assert.deepEqual(JSON.parse(seen[0]), { a: 1, b: 2, c: 3 });
+  assert.deepEqual(JSON.parse(seen[0]), {
+    a: 1,
+    b: 2,
+    c: 3
+  });
 });
 
 test('a ping between fragments is answered without losing the message', () => {
@@ -140,7 +183,13 @@ test('a completion-sized frame decodes where screenshots travel', () => {
 test('an oversized message is skipped while the link carries on', () => {
   const seen = [];
   const controls = [];
-  const read = createFrameReader((text) => seen.push(text), (kind, code) => controls.push([kind, code]));
+  const read = createFrameReader((text) => seen.push(text), (
+    kind,
+    code
+  ) => controls.push([
+    kind,
+    code
+  ]));
 
   read(maskedFrame(0x1, 'x'.repeat(17 * 1024 * 1024)));
   read(maskedFrame(0x1, 'still here'));
@@ -152,7 +201,13 @@ test('an oversized message is skipped while the link carries on', () => {
 test('a fragment flood is skipped the same way', () => {
   const seen = [];
   const controls = [];
-  const read = createFrameReader((text) => seen.push(text), (kind, code) => controls.push([kind, code]));
+  const read = createFrameReader((text) => seen.push(text), (
+    kind,
+    code
+  ) => controls.push([
+    kind,
+    code
+  ]));
 
   read(maskedFrame(0x1, 'x'.repeat(10 * 1024 * 1024), { fin: false }));
   read(maskedFrame(0x0, 'x'.repeat(10 * 1024 * 1024), { fin: true }));
@@ -165,9 +220,18 @@ test('a fragment flood is skipped the same way', () => {
 test('a continuation without a start closes as a protocol error', () => {
   const controls = [];
 
-  createFrameReader(() => {}, (kind, code) => controls.push([kind, code]))(maskedFrame(0x0, 'orphan'));
+  createFrameReader(() => {}, (
+    kind,
+    code
+  ) => controls.push([
+    kind,
+    code
+  ]))(maskedFrame(0x0, 'orphan'));
 
-  assert.deepEqual(controls, [['close', 1002]]);
+  assert.deepEqual(controls, [[
+    'close',
+    1002
+  ]]);
 });
 
 test('frame sizes are visible on request and silent otherwise', () => {

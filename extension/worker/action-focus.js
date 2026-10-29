@@ -4,11 +4,32 @@
 // @dependencies: utils, tab-content, capture, log, protocol, action-pipeline, focus-gate, keyboard, popup-events.
 
 import { log } from '../lib/log.js';
-import { METHOD_SPECS, clamp } from '../lib/protocol.js';
-import { pollDelays, classifyResolve, makeNotReady, attachResolution } from '../lib/action-pipeline.js';
-import { decideFocusGate, FOCUS_GATE_ATTEMPTS, FOCUS_GATE_SETTLE_MS } from '../lib/focus-gate.js';
-import { resolveKeyInput, resolveKeyStream, resolveTextKeys, MODIFIER_BITS } from '../lib/keyboard.js';
-import { recordPopup, resolvePopupOpener, POPUP_LOG_LIMIT } from '../lib/popup-events.js';
+import {
+  METHOD_SPECS,
+  clamp
+} from '../lib/protocol.js';
+import {
+  pollDelays,
+  classifyResolve,
+  makeNotReady,
+  attachResolution
+} from '../lib/action-pipeline.js';
+import {
+  decideFocusGate,
+  FOCUS_GATE_ATTEMPTS,
+  FOCUS_GATE_SETTLE_MS
+} from '../lib/focus-gate.js';
+import {
+  resolveKeyInput,
+  resolveKeyStream,
+  resolveTextKeys,
+  MODIFIER_BITS
+} from '../lib/keyboard.js';
+import {
+  recordPopup,
+  resolvePopupOpener,
+  POPUP_LOG_LIMIT
+} from '../lib/popup-events.js';
 import { sleep } from './utils.js';
 import { contentCall } from './tab-content.js';
 import { withDebugger } from './capture.js';
@@ -17,14 +38,24 @@ export function executionMode(params = {}) {
   return params.executionMode === 'foreground' ? 'foreground' : 'background';
 }
 
-function foregroundRequired(message, details = {}) {
+function foregroundRequired(
+  message,
+  details = {}
+) {
   const error = new Error(message);
   error.code = 'FOREGROUND_REQUIRED';
-  error.details = { requiredExecutionMode: 'foreground', ...details };
+  error.details = {
+    requiredExecutionMode: 'foreground',
+    ...details
+  };
   return error;
 }
 
-export async function withInputFocusEmulation(target, mode, work) {
+export async function withInputFocusEmulation(
+  target,
+  mode,
+  work
+) {
   let focusEmulated = false;
   if (mode === 'background') {
     try {
@@ -35,10 +66,17 @@ export async function withInputFocusEmulation(target, mode, work) {
     }
   }
   try {
-    return { ...(await work()), focusEmulated };
+    return {
+      ...(await work()),
+      focusEmulated
+    };
   } finally {
     if (focusEmulated) {
-      try { await chrome.debugger.sendCommand(target, 'Emulation.setFocusEmulationEnabled', { enabled: false }); } catch (error) { log.debug('FOCUS_EMULATION_DISABLE_FAILED', error?.message || String(error)); }
+      try {
+        await chrome.debugger.sendCommand(target, 'Emulation.setFocusEmulationEnabled', { enabled: false });
+      } catch (error) {
+        log.debug('FOCUS_EMULATION_DISABLE_FAILED', error?.message || String(error));
+      }
     }
   }
 }
@@ -46,10 +84,18 @@ export async function withInputFocusEmulation(target, mode, work) {
 export async function sampleTabFocus(tabId) {
   const tab = await chrome.tabs.get(tabId);
   const win = await chrome.windows.get(tab.windowId);
-  return { tabActive: !!tab.active, windowFocused: !!win.focused, windowId: tab.windowId };
+  return {
+    tabActive: !!tab.active,
+    windowFocused: !!win.focused,
+    windowId: tab.windowId
+  };
 }
 
-export async function withForegroundFocusGate(tabId, mode, work) {
+export async function withForegroundFocusGate(
+  tabId,
+  mode,
+  work
+) {
   if (mode !== 'foreground') return work();
 
   for (let attempt = 1; attempt <= FOCUS_GATE_ATTEMPTS; attempt += 1) {
@@ -63,15 +109,30 @@ export async function withForegroundFocusGate(tabId, mode, work) {
         reason: String(error?.message || error)
       });
     }
-    const decision = decideFocusGate({ mode, sample, attempt });
+    const decision = decideFocusGate({
+      mode,
+      sample,
+      attempt
+    });
     if (decision.outcome === 'dispatch') {
       const result = await work();
-      return { ...result, focusGate: { attempts: attempt, recovered: decision.recovered, ...sample } };
+      return {
+        ...result,
+        focusGate: {
+          attempts: attempt,
+          recovered: decision.recovered,
+          ...sample
+        }
+      };
     }
     if (decision.outcome === 'refuse') {
       throw foregroundRequired(
         'Pointer actions require the target tab and its window to already be active and focused.',
-        { targetTabId: tabId, attempts: attempt, ...sample }
+        {
+          targetTabId: tabId,
+          attempts: attempt,
+          ...sample
+        }
       );
     }
     await sleep(FOCUS_GATE_SETTLE_MS);
@@ -88,7 +149,10 @@ function popupInFlightTab() {
   return popupActionStack.length ? popupActionStack[popupActionStack.length - 1] : null;
 }
 
-export async function withActionPopupTracking(tabId, work) {
+export async function withActionPopupTracking(
+  tabId,
+  work
+) {
   popupActionStack.push(Number(tabId));
   try {
     return await work();
@@ -110,7 +174,12 @@ chrome.tabs.onCreated.addListener((tab) => {
   try {
     prunePopupLog();
     const opener = resolvePopupOpener(popupInFlightTab(), tab);
-    if (opener !== null) recordPopup(popupLog, { id: tab.id, openerTabId: opener, pendingUrl: tab.pendingUrl, url: tab.url }, Date.now(), POPUP_LOG_LIMIT);
+    if (opener !== null) recordPopup(popupLog, {
+      id: tab.id,
+      openerTabId: opener,
+      pendingUrl: tab.pendingUrl,
+      url: tab.url
+    }, Date.now(), POPUP_LOG_LIMIT);
   } catch (error) {
     log.warn('POPUP_TRACK_FAILED', error?.message || String(error));
   }
@@ -144,14 +213,22 @@ export function notReadyError(error) {
     reason: error.reason,
     waitedMs: error.waitedMs,
     hint: error.hint,
-    message: `Target not ready (${error.reason}) after ${error.waitedMs}ms. ${error.hint || ''}${Array.isArray(error.candidates) ? ` Candidates: ${JSON.stringify(error.candidates)}` : ''}`.trim()
+    message: `Target not ready (${error.reason}) after ${error.waitedMs}ms. ${error.hint || ''}${Array.isArray(error.candidates) ? ` Candidates: ${
+      JSON.stringify(error.candidates)
+    }` : ''}`.trim()
   };
   if (Array.isArray(error.candidates)) out.candidates = error.candidates;
   if (error.refState) out.refState = error.refState;
   return out;
 }
 
-export async function runActionPipeline(tabId, method, params, context, exec) {
+export async function runActionPipeline(
+  tabId,
+  method,
+  params,
+  context,
+  exec
+) {
   const started = Date.now();
   const specTimeout = METHOD_SPECS[method]?.timeoutMs ?? 8000;
   const cmdDeadline = Number(context?.deadline) || (started + specTimeout);
@@ -187,7 +264,6 @@ export async function runActionPipeline(tabId, method, params, context, exec) {
 
   if (verdict === 'not-actionable' && params?.trusted !== true) verdict = 'ready';
   if (verdict === 'ambiguous') {
-
     throw makeNotReady('ambiguous', waitedMs, state?.refusal || 'Refusal is deliberate (geometry guard). Pick a listed candidate deliberately or re-find with narrower text.', state?.candidates);
   }
   if (verdict !== 'ready') {
@@ -202,12 +278,27 @@ export async function runActionPipeline(tabId, method, params, context, exec) {
   const result = await exec(params.ref);
 
   if ((method === 'page.click' || method === 'page.fill') && result?.postAction?.verified !== undefined) {
-    return attachResolution(result, { attempts, waitedMs, healed, verified: result.postAction.verified === true });
+    return attachResolution(result, {
+      attempts,
+      waitedMs,
+      healed,
+      verified: result.postAction.verified === true
+    });
   }
-  return attachResolution(result, { attempts, waitedMs, healed });
+  return attachResolution(result, {
+    attempts,
+    waitedMs,
+    healed
+  });
 }
 
-export async function trustedClick(tabId, ref, context, mode = 'background', options = {}) {
+export async function trustedClick(
+  tabId,
+  ref,
+  context,
+  mode = 'background',
+  options = {}
+) {
   const attempts = Math.max(1, Math.min(3, Number(options.attempts) || 1));
   let last = null;
   for (let attempt = 1; attempt <= attempts; attempt += 1) {
@@ -217,130 +308,281 @@ export async function trustedClick(tabId, ref, context, mode = 'background', opt
     if (!Number.isFinite(x) || !Number.isFinite(y)) throw new Error('Element has no clickable rectangle.');
     const action = await withDebugger(tabId, context, (target) => withInputFocusEmulation(target, mode, () =>
       withForegroundFocusGate(tabId, mode, async () => {
-        await chrome.debugger.sendCommand(target, 'Input.dispatchMouseEvent', { type: 'mouseMoved', x, y });
-        await chrome.debugger.sendCommand(target, 'Input.dispatchMouseEvent', { type: 'mousePressed', x, y, button: 'left', clickCount: 1 });
-        await chrome.debugger.sendCommand(target, 'Input.dispatchMouseEvent', { type: 'mouseReleased', x, y, button: 'left', clickCount: 1 });
-        return { ok: true, ref, method: 'debugger', x, y };
+        await chrome.debugger.sendCommand(target, 'Input.dispatchMouseEvent', {
+          type: 'mouseMoved',
+          x,
+          y
+        });
+        await chrome.debugger.sendCommand(target, 'Input.dispatchMouseEvent', {
+          type: 'mousePressed',
+          x,
+          y,
+          button: 'left',
+          clickCount: 1
+        });
+        await chrome.debugger.sendCommand(target, 'Input.dispatchMouseEvent', {
+          type: 'mouseReleased',
+          x,
+          y,
+          button: 'left',
+          clickCount: 1
+        });
+        return {
+          ok: true,
+          ref,
+          method: 'debugger',
+          x,
+          y
+        };
       })));
     const postAction = await contentCall(tabId, 'page.post_action', {
       ref,
       before: info.postActionBefore,
       expect: options.expect || undefined
     });
-    last = { ...action, postAction, attempts: attempt };
+    last = {
+      ...action,
+      postAction,
+      attempts: attempt
+    };
     if (postAction.verified !== false || attempt >= attempts) break;
   }
   return last;
 }
 
-export async function trustedFill(tabId, ref, value, context, mode = 'background', options = {}) {
+export async function trustedFill(
+  tabId,
+  ref,
+  value,
+  context,
+  mode = 'background',
+  options = {}
+) {
   const text = String(value ?? '').slice(0, 20000);
   const info = await contentCall(tabId, 'page.fill_info', { ref });
   return withDebugger(tabId, context, (target) => withInputFocusEmulation(target, mode, () =>
     withForegroundFocusGate(tabId, mode, async () => {
-    const active = await contentCall(tabId, 'page.active_state', {});
-    if (active.sensitive || active.active?.ref !== ref) {
-      throw new Error('Trusted fill target lost safe document focus before text insertion.');
-    }
-    let action;
-    if (text) {
-      await chrome.debugger.sendCommand(target, 'Input.insertText', { text });
-      action = { ok: true, ref, valueLength: text.length, method: 'debugger' };
-    } else {
-      const key = { key: 'Backspace', code: 'Backspace', windowsVirtualKeyCode: 8, nativeVirtualKeyCode: 8 };
-      await chrome.debugger.sendCommand(target, 'Input.dispatchKeyEvent', { type: 'keyDown', ...key });
-      await chrome.debugger.sendCommand(target, 'Input.dispatchKeyEvent', { type: 'keyUp', ...key });
-      action = { ok: true, ref, valueLength: 0, method: 'debugger' };
-    }
+      const active = await contentCall(tabId, 'page.active_state', {});
+      if (active.sensitive || active.active?.ref !== ref) {
+        throw new Error('Trusted fill target lost safe document focus before text insertion.');
+      }
+      let action;
+      if (text) {
+        await chrome.debugger.sendCommand(target, 'Input.insertText', { text });
+        action = {
+          ok: true,
+          ref,
+          valueLength: text.length,
+          method: 'debugger'
+        };
+      } else {
+        const key = {
+          key: 'Backspace',
+          code: 'Backspace',
+          windowsVirtualKeyCode: 8,
+          nativeVirtualKeyCode: 8
+        };
+        await chrome.debugger.sendCommand(target, 'Input.dispatchKeyEvent', {
+          type: 'keyDown',
+          ...key
+        });
+        await chrome.debugger.sendCommand(target, 'Input.dispatchKeyEvent', {
+          type: 'keyUp',
+          ...key
+        });
+        action = {
+          ok: true,
+          ref,
+          valueLength: 0,
+          method: 'debugger'
+        };
+      }
 
-    const postAction = await contentCall(tabId, 'page.post_action', {
-      ref,
-      before: info.postActionBefore,
-      expect: options.expect || undefined
-    });
-    return { ...action, postAction };
-  })));
+      const postAction = await contentCall(tabId, 'page.post_action', {
+        ref,
+        before: info.postActionBefore,
+        expect: options.expect || undefined
+      });
+      return {
+        ...action,
+        postAction
+      };
+    })));
 }
 
-export async function trustedPointer(tabId, params, context) {
+export async function trustedPointer(
+  tabId,
+  params,
+  context
+) {
   const mode = executionMode(params);
   const action = String(params.action || 'click');
 
   const visiblePointer = params.showCursor === true || (mode === 'foreground' && params.showCursor !== false);
-  const start = await contentCall(tabId, 'page.pointer_target', { x: params.x, y: params.y, showCursor: visiblePointer, action });
+  const start = await contentCall(tabId, 'page.pointer_target', {
+    x: params.x,
+    y: params.y,
+    showCursor: visiblePointer,
+    action
+  });
   const end = action === 'drag'
-    ? await contentCall(tabId, 'page.pointer_target', { x: params.endX, y: params.endY, showCursor: visiblePointer, action })
+    ? await contentCall(tabId, 'page.pointer_target', {
+      x: params.endX,
+      y: params.endY,
+      showCursor: visiblePointer,
+      action
+    })
     : null;
   return withDebugger(tabId, context, (target) => withInputFocusEmulation(target, mode, () =>
     withForegroundFocusGate(tabId, mode, async () => {
-    let scroll = null;
-    await chrome.debugger.sendCommand(target, 'Input.dispatchMouseEvent', { type: 'mouseMoved', x: start.x, y: start.y });
-    if (action === 'click') {
-      await chrome.debugger.sendCommand(target, 'Input.dispatchMouseEvent', { type: 'mousePressed', x: start.x, y: start.y, button: 'left', clickCount: 1 });
-      await chrome.debugger.sendCommand(target, 'Input.dispatchMouseEvent', { type: 'mouseReleased', x: start.x, y: start.y, button: 'left', clickCount: 1 });
-    } else if (action === 'drag') {
-      await chrome.debugger.sendCommand(target, 'Input.dispatchMouseEvent', { type: 'mousePressed', x: start.x, y: start.y, button: 'left', clickCount: 1 });
-      await chrome.debugger.sendCommand(target, 'Input.dispatchMouseEvent', { type: 'mouseMoved', x: end.x, y: end.y, button: 'left', buttons: 1 });
-      await chrome.debugger.sendCommand(target, 'Input.dispatchMouseEvent', { type: 'mouseReleased', x: end.x, y: end.y, button: 'left', clickCount: 1 });
-    } else if (action === 'wheel') {
-      const deltaX = clamp(params.deltaX, -1200, 1200, 0);
-      const deltaY = clamp(params.deltaY, -1200, 1200, 0);
-      await chrome.debugger.sendCommand(target, 'Input.dispatchMouseEvent', { type: 'mouseWheel', x: start.x, y: start.y, deltaX, deltaY });
-      scroll = await contentCall(tabId, 'page.scroll_settle', {
+      let scroll = null;
+      await chrome.debugger.sendCommand(target, 'Input.dispatchMouseEvent', {
+        type: 'mouseMoved',
         x: start.x,
-        y: start.y,
-        before: start.scrollTarget,
-        beforeMutationVersion: start.mutationVersion,
-        maxWaitMs: 300,
-        stableRounds: 2
+        y: start.y
       });
-      scroll.inputMethod = 'debugger';
-
-      // WHY THE BOUNDARY IS READ PER AXIS AND PER DIRECTION.
-      // A wheel that moved down asks whether the bottom was reached, and a wheel that moved up asks about the top; asking the wrong one reports a scroll that stopped when it had room.
-      // Written as one expression over four directions it is unreadable, and the answer it gives is what the caller uses to decide whether to scroll again.
-      // It is read after the fallback rather than before it, so the boundary describes the scroll the caller ended up with rather than the one the debugger attempted.
-      const boundaryFor = (axis, delta) => {
-        if (delta > 0) return scroll.after?.[`reached${axis === 'Y' ? 'Bottom' : 'Right'}`] === true;
-        if (delta < 0) return scroll.after?.[`reached${axis === 'Y' ? 'Top' : 'Left'}`] === true;
-        return false;
-      };
-      const canMoveY = deltaY !== 0 && !boundaryFor('Y', deltaY);
-      const canMoveX = deltaX !== 0 && !boundaryFor('X', deltaX);
-      if (!scroll.moved && (canMoveY || canMoveX)) {
-        scroll = await contentCall(tabId, 'page.scroll_target', {
+      if (action === 'click') {
+        await chrome.debugger.sendCommand(target, 'Input.dispatchMouseEvent', {
+          type: 'mousePressed',
           x: start.x,
           y: start.y,
-          ref: start.scrollTarget?.ref,
-          before: start.scrollTarget,
-          beforeMutationVersion: start.mutationVersion,
+          button: 'left',
+          clickCount: 1
+        });
+        await chrome.debugger.sendCommand(target, 'Input.dispatchMouseEvent', {
+          type: 'mouseReleased',
+          x: start.x,
+          y: start.y,
+          button: 'left',
+          clickCount: 1
+        });
+      } else if (action === 'drag') {
+        await chrome.debugger.sendCommand(target, 'Input.dispatchMouseEvent', {
+          type: 'mousePressed',
+          x: start.x,
+          y: start.y,
+          button: 'left',
+          clickCount: 1
+        });
+        await chrome.debugger.sendCommand(target, 'Input.dispatchMouseEvent', {
+          type: 'mouseMoved',
+          x: end.x,
+          y: end.y,
+          button: 'left',
+          buttons: 1
+        });
+        await chrome.debugger.sendCommand(target, 'Input.dispatchMouseEvent', {
+          type: 'mouseReleased',
+          x: end.x,
+          y: end.y,
+          button: 'left',
+          clickCount: 1
+        });
+      } else if (action === 'wheel') {
+        const deltaX = clamp(params.deltaX, -1200, 1200, 0);
+        const deltaY = clamp(params.deltaY, -1200, 1200, 0);
+        await chrome.debugger.sendCommand(target, 'Input.dispatchMouseEvent', {
+          type: 'mouseWheel',
+          x: start.x,
+          y: start.y,
           deltaX,
           deltaY
         });
-        scroll.inputMethod = 'dom-fallback';
+        scroll = await contentCall(tabId, 'page.scroll_settle', {
+          x: start.x,
+          y: start.y,
+          before: start.scrollTarget,
+          beforeMutationVersion: start.mutationVersion,
+          maxWaitMs: 300,
+          stableRounds: 2
+        });
+        scroll.inputMethod = 'debugger';
+
+        // WHY THE BOUNDARY IS READ PER AXIS AND PER DIRECTION.
+        // A wheel that moved down asks whether the bottom was reached, and a wheel that moved up asks about the top; asking the wrong one reports a scroll that stopped when it had room.
+        // Written as one expression over four directions it is unreadable, and the answer it gives is what the caller uses to decide whether to scroll again.
+        // It is read after the fallback rather than before it, so the boundary describes the scroll the caller ended up with rather than the one the debugger attempted.
+        const boundaryFor = (
+          axis,
+          delta
+        ) => {
+          if (delta > 0) return scroll.after?.[`reached${axis === 'Y' ? 'Bottom' : 'Right'}`] === true;
+          if (delta < 0) return scroll.after?.[`reached${axis === 'Y' ? 'Top' : 'Left'}`] === true;
+          return false;
+        };
+        const canMoveY = deltaY !== 0 && !boundaryFor('Y', deltaY);
+        const canMoveX = deltaX !== 0 && !boundaryFor('X', deltaX);
+        if (!scroll.moved && (canMoveY || canMoveX)) {
+          scroll = await contentCall(tabId, 'page.scroll_target', {
+            x: start.x,
+            y: start.y,
+            ref: start.scrollTarget?.ref,
+            before: start.scrollTarget,
+            beforeMutationVersion: start.mutationVersion,
+            deltaX,
+            deltaY
+          });
+          scroll.inputMethod = 'dom-fallback';
+        }
+        scroll.reachedBoundary = deltaY !== 0 ? boundaryFor('Y', deltaY) : boundaryFor('X', deltaX);
       }
-      scroll.reachedBoundary = deltaY !== 0 ? boundaryFor('Y', deltaY) : boundaryFor('X', deltaX);
-    }
-    return { ok: true, method: 'debugger', action, executionMode: mode, visiblePointer, start, end, ...(scroll ? { scroll } : {}) };
-  })));
+      return {
+        ok: true,
+        method: 'debugger',
+        action,
+        executionMode: mode,
+        visiblePointer,
+        start,
+        end,
+        ...(scroll ? { scroll } : {})
+      };
+    })));
 }
 
 // WHY TEXT SOMETIMES TRAVELS ONE CHARACTER AT A TIME.
 // An IME insert carries no key events, and canvas editors commit off key-event sequences, so the insert reports success and paints nothing.
 // One keyDown carrying text plus keyUp per character is the shape such editors accept; the caller opts in per call because native inputs are faster and correct on plain inserts.
 
-async function sendTextAsKeys(target, text) {
+async function sendTextAsKeys(
+  target,
+  text
+) {
   const keys = resolveTextKeys(text);
   for (const spec of keys) {
     const modifiers = spec.shift ? { modifiers: MODIFIER_BITS.shift } : {};
-    const codes = { key: spec.key, code: spec.code, windowsVirtualKeyCode: spec.vk, nativeVirtualKeyCode: spec.vk };
-    await chrome.debugger.sendCommand(target, 'Input.dispatchKeyEvent', { type: 'keyDown', text: spec.text, ...codes, ...modifiers });
-    await chrome.debugger.sendCommand(target, 'Input.dispatchKeyEvent', { type: 'keyUp', ...codes, ...modifiers });
+    const codes = {
+      key: spec.key,
+      code: spec.code,
+      windowsVirtualKeyCode: spec.vk,
+      nativeVirtualKeyCode: spec.vk
+    };
+    await chrome.debugger.sendCommand(target, 'Input.dispatchKeyEvent', {
+      type: 'keyDown',
+      text: spec.text,
+      ...codes,
+      ...modifiers
+    });
+    await chrome.debugger.sendCommand(target, 'Input.dispatchKeyEvent', {
+      type: 'keyUp',
+      ...codes,
+      ...modifiers
+    });
   }
-  return { ok: true, method: 'debugger', input: 'text-keys', valueLength: keys.length, keys: keys.length };
+  return {
+    ok: true,
+    method: 'debugger',
+    input: 'text-keys',
+    valueLength: keys.length,
+    keys: keys.length
+  };
 }
 
-export async function trustedKey(tabId, params, context, mode = 'background') {
+export async function trustedKey(
+  tabId,
+  params,
+  context,
+  mode = 'background'
+) {
   const request = resolveKeyInput({
     key: params?.key,
     modifiers: params?.modifiers,
@@ -350,81 +592,112 @@ export async function trustedKey(tabId, params, context, mode = 'background') {
   if (active.sensitive) throw new Error('Keyboard input blocked on sensitive field.');
   return withDebugger(tabId, context, (target) => withInputFocusEmulation(target, mode, () =>
     withForegroundFocusGate(tabId, mode, async () => {
-    if (request.kind === 'text') {
-      if (params?.keyEvents === true) {
-        return sendTextAsKeys(target, request.text);
+      if (request.kind === 'text') {
+        if (params?.keyEvents === true) {
+          return sendTextAsKeys(target, request.text);
+        }
+        for (const chunk of request.chunks) {
+          await chrome.debugger.sendCommand(target, 'Input.insertText', { text: chunk });
+        }
+        return {
+          ok: true,
+          method: 'debugger',
+          input: 'text',
+          valueLength: request.chars,
+          chunks: request.chunks.length
+        };
       }
-      for (const chunk of request.chunks) {
-        await chrome.debugger.sendCommand(target, 'Input.insertText', { text: chunk });
-      }
-      return { ok: true, method: 'debugger', input: 'text', valueLength: request.chars, chunks: request.chunks.length };
-    }
-    const spec = {
-      key: request.key,
-      code: request.code,
-      windowsVirtualKeyCode: request.windowsVirtualKeyCode,
-      nativeVirtualKeyCode: request.nativeVirtualKeyCode
-    };
-    const modifiers = request.modifiers ? { modifiers: request.modifiers } : {};
-    await chrome.debugger.sendCommand(target, 'Input.dispatchKeyEvent', { type: 'keyDown', ...modifiers, ...spec });
-    await chrome.debugger.sendCommand(target, 'Input.dispatchKeyEvent', { type: 'keyUp', ...modifiers, ...spec });
-    return {
-      ok: true,
-      key: request.name,
-      modifiers: request.modifierNames,
-      method: 'debugger',
-      input: 'chord'
-    };
-  })));
+      const spec = {
+        key: request.key,
+        code: request.code,
+        windowsVirtualKeyCode: request.windowsVirtualKeyCode,
+        nativeVirtualKeyCode: request.nativeVirtualKeyCode
+      };
+      const modifiers = request.modifiers ? { modifiers: request.modifiers } : {};
+      await chrome.debugger.sendCommand(target, 'Input.dispatchKeyEvent', {
+        type: 'keyDown',
+        ...modifiers,
+        ...spec
+      });
+      await chrome.debugger.sendCommand(target, 'Input.dispatchKeyEvent', {
+        type: 'keyUp',
+        ...modifiers,
+        ...spec
+      });
+      return {
+        ok: true,
+        key: request.name,
+        modifiers: request.modifierNames,
+        method: 'debugger',
+        input: 'chord'
+      };
+    })));
 }
 
-export async function trustedKeyStream(tabId, params, context, mode = 'background') {
+export async function trustedKeyStream(
+  tabId,
+  params,
+  context,
+  mode = 'background'
+) {
   const events = resolveKeyStream(params?.events);
   const active = await contentCall(tabId, 'page.active_state', {});
   if (active.sensitive) throw new Error('Keyboard input blocked on sensitive field.');
   return withDebugger(tabId, context, (target) => withInputFocusEmulation(target, mode, () =>
     withForegroundFocusGate(tabId, mode, async () => {
-    const started = Date.now();
-    let chords = 0;
-    let chars = 0;
-    for (const event of events) {
-      if (event.kind === 'text') {
-        if (params?.keyEvents === true) {
-          const sent = await sendTextAsKeys(target, event.text);
-          chars += sent.keys;
-        } else {
-          for (const chunk of event.chunks) {
-            await chrome.debugger.sendCommand(target, 'Input.insertText', { text: chunk });
+      const started = Date.now();
+      let chords = 0;
+      let chars = 0;
+      for (const event of events) {
+        if (event.kind === 'text') {
+          if (params?.keyEvents === true) {
+            const sent = await sendTextAsKeys(target, event.text);
+            chars += sent.keys;
+          } else {
+            for (const chunk of event.chunks) {
+              await chrome.debugger.sendCommand(target, 'Input.insertText', { text: chunk });
+            }
+            chars += event.chars;
           }
-          chars += event.chars;
+        } else {
+          const spec = {
+            key: event.key,
+            code: event.code,
+            windowsVirtualKeyCode: event.windowsVirtualKeyCode,
+            nativeVirtualKeyCode: event.nativeVirtualKeyCode
+          };
+          const modifiers = event.modifiers ? { modifiers: event.modifiers } : {};
+          await chrome.debugger.sendCommand(target, 'Input.dispatchKeyEvent', {
+            type: 'keyDown',
+            ...modifiers,
+            ...spec
+          });
+          await chrome.debugger.sendCommand(target, 'Input.dispatchKeyEvent', {
+            type: 'keyUp',
+            ...modifiers,
+            ...spec
+          });
+          chords += 1;
         }
-      } else {
-        const spec = {
-          key: event.key,
-          code: event.code,
-          windowsVirtualKeyCode: event.windowsVirtualKeyCode,
-          nativeVirtualKeyCode: event.nativeVirtualKeyCode
-        };
-        const modifiers = event.modifiers ? { modifiers: event.modifiers } : {};
-        await chrome.debugger.sendCommand(target, 'Input.dispatchKeyEvent', { type: 'keyDown', ...modifiers, ...spec });
-        await chrome.debugger.sendCommand(target, 'Input.dispatchKeyEvent', { type: 'keyUp', ...modifiers, ...spec });
-        chords += 1;
+        if (event.gapMs > 0) await sleep(event.gapMs);
       }
-      if (event.gapMs > 0) await sleep(event.gapMs);
-    }
-    return {
-      ok: true,
-      events: events.length,
-      chords,
-      chars,
-      execMs: Date.now() - started,
-      method: 'debugger',
-      input: 'stream'
-    };
-  })));
+      return {
+        ok: true,
+        events: events.length,
+        chords,
+        chars,
+        execMs: Date.now() - started,
+        method: 'debugger',
+        input: 'stream'
+      };
+    })));
 }
 
-function burstPassthroughRef(results, step, index) {
+function burstPassthroughRef(
+  results,
+  step,
+  index
+) {
   const from = step.refFromStep;
   if (from === undefined || from === null) return null;
   const source = results[Number(from)];
@@ -437,12 +710,29 @@ function burstPassthroughRef(results, step, index) {
   if (!pick || typeof pick.ref !== 'string' || !pick.ref) {
     throw new Error(`refFromStep must reference an earlier burst step with items (step ${from} item has no ref).`);
   }
-  return { ref: pick.ref, resolvedFrom: `step:${from}` };
+  return {
+    ref: pick.ref,
+    resolvedFrom: `step:${from}`
+  };
 }
 
-export function burstStepParams(step, tabId, remainingMs, mode, results) {
-  const { action, pointerAction, ...values } = step;
-  const params = { ...values, tabId, executionMode: mode };
+export function burstStepParams(
+  step,
+  tabId,
+  remainingMs,
+  mode,
+  results
+) {
+  const {
+    action,
+    pointerAction,
+    ...values
+  } = step;
+  const params = {
+    ...values,
+    tabId,
+    executionMode: mode
+  };
 
   if (action === 'click' || action === 'fill' || action === 'hover') {
     const passthrough = burstPassthroughRef(results || [], step);

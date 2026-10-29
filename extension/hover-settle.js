@@ -20,9 +20,18 @@
   'use strict';
   if (globalThis.OperaAgentHoverSettle) return;
 
-  const DEFAULTS = Object.freeze({ timeoutMs: 1500, intervalMs: 50, stableRounds: 2 });
+  const DEFAULTS = Object.freeze({
+    timeoutMs: 1500,
+    intervalMs: 50,
+    stableRounds: 2
+  });
 
-  function clamp(value, min, max, fallback) {
+  function clamp(
+    value,
+    min,
+    max,
+    fallback
+  ) {
     const number = Number(value);
     if (!Number.isFinite(number)) return fallback;
     return Math.min(max, Math.max(min, Math.floor(number)));
@@ -45,26 +54,54 @@
     if (wanted) {
       const seen = String(input.observedText == null ? '' : input.observedText).toLowerCase();
       if (seen.includes(wanted)) {
-        return { done: true, reason: 'text_appeared', expectedText: wanted };
+        return {
+          done: true,
+          reason: 'text_appeared',
+          expectedText: wanted
+        };
       }
       if (Number(input.elapsedMs) >= Number(input.timeoutMs)) {
-        return { done: true, reason: 'text_timeout', expectedText: wanted };
+        return {
+          done: true,
+          reason: 'text_timeout',
+          expectedText: wanted
+        };
       }
-      return { done: false, reason: 'awaiting_text' };
+      return {
+        done: false,
+        reason: 'awaiting_text'
+      };
     }
 
     if (input.ariaExpanded != null && input.previousAriaExpanded != null
       && input.ariaExpanded !== input.previousAriaExpanded) {
-      return { done: true, reason: 'aria_expanded_changed' };
+      return {
+        done: true,
+        reason: 'aria_expanded_changed'
+      };
     }
     if (input.mutationVersion === input.previousMutationVersion) {
-      return { done: true, reason: 'dom_stable', stableRounds: input.stableRounds };
+      return {
+        done: true,
+        reason: 'dom_stable',
+        stableRounds: input.stableRounds
+      };
     }
     if (Number(input.elapsedMs) >= Number(input.timeoutMs)) {
-      return { done: true, reason: 'timeout' };
+      return {
+        done: true,
+        reason: 'timeout'
+      };
     }
-    return { done: false, reason: 'mutating' };
+    return {
+      done: false,
+      reason: 'mutating'
+    };
   }
 
-  globalThis.OperaAgentHoverSettle = Object.freeze({ DEFAULTS, normalize, plan });
+  globalThis.OperaAgentHoverSettle = Object.freeze({
+    DEFAULTS,
+    normalize,
+    plan
+  });
 })();

@@ -43,7 +43,6 @@ test('media sampling does not seek by navigation or reload', () => {
 });
 
 test('advertised media capabilities are invocable tools (decision superseded by measurement)', () => {
-
   const registered = [
     ...mcpSource.matchAll(/server\.registerTool\("([a-z_]+)"/g)
   ].map((match) => match[1]);

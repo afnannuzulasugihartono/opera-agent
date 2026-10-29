@@ -12,43 +12,108 @@ import {
   validateCommand,
   normalizeError,
 } from '../lib/protocol.js';
-import { readModelConfig, saveModelEndpoint, saveModelKey, saveModelName } from '../lib/options-store.js';
-import { buildProbeRequest, endpointOk, MODEL_TIMEOUT_MS } from '../lib/model-client.js';
+import {
+  readModelConfig,
+  saveModelEndpoint,
+  saveModelKey,
+  saveModelName
+} from '../lib/options-store.js';
+import {
+  buildProbeRequest,
+  endpointOk,
+  MODEL_TIMEOUT_MS
+} from '../lib/model-client.js';
 import { originAllowed } from '../lib/external-origins.js';
 import { raceWithTimeout } from '../lib/deadline-race.js';
-import { nowIso, randomToken, getConfig, setState, connectionState } from './utils.js';
-import { fetchJson, publicTab, requireTabId, contentCall, HTTP_URL_RE } from './tab-content.js';
-import { privateTabIds, isPrivateTab, setPrivateTab, PRIVATE_TABS_KEY } from './private-tabs.js';
-import { readListenSession, listenStop, postListenChunk } from './listen.js';
+import {
+  nowIso,
+  randomToken,
+  getConfig,
+  setState,
+  connectionState
+} from './utils.js';
+import {
+  fetchJson,
+  publicTab,
+  requireTabId,
+  contentCall,
+  HTTP_URL_RE
+} from './tab-content.js';
+import {
+  privateTabIds,
+  isPrivateTab,
+  setPrivateTab,
+  PRIVATE_TABS_KEY
+} from './private-tabs.js';
+import {
+  readListenSession,
+  listenStop,
+  postListenChunk
+} from './listen.js';
 import { notReadyError } from './action-focus.js';
-import { createSocketClient, connectionPatch } from '../lib/socket-client.js';
+import {
+  createSocketClient,
+  connectionPatch
+} from '../lib/socket-client.js';
 import { completionFrame } from '../lib/socket-protocol.js';
-import { loadWatchers, armWatchersForTab, handleWatchFacts, commandTimeoutError } from './watch-registry.js';
+import {
+  loadWatchers,
+  armWatchersForTab,
+  handleWatchFacts,
+  commandTimeoutError
+} from './watch-registry.js';
 import { screenshotCache } from './capture.js';
-import { clearSerializedResult, boundedResult } from '../lib/serialize.js';
+import {
+  clearSerializedResult,
+  boundedResult
+} from '../lib/serialize.js';
 import { dispatch } from '../background.js';
 
 const WAKE_ALARM = 'opera-agent-wake';
 let socketClient = null;
 
-async function runDispatch(dispatch, timeoutMs) {
+async function runDispatch(
+  dispatch,
+  timeoutMs
+) {
   try {
     const result = await raceWithTimeout(dispatch, timeoutMs, commandTimeoutError);
-    return { ok: true, result: boundedResult(result) };
+    return {
+      ok: true,
+      result: boundedResult(result)
+    };
   } catch (error) {
     if (error && error.code === 'TARGET_NOT_READY') {
-      return { ok: false, error: notReadyError(error) };
+      return {
+        ok: false,
+        error: notReadyError(error)
+      };
     }
     if (error && error.code === 'COMMAND_TIMEOUT') {
-      return { ok: false, error: { code: 'COMMAND_TIMEOUT', outcome: 'unknown', message: error.message } };
+      return {
+        ok: false,
+        error: {
+          code: 'COMMAND_TIMEOUT',
+          outcome: 'unknown',
+          message: error.message
+        }
+      };
     }
-    return { ok: false, error: normalizeError(error) };
+    return {
+      ok: false,
+      error: normalizeError(error)
+    };
   }
 }
 
 let emitChain = Promise.resolve();
 
-function emitCommandEvent(cfg, commandId, kind, envelope) {
+function emitCommandEvent(
+  cfg,
+  commandId,
+  kind,
+  envelope
+) {
   if (!cfg?.bridgeUrl || !commandId) return;
   const body = {
     action: 'command_event',
@@ -61,23 +126,40 @@ function emitCommandEvent(cfg, commandId, kind, envelope) {
   emitChain = emitChain.then(() => fetchJson(cfg.bridgeUrl, body, 5000)).catch(() => {});
 }
 
-async function executeCommand(raw, cfg) {
-
+async function executeCommand(
+  raw,
+  cfg
+) {
   clearSerializedResult();
 
   const onStep = cfg
-    ? (info) => emitCommandEvent(cfg, raw?.id, 'step', { method: raw?.method, ...info })
+    ? (info) => emitCommandEvent(cfg, raw?.id, 'step', {
+      method: raw?.method,
+      ...info
+    })
     : null;
 
   if (raw && typeof raw.method === 'string' && (raw.method.startsWith('watch.') || raw.method.startsWith('loop.'))) {
     const deadlineW = Date.now() + 10000;
-    return runDispatch(() => dispatch(raw.method, raw.params || {}, { deadline: deadlineW, onStep }), 10000);
+    return runDispatch(() => dispatch(raw.method, raw.params || {}, {
+      deadline: deadlineW,
+      onStep
+    }), 10000);
   }
   const validated = validateCommand(raw);
-  if (!validated.ok) return { ok: false, error: { code: 'INVALID_COMMAND', message: validated.error } };
+  if (!validated.ok) return {
+    ok: false,
+    error: {
+      code: 'INVALID_COMMAND',
+      message: validated.error
+    }
+  };
   const { command } = validated;
   const deadline = Date.now() + command.timeoutMs;
-  return runDispatch(() => dispatch(command.method, command.params, { deadline, onStep }), Math.max(1, deadline - Date.now()));
+  return runDispatch(() => dispatch(command.method, command.params, {
+    deadline,
+    onStep
+  }), Math.max(1, deadline - Date.now()));
 }
 
 async function pair(code) {
@@ -103,21 +185,37 @@ async function pair(code) {
     deviceId: data.deviceId || '',
     bridgeUrl: cfg.bridgeUrl
   });
-  await setState({ status: 'connecting', lastError: null, retryMs: 250 });
+  await setState({
+    status: 'connecting',
+    lastError: null,
+    retryMs: 250
+  });
   restartSocket();
   return data;
 }
 
 async function unpair() {
   await listenStop().catch(() => {});
-  await chrome.storage.local.remove(['paired', 'deviceToken', 'deviceId']);
-  try { socketClient?.stop(); } catch { }
+  await chrome.storage.local.remove([
+    'paired',
+    'deviceToken',
+    'deviceId'
+  ]);
+  try {
+    socketClient?.stop();
+  } catch {}
   socketClient = null;
-  await setState({ status: 'unpaired', lastError: null });
+  await setState({
+    status: 'unpaired',
+    lastError: null
+  });
   return { ok: true };
 }
 
-function completionPayload(commandId, execution) {
+function completionPayload(
+  commandId,
+  execution
+) {
   return {
     commandId,
     ok: execution.ok,
@@ -169,7 +267,10 @@ async function ensureSocket() {
 
   const url = socketUrl(cfg.bridgeUrl);
   if (!url) {
-    await setState({ status: 'unreachable', lastError: 'No bridge url configured.' });
+    await setState({
+      status: 'unreachable',
+      lastError: 'No bridge url configured.'
+    });
     return;
   }
 
@@ -189,9 +290,9 @@ async function ensureSocket() {
       if (state.status === 'error') {
         log.warn('SOCKET_ERROR_FRAME', state.message);
       }
-      setState(connectionPatch(state, nowIso())).catch(() => { });
+      setState(connectionPatch(state, nowIso())).catch(() => {});
       if (state.status === 'connected') {
-        flushPendingCompletion(cfg).catch(() => { });
+        flushPendingCompletion(cfg).catch(() => {});
       }
     }
   });
@@ -200,9 +301,13 @@ async function ensureSocket() {
 }
 
 function restartSocket() {
-  try { socketClient?.stop(); } catch { }
+  try {
+    socketClient?.stop();
+  } catch {}
   socketClient = null;
-  ensureSocket().catch((error) => { log.debug('SOCKET_START_FAILED', String(error?.message || error)); });
+  ensureSocket().catch((error) => {
+    log.debug('SOCKET_START_FAILED', String(error?.message || error));
+  });
 }
 
 // WHY the heartbeat no longer reports a connection status.
@@ -230,10 +335,23 @@ async function heartbeat() {
 
 async function localSelfTest() {
   const tabs = await chrome.tabs.query({});
-  const active = (await chrome.tabs.query({ active: true, currentWindow: true }))[0] || null;
+  const active = (await chrome.tabs.query({
+    active: true,
+    currentWindow: true
+  }))[0] || null;
   let page = null;
   if (active?.id && HTTP_URL_RE.test(active.url || '')) {
-    try { page = await contentCall(active.id, 'page.read', { limit: 600, maxElements: 10 }); } catch (error) { page = { ok: false, error: String(error?.message || error) }; }
+    try {
+      page = await contentCall(active.id, 'page.read', {
+        limit: 600,
+        maxElements: 10
+      });
+    } catch (error) {
+      page = {
+        ok: false,
+        error: String(error?.message || error)
+      };
+    }
   }
   return {
     ok: true,
@@ -247,11 +365,18 @@ async function localSelfTest() {
   };
 }
 
-chrome.runtime.onMessageExternal?.addListener((message, sender, sendResponse) => {
+chrome.runtime.onMessageExternal?.addListener((
+  message,
+  sender,
+  sendResponse
+) => {
   if (!message || message.type !== 'applyModelConfig') return false;
   const from = String(sender?.origin || sender?.url || '');
   if (!originAllowed(from)) {
-    sendResponse({ ok: false, message: 'That page may not configure this extension.' });
+    sendResponse({
+      ok: false,
+      message: 'That page may not configure this extension.'
+    });
     return true;
   }
   (async () => {
@@ -262,46 +387,108 @@ chrome.runtime.onMessageExternal?.addListener((message, sender, sendResponse) =>
     return { ok: true };
   })()
     .then((reply) => sendResponse(reply))
-    .catch((error) => sendResponse({ ok: false, message: String(error?.message || error).slice(0, 200) }));
+    .catch((error) => sendResponse({
+      ok: false,
+      message: String(error?.message || error).slice(0, 200)
+    }));
   return true;
 });
 
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+chrome.runtime.onMessage.addListener((
+  message,
+  sender,
+  sendResponse
+) => {
   if (message && message.scope === 'opera-agent-listen-chunk') {
     const tabId = sender?.tab?.id;
     Promise.resolve(postListenChunk(tabId, message.seq, message.audio, message.mime))
       .then(() => sendResponse({ ok: true }))
-      .catch((error) => sendResponse({ ok: false, error: String(error?.message || error).slice(0, 200) }));
+      .catch((error) => sendResponse({
+        ok: false,
+        error: String(error?.message || error).slice(0, 200)
+      }));
     return true;
   }
-  if (message && message.scope === 'opera-agent-watch' && message.method === 'watch.facts') {    const tabId = sender?.tab?.id;
-    if (tabId == null) { sendResponse({ ok: false, error: 'No sender tab.' }); return true; }
-    Promise.resolve(handleWatchFacts(tabId, message.params || {}))
-      .then((r) => sendResponse({ ok: true, ...r }))
-      .catch((error) => sendResponse({ ok: false, error: String(error?.message || error).slice(0, 500) }));
-    return true;
+  if (message && message.scope === 'opera-agent-watch' && message.method === 'watch.facts') {
+    const tabId = sender?.tab?.id;
+      if (tabId == null) {
+        sendResponse({
+          ok: false,
+          error: 'No sender tab.'
+        }); return true;
+      }
+      Promise.resolve(handleWatchFacts(tabId, message.params || {}))
+        .then((r) => sendResponse({
+          ok: true,
+          ...r
+        }))
+        .catch((error) => sendResponse({
+          ok: false,
+          error: String(error?.message || error).slice(0, 500)
+        }));
+      return true;
   }
   if (message && message.scope === 'opera-agent-options' && message.action === 'testModel') {
     (async () => {
       const cfg = await readModelConfig(chrome.storage.local);
-      if (!cfg.configured) return { ok: false, code: 'MODEL_NOT_CONFIGURED', message: `Belum dikonfigurasi: ${cfg.missing.join(', ')}.` };
-      if (!endpointOk(cfg.endpoint)) return { ok: false, code: 'MODEL_BAD_ENDPOINT', message: 'The model endpoint must be https or loopback http.' };
+      if (!cfg.configured) return {
+        ok: false,
+        code: 'MODEL_NOT_CONFIGURED',
+        message: `Belum dikonfigurasi: ${cfg.missing.join(', ')}.`
+      };
+      if (!endpointOk(cfg.endpoint)) return {
+        ok: false,
+        code: 'MODEL_BAD_ENDPOINT',
+        message: 'The model endpoint must be https or loopback http.'
+      };
       const probe = buildProbeRequest({ model: cfg.model });
-      const res = await fetch(cfg.endpoint, { method: 'POST', headers: { 'content-type': 'application/json', Authorization: `Bearer ${cfg.key}` }, body: JSON.stringify({ ...probe }), signal: AbortSignal.timeout(MODEL_TIMEOUT_MS) });
-      if (!res || !res.ok) return { ok: false, code: 'MODEL_HTTP_ERROR', message: `Endpoint menjawab ${res?.status ?? 'nothing'}.` };
+      const res = await fetch(cfg.endpoint, {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          Authorization: `Bearer ${cfg.key}`
+        },
+        body: JSON.stringify({ ...probe }),
+        signal: AbortSignal.timeout(MODEL_TIMEOUT_MS)
+      });
+      if (!res || !res.ok) return {
+        ok: false,
+        code: 'MODEL_HTTP_ERROR',
+        message: `Endpoint menjawab ${res?.status ?? 'nothing'}.`
+      };
       return { ok: true };
     })()
       .then((reply) => sendResponse(reply))
-      .catch((error) => sendResponse({ ok: false, code: 'MODEL_HTTP_ERROR', message: String(error?.message || error).slice(0, 200) }));
+      .catch((error) => sendResponse({
+        ok: false,
+        code: 'MODEL_HTTP_ERROR',
+        message: String(error?.message || error).slice(0, 200)
+      }));
     return true;
   }
   if (!message || message.scope !== 'opera-agent-popup') return false;
   Promise.resolve().then(async () => {
     if (message.action === 'status') {
       const cfg = await getConfig();
-      const [active] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+      const [active] = await chrome.tabs.query({
+        active: true,
+        lastFocusedWindow: true
+      });
       const currentTabPrivate = active?.id != null ? await isPrivateTab(active.id) : false;
-      return { ok: true, config: { paired: cfg.paired, deviceName: cfg.deviceName, deviceId: cfg.deviceId, bridgeUrl: cfg.bridgeUrl }, state: connectionState, version: PRODUCT_VERSION, protocolVersion: PROTOCOL_VERSION, currentTabId: active?.id ?? null, currentTabPrivate };
+      return {
+        ok: true,
+        config: {
+          paired: cfg.paired,
+          deviceName: cfg.deviceName,
+          deviceId: cfg.deviceId,
+          bridgeUrl: cfg.bridgeUrl
+        },
+        state: connectionState,
+        version: PRODUCT_VERSION,
+        protocolVersion: PROTOCOL_VERSION,
+        currentTabId: active?.id ?? null,
+        currentTabPrivate
+      };
     }
     if (message.action === 'pair') return pair(message.code);
     if (message.action === 'unpair') return unpair();
@@ -309,10 +496,17 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.action === 'toggle-private-tab') {
       const tabId = requireTabId(message.tabId);
       await chrome.tabs.get(tabId);
-      return { ok: true, tabId, private: await setPrivateTab(tabId, !!message.private) };
+      return {
+        ok: true,
+        tabId,
+        private: await setPrivateTab(tabId, !!message.private)
+      };
     }
     throw new Error('Unknown popup action.');
-  }).then(sendResponse).catch((error) => sendResponse({ ok: false, error: String(error?.message || error) }));
+  }).then(sendResponse).catch((error) => sendResponse({
+    ok: false,
+    error: String(error?.message || error)
+  }));
   return true;
 });
 
@@ -320,49 +514,64 @@ chrome.runtime.onInstalled.addListener(async () => {
   await chrome.alarms.create(WAKE_ALARM, { periodInMinutes: 0.5 });
 
   await listenStop().catch(() => {});
-  ensureSocket().catch(() => { });
+  ensureSocket().catch(() => {});
 });
 
 chrome.runtime.onStartup.addListener(async () => {
   await chrome.alarms.create(WAKE_ALARM, { periodInMinutes: 0.5 });
   await listenStop().catch(() => {});
-  ensureSocket().catch(() => { });
+  ensureSocket().catch(() => {});
 });
 
 chrome.alarms.onAlarm.addListener((alarm) => {
   if (alarm.name !== WAKE_ALARM) return;
 
-  heartbeat().finally(ensureSocket).catch((error) => { log.warn('HEARTBEAT_FAILED', error?.message || String(error)); });
+  heartbeat().finally(ensureSocket).catch((error) => {
+    log.warn('HEARTBEAT_FAILED', error?.message || String(error));
+  });
 });
 
-chrome.storage.onChanged.addListener((changes, area) => {
+chrome.storage.onChanged.addListener((
+  changes,
+  area
+) => {
   if (area !== 'local') return;
   if (changes.paired || changes.deviceToken || changes.bridgeUrl || changes.deviceName) {
     restartSocket();
   }
 });
 
-chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-
+chrome.tabs.onUpdated.addListener((
+  tabId,
+  changeInfo,
+  tab
+) => {
   if (changeInfo.status === 'complete' && /^https?:/i.test(tab.url || '')) {
     const w = loadWatchers();
     Promise.resolve(w).then((watchers) => {
-      if ((watchers.byTab[tabId] || []).length) armWatchersForTab(tabId).catch((error) => { log.warn('WATCH_ARM_FAILED', error?.message || String(error)); });
-    }).catch((error) => { log.warn('WATCHERS_LOAD_FAILED', error?.message || String(error)); });
+      if ((watchers.byTab[tabId] || []).length) armWatchersForTab(tabId).catch((error) => {
+        log.warn('WATCH_ARM_FAILED', error?.message || String(error));
+      });
+    }).catch((error) => {
+      log.warn('WATCHERS_LOAD_FAILED', error?.message || String(error));
+    });
   }
 });
 
 chrome.tabs.onRemoved.addListener((tabId) => {
   screenshotCache.delete(tabId);
   readListenSession().then((existing) => {
-
     if (existing?.tabId === tabId) listenStop().catch(() => {});
   }).catch(() => {});
   privateTabIds().then((ids) => {
     if (!ids.delete(tabId)) return;
     return chrome.storage.local.set({ [PRIVATE_TABS_KEY]: [...ids] });
-  }).catch((error) => { log.debug('PRIVATE_TAB_CLEANUP_FAILED', error?.message || String(error)); });
+  }).catch((error) => {
+    log.debug('PRIVATE_TAB_CLEANUP_FAILED', error?.message || String(error));
+  });
 });
 
-chrome.alarms.create(WAKE_ALARM, { periodInMinutes: 0.5 }).catch((error) => { log.warn('WAKE_ALARM_CREATE_FAILED', error?.message || String(error)); });
-ensureSocket().catch(() => { });
+chrome.alarms.create(WAKE_ALARM, { periodInMinutes: 0.5 }).catch((error) => {
+  log.warn('WAKE_ALARM_CREATE_FAILED', error?.message || String(error));
+});
+ensureSocket().catch(() => {});

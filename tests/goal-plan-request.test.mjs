@@ -11,8 +11,18 @@ import { ALLOWED_METHODS } from '../extension/lib/protocol.js';
 const PAGE = {
   url: 'https://www.youtube.com/results?search_query=kucing',
   elements: [
-    { ref: 'oa_a_1', role: 'button', label: 'Search', actionable: true },
-    { ref: 'oa_a_2', role: 'link', label: 'Subscribe', actionable: true }
+    {
+      ref: 'oa_a_1',
+      role: 'button',
+      label: 'Search',
+      actionable: true
+    },
+    {
+      ref: 'oa_a_2',
+      role: 'link',
+      label: 'Subscribe',
+      actionable: true
+    }
   ]
 };
 
@@ -42,7 +52,14 @@ test('the prompt offers a way to refuse rather than guess', () => {
 });
 
 test('the prompt carries the observed page, not the whole page', () => {
-  const request = buildPlanRequest('click Search', { page: { ...PAGE, elements: Array.from({ length: 500 }, () => ({ ref: 'r', role: 'link', label: 'x' })) } });
+  const request = buildPlanRequest('click Search', { page: {
+    ...PAGE,
+    elements: Array.from({ length: 500 }, () => ({
+      ref: 'r',
+      role: 'link',
+      label: 'x'
+    }))
+  } });
   assert.ok(request.user.length < 8000, `prompt grew to ${request.user.length} characters`);
   assert.match(request.user, /click Search/);
 });
@@ -62,8 +79,15 @@ test('an empty goal is refused rather than turned into a guess', () => {
 test('the model may return a reason, and the refusal carries it', async () => {
   const { compileGoalPlan } = await import('../extension/lib/goal-plan.js');
   const result = compileGoalPlan('{"root": null, "reason": "no primitive can book a flight"}', {
-    target: { deviceId: 'd', tabId: 1, documentGeneration: 'g' },
-    budgets: { astDepth: 12, browserCommandLeavesPerRun: 4 }
+    target: {
+      deviceId: 'd',
+      tabId: 1,
+      documentGeneration: 'g'
+    },
+    budgets: {
+      astDepth: 12,
+      browserCommandLeavesPerRun: 4
+    }
   });
   assert.equal(result.ok, false);
   assert.match(result.message, /no primitive can book a flight/);

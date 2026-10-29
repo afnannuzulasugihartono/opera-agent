@@ -56,13 +56,21 @@ function trustedRecently() {
 
 function adoptedBridge(port) {
   let linked = false;
-  const call = async (method, params = {}, { timeoutMs = 60000 } = {}) => {
+  const call = async (
+    method,
+    params = {},
+    { timeoutMs = 60000 } = {}
+  ) => {
     let body;
     try {
       const response = await fetch(`http://127.0.0.1:${port}/command`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ method, params, timeoutMs }),
+        body: JSON.stringify({
+          method,
+          params,
+          timeoutMs
+        }),
         signal: AbortSignal.timeout(timeoutMs + 2000)
       });
       if (!response.ok) throw new Error(`the bridge answered ${response.status}`);
@@ -90,14 +98,32 @@ function adoptedBridge(port) {
   };
   return {
     adopted: true,
-    address: () => ({ port, host: '127.0.0.1' }),
-    listen: async () => ({ port, host: '127.0.0.1' }),
-    close: async () => { server = null; },
+    address: () => ({
+      port,
+      host: '127.0.0.1'
+    }),
+    listen: async () => ({
+      port,
+      host: '127.0.0.1'
+    }),
+    close: async () => {
+      server = null;
+    },
     probe,
     linked: () => linked,
-    send: (method, params, options) => call(method, params, options),
+    send: (
+      method,
+      params,
+      options
+    ) => call(method, params, options),
     on: () => {},
-    state: () => ({ linked, deviceId: null, queued: null, waiting: null, lastHeardMsAgo: null })
+    state: () => ({
+      linked,
+      deviceId: null,
+      queued: null,
+      waiting: null,
+      lastHeardMsAgo: null
+    })
   };
 }
 
@@ -140,7 +166,12 @@ async function prove(srv) {
 // A guest asks the owner instead — one round trip on a path that already pays one — and a live owner says yes.
 // The owner's own server keeps its in-process truth.
 
-async function attempt(method, params, timeoutMs, takeover = true) {
+async function attempt(
+  method,
+  params,
+  timeoutMs,
+  takeover = true
+) {
   const srv = await ensureServer();
   if (!srv.linked()) {
     const alive = srv.adopted ? await srv.probe().catch(() => false) : false;
@@ -163,14 +194,21 @@ async function attempt(method, params, timeoutMs, takeover = true) {
   return answer.result;
 }
 
-function request(method, params, { timeoutMs = REPLY_TIMEOUT_MS } = {}) {
+function request(
+  method,
+  params,
+  { timeoutMs = REPLY_TIMEOUT_MS } = {}
+) {
   return attempt(method, params, timeoutMs);
 }
 
 export async function bridgeAddress() {
   const srv = await ensureServer();
   const { port } = srv.address();
-  return { port, url: `ws://127.0.0.1:${port}` };
+  return {
+    port,
+    url: `ws://127.0.0.1:${port}`
+  };
 }
 
 export async function waitForBridgeLink({ timeoutMs = 15000 } = {}) {
@@ -216,8 +254,15 @@ export async function listBridgeTargets({ timeoutMs } = {}) {
 }
 
 export async function openBridgeTarget(url) {
-  const tab = await request('tabs.open', { url, active: false });
-  return { id: tab.id, url: tab.url ?? '', title: tab.title ?? '' };
+  const tab = await request('tabs.open', {
+    url,
+    active: false
+  });
+  return {
+    id: tab.id,
+    url: tab.url ?? '',
+    title: tab.title ?? ''
+  };
 }
 
 export async function closeBridgeTarget(targetId) {
@@ -228,21 +273,38 @@ export async function closeBridgeTarget(targetId) {
 // Each agent spawns its own driver, and two drivers have two memories: a claim kept inside one lets the other drive straight through it.
 // The bridge is where every driver on this machine already meets, so the table lives there and every agent reads the same one.
 
-export async function leaseTab(tabId, owner, ttlMs) {
+export async function leaseTab(
+  tabId,
+  owner,
+  ttlMs
+) {
   return leaseAsk('claim', tabId, owner, ttlMs);
 }
 
-export async function releaseTab(tabId, owner) {
+export async function releaseTab(
+  tabId,
+  owner
+) {
   return leaseAsk('release', tabId, owner);
 }
 
-async function leaseAsk(action, tabId, owner, ttlMs) {
+async function leaseAsk(
+  action,
+  tabId,
+  owner,
+  ttlMs
+) {
   const srv = await ensureServer();
   const { port } = srv.address();
   const response = await fetch(`http://127.0.0.1:${port}/lease`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ action, tabId: String(tabId), owner, ...(ttlMs ? { ttlMs } : {}) }),
+    body: JSON.stringify({
+      action,
+      tabId: String(tabId),
+      owner,
+      ...(ttlMs ? { ttlMs } : {})
+    }),
     signal: AbortSignal.timeout(REPLY_TIMEOUT_MS)
   }).catch(() => null);
   if (!response) throw new Error('bridge: the lease door did not answer');
@@ -266,9 +328,19 @@ export function connectBridgeTarget(targetId) {
       } catch {
         throw new Error('bridge: transport takes JSON CDP frames');
       }
-      request('cdp', { tabId: tab, method: frame.method, params: frame.params ?? {} }).then(
-        (result) => onFrame?.({ id: frame.id, result: result ?? null }),
-        (error) => onFrame?.({ id: frame.id, error: { message: error?.message || String(error) } })
+      request('cdp', {
+        tabId: tab,
+        method: frame.method,
+        params: frame.params ?? {}
+      }).then(
+        (result) => onFrame?.({
+          id: frame.id,
+          result: result ?? null
+        }),
+        (error) => onFrame?.({
+          id: frame.id,
+          error: { message: error?.message || String(error) }
+        })
       );
     },
     onMessage(fn) {

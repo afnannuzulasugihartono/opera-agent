@@ -36,7 +36,10 @@ test('the repository carries the files a reader and a reviewer need', () => {
   };
   const missing = Object.entries(required)
     .filter(([file]) => !exists(file))
-    .map(([file, purpose]) => `${file} (${purpose})`);
+    .map(([
+      file,
+      purpose
+    ]) => `${file} (${purpose})`);
   assert.deepEqual(missing, [], `a repository without these cannot be read or reviewed:\n${missing.join('\n')}`);
 });
 
@@ -80,7 +83,13 @@ test('the tree is stored with LF line endings, and says so', () => {
   const attributes = read('.gitattributes');
   assert.match(attributes, /\*\s+text=auto eol=lf/,
     'the attributes must pin text to LF, or a Windows checkout moves the bytes a pin protects');
-  const tracked = execFileSync('git', ['ls-files', '--eol'], { cwd: repo('.'), encoding: 'utf8' })
+  const tracked = execFileSync('git', [
+    'ls-files',
+    '--eol'
+  ], {
+    cwd: repo('.'),
+    encoding: 'utf8'
+  })
     .split('\n').filter(Boolean);
   const crlf = tracked.filter((line) => /\bi\/crlf|\bw\/crlf/.test(line));
   assert.deepEqual(crlf, [],
@@ -88,7 +97,10 @@ test('the tree is stored with LF line endings, and says so', () => {
 });
 
 test('a live document names no file that is not in the tree', () => {
-  const tracked = execFileSync('git', ['ls-files'], { cwd: repo('.'), encoding: 'utf8' })
+  const tracked = execFileSync('git', ['ls-files'], {
+    cwd: repo('.'),
+    encoding: 'utf8'
+  })
     .split('\n').filter(Boolean);
   const set = new Set(tracked);
   // Dated records describe a point in time; the live documents must be true now.

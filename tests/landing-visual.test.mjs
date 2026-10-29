@@ -20,7 +20,20 @@ const cssOf = (name) => {
   const links = [...html.matchAll(/<link[^>]+rel="stylesheet"[^>]+href="\/([^"]+)"/g)].map((match) => match[1]);
   return `${html}\n${links.map((file) => read(file)).join('\n')}`;
 };
-const pages = ['beranda.html', 'akun.html', 'index.html', 'dashboard.html', 'unduh.html', 'unduh-berkas.html', 'privasi.html', 'syarat.html', '404.html', 'oauth/consent.html', 'fitur.html', 'dukungan.html'];
+const pages = [
+  'beranda.html',
+  'akun.html',
+  'index.html',
+  'dashboard.html',
+  'unduh.html',
+  'unduh-berkas.html',
+  'privasi.html',
+  'syarat.html',
+  '404.html',
+  'oauth/consent.html',
+  'fitur.html',
+  'dukungan.html'
+];
 
 test('the hero sells the product instead of apologizing for it', () => {
   const html = read('beranda.html');
@@ -32,7 +45,6 @@ test('the hero sells the product instead of apologizing for it', () => {
 });
 
 test('the hero stats equal live source counts, never stale copy', () => {
-
   const html = read('beranda.html');
   const mcp = mcpSurfaceSourceSync();
   const tools = (mcp.match(/registerTool\("/g) || []).length;
@@ -43,7 +55,10 @@ test('the hero stats equal live source counts, never stale copy', () => {
   const block = /<dl class="heroStats" id="heroStats">([\s\S]*?)<\/dl>/.exec(html)[1];
 
   const stats = [...block.matchAll(/<div\b[^>]*><dt\b[^>]*>(\d+)<\/dt><dd\b[^>]*>([^<]+)<\/dd><\/div>/g)];
-  const byLabel = Object.fromEntries(stats.map((m) => [m[2].trim(), Number(m[1])]));
+  const byLabel = Object.fromEntries(stats.map((m) => [
+    m[2].trim(),
+    Number(m[1])
+  ]));
   assert.equal(byLabel['tool MCP'], tools, 'tool stat matches the registered count');
   assert.equal(byLabel['primitive browser'], prims, 'primitive stat matches the allowlist');
 });
@@ -69,7 +84,6 @@ test('the nav survives a 390px phone without wrapping ragged', () => {
 });
 
 test('the header is never squeezed by a page that keeps a narrow column', () => {
-
   // WHY THE HEADER HAS ITS OWN WIDTH.
   // Measured live on 2026-10-26: index.html sets .wrap to 560px, and the header shares that wrap, so at a 912px window the last nav item ended at 936px and the document scrolled sideways by 24px.
   // The nav row measures 747px, and the wrap spends 40px of padding inside the viewport margin, so the row needs 835px; the old 800px rule counted only the margin and left 801-835 overflowing.
@@ -100,7 +114,6 @@ test('the marked nav item is visible, not metadata only', () => {
 });
 
 test('the phone nav hints that it scrolls instead of clipping mid-word', () => {
-
   for (const page of pages) {
     const html = cssOf(page);
     assert.match(html, /mask-image:\s*linear-gradient\(to right/, `${page} fades the nav edge on a phone`);
@@ -108,7 +121,6 @@ test('the phone nav hints that it scrolls instead of clipping mid-word', () => {
 });
 
 test('the hero carries exactly one filled action, and it is the download', () => {
-
   const hero = read('beranda.html').match(/<section class="hero[^"]*">[\s\S]*?<\/section>/)[0];
 
   const row = (id) => new RegExp(`<div class="row" id="${id}"[^>]*>([\\s\\S]*?)</div>`).exec(hero)[1];
@@ -118,7 +130,6 @@ test('the hero carries exactly one filled action, and it is the download', () =>
 });
 
 test('the hero states each number once', () => {
-
   const hero = read('beranda.html').match(/<section class="hero[^"]*">[\s\S]*?<\/section>/)[0];
   const prose = hero
     .replace(/<dl class="heroStats"[\s\S]*?<\/dl>/, '')
@@ -129,7 +140,6 @@ test('the hero states each number once', () => {
 });
 
 test('no script renames a link that is not there', () => {
-
   assert.doesNotMatch(read('beranda.html'), /Akun ●/, 'the dead rename is gone');
 });
 
@@ -140,17 +150,19 @@ test('the provider buttons show their marks, not bare text', () => {
 });
 
 test('the 404 exits are real doors, counted honestly', () => {
-
   const html = read('404.html');
   const tiles = [...html.matchAll(/<a class="tile" href="([^"]+)">/g)].map((m) => m[1]);
   assert.ok(tiles.length >= 4, 'the exits exist as links, not divs');
-  const words = { 4: 'Empat', 5: 'Lima', 6: 'Enam' };
+  const words = {
+    4: 'Empat',
+    5: 'Lima',
+    6: 'Enam'
+  };
   assert.match(html, new RegExp(`${words[tiles.length]} jalan keluar`), 'the copy counts what stands under it');
   assert.match(read('site.css'), /\.tile:hover/, 'a tile answers the hover, so it reads clickable');
 });
 
 test('the legal pages open with a map, not a wall', () => {
-
   for (const page of ['privasi.html', 'syarat.html']) {
     const html = read(page);
     const ids = [...html.matchAll(/<h2 id="([^"]+)">/g)].map((m) => m[1]);
@@ -162,7 +174,6 @@ test('the legal pages open with a map, not a wall', () => {
 });
 
 test('home after sign-in is a console door, not the sales pitch again', () => {
-
   const html = read('beranda.html');
   assert.match(html, /id="heroEyebrow"/, 'the eyebrow is addressable');
   assert.match(html, /id="ctaOut"/, 'the acquisition actions have an element');
@@ -176,7 +187,6 @@ test('home after sign-in is a console door, not the sales pitch again', () => {
 });
 
 test('display type sets the page apart from its own dashboard', () => {
-
   const css = cssOf('beranda.html');
   assert.match(css, /clamp\(44px, 6vw, 82px\)/, 'the headline spans display sizes');
   assert.match(css, /h2 \{[^}]*font-size: clamp\(28px, 3\.2vw, 44px\)/, 'sections step down to a clear second rank');
@@ -184,7 +194,6 @@ test('display type sets the page apart from its own dashboard', () => {
 });
 
 test('buttons are pills on the marketing surfaces, and square on the signed-in shell', () => {
-
   for (const page of ['beranda.html', 'unduh.html', 'oauth/consent.html']) {
     const html = cssOf(page);
     assert.match(html, /\.btn \{[^}]*border-radius: 980px/, `${page} pills its buttons`);
@@ -200,14 +209,12 @@ test('buttons are pills on the marketing surfaces, and square on the signed-in s
 });
 
 test('the hero carries its footnote instead of hiding the catch', () => {
-
   const html = read('beranda.html');
   assert.match(html, /class="footnote"/, 'the line has an element');
   assert.match(html, /Model ditagih penyedia Anda/, 'stating the only money that moves');
 });
 
 test('motion is an enhancement, never the content', () => {
-
   const page = read('beranda.html');
   const css = cssOf('beranda.html');
   assert.match(page, /documentElement\.classList\.add\('js'\)/, 'JS announces itself before anything hides');
@@ -220,7 +227,6 @@ test('motion is an enhancement, never the content', () => {
 });
 
 test('nothing spills out of a 320px screen', () => {
-
   for (const page of pages) {
     const html = cssOf(page);
     assert.match(html, /\.doors\s*{[^}]*flex-wrap:\s*wrap/s, `${page}: the footer row wraps`);

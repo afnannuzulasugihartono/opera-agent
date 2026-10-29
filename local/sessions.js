@@ -16,7 +16,10 @@
 // Only the switch fronts, never every call, so a long drive on one tab never yanks the screen twice.
 // A tab that refuses still gets driven: the indicator must not break the drive.
 
-export function findOn(page, query) {
+export function findOn(
+  page,
+  query
+) {
   return page.evaluate(`(() => {
     const needle = ${JSON.stringify(String(query).toLowerCase())};
     const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_ELEMENT);
@@ -59,29 +62,67 @@ export function asDriver(session) {
     surfaceProfile: () => session.surfaceProfile(),
     evaluate: (expression) => session.evaluate(expression),
     settle: () => session.settle(),
-    ask: (method, params) => session.ask(method, params),
+    ask: (
+      method,
+      params
+    ) => session.ask(method, params),
     find: (query) => findOn(session, query),
-    click: async (x, y, handle = null) => (handle ? session.clickHandle(handle) : session.clickAt(x, y)),
-    resolve: (role, name) => session.resolveRow({ role, name }),
+    click: async (
+      x,
+      y,
+      handle = null
+    ) => (handle ? session.clickHandle(handle) : session.clickAt(x, y)),
+    resolve: (
+      role,
+      name
+    ) => session.resolveRow({
+      role,
+      name
+    }),
     clickFraction: (at) => session.clickFraction(at),
     hasFocus: () => session.hasFocus(),
-    ensureFront: (options) => focusGuard({ ...(options ?? {}), hasFocus: () => session.hasFocus() }),
+    ensureFront: (options) => focusGuard({
+      ...(options ?? {}),
+      hasFocus: () => session.hasFocus()
+    }),
     captureSized: (options) => session.captureSized(options ?? {}),
     navigate: (url) => session.navigate(url),
     guide: async (topic) => guide(topic),
     menuTree: (options) => session.menuTree(options ?? {}),
     openMenu: (options) => session.openMenu(options ?? {}),
-    hover: (x, y) => session.hover(x, y),
-    clickRow: async (role, name) => {
-      const row = await session.resolveRow({ role, name });
+    hover: (
+      x,
+      y
+    ) => session.hover(x, y),
+    clickRow: async (
+      role,
+      name
+    ) => {
+      const row = await session.resolveRow({
+        role,
+        name
+      });
       if (!row.handle) {
         const at = await session.clickAt(row.x, row.y);
-        return { role: row.role, name: row.name, x: row.x, y: row.y, hit: at.hit };
+        return {
+          role: row.role,
+          name: row.name,
+          x: row.x,
+          y: row.y,
+          hit: at.hit
+        };
       }
       const at = await session.clickHandle(row.handle);
-      return { role: row.role, name: row.name, ...at };
+      return {
+        role: row.role,
+        name: row.name,
+        ...at
+      };
     },
-    key: (name, modifiers) => session.key(name, modifiers),
+    key: (
+      name,
+      modifiers
+    ) => session.key(name, modifiers),
     type: (text) => session.type(text),
     append: (text) => session.append(text),
     scroll: (options) => session.scroll(options ?? {}),
@@ -96,7 +137,10 @@ export function asDriver(session) {
     dialogType: (text) => session.dialogType(text),
     dialogPress: (name) => session.dialogPress(name),
     waitForRow: (options) => session.waitForRow(options),
-    waitForText: (text, options) => session.waitForText(text, options),
+    waitForText: (
+      text,
+      options
+    ) => session.waitForText(text, options),
     waitForStill: (options) => session.waitForStill(options),
     upload: (options) => session.upload(options),
     dropFile: (options) => session.dropFile(options),
@@ -108,15 +152,32 @@ export function asDriver(session) {
   };
 }
 
-export function createSessionStore({ openSession, port, browserId, viaBridge = null }) {
+export function createSessionStore({
+  openSession,
+  port,
+  browserId,
+  viaBridge = null
+}) {
   const sessions = new Map();
   let fronted = null;
 
   async function open(options = {}) {
-    const { url: targetUrl, targetId: named, ...rest } = options;
+    const {
+      url: targetUrl,
+      targetId: named,
+      ...rest
+    } = options;
     const key = targetUrl ?? named ?? '';
     if (!sessions.has(key)) {
-      const session = await openSession({ port, id: browserId, launch: false, tabUrl: targetUrl ?? null, targetId: named ?? null, viaBridge, ...rest });
+      const session = await openSession({
+        port,
+        id: browserId,
+        launch: false,
+        tabUrl: targetUrl ?? null,
+        targetId: named ?? null,
+        viaBridge,
+        ...rest
+      });
       sessions.set(key, asDriver(session));
     }
     const driver = sessions.get(key);
@@ -129,12 +190,19 @@ export function createSessionStore({ openSession, port, browserId, viaBridge = n
 
   const attach = () => open({});
 
-  async function closeTab(tabId, closeTransport) {
+  async function closeTab(
+    tabId,
+    closeTransport
+  ) {
     sessions.get(tabId)?.close?.();
     sessions.delete(tabId);
     if (fronted === tabId) fronted = null;
     return closeTransport(tabId);
   }
 
-  return { open, attach, closeTab };
+  return {
+    open,
+    attach,
+    closeTab
+  };
 }

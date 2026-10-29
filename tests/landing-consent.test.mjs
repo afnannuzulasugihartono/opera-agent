@@ -25,7 +25,6 @@ const code = html
   .join('\n');
 
 test('the consent screen names no application it did not read from the server', () => {
-
   assert.doesNotMatch(code, /ChatGPT/, 'no application name is written into the page');
   assert.doesNotMatch(code, /OpenCode|opencode|Claude|Gemini/i, 'and no other name is either');
   assert.match(html, /details\.client\?\.name\?\.trim\(\) \|\| ''/, 'the name comes from the authorization details');
@@ -47,7 +46,6 @@ test('the consent screen asks for no password, like every other page here', () =
 });
 
 test('a person who is not signed in keeps their request', () => {
-
   assert.match(html, /authorization_id=\$\{authorizationId \|\| ''\}/, 'the id is carried through the sign-in return path');
   assert.match(read('landing/index.html'), /location\.replace\(returnTo\(\)\)/, 'and the sign-in page returns the person to it');
 });
@@ -64,13 +62,11 @@ test('the screen shows what a person needs to judge, and answers every action', 
 });
 
 test('an authorization that is already decided is followed, not re-asked', () => {
-
   assert.match(html, /if \(details\.redirect_url\) \{[\s\S]*location\.assign\(details\.redirect_url\)/, 'a decided request is followed');
   assert.match(html, /data\.redirect_url/, 'and so is the redirect after approve or deny');
 });
 
 test('the consent page is served at the path GoTrue actually asks for', () => {
-
   const config = read('supabase/config.toml');
   assert.match(config, /authorization_path = "\/oauth\/consent"/, 'the path GoTrue uses');
   assert.ok(fs.existsSync(new URL('landing/oauth/consent.html', root)), 'the page is at that path on disk');
@@ -85,8 +81,16 @@ test('the consent page is served at the path GoTrue actually asks for', () => {
 });
 
 test('every page link resolves, including on the page that lives in a subdirectory', () => {
-
-  const pages = ['beranda.html', 'index.html', 'akun.html', 'dashboard.html', 'privasi.html', 'syarat.html', 'unduh.html', 'oauth/consent.html'];
+  const pages = [
+    'beranda.html',
+    'index.html',
+    'akun.html',
+    'dashboard.html',
+    'privasi.html',
+    'syarat.html',
+    'unduh.html',
+    'oauth/consent.html'
+  ];
   const exists = (path) => {
     try {
       return fs.statSync(new URL(`landing/${path}`, root)).isFile();
@@ -113,7 +117,6 @@ test('every page link resolves, including on the page that lives in a subdirecto
 });
 
 test('the consent screen carries the same navigation as every other page', () => {
-
   const entries = (page) => [...read(`landing/${page}`).match(/<nav>[\s\S]*?<\/nav>/)[0].matchAll(/>([^<>]+)<\/a>/g)].map((m) => m[1].trim());
   const shared = entries('beranda.html');
   for (const page of ['akun.html', 'dashboard.html', 'index.html', 'privasi.html', 'syarat.html', 'unduh.html', 'oauth/consent.html']) {

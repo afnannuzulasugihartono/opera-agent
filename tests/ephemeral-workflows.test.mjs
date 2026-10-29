@@ -32,7 +32,6 @@ test('grants are EXECUTE to service_role only', () => {
 });
 
 test('request_id reuse with a different definition is refused, not silently shared', () => {
-
   const hits = migration.match(/v_existing\.definition is distinct from p_definition/g) || [];
   assert.equal(hits.length, 2, 'both the fast path and the race retry must compare definitions');
   assert.ok(migration.includes('REQUEST_ID_CONFLICT'));

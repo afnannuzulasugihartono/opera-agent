@@ -17,7 +17,9 @@ const listeners = {};
 function event(name) {
   const fns = [];
   listeners[name] = fns;
-  return { addListener: (fn) => { fns.push(fn); } };
+  return { addListener: (fn) => {
+    fns.push(fn);
+  } };
 }
 
 const debugged = [];
@@ -26,9 +28,21 @@ globalThis.chrome = {
     onDetach: event('debugger.onDetach'),
     attach: async () => {},
     detach: async () => {},
-    sendCommand: async (target, method, params) => {
-      debugged.push({ tabId: target.tabId, method, params });
-      return { method, tabId: target.tabId, params };
+    sendCommand: async (
+      target,
+      method,
+      params
+    ) => {
+      debugged.push({
+        tabId: target.tabId,
+        method,
+        params
+      });
+      return {
+        method,
+        tabId: target.tabId,
+        params
+      };
     }
   },
   tabs: {
@@ -36,8 +50,16 @@ globalThis.chrome = {
     onRemoved: event('tabs.onRemoved'),
     onUpdated: event('tabs.onUpdated'),
     onActivated: event('tabs.onActivated'),
-    query: async () => [{ id: 5, url: 'https://example/', title: 'Example' }],
-    create: async ({ url }) => ({ id: 6, url, title: '' }),
+    query: async () => [{
+      id: 5,
+      url: 'https://example/',
+      title: 'Example'
+    }],
+    create: async ({ url }) => ({
+      id: 6,
+      url,
+      title: ''
+    }),
     remove: async (id) => ({ removed: id })
   },
   runtime: {
@@ -46,8 +68,17 @@ globalThis.chrome = {
     onInstalled: event('runtime.onInstalled'),
     onStartup: event('runtime.onStartup')
   },
-  alarms: { onAlarm: event('alarms.onAlarm'), create: async () => {} },
-  storage: { onChanged: event('storage.onChanged'), local: { get: async () => ({}), set: async () => {} } }
+  alarms: {
+    onAlarm: event('alarms.onAlarm'),
+    create: async () => {}
+  },
+  storage: {
+    onChanged: event('storage.onChanged'),
+    local: {
+      get: async () => ({}),
+      set: async () => {}
+    }
+  }
 };
 
 // Its own port, because another test process imports the same worker graph and would otherwise fight this one for the device connection.
@@ -56,10 +87,19 @@ globalThis.chrome = {
 const PORT = 9471;
 globalThis.OPERA_BRIDGE_WS = `ws://127.0.0.1:${PORT}`;
 
-const bridge = createBridgeServer({ port: PORT, heartbeatMs: 500 });
+const bridge = createBridgeServer({
+  port: PORT,
+  heartbeatMs: 500
+});
 await bridge.listen();
 
-const { stopBridgeLink, bridgeLinkState, ensureBridgeLink, discoverBridge, probePort } = await import('../extension/worker/bridge-link.js');
+const {
+  stopBridgeLink,
+  bridgeLinkState,
+  ensureBridgeLink,
+  discoverBridge,
+  probePort
+} = await import('../extension/worker/bridge-link.js');
 
 const deadline = Date.now() + 5000;
 while (!bridge.linked() && Date.now() < deadline) await new Promise((r) => setTimeout(r, 25));
@@ -94,14 +134,19 @@ test('discovery walks past a dead configured port to one that answers', async ()
   const live = PORT;
   // The live port is put first in the walk, because the claim is about the order and not about which port the machine happens to be serving.
   // A walk that finds some other live port first has still stepped over the dead one, but it has not proved the dead one is the reason it kept going.
-  const order = [dead, live];
+  const order = [
+    dead,
+    live
+  ];
 
   assert.equal(await probePort(dead), false, 'the configured port is dead');
   assert.equal(await probePort(live), true, 'and a port with the bridge on it answers');
 
   const walked = [];
   for (const port of order) {
-    if (await probePort(port)) { walked.push(port); break; }
+    if (await probePort(port)) {
+      walked.push(port); break;
+    }
   }
 
   assert.deepEqual(walked, [live], 'the dead configured port is stepped over and the live one is found');
@@ -121,9 +166,18 @@ test('a pushed command runs and its answer comes back over the same socket', asy
 
 test('a CDP command reaches the browser with its tab and method intact', async () => {
   debugged.length = 0;
-  const answer = await bridge.send('cdp', { tabId: 9, method: 'Page.getLayoutMetrics' });
+  const answer = await bridge.send('cdp', {
+    tabId: 9,
+    method: 'Page.getLayoutMetrics'
+  });
   assert.equal(answer.ok, true);
-  assert.deepEqual(debugged.map((c) => [c.tabId, c.method]), [[9, 'Page.getLayoutMetrics']]);
+  assert.deepEqual(debugged.map((c) => [
+    c.tabId,
+    c.method
+  ]), [[
+    9,
+    'Page.getLayoutMetrics'
+  ]]);
 });
 
 test('a command the bridge refuses answers with the refusal, never silence', async () => {

@@ -7,12 +7,18 @@ import "@supabase/edge-runtime";
 import { createClient } from "@supabase/supabase-js";
 import { createEdgeLog } from "../_shared/edge-log.js";
 import { commandFailure } from "../_shared/command-result.js";
-import { CORS_DEFAULT_ORIGINS, resolveAllowedOrigin } from "../_shared/cors.js";
+import {
+  CORS_DEFAULT_ORIGINS,
+  resolveAllowedOrigin
+} from "../_shared/cors.js";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
-  auth: { persistSession: false, autoRefreshToken: false }
+  auth: {
+    persistSession: false,
+    autoRefreshToken: false
+  }
 });
 
 const cors = {
@@ -26,7 +32,11 @@ function withCors(req: Request, res: Response): Response {
   const headers = new Headers(res.headers);
   if (origin === null) headers.delete("Access-Control-Allow-Origin");
   else headers.set("Access-Control-Allow-Origin", origin);
-  return new Response(res.body, { status: res.status, statusText: res.statusText, headers });
+  return new Response(res.body, {
+    status: res.status,
+    statusText: res.statusText,
+    headers
+  });
 }
 
 const SAFE_RETRY_DELAY_MS = 75;
@@ -34,15 +44,25 @@ const MAX_PARALLEL_ITEMS = 4;
 
 const RETRY_SAFE_METHODS = new Set([
   "browser.ping",
-  "tabs.list", "tabs.get", "tabs.find",
-  "page.read", "page.query", "page.find", "page.collect_links", "page.wait_for",
+  "tabs.list",
+  "tabs.get",
+  "tabs.find",
+  "page.read",
+  "page.query",
+  "page.find",
+  "page.collect_links",
+  "page.wait_for",
   "media.state"
 ]);
 
 class WorkflowError extends Error {
   code: string;
   details?: unknown;
-  constructor(code: string, message: string, details?: unknown) {
+  constructor(
+    code: string,
+    message: string,
+    details?: unknown
+  ) {
     super(message);
     this.code = code;
     this.details = details;
@@ -119,10 +139,16 @@ interface CommandResult {
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-function json(data: unknown, status = 200) {
+function json(
+  data: unknown,
+  status = 200
+) {
   return new Response(JSON.stringify(data), {
     status,
-    headers: { ...cors, "Content-Type": "application/json; charset=utf-8" }
+    headers: {
+      ...cors,
+      "Content-Type": "application/json; charset=utf-8"
+    }
   });
 }
 
@@ -169,8 +195,14 @@ function truthy(value: unknown) {
   return true;
 }
 
-function evaluateCondition(condition: unknown, ctx: Record<string, unknown>) {
-  const source = (condition ?? {}) as { op?: unknown; left?: unknown; right?: unknown };
+function evaluateCondition(
+  condition: unknown,
+  ctx: Record<string,
+  unknown>
+) {
+  const source = (condition ?? {}) as {
+    op?: unknown; left?: unknown; right?: unknown
+  };
   const op = String(source.op || "truthy");
   const left = resolveValue(source.left, ctx);
   const right = resolveValue(source.right, ctx);
@@ -189,7 +221,9 @@ function timestampMs(value: unknown) {
 }
 
 function normalizeAwaitTiming(timing: unknown) {
-  const source = (timing ?? {}) as { queuedMs?: unknown; totalMs?: unknown };
+  const source = (timing ?? {}) as {
+    queuedMs?: unknown; totalMs?: unknown
+  };
   const queuedMs = Number(source.queuedMs);
   const totalMs = Number(source.totalMs);
   const queueMs = Number.isFinite(queuedMs) ? Math.max(0, queuedMs) : null;
@@ -206,7 +240,9 @@ const METRIC_SAMPLE_DEPTH = 6;
 const METRIC_SAMPLE_ITEMS = 50;
 const METRIC_SAMPLE_NODES = 200;
 
-function metricSample(value: unknown, budget: { remainingChars: number; remainingNodes: number; truncated: boolean }, depth = 0): unknown {
+function metricSample(value: unknown, budget: {
+  remainingChars: number; remainingNodes: number; truncated: boolean
+}, depth = 0): unknown {
   if (budget.remainingNodes <= 0) {
     budget.truncated = true;
     return null;
@@ -250,12 +286,22 @@ function metricSample(value: unknown, budget: { remainingChars: number; remainin
 }
 
 function sampledJsonBytes(value: unknown) {
-  const budget = { remainingChars: METRIC_SAMPLE_CHARS, remainingNodes: METRIC_SAMPLE_NODES, truncated: false };
+  const budget = {
+    remainingChars: METRIC_SAMPLE_CHARS,
+    remainingNodes: METRIC_SAMPLE_NODES,
+    truncated: false
+  };
   try {
     const bytes = new TextEncoder().encode(JSON.stringify(metricSample(value, budget))).byteLength;
-    return { bytes, truncated: budget.truncated };
+    return {
+      bytes,
+      truncated: budget.truncated
+    };
   } catch {
-    return { bytes: 0, truncated: true };
+    return {
+      bytes: 0,
+      truncated: true
+    };
   }
 }
 
@@ -273,15 +319,24 @@ function createWorkflowMetrics(workflowQueueMs: number | null): WorkflowMetrics 
     retries: 0,
     fixedWaitCount: 0,
     intentionalWaitMs: 0,
-    commands: [] as Array<Record<string, unknown>>,
+    commands: [] as Array<Record<string,
+    unknown>>,
     commandsTruncated: false
   };
 }
 
-function recordCommandMetrics(metrics: WorkflowMetrics | null | undefined, method: string, result: unknown) {
+function recordCommandMetrics(
+  metrics: WorkflowMetrics | null | undefined,
+  method: string,
+  result: unknown
+) {
   if (!metrics) return;
-  const source = (result ?? {}) as { timing?: unknown; ok?: unknown; result?: unknown; error?: unknown; retried?: unknown; status?: unknown };
-  const timing = (source.timing ?? {}) as { queueMs?: unknown; executionMs?: unknown; totalMs?: unknown };
+  const source = (result ?? {}) as {
+    timing?: unknown; ok?: unknown; result?: unknown; error?: unknown; retried?: unknown; status?: unknown
+  };
+  const timing = (source.timing ?? {}) as {
+    queueMs?: unknown; executionMs?: unknown; totalMs?: unknown
+  };
   const queueMs = Number(timing.queueMs);
   const executionMs = Number(timing.executionMs);
   const totalMs = Number(timing.totalMs);
@@ -311,9 +366,13 @@ function recordCommandMetrics(metrics: WorkflowMetrics | null | undefined, metho
 }
 
 function transientFailure(result: unknown) {
-  const source = (result ?? {}) as { status?: unknown; error?: unknown };
+  const source = (result ?? {}) as {
+    status?: unknown; error?: unknown
+  };
   if (source.status !== "failed") return false;
-  const failure = (source.error ?? {}) as { message?: unknown };
+  const failure = (source.error ?? {}) as {
+    message?: unknown
+  };
   const message = String(failure.message || source.error || "").toLowerCase();
   return [
     "no response from page bridge",
@@ -327,19 +386,35 @@ function transientFailure(result: unknown) {
 
 function normalizeWorkflowError(error: unknown) {
   if (error instanceof WorkflowError) {
-    return { code: error.code, message: error.message, details: error.details ?? null };
+    return {
+      code: error.code,
+      message: error.message,
+      details: error.details ?? null
+    };
   }
-  return { code: "WORKFLOW_ERROR", message: error instanceof Error ? error.message : String(error) };
+  return {
+    code: "WORKFLOW_ERROR",
+    message: error instanceof Error ? error.message : String(error)
+  };
 }
 
-async function rpc(name: string, args: Record<string, unknown>) {
-  const { data, error } = await supabase.rpc(name, args);
+async function rpc(
+  name: string,
+  args: Record<string,
+  unknown>
+) {
+  const {
+    data,
+    error
+  } = await supabase.rpc(name, args);
   if (error) throw new WorkflowError("RPC_ERROR", `${name}: ${error.message}`);
   return data as Record<string, unknown> | null;
 }
 
 async function runCommandOnce(
-  run: { device_name: string },
+  run: {
+    device_name: string
+  },
   method: string,
   params: unknown,
   timeoutMs: number | null,
@@ -374,7 +449,6 @@ async function runCommandOnce(
         p_timeout_ms: sliceMs
       });
     } catch (error) {
-
       const message = error instanceof Error ? error.message : String(error);
       if (/statement timeout/i.test(message)) {
         lastError = error;
@@ -383,7 +457,9 @@ async function runCommandOnce(
       throw error;
     }
     if (awaited?.ok) break;
-    const failure = awaited?.error && typeof awaited.error === "object" ? awaited.error as { code?: unknown } : {};
+    const failure = awaited?.error && typeof awaited.error === "object" ? awaited.error as {
+      code?: unknown
+    } : {};
     if (String(failure.code || "").toUpperCase() === "AWAIT_TIMEOUT") {
       lastError = awaited?.error;
       awaited = null;
@@ -393,7 +469,9 @@ async function runCommandOnce(
   }
   if (!awaited?.ok) {
     const failure = (awaited?.error || lastError) && typeof (awaited?.error || lastError) === "object"
-      ? (awaited?.error || lastError) as { code?: unknown; message?: unknown }
+      ? (awaited?.error || lastError) as {
+        code?: unknown; message?: unknown
+      }
       : {};
     const awaitTimedOut = String(failure.code || "").toUpperCase() === "AWAIT_TIMEOUT" || lastError !== null;
     return {
@@ -419,8 +497,12 @@ async function runCommandOnce(
     };
   }
 
-  const error = awaited?.error || { code: "COMMAND_FAILED", message: `Command ${method} failed.` };
-  const failure = error && typeof error === "object" ? error as { code?: unknown } : {};
+  const error = awaited?.error || {
+    code: "COMMAND_FAILED", message: `Command ${method} failed.`
+  };
+  const failure = error && typeof error === "object" ? error as {
+    code?: unknown
+  } : {};
   const awaitTimedOut = String(failure.code || "").toUpperCase() === "AWAIT_TIMEOUT";
   return {
     ok: false,
@@ -432,7 +514,9 @@ async function runCommandOnce(
 }
 
 async function runCommand(
-  run: { device_name: string },
+  run: {
+    device_name: string
+  },
   method: string,
   params: unknown,
   timeoutMs: number | null,
@@ -442,16 +526,25 @@ async function runCommand(
   const first = await runCommandOnce(run, method, params, timeoutMs, workflowDeadline, requestId);
   if (first.ok) return first;
 
-  const retryable = ["expired", "timeout"].includes(first.status) || transientFailure(first);
+  const retryable = [
+    "expired",
+    "timeout"
+  ].includes(first.status) || transientFailure(first);
   if (RETRY_SAFE_METHODS.has(method) && retryable && Date.now() + 400 < workflowDeadline) {
     await sleep(SAFE_RETRY_DELAY_MS);
     const second = await runCommandOnce(run, method, params, timeoutMs, workflowDeadline, null);
-    return { ...second, retried: true, previous: first };
+    return {
+      ...second,
+      retried: true,
+      previous: first
+    };
   }
   return first;
 }
 
-async function executeSteps(steps: unknown, ctx: WorkflowCtx, run: { device_name: string }, deadline: number): Promise<WorkflowCtx> {
+async function executeSteps(steps: unknown, ctx: WorkflowCtx, run: {
+  device_name: string
+}, deadline: number): Promise<WorkflowCtx> {
   for (const item of Array.isArray(steps) ? steps : []) {
     const step = (item ?? {}) as WorkflowStep;
     if (Date.now() >= deadline) throw new WorkflowError("WORKFLOW_TIMEOUT", "Workflow deadline exceeded.");
@@ -588,27 +681,59 @@ async function executeSteps(steps: unknown, ctx: WorkflowCtx, run: { device_name
   return ctx;
 }
 
-async function processRun(runId: string, token: string) {
-  const { data: run, error } = await supabase.from("opera_workflow_runs").select("*").eq("id", runId).maybeSingle();
+async function processRun(
+  runId: string,
+  token: string
+) {
+  const {
+    data: run,
+    error
+  } = await supabase.from("opera_workflow_runs").select("*").eq("id", runId).maybeSingle();
   if (error || !run) throw new WorkflowError("RUN_NOT_FOUND", "Workflow run not found.");
   if (await sha256(token) !== run.trigger_hash) throw new WorkflowError("UNAUTHORIZED", "Invalid runner token.");
 
-  if (["completed", "failed", "expired", "cancelled"].includes(run.status)) {
-    return { ok: true, runId, status: run.status, idempotent: true };
+  if ([
+    "completed",
+    "failed",
+    "expired",
+    "cancelled"
+  ].includes(run.status)) {
+    return {
+      ok: true,
+      runId,
+      status: run.status,
+      idempotent: true
+    };
   }
-  if (run.status === "running") return { ok: true, runId, status: "running", idempotent: true };
+  if (run.status === "running") return {
+    ok: true,
+    runId,
+    status: "running",
+    idempotent: true
+  };
 
   const now = new Date().toISOString();
   const claimed = await supabase.from("opera_workflow_runs")
-    .update({ status: "running", started_at: now, updated_at: now })
+    .update({
+      status: "running",
+      started_at: now,
+      updated_at: now
+    })
     .eq("id", runId)
     .eq("status", "queued")
     .select("*")
     .maybeSingle();
-  if (claimed.error || !claimed.data) return { ok: true, runId, status: "running", idempotent: true };
+  if (claimed.error || !claimed.data) return {
+    ok: true,
+    runId,
+    status: "running",
+    idempotent: true
+  };
 
   const activeRun = claimed.data;
-  const ctx = activeRun.context || { input: activeRun.input || {}, vars: {}, steps: {} };
+  const ctx = activeRun.context || {
+    input: activeRun.input || {}, vars: {}, steps: {}
+  };
   ctx.input = ctx.input || activeRun.input || {};
   ctx.vars = ctx.vars || {};
   ctx.steps = ctx.steps || {};
@@ -636,9 +761,20 @@ async function processRun(runId: string, token: string) {
     await supabase.from("opera_audit").insert({
       event_type: "workflow.completed",
       workflow_name: activeRun.workflow_name,
-      details: { runId, version: activeRun.workflow_version, durationMs, metrics: ctx.metrics }
+      details: {
+        runId,
+        version: activeRun.workflow_version,
+        durationMs,
+        metrics: ctx.metrics
+      }
     });
-    return { ok: true, runId, status: "completed", durationMs, metrics: ctx.metrics };
+    return {
+      ok: true,
+      runId,
+      status: "completed",
+      durationMs,
+      metrics: ctx.metrics
+    };
   } catch (error) {
     const normalized = normalizeWorkflowError(error);
     const completedAt = new Date().toISOString();
@@ -656,22 +792,44 @@ async function processRun(runId: string, token: string) {
     await supabase.from("opera_audit").insert({
       event_type: "workflow.failed",
       workflow_name: activeRun.workflow_name,
-      details: { runId, version: activeRun.workflow_version, error: normalized, durationMs, metrics: ctx.metrics }
+      details: {
+        runId,
+        version: activeRun.workflow_version,
+        error: normalized,
+        durationMs,
+        metrics: ctx.metrics
+      }
     });
-    return { ok: false, runId, status, error: normalized, durationMs, metrics: ctx.metrics };
+    return {
+      ok: false,
+      runId,
+      status,
+      error: normalized,
+      durationMs,
+      metrics: ctx.metrics
+    };
   }
 }
 
 async function handle(req: Request) {
-  if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: cors });
-  if (req.method !== "POST") return json({ ok: false, error: "POST required." }, 405);
+  if (req.method === "OPTIONS") return new Response(null, {
+    status: 204,
+    headers: cors
+  });
+  if (req.method !== "POST") return json({
+    ok: false,
+    error: "POST required."
+  }, 405);
 
   try {
     const body = await req.json();
     const runId = String(body?.runId || "");
     const token = String(body?.token || "");
     if (!/^[0-9a-f-]{36}$/i.test(runId) || !/^[a-f0-9]{48}$/i.test(token)) {
-      return json({ ok: false, error: "Invalid runner request." }, 400);
+      return json({
+        ok: false,
+        error: "Invalid runner request."
+      }, 400);
     }
     const result = await processRun(runId, token.toLowerCase());
     return json(result, result.ok ? 200 : 500);
@@ -679,7 +837,13 @@ async function handle(req: Request) {
     const code = error instanceof WorkflowError ? error.code : "RUNNER_ERROR";
     const message = error instanceof Error ? error.message : String(error);
     createEdgeLog({}).error(code, message);
-    return json({ ok: false, error: { code, message } }, code === "UNAUTHORIZED" ? 401 : 500);
+    return json({
+      ok: false,
+      error: {
+        code,
+        message
+      }
+    }, code === "UNAUTHORIZED" ? 401 : 500);
   }
 }
 

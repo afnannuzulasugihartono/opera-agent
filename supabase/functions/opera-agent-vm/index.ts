@@ -5,9 +5,15 @@
 
 import "@supabase/edge-runtime";
 import { createClient } from "@supabase/supabase-js";
-import { CORS_DEFAULT_ORIGINS, resolveAllowedOrigin } from "../_shared/cors.js";
+import {
+  CORS_DEFAULT_ORIGINS,
+  resolveAllowedOrigin
+} from "../_shared/cors.js";
 
-import { canonicalJson, digestCanonical } from "../_shared/goal-ledger.js";
+import {
+  canonicalJson,
+  digestCanonical
+} from "../_shared/goal-ledger.js";
 import {
   advanceCollectVm,
   createCollectVm,
@@ -34,13 +40,30 @@ const ALLOWED_USER_EMAILS = new Set(
   (Deno.env.get("OPERA_AGENT_MCP_USER_EMAILS") || "").split(",").map((value) => value.trim().toLowerCase()).filter(Boolean),
 );
 const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
-  auth: { persistSession: false, autoRefreshToken: false },
+  auth: {
+    persistSession: false,
+    autoRefreshToken: false
+  },
 });
 
 const DEVICE_NAME = "opera";
-const TERMINAL = new Set(["SUSPENDED", "RETURNED", "LIMIT_REACHED", "FAILED", "CANCELLED", "EXPIRED"]);
+const TERMINAL = new Set([
+  "SUSPENDED",
+  "RETURNED",
+  "LIMIT_REACHED",
+  "FAILED",
+  "CANCELLED",
+  "EXPIRED"
+]);
 const DOCUMENT_SCOPED = new Set([
-  "browser.burst", "page.read", "page.query", "page.find", "page.collect_links", "page.capture", "page.wait_for", "media.state",
+  "browser.burst",
+  "page.read",
+  "page.query",
+  "page.find",
+  "page.collect_links",
+  "page.capture",
+  "page.wait_for",
+  "media.state",
 ]);
 
 const headers = {
@@ -61,13 +84,21 @@ function withCors(req: Request, res: Response): Response {
   const out = new Headers(res.headers);
   if (origin === null) out.delete("Access-Control-Allow-Origin");
   else out.set("Access-Control-Allow-Origin", origin);
-  return new Response(res.body, { status: res.status, statusText: res.statusText, headers: out });
+  return new Response(res.body, {
+    status: res.status,
+    statusText: res.statusText,
+    headers: out
+  });
 }
 
 class HostError extends Error {
   code: string;
   status: number;
-  constructor(code: string, message: string, status = 400) {
+  constructor(
+    code: string,
+    message: string,
+    status = 400
+  ) {
     super(message);
     this.name = "HostError";
     this.code = code;
@@ -136,8 +167,14 @@ interface VmTransition {
   [key: string]: unknown;
 }
 
-function response(body: unknown, status = 200) {
-  return new Response(JSON.stringify(body), { status, headers });
+function response(
+  body: unknown,
+  status = 200
+) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers
+  });
 }
 
 function bearer(req: Request) {
@@ -147,14 +184,24 @@ function bearer(req: Request) {
 async function authenticatedUser(req: Request) {
   const token = bearer(req);
   if (!token) return null;
-  const { data, error } = await supabase.auth.getUser(token);
+  const {
+    data,
+    error
+  } = await supabase.auth.getUser(token);
   if (error || !data.user || (ALLOWED_USER_IDS.size === 0 && ALLOWED_USER_EMAILS.size === 0)) return null;
   const email = data.user.email?.toLowerCase() || "";
   return ALLOWED_USER_IDS.has(data.user.id) || ALLOWED_USER_EMAILS.has(email) ? data.user : null;
 }
 
-async function rpc(name: string, args: Record<string, unknown> = {}) {
-  const { data, error } = await supabase.rpc(name, args);
+async function rpc(
+  name: string,
+  args: Record<string,
+  unknown> = {}
+) {
+  const {
+    data,
+    error
+  } = await supabase.rpc(name, args);
   if (error) throw new HostError("STORAGE_ERROR", `${name} failed.`, 503);
   return data as Record<string, unknown> | null;
 }
@@ -182,7 +229,10 @@ function nowMsAtLeast(value: unknown) {
   return Math.max(Date.now(), Number.isSafeInteger(previous) ? previous : 0);
 }
 
-function boundedErrorCode(value: unknown, fallback = "HOST_ERROR") {
+function boundedErrorCode(
+  value: unknown,
+  fallback = "HOST_ERROR"
+) {
   const text = String(value || fallback).toUpperCase().replace(/[^A-Z0-9_]/g, "_").slice(0, 128);
   return text || fallback;
 }
@@ -219,17 +269,30 @@ async function cryptoKey() {
   return decodeVmHostKey(result.key);
 }
 
-async function assertGoalCurrent(tenantId: string, goalId: string, goalRevision: number) {
-  const head = await rpc("opera_goal_head_get", { p_tenant_id: tenantId, p_goal_id: goalId });
+async function assertGoalCurrent(
+  tenantId: string,
+  goalId: string,
+  goalRevision: number
+) {
+  const head = await rpc("opera_goal_head_get", {
+    p_tenant_id: tenantId,
+    p_goal_id: goalId
+  });
   if (!head?.ok) throw new HostError(String(head?.code || "GOAL_NOT_FOUND"), "Goal ledger head is unavailable.", 409);
-  if (Number(head.headRevision) !== goalRevision || !["OPEN", "PARTIAL"].includes(String(head.status))) {
+  if (Number(head.headRevision) !== goalRevision || ![
+    "OPEN",
+    "PARTIAL"
+  ].includes(String(head.status))) {
     throw new HostError("GOAL_REVISED", "Goal revision or state no longer authorizes this run.", 409);
   }
   return head;
 }
 
 async function resolveDevice(expectedDeviceId: string) {
-  const { data, error } = await supabase.from("opera_devices")
+  const {
+    data,
+    error
+  } = await supabase.from("opera_devices")
     .select("id,device_name,status")
     .eq("device_name", DEVICE_NAME)
     .neq("status", "disabled")
@@ -255,17 +318,48 @@ function extractDocumentGeneration(value: unknown): unknown {
 }
 
 function mapEffectError(awaited: unknown) {
-  const source = (awaited ?? {}) as { error?: unknown; status?: unknown };
-  const failure = (source.error ?? {}) as { code?: unknown };
+  const source = (awaited ?? {}) as {
+    error?: unknown; status?: unknown
+  };
+  const failure = (source.error ?? {}) as {
+    code?: unknown
+  };
   const code = String(failure.code || source.status || "EFFECT_FAILED").toUpperCase();
-  if (["AWAIT_TIMEOUT", "EXPIRED", "TIMEOUT"].includes(code)) return "TIMEOUT";
-  if (["NETWORK_ERROR", "NETWORK_DISCONNECTED", "CONNECTION_RESET", "TEMPORARY_UNAVAILABLE", "SERVICE_UNAVAILABLE", "TRANSIENT", "RETRYABLE"].includes(code)) return code;
-  if (["UNAUTHORIZED", "FORBIDDEN", "MISSING_AUTHORITY", "AUTHORIZATION_FAILED"].includes(code)) return code;
-  if (["STALE_TARGET", "STALE_DOCUMENT", "INVALID_INPUT", "INVALID_ARGUMENT", "INVALID_SCHEMA", "CONTRADICTION"].includes(code)) return code;
+  if ([
+    "AWAIT_TIMEOUT",
+    "EXPIRED",
+    "TIMEOUT"
+  ].includes(code)) return "TIMEOUT";
+  if ([
+    "NETWORK_ERROR",
+    "NETWORK_DISCONNECTED",
+    "CONNECTION_RESET",
+    "TEMPORARY_UNAVAILABLE",
+    "SERVICE_UNAVAILABLE",
+    "TRANSIENT",
+    "RETRYABLE"
+  ].includes(code)) return code;
+  if ([
+    "UNAUTHORIZED",
+    "FORBIDDEN",
+    "MISSING_AUTHORITY",
+    "AUTHORIZATION_FAILED"
+  ].includes(code)) return code;
+  if ([
+    "STALE_TARGET",
+    "STALE_DOCUMENT",
+    "INVALID_INPUT",
+    "INVALID_ARGUMENT",
+    "INVALID_SCHEMA",
+    "CONTRADICTION"
+  ].includes(code)) return code;
   return boundedErrorCode(code, "EFFECT_FAILED");
 }
 
-async function authoritativeProgram(programInput: unknown, tenantId: string) {
+async function authoritativeProgram(
+  programInput: unknown,
+  tenantId: string
+) {
   if (!programInput || typeof programInput !== "object" || Array.isArray(programInput)) throw new HostError("INVALID_PROGRAM", "program must be an object.");
   const candidate = programInput as Record<string, unknown>;
   if (candidate.tenantId !== tenantId) throw new HostError("CROSS_TENANT", "Program tenant differs from authenticated tenant.", 403);
@@ -273,19 +367,31 @@ async function authoritativeProgram(programInput: unknown, tenantId: string) {
   try {
     program = await validateCollectProgram(candidate);
   } catch (error) {
-    const failure = error && typeof error === "object" ? error as { code?: unknown } : {};
+    const failure = error && typeof error === "object" ? error as {
+      code?: unknown
+    } : {};
     throw new HostError(boundedErrorCode(failure.code, "INVALID_PROGRAM"), "Reactive VM program validation failed.");
   }
   if (canonicalBytes(program) > REACTIVE_VM_HOST_LIMITS.programBytes) throw new HostError("OVER_LIMIT", "Program exceeds the frozen byte budget.", 413);
   await assertGoalCurrent(tenantId, program.goalId, program.goalRevision);
   await resolveDevice(String(program.target.deviceId));
   const targetDigest = await digestCanonical(program.target);
-  return { program, targetDigest };
+  return {
+    program,
+    targetDigest
+  };
 }
 
-async function enqueueRun(body: Record<string, unknown>, tenantId: string) {
+async function enqueueRun(
+  body: Record<string,
+  unknown>,
+  tenantId: string
+) {
   if (typeof body.requestId !== "string") throw new HostError("INVALID_REQUEST", "requestId is required.");
-  const { program, targetDigest } = await authoritativeProgram(body.program, tenantId);
+  const {
+    program,
+    targetDigest
+  } = await authoritativeProgram(body.program, tenantId);
   const key = await cryptoKey();
   const runId = crypto.randomUUID();
   const logicalNowMs = Date.now();
@@ -299,7 +405,9 @@ async function enqueueRun(body: Record<string, unknown>, tenantId: string) {
       deadlineAtMs: logicalNowMs + Math.min(program.budgets.runDeadlineMs, REACTIVE_VM_HOST_LIMITS.runDeadlineMs),
     });
   } catch (error) {
-    const failure = error && typeof error === "object" ? error as { code?: unknown } : {};
+    const failure = error && typeof error === "object" ? error as {
+      code?: unknown
+    } : {};
     throw new HostError(boundedErrorCode(failure.code, "INVALID_PROGRAM"), "Unable to initialize Reactive VM state.");
   }
   const programBytes = canonicalBytes(program);
@@ -327,7 +435,15 @@ async function enqueueRun(body: Record<string, unknown>, tenantId: string) {
   return safePublicRun(stored);
 }
 
-async function executeEffect(program: VmProgram, state: VmState, claim: VmClaim, workerId: string, tenantId: string, device: VmDevice, sliceDeadline: number) {
+async function executeEffect(
+  program: VmProgram,
+  state: VmState,
+  claim: VmClaim,
+  workerId: string,
+  tenantId: string,
+  device: VmDevice,
+  sliceDeadline: number
+) {
   const pending = state.pendingEffect;
   if (!pending) throw new HostError("INVALID_HOST_STATE", "No pending effect exists.");
   if (String(pending.target?.deviceId) !== String(device.id) || pending.target?.tabId !== program.target.tabId) {
@@ -388,7 +504,10 @@ async function executeEffect(program: VmProgram, state: VmState, claim: VmClaim,
 
   const remaining = Math.max(100, Math.floor(sliceDeadline - performance.now()));
   const awaitMs = Math.max(100, Math.min(8000, remaining - 1500));
-  const awaited = await rpc("opera_await", { p_command_id: commandId, p_timeout_ms: awaitMs });
+  const awaited = await rpc("opera_await", {
+    p_command_id: commandId,
+    p_timeout_ms: awaitMs
+  });
   const ok = awaited?.ok === true;
 
   await rpc("opera_vm_effect_finish", {
@@ -460,7 +579,13 @@ async function executeEffect(program: VmProgram, state: VmState, claim: VmClaim,
   };
 }
 
-async function checkpointOriginal(claim: VmClaim, workerId: string, tenantId: string, status: string, errorCode: string | null) {
+async function checkpointOriginal(
+  claim: VmClaim,
+  workerId: string,
+  tenantId: string,
+  status: string,
+  errorCode: string | null
+) {
   return await rpc("opera_vm_checkpoint", {
     p_tenant_id: tenantId,
     p_run_id: claim.runId,
@@ -482,7 +607,15 @@ async function checkpointOriginal(claim: VmClaim, workerId: string, tenantId: st
   });
 }
 
-async function persistSlice(_program: VmProgram, state: VmState, transition: VmTransition, claim: VmClaim, workerId: string, tenantId: string, key: Uint8Array) {
+async function persistSlice(
+  _program: VmProgram,
+  state: VmState,
+  transition: VmTransition,
+  claim: VmClaim,
+  workerId: string,
+  tenantId: string,
+  key: Uint8Array
+) {
   const logicalNowMs = nowMsAtLeast(state.lastLogicalNowMs);
   const classification = classifyVmPersistence(state, transition, logicalNowMs);
   const checkpointBytes = canonicalBytes(state);
@@ -527,10 +660,17 @@ async function persistSlice(_program: VmProgram, state: VmState, transition: VmT
     stored = await checkpointOriginal(claim, workerId, tenantId, "CANCELLED", "CANCELLED");
   }
   if (!stored?.ok) throw new HostError(String(stored?.code || "CHECKPOINT_FAILED"), "Unable to persist VM checkpoint.", 409);
-  return { stored, classification, result: classification.terminal && state.status === "RETURNED" ? state.result : undefined };
+  return {
+    stored,
+    classification,
+    result: classification.terminal && state.status === "RETURNED" ? state.result : undefined
+  };
 }
 
-async function processSlice(runId: string, tenantId: string) {
+async function processSlice(
+  runId: string,
+  tenantId: string
+) {
   if (!/^[0-9a-f-]{36}$/i.test(runId)) throw new HostError("INVALID_REQUEST", "runId is invalid.");
   const key = await cryptoKey();
   const workerId = crypto.randomUUID();
@@ -541,7 +681,10 @@ async function processSlice(runId: string, tenantId: string) {
     p_lease_ms: REACTIVE_VM_HOST_LIMITS.leaseMsDefault,
   });
   if (!claim?.ok) {
-    if (claim?.code === "NO_WORK") return safePublicRun(await rpc("opera_vm_get", { p_tenant_id: tenantId, p_run_id: runId }));
+    if (claim?.code === "NO_WORK") return safePublicRun(await rpc("opera_vm_get", {
+      p_tenant_id: tenantId,
+      p_run_id: runId
+    }));
     throw new HostError(String(claim?.code || "CLAIM_FAILED"), "Unable to claim VM run.", 409);
   }
 
@@ -571,7 +714,10 @@ async function processSlice(runId: string, tenantId: string) {
       if (!lease?.ok || lease.leaseValid !== true) throw new HostError("STALE_LEASE", "VM lease expired before the slice completed.", 409);
       const logicalNowMs = nowMsAtLeast(state.lastLogicalNowMs);
       if (lease.cancelRequested === true) {
-        const advanced = await advanceCollectVm(validatedProgram, state, { logicalNowMs, cancelled: true });
+        const advanced = await advanceCollectVm(validatedProgram, state, {
+          logicalNowMs,
+          cancelled: true
+        });
         state = advanced.state;
         transition = advanced.transition;
         break;
@@ -580,7 +726,10 @@ async function processSlice(runId: string, tenantId: string) {
       let advanced;
       if (state.pendingEffect) {
         const effectResult = await executeEffect(validatedProgram, state, claim, workerId, tenantId, device, sliceDeadline);
-        advanced = await advanceCollectVm(validatedProgram, state, { logicalNowMs, effectResult });
+        advanced = await advanceCollectVm(validatedProgram, state, {
+          logicalNowMs,
+          effectResult
+        });
       } else {
         advanced = await advanceCollectVm(validatedProgram, state, { logicalNowMs });
       }
@@ -602,36 +751,74 @@ async function processSlice(runId: string, tenantId: string) {
       ...(persisted.result === undefined ? {} : { result: persisted.result }),
     };
   } catch (error) {
-    const failure = error && typeof error === "object" ? error as { code?: unknown } : {};
+    const failure = error && typeof error === "object" ? error as {
+      code?: unknown
+    } : {};
     const code = boundedErrorCode(failure.code, "HOST_ERROR");
     if (code === "STALE_LEASE") throw error;
-    const status = ["GOAL_REVISED", "STALE_TARGET", "STALE_DOCUMENT", "MISSING_AUTHORITY", "CROSS_TAB"].includes(code) ? "SUSPENDED" : "FAILED";
+    const status = [
+      "GOAL_REVISED",
+      "STALE_TARGET",
+      "STALE_DOCUMENT",
+      "MISSING_AUTHORITY",
+      "CROSS_TAB"
+    ].includes(code) ? "SUSPENDED" : "FAILED";
     const stored = await checkpointOriginal(claim, workerId, tenantId, status, code);
     if (!stored?.ok && stored?.code === "CANCEL_REQUESTED") {
       await checkpointOriginal(claim, workerId, tenantId, "CANCELLED", "CANCELLED");
-      return { ok: true, runId, status: "CANCELLED" };
+      return {
+        ok: true,
+        runId,
+        status: "CANCELLED"
+      };
     }
     if (!stored?.ok) throw error;
-    return { ok: false, runId, status, error: { code } };
+    return {
+      ok: false,
+      runId,
+      status,
+      error: { code }
+    };
   }
 }
 
-async function getResult(runId: string, tenantId: string) {
-  const metadata = await rpc("opera_vm_get", { p_tenant_id: tenantId, p_run_id: runId });
+async function getResult(
+  runId: string,
+  tenantId: string
+) {
+  const metadata = await rpc("opera_vm_get", {
+    p_tenant_id: tenantId,
+    p_run_id: runId
+  });
   if (!metadata?.ok) throw new HostError(String(metadata?.code || "RUN_NOT_FOUND"), "VM run was not found.", 404);
-  if (metadata.status !== "RETURNED") return { ...safePublicRun(metadata), result: null };
+  if (metadata.status !== "RETURNED") return {
+    ...safePublicRun(metadata),
+    result: null
+  };
   if (typeof metadata.resultToken !== "string") throw new HostError("RESULT_UNAVAILABLE", "Returned result token is unavailable.", 409);
   const key = await cryptoKey();
   const result = await openVmHostToken(metadata.resultToken, key, { kind: "RESULT" });
   if (await digestCanonical(result) !== metadata.resultDigest) throw new HostError("STALE_RUN", "Returned result digest mismatch.", 409);
-  return { ...safePublicRun(metadata), result };
+  return {
+    ...safePublicRun(metadata),
+    result
+  };
 }
 
 async function handle(req: Request) {
-  if (req.method === "OPTIONS") return new Response(null, { status: 204, headers });
-  if (req.method !== "POST") return response({ ok: false, error: { code: "METHOD_NOT_ALLOWED" } }, 405);
+  if (req.method === "OPTIONS") return new Response(null, {
+    status: 204,
+    headers
+  });
+  if (req.method !== "POST") return response({
+    ok: false,
+    error: { code: "METHOD_NOT_ALLOWED" }
+  }, 405);
   const user = await authenticatedUser(req);
-  if (!user) return response({ ok: false, error: { code: "UNAUTHORIZED" } }, 401);
+  if (!user) return response({
+    ok: false,
+    error: { code: "UNAUTHORIZED" }
+  }, 401);
 
   try {
     const body = await readBody(req);
@@ -639,21 +826,32 @@ async function handle(req: Request) {
     if (operation === "enqueue") return response(await enqueueRun(body, user.id));
     if (operation === "resume") return response(await processSlice(String(body.runId || ""), user.id));
     if (operation === "status") {
-      const metadata = await rpc("opera_vm_get", { p_tenant_id: user.id, p_run_id: String(body.runId || "") });
+      const metadata = await rpc("opera_vm_get", {
+        p_tenant_id: user.id,
+        p_run_id: String(body.runId || "")
+      });
       return response(safePublicRun(metadata), metadata?.ok ? 200 : 404);
     }
     if (operation === "result") return response(await getResult(String(body.runId || ""), user.id));
     if (operation === "cancel") {
-      const cancelled = await rpc("opera_vm_cancel", { p_tenant_id: user.id, p_run_id: String(body.runId || "") });
+      const cancelled = await rpc("opera_vm_cancel", {
+        p_tenant_id: user.id,
+        p_run_id: String(body.runId || "")
+      });
       return response(safePublicRun(cancelled), cancelled?.ok ? 200 : 404);
     }
     throw new HostError("INVALID_OPERATION", "Unsupported VM host operation.", 400);
   } catch (error) {
-    const failure = error && typeof error === "object" ? error as { code?: unknown } : {};
+    const failure = error && typeof error === "object" ? error as {
+      code?: unknown
+    } : {};
     const code = boundedErrorCode(failure.code, "VM_HOST_ERROR");
     const status = error instanceof HostError ? error.status : code === "CROSS_TENANT" ? 403 : code === "OVER_LIMIT" ? 413 : 400;
     console.error("opera-agent-vm", code);
-    return response({ ok: false, error: { code } }, status);
+    return response({
+      ok: false,
+      error: { code }
+    }, status);
   }
 }
 

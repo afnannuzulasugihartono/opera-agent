@@ -35,7 +35,10 @@ function asArray(value) {
   return Array.isArray(value) ? value : [];
 }
 
-function sameGraphData(actual, expected) {
+function sameGraphData(
+  actual,
+  expected
+) {
   if (!Array.isArray(actual) || actual.length !== expected.length) return false;
   const left = new Map();
   for (const point of actual) {
@@ -45,7 +48,10 @@ function sameGraphData(actual, expected) {
     if (left.has(label)) return false;
     left.set(label, value);
   }
-  const right = new Map(expected.map((point) => [point.label, point.value]));
+  const right = new Map(expected.map((point) => [
+    point.label,
+    point.value
+  ]));
   if (left.size !== right.size) return false;
   for (const [label, value] of left) {
     if (!right.has(label) || right.get(label) !== value) return false;
@@ -53,7 +59,11 @@ function sameGraphData(actual, expected) {
   return true;
 }
 
-function validateImage(image, sectionIndex, imageIndex) {
+function validateImage(
+  image,
+  sectionIndex,
+  imageIndex
+) {
   if (!image || typeof image !== 'object' || Array.isArray(image)) {
     throw new Error(`section ${sectionIndex + 1} image ${imageIndex + 1} is not an object.`);
   }
@@ -67,7 +77,11 @@ function validateImage(image, sectionIndex, imageIndex) {
   };
 }
 
-function validateTable(table, sectionIndex, tableIndex) {
+function validateTable(
+  table,
+  sectionIndex,
+  tableIndex
+) {
   if (!table || typeof table !== 'object' || Array.isArray(table)) {
     throw new Error(`section ${sectionIndex + 1} table ${tableIndex + 1} is not an object.`);
   }
@@ -76,17 +90,26 @@ function validateTable(table, sectionIndex, tableIndex) {
     throw new Error(`section ${sectionIndex + 1} table ${tableIndex + 1} has no headers.`);
   }
   const rows = asArray(table.rows);
-  const normalized = rows.map((row, rowIndex) => {
+  const normalized = rows.map((
+    row,
+    rowIndex
+  ) => {
     const cells = asArray(row).map((cell) => String(cell ?? ''));
     if (cells.length !== headers.length) {
       throw new Error(`section ${sectionIndex + 1} table ${tableIndex + 1} row ${rowIndex + 1} has ${cells.length} cells, expected ${headers.length}.`);
     }
     return cells;
   });
-  return { headers, rows: normalized };
+  return {
+    headers,
+    rows: normalized
+  };
 }
 
-function computeGraph(table, source) {
+function computeGraph(
+  table,
+  source
+) {
   if (source.aggregate !== 'count' && source.aggregate !== 'sum') {
     throw new Error('the graph source needs aggregate "count" or "sum".');
   }
@@ -100,7 +123,10 @@ function computeGraph(table, source) {
   }
 
   const groups = new Map();
-  table.rows.forEach((row, rowIndex) => {
+  table.rows.forEach((
+    row,
+    rowIndex
+  ) => {
     const label = String(row[labelIndex] ?? '').trim();
     if (label === '') {
       throw new Error(`row ${rowIndex + 1} has no label in "${source.labelColumn}".`);
@@ -113,19 +139,33 @@ function computeGraph(table, source) {
       }
       value = parsed;
     }
-    const bucket = groups.get(label) ?? { value: 0, rows: [] };
+    const bucket = groups.get(label) ?? {
+      value: 0,
+      rows: []
+    };
     bucket.value = source.aggregate === 'sum' ? bucket.value + value : bucket.value + 1;
     bucket.rows.push(rowIndex);
     groups.set(label, bucket);
   });
 
   return {
-    data: [...groups.entries()].map(([label, bucket]) => ({ label, value: bucket.value })),
+    data: [...groups.entries()].map(([
+      label,
+      bucket
+    ]) => ({
+      label,
+      value: bucket.value
+    })),
     rows: [...groups.values()].flatMap((bucket) => bucket.rows)
   };
 }
 
-function validateGraph(graph, sectionIndex, graphIndex, tables) {
+function validateGraph(
+  graph,
+  sectionIndex,
+  graphIndex,
+  tables
+) {
   if (!graph || typeof graph !== 'object' || Array.isArray(graph)) {
     throw new Error(`section ${sectionIndex + 1} graph ${graphIndex + 1} is not an object.`);
   }
@@ -167,7 +207,11 @@ function validateGraph(graph, sectionIndex, graphIndex, tables) {
     }
   }
 
-  const computed = computeGraph(tables[tableIndex], { labelColumn, valueColumn, aggregate });
+  const computed = computeGraph(tables[tableIndex], {
+    labelColumn,
+    valueColumn,
+    aggregate
+  });
   const provided = asArray(graph.data);
   if (provided.length === 0) {
     throw new Error(`section ${sectionIndex + 1} graph ${graphIndex + 1} has no data.`);
@@ -208,7 +252,10 @@ export function buildDocument({ doc } = {}) {
   const blocks = [];
   let totalItems = 0;
 
-  sections.forEach((section, sectionIndex) => {
+  sections.forEach((
+    section,
+    sectionIndex
+  ) => {
     if (!section || typeof section !== 'object' || Array.isArray(section)) {
       throw new Error(`section ${sectionIndex + 1} is not an object.`);
     }
@@ -216,26 +263,57 @@ export function buildDocument({ doc } = {}) {
       throw new Error(`section ${sectionIndex + 1} has no heading.`);
     }
 
-    blocks.push({ kind: 'heading', level: 1, text: section.heading.trim(), section: sectionIndex });
+    blocks.push({
+      kind: 'heading',
+      level: 1,
+      text: section.heading.trim(),
+      section: sectionIndex
+    });
 
     if (nonEmptyString(section.body)) {
-      blocks.push({ kind: 'paragraph', text: section.body.trim(), section: sectionIndex });
+      blocks.push({
+        kind: 'paragraph',
+        text: section.body.trim(),
+        section: sectionIndex
+      });
     }
 
-    const normalizedTables = asArray(section.tables).map((table, tableIndex) => validateTable(table, sectionIndex, tableIndex));
-    normalizedTables.forEach((normalized, tableIndex) => {
-      blocks.push({ kind: 'table', headers: normalized.headers, rows: normalized.rows, section: sectionIndex, table: tableIndex });
+    const normalizedTables = asArray(section.tables).map((
+      table,
+      tableIndex
+    ) => validateTable(table, sectionIndex, tableIndex));
+    normalizedTables.forEach((
+      normalized,
+      tableIndex
+    ) => {
+      blocks.push({
+        kind: 'table',
+        headers: normalized.headers,
+        rows: normalized.rows,
+        section: sectionIndex,
+        table: tableIndex
+      });
       totalItems += normalized.rows.length;
     });
 
     const images = asArray(section.images);
-    images.forEach((image, imageIndex) => {
+    images.forEach((
+      image,
+      imageIndex
+    ) => {
       const normalized = validateImage(image, sectionIndex, imageIndex);
-      blocks.push({ kind: 'image', ...normalized, section: sectionIndex });
+      blocks.push({
+        kind: 'image',
+        ...normalized,
+        section: sectionIndex
+      });
     });
 
     const graphs = asArray(section.graphs);
-    graphs.forEach((graph, graphIndex) => {
+    graphs.forEach((
+      graph,
+      graphIndex
+    ) => {
       const normalized = validateGraph(graph, sectionIndex, graphIndex, normalizedTables);
       figures.push({
         id: `graph:${sectionIndex}:${graphIndex}`,
@@ -251,7 +329,11 @@ export function buildDocument({ doc } = {}) {
           rows: normalized.source.rows
         }
       });
-      blocks.push({ ...normalized, kind: 'graph', section: sectionIndex });
+      blocks.push({
+        ...normalized,
+        kind: 'graph',
+        section: sectionIndex
+      });
     });
   });
 
@@ -260,17 +342,32 @@ export function buildDocument({ doc } = {}) {
     author: nonEmptyString(doc.author) ? doc.author.trim() : null,
     sections: sections.map((section) => ({
       heading: section.heading.trim(),
-      items: asArray(section.tables).reduce((count, table) => count + asArray(table.rows).length, 0),
+      items: asArray(section.tables).reduce((
+        count,
+        table
+      ) => count + asArray(table.rows).length, 0),
       images: asArray(section.images).length,
       graphs: asArray(section.graphs).length
     })),
     blocks,
-    totals: { sections: sections.length, items: totalItems, images: blocks.filter((block) => block.kind === 'image').length, graphs: figures.length }
+    totals: {
+      sections: sections.length,
+      items: totalItems,
+      images: blocks.filter((block) => block.kind === 'image').length,
+      graphs: figures.length
+    }
   };
 
-  return { title: docplan.title, docplan, figures };
+  return {
+    title: docplan.title,
+    docplan,
+    figures
+  };
 }
-export function verifyDocument({ document, doc } = {}) {
+export function verifyDocument({
+  document,
+  doc
+} = {}) {
   if (!document || !Array.isArray(document.figures)) {
     throw new Error('verifyDocument needs a document with figures.');
   }
@@ -281,9 +378,17 @@ export function verifyDocument({ document, doc } = {}) {
   const sections = Array.isArray(doc.sections) ? doc.sections : [];
 
   // The count comes from the source, not from the artifact: a plan that dropped a figure cannot hide behind a totals line it also dropped.
-  const expectedGraphs = sections.reduce((count, section) => count + (Array.isArray(section.graphs) ? section.graphs.length : 0), 0);
+  const expectedGraphs = sections.reduce((
+    count,
+    section
+  ) => count + (Array.isArray(section.graphs) ? section.graphs.length : 0), 0);
   if (document.figures.length !== expectedGraphs) {
-    mismatches.push({ id: null, expected: expectedGraphs, actual: document.figures.length, why: 'the document does not carry every graph its source defines' });
+    mismatches.push({
+      id: null,
+      expected: expectedGraphs,
+      actual: document.figures.length,
+      why: 'the document does not carry every graph its source defines'
+    });
   }
 
   for (const figure of document.figures) {
@@ -305,29 +410,58 @@ export function verifyDocument({ document, doc } = {}) {
       });
 
       if (!sameGraphData(figure.data, expected.data)) {
-        mismatches.push({ id: figure.id, expected: expected.data, actual: figure.data ?? null, why: 'the graph and its table source disagree' });
+        mismatches.push({
+          id: figure.id,
+          expected: expected.data,
+          actual: figure.data ?? null,
+          why: 'the graph and its table source disagree'
+        });
         continue;
       }
 
       const rows = Array.isArray(source.rows) ? source.rows : [];
-      if (rows.length !== expected.rows.length || rows.some((row, index) => row !== expected.rows[index])) {
-        mismatches.push({ id: figure.id, expected: expected.rows, actual: rows, why: 'the figure does not name the exact rows that produced it' });
+      if (rows.length !== expected.rows.length || rows.some((
+        row,
+        index
+      ) => row !== expected.rows[index])) {
+        mismatches.push({
+          id: figure.id,
+          expected: expected.rows,
+          actual: rows,
+          why: 'the figure does not name the exact rows that produced it'
+        });
       }
     } catch (error) {
-      mismatches.push({ id: figure?.id ?? null, why: error.message });
+      mismatches.push({
+        id: figure?.id ?? null,
+        why: error.message
+      });
     }
   }
 
   if (!nonEmptyString(document?.docplan?.title)) {
-    mismatches.push({ id: null, why: 'the document has no title' });
+    mismatches.push({
+      id: null,
+      why: 'the document has no title'
+    });
   } else if (document.docplan.title !== String(doc.title ?? '').trim()) {
-    mismatches.push({ id: null, why: 'the document title does not match its source' });
+    mismatches.push({
+      id: null,
+      why: 'the document title does not match its source'
+    });
   }
 
-  return { ok: mismatches.length === 0, checked: document.figures.length, mismatches };
+  return {
+    ok: mismatches.length === 0,
+    checked: document.figures.length,
+    mismatches
+  };
 }
 
-export function documentFromFile({ source, out = null } = {}) {
+export function documentFromFile({
+  source,
+  out = null
+} = {}) {
   if (source === null || source === undefined || String(source).trim() === '') {
     throw new Error('document_build needs source: the JSON describing the paper.');
   }
@@ -343,7 +477,10 @@ export function documentFromFile({ source, out = null } = {}) {
 
   const doc = parseDocument(fs.readFileSync(from, 'utf8'));
   const built = buildDocument({ doc });
-  const verified = verifyDocument({ document: built, doc });
+  const verified = verifyDocument({
+    document: built,
+    doc
+  });
   if (!verified.ok) {
     throw new Error(`the document failed its own recheck: ${verified.mismatches.map((miss) => miss.why ?? miss.id).join('; ')}`);
   }
@@ -364,5 +501,10 @@ export function documentFromFile({ source, out = null } = {}) {
   fs.rmSync(outPath, { force: true });
   fs.renameSync(tmp, outPath);
 
-  return { source: from, out: outPath, verified, document: built };
+  return {
+    source: from,
+    out: outPath,
+    verified,
+    document: built
+  };
 }

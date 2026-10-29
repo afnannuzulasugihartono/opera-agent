@@ -11,7 +11,10 @@ import { extensionSource } from './helpers/extension-source.mjs';
 
 const background = await extensionSource();
 
-function sliceBetween(startMarker, endMarker) {
+function sliceBetween(
+  startMarker,
+  endMarker
+) {
   const start = background.indexOf(startMarker);
   const end = background.indexOf(endMarker, start);
   assert.ok(start >= 0, `${startMarker} must exist`);
@@ -49,10 +52,17 @@ test('withDebugger registers a shared session so onDetach can find it', () => {
 });
 
 test('an unexpected detach clears the cached flag instead of leaving it attached', async () => {
-  const { registerDebuggerSession, handleDebuggerDetach, getDebuggerSessions } = await import(
+  const {
+    registerDebuggerSession,
+    handleDebuggerDetach,
+    getDebuggerSessions
+  } = await import(
     '../extension/lib/debugger-session.js'
   );
-  const session = { tabId: 4242, attached: true };
+  const session = {
+    tabId: 4242,
+    attached: true
+  };
   registerDebuggerSession(session);
   assert.equal(getDebuggerSessions().get(4242), session);
 
@@ -62,11 +72,21 @@ test('an unexpected detach clears the cached flag instead of leaving it attached
 });
 
 test('a detach for an unrelated tab leaves other sessions alone', async () => {
-  const { registerDebuggerSession, handleDebuggerDetach, getDebuggerSessions } = await import(
+  const {
+    registerDebuggerSession,
+    handleDebuggerDetach,
+    getDebuggerSessions
+  } = await import(
     '../extension/lib/debugger-session.js'
   );
-  const keep = { tabId: 11, attached: true };
-  const other = { tabId: 22, attached: true };
+  const keep = {
+    tabId: 11,
+    attached: true
+  };
+  const other = {
+    tabId: 22,
+    attached: true
+  };
   registerDebuggerSession(keep);
   registerDebuggerSession(other);
   handleDebuggerDetach({ tabId: 99 });
@@ -76,10 +96,16 @@ test('a detach for an unrelated tab leaves other sessions alone', async () => {
 });
 
 test('a detach event without a tab id is ignored rather than clearing everything', async () => {
-  const { registerDebuggerSession, handleDebuggerDetach } = await import(
+  const {
+    registerDebuggerSession,
+    handleDebuggerDetach
+  } = await import(
     '../extension/lib/debugger-session.js'
   );
-  const session = { tabId: 33, attached: true };
+  const session = {
+    tabId: 33,
+    attached: true
+  };
   registerDebuggerSession(session);
   handleDebuggerDetach(undefined);
   handleDebuggerDetach({});
@@ -164,7 +190,10 @@ test('withDebugger releases the previous session when a burst step switches tabs
 test('releaseDebuggerSession tolerates a session that is not attached', async () => {
   const { releaseDebuggerSession } = await import('../extension/lib/debugger-session.js');
   await assert.doesNotReject(releaseDebuggerSession(null));
-  await assert.doesNotReject(releaseDebuggerSession({ tabId: 7, attached: false }));
+  await assert.doesNotReject(releaseDebuggerSession({
+    tabId: 7,
+    attached: false
+  }));
 });
 
 // A detach that throws leaves Chrome holding an attachment the code believes is gone, and every later attach then fails with "already attached" forever: one flaky detach bricks the tab until the extension reloads.
@@ -192,21 +221,42 @@ test('withDebugger recovers from a stale attach instead of failing forever', asy
 // Either half missing reverts to a bar that never leaves.
 
 test('an idle debugger session is released while a fresh one is kept', async () => {
-  const { registerDebuggerSession, releaseIdleDebuggerSessions, getDebuggerSessions } = await import(
+  const {
+    registerDebuggerSession,
+    releaseIdleDebuggerSessions,
+    getDebuggerSessions
+  } = await import(
     '../extension/lib/debugger-session.js'
   );
   const detached = [];
   const previous = globalThis.chrome;
-  globalThis.chrome = { debugger: { detach: async (target) => { detached.push(target.tabId); } } };
+  globalThis.chrome = { debugger: { detach: async (target) => {
+    detached.push(target.tabId);
+  } } };
   try {
-    const old = { tabId: 5101, attached: true, lastUsedAt: 1000 };
-    const fresh = { tabId: 5102, attached: true, lastUsedAt: 9000 };
-    const down = { tabId: 5103, attached: false, lastUsedAt: 1000 };
+    const old = {
+      tabId: 5101,
+      attached: true,
+      lastUsedAt: 1000
+    };
+    const fresh = {
+      tabId: 5102,
+      attached: true,
+      lastUsedAt: 9000
+    };
+    const down = {
+      tabId: 5103,
+      attached: false,
+      lastUsedAt: 1000
+    };
     registerDebuggerSession(old);
     registerDebuggerSession(fresh);
     registerDebuggerSession(down);
 
-    const released = await releaseIdleDebuggerSessions({ maxIdleMs: 5000, now: 10000 });
+    const released = await releaseIdleDebuggerSessions({
+      maxIdleMs: 5000,
+      now: 10000
+    });
 
     assert.equal(released, 1);
     assert.equal(old.attached, false);

@@ -15,15 +15,30 @@ import {
   SETTLE_QUIET_MS,
   SETTLE_READ_EXPRESSION
 } from './page-expressions.js';
-import { MIN_DOM_TEXT, probeSurface } from './surface-profile.js';
+import {
+  MIN_DOM_TEXT,
+  probeSurface
+} from './surface-profile.js';
 
-export function createWaits({ cdp, sleep, readState, readRows, read, primitives, now = Date.now }) {
+export function createWaits({
+  cdp,
+  sleep,
+  readState,
+  readRows,
+  read,
+  primitives,
+  now = Date.now
+}) {
   // WHY SETTLE IS A PRIMITIVE AND NOT A TOOL.
   // Every action needs the same short look before the page is read, so the wait belongs beside the actions, not in the surface where a caller has to remember it.
   // The page expression resolves with what it saw, which makes the cost inspectable instead of a blind sleep: quiet means the last change was at least 32ms ago, deadline means the page was still moving when the 120ms cap arrived.
   async function settle() {
     const started = Date.now();
-    const answer = (why, state, detail) => ({
+    const answer = (
+      why,
+      state,
+      detail
+    ) => ({
       waitedMs: Date.now() - started,
       quietMs: Number(state?.quietMs) || 0,
       maxMs: SETTLE_MAX_MS,
@@ -68,7 +83,11 @@ export function createWaits({ cdp, sleep, readState, readRows, read, primitives,
     }
   }
 
-  async function waitForIdle({ timeoutMs = 10000, intervalMs = 100, readyState = 'complete' } = {}) {
+  async function waitForIdle({
+    timeoutMs = 10000,
+    intervalMs = 100,
+    readyState = 'complete'
+  } = {}) {
     const deadline = Date.now() + timeoutMs;
     for (;;) {
       const state = await primitives.evaluate('document.readyState');
@@ -78,7 +97,14 @@ export function createWaits({ cdp, sleep, readState, readRows, read, primitives,
     }
   }
 
-  async function waitForMutation(read, predicate, { timeoutMs = 10000, now: clock = now } = {}) {
+  async function waitForMutation(
+    read,
+    predicate,
+    {
+      timeoutMs = 10000,
+      now: clock = now
+    } = {}
+  ) {
     const deadline = clock() + timeoutMs;
     for (;;) {
       const state = await read();
@@ -92,7 +118,15 @@ export function createWaits({ cdp, sleep, readState, readRows, read, primitives,
   // This used to ask the url whether the page was a document editor and then read the document for it, which is the site recognition the drive no longer carries.
   // A length bar is not the decision either: measured on a real Google Doc, the chrome around the canvas holds 1,312 characters of its own, so a wait that only measures length polls the toolbar forever and reports found:false for text that is right there in the document.
   // So the probe decides once: a page with no canvas takes the cheap DOM answer, and a canvas page is read through the ladder, which reaches past the chrome.
-  async function waitForText(text, { timeoutMs = 10000, intervalMs = 100, absent = false, now: clock = now } = {}) {
+  async function waitForText(
+    text,
+    {
+      timeoutMs = 10000,
+      intervalMs = 100,
+      absent = false,
+      now: clock = now
+    } = {}
+  ) {
     const surface = await probeSurface({ evaluate: primitives.evaluate });
     const domLeads = surface.canvas.value !== true;
     return waitForMutation(
@@ -104,11 +138,21 @@ export function createWaits({ cdp, sleep, readState, readRows, read, primitives,
         return read();
       },
       (state) => String(state.text ?? '').includes(text) !== absent,
-      { timeoutMs, now: clock }
+      {
+        timeoutMs,
+        now: clock
+      }
     );
   }
 
-  async function waitForRow({ role, name, timeoutMs = 10000, intervalMs = 150, absent = false, now: clock = now } = {}) {
+  async function waitForRow({
+    role,
+    name,
+    timeoutMs = 10000,
+    intervalMs = 150,
+    absent = false,
+    now: clock = now
+  } = {}) {
     const want = String(name ?? '').toLowerCase();
     const seen = [];
     const state = await waitForMutation(
@@ -117,10 +161,19 @@ export function createWaits({ cdp, sleep, readState, readRows, read, primitives,
         const hit = rows.find((r) => r.role === role && String(r.name ?? '').toLowerCase() === want)
           ?? rows.find((r) => r.role === role && String(r.name ?? '').toLowerCase().includes(want));
         seen.push(hit?.name ?? null);
-        return { role, name, row: hit ?? null, present: Boolean(hit), checks: seen.length };
+        return {
+          role,
+          name,
+          row: hit ?? null,
+          present: Boolean(hit),
+          checks: seen.length
+        };
       },
       (state) => state.present !== absent,
-      { timeoutMs, now: clock }
+      {
+        timeoutMs,
+        now: clock
+      }
     );
     return {
       found: absent ? state.present === false : state.present,
@@ -131,7 +184,13 @@ export function createWaits({ cdp, sleep, readState, readRows, read, primitives,
     };
   }
 
-  async function waitForStill({ timeoutMs = 8000, quietMs = 120, intervalMs = 60, limit = 120, now: clock = now } = {}) {
+  async function waitForStill({
+    timeoutMs = 8000,
+    quietMs = 120,
+    intervalMs = 60,
+    limit = 120,
+    now: clock = now
+  } = {}) {
     const started = clock();
     let previous = null;
     let unchangedSince = started;
@@ -139,20 +198,49 @@ export function createWaits({ cdp, sleep, readState, readRows, read, primitives,
     const out = await waitForMutation(
       async () => {
         const rows = await readRows(limit);
-        const shape = JSON.stringify(rows.map(({ role, name, x, y }) => [role, name, x, y]));
+        const shape = JSON.stringify(rows.map(({
+          role,
+          name,
+          x,
+          y
+        }) => [
+          role,
+          name,
+          x,
+          y
+        ]));
         checks += 1;
         const stable = shape === previous && clock() - unchangedSince >= quietMs;
         if (shape !== previous) {
           previous = shape;
           unchangedSince = clock();
         }
-        return { still: stable, ms: clock() - started, checks };
+        return {
+          still: stable,
+          ms: clock() - started,
+          checks
+        };
       },
       (state) => state.still,
-      { timeoutMs, now: clock }
+      {
+        timeoutMs,
+        now: clock
+      }
     );
-    return { still: out.still, ms: out.ms, checks: out.checks, settled: out.checks > 1 };
+    return {
+      still: out.still,
+      ms: out.ms,
+      checks: out.checks,
+      settled: out.checks > 1
+    };
   }
 
-  return { settle, waitForIdle, waitForMutation, waitForText, waitForRow, waitForStill };
+  return {
+    settle,
+    waitForIdle,
+    waitForMutation,
+    waitForText,
+    waitForRow,
+    waitForStill
+  };
 }

@@ -7,7 +7,11 @@ const MAX_LOG_MESSAGE = 1000;
 export function createEdgeLog(context) {
   const commandId = context && typeof context.commandId === 'string' ? context.commandId : null;
   const requestId = context && typeof context.requestId === 'string' ? context.requestId : null;
-  function emit(level, code, message) {
+  function emit(
+    level,
+    code,
+    message
+  ) {
     const record = {
       t: new Date().toISOString(),
       level,
@@ -22,8 +26,17 @@ export function createEdgeLog(context) {
     return record;
   }
   return {
-    debug: (code, message) => emit('debug', code, message),
-    warn: (code, message) => emit('warn', code, message),
-    error: (code, message) => emit('error', code, message)
+    debug: (
+      code,
+      message
+    ) => emit('debug', code, message),
+    warn: (
+      code,
+      message
+    ) => emit('warn', code, message),
+    error: (
+      code,
+      message
+    ) => emit('error', code, message)
   };
 }

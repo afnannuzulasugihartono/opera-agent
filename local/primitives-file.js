@@ -30,19 +30,38 @@ import {
   dragMimeType
 } from './page-expressions.js';
 
-export function filePrimitives(primitives, { cdp, sleep, fs, os, path, readState }) {
-
+export function filePrimitives(
+  primitives,
+  {
+    cdp,
+    sleep,
+    fs,
+    os,
+    path,
+    readState
+  }
+) {
   // WHY THE FILE IS PREPARED IN ONE PLACE.
   // Upload and drop take the same two inputs - a base64 payload or a path - and must answer the same three questions: where the bytes are, how many there are, and how to remove the temporary copy.
   // Two copies of that answer drift the moment one gains a guard the other lacks, so it lives here.
 
-  const materialize = ({ data, filePath, filename, verb, prefix }) => {
+  const materialize = ({
+    data,
+    filePath,
+    filename,
+    verb,
+    prefix
+  }) => {
     const hasData = data !== null && data !== undefined;
     const hasPath = filePath !== null && filePath !== undefined;
     if (hasData === hasPath) throw new Error(`${verb} needs exactly one of data or path.`);
     if (hasPath) {
       if (!fs.existsSync(filePath)) throw new Error(`${verb}: no such file ${JSON.stringify(filePath)}`);
-      return { target: filePath, bytes: fs.statSync(filePath).size, cleanup: null };
+      return {
+        target: filePath,
+        bytes: fs.statSync(filePath).size,
+        cleanup: null
+      };
     }
     const decoded = Buffer.from(String(data), 'base64');
     if (decoded.length === 0) throw new Error(`${verb}: data carries no bytes.`);
@@ -64,10 +83,22 @@ export function filePrimitives(primitives, { cdp, sleep, fs, os, path, readState
   };
 
   return {
-    async upload({ filename, data = null, path: filePath = null } = {}) {
+    async upload({
+      filename,
+      data = null,
+      path: filePath = null
+    } = {}) {
       if (!filename || typeof filename !== 'string') throw new Error('upload needs a filename.');
-      const { target, bytes, cleanup } = materialize({
-        data, filePath, filename, verb: 'upload', prefix: 'opera-upload-'
+      const {
+        target,
+        bytes,
+        cleanup
+      } = materialize({
+        data,
+        filePath,
+        filename,
+        verb: 'upload',
+        prefix: 'opera-upload-'
       });
 
       // WHY THE FINDER ASKS CDP BEFORE ASKING THE PAGE, AND SWEEPS THE FRAMES.
@@ -79,14 +110,21 @@ export function filePrimitives(primitives, { cdp, sleep, fs, os, path, readState
       const FILE_INPUT_SELECTOR = 'input[type=file]';
 
       const piercedInputIn = async (nodeId) => {
-        const found = await cdp.send('DOM.querySelectorAll', { nodeId, selector: FILE_INPUT_SELECTOR, pierce: true });
+        const found = await cdp.send('DOM.querySelectorAll', {
+          nodeId,
+          selector: FILE_INPUT_SELECTOR,
+          pierce: true
+        });
         const hit = found?.nodeIds?.[0];
         if (!hit) return null;
         const described = await cdp.send('DOM.describeNode', { nodeId: hit });
         return described?.node?.backendNodeId ?? null;
       };
       const findInputNode = async () => {
-        const document_ = await cdp.send('DOM.getDocument', { depth: 0, pierce: true });
+        const document_ = await cdp.send('DOM.getDocument', {
+          depth: 0,
+          pierce: true
+        });
         const rootNodeId = document_?.root?.nodeId;
         return rootNodeId ? piercedInputIn(rootNodeId) : null;
       };
@@ -127,29 +165,63 @@ export function filePrimitives(primitives, { cdp, sleep, fs, os, path, readState
           if (!node && !objectId && attempt + 1 < UPLOAD_FIND_ATTEMPTS) await sleep(UPLOAD_FIND_GAP_MS);
         }
         if (node) {
-          await cdp.send('DOM.setFileInputFiles', { files: [target], backendNodeId: node });
-          return { inputFound: true, filename, bytes };
+          await cdp.send('DOM.setFileInputFiles', {
+            files: [target],
+            backendNodeId: node
+          });
+          return {
+            inputFound: true,
+            filename,
+            bytes
+          };
         }
-        if (!objectId) return { inputFound: false, filename };
-        await cdp.send('DOM.setFileInputFiles', { files: [target], objectId });
-        return { inputFound: true, filename, bytes };
+        if (!objectId) return {
+          inputFound: false,
+          filename
+        };
+        await cdp.send('DOM.setFileInputFiles', {
+          files: [target],
+          objectId
+        });
+        return {
+          inputFound: true,
+          filename,
+          bytes
+        };
       } finally {
         if (cleanup) cleanup();
         await cdp.send('Runtime.releaseObjectGroup', { objectGroup: 'opera-upload' }).catch(() => null);
       }
     },
-
-    async dropFile({ x, y, filename, data = null, path: filePath = null } = {}) {
+    async dropFile({
+      x,
+      y,
+      filename,
+      data = null,
+      path: filePath = null
+    } = {}) {
       if (!Number.isFinite(Number(x)) || !Number.isFinite(Number(y))) {
         throw new Error('drop_file needs x and y in the viewport.');
       }
       if (!filename || typeof filename !== 'string') throw new Error('drop_file needs a filename.');
-      const { target, bytes, cleanup } = materialize({
-        data, filePath, filename, verb: 'drop_file', prefix: 'opera-drop-'
+      const {
+        target,
+        bytes,
+        cleanup
+      } = materialize({
+        data,
+        filePath,
+        filename,
+        verb: 'drop_file',
+        prefix: 'opera-drop-'
       });
       const mimeType = dragMimeType(filename);
       const payload = {
-        items: [{ mimeType, title: filename, data: '' }],
+        items: [{
+          mimeType,
+          title: filename,
+          data: ''
+        }],
         files: [target],
         dragOperationsMask: 1
       };
@@ -162,22 +234,32 @@ export function filePrimitives(primitives, { cdp, sleep, fs, os, path, readState
         await sleep(DROP_FRONT_SETTLE_MS);
         await cdp.send('Input.setInterceptDrags', { enabled: true });
         for (const phase of DROP_PHASES) {
-          await cdp.send('Input.dispatchDragEvent', { type: phase, x: Number(x), y: Number(y), data: payload });
+          await cdp.send('Input.dispatchDragEvent', {
+            type: phase,
+            x: Number(x),
+            y: Number(y),
+            data: payload
+          });
           await sleep(DROP_PHASE_GAP_MS);
         }
         await sleep(DROP_SETTLE_MS);
-        return { dropped: true, filename, bytes, x: Number(x), y: Number(y), mimeType };
+        return {
+          dropped: true,
+          filename,
+          bytes,
+          x: Number(x),
+          y: Number(y),
+          mimeType
+        };
       } finally {
         await cdp.send('Input.setInterceptDrags', { enabled: false }).catch(() => null);
         if (cleanup) cleanup();
       }
     },
-
     async interceptFileChooser(enabled) {
       await cdp.send('Page.setInterceptFileChooserDialog', { enabled: enabled === true });
       return { intercepting: enabled === true };
     },
-
     // WHY THE FILE ON DISK IS THE PROOF, NOT THE PROTOCOL EVENT.
     // The bridge road forwards commands and not events, so a listener here would fire on a debugging port and stay silent on the signed-in profile - the one road that matters.
     // The directory is therefore read until a new file stops growing, which is true on every road and survives a browser that lies about finishing.
@@ -196,12 +278,24 @@ export function filePrimitives(primitives, { cdp, sleep, fs, os, path, readState
     // Renaming a download mid-write would leave Chrome writing to a path that no longer exists, so the new name is given at the only moment the file is whole.
     // The old file goes first because Windows refuses a rename onto an existing file, and pulling the same client-month twice is the normal case - a re-download is a deliberate replace.
     async download({
-      handle = null, role = null, name = null, x = null, y = null,
-      dir = null, saveAs = null, timeoutMs = 30000, settleMs = 250, intervalMs = 100
+      handle = null,
+      role = null,
+      name = null,
+      x = null,
+      y = null,
+      dir = null,
+      saveAs = null,
+      timeoutMs = 30000,
+      settleMs = 250,
+      intervalMs = 100
     } = {}) {
       const hasPoint = Number.isFinite(x) && Number.isFinite(y);
       const hasRow = role !== null && role !== undefined;
-      const ways = [handle !== null && handle !== undefined, hasRow, hasPoint].filter(Boolean).length;
+      const ways = [
+        handle !== null && handle !== undefined,
+        hasRow,
+        hasPoint
+      ].filter(Boolean).length;
       if (ways !== 1) throw new Error('download needs exactly one of: a handle, a role and name, or an x and a y.');
       if (hasRow && (name === null || name === undefined || String(name) === '')) {
         throw new Error('download with a role also needs a name, because the role alone does not say which row.');
@@ -216,10 +310,16 @@ export function filePrimitives(primitives, { cdp, sleep, fs, os, path, readState
 
       let armedVia = 'browser';
       try {
-        await cdp.send('Browser.setDownloadBehavior', { behavior: 'allow', downloadPath: target });
+        await cdp.send('Browser.setDownloadBehavior', {
+          behavior: 'allow',
+          downloadPath: target
+        });
       } catch (browserError) {
         try {
-          await cdp.send('Page.setDownloadBehavior', { behavior: 'allow', downloadPath: target });
+          await cdp.send('Page.setDownloadBehavior', {
+            behavior: 'allow',
+            downloadPath: target
+          });
           armedVia = 'page';
         } catch (pageError) {
           throw new Error(`download could not arm a folder: Browser said "${browserError?.message}", Page said "${pageError?.message}"`);
@@ -233,7 +333,10 @@ export function filePrimitives(primitives, { cdp, sleep, fs, os, path, readState
         if (handle !== null && handle !== undefined) {
           clicked = await primitives.clickHandle(handle);
         } else if (hasRow) {
-          const row = await primitives.resolveRow({ role, name });
+          const row = await primitives.resolveRow({
+            role,
+            name
+          });
           clicked = row.handle ? await primitives.clickHandle(row.handle) : await primitives.clickAt(row.x, row.y);
         } else {
           clicked = await primitives.clickAt(Number(x), Number(y));
@@ -243,7 +346,11 @@ export function filePrimitives(primitives, { cdp, sleep, fs, os, path, readState
         const deadline = started + limit;
         let growing = null;
         let stableAt = 0;
-        const handOver = (newest, full, size) => {
+        const handOver = (
+          newest,
+          full,
+          size
+        ) => {
           let file = newest;
           let where = full;
           if (renameTo !== null && renameTo !== newest) {
@@ -273,13 +380,22 @@ export function filePrimitives(primitives, { cdp, sleep, fs, os, path, readState
           const finished = fresh.filter((file) => !file.endsWith('.crdownload') && !file.endsWith('.tmp'));
           if (finished.length) {
             const newest = finished
-              .map((file) => ({ file, at: fs.statSync(path.join(target, file)).mtimeMs }))
-              .sort((a, b) => b.at - a.at)[0].file;
+              .map((file) => ({
+                file,
+                at: fs.statSync(path.join(target, file)).mtimeMs
+              }))
+              .sort((
+                a,
+                b
+              ) => b.at - a.at)[0].file;
             const full = path.join(target, newest);
             const size = fs.statSync(full).size;
             if (size > 0) {
               if (!growing || growing.size !== size || growing.file !== newest) {
-                growing = { file: newest, size };
+                growing = {
+                  file: newest,
+                  size
+                };
                 stableAt = Date.now();
               } else if (Date.now() - stableAt >= settleMs) {
                 return handOver(newest, full, size);

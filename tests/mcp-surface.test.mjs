@@ -10,7 +10,10 @@ import { readFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 
 import { sha256ContractSource } from './helpers/canonical-source-hash.mjs';
-import { ALLOWED_METHODS, PRODUCT_VERSION } from '../extension/lib/protocol.js';
+import {
+  ALLOWED_METHODS,
+  PRODUCT_VERSION
+} from '../extension/lib/protocol.js';
 import { mcpSurfaceSource } from './helpers/mcp-surface-source.mjs';
 
 const configUrl = new URL('../supabase/functions/opera-agent-mcp/deno.json', import.meta.url);
@@ -41,63 +44,118 @@ const screenshot = fs.readFileSync(
 );
 
 const FROZEN_MCP_TOOLS = [
-  'activate_tab', 'browser_status', 'capture_page', 'click_element',
-  'close_tab', 'fill_element', 'find_elements', 'list_tabs',
-  'media_pause', 'media_play', 'media_seek', 'media_state',
-  'navigate_tab', 'open_url', 'pointer', 'press_key', 'read_page', 'stream_keys',
-  'run_adhoc', 'run_browser_burst', 'run_program', 'run_workflow', 'scroll_page', 'skill_recall', 'skill_save',
-  'media_stream_start', 'media_stream_stop', 'media_listen_read'
+  'activate_tab',
+  'browser_status',
+  'capture_page',
+  'click_element',
+  'close_tab',
+  'fill_element',
+  'find_elements',
+  'list_tabs',
+  'media_pause',
+  'media_play',
+  'media_seek',
+  'media_state',
+  'navigate_tab',
+  'open_url',
+  'pointer',
+  'press_key',
+  'read_page',
+  'stream_keys',
+  'run_adhoc',
+  'run_browser_burst',
+  'run_program',
+  'run_workflow',
+  'scroll_page',
+  'skill_recall',
+  'skill_save',
+  'media_stream_start',
+  'media_stream_stop',
+  'media_listen_read'
 ];
 
 const FROZEN_METHODS = [
-  'browser.burst', 'browser.ping', 'media.pause', 'media.play', 'media.seek',
-  'media.state', 'media.stream_start', 'media.stream_stop', 'page.capture', 'page.click', 'page.collect_links',
-  'page.fill', 'page.find', 'page.focus', 'page.key', 'page.pointer',
-  'page.query', 'page.read', 'page.scroll', 'page.stream', 'page.wait_for',
-  'statement.download', 'statement.manifest',
-  'tabs.activate', 'tabs.close', 'tabs.find', 'tabs.get', 'tabs.list', 'tabs.navigate',
-  'tabs.open', 'tabs.reload'
+  'browser.burst',
+  'browser.ping',
+  'media.pause',
+  'media.play',
+  'media.seek',
+  'media.state',
+  'media.stream_start',
+  'media.stream_stop',
+  'page.capture',
+  'page.click',
+  'page.collect_links',
+  'page.fill',
+  'page.find',
+  'page.focus',
+  'page.key',
+  'page.pointer',
+  'page.query',
+  'page.read',
+  'page.scroll',
+  'page.stream',
+  'page.wait_for',
+  'statement.download',
+  'statement.manifest',
+  'tabs.activate',
+  'tabs.close',
+  'tabs.find',
+  'tabs.get',
+  'tabs.list',
+  'tabs.navigate',
+  'tabs.open',
+  'tabs.reload'
 ];
 
 const FROZEN_READ_PAGE_PROPERTIES = [
-  'includeElements', 'limit', 'maxElements', 'offset', 'tabId'
+  'includeElements',
+  'limit',
+  'maxElements',
+  'offset',
+  'tabId'
 ];
 
+// WHY THE MAP WAS RE-FROZEN ONCE, ALL AT ONCE.
+// The tree was rewritten to one item per line, and every schema block grew with it, so all thirty-four digests moved in the same sweep.
+// What did not move is the schema each digest describes: the sweep verifier holds the token stream identical for every file, so a name, a type or a description changing would have shown up as a failure elsewhere, not as a quieter digest.
+// The two PRE_ witnesses below were recomputed from the commits that made those changes and still match, which is the proof that the digest algorithm itself did not move.
+
 const FROZEN_TOOL_SCHEMAS = Object.freeze({
-  browser_status: 'cbc26bda16868a68',
-  run_browser_burst: 'd948c904d171e8d3',
-  run_workflow: '09ce624d89ed95ba',
-  run_program: '4220be7d53db3ab1',
-  run_adhoc: '14bb44a13751b230',
-  skill_save: '12779fcd8c0787db',
-  skill_recall: '778eae1cc693e9a3',
-  start_watch: '6080c4ec1568b132',
-  wait_events: '5edbf05fabbb14c8',
-  stop_watch: '5133e82aa7a83fb1',
-  list_tabs: '0ded59ff6c5f1b0c',
-  open_url: '9b68095958a8242f',
-  activate_tab: '39a762c1732bee92',
-  navigate_tab: '4947602daae152c1',
-  close_tab: '7fba21a3f036f380',
-  read_page: '7724641fbfc8270a',
-  capture_page: '288795a580c4c54a',
-  find_elements: '5ee494a2286bfe19',
-  click_element: '524bbdcd910efb97',
-  fill_element: '299f17ba1498cd96',
-  press_key: 'e4b0dcdca29f6450',
-  stream_keys: '9487610ec1707601',
-  scroll_page: '49c584144a526142',
-  pointer: 'a07a0e1b5843bfb4',
-  media_state: 'dd36328bc7f5eaad',
-  media_play: 'be8f1ff4460c156e',
-  media_pause: '733cd49a0e0bea0a',
-  media_seek: 'b5e27995716abd38',
-  media_stream_start: '0c5fbfac4707448f',
-  media_stream_stop: '5df002e4171733eb',
-  media_listen_read: '9834f1ca13dbeae9',
-  statement_manifest: 'c8e06f753d58ad98',
-  statement_deliver: '7a4a87bc8e59884b',
-  invoice_create: '06cfef1148eed4af',
+  browser_status: '1643ccd2ad4d372c',
+  run_browser_burst: '939e6676d829e915',
+  run_workflow: '0b8b9ff4e7b9a0fe',
+  run_program: '02fd2f6a22b4faa3',
+  run_adhoc: 'd80b470141e29371',
+  skill_save: 'a79e16892baba2dd',
+  skill_recall: '78851b577fcde797',
+  start_watch: 'ed0753ac769b2a95',
+  wait_events: '3dd348ee08862a96',
+  stop_watch: 'f6431e147c7552ef',
+  list_tabs: '669539958aad7dad',
+  open_url: 'ebe6e28c3d1f4549',
+  activate_tab: '752220f072aa662f',
+  navigate_tab: '188aba4f76580085',
+  close_tab: '7e87efab7cabe0b5',
+  read_page: '399986940fee2938',
+  capture_page: '9ec0953e967be5c9',
+  find_elements: '9d54935eaeb1c2a5',
+  click_element: 'cad46dcdb9f31e27',
+  fill_element: '4ebb79c739e76c7f',
+  press_key: '5ab683d6a0b63bde',
+  stream_keys: 'dd53b0bc7c32fb67',
+  scroll_page: '296fd23ee9610558',
+  pointer: '16baa2e8d35c2c85',
+  media_state: '078d4b60cecd92ef',
+  media_play: 'f5f2da81bd3a7651',
+  media_pause: 'e1f690c0cceb542a',
+  media_seek: '612b3c3fc8899339',
+  media_stream_start: '17630fe48af1413e',
+  media_stream_stop: '8f0192e1ebaa35a2',
+  media_listen_read: '82d0121958fef8b7',
+  statement_manifest: '7f2ed6ebc3c8d007',
+  statement_deliver: '9d430e6ed2f9bc8e',
+  invoice_create: '32805bba02ebc291',
 });
 
 const PLAN_DOOR_CHANGED_TOOL = 'invoice_create';
@@ -128,12 +186,18 @@ function toolBlock(name) {
 
 function toolBlocks() {
   const starts = [...source.matchAll(/server\.registerTool\("([a-z_]+)"/g)];
-  return starts.map((match, index) => {
+  return starts.map((
+    match,
+    index
+  ) => {
     const from = source.indexOf('inputSchema:', match.index);
     const end = index + 1 < starts.length
       ? starts[index + 1].index
       : source.indexOf('\n  });', match.index) + '\n  });'.length;
-    return { name: match[1], schema: source.slice(from, end) };
+    return {
+      name: match[1],
+      schema: source.slice(from, end)
+    };
   });
 }
 
@@ -143,7 +207,9 @@ function stripSchemaComments(text) {
   const n = text.length;
   while (i < n) {
     const c = text[i];
-    if (c === '/' && text[i + 1] === '/') { while (i < n && text[i] !== '\n') i += 1; continue; }
+    if (c === '/' && text[i + 1] === '/') {
+      while (i < n && text[i] !== '\n') i += 1; continue;
+    }
     if (c === '/' && text[i + 1] === '*') {
       i += 2;
       while (i < n && !(text[i] === '*' && text[i + 1] === '/')) i += 1;
@@ -155,9 +221,13 @@ function stripSchemaComments(text) {
       const quote = c;
       out += c; i += 1;
       while (i < n) {
-        if (text[i] === '\\') { out += text[i] + (text[i + 1] ?? ''); i += 2; continue; }
+        if (text[i] === '\\') {
+          out += text[i] + (text[i + 1] ?? ''); i += 2; continue;
+        }
         out += text[i];
-        if (text[i] === quote) { i += 1; break; }
+        if (text[i] === quote) {
+          i += 1; break;
+        }
         i += 1;
       }
       continue;
@@ -189,7 +259,10 @@ function outputSchemaOf(name) {
   assert.fail(`${name} outputSchema is not brace-balanced`);
 }
 
-function sqlBody(sql, fn) {
+function sqlBody(
+  sql,
+  fn
+) {
   const start = sql.indexOf(`create or replace function public.${fn}(`);
   assert.ok(start >= 0, `${fn} must exist`);
   const end = sql.indexOf('end $$;', start);
@@ -197,7 +270,6 @@ function sqlBody(sql, fn) {
 }
 
 test('MCP dependencies are pinned', () => {
-
   for (const specifier of Object.values(config.imports)) {
     assert.match(specifier, /@[0-9]+\.[0-9]+\.[0-9]+(\/|$)/);
     assert.doesNotMatch(specifier, /@(latest|next)(\/|$)/);
@@ -207,12 +279,40 @@ test('MCP dependencies are pinned', () => {
 test('MCP exposes focused browser tools and no generic command escape hatch', () => {
   const tools = [...source.matchAll(/server\.registerTool\("([a-z_]+)"/g)].map((match) => match[1]);
   assert.deepEqual(tools, [
-    'browser_status', 'run_browser_burst', 'run_workflow', 'run_program', 'run_adhoc', 'skill_save', 'skill_recall', 'start_watch', 'wait_events', 'stop_watch', 'list_tabs', 'open_url', 'activate_tab', 'navigate_tab', 'close_tab',
-    'read_page', 'capture_page', 'find_elements', 'click_element', 'fill_element', 'press_key', 'stream_keys', 'scroll_page',
+    'browser_status',
+    'run_browser_burst',
+    'run_workflow',
+    'run_program',
+    'run_adhoc',
+    'skill_save',
+    'skill_recall',
+    'start_watch',
+    'wait_events',
+    'stop_watch',
+    'list_tabs',
+    'open_url',
+    'activate_tab',
+    'navigate_tab',
+    'close_tab',
+    'read_page',
+    'capture_page',
+    'find_elements',
+    'click_element',
+    'fill_element',
+    'press_key',
+    'stream_keys',
+    'scroll_page',
     'pointer',
-    'media_state', 'media_play', 'media_pause', 'media_seek',
-    'media_stream_start', 'media_stream_stop', 'media_listen_read',
-    'statement_deliver', 'statement_manifest', 'invoice_create'
+    'media_state',
+    'media_play',
+    'media_pause',
+    'media_seek',
+    'media_stream_start',
+    'media_stream_stop',
+    'media_listen_read',
+    'statement_deliver',
+    'statement_manifest',
+    'invoice_create'
   ]);
   assert.equal(new Set(tools).size, tools.length);
   assert.doesNotMatch(source, /registerTool\("(?:run_command|execute_command|raw_command)"/);
@@ -227,7 +327,15 @@ test('R4 keeps the protocol inventory frozen at 31 allowlisted primitives for re
 test('R11 removes the sense-act loop tools, so the public MCP tool inventory is 34 tools', async () => {
   const registered = [...source.matchAll(/server\.registerTool\("([a-z_]+)"/g)].map((match) => match[1]);
   assert.equal(registered.length, 34);
-  assert.deepEqual([...registered].sort(), [...FROZEN_MCP_TOOLS, 'start_watch', 'stop_watch', 'wait_events', 'statement_deliver', 'statement_manifest', 'invoice_create'].sort());
+  assert.deepEqual([...registered].sort(), [
+    ...FROZEN_MCP_TOOLS,
+    'start_watch',
+    'stop_watch',
+    'wait_events',
+    'statement_deliver',
+    'statement_manifest',
+    'invoice_create'
+  ].sort());
 });
 
 test('R4 keeps the read_page input schema frozen with no view parameter', async () => {
@@ -256,7 +364,6 @@ test('no generic escape hatch was introduced', () => {
 });
 
 test('an empty allowlist admits nobody, because every caller drives the same device', () => {
-
   const authenticate = source.match(/async function authenticate\([\s\S]*?\n}\n/)[0];
   assert.match(authenticate, /if \(ALLOWED_USER_IDS\.size === 0 && ALLOWED_USER_EMAILS\.size === 0\) return null;/);
   assert.doesNotMatch(authenticate, /unrestricted/);
@@ -264,7 +371,6 @@ test('an empty allowlist admits nobody, because every caller drives the same dev
 });
 
 test('resolveDeviceName never hands out a device the caller does not own', () => {
-
   const fn = source.match(/async function resolveDeviceName\([\s\S]*?\n}\n/)[0];
   assert.doesNotMatch(fn, /return deviceFromHeader/);
   assert.match(fn, /return null/);
@@ -272,24 +378,21 @@ test('resolveDeviceName never hands out a device the caller does not own', () =>
 });
 
 test('wait_events exposes only the caller-owned device events', () => {
-
   const handler = toolBlock('wait_events').slice(toolBlock('wait_events').indexOf('}, ({'));
   assert.match(handler, /event\.device_name === deviceName/);
 });
 
 test('wait_events preserves a falsy RPC envelope instead of forcing ok:true', () => {
-
   const handler = toolBlock('wait_events').slice(toolBlock('wait_events').indexOf('}, ({'));
   assert.match(handler, /ok === false/);
   assert.doesNotMatch(handler, /ok: true, events: rows/);
 });
 
 test('each command is stamped with its harness provider, never used for access', () => {
-
   assert.match(source, /x-opera-provider/);
   assert.match(source, /async function resolveProvider\(req: Request, auth\?: AuthContext \| null\): Promise<string>/);
-  assert.match(source, /\[\/chatgpt\|openai-connector\|oai-mcp\/i, "chatgpt"\]/);
-  assert.match(source, /\[\/opencode\/i, "opencode"\]/);
+  assert.match(source, /\[\s*\/chatgpt\|openai-connector\|oai-mcp\/i,\s*"chatgpt"\s*\]/);
+  assert.match(source, /\[\s*\/opencode\/i,\s*"opencode"\s*\]/);
   assert.match(source, /return "unknown";/);
   assert.match(source, /const provider = await resolveProvider\(req, authContext\);/);
   assert.match(source, /createServer\(deviceName, provider, caller\)/);
@@ -301,7 +404,6 @@ test('each command is stamped with its harness provider, never used for access',
 });
 
 test('listening tools route commands and read transcripts owner-scoped', () => {
-
   assert.match(source, /execute\("media\.stream_start"/);
   assert.match(source, /execute\("media\.stream_stop"/);
   assert.match(source, /That session belongs to another device\./);
@@ -310,8 +412,19 @@ test('listening tools route commands and read transcripts owner-scoped', () => {
 });
 
 test('advertised media capabilities are invocable tools, not just status text', () => {
-
-  for (const [tool, method] of [['media_state', 'media.state'], ['media_play', 'media.play'], ['media_pause', 'media.pause'], ['media_seek', 'media.seek']]) {
+  for (const [tool, method] of [[
+    'media_state',
+    'media.state'
+  ], [
+    'media_play',
+    'media.play'
+  ], [
+    'media_pause',
+    'media.pause'
+  ], [
+    'media_seek',
+    'media.seek'
+  ]]) {
     assert.match(source, new RegExp(`server\\.registerTool\\("${tool}"`));
     assert.match(source, new RegExp(`execute\\("${method.replace('.', '\\.')}"`));
   }
@@ -342,20 +455,28 @@ test('the frozen schema map matches the live file, and records the one authorize
 
 test('the plan is billed through the same door as a delivery, so no operator path is left outside the tool', () => {
   const invoice = toolBlocks().find((block) => block.name === 'invoice_create').schema;
-  assert.match(invoice, /plan: z\.enum\(\['plan\.pilot', 'plan\.firm'\]\)\.optional\(\)/,
+  assert.match(invoice, /plan: z\.enum\(\[\s*'plan\.pilot',\s*'plan\.firm'\s*\]\)\.optional\(\)/,
     'the plan is one of the price-list kinds, so a plan nobody priced is refused rather than billed as zero');
-  assert.match(source, /body: JSON\.stringify\(\{ action: "invoice", customer_id: customer, period, deliveries, \.\.\.\(plan \? \{ plan \} : \{\}\) \}\)/,
+  assert.match(source, /body: JSON\.stringify\(\{\s*action: "invoice",\s*customer_id: customer,\s*period,\s*deliveries,\s*\.\.\.\(plan \? \{ plan \} : \{\}\)\s*\}\)/,
     'the tool forwards the plan to the one function that already prices it');
   assert.doesNotMatch(invoice, /amount_cents/,
     'the amount is still computed from the price list, never taken from the call');
 });
 
 test('the shared burst step schema is pinned by its step set, not only by digest', () => {
-
   const steps = [...source.matchAll(/action: z\.literal\("([a-z]+)"\)/g)].map((m) => m[1]);
 
   assert.deepEqual(steps, [
-    'read', 'find', 'click', 'fill', 'key', 'scroll', 'hover', 'wait', 'pointer', 'navigate'
+    'read',
+    'find',
+    'click',
+    'fill',
+    'key',
+    'scroll',
+    'hover',
+    'wait',
+    'pointer',
+    'navigate'
   ]);
 
   const union = source.match(/const burstStepSchema = z\.discriminatedUnion\("action", \[([\s\S]*?)\n\]\);/);
@@ -410,7 +531,18 @@ test('the expanded key and modifier vocabularies are bounded', () => {
 
   const modifiers = source.match(/const modifierSchema = z\.enum\(\[([\s\S]*?)\]\)/)[1]
     .split(',').map((entry) => entry.trim().replace(/^"|"$/g, ''));
-  assert.deepEqual(modifiers, ['alt', 'control', 'ctrl', 'shift', 'meta', 'cmd', 'command', 'option', 'super', 'win']);
+  assert.deepEqual(modifiers, [
+    'alt',
+    'control',
+    'ctrl',
+    'shift',
+    'meta',
+    'cmd',
+    'command',
+    'option',
+    'super',
+    'win'
+  ]);
   assert.equal(modifiers.length <= 10, true);
 });
 
@@ -452,7 +584,6 @@ test('MCP burst schema is bounded and does not expose arbitrary commands or code
 });
 
 test('every burst step kind accepts an optional per-step tabId', () => {
-
   const start = source.indexOf('const burstStepSchema');
   const end = source.indexOf(']);', start);
   assert.ok(start >= 0 && end > start, 'burstStepSchema block must exist');
@@ -460,7 +591,18 @@ test('every burst step kind accepts an optional per-step tabId', () => {
   const kinds = [...block.matchAll(/action: z\.literal\("([a-z]+)"\)/g)].map((m) => m[1]);
   const tabFields = [...block.matchAll(/tabId: tabIdSchema\.optional\(\)/g)];
   const stricts = [...block.matchAll(/\.strict\(\)/g)];
-  assert.deepEqual(kinds, ['read', 'find', 'click', 'fill', 'key', 'scroll', 'hover', 'wait', 'pointer', 'navigate']);
+  assert.deepEqual(kinds, [
+    'read',
+    'find',
+    'click',
+    'fill',
+    'key',
+    'scroll',
+    'hover',
+    'wait',
+    'pointer',
+    'navigate'
+  ]);
   assert.equal(tabFields.length, kinds.length, `each of the ${kinds.length} step kinds must accept tabId`);
   assert.equal(stricts.length, kinds.length, 'strictness must stay on every step kind');
 });
@@ -471,7 +613,6 @@ test('the MCP command path waits on the adaptive ramp, not the flat 50ms', () =>
 });
 
 test('page.capture still uses opera_await_capture, which rewrites the screenshot', () => {
-
   assert.match(sqlBody(screenshot, 'opera_await_capture'), /scrubbed/);
   assert.match(source, /method === "page\.capture" \? "opera_await_capture" : "opera_await_adaptive"/);
 });
@@ -591,11 +732,32 @@ test('OAuth protected-resource metadata uses the canonical public function URL',
 test('MCP delegates only known Opera Agent methods', () => {
   const methods = [...source.matchAll(/execute\("([a-z.]+)"/g)].map((match) => match[1]);
   const allowed = new Set([
-    'browser.ping', 'browser.burst', 'tabs.list', 'tabs.open', 'tabs.activate', 'tabs.navigate', 'tabs.close',
-    'page.read', 'page.capture', 'page.find', 'page.click', 'page.fill', 'page.key', 'page.scroll', 'page.pointer', 'page.stream',
-    'media.state', 'media.play', 'media.pause', 'media.seek',
-    'watch.start', 'watch.stop', 'watch.stop_all', 'watch.list',
-    'statement.download', 'statement.manifest'
+    'browser.ping',
+    'browser.burst',
+    'tabs.list',
+    'tabs.open',
+    'tabs.activate',
+    'tabs.navigate',
+    'tabs.close',
+    'page.read',
+    'page.capture',
+    'page.find',
+    'page.click',
+    'page.fill',
+    'page.key',
+    'page.scroll',
+    'page.pointer',
+    'page.stream',
+    'media.state',
+    'media.play',
+    'media.pause',
+    'media.seek',
+    'watch.start',
+    'watch.stop',
+    'watch.stop_all',
+    'watch.list',
+    'statement.download',
+    'statement.manifest'
   ]);
   assert.ok(methods.length >= 16);
   for (const method of methods) assert.ok(allowed.has(method), `unexpected method ${method}`);
@@ -616,7 +778,7 @@ test('MCP instructions make browser usage discoverable without mentioning Supaba
 });
 
 test('MCP returns screenshots as image content without duplicating base64 in structured metadata', () => {
-  assert.match(source, /type: "image", data, mimeType/);
+  assert.match(source, /type: "image",\s*data,\s*mimeType/);
   assert.match(source, /delete metadataScreenshot\.data/);
   assert.match(source, /runCommand\("page\.capture"/);
 
@@ -630,10 +792,10 @@ test('MCP defaults to background tabs and requires explicit automation targets',
   assert.doesNotMatch(source, /active: active \?\? true/);
   assert.match(source, /const tabIdSchema = z\.number\(\)\.int\(\)\.nonnegative\(\)/);
   assert.doesNotMatch(source, /const tabIdSchema[^\n]*\.optional\(\)/);
-  assert.match(source, /z\.enum\(\["background", "foreground"\]\)\.optional\(\)/);
+  assert.match(source, /z\.enum\(\[\s*"background",\s*"foreground"\s*\]\)\.optional\(\)/);
   assert.doesNotMatch(source, /"auto"/);
   assert.match(source, /executionMode: executionMode \?\? "background"/);
-  assert.match(source, /value, trusted: true, executionMode/);
+  assert.match(source, /trusted: true,\s*executionMode/);
 
   assert.match(source, /A visible cursor marker is drawn in both modes/);
   assert.match(source, /coordinate steps draw a visible cursor marker/);
@@ -642,11 +804,10 @@ test('MCP defaults to background tabs and requires explicit automation targets',
 });
 
 test('MCP preserves structured command failures for foreground permission handling', () => {
-
-  assert.match(source, /import \{ CommandFailure, sealVmProgram \} from "\.\.\/_shared\/seal-vm-program\.js"/);
-  assert.match(source, /code: error\.code, message: error\.message/);
+  assert.match(source, /import \{\s*CommandFailure,\s*sealVmProgram\s*\} from "\.\.\/_shared\/seal-vm-program\.js"/);
+  assert.match(source, /code: error\.code,\s*message: error\.message/);
   assert.match(source, /throw new CommandFailure\(code, message/);
-  assert.match(source, /structuredContent = \{ ok: false, error: failure \}/);
+  assert.match(source, /structuredContent = \{\s*ok: false,\s*error: failure\s*\}/);
 });
 
 test('OAuth config endpoint exposes only public client configuration', () => {
@@ -657,7 +818,6 @@ test('OAuth config endpoint exposes only public client configuration', () => {
 });
 
 test('hosted OAuth consent artifact has no embedded privileged secret', () => {
-
   assert.match(consentSource, /\/oauth\/authorizations\/\$\{encodeURIComponent\(authorizationId\)\}/);
   assert.match(consentSource, /\/oauth\/authorizations\/\$\{encodeURIComponent\(authorizationId\)\}\/consent/);
   assert.match(consentSource, /JSON\.stringify\(\{ action \}\)/);

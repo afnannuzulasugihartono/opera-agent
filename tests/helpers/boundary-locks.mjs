@@ -3,6 +3,11 @@
 // @state: one pin per frozen runtime file across three lock arrays; each line says why the current pin exists, and nothing else.
 // @dependencies: none.
 
+// WHY THIS PIN SET MOVED ONCE, TOGETHER.
+// The tree was reformatted repo-wide to K&R with one item per line, and every file below kept its token stream exactly: the same names, the same order, the same strings.
+// What moved is where the delimiters stand and how deep each line sits, so the criterion each pin enforces — the public contract — did not move at all.
+// That is what a re-pin for formatting looks like: one sweep, one commit, and a note saying the contract held.
+
 // Each entry is the git-blob SHA1 (LF-normalized) of a runtime source whose public contract is frozen.
 // Changing one means the contract changed, which is a reviewed decision: update the SHA in the same commit and say what moved.
 
@@ -21,21 +26,54 @@
 // Otherwise every developer on Windows would see all nine pins fail for a reason that is not a contract change.
 
 export const PUBLIC_SURFACE_LOCKS = Object.freeze([
-  ['../extension/content.js', 'c8444adde9ccfbf525ba4592151fc367e694da7f'],
-  ['../extension/page-kit.js', 'afa5bc3f7916ba1b9f49a39fa1cc78d16015813d'],
-  ['../extension/background.js', 'da44f1ed773c985cb6ad74c62d5e732d2fe2afee'],
-  ['../extension/manifest.json', '39d65cb3c5b1c2262b58dc5d8bab57c673f15650'],
-  ['../supabase/functions/opera-agent-mcp/index.ts', '91e991ff29d58b02930284846c1118c9b73f6d40'],
-  ['../supabase/functions/opera-agent-mcp/tools.ts', '3e6c05dc9a610752b481951303f998e045c55baf'],
+  [
+    '../extension/content.js',
+    'c3ff09df6107f794d9259f225dc9bdf452d5b84d'
+  ],
+  [
+    '../extension/page-kit.js',
+    'afa5bc3f7916ba1b9f49a39fa1cc78d16015813d'
+  ],
+  [
+    '../extension/background.js',
+    '8cff50ebecd4cf905aad8c95f587503be0f7ba0d'
+  ],
+  [
+    '../extension/manifest.json',
+    '39d65cb3c5b1c2262b58dc5d8bab57c673f15650'
+  ],
+  [
+    '../supabase/functions/opera-agent-mcp/index.ts',
+    'd08f20cc6412350fd501d44cf9c53105be0c26c2'
+  ],
+  [
+    '../supabase/functions/opera-agent-mcp/tools.ts',
+    'bbbe1151345fecc37a2cf0ed47f665741bce619c'
+  ],
 ]);
 
 export const OBSERVATION_STACK_LOCKS = Object.freeze([
-  ['../lib/reactive-vm.js', 'adb646c71fd033593bdbef264179b9877d569371'],
-  ['../lib/reactive-vm-control-flow.js', '5014d8d7338c23f51fd8ae39c54ffea8ce24599b'],
-  ['../lib/reactive-vm-collect.js', 'f687f4cd3088788b02291c64a12860d0fa5742e1'],
+  [
+    '../lib/reactive-vm.js',
+    '24ab1dc047fa122d360e15fe56e22449989bd06f'
+  ],
+  [
+    '../lib/reactive-vm-control-flow.js',
+    'a01be9e086892a566232274e15b0f10e78195784'
+  ],
+  [
+    '../lib/reactive-vm-collect.js',
+    'bcd50f4a2179401ca039b0504a2c000cfa36873e'
+  ],
 ]);
 
 export const RELEVANCE_STACK_LOCKS = Object.freeze([
-  ['../lib/multi-signal-relevance.js', 'a1bf0e5f1702d50a41340fa553d3b5255f2876a1'],
-  ['../lib/delta-first-observation.js', '847cdf88ad9d6c410984f3b4c427370796ef84f1'],
+  [
+    '../lib/multi-signal-relevance.js',
+    'c57be57fc28b6e27c8b5c86e3f25e527436b12b7'
+  ],
+  [
+    '../lib/delta-first-observation.js',
+    'c47748b49778b751ae9480c1242174cbb8fdd29e'
+  ],
 ]);

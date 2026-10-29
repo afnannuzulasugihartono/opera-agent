@@ -12,7 +12,12 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
-  handshakeFrame, completionFrame, pongFrame, parseFrame, isRunnableCommand, normalizeCommand
+  handshakeFrame,
+  completionFrame,
+  pongFrame,
+  parseFrame,
+  isRunnableCommand,
+  normalizeCommand
 } from '../extension/lib/socket-protocol.js';
 
 test('a hello frame carries the identity and the protocol version', () => {
@@ -30,18 +35,33 @@ test('a complete frame states success or failure, never both', () => {
   assert.deepEqual(good.result, { ok: true });
   assert.equal(good.error, undefined);
 
-  const bad = parseFrame(completionFrame('c1', false, null, { code: 'X', message: 'y' })).message;
+  const bad = parseFrame(completionFrame('c1', false, null, {
+    code: 'X',
+    message: 'y'
+  })).message;
   assert.equal(bad.ok, false);
   assert.equal(bad.error.code, 'X');
   assert.equal(bad.result, undefined);
 });
 
 test('a command frame is only runnable when it has an id and a method', () => {
-  const runnable = { type: 'command', command: { id: 'c1', method: 'tabs.list' } };
+  const runnable = {
+    type: 'command',
+    command: {
+      id: 'c1',
+      method: 'tabs.list'
+    }
+  };
   assert.equal(isRunnableCommand(runnable), true);
   assert.deepEqual(normalizeCommand(runnable).method, 'tabs.list');
-  assert.equal(isRunnableCommand({ type: 'command', command: { method: 'tabs.list' } }), false);
-  assert.equal(isRunnableCommand({ type: 'command', command: { id: 'c1' } }), false);
+  assert.equal(isRunnableCommand({
+    type: 'command',
+    command: { method: 'tabs.list' }
+  }), false);
+  assert.equal(isRunnableCommand({
+    type: 'command',
+    command: { id: 'c1' }
+  }), false);
   assert.equal(isRunnableCommand({ type: 'pong' }), false);
   assert.equal(isRunnableCommand(null), false);
 });

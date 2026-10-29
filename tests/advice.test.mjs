@@ -6,7 +6,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { RULES, withAdvice } from '../local/advice.js';
+import {
+  RULES,
+  withAdvice
+} from '../local/advice.js';
 import { TOOLS } from '../local/mcp-server.js';
 
 const names = new Set(TOOLS.map((tool) => tool.name));
@@ -37,12 +40,18 @@ test('every move names a call the server actually has', () => {
       for (const move of moves) {
         const call = /([a-z_]+)\(/.exec(move);
         if (!call) continue;
-        rows.push([call[1], names.has(call[1])]);
+        rows.push([
+          call[1],
+          names.has(call[1])
+        ]);
       }
       break;
     }
   }
-  const unknown = rows.filter(([, known]) => !known);
+  const unknown = rows.filter(([
+    ,
+    known
+  ]) => !known);
   assert.deepEqual(unknown, [], `advice names calls that do not exist: ${unknown.map(([n]) => n).join(', ')}`);
   assert.ok(rows.length > 5, 'the rules do name real calls');
 });
@@ -72,7 +81,10 @@ test('an empty failure stays empty rather than gaining advice', () => {
 // The caller asked for one thing and the page holds another that starts the same way; seeing the difference written down is the difference between "I spelled it wrong" and "the page does not have it".
 
 test('a row the page nearly has is offered by its real name', () => {
-  const rows = [{ role: 'menuitem', name: 'Upload from computer' }];
+  const rows = [{
+    role: 'menuitem',
+    name: 'Upload from computer'
+  }];
   const out = withAdvice(new Error('no menuitem matching "Upload". Visible: nothing'), { rows });
 
   assert.match(out, /Upload from computer/);

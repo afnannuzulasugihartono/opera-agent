@@ -7,7 +7,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import crypto from 'node:crypto';
-import { EXTERNAL_CONFIG_ORIGINS, originAllowed } from '../extension/lib/external-origins.js';
+import {
+  EXTERNAL_CONFIG_ORIGINS,
+  originAllowed
+} from '../extension/lib/external-origins.js';
 
 const root = new URL('..', import.meta.url);
 const html = fs.readFileSync(new URL('landing/beranda.html', root), 'utf8');
@@ -22,7 +25,6 @@ test('the page names the extension it configures, and it is the pinned one', () 
 });
 
 test('the key is never sent to a network origin', () => {
-
   assert.doesNotMatch(html, /\bfetch\s*\(/, 'the landing page must not fetch anything');
   assert.doesNotMatch(html, /XMLHttpRequest/, 'the landing page must not open an XHR');
   assert.doesNotMatch(html, /<form[^>]+action=/i, 'the form must not post anywhere');
@@ -52,8 +54,11 @@ test('the extension only accepts the handoff from an origin it was granted', () 
 });
 
 test('the origin check admits the official site and localhost, and nothing else', () => {
-
-  assert.deepEqual([...EXTERNAL_CONFIG_ORIGINS], ['http://localhost:', 'https://localhost:', 'https://opera-agent.pages.dev']);
+  assert.deepEqual([...EXTERNAL_CONFIG_ORIGINS], [
+    'http://localhost:',
+    'https://localhost:',
+    'https://opera-agent.pages.dev'
+  ]);
   assert.equal(originAllowed('https://opera-agent.pages.dev'), true, 'the official site origin is accepted');
   assert.equal(originAllowed('https://opera-agent.pages.dev/model'), true, 'the sender.url form with a path is accepted');
   assert.equal(originAllowed('http://localhost:8000'), true, 'localhost over http is accepted');
@@ -65,7 +70,6 @@ test('the origin check admits the official site and localhost, and nothing else'
 
 test('the provider picker names the providers, and the NVIDIA pair plus the Groq trio exactly', () => {
   for (const id of ['nvidia', 'groq', 'ollama', 'lmstudio', 'custom']) {
-
     assert.match(html, new RegExp(`<option\\b[^>]*value="${id}"[^>]*>`), `the provider picker offers ${id}`);
   }
   assert.ok(html.includes('https://integrate.api.nvidia.com/v1/chat/completions'), 'the NVIDIA endpoint is exact');
@@ -80,7 +84,6 @@ test('the provider picker names the providers, and the NVIDIA pair plus the Groq
 });
 
 test('the key field is only ever cleared, never filled in by the page', () => {
-
   const writes = [...html.matchAll(/\$\('modelKey'\)\.value\s*=\s*([^;]+);/g)].map((m) => m[1].trim());
   assert.ok(writes.length >= 1, 'the post-send reset exists');
   for (const written of writes) {
@@ -109,7 +112,6 @@ test('every form control on the page has an accessible name', () => {
 });
 
 test('the privacy section discloses the relay instead of denying it', () => {
-
   assert.doesNotMatch(html, /Nothing is uploaded/, 'the page must not claim nothing leaves the machine');
   assert.doesNotMatch(html, /Never to the .*bridge/, 'the page must not deny the relay');
   assert.match(html, /riwayat antrean/, 'the page must disclose queue-history storage');

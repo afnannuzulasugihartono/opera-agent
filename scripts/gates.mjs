@@ -22,7 +22,10 @@ function readGateEntries() {
     .filter((line) => line && !line.startsWith('#'))
     .map((line) => {
       const [file, sha] = line.split(/\s+/);
-      return { file, sha };
+      return {
+        file,
+        sha
+      };
     });
 }
 
@@ -41,26 +44,40 @@ const missing = [];
 const drifted = [];
 const unpinned = [];
 
-for (const { file, sha } of entries) {
+for (const {
+  file,
+  sha
+} of entries) {
   if (seen.has(file)) throw new Error(`gates.lock lists ${file} twice; one pin per criterion`);
   seen.add(file);
 
   const actual = sha1Blob(file);
-  if (actual === null) { missing.push(file); continue; }
+  if (actual === null) {
+    missing.push(file); continue;
+  }
 
-  if (!sha) { unpinned.push(file); continue; }
+  if (!sha) {
+    unpinned.push(file); continue;
+  }
   if (!/^[0-9a-f]{40}$/.test(sha)) throw new Error(`gates.lock has a malformed pin for ${file}`);
-  if (actual !== sha) drifted.push({ file, was: sha, now: actual });
+  if (actual !== sha) drifted.push({
+    file,
+    was: sha,
+    now: actual
+  });
 }
 
 if (refreshing) {
-
   if (missing.length) {
     console.error(`gates:refresh refused. These are pinned but absent:\n  ${missing.join('\n  ')}`);
     process.exit(1);
   }
   const toWrite = [
-    ...unpinned.map((file) => ({ file, was: null, now: sha1Blob(file) })),
+    ...unpinned.map((file) => ({
+      file,
+      was: null,
+      now: sha1Blob(file)
+    })),
     ...drifted
   ];
   if (!toWrite.length) {
@@ -68,7 +85,10 @@ if (refreshing) {
     process.exit(0);
   }
   const text = fs.readFileSync(lockPath, 'utf8');
-  const byPath = new Map(toWrite.map((d) => [d.file, d.now]));
+  const byPath = new Map(toWrite.map((d) => [
+    d.file,
+    d.now
+  ]));
   const updated = text
     .split('\n')
     .map((line) => {

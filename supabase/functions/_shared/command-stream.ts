@@ -13,13 +13,23 @@
 // A notification callback is allowed to throw.
 // A model that disconnects mid-run must not turn into a command that never completes, and the events have already been recorded either way.
 
-export const TERMINAL_COMMAND_STATUSES = Object.freeze(['completed', 'failed', 'expired', 'cancelled']);
+export const TERMINAL_COMMAND_STATUSES = Object.freeze([
+  'completed',
+  'failed',
+  'expired',
+  'cancelled'
+]);
 
 const WAIT_SLICE_CEILING_MS = 30000;
 
 const waitSliceMs = (remainingMs) => Math.max(100, Math.min(WAIT_SLICE_CEILING_MS, remainingMs));
 
-export async function streamCommandEvents({ rpc, commandId, onEvent, deadlineMs = 30000 }) {
+export async function streamCommandEvents({
+  rpc,
+  commandId,
+  onEvent,
+  deadlineMs = 30000
+}) {
   const deadline = Date.now() + Math.max(200, deadlineMs);
   const events = [];
   let cursor = 0;
@@ -33,20 +43,39 @@ export async function streamCommandEvents({ rpc, commandId, onEvent, deadlineMs 
     });
 
     if (!slice?.ok) {
-      return { ok: false, status, events, error: slice?.error ?? 'Command stream lost.' };
+      return {
+        ok: false,
+        status,
+        events,
+        error: slice?.error ?? 'Command stream lost.'
+      };
     }
 
     for (const event of slice.events ?? []) {
       cursor = Number(event?.id) || cursor;
       events.push(event);
-      try { onEvent?.(event); } catch {}
+      try {
+        onEvent?.(event);
+      } catch {}
     }
 
     status = String(slice.status ?? status);
-    if (TERMINAL_COMMAND_STATUSES.includes(status)) return { ok: true, status, events };
+    if (TERMINAL_COMMAND_STATUSES.includes(status)) return {
+      ok: true,
+      status,
+      events
+    };
 
     if (Date.now() >= deadline) {
-      return { ok: false, status, events, error: { code: 'AWAIT_TIMEOUT', message: 'Timed out streaming command progress.' } };
+      return {
+        ok: false,
+        status,
+        events,
+        error: {
+          code: 'AWAIT_TIMEOUT',
+          message: 'Timed out streaming command progress.'
+        }
+      };
     }
   }
 }

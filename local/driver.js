@@ -13,14 +13,28 @@
 // The session is closed by the caller rather than by a signal handler here, so that a script can decide whether a browser it launched should outlive it.
 
 import { spawn } from 'node:child_process';
-import { existsSync, mkdtempSync } from 'node:fs';
+import {
+  existsSync,
+  mkdtempSync
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-import { BROWSERS, detectBrowsers, expandPath, findBrowser, launchArgs } from './browsers.js';
+import {
+  BROWSERS,
+  detectBrowsers,
+  expandPath,
+  findBrowser,
+  launchArgs
+} from './browsers.js';
 import { createPrimitives } from './primitives.js';
 import { createCdpClient } from './cdp.js';
-import { connect, discoverPageWebSocket, openTab, pageWebSocketById } from './transport.js';
+import {
+  connect,
+  discoverPageWebSocket,
+  openTab,
+  pageWebSocketById
+} from './transport.js';
 import {
   bridgeReachable,
   connectBridgeTarget,
@@ -30,16 +44,33 @@ import {
   LINK_ERROR
 } from './bridge.js';
 
-export function installedBrowsers({ platform = process.platform, exists = existsSync, env = process.env } = {}) {
-  return detectBrowsers({ platform, exists, env }).map((entry) => ({
+export function installedBrowsers({
+  platform = process.platform,
+  exists = existsSync,
+  env = process.env
+} = {}) {
+  return detectBrowsers({
+    platform,
+    exists,
+    env
+  }).map((entry) => ({
     ...entry,
     binary: entry.paths[platform].map((p) => expandPath(p, env)).find((p) => exists(p)) ?? null
   }));
 }
 
-function resolveBinary({ id, platform = process.platform, exists = existsSync, env = process.env } = {}) {
+function resolveBinary({
+  id,
+  platform = process.platform,
+  exists = existsSync,
+  env = process.env
+} = {}) {
   if (!id) {
-    const [first] = installedBrowsers({ platform, exists, env });
+    const [first] = installedBrowsers({
+      platform,
+      exists,
+      env
+    });
     if (!first) throw new Error('No Chromium browser was found on this machine.');
     return first;
   }
@@ -47,7 +78,10 @@ function resolveBinary({ id, platform = process.platform, exists = existsSync, e
   if (!entry) throw new Error(`Unknown browser: ${id}. Known: ${BROWSERS.map((b) => b.id).join(', ')}`);
   const binary = entry.paths[platform].map((p) => expandPath(p, env)).find((p) => exists(p));
   if (!binary) throw new Error(`${entry.name} is not installed for ${platform}.`);
-  return { ...entry, binary };
+  return {
+    ...entry,
+    binary
+  };
 }
 
 // A named tab is always a NEW tab.
@@ -56,7 +90,12 @@ function resolveBinary({ id, platform = process.platform, exists = existsSync, e
 // A bridged session is a CDP session whose wire runs through the extension instead of a debugging port: same client, same primitives, numeric tab ids.
 // There is nothing to launch and nothing to reuse; either the link is up or the call fails loudly naming the one fix that exists.
 
-async function openBridgeSession({ tabUrl, targetId, timeoutMs, primitivesOptions }) {
+async function openBridgeSession({
+  tabUrl,
+  targetId,
+  timeoutMs,
+  primitivesOptions
+}) {
   const linked = await waitForBridgeLink({ timeoutMs });
   if (!linked) throw new Error(LINK_ERROR);
   let numericId;
@@ -108,7 +147,12 @@ export async function openSession({
   viaBridge = null
 } = {}) {
   const bridged = viaBridge ?? (env.OPERA_LOCAL_TRANSPORT !== 'cdp' && await bridgeReachable());
-  if (bridged) return openBridgeSession({ tabUrl, targetId, timeoutMs, primitivesOptions });
+  if (bridged) return openBridgeSession({
+    tabUrl,
+    targetId,
+    timeoutMs,
+    primitivesOptions
+  });
 
   let reused = false;
   let target = null;
@@ -130,10 +174,22 @@ export async function openSession({
 
   let child = null;
   if (!reused) {
-    const entry = resolveBinary({ id, platform, exists, env });
+    const entry = resolveBinary({
+      id,
+      platform,
+      exists,
+      env
+    });
     const userDataDir = mkdtempSync(join(tmpdir(), 'opera-local-'));
-    const args = launchArgs({ browser: entry, port, userDataDir });
-    child = spawnBrowser(entry.binary, args, { detached: false, stdio: 'ignore' });
+    const args = launchArgs({
+      browser: entry,
+      port,
+      userDataDir
+    });
+    child = spawnBrowser(entry.binary, args, {
+      detached: false,
+      stdio: 'ignore'
+    });
   }
 
   if (!target) {
@@ -146,7 +202,12 @@ export async function openSession({
   return {
     port,
     reused,
-    binary: reused ? null : resolveBinary({ id, platform, exists, env }).binary,
+    binary: reused ? null : resolveBinary({
+      id,
+      platform,
+      exists,
+      env
+    }).binary,
     cdp,
     ...createPrimitives(cdp, primitivesOptions),
     close() {

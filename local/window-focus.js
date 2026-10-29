@@ -101,7 +101,10 @@ const APPLE_FOCUS = (match) => [
 // Measured on CI: a Linux runner took the refusal path and the answer came back without a `title` at all, because the refusal never had one - so a caller that reads the title of a refusal finds nothing where a caller on Windows finds an empty string.
 // A shape that depends on the platform is a shape a caller has to guess.
 
-const unsupported = (platform, why) => ({
+const unsupported = (
+  platform,
+  why
+) => ({
   platform,
   match: '',
   foreground: '',
@@ -125,30 +128,79 @@ const readWindows = (all) => {
 };
 
 async function windows(run_) {
-  const read = await run_('powershell', ['-NoProfile', '-NonInteractive', '-Command', WINDOWS_SCRIPT(null)]);
+  const read = await run_('powershell', [
+    '-NoProfile',
+    '-NonInteractive',
+    '-Command',
+    WINDOWS_SCRIPT(null)
+  ]);
   return readWindows(lines(read.stdout));
 }
 
-async function apple(match, run_) {
-  const read = await run_('osascript', ['-e', APPLE_READ]);
+async function apple(
+  match,
+  run_
+) {
+  const read = await run_('osascript', [
+    '-e',
+    APPLE_READ
+  ]);
   const foreground = lines(read.stdout)[0] ?? '';
-  if (match === null) return { platform: 'darwin', foreground, windows: [], minimized: [] };
-  const out = await run_('osascript', ['-e', APPLE_FOCUS(match)]);
-  return { platform: 'darwin', foreground: lines(out.stdout)[0] ?? '', windows: [], minimized: [] };
+  if (match === null) return {
+    platform: 'darwin',
+    foreground,
+    windows: [],
+    minimized: []
+  };
+  const out = await run_('osascript', [
+    '-e',
+    APPLE_FOCUS(match)
+  ]);
+  return {
+    platform: 'darwin',
+    foreground: lines(out.stdout)[0] ?? '',
+    windows: [],
+    minimized: []
+  };
 }
 
-async function x11(match, run_) {
-  const active = await run_('xdotool', ['getactivewindow', 'getwindowname']);
+async function x11(
+  match,
+  run_
+) {
+  const active = await run_('xdotool', [
+    'getactivewindow',
+    'getwindowname'
+  ]);
   const foreground = lines(active.stdout)[0] ?? '';
-  if (match === null) return { platform: 'linux', foreground, windows: [], minimized: [] };
-  const out = await run_('xdotool', ['search', '--name', match, 'windowactivate', '--sync']);
-  return { platform: 'linux', foreground: lines(out.stdout)[0] ?? foreground, windows: [], minimized: [] };
+  if (match === null) return {
+    platform: 'linux',
+    foreground,
+    windows: [],
+    minimized: []
+  };
+  const out = await run_('xdotool', [
+    'search',
+    '--name',
+    match,
+    'windowactivate',
+    '--sync'
+  ]);
+  return {
+    platform: 'linux',
+    foreground: lines(out.stdout)[0] ?? foreground,
+    windows: [],
+    minimized: []
+  };
 }
 
 // WHY THE READ ANSWERS INSTEAD OF GUESSING.
 // windowFocused is the difference between "the page ignored my click" and "the page was never in front"; an agent that is told which one it was can act, and one that is told neither spends the drive re-clicking a page that was never listening.
 
-export async function windowState({ platform = process.platform, exec = run } = {}) {
+export async function windowState({
+  platform = process.platform,
+  exec = run
+} = {}) {
   try {
     if (platform === 'win32') return await windows(exec);
     if (platform === 'darwin') return await apple(null, exec);
@@ -162,10 +214,19 @@ export async function windowState({ platform = process.platform, exec = run } = 
 // WHY THE FOCUS ANSWER NAMES THE WINDOW IT BROUGHT.
 // Windows can refuse to come forward \u2014 the operating system says no \u2014 and a drive that cannot tell refusal from success will go on driving a page that is still behind a spreadsheet.
 
-export async function focusWindow(match = '', { platform = process.platform, exec = run } = {}) {
+export async function focusWindow(
+  match = '',
+  {
+    platform = process.platform,
+    exec = run
+  } = {}
+) {
   const wanted = String(match ?? '').trim();
   if (wanted === '') {
-    const state = await windowState({ platform, exec });
+    const state = await windowState({
+      platform,
+      exec
+    });
     return {
       platform: state.platform ?? platform,
       match: '',
@@ -179,17 +240,34 @@ export async function focusWindow(match = '', { platform = process.platform, exe
   }
   try {
     const out = platform === 'win32'
-      ? await exec('powershell', ['-NoProfile', '-NonInteractive', '-Command', WINDOWS_SCRIPT(wanted)])
+      ? await exec('powershell', [
+        '-NoProfile',
+        '-NonInteractive',
+        '-Command',
+        WINDOWS_SCRIPT(wanted)
+      ])
       : platform === 'darwin'
-        ? await exec('osascript', ['-e', APPLE_FOCUS(wanted)])
+        ? await exec('osascript', [
+          '-e',
+          APPLE_FOCUS(wanted)
+        ])
         : platform === 'linux'
-          ? await exec('xdotool', ['search', '--name', wanted, 'windowactivate', '--sync'])
+          ? await exec('xdotool', [
+            'search',
+            '--name',
+            wanted,
+            'windowactivate',
+            '--sync'
+          ])
           : null;
     if (out === null) return unsupported(platform, `window focus is not implemented on ${platform}`);
     const all = lines(out.stdout);
     const brought = all.filter((line) => line.startsWith('BROUGHT ')).map((line) => line.slice('BROUGHT '.length));
     const title = brought[brought.length - 1] ?? '';
-    const after = all.length ? readWindows(all) : await windowState({ platform, exec });
+    const after = all.length ? readWindows(all) : await windowState({
+      platform,
+      exec
+    });
     const focused = Boolean(title) && after.foreground.toLowerCase().includes(title.toLowerCase().slice(0, 24));
     return {
       platform,

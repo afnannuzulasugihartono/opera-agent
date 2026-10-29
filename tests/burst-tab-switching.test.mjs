@@ -7,12 +7,21 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
-import { validateBurst, burstCrossTabRef, burstStaleRef, BURST_MAX_STEPS, BURST_MAX_TIMEOUT_MS } from '../extension/lib/protocol.js';
+import {
+  validateBurst,
+  burstCrossTabRef,
+  burstStaleRef,
+  BURST_MAX_STEPS,
+  BURST_MAX_TIMEOUT_MS
+} from '../extension/lib/protocol.js';
 import { extensionSource } from './helpers/extension-source.mjs';
 
 const background = await extensionSource();
 
-function sliceBetween(startMarker, endMarker) {
+function sliceBetween(
+  startMarker,
+  endMarker
+) {
   const start = background.indexOf(startMarker);
   const end = background.indexOf(endMarker, start);
   assert.ok(start >= 0, `${startMarker} must exist`);
@@ -20,38 +29,65 @@ function sliceBetween(startMarker, endMarker) {
   return background.slice(start, end);
 }
 
-function burstStep(action, extra = {}) {
-  return { action, ...extra };
+function burstStep(
+  action,
+  extra = {}
+) {
+  return {
+    action,
+    ...extra
+  };
 }
 
 const VALID_STEP = Object.freeze({
   read: {},
   find: {},
   click: { ref: 'r1' },
-  fill: { ref: 'r1', value: 'hello' },
+  fill: {
+    ref: 'r1',
+    value: 'hello'
+  },
   key: { key: 'Enter' },
   scroll: { y: 100 },
   wait: { selector: '.ready' },
   hover: { ref: 'r1' },
-  pointer: { pointerAction: 'click', x: 10, y: 20 }
+  pointer: {
+    pointerAction: 'click',
+    x: 10,
+    y: 20
+  }
 });
 
 test('tabId is an accepted optional key on every existing burst step', () => {
-
   for (const action of Object.keys(VALID_STEP)) {
-    const withoutTab = validateBurst({ tabId: 7, steps: [burstStep(action, VALID_STEP[action])] });
+    const withoutTab = validateBurst({
+      tabId: 7,
+      steps: [burstStep(action, VALID_STEP[action])]
+    });
     assert.equal(withoutTab.ok, true, `${action} without tabId: ${withoutTab.error || ''}`);
-    const withTab = validateBurst({ tabId: 7, steps: [burstStep(action, { ...VALID_STEP[action], tabId: 3 })] });
+    const withTab = validateBurst({
+      tabId: 7,
+      steps: [burstStep(action, {
+        ...VALID_STEP[action],
+        tabId: 3
+      })]
+    });
     assert.equal(withTab.ok, true, `${action} with tabId: ${withTab.error || ''}`);
   }
 });
 
 test('a per-step tabId must be a non-negative integer', () => {
-  const bad = [-1, 1.5, 'x', null, true, false];
+  const bad = [
+    -1,
+    1.5,
+    'x',
+    null,
+    true,
+    false
+  ];
   for (const tabId of bad) {
     const check = validateBurst({ steps: [burstStep('find', { tabId })] });
     if (tabId === null) {
-
       assert.equal(check.ok, true);
       continue;
     }
@@ -66,7 +102,10 @@ test('requireTabId refuses booleans instead of coercing false to tab 0', () => {
 });
 
 test('step keys stay strict, so an unknown key cannot ride in', () => {
-  const check = validateBurst({ steps: [burstStep('find', { tabId: 3, navigate: 'https://evil.test' })] });
+  const check = validateBurst({ steps: [burstStep('find', {
+    tabId: 3,
+    navigate: 'https://evil.test'
+  })] });
   assert.equal(check.ok, false, 'an unknown per-step key must fail closed');
 });
 
@@ -77,21 +116,39 @@ test('the step count and budget are unchanged', () => {
 });
 
 test('refFromStep still refuses a forward or self reference', () => {
-
   const check = validateBurst({
-    steps: [burstStep('find'), burstStep('click', { ref: 'r1', refFromStep: 1 })]
+    steps: [
+      burstStep('find'),
+      burstStep('click', {
+        ref: 'r1',
+        refFromStep: 1
+      })
+    ]
   });
   assert.equal(check.ok, false, 'a forward reference must fail closed');
 
   const self = validateBurst({
-    steps: [burstStep('find'), burstStep('click', { ref: 'r1', refFromStep: 0 })]
+    steps: [
+      burstStep('find'),
+      burstStep('click', {
+        ref: 'r1',
+        refFromStep: 0
+      })
+    ]
   });
   assert.equal(self.ok, true, 'binding to the immediately earlier step is the supported case');
 });
 
 test('refFromStep validation still runs before any tab check', () => {
   const check = validateBurst({
-    steps: [burstStep('find'), burstStep('click', { ref: 'r1', refFromStep: 1, tabId: 9 })]
+    steps: [
+      burstStep('find'),
+      burstStep('click', {
+        ref: 'r1',
+        refFromStep: 1,
+        tabId: 9
+      })
+    ]
   });
   assert.equal(check.ok, false);
 });
@@ -120,7 +177,10 @@ test('withDebugger no longer refuses a different tab outright', () => {
 test('every released session is detached, not merely forgotten', async () => {
   const { releaseDebuggerSession } = await import('../extension/lib/debugger-session.js');
 
-  await assert.doesNotReject(releaseDebuggerSession({ tabId: 5, attached: false }));
+  await assert.doesNotReject(releaseDebuggerSession({
+    tabId: 5,
+    attached: false
+  }));
 });
 
 test('a burst still reports completed evidence when it times out mid-sequence', () => {
@@ -154,10 +214,22 @@ test('the VM cross-tab fence is untouched', () => {
 
 test('the burst still refuses to run JavaScript or loop or branch', () => {
   const steps = [
-    burstStep('read'), burstStep('find'), burstStep('click', { ref: 'r' }),
-    burstStep('fill', { ref: 'r', value: 'v' }), burstStep('key', { key: 'Enter' }),
-    burstStep('scroll', { y: 1 }), burstStep('wait', { selector: '.x' }),
-    burstStep('hover', { ref: 'r' }), burstStep('pointer', { pointerAction: 'click', x: 1, y: 1 })
+    burstStep('read'),
+    burstStep('find'),
+    burstStep('click', { ref: 'r' }),
+    burstStep('fill', {
+      ref: 'r',
+      value: 'v'
+    }),
+    burstStep('key', { key: 'Enter' }),
+    burstStep('scroll', { y: 1 }),
+    burstStep('wait', { selector: '.x' }),
+    burstStep('hover', { ref: 'r' }),
+    burstStep('pointer', {
+      pointerAction: 'click',
+      x: 1,
+      y: 1
+    })
   ];
   assert.equal(steps.length, 9, 'the fixture lists the current vocabulary plus one');
   assert.equal(validateBurst({ steps: steps.slice(0, BURST_MAX_STEPS) }).ok, true);
@@ -171,8 +243,13 @@ test('the burst still refuses to run JavaScript or loop or branch', () => {
 });
 
 test('a ref consumed on a different tab than its source is refused, even without a switch', () => {
-
-  const results = [{ index: 0, action: 'find', tabId: 1, ok: true, result: { items: [{ ref: 'r1' }] } }];
+  const results = [{
+    index: 0,
+    action: 'find',
+    tabId: 1,
+    ok: true,
+    result: { items: [{ ref: 'r1' }] }
+  }];
   assert.equal(burstCrossTabRef(results, 0, 2), true, 'consume on a foreign tab must be a violation');
   assert.equal(burstCrossTabRef(results, 0, 1), false, 'consume on the minting tab must be allowed');
 
@@ -181,38 +258,66 @@ test('a ref consumed on a different tab than its source is refused, even without
 });
 
 test('runBurst enforces the source-tab comparison instead of the switch flag', () => {
-
   const burst = sliceBetween('async function runBurst(', 'async function runDispatch(');
   assert.match(burst, /burstCrossTabRef\(results, step\.refFromStep, stepTabId\)/);
   assert.doesNotMatch(burst, /switched && step\.refFromStep/);
 });
 
 test('navigate is a burst step that maps to the existing tabs.navigate primitive', () => {
-
   assert.equal(validateBurst({ steps: [burstStep('navigate')] }).ok, false, 'bare navigate must fail closed');
   assert.equal(validateBurst({ steps: [burstStep('navigate', { url: 'https://example.test/' })] }).ok, true);
-  assert.equal(validateBurst({ steps: [burstStep('navigate', { url: 'https://example.test/', tabId: 2 })] }).ok, true);
+  assert.equal(validateBurst({ steps: [burstStep('navigate', {
+    url: 'https://example.test/',
+    tabId: 2
+  })] }).ok, true);
   assert.equal(validateBurst({ steps: [burstStep('navigate', { url: '' })] }).ok, false, 'empty URL must fail closed');
 });
 
 test('a ref minted before a navigate on the same tab is dead', () => {
-
   const results = [
-    { index: 0, action: 'find', tabId: 1, ok: true, result: { items: [{ ref: 'r1' }] } },
-    { index: 1, action: 'navigate', tabId: 1, ok: true, result: {} }
+    {
+      index: 0,
+      action: 'find',
+      tabId: 1,
+      ok: true,
+      result: { items: [{ ref: 'r1' }] }
+    },
+    {
+      index: 1,
+      action: 'navigate',
+      tabId: 1,
+      ok: true,
+      result: {}
+    }
   ];
   assert.equal(burstStaleRef(results, 0, 1), true, 'ref before navigate on the same tab must be refused');
   assert.equal(burstStaleRef(results, 0, 2), false, 'cross-tab is the other check, not this one');
   const otherTab = [
-    { index: 0, action: 'find', tabId: 1, ok: true, result: { items: [{ ref: 'r1' }] } },
-    { index: 1, action: 'navigate', tabId: 2, ok: true, result: {} }
+    {
+      index: 0,
+      action: 'find',
+      tabId: 1,
+      ok: true,
+      result: { items: [{ ref: 'r1' }] }
+    },
+    {
+      index: 1,
+      action: 'navigate',
+      tabId: 2,
+      ok: true,
+      result: {}
+    }
   ];
   assert.equal(burstStaleRef(otherTab, 0, 1), false, 'navigate on another tab kills nothing here');
-  assert.equal(burstStaleRef([{ index: 0, action: 'find', tabId: 1, ok: true }], 0, 1), false, 'no navigate means no staleness');
+  assert.equal(burstStaleRef([{
+    index: 0,
+    action: 'find',
+    tabId: 1,
+    ok: true
+  }], 0, 1), false, 'no navigate means no staleness');
 });
 
 test('runBurst enforces the navigate staleness check with its own code', () => {
-
   const burst = sliceBetween('async function runBurst(', 'async function runDispatch(');
   assert.match(burst, /burstStaleRef\(results, step\.refFromStep, stepTabId\)/);
   assert.match(burst, /BURST_STALE_REF/);

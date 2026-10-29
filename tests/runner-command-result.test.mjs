@@ -16,18 +16,30 @@ import { commandFailure } from '../supabase/functions/_shared/command-result.js'
 test('a completed burst carrying ok:false fails with the device error', () => {
   const failure = commandFailure({
     ok: true,
-    result: { ok: false, error: { code: 'EXECUTION_ERROR', message: 'step 2 returned none' } }
+    result: {
+      ok: false,
+      error: {
+        code: 'EXECUTION_ERROR',
+        message: 'step 2 returned none'
+      }
+    }
   });
 
   assert.deepEqual(failure, {
     code: 'EXECUTION_ERROR',
     message: 'step 2 returned none',
-    details: { code: 'EXECUTION_ERROR', message: 'step 2 returned none' }
+    details: {
+      code: 'EXECUTION_ERROR',
+      message: 'step 2 returned none'
+    }
   });
 });
 
 test('a device failure without an error shape falls back to COMMAND_FAILED', () => {
-  const failure = commandFailure({ ok: true, result: { ok: false } });
+  const failure = commandFailure({
+    ok: true,
+    result: { ok: false }
+  });
 
   assert.deepEqual(failure, {
     code: 'COMMAND_FAILED',
@@ -37,19 +49,41 @@ test('a device failure without an error shape falls back to COMMAND_FAILED', () 
 });
 
 test('reads and finds without an ok field stay successful', () => {
-  assert.equal(commandFailure({ ok: true, result: { page: { text: 'hi' } } }), null);
-  assert.equal(commandFailure({ ok: true, result: { ok: true, item: null, count: 0 } }), null);
-  assert.equal(commandFailure({ ok: true, result: null }), null);
+  assert.equal(commandFailure({
+    ok: true,
+    result: { page: { text: 'hi' } }
+  }), null);
+  assert.equal(commandFailure({
+    ok: true,
+    result: {
+      ok: true,
+      item: null,
+      count: 0
+    }
+  }), null);
+  assert.equal(commandFailure({
+    ok: true,
+    result: null
+  }), null);
   assert.equal(commandFailure({ ok: true }), null);
 });
 
 test('a transport failure keeps its own code and message', () => {
-  const failure = commandFailure({ ok: false, error: { code: 'AWAIT_OUTCOME_UNKNOWN', message: 'stopped waiting' } });
+  const failure = commandFailure({
+    ok: false,
+    error: {
+      code: 'AWAIT_OUTCOME_UNKNOWN',
+      message: 'stopped waiting'
+    }
+  });
 
   assert.deepEqual(failure, {
     code: 'AWAIT_OUTCOME_UNKNOWN',
     message: 'stopped waiting',
-    details: { code: 'AWAIT_OUTCOME_UNKNOWN', message: 'stopped waiting' }
+    details: {
+      code: 'AWAIT_OUTCOME_UNKNOWN',
+      message: 'stopped waiting'
+    }
   });
 });
 

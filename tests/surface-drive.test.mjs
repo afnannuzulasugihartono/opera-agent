@@ -7,27 +7,83 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import { createPrimitives } from '../local/primitives.js';
-import { HARM_CARET_MOVE, STRATEGY_AX } from '../local/read-strategy.js';
+import {
+  HARM_CARET_MOVE,
+  STRATEGY_AX
+} from '../local/read-strategy.js';
 
-const richAx = ['PROPOSAL PENAWARAN', 'Kepada Yth.', 'Tim Pengembangan Lokasi', 'PT Indomarco Prismatama', 'Perihal penawaran lokasi', '1. Identitas Pengusul', '2. Latar Belakang', '3. Rincian Penawaran', '4. Nilai Investasi', '5. Jadwal'];
+const richAx = [
+  'PROPOSAL PENAWARAN',
+  'Kepada Yth.',
+  'Tim Pengembangan Lokasi',
+  'PT Indomarco Prismatama',
+  'Perihal penawaran lokasi',
+  '1. Identitas Pengusul',
+  '2. Latar Belakang',
+  '3. Rincian Penawaran',
+  '4. Nilai Investasi',
+  '5. Jadwal'
+];
 const poorAx = ['Share'];
 
 const axTree = (texts) => {
   const nodes = [
-    { nodeId: 'root', parentId: undefined, childIds: ['chromeRoot', 'docRoot'], role: { value: 'RootWebArea' }, name: { value: '' } },
-    { nodeId: 'chromeRoot', parentId: 'root', childIds: [], role: { value: 'toolbar' }, name: { value: '' } },
-    { nodeId: 'docRoot', parentId: 'root', childIds: [], role: { value: 'generic' }, name: { value: '' } }
+    {
+      nodeId: 'root',
+      parentId: undefined,
+      childIds: [
+        'chromeRoot',
+        'docRoot'
+      ],
+      role: { value: 'RootWebArea' },
+      name: { value: '' }
+    },
+    {
+      nodeId: 'chromeRoot',
+      parentId: 'root',
+      childIds: [],
+      role: { value: 'toolbar' },
+      name: { value: '' }
+    },
+    {
+      nodeId: 'docRoot',
+      parentId: 'root',
+      childIds: [],
+      role: { value: 'generic' },
+      name: { value: '' }
+    }
   ];
-  texts.forEach((text, i) => nodes.push({ nodeId: `doc${i}`, parentId: 'docRoot', childIds: [], role: { value: 'InlineTextBox' }, name: { value: text } }));
+  texts.forEach((
+    text,
+    i
+  ) => nodes.push({
+    nodeId: `doc${i}`,
+    parentId: 'docRoot',
+    childIds: [],
+    role: { value: 'InlineTextBox' },
+    name: { value: text }
+  }));
   return { nodes };
 };
 
-const fakeCdp = ({ probe, ax = richAx, copy, domText = '', caret = null }) => {
+const fakeCdp = ({
+  probe,
+  ax = richAx,
+  copy,
+  domText = '',
+  caret = null
+}) => {
   const sent = [];
   return {
     sent,
-    async send(method, params = {}) {
-      sent.push({ method, expression: params.expression });
+    async send(
+      method,
+      params = {}
+    ) {
+      sent.push({
+        method,
+        expression: params.expression
+      });
       const expression = String(params.expression ?? '');
       // The probe is keyed on the canvas-coverage arithmetic, which no other expression in the driver contains, so readState is not mistaken for it.
       if (method === 'Runtime.evaluate' && expression.includes('window.innerHeight')) {
@@ -35,11 +91,26 @@ const fakeCdp = ({ probe, ax = richAx, copy, domText = '', caret = null }) => {
       }
       if (method === 'Accessibility.getFullAXTree') return axTree(ax);
       if (method === 'Runtime.evaluate' && expression.includes('innerText')) {
-        return { result: { value: { title: 'Fake', url: 'https://example.invalid/', text: domText, ready: 'complete' } } };
+        return { result: { value: {
+          title: 'Fake',
+          url: 'https://example.invalid/',
+          text: domText,
+          ready: 'complete'
+        } } };
       }
       // The one selection state, read by both the copy and the caret guard.
       if (method === 'Runtime.evaluate' && expression.includes('richest')) {
-        return { result: { value: { ...(caret ?? { frame: -1, hostPath: '', rangeCount: 0, collapsed: null, anchorOffset: 0, hostTextLength: 0 }), text: typeof copy === 'string' ? copy : '' } } };
+        return { result: { value: {
+          ...(caret ?? {
+            frame: -1,
+            hostPath: '',
+            rangeCount: 0,
+            collapsed: null,
+            anchorOffset: 0,
+            hostTextLength: 0
+          }),
+          text: typeof copy === 'string' ? copy : ''
+        } } };
       }
       return { result: { value: null } };
     },
@@ -48,14 +119,30 @@ const fakeCdp = ({ probe, ax = richAx, copy, domText = '', caret = null }) => {
 };
 
 const canvasProbe = {
-  textInDom: { value: false, evidence: 0 },
-  canvas: { value: true, evidence: 0.61 },
-  editable: { value: true, evidence: 'true' },
-  focused: { value: true, evidence: 'document.hasFocus() is true' }
+  textInDom: {
+    value: false,
+    evidence: 0
+  },
+  canvas: {
+    value: true,
+    evidence: 0.61
+  },
+  editable: {
+    value: true,
+    evidence: 'true'
+  },
+  focused: {
+    value: true,
+    evidence: 'document.hasFocus() is true'
+  }
 };
 
 test('surface_profile answers without reading the document', async () => {
-  const cdp = fakeCdp({ probe: canvasProbe, ax: richAx, copy: '' });
+  const cdp = fakeCdp({
+    probe: canvasProbe,
+    ax: richAx,
+    copy: ''
+  });
   const primitives = createPrimitives(cdp, { sleep: async () => {} });
   const out = await primitives.surfaceProfile();
   assert.equal(out.surface.canvas, true);
@@ -65,7 +152,11 @@ test('surface_profile answers without reading the document', async () => {
 });
 
 test('a read with no consent skips the caret-moving step and says why', async () => {
-  const cdp = fakeCdp({ probe: canvasProbe, ax: poorAx, copy: '' });
+  const cdp = fakeCdp({
+    probe: canvasProbe,
+    ax: poorAx,
+    copy: ''
+  });
   const primitives = createPrimitives(cdp, { sleep: async () => {} });
   const out = await primitives.read({ allowCaretMove: false });
   const skipped = out.skipped.find((entry) => entry.harm === HARM_CARET_MOVE);
@@ -76,7 +167,12 @@ test('a read with no consent skips the caret-moving step and says why', async ()
 
 test('a read with consent runs the caret-moving step', async () => {
   // A canvas caret: offset 0 on a node with no text, which is what the real measurement found, so the verdict must report it could not be restored.
-  const canvasCaret = { rangeCount: 1, collapsed: true, anchorOffset: 0, hostTextLength: 0 };
+  const canvasCaret = {
+    rangeCount: 1,
+    collapsed: true,
+    anchorOffset: 0,
+    hostTextLength: 0
+  };
   const cdp = fakeCdp({
     probe: canvasProbe,
     ax: poorAx,
@@ -93,7 +189,11 @@ test('a read with consent runs the caret-moving step', async () => {
 });
 
 test('a rich accessibility tree answers before the gated step is ever reached', async () => {
-  const cdp = fakeCdp({ probe: canvasProbe, ax: richAx, copy: 'PROPOSAL PENAWARAN' });
+  const cdp = fakeCdp({
+    probe: canvasProbe,
+    ax: richAx,
+    copy: 'PROPOSAL PENAWARAN'
+  });
   const primitives = createPrimitives(cdp, { sleep: async () => {} });
   const out = await primitives.read({ allowCaretMove: false });
   assert.equal(out.strategy, 'ax');
@@ -104,12 +204,29 @@ test('a rich accessibility tree answers before the gated step is ever reached', 
 
 test('an ordinary DOM page is read through the DOM and nothing is skipped', async () => {
   const domProbe = {
-    textInDom: { value: true, evidence: 4200 },
-    canvas: { value: false, evidence: 0 },
-    editable: { value: false, evidence: 'no editable host' },
-    focused: { value: false, evidence: 'document.hasFocus() is false' }
+    textInDom: {
+      value: true,
+      evidence: 4200
+    },
+    canvas: {
+      value: false,
+      evidence: 0
+    },
+    editable: {
+      value: false,
+      evidence: 'no editable host'
+    },
+    focused: {
+      value: false,
+      evidence: 'document.hasFocus() is false'
+    }
   };
-  const cdp = fakeCdp({ probe: domProbe, ax: [], copy: '', domText: 'A page that already holds its own words.' });
+  const cdp = fakeCdp({
+    probe: domProbe,
+    ax: [],
+    copy: '',
+    domText: 'A page that already holds its own words.'
+  });
   const primitives = createPrimitives(cdp, { sleep: async () => {} });
   const out = await primitives.read();
   assert.equal(out.strategy, 'dom');
@@ -120,12 +237,29 @@ test('an ordinary DOM page is read through the DOM and nothing is skipped', asyn
 
 test('a surface no read can answer names the picture instead of returning nothing', async () => {
   const bareProbe = {
-    textInDom: { value: false, evidence: 0 },
-    canvas: { value: true, evidence: 0.4 },
-    editable: { value: false, evidence: 'no editable host' },
-    focused: { value: false, evidence: 'document.hasFocus() is false' }
+    textInDom: {
+      value: false,
+      evidence: 0
+    },
+    canvas: {
+      value: true,
+      evidence: 0.4
+    },
+    editable: {
+      value: false,
+      evidence: 'no editable host'
+    },
+    focused: {
+      value: false,
+      evidence: 'document.hasFocus() is false'
+    }
   };
-  const cdp = fakeCdp({ probe: bareProbe, ax: poorAx, copy: '', domText: '' });
+  const cdp = fakeCdp({
+    probe: bareProbe,
+    ax: poorAx,
+    copy: '',
+    domText: ''
+  });
   const primitives = createPrimitives(cdp, { sleep: async () => {} });
   const out = await primitives.read();
   assert.equal(out.strategy, 'vision');

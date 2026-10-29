@@ -26,7 +26,13 @@
 // The count answers "did this action change what the page says", which is the question an action's answer owes.
 // The words themselves belong to read_page, where the caller asked for them.
 
-import { findNode, menuTreeExpression, nearestNames, revealOf, stateOf } from './menu-tree.js';
+import {
+  findNode,
+  menuTreeExpression,
+  nearestNames,
+  revealOf,
+  stateOf
+} from './menu-tree.js';
 import {
   HANDLE_PREFIX,
   PAGE_STATE_TEXT_EXPRESSION,
@@ -76,7 +82,11 @@ const PAGE_STATE_EXPRESSION = `(() => {
 // Written as one nested ternary inside the answer object, the ordinary case was the last line of a four-deep expression, so the reader reached it only after parsing the three failures first.
 // Named cases read in the order they are checked, and each one says what the caller should do next.
 
-function scrollWhy({ seen, wanted, end }) {
+function scrollWhy({
+  seen,
+  wanted,
+  end
+}) {
   if (wanted && !seen.target?.found) {
     const named = JSON.stringify(String(wanted).slice(0, 40));
     return `found nothing on this page for ${named} - read_page() to see what the page holds`;
@@ -93,7 +103,11 @@ function scrollWhy({ seen, wanted, end }) {
   return '';
 }
 
-export function createObserveMethods({ cdp, primitives, capped }) {
+export function createObserveMethods({
+  cdp,
+  primitives,
+  capped
+}) {
   const readRows = async (limit) => {
     const { result } = await cdp.send('Runtime.evaluate', {
       expression: snapshotExpression(limit),
@@ -108,7 +122,11 @@ export function createObserveMethods({ cdp, primitives, capped }) {
       expression: PAGE_STATE_TEXT_EXPRESSION,
       returnByValue: true
     });
-    return result?.value ?? { title: '', url: '', text: '' };
+    return result?.value ?? {
+      title: '',
+      url: '',
+      text: ''
+    };
   };
 
   const pageState = async () => {
@@ -116,7 +134,12 @@ export function createObserveMethods({ cdp, primitives, capped }) {
       expression: PAGE_STATE_EXPRESSION,
       returnByValue: true
     });
-    return result?.value ?? { url: '', title: '', textChars: 0, focus: null };
+    return result?.value ?? {
+      url: '',
+      title: '',
+      textChars: 0,
+      focus: null
+    };
   };
 
   async function viewport() {
@@ -124,20 +147,35 @@ export function createObserveMethods({ cdp, primitives, capped }) {
       expression: VIEWPORT_EXPRESSION,
       returnByValue: true
     });
-    return result?.value ?? { width: 0, height: 0, dpr: 1 };
+    return result?.value ?? {
+      width: 0,
+      height: 0,
+      dpr: 1
+    };
   }
 
   // WHY A CAPTURE ANSWERS WITH THE SPACE IT WAS TAKEN IN.
   // Measured live by resizing this machine's browser window: the viewport went 1144x714 -> 1186x670 and the capture went 1430x963 -> 1483x838, with the scale factor constant at 1.25.
   // So the picture is the CSS viewport times the device's scale, and both move under the agent's feet: a window resized, a window dragged to a monitor with another scale.
   // An agent given a picture and nothing else has to guess that number, and it guesses wrong - which is how a click lands on the wrong thing while every answer says the click was delivered.
-  async function captureSized({ format = 'jpeg', quality = 60, fullPage = false } = {}) {
+  async function captureSized({
+    format = 'jpeg',
+    quality = 60,
+    fullPage = false
+  } = {}) {
     const view = await viewport();
-    const data = await capture({ format, quality, fullPage });
+    const data = await capture({
+      format,
+      quality,
+      fullPage
+    });
     const pixels = await imageSize(data, format);
     return {
       data,
-      viewport: { width: view.width, height: view.height },
+      viewport: {
+        width: view.width,
+        height: view.height
+      },
       dpr: view.dpr,
       image: pixels,
       note: fullPage
@@ -146,7 +184,11 @@ export function createObserveMethods({ cdp, primitives, capped }) {
     };
   }
 
-  async function capture({ format = 'jpeg', quality = 60, fullPage = false } = {}) {
+  async function capture({
+    format = 'jpeg',
+    quality = 60,
+    fullPage = false
+  } = {}) {
     if (fullPage) {
       const metrics = await cdp.send('Page.getLayoutMetrics', {});
       const content = metrics?.contentSize ?? {};
@@ -158,20 +200,39 @@ export function createObserveMethods({ cdp, primitives, capped }) {
         format,
         quality,
         captureBeyondViewport: true,
-        clip: { x: 0, y: 0, width, height, scale }
+        clip: {
+          x: 0,
+          y: 0,
+          width,
+          height,
+          scale
+        }
       });
       return data;
     }
-    const { width, height } = await viewport();
+    const {
+      width,
+      height
+    } = await viewport();
     const { data } = await cdp.send('Page.captureScreenshot', {
       format,
       quality,
-      clip: { x: 0, y: 0, width, height, scale: 1 }
+      clip: {
+        x: 0,
+        y: 0,
+        width,
+        height,
+        scale: 1
+      }
     });
     return data;
   }
 
-  async function resolveRow({ role, name, limit = 120 } = {}) {
+  async function resolveRow({
+    role,
+    name,
+    limit = 120
+  } = {}) {
     const rows = await readRows(capped(limit));
     const want = String(name ?? '').toLowerCase();
     const row = rows.find((r) => r.role === role && String(r.name ?? '').toLowerCase() === want)
@@ -180,20 +241,32 @@ export function createObserveMethods({ cdp, primitives, capped }) {
       const visible = rows.filter((r) => r.role === role).map((r) => r.name).slice(0, 12).join(' | ');
       throw new Error(`no ${role} matching "${name}". Visible: ${visible}`);
     }
-    if (row.node === undefined) return { ...row, handle: null };
+    if (row.node === undefined) return {
+      ...row,
+      handle: null
+    };
     const { result } = await cdp.send('Runtime.evaluate', {
       expression: `window.__operaNodes[${row.node}]`,
       returnByValue: false
     });
-    if (!result?.objectId) return { ...row, handle: null };
+    if (!result?.objectId) return {
+      ...row,
+      handle: null
+    };
     const described = await cdp.send('DOM.describeNode', { objectId: result.objectId });
     const backendNodeId = described?.node?.backendNodeId;
-    return { ...row, handle: backendNodeId ? HANDLE_PREFIX + backendNodeId : null };
+    return {
+      ...row,
+      handle: backendNodeId ? HANDLE_PREFIX + backendNodeId : null
+    };
   }
 
   async function snapshot({ limit = 120 } = {}) {
     const rows = await readRows(capped(limit));
-    return rows.map(({ node, ...row }) => row);
+    return rows.map(({
+      node,
+      ...row
+    }) => row);
   }
 
   async function menuTree({ limit } = {}) {
@@ -203,12 +276,26 @@ export function createObserveMethods({ cdp, primitives, capped }) {
       awaitPromise: false
     });
     const rows = Array.isArray(result?.value) ? result.value : [];
-    return rows.map((row) => ({ ...row, state: stateOf(row), revealedBy: revealOf(row), handle: null }));
+    return rows.map((row) => ({
+      ...row,
+      state: stateOf(row),
+      revealedBy: revealOf(row),
+      handle: null
+    }));
   }
 
-  async function openMenu({ path = [], clickLeaf = false, limit, timeoutMs = 8000 } = {}) {
+  async function openMenu({
+    path = [],
+    clickLeaf = false,
+    limit,
+    timeoutMs = 8000
+  } = {}) {
     const wanted = path.map((step) => String(step ?? '').trim()).filter(Boolean);
-    if (wanted.length === 0) return { opened: false, at: [], tree: await menuTree({ limit }) };
+    if (wanted.length === 0) return {
+      opened: false,
+      at: [],
+      tree: await menuTree({ limit })
+    };
     let rows = await menuTree({ limit });
     const at = [];
     for (let index = 0; index < wanted.length; index += 1) {
@@ -218,7 +305,12 @@ export function createObserveMethods({ cdp, primitives, capped }) {
       let node = findNode(name, rows.filter((row) => row.depth === index));
       let here = rows.filter((row) => row.depth === index);
       while (!node && Date.now() < deadline) {
-        await primitives.waitForRow({ role: 'menuitem', name, timeoutMs: 400, intervalMs: 120 });
+        await primitives.waitForRow({
+          role: 'menuitem',
+          name,
+          timeoutMs: 400,
+          intervalMs: 120
+        });
         rows = await menuTree({ limit });
         here = rows.filter((row) => row.depth === index);
         node = findNode(name, here);
@@ -265,10 +357,21 @@ export function createObserveMethods({ cdp, primitives, capped }) {
         rows = await menuTree({ limit });
       }
       if (last) {
-        return { opened: true, at, acted, row: findNode(name, rows.filter((r) => r.depth === index)) ?? node, tree: rows };
+        return {
+          opened: true,
+          at,
+          acted,
+          row: findNode(name, rows.filter((r) => r.depth === index)) ?? node,
+          tree: rows
+        };
       }
     }
-    return { opened: true, at, acted, tree: rows };
+    return {
+      opened: true,
+      at,
+      acted,
+      tree: rows
+    };
   }
 
   // WHY ONE CALL, AND WHY IT ANSWERS WHAT IT DID.
@@ -278,21 +381,46 @@ export function createObserveMethods({ cdp, primitives, capped }) {
   // WHY "AT THE END" CAN BE FALSE AND MEANS NOTHING MOVED.
   // Measured live on a Google Doc: an end scroll moved the document element 56 pixels and answered atEnd true, because the document is not what scrolls on a canvas editor.
   // So atEnd is true only when the page reports its last text on screen, and the scroller that answers is named - a refusal to claim an end it did not reach is the whole value here.
-  async function scroll({ y, end = false, text, selector } = {}) {
-    const probe = { y: Number.isFinite(Number(y)) ? Number(y) : undefined, end: end === true, text, selector };
+  async function scroll({
+    y,
+    end = false,
+    text,
+    selector
+  } = {}) {
+    const probe = {
+      y: Number.isFinite(Number(y)) ? Number(y) : undefined,
+      end: end === true,
+      text,
+      selector
+    };
     void end;
     const { result } = await cdp.send('Runtime.evaluate', {
       expression: scrollExpression(probe),
       returnByValue: true
     });
     const seen = result?.value ?? {
-      from: { x: 0, y: 0 },
-      to: { x: 0, y: 0 },
-      scroller: { name: 'unknown', from: 0, to: 0 },
+      from: {
+        x: 0,
+        y: 0
+      },
+      to: {
+        x: 0,
+        y: 0
+      },
+      scroller: {
+        name: 'unknown',
+        from: 0,
+        to: 0
+      },
       movedPx: 0,
       atEnd: false,
       root: 'unknown',
-      target: { found: false, visible: false, y: 0, text: '' }
+      target: {
+        found: false,
+        visible: false,
+        y: 0,
+        text: ''
+      }
     };
     const wanted = text ?? selector;
     return {
@@ -304,11 +432,19 @@ export function createObserveMethods({ cdp, primitives, capped }) {
       travelPx: seen.travelPx ?? null,
       root: seen.root,
       target: seen.target,
-      why: scrollWhy({ seen, wanted, end })
+      why: scrollWhy({
+        seen,
+        wanted,
+        end
+      })
     };
   }
 
-  async function computed({ x, y, selector } = {}) {
+  async function computed({
+    x,
+    y,
+    selector
+  } = {}) {
     const probe = {
       selector: selector ?? undefined,
       x: Number.isFinite(Number(x)) ? Number(x) : undefined,
@@ -330,7 +466,10 @@ export function createObserveMethods({ cdp, primitives, capped }) {
           : `nothing at ${probe.x},${probe.y} - ax_snapshot() to see what is on screen`
       };
     }
-    return { found: true, ...seen };
+    return {
+      found: true,
+      ...seen
+    };
   }
 
   return {

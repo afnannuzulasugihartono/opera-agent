@@ -23,9 +23,25 @@
 
 import { payLinkState } from './billing.js';
 
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const MONTHS = [
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec'
+];
 
-const money = (cents, currency) => {
+const money = (
+  cents,
+  currency
+) => {
   const value = (Number(cents) || 0) / 100;
   return currency === 'IDR'
     ? `Rp ${value.toLocaleString('id-ID', { maximumFractionDigits: 0 })}`
@@ -70,11 +86,19 @@ const methodWords = (method) => {
   return METHOD_WORDS[key] || key.replace(/[_-]+/g, ' ');
 };
 
-const STATUS_WORDS = Object.freeze({ open: 'Open, awaiting payment', paid: 'Paid', void: 'Cancelled' });
+const STATUS_WORDS = Object.freeze({
+  open: 'Open, awaiting payment',
+  paid: 'Paid',
+  void: 'Cancelled'
+});
 
 const statusWords = (status) => STATUS_WORDS[String(status || '').toLowerCase()] || String(status || 'Unknown');
 
-function refreshForm(invoice, token, failed) {
+function refreshForm(
+  invoice,
+  token,
+  failed
+) {
   const notice = failed
     ? '<p class="notice" role="status">The new payment link could not be opened just now. Please try again.</p>'
     : '';
@@ -92,16 +116,33 @@ function paidBlock(invoice) {
   const transaction = String(invoice.provider_transaction_id || '').trim();
   const manual = invoice.lines?.manual;
   const how = at
-    ? `<p>Paid on ${escapeHtml(at)}${method ? ` with ${escapeHtml(method)}` : ''}.</p>`
+    ? `<p>Paid on ${escapeHtml(at)}${method ? ` with ${
+      escapeHtml(method)
+    }` : ''}.</p>`
     : '<p>The payment has been recorded.</p>';
-  return `<p class="paid">Paid — thank you.</p>${how}${transaction ? `<p><small>Provider transaction ${escapeHtml(transaction)}</small></p>` : ''}${manual ? `<p><small>Recorded by hand: ${escapeHtml(manual.note)} (${escapeHtml(moment(manual.at) || manual.at)})</small></p>` : ''}`;
+  return `<p class="paid">Paid — thank you.</p>${how}${transaction ? `<p><small>Provider transaction ${
+    escapeHtml(transaction)
+  }</small></p>` : ''}${manual ? `<p><small>Recorded by hand: ${
+    escapeHtml(manual.note)
+  } (${
+    escapeHtml(moment(manual.at) || manual.at)
+  })</small></p>` : ''}`;
 }
 
 // WHY THE PAYMENT BLOCK IS ONE FUNCTION OF THE STATE.
 // Every state shows a different sentence and a different set of controls, and a page that chose them in two places would sooner or later show a Pay button under "cancelled".
 // The state comes from payLinkState, the one rule the create path also uses, so the page and the writer cannot disagree about a link that has died.
 
-function paymentBlock(invoice, { token, bank, canRefresh, now, refreshFailed }) {
+function paymentBlock(
+  invoice,
+  {
+    token,
+    bank,
+    canRefresh,
+    now,
+    refreshFailed
+  }
+) {
   const total = escapeHtml(money(invoice.amount_cents, invoice.currency));
   const bankLine = bank ? `<p><small>${escapeHtml(bank)}</small></p>` : '';
   const status = String(invoice.status || '').toLowerCase();
@@ -133,7 +174,16 @@ function lineRows(invoice) {
   return `${priced}${unpriced}`;
 }
 
-export function invoicePage(invoice, { token, bank = '', now = Date.now(), canRefresh = false, refreshFailed = false } = {}) {
+export function invoicePage(
+  invoice,
+  {
+    token,
+    bank = '',
+    now = Date.now(),
+    canRefresh = false,
+    refreshFailed = false
+  } = {}
+) {
   return `<!doctype html>
 <html lang="en">
 <head>

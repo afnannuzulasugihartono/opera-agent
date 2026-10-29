@@ -6,15 +6,29 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { compileGoalPlan } from '../extension/lib/goal-plan.js';
-import { advanceCollectVm, createCollectVm, validateCollectProgram } from '../lib/reactive-vm-collect.js';
+import {
+  advanceCollectVm,
+  createCollectVm,
+  validateCollectProgram
+} from '../lib/reactive-vm-collect.js';
 import { digestCanonical } from '../supabase/functions/_shared/goal-ledger.js';
 
 const reply = JSON.stringify({
   root: {
     type: 'SEQUENCE',
     children: [
-      { type: 'COMMAND', method: 'page.find', arguments: { text: 'Skip' }, resultBinding: 'hit' },
-      { type: 'COMMAND', method: 'page.read', arguments: {}, resultBinding: 'text' }
+      {
+        type: 'COMMAND',
+        method: 'page.find',
+        arguments: { text: 'Skip' },
+        resultBinding: 'hit'
+      },
+      {
+        type: 'COMMAND',
+        method: 'page.read',
+        arguments: {},
+        resultBinding: 'text'
+      }
     ]
   }
 });
@@ -42,31 +56,59 @@ function fullBudgets() {
 }
 
 test('a sealed VM-true program passes the VM validator unchanged', async () => {
-  const target = { deviceId: 'opera', tabId: 1 };
-  const compiled = compileGoalPlan(reply, { target, budgets: fullBudgets() });
+  const target = {
+    deviceId: 'opera',
+    tabId: 1
+  };
+  const compiled = compileGoalPlan(reply, {
+    target,
+    budgets: fullBudgets()
+  });
   assert.equal(compiled.ok, true, JSON.stringify(compiled).slice(0, 300));
-  const program = { ...compiled.program, tenantId: 'caller', budgets: fullBudgets() };
+  const program = {
+    ...compiled.program,
+    tenantId: 'caller',
+    budgets: fullBudgets()
+  };
   program.programDigest = await digestCanonical(program);
   const accepted = await validateCollectProgram(program);
   assert.ok(accepted, 'VM validator must accept sealed VM-true programs as-is');
 });
 
 test('a non-allowlisted method never reaches the VM validator', () => {
-  const bad = JSON.stringify({ root: { type: 'COMMAND', method: 'page.evil', arguments: {} } });
-  const refused = compileGoalPlan(bad, { target: { deviceId: 'opera', tabId: 1 }, budgets: {} });
+  const bad = JSON.stringify({ root: {
+    type: 'COMMAND',
+    method: 'page.evil',
+    arguments: {}
+  } });
+  const refused = compileGoalPlan(bad, {
+    target: {
+      deviceId: 'opera',
+      tabId: 1
+    },
+    budgets: {}
+  });
   assert.equal(refused.ok, false);
   assert.match(refused.code, /METHOD_NOT_ALLOWED/);
 });
 
 function smallBudgets() {
-  return { ...fullBudgets(), collectionItemsPerBinding: 10, bindings: 2 };
+  return {
+    ...fullBudgets(),
+    collectionItemsPerBinding: 10,
+    bindings: 2
+  };
 }
 
 function metaEntry(fingerprint) {
   return {
     method: 'page.read',
     logicalNowMs: 1,
-    provenance: { tenantId: 'caller', deviceId: 'opera', tabId: 1 },
+    provenance: {
+      tenantId: 'caller',
+      deviceId: 'opera',
+      tabId: 1
+    },
     observationKind: 'DIRECT_OBSERVATION',
     scopeKind: 'LOADED_DOM',
     boundaryStable: true,
@@ -80,13 +122,28 @@ async function commandProgram() {
     root: {
       type: 'SEQUENCE',
       children: [
-        { type: 'COMMAND', method: 'page.read', arguments: {}, resultBinding: 'text' }
+        {
+          type: 'COMMAND',
+          method: 'page.read',
+          arguments: {},
+          resultBinding: 'text'
+        }
       ]
     }
   });
-  const compiled = compileGoalPlan(replyCommand, { target: { deviceId: 'opera', tabId: 1 }, budgets: smallBudgets() });
+  const compiled = compileGoalPlan(replyCommand, {
+    target: {
+      deviceId: 'opera',
+      tabId: 1
+    },
+    budgets: smallBudgets()
+  });
   assert.equal(compiled.ok, true, JSON.stringify(compiled).slice(0, 300));
-  const program = { ...compiled.program, tenantId: 'caller', budgets: smallBudgets() };
+  const program = {
+    ...compiled.program,
+    tenantId: 'caller',
+    budgets: smallBudgets()
+  };
   program.programDigest = await digestCanonical(program);
   return program;
 }
@@ -98,7 +155,10 @@ async function acceptAtFullTerminal() {
     tenantId: 'caller',
     goalRevision: 1,
     logicalNowMs: 1,
-    initialBindings: { a: 1, b: 2 }
+    initialBindings: {
+      a: 1,
+      b: 2
+    }
   });
   const first = await advanceCollectVm(program, created, { logicalNowMs: 2 });
   assert.equal(first.state.status, 'RUNNING');
@@ -112,22 +172,38 @@ async function acceptAtFullTerminal() {
       requestDigest: pending.requestDigest,
       method: 'page.read',
       ok: true,
-      provenance: { tenantId: 'caller', deviceId: 'opera', tabId: 1 },
+      provenance: {
+        tenantId: 'caller',
+        deviceId: 'opera',
+        tabId: 1
+      },
       value: { text: 'hello' }
     }
   });
-  return { program, terminal: accepted.state };
+  return {
+    program,
+    terminal: accepted.state
+  };
 }
 
 test('a single N+1 terminal artifact from effect-accept-at-full is accepted', async () => {
-  const { program, terminal } = await acceptAtFullTerminal();
+  const {
+    program,
+    terminal
+  } = await acceptAtFullTerminal();
   assert.equal(terminal.status, 'LIMIT_REACHED');
-  const union = new Set([...Object.keys(terminal.bindings), ...Object.keys(terminal.observationMeta)]);
+  const union = new Set([
+    ...Object.keys(terminal.bindings),
+    ...Object.keys(terminal.observationMeta)
+  ]);
   assert.equal(union.size, program.budgets.bindings + 1);
 });
 
 test('advancing a terminal checkpoint is refused: no second terminal', async () => {
-  const { program, terminal } = await acceptAtFullTerminal();
+  const {
+    program,
+    terminal
+  } = await acceptAtFullTerminal();
   try {
     await advanceCollectVm(program, terminal, { logicalNowMs: 5 });
   } catch (error) {
@@ -142,13 +218,32 @@ async function collectProgram() {
     root: {
       type: 'SEQUENCE',
       children: [
-        { type: 'COLLECT', source: { op: 'PATH', path: ['pre'] }, projection: ['a'], destination: 'col', maxItems: 5 }
+        {
+          type: 'COLLECT',
+          source: {
+            op: 'PATH',
+            path: ['pre']
+          },
+          projection: ['a'],
+          destination: 'col',
+          maxItems: 5
+        }
       ]
     }
   });
-  const compiled = compileGoalPlan(replyCollect, { target: { deviceId: 'opera', tabId: 1 }, budgets: smallBudgets() });
+  const compiled = compileGoalPlan(replyCollect, {
+    target: {
+      deviceId: 'opera',
+      tabId: 1
+    },
+    budgets: smallBudgets()
+  });
   assert.equal(compiled.ok, true, JSON.stringify(compiled).slice(0, 300));
-  const program = { ...compiled.program, tenantId: 'caller', budgets: smallBudgets() };
+  const program = {
+    ...compiled.program,
+    tenantId: 'caller',
+    budgets: smallBudgets()
+  };
   program.programDigest = await digestCanonical(program);
   return program;
 }
@@ -162,8 +257,14 @@ test('bindings and observation metadata share one budget: disjoint seeds are ref
       tenantId: 'caller',
       goalRevision: 1,
       logicalNowMs: 1,
-      initialBindings: { k1: 1, k2: 2 },
-      initialObservationMeta: { m1: metaEntry(fingerprint), m2: metaEntry(fingerprint) }
+      initialBindings: {
+        k1: 1,
+        k2: 2
+      },
+      initialObservationMeta: {
+        m1: metaEntry(fingerprint),
+        m2: metaEntry(fingerprint)
+      }
     });
   } catch (error) {
     assert.equal(error.code, 'BINDING_BUDGET_EXCEEDED');

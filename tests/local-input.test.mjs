@@ -13,10 +13,16 @@ import {
 } from '../local/page-expressions.js';
 import { createPrimitives } from '../local/primitives.js';
 import { createInputMethods } from '../local/input.js';
-import { pipelinedCdp, recordingCdp } from './helpers/local-page.mjs';
+import {
+  pipelinedCdp,
+  recordingCdp
+} from './helpers/local-page.mjs';
 
 test('long text is chunked, because one oversized insert can be dropped without an error', () => {
-  assert.deepEqual(splitText('abcdef', 4), ['abcd', 'ef']);
+  assert.deepEqual(splitText('abcdef', 4), [
+    'abcd',
+    'ef'
+  ]);
   assert.deepEqual(splitText('', 4), []);
   assert.deepEqual(splitText('ab', 10), ['ab']);
 });
@@ -40,7 +46,12 @@ test('a long document is sent as several inserts so one failure cannot lose all 
   await p.type('x'.repeat(35));
 
   const inserts = cdp.calls.filter((c) => c.method === 'Input.insertText');
-  assert.deepEqual(inserts.map((i) => i.params.text.length), [10, 10, 10, 5]);
+  assert.deepEqual(inserts.map((i) => i.params.text.length), [
+    10,
+    10,
+    10,
+    5
+  ]);
 });
 
 // WHY PLACEMENT IS PROVED AND NOT TRUSTED.
@@ -61,14 +72,31 @@ test('type answers where the text landed, not just that it did', async () => {
 
 test('text typed into a field is found in the field, because a field never touches the body text', async () => {
   const sigs = [
-    { body: '9:body text', value: '0:', holds: true },
-    { body: '9:body text', value: '5:hello', holds: true }
+    {
+      body: '9:body text',
+      value: '0:',
+      holds: true
+    },
+    {
+      body: '9:body text',
+      value: '5:hello',
+      holds: true
+    }
   ];
   let asks = 0;
   const cdp = {
-    send: async (method, params = {}) => {
+    send: async (
+      method,
+      params = {}
+    ) => {
       if (method === 'Runtime.evaluate' && String(params.expression).includes('opera-locate')) {
-        return { result: { value: { index: 0, field: true, before: '', after: '', len: 9 } } };
+        return { result: { value: {
+          index: 0,
+          field: true,
+          before: '',
+          after: '',
+          len: 9
+        } } };
       }
       if (method === 'Runtime.evaluate' && String(params.expression).includes('isContentEditable')) {
         return { result: { value: sigs[Math.min(asks++, sigs.length - 1)] } };
@@ -93,22 +121,40 @@ test('type outlasts a slow mirror instead of failing over text that landed', asy
   let reads = 0;
   const slept = [];
   const cdp = {
-    send: async (method, params = {}) => {
+    send: async (
+      method,
+      params = {}
+    ) => {
       if (method === 'Runtime.evaluate' && String(params.expression).includes('isContentEditable')) {
         reads += 1;
         const moved = reads >= 7;
         return { result: { value: moved
-          ? { body: '14:body textHello', value: '', holds: true }
-          : { body: '9:body text', value: '', holds: true } } };
+          ? {
+            body: '14:body textHello',
+            value: '',
+            holds: true
+          }
+          : {
+            body: '9:body text',
+            value: '',
+            holds: true
+          } } };
       }
       if (method === 'Runtime.evaluate' && String(params.expression).includes('opera-locate')) {
-        return { result: { value: { index: 9, before: 'body text', after: '', len: 14 } } };
+        return { result: { value: {
+          index: 9,
+          before: 'body text',
+          after: '',
+          len: 14
+        } } };
       }
       return {};
     }
   };
 
-  const out = await createPrimitives(cdp, { sleep: async (ms) => { slept.push(ms); } }).type('Hello');
+  const out = await createPrimitives(cdp, { sleep: async (ms) => {
+    slept.push(ms);
+  } }).type('Hello');
 
   assert.equal(out.landed, true);
   assert.ok(reads > 4, `a four-ask budget would have failed this: ${reads} reads`);
@@ -117,14 +163,30 @@ test('type outlasts a slow mirror instead of failing over text that landed', asy
 
 test('type survives an unfindable probe, because the page moved even if the probe did not match', async () => {
   const sigs = [
-    { body: '9:body text', value: '', holds: true },
-    { body: '14:body textHello', value: '', holds: true }
+    {
+      body: '9:body text',
+      value: '',
+      holds: true
+    },
+    {
+      body: '14:body textHello',
+      value: '',
+      holds: true
+    }
   ];
   let asks = 0;
   const cdp = {
-    send: async (method, params = {}) => {
+    send: async (
+      method,
+      params = {}
+    ) => {
       if (method === 'Runtime.evaluate' && String(params.expression).includes('opera-locate')) {
-        return { result: { value: { index: -1, before: 'body textHello', after: '', len: 14 } } };
+        return { result: { value: {
+          index: -1,
+          before: 'body textHello',
+          after: '',
+          len: 14
+        } } };
       }
       if (method === 'Runtime.evaluate' && String(params.expression).includes('isContentEditable')) {
         return { result: { value: sigs[Math.min(asks++, sigs.length - 1)] } };
@@ -156,7 +218,9 @@ test('append waits for the page to be quiet, not for a fixed beat', async () => 
   const slept = [];
   const cdp = recordingCdp();
 
-  await createPrimitives(cdp, { sleep: async (ms) => { slept.push(ms); } }).append('tail text');
+  await createPrimitives(cdp, { sleep: async (ms) => {
+    slept.push(ms);
+  } }).append('tail text');
 
   assert.ok(slept.includes(SETTLE_POLL_MS), 'the end key is followed by a settle');
   assert.ok(!slept.includes(120), 'and not by the old fixed 120 ms beat');
@@ -174,14 +238,31 @@ test('append says so when text follows it, because "at the end" is a claim to pr
 
 test('append admits it cannot see where the text went rather than claiming the end', async () => {
   const sigs = [
-    { body: '9:body text', value: '', holds: true },
-    { body: '18:body texttail text', value: '', holds: true }
+    {
+      body: '9:body text',
+      value: '',
+      holds: true
+    },
+    {
+      body: '18:body texttail text',
+      value: '',
+      holds: true
+    }
   ];
   let asks = 0;
   const cdp = {
-    send: async (method, params = {}) => {
+    send: async (
+      method,
+      params = {}
+    ) => {
       if (method === 'Runtime.evaluate' && String(params.expression).includes('opera-locate')) {
-        return { result: { value: { index: -1, field: false, before: 'body texttail text', after: '', len: 18 } } };
+        return { result: { value: {
+          index: -1,
+          field: false,
+          before: 'body texttail text',
+          after: '',
+          len: 18
+        } } };
       }
       if (method === 'Runtime.evaluate' && String(params.expression).includes('isContentEditable')) {
         return { result: { value: sigs[Math.min(asks++, sigs.length - 1)] } };
@@ -218,7 +299,10 @@ test('a chord is two masked events with codes and no text, because separate modi
   assert.equal(events[0].params.nativeVirtualKeyCode, 65);
   assert.equal(events[1].params.type, 'keyUp');
   assert.equal(events[1].params.modifiers, 2);
-  assert.deepEqual(out, { key: 'a', modifiers: 2 });
+  assert.deepEqual(out, {
+    key: 'a',
+    modifiers: 2
+  });
 });
 
 // WHY A MISSPELLED MODIFIER MAY NOT BECOME A PLAIN KEY.
@@ -243,7 +327,10 @@ test('a bare key carries no modifier bits', async () => {
 test('modifier bits combine rather than overwrite', () => {
   assert.equal(modifierMask([]), 0);
   assert.equal(modifierMask(['Shift']), 8);
-  assert.equal(modifierMask(['Control', 'Shift']), 10);
+  assert.equal(modifierMask([
+    'Control',
+    'Shift'
+  ]), 10);
 });
 
 test('Tab carries no text, because text on Tab stranded Sheets focus in the formula bar', async () => {
@@ -271,7 +358,10 @@ test('an unknown key fails loudly before anything is sent, or a value silently l
   const p = createPrimitives(cdp);
 
   await assert.rejects(() => p.key('Frobnicator'), /Unknown key/);
-  await assert.rejects(() => p.keys([{ text: 'a' }, { key: 'Frobnicator' }]), /Unknown key/);
+  await assert.rejects(() => p.keys([
+    { text: 'a' },
+    { key: 'Frobnicator' }
+  ]), /Unknown key/);
   assert.deepEqual(cdp.calls, [], 'a refused stream must not partially execute');
 });
 
@@ -284,42 +374,73 @@ test('a named key like Enter is dispatched with its virtual key code', async () 
   assert.equal(down.params.code, 'Enter');
 });
 
-test('Space types a real blank, because Sheets values carry them', async () => {  const cdp = recordingCdp();
-  await createPrimitives(cdp).key('Space');
+test('Space types a real blank, because Sheets values carry them', async () => {
+  const cdp = recordingCdp();
+    await createPrimitives(cdp).key('Space');
 
-  const down = cdp.calls.find((c) => c.method === 'Input.dispatchKeyEvent' && c.params.type === 'keyDown');
-  assert.equal(down.params.key, ' ');
-  assert.equal(down.params.code, 'Space');
-  assert.equal(down.params.windowsVirtualKeyCode, 32);
-  assert.equal(down.params.text, ' ');
+    const down = cdp.calls.find((c) => c.method === 'Input.dispatchKeyEvent' && c.params.type === 'keyDown');
+    assert.equal(down.params.key, ' ');
+    assert.equal(down.params.code, 'Space');
+    assert.equal(down.params.windowsVirtualKeyCode, 32);
+    assert.equal(down.params.text, ' ');
 });
 
 test('a stream preserves order, counts its work, and refuses what it cannot carry', async () => {
   const cdp = recordingCdp();
   const slept = [];
-  const p = createPrimitives(cdp, { sleep: async (ms) => { slept.push(ms); } });
+  const p = createPrimitives(cdp, { sleep: async (ms) => {
+    slept.push(ms);
+  } });
 
   const out = await p.keys([
-    { key: '1', modifiers: ['Control', 'Alt'] },
+    {
+      key: '1',
+      modifiers: [
+        'Control',
+        'Alt'
+      ]
+    },
     { text: 'Hi' },
-    { key: 'Enter', gapMs: 50 }
+    {
+      key: 'Enter',
+      gapMs: 50
+    }
   ]);
 
   assert.equal(out.events, 3);
   assert.equal(out.chords, 2);
   assert.equal(out.chars, 2);
   assert.ok(out.execMs >= 0);
-  assert.deepEqual(slept, [KEY_BEAT_MS, KEY_BEAT_MS, 50],
+  assert.deepEqual(slept, [
+    KEY_BEAT_MS,
+    KEY_BEAT_MS,
+    50
+  ],
     'each chord keeps its beat once, inside the key; then the asked gap');
   assert.deepEqual(
     cdp.calls.map((c) => c.method),
-    ['Runtime.evaluate', 'Input.dispatchKeyEvent', 'Input.dispatchKeyEvent', 'Input.insertText', 'Input.dispatchKeyEvent', 'Input.dispatchKeyEvent', 'Runtime.evaluate', 'Runtime.evaluate'],
+    [
+      'Runtime.evaluate',
+      'Input.dispatchKeyEvent',
+      'Input.dispatchKeyEvent',
+      'Input.insertText',
+      'Input.dispatchKeyEvent',
+      'Input.dispatchKeyEvent',
+      'Runtime.evaluate',
+      'Runtime.evaluate'
+    ],
     'the run is what was written, bracketed by the signature before and the focus-plus-signature after'
   );
   await assert.rejects(() => p.keys([]), /non-empty/);
   await assert.rejects(() => p.keys(new Array(101).fill({ key: 'a' })), /at most 100/);
-  await assert.rejects(() => p.keys([{ key: 'a', gapMs: 5000 }]), /gap/);
-  await assert.rejects(() => p.keys([{ key: 'a', text: 'b' }]), /not both/);
+  await assert.rejects(() => p.keys([{
+    key: 'a',
+    gapMs: 5000
+  }]), /gap/);
+  await assert.rejects(() => p.keys([{
+    key: 'a',
+    text: 'b'
+  }]), /not both/);
   await assert.rejects(() => p.keys([{}]), /needs text or a key/);
 });
 
@@ -343,9 +464,16 @@ test('text that lands is reported as landed, and the page is asked once on the w
 
 test('a page with no caret fails the edit instead of counting the characters it inserted', async () => {
   const cdp = {
-    send: async (method, params = {}) => {
+    send: async (
+      method,
+      params = {}
+    ) => {
       if (method === 'Runtime.evaluate' && String(params.expression).includes('isContentEditable')) {
-        return { result: { value: { body: '19:Untitled document\n\n', value: '', holds: true } } };
+        return { result: { value: {
+          body: '19:Untitled document\n\n',
+          value: '',
+          holds: true
+        } } };
       }
       return {};
     }
@@ -362,13 +490,27 @@ test('a page with no caret fails the edit instead of counting the characters it 
 test('a type that lands nowhere names the element that had focus', async () => {
   const cdp = {
     calls: [],
-    send: async (method, params = {}) => {
-      cdp.calls.push({ method, params });
+    send: async (
+      method,
+      params = {}
+    ) => {
+      cdp.calls.push({
+        method,
+        params
+      });
       if (method === 'Runtime.evaluate' && String(params.expression).includes('trail')) {
-        return { result: { value: { trail: 'button#button', tag: 'BUTTON', editable: false } } };
+        return { result: { value: {
+          trail: 'button#button',
+          tag: 'BUTTON',
+          editable: false
+        } } };
       }
       if (method === 'Runtime.evaluate' && String(params.expression).includes('isContentEditable')) {
-        return { result: { value: { body: '19:Untitled document\n\n', value: '', holds: true } } };
+        return { result: { value: {
+          body: '19:Untitled document\n\n',
+          value: '',
+          holds: true
+        } } };
       }
       return {};
     }
@@ -386,9 +528,16 @@ test('a type that lands nowhere names the element that had focus', async () => {
 
 test('a page with nothing to type into says so in the words of that fact', async () => {
   const cdp = {
-    send: async (method, params = {}) => {
+    send: async (
+      method,
+      params = {}
+    ) => {
       if (method === 'Runtime.evaluate' && String(params.expression).includes('isContentEditable')) {
-        return { result: { value: { body: '0:', value: '', holds: false } } };
+        return { result: { value: {
+          body: '0:',
+          value: '',
+          holds: false
+        } } };
       }
       return {};
     }
@@ -400,10 +549,17 @@ test('a page with nothing to type into says so in the words of that fact', async
 test('text typed into a field counts as landed, because a field does not change the page text', async () => {
   let value = '';
   const cdp = {
-    send: async (method, params = {}) => {
+    send: async (
+      method,
+      params = {}
+    ) => {
       if (method === 'Input.insertText') value += params.text;
       if (method === 'Runtime.evaluate' && String(params.expression).includes('isContentEditable')) {
-        return { result: { value: { body: '9:no change', value: `${value.length}:${value}`, holds: true } } };
+        return { result: { value: {
+          body: '9:no change',
+          value: `${value.length}:${value}`,
+          holds: true
+        } } };
       }
       return {};
     }
@@ -417,7 +573,13 @@ test('text typed into a field counts as landed, because a field does not change 
 test('a stream reports whether the page moved, because a shortcut in it can move the page on its own', async () => {
   const cdp = pipelinedCdp();
 
-  const out = await createPrimitives(cdp).keys([{ key: 'a', modifiers: ['Control'] }, { text: 'Hi' }]);
+  const out = await createPrimitives(cdp).keys([
+    {
+      key: 'a',
+      modifiers: ['Control']
+    },
+    { text: 'Hi' }
+  ]);
 
   assert.equal(out.moved, true, 'the text moved the page, and the stream says so');
 });
@@ -426,7 +588,10 @@ test('a run reaches the wire in the order it was written', async () => {
   const cdp = pipelinedCdp();
 
   await createPrimitives(cdp, { sleep: async () => {} }).keys([
-    { key: '1', modifiers: ['Control'] },
+    {
+      key: '1',
+      modifiers: ['Control']
+    },
     { text: 'Hi' },
     { key: 'Enter' }
   ]);
@@ -450,14 +615,25 @@ test('a run reaches the wire in the order it was written', async () => {
 test('a gap splits the run, so a beat for the UI is a real beat', async () => {
   const slept = [];
   const cdp = pipelinedCdp();
-  const p = createPrimitives(cdp, { sleep: async (ms) => { slept.push(ms); } });
+  const p = createPrimitives(cdp, { sleep: async (ms) => {
+    slept.push(ms);
+  } });
 
-  await p.keys([{ text: 'a', gapMs: 50 }, { text: 'b' }]);
+  await p.keys([
+    {
+      text: 'a',
+      gapMs: 50
+    },
+    { text: 'b' }
+  ]);
 
   assert.deepEqual(slept, [50]);
   assert.deepEqual(
     cdp.calls.filter((c) => c.method === 'Input.insertText').map((c) => c.params.text),
-    ['a', 'b']
+    [
+      'a',
+      'b'
+    ]
   );
 });
 
@@ -471,7 +647,10 @@ test('type chunks fire together', async () => {
 
 test('a modified key sends no text, because text under a modifier is typed literally', async () => {
   const cdp = recordingCdp();
-  await createPrimitives(cdp).key('2', ['Control', 'Alt']);
+  await createPrimitives(cdp).key('2', [
+    'Control',
+    'Alt'
+  ]);
 
   const downs = cdp.calls.filter((c) => c.method === 'Input.dispatchKeyEvent' && c.params.type === 'rawKeyDown');
   assert.equal(downs.length, 1, 'one keyDown carries the whole chord');
@@ -501,10 +680,16 @@ test('a modified letter sends no text either, or Ctrl+A would type an a', async 
 
 test('every keyUp carries the same mask as its keyDown, so the chord reads whole on both edges', async () => {
   const cdp = recordingCdp();
-  await createPrimitives(cdp).key('2', ['Control', 'Alt']);
+  await createPrimitives(cdp).key('2', [
+    'Control',
+    'Alt'
+  ]);
 
   const events = cdp.calls.filter((c) => c.method === 'Input.dispatchKeyEvent');
-  assert.deepEqual(events.map((e) => e.params.type), ['rawKeyDown', 'keyUp']);
+  assert.deepEqual(events.map((e) => e.params.type), [
+    'rawKeyDown',
+    'keyUp'
+  ]);
   assert.equal(events[1].params.modifiers, 3);
   assert.equal(events[1].params.text, undefined);
 });
@@ -531,7 +716,9 @@ test('a key holds its down edge a beat before the up', async () => {
   for (const modifiers of [['Control'], []]) {
     const slept = [];
     const cdp = recordingCdp();
-    await createPrimitives(cdp, { sleep: async (ms) => { slept.push(ms); } }).key('a', modifiers);
+    await createPrimitives(cdp, { sleep: async (ms) => {
+      slept.push(ms);
+    } }).key('a', modifiers);
 
     assert.deepEqual(slept, [KEY_BEAT_MS], 'down, beat, up — chord and bare key alike');
   }
@@ -540,41 +727,87 @@ test('a key holds its down edge a beat before the up', async () => {
 test('chords in a stream keep one beat, not two', async () => {
   const slept = [];
   const cdp = recordingCdp();
-  const p = createPrimitives(cdp, { sleep: async (ms) => { slept.push(ms); } });
+  const p = createPrimitives(cdp, { sleep: async (ms) => {
+    slept.push(ms);
+  } });
 
-  await p.keys([{ key: 'a', modifiers: ['Control'] }, { text: 'hi' }, { key: 'b', modifiers: ['Control'] }]);
+  await p.keys([
+    {
+      key: 'a',
+      modifiers: ['Control']
+    },
+    { text: 'hi' },
+    {
+      key: 'b',
+      modifiers: ['Control']
+    }
+  ]);
 
-  assert.deepEqual(slept, [KEY_BEAT_MS, KEY_BEAT_MS], 'the beat lives inside key(); the stream adds no second beat');
+  assert.deepEqual(slept, [
+    KEY_BEAT_MS,
+    KEY_BEAT_MS
+  ], 'the beat lives inside key(); the stream adds no second beat');
 });
 
 test('a chord-only stream settles once instead of polling for an edit that never comes', async () => {
   const slept = [];
   const cdp = recordingCdp();
-  const p = createPrimitives(cdp, { sleep: async (ms) => { slept.push(ms); } });
+  const p = createPrimitives(cdp, { sleep: async (ms) => {
+    slept.push(ms);
+  } });
 
-  const out = await p.keys([{ key: 'a', modifiers: ['Control'] }, { key: 'b', modifiers: ['Control'] }]);
+  const out = await p.keys([
+    {
+      key: 'a',
+      modifiers: ['Control']
+    },
+    {
+      key: 'b',
+      modifiers: ['Control']
+    }
+  ]);
 
   assert.equal(out.moved, false, 'a menu chord does not move the text signature');
   assert.equal(out.settled, true, 'and it says it already settled, so the page look does not pay twice');
-  assert.deepEqual(slept, [KEY_BEAT_MS, KEY_BEAT_MS, SETTLE_POLL_MS], 'two key beats, then one settle — not twelve 150 ms polls');
+  assert.deepEqual(slept, [
+    KEY_BEAT_MS,
+    KEY_BEAT_MS,
+    SETTLE_POLL_MS
+  ], 'two key beats, then one settle — not twelve 150 ms polls');
 });
 
 test('a text stream with nothing focused fails fast instead of polling for text that cannot land', async () => {
   const slept = [];
   const cdp = {
     calls: [],
-    send: async (method, params = {}) => {
-      cdp.calls.push({ method, params });
+    send: async (
+      method,
+      params = {}
+    ) => {
+      cdp.calls.push({
+        method,
+        params
+      });
       if (method === 'Runtime.evaluate' && String(params.expression).includes('shadowRoot')) {
-        return { result: { value: { trail: 'button', tag: 'BUTTON', editable: false } } };
+        return { result: { value: {
+          trail: 'button',
+          tag: 'BUTTON',
+          editable: false
+        } } };
       }
       if (method === 'Runtime.evaluate' && String(params.expression).includes('document.body')) {
-        return { result: { value: { body: '9:body text', value: '', holds: true } } };
+        return { result: { value: {
+          body: '9:body text',
+          value: '',
+          holds: true
+        } } };
       }
       return {};
     }
   };
-  const p = createPrimitives(cdp, { sleep: async (ms) => { slept.push(ms); } });
+  const p = createPrimitives(cdp, { sleep: async (ms) => {
+    slept.push(ms);
+  } });
 
   const out = await p.keys([{ text: 'abc' }]);
 
@@ -585,16 +818,43 @@ test('a text stream with nothing focused fails fast instead of polling for text 
 test('createInputMethods exposes the typing and key verbs', () => {
   const methods = createInputMethods({
     cdp: { send: async () => ({}) },
-    primitives: { key: async () => ({}), settle: async () => ({}), type: async () => ({}) },
+    primitives: {
+      key: async () => ({}),
+      settle: async () => ({}),
+      type: async () => ({})
+    },
     sleep: async () => {},
     chunkSize: 2000
   });
 
-  assert.deepEqual(Object.keys(methods).sort(), ['append', 'clear', 'key', 'keys', 'selectAll', 'type']);
+  assert.deepEqual(Object.keys(methods).sort(), [
+    'append',
+    'clear',
+    'key',
+    'keys',
+    'selectAll',
+    'type'
+  ]);
 });
 
 test('all four arrows dispatch with their virtual key codes', async () => {
-  for (const [name, vk, code] of [['ArrowLeft', 37, 'ArrowLeft'], ['ArrowRight', 39, 'ArrowRight'], ['ArrowUp', 38, 'ArrowUp'], ['ArrowDown', 40, 'ArrowDown']]) {
+  for (const [name, vk, code] of [[
+    'ArrowLeft',
+    37,
+    'ArrowLeft'
+  ], [
+    'ArrowRight',
+    39,
+    'ArrowRight'
+  ], [
+    'ArrowUp',
+    38,
+    'ArrowUp'
+  ], [
+    'ArrowDown',
+    40,
+    'ArrowDown'
+  ]]) {
     const cdp = recordingCdp();
     await createPrimitives(cdp).key(name);
 

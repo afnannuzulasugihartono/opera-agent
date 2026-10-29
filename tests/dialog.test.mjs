@@ -11,7 +11,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { dialogState, dialogType, dialogPress } from '../local/dialog.js';
+import {
+  dialogState,
+  dialogType,
+  dialogPress
+} from '../local/dialog.js';
 import { TOOLS } from '../local/mcp-server.js';
 import { guide } from '../local/agent-guide.js';
 
@@ -44,7 +48,11 @@ test('a type that reports success also reads back what it typed', async () => {
 // Driving an operating system dialog is the first thing this driver does outside the browser, so it is visible by name rather than hidden behind a flag: a caller reading the catalogue can see it before it happens, and an agent can find it without being told.
 
 test('the catalogue names the dialog road, and says it is outside the browser', () => {
-  const names = ['dialog_state', 'dialog_type', 'dialog_press'].map((name) => TOOLS.find((tool) => tool.name === name));
+  const names = [
+    'dialog_state',
+    'dialog_type',
+    'dialog_press'
+  ].map((name) => TOOLS.find((tool) => tool.name === name));
 
   for (const tool of names) assert.ok(tool, `${tool} is in the catalogue`);
   assert.match(names[1].description, /dialog/i);
@@ -65,7 +73,10 @@ test('the guide says a dialog is answerable now, not only avoidable', () => {
 
 test('the guide declares what the dialog calls do to the machine', () => {
   const { sideEffects } = guide();
-  const byTool = Object.fromEntries(sideEffects.map((entry) => [entry.tool, entry.effects]));
+  const byTool = Object.fromEntries(sideEffects.map((entry) => [
+    entry.tool,
+    entry.effects
+  ]));
 
   assert.ok(byTool.dialog_type.some((line) => /outside the browser/.test(line)));
   assert.ok(byTool.dialog_press.some((line) => /outside the browser/.test(line)));

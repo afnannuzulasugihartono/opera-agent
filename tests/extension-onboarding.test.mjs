@@ -44,7 +44,6 @@ test('the options page speaks Indonesian too', () => {
 });
 
 test('every user-facing error is Indonesian, never a raw internal', () => {
-
   for (const source of [
     'Pairing failed.',
     'Invalid pairing code.',

@@ -11,7 +11,9 @@ function event(name) {
   const fns = [];
   listeners[name] = fns;
   return {
-    addListener: (fn) => { fns.push(fn); },
+    addListener: (fn) => {
+      fns.push(fn);
+    },
     removeListener: (fn) => {
       const i = fns.indexOf(fn); if (i >= 0) fns.splice(i, 1);
     },
@@ -38,7 +40,10 @@ globalThis.chrome = {
   },
   storage: {
     onChanged: event('storage.onChanged'),
-    local: { get: async () => ({}), set: async () => {} },
+    local: {
+      get: async () => ({}),
+      set: async () => {}
+    },
   },
 };
 
@@ -56,7 +61,6 @@ test('the service worker module graph evaluates without throwing', async () => {
 test.after(() => stopBridgeLink());
 
 test('the load-time listeners actually registered', () => {
-
   assert.equal(listeners['runtime.onMessage'].length, 1, 'exactly one onMessage handler');
   assert.equal(listeners['tabs.onRemoved'].length, 3, 'pull, loops and bridge-link all drop their tab state');
   assert.equal(listeners['debugger.onDetach'].length, 1, 'the debugger detach handler registers');

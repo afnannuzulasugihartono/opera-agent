@@ -17,8 +17,14 @@ const SCROLL_CDP = (answer) => {
   const calls = [];
   return {
     calls,
-    send: async (method, params = {}) => {
-      calls.push({ method, params });
+    send: async (
+      method,
+      params = {}
+    ) => {
+      calls.push({
+        method,
+        params
+      });
       if (method === 'Runtime.evaluate' && String(params.expression).includes('opera-scroll')) {
         return { result: { value: answer } };
       }
@@ -29,7 +35,24 @@ const SCROLL_CDP = (answer) => {
 
 
 test('a scroll by pixels answers how far the view actually moved', async () => {
-  const cdp = SCROLL_CDP({ from: { x: 0, y: 1200 }, to: { x: 0, y: 2600 }, scroller: { name: 'document', from: 1200, to: 2600 }, movedPx: 1400, atEnd: false, root: 'document' });
+  const cdp = SCROLL_CDP({
+    from: {
+      x: 0,
+      y: 1200
+    },
+    to: {
+      x: 0,
+      y: 2600
+    },
+    scroller: {
+      name: 'document',
+      from: 1200,
+      to: 2600
+    },
+    movedPx: 1400,
+    atEnd: false,
+    root: 'document'
+  });
 
   const out = await createPrimitives(cdp).scroll({ y: 1400 });
 
@@ -47,14 +70,29 @@ test('a scroll by pixels answers how far the view actually moved', async () => {
 
 test('a scroll that reached no end says so, and names what it moved instead', async () => {
   const cdp = SCROLL_CDP({
-    from: { x: 0, y: 0 },
-    to: { x: 0, y: 0 },
-    scroller: { name: 'div.kix-canvas-tile-content', from: 0, to: 0 },
+    from: {
+      x: 0,
+      y: 0
+    },
+    to: {
+      x: 0,
+      y: 0
+    },
+    scroller: {
+      name: 'div.kix-canvas-tile-content',
+      from: 0,
+      to: 0
+    },
     movedPx: 0,
     atEnd: false,
     exhausted: true,
     root: 'div.kix-canvas-tile-content',
-    target: { found: false, visible: false, y: 0, text: '' }
+    target: {
+      found: false,
+      visible: false,
+      y: 0,
+      text: ''
+    }
   });
 
   const out = await createPrimitives(cdp).scroll({ end: true });
@@ -69,15 +107,30 @@ test('a scroll that reached no end says so, and names what it moved instead', as
 
 test('an exhausted scroller is not a page that is finished', async () => {
   const cdp = SCROLL_CDP({
-    from: { x: 0, y: 0 },
-    to: { x: 0, y: 0 },
-    scroller: { name: 'div.feed', from: 0, to: 0 },
+    from: {
+      x: 0,
+      y: 0
+    },
+    to: {
+      x: 0,
+      y: 0
+    },
+    scroller: {
+      name: 'div.feed',
+      from: 0,
+      to: 0
+    },
     movedPx: 0,
     atEnd: false,
     exhausted: true,
     travelPx: 0,
     root: 'div.feed',
-    target: { found: false, visible: false, y: 0, text: '' }
+    target: {
+      found: false,
+      visible: false,
+      y: 0,
+      text: ''
+    }
   });
 
   const out = await createPrimitives(cdp).scroll({ end: true });
@@ -101,13 +154,28 @@ test('the scroll expression prefers the container with the most room over the wi
 
 test('a scroll whose scroller moved reports that scroller, not the window', async () => {
   const cdp = SCROLL_CDP({
-    from: { x: 0, y: 0 },
-    to: { x: 0, y: 0 },
-    scroller: { name: 'div.feed', from: 900, to: 26400 },
+    from: {
+      x: 0,
+      y: 0
+    },
+    to: {
+      x: 0,
+      y: 0
+    },
+    scroller: {
+      name: 'div.feed',
+      from: 900,
+      to: 26400
+    },
     movedPx: 25500,
     atEnd: true,
     root: 'div.feed',
-    target: { found: false, visible: false, y: 0, text: '' }
+    target: {
+      found: false,
+      visible: false,
+      y: 0,
+      text: ''
+    }
   });
 
   const out = await createPrimitives(cdp).scroll({ end: true });
@@ -120,7 +188,24 @@ test('a scroll whose scroller moved reports that scroller, not the window', asyn
 
 
 test('a scroll to the end says the end was reached, in pixels the page measured', async () => {
-  const cdp = SCROLL_CDP({ from: { x: 0, y: 0 }, to: { x: 0, y: 26400 }, scroller: { name: 'document', from: 0, to: 26400 }, movedPx: 26400, atEnd: true, root: 'document' });
+  const cdp = SCROLL_CDP({
+    from: {
+      x: 0,
+      y: 0
+    },
+    to: {
+      x: 0,
+      y: 26400
+    },
+    scroller: {
+      name: 'document',
+      from: 0,
+      to: 26400
+    },
+    movedPx: 26400,
+    atEnd: true,
+    root: 'document'
+  });
 
   const out = await createPrimitives(cdp).scroll({ end: true });
 
@@ -131,7 +216,30 @@ test('a scroll to the end says the end was reached, in pixels the page measured'
 
 
 test('a scroll to a text reports whether that text is now on screen', async () => {
-  const cdp = SCROLL_CDP({ from: { x: 0, y: 0 }, to: { x: 0, y: 0 }, scroller: { name: 'target', from: 0, to: 0 }, movedPx: 1, atEnd: false, root: 'target', target: { found: true, visible: true, y: 420, text: 'BAB V KESIMPULAN DAN SARAN' } });
+  const cdp = SCROLL_CDP({
+    from: {
+      x: 0,
+      y: 0
+    },
+    to: {
+      x: 0,
+      y: 0
+    },
+    scroller: {
+      name: 'target',
+      from: 0,
+      to: 0
+    },
+    movedPx: 1,
+    atEnd: false,
+    root: 'target',
+    target: {
+      found: true,
+      visible: true,
+      y: 420,
+      text: 'BAB V KESIMPULAN DAN SARAN'
+    }
+  });
 
   const out = await createPrimitives(cdp).scroll({ text: 'BAB V KESIMPULAN DAN SARAN' });
 
@@ -143,7 +251,30 @@ test('a scroll to a text reports whether that text is now on screen', async () =
 
 
 test('a scroll that finds nothing says so, rather than reporting a scroll that went nowhere', async () => {
-  const cdp = SCROLL_CDP({ from: { x: 0, y: 500 }, to: { x: 0, y: 500 }, scroller: { name: 'document', from: 500, to: 500 }, movedPx: 0, atEnd: false, root: 'document', target: { found: false, visible: false, y: 0, text: '' } });
+  const cdp = SCROLL_CDP({
+    from: {
+      x: 0,
+      y: 500
+    },
+    to: {
+      x: 0,
+      y: 500
+    },
+    scroller: {
+      name: 'document',
+      from: 500,
+      to: 500
+    },
+    movedPx: 0,
+    atEnd: false,
+    root: 'document',
+    target: {
+      found: false,
+      visible: false,
+      y: 0,
+      text: ''
+    }
+  });
 
   const out = await createPrimitives(cdp).scroll({ text: 'a heading that is not on this page' });
 
@@ -161,8 +292,14 @@ const COMPUTED_CDP = (answer) => {
   const calls = [];
   return {
     calls,
-    send: async (method, params = {}) => {
-      calls.push({ method, params });
+    send: async (
+      method,
+      params = {}
+    ) => {
+      calls.push({
+        method,
+        params
+      });
       if (method === 'Runtime.evaluate' && String(params.expression).includes('opera-computed')) {
         return { result: { value: answer } };
       }
@@ -176,7 +313,14 @@ const BLUE_BUTTON = {
   tag: 'BUTTON',
   role: 'button',
   name: 'Bold',
-  rect: { x: 12, y: 30, w: 40, h: 30, onScreen: true, clipped: false },
+  rect: {
+    x: 12,
+    y: 30,
+    w: 40,
+    h: 30,
+    onScreen: true,
+    clipped: false
+  },
   font: 'Arial',
   size: '13px',
   weight: '700',
@@ -204,9 +348,25 @@ test('a computed read names the element it read and the values that decide what 
 
 
 test('a computed read by point answers about whatever is under that point', async () => {
-  const cdp = COMPUTED_CDP({ ...BLUE_BUTTON, tag: 'CANVAS', role: '', name: '', rect: { x: 0, y: 0, w: 1430, h: 893, onScreen: true, clipped: true } });
+  const cdp = COMPUTED_CDP({
+    ...BLUE_BUTTON,
+    tag: 'CANVAS',
+    role: '',
+    name: '',
+    rect: {
+      x: 0,
+      y: 0,
+      w: 1430,
+      h: 893,
+      onScreen: true,
+      clipped: true
+    }
+  });
 
-  const out = await createPrimitives(cdp).computed({ x: 500, y: 300 });
+  const out = await createPrimitives(cdp).computed({
+    x: 500,
+    y: 300
+  });
 
   assert.equal(out.tag, 'CANVAS');
   assert.equal(out.rect.clipped, true, 'an element that runs past the viewport says so');
@@ -216,7 +376,10 @@ test('a computed read by point answers about whatever is under that point', asyn
 test('a computed read that finds nothing says so, with the call that would find something', async () => {
   const cdp = COMPUTED_CDP(null);
 
-  const out = await createPrimitives(cdp).computed({ x: 5, y: 5 });
+  const out = await createPrimitives(cdp).computed({
+    x: 5,
+    y: 5
+  });
 
   assert.equal(out.found, false);
   assert.match(out.why, /ax_snapshot\(\)/);
@@ -239,14 +402,31 @@ test('a computed read without a target is refused before it costs a round trip',
 test('a snapshot costs one round trip, whatever the page holds', async () => {
   const calls = [];
   const cdp = {
-    send: async (method, params = {}) => {
-      calls.push({ method, params });
+    send: async (
+      method,
+      params = {}
+    ) => {
+      calls.push({
+        method,
+        params
+      });
       if (method === 'Runtime.evaluate') {
         return {
           result: {
             value: [
-              { role: 'menuitem', name: 'Table t ►', x: 200, y: 220 },
-              { role: 'textbox', name: 'Formula', x: 200, y: 220, value: '=SUM(A1)' }
+              {
+                role: 'menuitem',
+                name: 'Table t ►',
+                x: 200,
+                y: 220
+              },
+              {
+                role: 'textbox',
+                name: 'Formula',
+                x: 200,
+                y: 220,
+                value: '=SUM(A1)'
+              }
             ]
           }
         };
@@ -261,8 +441,19 @@ test('a snapshot costs one round trip, whatever the page holds', async () => {
     'one call decides the whole snapshot');
   assert.equal(calls[0].params.returnByValue, true, 'the list comes back as a value, not a handle');
   assert.deepEqual(snap, [
-    { role: 'menuitem', name: 'Table t ►', x: 200, y: 220 },
-    { role: 'textbox', name: 'Formula', x: 200, y: 220, value: '=SUM(A1)' }
+    {
+      role: 'menuitem',
+      name: 'Table t ►',
+      x: 200,
+      y: 220
+    },
+    {
+      role: 'textbox',
+      name: 'Formula',
+      x: 200,
+      y: 220,
+      value: '=SUM(A1)'
+    }
   ]);
 });
 
@@ -284,8 +475,13 @@ test('the page expression keeps every role the old tree filter kept', () => {
 test('a snapshot carries its limit into the page, because the page does the filtering', async () => {
   let expression = '';
   const cdp = {
-    send: async (method, params = {}) => {
-      if (method === 'Runtime.evaluate') { expression = params.expression; return { result: { value: [] } }; }
+    send: async (
+      method,
+      params = {}
+    ) => {
+      if (method === 'Runtime.evaluate') {
+        expression = params.expression; return { result: { value: [] } };
+      }
       return {};
     }
   };
@@ -298,8 +494,13 @@ test('a snapshot carries its limit into the page, because the page does the filt
 test('a snapshot clamps its limit, so a wild request cannot walk the whole document', async () => {
   const limits = [];
   const cdp = {
-    send: async (method, params = {}) => {
-      if (method === 'Runtime.evaluate') { limits.push(params.expression); return { result: { value: [] } }; }
+    send: async (
+      method,
+      params = {}
+    ) => {
+      if (method === 'Runtime.evaluate') {
+        limits.push(params.expression); return { result: { value: [] } };
+      }
       return {};
     }
   };
@@ -338,7 +539,13 @@ test('a capture is clipped to the clickable viewport at one to one, or every vis
   await createPrimitives(cdp).capture();
 
   const shot = cdp.calls.find((c) => c.method === 'Page.captureScreenshot');
-  assert.deepEqual(shot.params.clip, { x: 0, y: 0, width: 1136, height: 770, scale: 1 },
+  assert.deepEqual(shot.params.clip, {
+    x: 0,
+    y: 0,
+    width: 1136,
+    height: 770,
+    scale: 1
+  },
     'a pixel in the picture must be a coordinate clickAt accepts');
 });
 
@@ -349,17 +556,34 @@ test('a full-page capture spans the content size beyond the viewport', async () 
 
   const shot = cdp.calls.find((c) => c.method === 'Page.captureScreenshot');
   assert.equal(shot.params.captureBeyondViewport, true);
-  assert.deepEqual(shot.params.clip, { x: 0, y: 0, width: 1136, height: 2400, scale: 1 });
+  assert.deepEqual(shot.params.clip, {
+    x: 0,
+    y: 0,
+    width: 1136,
+    height: 2400,
+    scale: 1
+  });
 });
 
 
 test('a huge document scales the full page down instead of hanging the capture', async () => {
   const calls = [];
   const cdp = {
-    send: async (method, params = {}) => {
-      calls.push({ method, params });
+    send: async (
+      method,
+      params = {}
+    ) => {
+      calls.push({
+        method,
+        params
+      });
       if (method === 'Page.getLayoutMetrics') {
-        return { contentSize: { x: 0, y: 0, width: 800, height: 4800 } };
+        return { contentSize: {
+          x: 0,
+          y: 0,
+          width: 800,
+          height: 4800
+        } };
       }
       if (method === 'Page.captureScreenshot') return { data: 'BASE64' };
       return { result: {} };
@@ -368,7 +592,13 @@ test('a huge document scales the full page down instead of hanging the capture',
   await createPrimitives(cdp).capture({ fullPage: true });
 
   const shot = calls.find((c) => c.method === 'Page.captureScreenshot');
-  assert.deepEqual(shot.params.clip, { x: 0, y: 0, width: 800, height: 4800, scale: 0.5 });
+  assert.deepEqual(shot.params.clip, {
+    x: 0,
+    y: 0,
+    width: 800,
+    height: 4800,
+    scale: 0.5
+  });
 });
 
 
@@ -417,11 +647,30 @@ test('the text caret rides the snapshot so the next keystroke lands knowingly', 
 test('createObserveMethods exposes the reads of the page', () => {
   const methods = createObserveMethods({
     cdp: { send: async () => ({ result: { value: [] } }) },
-    primitives: { waitForRow: async () => ({}), resolveHandle: async () => ({}), clickAt: async () => ({}), hoverRow: async () => ({}), settle: async () => ({}) },
+    primitives: {
+      waitForRow: async () => ({}),
+      resolveHandle: async () => ({}),
+      clickAt: async () => ({}),
+      hoverRow: async () => ({}),
+      settle: async () => ({})
+    },
     capped: (limit) => limit
   });
 
   assert.deepEqual(Object.keys(methods).sort(),
-    ['capture', 'captureSized', 'computed', 'menuTree', 'openMenu', 'pageState', 'readRows', 'readState', 'resolveRow', 'scroll', 'snapshot', 'viewport']);
+    [
+      'capture',
+      'captureSized',
+      'computed',
+      'menuTree',
+      'openMenu',
+      'pageState',
+      'readRows',
+      'readState',
+      'resolveRow',
+      'scroll',
+      'snapshot',
+      'viewport'
+    ]);
 });
 

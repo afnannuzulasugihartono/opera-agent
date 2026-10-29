@@ -16,13 +16,27 @@ const sql = fs.readFileSync(new URL('supabase/migrations/20261010090000_opera_ag
 const html = fs.readFileSync(new URL('landing/dashboard.html', root), 'utf8');
 
 const mapRows = [...sql.matchAll(/^ {4}\('([a-z0-9_]+)', '(owner|operator)', '(.*)'\),?$/gm)]
-  .map((match) => ({ table: match[1], scope: match[2], qual: match[3] }));
-const map = new Map(mapRows.map((row) => [row.table, row]));
+  .map((match) => ({
+    table: match[1],
+    scope: match[2],
+    qual: match[3]
+  }));
+const map = new Map(mapRows.map((row) => [
+  row.table,
+  row
+]));
 
 const policyRows = [...sql.matchAll(/^create policy (\w+) on public\.([a-z0-9_]+) for select to authenticated using \((.*)\);$/gm)]
-  .map((match) => ({ name: match[1], table: match[2], qual: match[3] }));
+  .map((match) => ({
+    name: match[1],
+    table: match[2],
+    qual: match[3]
+  }));
 const dropRows = [...sql.matchAll(/^drop policy if exists (\w+) on public\.([a-z0-9_]+);$/gm)]
-  .map((match) => ({ name: match[1], table: match[2] }));
+  .map((match) => ({
+    name: match[1],
+    table: match[2]
+  }));
 
 const balanced = (text) => {
   let depth = 0;
@@ -38,13 +52,24 @@ const balanced = (text) => {
 
 test('the map names exactly the project\'s sixteen tables, seven of them operator-only', () => {
   const expectedOwner = [
-    'opera_audit', 'opera_commands', 'opera_devices', 'opera_listen_chunks',
-    'opera_listen_segments', 'opera_listen_sessions', 'opera_pairing_codes',
-    'opera_watch_events', 'opera_workflow_runs'
+    'opera_audit',
+    'opera_commands',
+    'opera_devices',
+    'opera_listen_chunks',
+    'opera_listen_segments',
+    'opera_listen_sessions',
+    'opera_pairing_codes',
+    'opera_watch_events',
+    'opera_workflow_runs'
   ];
   const expectedOperator = [
-    'opera_methods', 'opera_releases', 'opera_skills', 'opera_update_events',
-    'opera_v2_releases', 'opera_workflow_versions', 'opera_workflows'
+    'opera_methods',
+    'opera_releases',
+    'opera_skills',
+    'opera_update_events',
+    'opera_v2_releases',
+    'opera_workflow_versions',
+    'opera_workflows'
   ];
   assert.equal(mapRows.length, 16, 'the map has one row per table');
   assert.deepEqual(mapRows.filter((row) => row.scope === 'owner').map((row) => row.table).sort(), expectedOwner, 'owner-scoped tables are exactly the nine with an owner path');
@@ -135,7 +160,6 @@ test('secrets are masked in the database, never in the page', () => {
 });
 
 test('the tautology is gone and workflow runs stay owned', () => {
-
   const code = sql.split('\n').filter((line) => !line.trim().startsWith('--')).join('\n');
   assert.doesNotMatch(code, /device_name = d\.device_name/, 'the silent drift that opened every run to every device is not reintroduced');
   assert.match(map.get('opera_workflow_runs').qual, /\(opera_workflow_runs\.user_id = auth\.uid\(\)\) or exists/, 'a run is readable to its user and to the owner of its device');

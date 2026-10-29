@@ -27,7 +27,10 @@ export function registerDebuggerSession(session) {
   sessions.set(session.tabId, session);
 }
 
-export async function releaseDebuggerSession(session, log) {
+export async function releaseDebuggerSession(
+  session,
+  log
+) {
   if (!session || !session.attached) return;
   session.attached = false;
   sessions.delete(session.tabId);
@@ -47,12 +50,19 @@ export function handleDebuggerDetach(source) {
   sessions.delete(tabId);
 }
 
-export function touchDebuggerSession(session, now = Date.now()) {
+export function touchDebuggerSession(
+  session,
+  now = Date.now()
+) {
   if (!session || typeof session.tabId !== 'number') return;
   session.lastUsedAt = now;
 }
 
-export async function releaseIdleDebuggerSessions({ maxIdleMs = 60000, now = Date.now(), log } = {}) {
+export async function releaseIdleDebuggerSessions({
+  maxIdleMs = 60000,
+  now = Date.now(),
+  log
+} = {}) {
   let released = 0;
   for (const session of [...sessions.values()]) {
     if (!session?.attached) continue;

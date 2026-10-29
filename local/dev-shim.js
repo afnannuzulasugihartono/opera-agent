@@ -33,7 +33,10 @@
 // Asking keeps both: the stop handler still ends the wait, and the reader can see what the loop is waiting for.
 // refuse: two shims, two sets of tools, one signed-in browser.
 
-const TOOLS_CHANGED = JSON.stringify({ jsonrpc: '2.0', method: 'notifications/tools/list_changed' });
+const TOOLS_CHANGED = JSON.stringify({
+  jsonrpc: '2.0',
+  method: 'notifications/tools/list_changed'
+});
 
 export function createSupervisor({
   spawnWorker,
@@ -98,7 +101,14 @@ export function createSupervisor({
   const failPending = (message) => {
     for (const id of [...pending]) {
       pending.delete(id);
-      forwardToClient(JSON.stringify({ jsonrpc: '2.0', id, error: { code: -32000, message } }));
+      forwardToClient(JSON.stringify({
+        jsonrpc: '2.0',
+        id,
+        error: {
+          code: -32000,
+          message
+        }
+      }));
     }
   };
 
@@ -114,7 +124,14 @@ export function createSupervisor({
     if (poisoned) {
       const id = idOf(text);
       if (id !== null) {
-        forwardToClient(JSON.stringify({ jsonrpc: '2.0', id, error: { code: -32000, message: poisoned } }));
+        forwardToClient(JSON.stringify({
+          jsonrpc: '2.0',
+          id,
+          error: {
+            code: -32000,
+            message: poisoned
+          }
+        }));
       }
       return;
     }

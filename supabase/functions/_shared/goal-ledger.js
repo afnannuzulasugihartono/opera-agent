@@ -26,10 +26,36 @@ export const LEDGER_LIMITS = Object.freeze({
   maximumRevision: 2147483647,
 });
 
-const LEDGER_STATUSES = new Set(['OPEN', 'PARTIAL', 'SATISFIED', 'BLOCKED', 'CANCELLED', 'EXPIRED']);
-const TERMINAL_STATUSES = new Set(['CANCELLED', 'EXPIRED']);
-const CONSTRAINT_KINDS = new Set(['VALUE_PREDICATE', 'SCOPE_BOUND', 'INVARIANT', 'SAFETY_BOUND']);
-const CLAIM_OPERATORS = new Set(['EQ', 'NEQ', 'GT', 'GTE', 'LT', 'LTE', 'IN', 'CONTAINS', 'EXISTS', 'FOR_ALL']);
+const LEDGER_STATUSES = new Set([
+  'OPEN',
+  'PARTIAL',
+  'SATISFIED',
+  'BLOCKED',
+  'CANCELLED',
+  'EXPIRED'
+]);
+const TERMINAL_STATUSES = new Set([
+  'CANCELLED',
+  'EXPIRED'
+]);
+const CONSTRAINT_KINDS = new Set([
+  'VALUE_PREDICATE',
+  'SCOPE_BOUND',
+  'INVARIANT',
+  'SAFETY_BOUND'
+]);
+const CLAIM_OPERATORS = new Set([
+  'EQ',
+  'NEQ',
+  'GT',
+  'GTE',
+  'LT',
+  'LTE',
+  'IN',
+  'CONTAINS',
+  'EXISTS',
+  'FOR_ALL'
+]);
 const EVIDENCE_CATEGORIES = new Set([
   'USER_ASSERTION',
   'USER_AUTHORIZATION',
@@ -41,22 +67,63 @@ const EVIDENCE_CATEGORIES = new Set([
 ]);
 
 const ROOT_FIELDS = new Set([
-  'schemaVersion', 'goalId', 'tenantId', 'revision', 'parentDigest', 'objective', 'scope',
-  'constraints', 'authorizations', 'claims', 'evidenceRequirements', 'nonGoals', 'status',
-  'createdAt', 'expiresAt', 'ledgerDigest',
+  'schemaVersion',
+  'goalId',
+  'tenantId',
+  'revision',
+  'parentDigest',
+  'objective',
+  'scope',
+  'constraints',
+  'authorizations',
+  'claims',
+  'evidenceRequirements',
+  'nonGoals',
+  'status',
+  'createdAt',
+  'expiresAt',
+  'ledgerDigest',
 ]);
-const SCOPE_FIELDS = new Set(['kind', 'resourceId']);
+const SCOPE_FIELDS = new Set([
+  'kind',
+  'resourceId'
+]);
 const CONSTRAINT_FIELDS = new Set([
-  'constraintId', 'kind', 'claimField', 'operator', 'integerValue', 'stringValue',
-  'booleanValue', 'stringValues',
+  'constraintId',
+  'kind',
+  'claimField',
+  'operator',
+  'integerValue',
+  'stringValue',
+  'booleanValue',
+  'stringValues',
 ]);
-const AUTHORIZATION_FIELDS = new Set(['authorizationId', 'operationClass', 'scopeId', 'expiresAt']);
-const CLAIM_FIELDS = new Set(['claimId', 'scopeId', 'predicate', 'evidenceRequirementIds']);
-const REQUIREMENT_FIELDS = new Set(['requirementId', 'categories', 'minimumCount', 'maximumAgeSeconds']);
+const AUTHORIZATION_FIELDS = new Set([
+  'authorizationId',
+  'operationClass',
+  'scopeId',
+  'expiresAt'
+]);
+const CLAIM_FIELDS = new Set([
+  'claimId',
+  'scopeId',
+  'predicate',
+  'evidenceRequirementIds'
+]);
+const REQUIREMENT_FIELDS = new Set([
+  'requirementId',
+  'categories',
+  'minimumCount',
+  'maximumAgeSeconds'
+]);
 const SECRET_FIELD = /(?:password|passcode|otp|secret|credential|private.?key|access.?token|refresh.?token|card.?number|cvv)/i;
 
 export class LedgerError extends Error {
-  constructor(code, message, details = undefined) {
+  constructor(
+    code,
+    message,
+    details = undefined
+  ) {
     super(message);
     this.name = 'LedgerError';
     this.code = code;
@@ -64,7 +131,11 @@ export class LedgerError extends Error {
   }
 }
 
-function fail(code, message, details) {
+function fail(
+  code,
+  message,
+  details
+) {
   throw new LedgerError(code, message, details);
 }
 
@@ -74,11 +145,18 @@ function isPlainObject(value) {
   return prototype === Object.prototype || prototype === null;
 }
 
-function assertPlainObject(value, path) {
+function assertPlainObject(
+  value,
+  path
+) {
   if (!isPlainObject(value)) fail('INVALID_TYPE', `${path} must be a plain object.`);
 }
 
-function assertAllowedFields(value, allowed, path) {
+function assertAllowedFields(
+  value,
+  allowed,
+  path
+) {
   assertPlainObject(value, path);
   for (const key of Object.keys(value)) {
     if (SECRET_FIELD.test(key)) fail('SECRET_LIKE_VALUE', `${path}.${key} is a forbidden secret-like field.`);
@@ -86,7 +164,11 @@ function assertAllowedFields(value, allowed, path) {
   }
 }
 
-function assertNoSecretLikeValues(value, path = 'ledger', seen = new WeakSet()) {
+function assertNoSecretLikeValues(
+  value,
+  path = 'ledger',
+  seen = new WeakSet()
+) {
   if (typeof value === 'string') {
     if (SECRET_VALUE.test(value)) fail('SECRET_LIKE_VALUE', `${path} contains a secret-like value.`);
     return;
@@ -94,7 +176,10 @@ function assertNoSecretLikeValues(value, path = 'ledger', seen = new WeakSet()) 
   if (!value || typeof value !== 'object') return;
   if (seen.has(value)) fail('UNSUPPORTED_CANONICAL_VALUE', `${path} contains a cycle.`);
   seen.add(value);
-  if (Array.isArray(value)) value.forEach((item, index) => assertNoSecretLikeValues(item, `${path}[${index}]`, seen));
+  if (Array.isArray(value)) value.forEach((
+    item,
+    index
+  ) => assertNoSecretLikeValues(item, `${path}[${index}]`, seen));
   else for (const [key, item] of Object.entries(value)) {
     if (SECRET_FIELD.test(key)) fail('SECRET_LIKE_VALUE', `${path}.${key} is a forbidden secret-like field.`);
     assertNoSecretLikeValues(item, `${path}.${key}`, seen);
@@ -102,7 +187,15 @@ function assertNoSecretLikeValues(value, path = 'ledger', seen = new WeakSet()) 
   seen.delete(value);
 }
 
-function normalizeString(value, path, { min = 1, maxBytes = 1000, pattern } = {}) {
+function normalizeString(
+  value,
+  path,
+  {
+    min = 1,
+    maxBytes = 1000,
+    pattern
+  } = {}
+) {
   if (typeof value !== 'string') fail('INVALID_TYPE', `${path} must be a string.`);
   const normalized = value.normalize('NFC');
   const bytes = new TextEncoder().encode(normalized).length;
@@ -111,29 +204,54 @@ function normalizeString(value, path, { min = 1, maxBytes = 1000, pattern } = {}
   return normalized;
 }
 
-function normalizeId(value, path) {
-  return normalizeString(value, path, { maxBytes: 128, pattern: ID_PATTERN });
+function normalizeId(
+  value,
+  path
+) {
+  return normalizeString(value, path, {
+    maxBytes: 128,
+    pattern: ID_PATTERN
+  });
 }
 
-function normalizeTimestamp(value, path) {
+function normalizeTimestamp(
+  value,
+  path
+) {
   const normalized = normalizeString(value, path, { maxBytes: 32 });
   const milliseconds = Date.parse(normalized);
   if (!UTC_TIMESTAMP.test(normalized) || !Number.isFinite(milliseconds)) fail('INVALID_VALUE', `${path} must be an RFC3339 UTC timestamp.`);
   return normalized;
 }
 
-function normalizePositiveInteger(value, path, maximum = Number.MAX_SAFE_INTEGER) {
+function normalizePositiveInteger(
+  value,
+  path,
+  maximum = Number.MAX_SAFE_INTEGER
+) {
   if (!Number.isSafeInteger(value) || value < 1 || value > maximum) fail('INVALID_VALUE', `${path} must be a bounded positive integer.`);
   return value;
 }
 
-function normalizeArray(value, path, maximum, mapper) {
+function normalizeArray(
+  value,
+  path,
+  maximum,
+  mapper
+) {
   if (!Array.isArray(value)) fail('INVALID_TYPE', `${path} must be an array.`);
   if (value.length > maximum) fail('OVER_LIMIT', `${path} exceeds its item limit.`);
-  return value.map((item, index) => mapper(item, `${path}[${index}]`));
+  return value.map((
+    item,
+    index
+  ) => mapper(item, `${path}[${index}]`));
 }
 
-function uniqueBy(items, key, path) {
+function uniqueBy(
+  items,
+  key,
+  path
+) {
   const values = new Set();
   for (const item of items) {
     if (values.has(item[key])) fail('DUPLICATE_ID', `${path} contains duplicate ${key} ${item[key]}.`);
@@ -142,15 +260,24 @@ function uniqueBy(items, key, path) {
   return values;
 }
 
-function normalizeScope(value, path) {
+function normalizeScope(
+  value,
+  path
+) {
   assertAllowedFields(value, SCOPE_FIELDS, path);
   return {
-    kind: normalizeString(value.kind, `${path}.kind`, { maxBytes: 64, pattern: /^[A-Z][A-Z0-9_]{0,63}$/ }),
+    kind: normalizeString(value.kind, `${path}.kind`, {
+      maxBytes: 64,
+      pattern: /^[A-Z][A-Z0-9_]{0,63}$/
+    }),
     resourceId: normalizeId(value.resourceId, `${path}.resourceId`),
   };
 }
 
-function normalizeConstraint(value, path) {
+function normalizeConstraint(
+  value,
+  path
+) {
   assertAllowedFields(value, CONSTRAINT_FIELDS, path);
   const output = {
     constraintId: normalizeId(value.constraintId, `${path}.constraintId`),
@@ -161,7 +288,12 @@ function normalizeConstraint(value, path) {
   if (!CONSTRAINT_KINDS.has(output.kind)) fail('INVALID_VALUE', `${path}.kind is not supported.`);
   if (!CLAIM_OPERATORS.has(output.operator)) fail('INVALID_VALUE', `${path}.operator is not supported.`);
 
-  const valueFields = ['integerValue', 'stringValue', 'booleanValue', 'stringValues'].filter((field) => value[field] !== undefined);
+  const valueFields = [
+    'integerValue',
+    'stringValue',
+    'booleanValue',
+    'stringValues'
+  ].filter((field) => value[field] !== undefined);
   if (valueFields.length !== 1) fail('INVALID_VALUE', `${path} must contain exactly one typed value.`);
   const valueField = valueFields[0];
   if (valueField === 'integerValue') {
@@ -171,38 +303,62 @@ function normalizeConstraint(value, path) {
   else if (valueField === 'booleanValue') {
     if (typeof value.booleanValue !== 'boolean') fail('INVALID_TYPE', `${path}.booleanValue must be boolean.`);
     output.booleanValue = value.booleanValue;
-  } else output.stringValues = normalizeArray(value.stringValues, `${path}.stringValues`, 64, (item, itemPath) => normalizeString(item, itemPath));
+  } else output.stringValues = normalizeArray(value.stringValues, `${path}.stringValues`, 64, (
+    item,
+    itemPath
+  ) => normalizeString(item, itemPath));
   return output;
 }
 
-function normalizeAuthorization(value, path) {
+function normalizeAuthorization(
+  value,
+  path
+) {
   assertAllowedFields(value, AUTHORIZATION_FIELDS, path);
   return {
     authorizationId: normalizeId(value.authorizationId, `${path}.authorizationId`),
-    operationClass: normalizeString(value.operationClass, `${path}.operationClass`, { maxBytes: 128, pattern: /^[A-Z][A-Z0-9_]{0,127}$/ }),
+    operationClass: normalizeString(value.operationClass, `${path}.operationClass`, {
+      maxBytes: 128,
+      pattern: /^[A-Z][A-Z0-9_]{0,127}$/
+    }),
     scopeId: normalizeId(value.scopeId, `${path}.scopeId`),
     expiresAt: normalizeTimestamp(value.expiresAt, `${path}.expiresAt`),
   };
 }
 
-function normalizeClaim(value, path) {
+function normalizeClaim(
+  value,
+  path
+) {
   assertAllowedFields(value, CLAIM_FIELDS, path);
   return {
     claimId: normalizeId(value.claimId, `${path}.claimId`),
     scopeId: normalizeId(value.scopeId, `${path}.scopeId`),
-    predicate: normalizeString(value.predicate, `${path}.predicate`, { maxBytes: 256, pattern: /^[A-Z][A-Z0-9_]{0,255}$/ }),
+    predicate: normalizeString(value.predicate, `${path}.predicate`, {
+      maxBytes: 256,
+      pattern: /^[A-Z][A-Z0-9_]{0,255}$/
+    }),
     evidenceRequirementIds: normalizeArray(
       value.evidenceRequirementIds,
       `${path}.evidenceRequirementIds`,
       LEDGER_LIMITS.evidenceRequirementsPerClaim,
-      (item, itemPath) => normalizeId(item, itemPath),
+      (
+        item,
+        itemPath
+      ) => normalizeId(item, itemPath),
     ),
   };
 }
 
-function normalizeRequirement(value, path) {
+function normalizeRequirement(
+  value,
+  path
+) {
   assertAllowedFields(value, REQUIREMENT_FIELDS, path);
-  const categories = normalizeArray(value.categories, `${path}.categories`, 7, (item, itemPath) => {
+  const categories = normalizeArray(value.categories, `${path}.categories`, 7, (
+    item,
+    itemPath
+  ) => {
     const category = normalizeString(item, itemPath, { maxBytes: 64 });
     if (!EVIDENCE_CATEGORIES.has(category)) fail('INVALID_VALUE', `${itemPath} is not a supported evidence category.`);
     return category;
@@ -216,7 +372,10 @@ function normalizeRequirement(value, path) {
   };
 }
 
-function normalizeLedgerShape(input, { creation = false } = {}) {
+function normalizeLedgerShape(
+  input,
+  { creation = false } = {}
+) {
   assertNoSecretLikeValues(input);
   assertAllowedFields(input, ROOT_FIELDS, 'ledger');
   if (input.schemaVersion !== SCHEMA_VERSION) fail('INVALID_VALUE', 'ledger.schemaVersion is unsupported.');
@@ -234,7 +393,10 @@ function normalizeLedgerShape(input, { creation = false } = {}) {
     LEDGER_LIMITS.claims * LEDGER_LIMITS.evidenceRequirementsPerClaim,
     normalizeRequirement,
   );
-  const nonGoals = normalizeArray(input.nonGoals, 'ledger.nonGoals', LEDGER_LIMITS.nonGoals, (item, path) => normalizeString(item, path));
+  const nonGoals = normalizeArray(input.nonGoals, 'ledger.nonGoals', LEDGER_LIMITS.nonGoals, (
+    item,
+    path
+  ) => normalizeString(item, path));
   uniqueBy(constraints, 'constraintId', 'ledger.constraints');
   uniqueBy(authorizations, 'authorizationId', 'ledger.authorizations');
   uniqueBy(claims, 'claimId', 'ledger.claims');
@@ -294,7 +456,10 @@ function deepFreeze(value) {
 
 export function canonicalJson(value) {
   const active = new WeakSet();
-  function encode(item, path) {
+  function encode(
+    item,
+    path
+  ) {
     if (item === null) return 'null';
     if (typeof item === 'boolean') return item ? 'true' : 'false';
     if (typeof item === 'number') {
@@ -306,19 +471,30 @@ export function canonicalJson(value) {
     if (active.has(item)) fail('UNSUPPORTED_CANONICAL_VALUE', `${path} contains a cycle.`);
     active.add(item);
     let encoded;
-    if (Array.isArray(item)) encoded = `[${item.map((child, index) => encode(child, `${path}[${index}]`)).join(',')}]`;
+    if (Array.isArray(item)) encoded = `[${item.map((child, index) => encode(child, `${
+      path
+    }[${
+      index
+    }]`)).join(',')}]`;
     else {
       if (!isPlainObject(item)) fail('UNSUPPORTED_CANONICAL_VALUE', `${path} must be a plain object.`);
       const keys = Object.keys(item);
       for (const key of keys) if (!/^[\x20-\x7e]+$/.test(key)) fail('INVALID_CANONICAL_KEY', `${path} contains a non-ASCII key.`);
-      keys.sort((a, b) => {
+      keys.sort((
+        a,
+        b
+      ) => {
         const left = new TextEncoder().encode(a);
         const right = new TextEncoder().encode(b);
         const length = Math.min(left.length, right.length);
         for (let index = 0; index < length; index += 1) if (left[index] !== right[index]) return left[index] - right[index];
         return left.length - right.length;
       });
-      encoded = `{${keys.map((key) => `${JSON.stringify(key)}:${encode(item[key], `${path}.${key}`)}`).join(',')}}`;
+      encoded = `{${keys.map((key) => `${
+        JSON.stringify(key)
+      }:${
+        encode(item[key], `${path}.${key}`)
+      }`).join(',')}}`;
     }
     active.delete(item);
     return encoded;
@@ -334,10 +510,17 @@ export async function digestCanonical(value) {
 
 async function attachDigest(normalized) {
   const ledgerDigest = await digestCanonical(normalized);
-  return deepFreeze({ ...normalized, ledgerDigest });
+  return deepFreeze({
+    ...normalized,
+    ledgerDigest
+  });
 }
 
-function assertNowWithinLedger(ledger, now, { allowAtExpiry = false } = {}) {
+function assertNowWithinLedger(
+  ledger,
+  now,
+  { allowAtExpiry = false } = {}
+) {
   const nowValue = normalizeTimestamp(now, 'options.now');
   const nowMs = Date.parse(nowValue);
   const expiresMs = Date.parse(ledger.expiresAt);
@@ -345,7 +528,10 @@ function assertNowWithinLedger(ledger, now, { allowAtExpiry = false } = {}) {
   return nowValue;
 }
 
-export async function createLedger(input, options = {}) {
+export async function createLedger(
+  input,
+  options = {}
+) {
   const normalized = normalizeLedgerShape(input, { creation: true });
   assertNowWithinLedger(normalized, options.now);
   if (normalized.authorizations.length && options.authoritySource !== 'USER') {
@@ -354,14 +540,20 @@ export async function createLedger(input, options = {}) {
   return await attachDigest(normalized);
 }
 
-export async function validateLedger(input, options = {}) {
+export async function validateLedger(
+  input,
+  options = {}
+) {
   assertPlainObject(input, 'ledger');
   if (!SHA256_HEX.test(input.ledgerDigest || '')) fail('INVALID_DIGEST', 'ledger.ledgerDigest is invalid.');
   const normalized = normalizeLedgerShape(input, { creation: input.revision === 1 });
   if (options.now !== undefined && !TERMINAL_STATUSES.has(normalized.status)) assertNowWithinLedger(normalized, options.now);
   const expected = await digestCanonical(normalized);
   if (expected !== input.ledgerDigest) fail('INVALID_DIGEST', 'ledger.ledgerDigest does not match canonical content.');
-  return deepFreeze({ ...normalized, ledgerDigest: expected });
+  return deepFreeze({
+    ...normalized,
+    ledgerDigest: expected
+  });
 }
 
 export function inspectLedger(ledger) {

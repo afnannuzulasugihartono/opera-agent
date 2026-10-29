@@ -12,9 +12,18 @@
 // - TARGET_NOT_READY carries candidates only for ambiguity
 // - resolved telemetry is a superset field; verified omitted when absent
 
-export const ACTION_RAMP_MS = [25, 50, 100, 200, 400];
+export const ACTION_RAMP_MS = [
+  25,
+  50,
+  100,
+  200,
+  400
+];
 
-export function pollDelays(deadlineMs, elapsedMs = 0) {
+export function pollDelays(
+  deadlineMs,
+  elapsedMs = 0
+) {
   const budget = deadlineMs - elapsedMs;
   const delays = [];
   let used = 0;
@@ -34,16 +43,42 @@ export function classifyResolve(state) {
   return state.actionable === true ? 'ready' : 'not-actionable';
 }
 
-export function makeNotReady(reason, waitedMs, hint, candidates, refState) {
-  const err = { code: 'TARGET_NOT_READY', reason, waitedMs, hint };
+export function makeNotReady(
+  reason,
+  waitedMs,
+  hint,
+  candidates,
+  refState
+) {
+  const err = {
+    code: 'TARGET_NOT_READY',
+    reason,
+    waitedMs,
+    hint
+  };
   if (reason === 'ambiguous' && candidates) err.candidates = candidates;
 
   if (refState) err.refState = refState;
   return err;
 }
 
-export function attachResolution(envelope, { attempts, waitedMs, healed, verified }) {
-  const resolved = { attempts, waitedMs, healed };
+export function attachResolution(
+  envelope,
+  {
+    attempts,
+    waitedMs,
+    healed,
+    verified
+  }
+) {
+  const resolved = {
+    attempts,
+    waitedMs,
+    healed
+  };
   if (verified !== undefined) resolved.verified = verified;
-  return { ...envelope, resolved };
+  return {
+    ...envelope,
+    resolved
+  };
 }

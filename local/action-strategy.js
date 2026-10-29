@@ -12,7 +12,19 @@ export const ACTION_COORDINATE = 'coordinate';
 
 export function actionLadder(profile = {}) {
   const canvas = profile.canvas === true;
-  const dom = { strategy: ACTION_DOM, why: 'the page holds the element, so it can be found and clicked by name' };
-  const coordinate = { strategy: ACTION_COORDINATE, why: 'the page draws the control, so it is grounded on the box the accessibility tree reports' };
-  return canvas === true ? [coordinate, dom] : [dom, coordinate];
+  const dom = {
+    strategy: ACTION_DOM,
+    why: 'the page holds the element, so it can be found and clicked by name'
+  };
+  const coordinate = {
+    strategy: ACTION_COORDINATE,
+    why: 'the page draws the control, so it is grounded on the box the accessibility tree reports'
+  };
+  return canvas === true ? [
+    coordinate,
+    dom
+  ] : [
+    dom,
+    coordinate
+  ];
 }

@@ -38,19 +38,39 @@ export function createLeaseTable({
 
   const row = (tabId) => {
     const entry = held(tabId);
-    return entry ? { owner: entry.owner, expiresAt: entry.renewedAt + entry.ttlMs } : null;
+    return entry ? {
+      owner: entry.owner,
+      expiresAt: entry.renewedAt + entry.ttlMs
+    } : null;
   };
 
-  const claim = (tabId, owner, ttl = ttlMs) => {
+  const claim = (
+    tabId,
+    owner,
+    ttl = ttlMs
+  ) => {
     const key = String(tabId);
     const current = held(key);
-    if (current && current.owner !== owner) return { granted: false, holder: row(key) };
+    if (current && current.owner !== owner) return {
+      granted: false,
+      holder: row(key)
+    };
     const span = Number(ttl) > 0 ? Number(ttl) : ttlMs;
-    table.set(key, { owner, ttlMs: span, renewedAt: now() });
-    return { granted: true, holder: row(key) };
+    table.set(key, {
+      owner,
+      ttlMs: span,
+      renewedAt: now()
+    });
+    return {
+      granted: true,
+      holder: row(key)
+    };
   };
 
-  const release = (tabId, owner) => {
+  const release = (
+    tabId,
+    owner
+  ) => {
     const key = String(tabId);
     const current = table.get(key);
     if (!current) return false;

@@ -252,7 +252,10 @@ export function revealOf(node) {
 // When a path fails, the most useful thing an agent can be handed is the nearest thing that exists: the difference in letters between what was asked for and what is really there.
 // "Upload from computer" against "Upload" is one word of difference; against "Break" it is many, and the agent should not be shown that one first.
 
-export function distanceBetween(wanted, offered) {
+export function distanceBetween(
+  wanted,
+  offered
+) {
   const a = String(wanted ?? '').toLowerCase();
   const b = String(offered ?? '').toLowerCase();
   const rows = a.length + 1;
@@ -277,29 +280,50 @@ export function distanceBetween(wanted, offered) {
 // "Upload" is six edits from "Break" and thirteen from "Upload from computer", so distance alone hands back the wrong row first — and the wrong row here is the one that costs a click.
 // A name that starts with the caller's word is that word with more detail on it, and it wins whatever the count says.
 
-export function nearestNames(wanted, offered, count = 3) {
+export function nearestNames(
+  wanted,
+  offered,
+  count = 3
+) {
   const ask = String(wanted ?? '').toLowerCase();
   return [...new Set(offered)]
     .map((name) => {
       const low = String(name ?? '').toLowerCase();
       const begins = low.startsWith(ask) ? 0 : 1;
-      return { name, rank: begins, distance: distanceBetween(wanted, name), length: Math.abs(low.length - ask.length) };
+      return {
+        name,
+        rank: begins,
+        distance: distanceBetween(wanted, name),
+        length: Math.abs(low.length - ask.length)
+      };
     })
-    .sort((a, b) => a.rank - b.rank || a.distance - b.distance || a.length - b.length)
+    .sort((
+      a,
+      b
+    ) => a.rank - b.rank || a.distance - b.distance || a.length - b.length)
     .slice(0, count)
     .map((entry) => entry.name);
 }
 
-export function exactMatch(name, rows) {
+export function exactMatch(
+  name,
+  rows
+) {
   const want = String(name ?? '').toLowerCase();
   return rows.find((row) => String(row.name ?? '').toLowerCase() === want) ?? null;
 }
 
-export function looseMatch(name, rows) {
+export function looseMatch(
+  name,
+  rows
+) {
   const want = String(name ?? '').toLowerCase();
   return rows.find((row) => String(row.name ?? '').toLowerCase().includes(want)) ?? null;
 }
 
-export function findNode(name, rows) {
+export function findNode(
+  name,
+  rows
+) {
   return exactMatch(name, rows) ?? looseMatch(name, rows);
 }

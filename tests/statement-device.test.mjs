@@ -28,9 +28,17 @@ const PDF = Buffer.from(
   + 'trailer<</Root 1 0 R>>\n%%EOF\n'
 );
 
-function fakeBrowser({ bytes = PDF, state = 'complete', interrupted = null } = {}) {
+function fakeBrowser({
+  bytes = PDF,
+  state = 'complete',
+  interrupted = null
+} = {}) {
   const storage = new Map();
-  const calls = { downloads: [], injected: [], verified: [] };
+  const calls = {
+    downloads: [],
+    injected: [],
+    verified: []
+  };
   let nextId = 1;
 
   const globals = {
@@ -48,7 +56,9 @@ function fakeBrowser({ bytes = PDF, state = 'complete', interrupted = null } = {
           }];
           return id;
         },
-        async search() { return []; }
+        async search() {
+          return [];
+        }
       },
       storage: {
         local: {
@@ -70,20 +80,43 @@ function fakeBrowser({ bytes = PDF, state = 'complete', interrupted = null } = {
           const helpers = globalThis.OperaAgentStatementFile;
           const kind = helpers.kindOf(new Uint8Array(bytes));
           const pages = kind === 'pdf' ? helpers.countPages(new Uint8Array(bytes)) : null;
-          return [{ frameId: 0, result: { ok: true, bytes: bytes.length, kind, pages, pagesFrom: helpers.pagesFrom(kind, pages || 0) } }];
+          return [{
+            frameId: 0,
+            result: {
+              ok: true,
+              bytes: bytes.length,
+              kind,
+              pages,
+              pagesFrom: helpers.pagesFrom(kind, pages || 0)
+            }
+          }];
         }
       },
       tabs: {
-        async query() { return [{ id: 7 }]; },
-        async get(id) { return { id, url: 'https://portal.test/statements' }; }
+        async query() {
+          return [{ id: 7 }];
+        },
+        async get(id) {
+          return {
+            id,
+            url: 'https://portal.test/statements'
+          };
+        }
       }
     }
   };
 
-  return { globals, calls, storage };
+  return {
+    globals,
+    calls,
+    storage
+  };
 }
 
-async function withBrowser(options, run) {
+async function withBrowser(
+  options,
+  run
+) {
   const browser = fakeBrowser(options);
   const previous = globalThis.chrome;
   globalThis.chrome = browser.globals.chrome;
@@ -119,7 +152,10 @@ test('a delivery downloads the file under the name it was given and proves it', 
     assert.equal(out.row.pagesFrom, 'counted from the file structure');
     assert.equal(out.row.bytes, PDF.length);
     assert.equal(out.row.path, '/home/user/Downloads/toko-sinar-jaya-bca-2026-09.pdf');
-    assert.deepEqual(out.row.balance, { raw: 'Rp 8.900.000', digits: '8900000' });
+    assert.deepEqual(out.row.balance, {
+      raw: 'Rp 8.900.000',
+      digits: '8900000'
+    });
     assert.match(out.row.balanceFrom, /page/i);
     assert.equal(out.manifest.delivered, 1);
   });
@@ -128,8 +164,11 @@ test('a delivery downloads the file under the name it was given and proves it', 
 test('the manifest lives on the device and survives being read again', async () => {
   await withBrowser({}, async (browser) => {
     await statementDownload({
-      client: 'Toko Sinar Jaya', portal: 'BCA', period: '2026-09',
-      filename: 'a.pdf', url: 'https://portal.test/a.pdf'
+      client: 'Toko Sinar Jaya',
+      portal: 'BCA',
+      period: '2026-09',
+      filename: 'a.pdf',
+      url: 'https://portal.test/a.pdf'
     });
     const stored = browser.storage.get(MANIFEST_KEY);
     assert.equal(stored.rows.length, 1, 'the row is written to the device storage');
@@ -145,19 +184,32 @@ test('the manifest lives on the device and survives being read again', async () 
 test('a second delivery of the same client-month is refused, and replace corrects it', async () => {
   await withBrowser({}, async () => {
     const first = await statementDownload({
-      client: 'A', portal: 'B', period: '2026-09', filename: 'a.pdf', url: 'https://portal.test/a.pdf'
+      client: 'A',
+      portal: 'B',
+      period: '2026-09',
+      filename: 'a.pdf',
+      url: 'https://portal.test/a.pdf'
     });
     assert.equal(first.duplicate, false);
 
     const again = await statementDownload({
-      client: 'A', portal: 'B', period: '2026-09', filename: 'a.pdf', url: 'https://portal.test/a.pdf'
+      client: 'A',
+      portal: 'B',
+      period: '2026-09',
+      filename: 'a.pdf',
+      url: 'https://portal.test/a.pdf'
     });
     assert.equal(again.duplicate, true, 'a second line would bill the same month twice');
     assert.match(again.why, /twice/);
     assert.equal((await statementManifest()).delivered, 1);
 
     const replaced = await statementDownload({
-      client: 'A', portal: 'B', period: '2026-09', filename: 'a.pdf', url: 'https://portal.test/a.pdf', replace: true
+      client: 'A',
+      portal: 'B',
+      period: '2026-09',
+      filename: 'a.pdf',
+      url: 'https://portal.test/a.pdf',
+      replace: true
     });
     assert.equal(replaced.duplicate, false);
     assert.equal((await statementManifest()).delivered, 1, 'a replace corrects the line instead of adding one');
@@ -167,7 +219,13 @@ test('a second delivery of the same client-month is refused, and replace correct
 test('a name with a folder in it is refused, because the device writes one folder', async () => {
   await withBrowser({}, async (browser) => {
     await assert.rejects(
-      () => statementDownload({ client: 'A', portal: 'B', period: '2026-09', filename: '../escape.pdf', url: 'https://portal.test/a.pdf' }),
+      () => statementDownload({
+        client: 'A',
+        portal: 'B',
+        period: '2026-09',
+        filename: '../escape.pdf',
+        url: 'https://portal.test/a.pdf'
+      }),
       /must be a file name, not a path/
     );
     assert.equal(browser.calls.downloads.length, 0, 'nothing was downloaded');
@@ -177,7 +235,13 @@ test('a name with a folder in it is refused, because the device writes one folde
 test('a month that is not a month is refused before anything is downloaded', async () => {
   await withBrowser({}, async (browser) => {
     await assert.rejects(
-      () => statementDownload({ client: 'A', portal: 'B', period: 'September', filename: 'a.pdf', url: 'https://portal.test/a.pdf' }),
+      () => statementDownload({
+        client: 'A',
+        portal: 'B',
+        period: 'September',
+        filename: 'a.pdf',
+        url: 'https://portal.test/a.pdf'
+      }),
       /YYYY-MM/
     );
     assert.equal(browser.calls.downloads.length, 0);
@@ -185,19 +249,42 @@ test('a month that is not a month is refused before anything is downloaded', asy
 });
 
 test('a download that is interrupted is named as interrupted', async () => {
-  await withBrowser({ state: 'interrupted', interrupted: 'FILE_NO_SPACE' }, async () => {
+  await withBrowser({
+    state: 'interrupted',
+    interrupted: 'FILE_NO_SPACE'
+  }, async () => {
     await assert.rejects(
-      () => statementDownload({ client: 'A', portal: 'B', period: '2026-09', filename: 'a.pdf', url: 'https://portal.test/a.pdf', timeoutMs: 1000 }),
+      () => statementDownload({
+        client: 'A',
+        portal: 'B',
+        period: '2026-09',
+        filename: 'a.pdf',
+        url: 'https://portal.test/a.pdf',
+        timeoutMs: 1000
+      }),
       /interrupted/
     );
   });
 });
 
 test('a workbook is proved as a workbook, with no pages to count', async () => {
-  const xlsx = Buffer.from([0x50, 0x4b, 0x03, 0x04, 1, 2, 3, 4]);
+  const xlsx = Buffer.from([
+    0x50,
+    0x4b,
+    0x03,
+    0x04,
+    1,
+    2,
+    3,
+    4
+  ]);
   await withBrowser({ bytes: xlsx }, async () => {
     const out = await statementDownload({
-      client: 'A', portal: 'B', period: '2026-09', filename: 'a.xlsx', url: 'https://portal.test/a.xlsx'
+      client: 'A',
+      portal: 'B',
+      period: '2026-09',
+      filename: 'a.xlsx',
+      url: 'https://portal.test/a.xlsx'
     });
     assert.equal(out.row.kind, 'zip');
     assert.equal(out.row.pages, null);
@@ -207,7 +294,13 @@ test('a workbook is proved as a workbook, with no pages to count', async () => {
 
 test('the manifest that was written is the one the device reads back', async () => {
   await withBrowser({}, async (browser) => {
-    await statementDownload({ client: 'A', portal: 'B', period: '2026-09', filename: 'a.pdf', url: 'https://portal.test/a.pdf' });
+    await statementDownload({
+      client: 'A',
+      portal: 'B',
+      period: '2026-09',
+      filename: 'a.pdf',
+      url: 'https://portal.test/a.pdf'
+    });
     const manifest = await loadManifest();
     assert.equal(manifest.rows.length, 1);
     assert.equal(manifest.rows[0].client, 'A');

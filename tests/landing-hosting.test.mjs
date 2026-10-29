@@ -23,7 +23,10 @@ function parse(text) {
   for (const line of text.split('\n')) {
     if (!line.trim() || line.startsWith('#')) continue;
     if (!/^\s/.test(line)) {
-      current = { paths: line.split(',').map((p) => p.trim()), headers: {} };
+      current = {
+        paths: line.split(',').map((p) => p.trim()),
+        headers: {}
+      };
       rules.push(current);
       continue;
     }
@@ -34,10 +37,12 @@ function parse(text) {
 }
 
 const rules = parse(headers);
-const bySource = Object.fromEntries(vercel.headers.map((h) => [h.source, h.headers]));
+const bySource = Object.fromEntries(vercel.headers.map((h) => [
+  h.source,
+  h.headers
+]));
 
 test('every _headers rule restates a vercel.json entry verbatim', () => {
-
   assert.ok(rules.length > 0, 'the file has rules');
   for (const rule of rules) {
     const marker = headers.match(new RegExp(`^${escapeRe(rule.paths.join(', '))}\\n# from vercel\\.json (\\S+)`, 'm'));
@@ -46,7 +51,6 @@ test('every _headers rule restates a vercel.json entry verbatim', () => {
     const original = bySource[source];
     assert.ok(original, `vercel.json has an entry for ${source}`);
     for (const [key, value] of Object.entries(rule.headers)) {
-
       if (key === 'Content-Type' || key === 'Vercel-CDN-Cache-Control') continue;
       const match = original.find((h) => h.key === key);
       assert.ok(match, `${rule.paths[0]} sets ${key}, which ${source} also sets`);
@@ -56,7 +60,6 @@ test('every _headers rule restates a vercel.json entry verbatim', () => {
 });
 
 test('every path of the site is covered, so no rule can be reached by inheritance', () => {
-
   const covered = new Set(rules.flatMap((rule) => rule.paths));
   for (const page of ['/', '/beranda', '/beranda.html', '/index.html', '/akun', '/akun.html', '/dashboard', '/dashboard.html', '/unduh', '/unduh.html', '/unduh-berkas', '/unduh-berkas.html', '/privasi', '/privasi.html', '/syarat', '/syarat.html', '/fitur', '/fitur.html', '/dukungan', '/dukungan.html', '/404.html', '/robots.txt', '/sitemap.xml']) {
     assert.ok(covered.has(page), `_headers must cover ${page}`);
@@ -64,7 +67,6 @@ test('every path of the site is covered, so no rule can be reached by inheritanc
 });
 
 test('no _headers block joins paths with a comma, because Cloudflare matches it against nothing', () => {
-
   for (const rule of rules) {
     assert.equal(rule.paths.length, 1, `one path per block: ${rule.paths.join(', ')}`);
   }
@@ -94,7 +96,6 @@ test('the pages that talk to Supabase still name only that origin', () => {
 });
 
 test('every inline module script is named by a hash, and the CSP offers no unsafe-inline', () => {
-
   const hashOf = (html) => {
     const body = /<script type="module">([\s\S]*?)<\/script>/.exec(html)?.[1] ?? '';
     return "'sha256-" + createHash('sha256').update(body, 'utf8').digest('base64') + "'";
@@ -111,7 +112,6 @@ test('every inline module script is named by a hash, and the CSP offers no unsaf
 });
 
 test('every page may load the stylesheet and script it names', () => {
-
   // WHY THE POLICY IS CHECKED AGAINST THE ASSETS AND NOT ONLY AGAINST THE OTHER HOST.
   // Measured live on 2026-10-26: every page linked /site.css, every CSP said style-src 'unsafe-inline' without 'self', and both hosts blocked the site's own stylesheet.
   // The only symptom was a console error: the header computed as display:block and the nav lost its layout.
@@ -121,8 +121,14 @@ test('every page may load the stylesheet and script it names', () => {
   for (const page of pages) {
     const html = read(`landing/${page}`);
     const assets = [
-      ...[...html.matchAll(/<link[^>]+rel="stylesheet"[^>]+href="([^"]+)"/g)].map((m) => ['style-src', m[1]]),
-      ...[...html.matchAll(/<script[^>]+src="([^"]+)"/g)].map((m) => ['script-src', m[1]])
+      ...[...html.matchAll(/<link[^>]+rel="stylesheet"[^>]+href="([^"]+)"/g)].map((m) => [
+        'style-src',
+        m[1]
+      ]),
+      ...[...html.matchAll(/<script[^>]+src="([^"]+)"/g)].map((m) => [
+        'script-src',
+        m[1]
+      ])
     ];
     const rule = rules.find((r) => r.paths.includes(`/${page}`));
     assert.ok(rule, `${page} has a _headers rule`);
@@ -136,7 +142,6 @@ test('every page may load the stylesheet and script it names', () => {
 });
 
 test('the features page states the counts and the permissions the product has', () => {
-
   // WHY THE FEATURES PAGE IS READ AGAINST THE CODE.
   // Measured on 2026-10-26: the page said 31 tools and 29 primitives, its meta said 39 and 28, and it named five permissions while the manifest declares six.
   // A marketing page that undercounts its own permissions is not a rounding error: it describes a product with less access than the one it ships.
@@ -166,7 +171,6 @@ test('the features page states the counts and the permissions the product has', 
 });
 
 test('the site hosts no archive, because the endpoint serves the newest one', () => {
-
   for (const rule of rules) {
     assert.doesNotMatch(rule.paths.join(' '), /\.(zip|crx)$/,
       `no _headers rule names a versioned archive: ${rule.paths.join(', ')}`);
@@ -178,7 +182,6 @@ test('the site hosts no archive, because the endpoint serves the newest one', ()
 });
 
 test('both hosts upload the same file set, so no page exists on only one of them', () => {
-
   const read = (name) => fs.readFileSync(new URL(`landing/${name}`, root), 'utf8')
     .split('\n')
     .map((line) => line.trim())
@@ -205,12 +208,10 @@ function escapeRe(text) {
 }
 
 test('a push does not deploy, because every push spent the daily budget', () => {
-
   assert.equal(vercel.git?.deploymentEnabled, false, 'git auto-deployment is off');
 });
 
 test('the static-hosting pins survive that change', () => {
-
   assert.equal(vercel.framework, null, 'no framework may be detected');
   assert.equal(vercel.buildCommand, null, 'there is no build step to run');
   assert.equal(vercel.outputDirectory, '.', 'the served directory is the site itself');
@@ -218,7 +219,6 @@ test('the static-hosting pins survive that change', () => {
 });
 
 test('the deploy invocation is written down where it will be found', () => {
-
   const handoff = read('docs/handoff.md');
   assert.match(handoff, /wrangler pages deploy|Cloudflare Pages/i, 'the host that serves the site is named');
   assert.match(handoff, /publish-crx\.yml|deploy-site\.yml/, 'and the workflow that publishes it');
@@ -227,7 +227,6 @@ test('the deploy invocation is written down where it will be found', () => {
 });
 
 test('the edge is told not to hold a page, because Cache-Control alone does not', () => {
-
   for (const entry of vercel.headers) {
     const cdn = entry.headers.find((h) => h.key === 'Vercel-CDN-Cache-Control');
     assert.ok(cdn, `${entry.source} tells the edge what to do`);
@@ -241,7 +240,6 @@ test('the edge is told not to hold a page, because Cache-Control alone does not'
 });
 
 test('the site is reachable at the path GoTrue asks for, from the site root directory', () => {
-
   assert.match(read('supabase/config.toml'), /site_url = "https:\/\/opera-agent\.pages\.dev"/);
   assert.match(read('supabase/config.toml'), /authorization_path = "\/oauth\/consent"/);
   assert.ok(fs.existsSync(new URL('landing/oauth/consent.html', root)), 'the page is at that path');

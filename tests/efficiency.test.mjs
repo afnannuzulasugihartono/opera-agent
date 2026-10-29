@@ -50,7 +50,6 @@ test('every popup message lands in a catch the user can read', () => {
 });
 
 test('the device asks nothing, so there is no pull endpoint left', () => {
-
   assert.match(bridge, /rpc\("opera_claim_next_wait", \{/);
   assert.doesNotMatch(bridge, /rpc\("opera_claim_next",/);
   assert.doesNotMatch(bridge, /async function pull\(/,
@@ -87,7 +86,10 @@ test('the heartbeat keeps the device row fresh without claiming the connection s
 });
 
 test('only the socket stamps lastConnectedAt, because only the socket knows when it connected', () => {
-  const device = ['../extension/worker/execute-pull.js', '../extension/lib/socket-client.js']
+  const device = [
+    '../extension/worker/execute-pull.js',
+    '../extension/lib/socket-client.js'
+  ]
     .map((p) => fs.readFileSync(new URL(p, import.meta.url), 'utf8').replace(/^\s*\/\/.*$/gm, ''))
     .join('\n');
 
@@ -128,7 +130,6 @@ test('content readiness uses an internal zero-payload ping instead of a semantic
 });
 
 test('contentCall sends first and only re-establishes the bridge on transport failure', () => {
-
   const call = background.slice(background.indexOf('async function contentCall'), background.indexOf('async function executeInTab'));
   const firstSend = call.indexOf('chrome.tabs.sendMessage');
   const ensure = call.indexOf('ensureContent(');

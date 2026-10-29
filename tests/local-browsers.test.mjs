@@ -21,11 +21,25 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { BROWSERS, detectBrowsers, expandPath, findBrowser, launchArgs, protocolsFor } from '../local/browsers.js';
+import {
+  BROWSERS,
+  detectBrowsers,
+  expandPath,
+  findBrowser,
+  launchArgs,
+  protocolsFor
+} from '../local/browsers.js';
 
 test('the Chromium family is declared as one protocol, because it is one protocol', () => {
   assert.deepEqual(BROWSERS.map((b) => b.id).sort(),
-    ['brave', 'chrome', 'chromium', 'edge', 'opera', 'vivaldi']);
+    [
+      'brave',
+      'chrome',
+      'chromium',
+      'edge',
+      'opera',
+      'vivaldi'
+    ]);
 
   for (const entry of BROWSERS) {
     assert.equal(entry.protocol, 'cdp', `${entry.id} is Chromium and must speak cdp`);
@@ -55,7 +69,11 @@ test('an unset variable is left visible rather than silently becoming an empty s
 
 test('matching survives a separator mismatch, because the caller does not control its separator', () => {
   const present = new Set(['c:/program files/google/chrome/application/chrome.exe']);
-  const found = detectBrowsers({ platform: 'win32', env: {}, exists: (p) => present.has(p) });
+  const found = detectBrowsers({
+    platform: 'win32',
+    env: {},
+    exists: (p) => present.has(p)
+  });
 
   assert.deepEqual(found.map((b) => b.id), ['chrome'],
     'a caller holding a forward-slash path must still match a backslash path in the table');
@@ -74,11 +92,19 @@ test('detection returns the entry whose path resolved, not the raw candidate', (
 });
 
 test('detection on a machine with nothing installed returns an empty list rather than throwing', () => {
-  assert.deepEqual(detectBrowsers({ platform: 'linux', env: {}, exists: () => false }), []);
+  assert.deepEqual(detectBrowsers({
+    platform: 'linux',
+    env: {},
+    exists: () => false
+  }), []);
 });
 
 test('a launch opens its own profile so an already-running browser cannot swallow the port', () => {
-  const args = launchArgs({ browser: findBrowser('chrome'), port: 9333, userDataDir: '/tmp/oa' });
+  const args = launchArgs({
+    browser: findBrowser('chrome'),
+    port: 9333,
+    userDataDir: '/tmp/oa'
+  });
 
   assert.ok(args.includes('--remote-debugging-port=9333'));
   assert.ok(args.includes('--user-data-dir=/tmp/oa'), 'a shared profile makes the debugging port a no-op');
@@ -87,13 +113,29 @@ test('a launch opens its own profile so an already-running browser cannot swallo
 });
 
 test('launching an unknown browser yields no flags rather than half a command line', () => {
-  assert.deepEqual(launchArgs({ browser: null, port: 9333, userDataDir: '/tmp/oa' }), []);
+  assert.deepEqual(launchArgs({
+    browser: null,
+    port: 9333,
+    userDataDir: '/tmp/oa'
+  }), []);
 });
 
 test('protocolsFor reports only what is actually installed, so a caller can refuse honestly', () => {
-  assert.deepEqual(protocolsFor({ platform: 'win32', env: {}, exists: (p) => p.includes('chrome.exe') }), ['cdp']);
-  assert.deepEqual(protocolsFor({ platform: 'win32', env: {}, exists: (p) => p.includes('brave.exe') }), ['cdp']);
-  assert.deepEqual(protocolsFor({ platform: 'linux', env: {}, exists: () => false }), []);
+  assert.deepEqual(protocolsFor({
+    platform: 'win32',
+    env: {},
+    exists: (p) => p.includes('chrome.exe')
+  }), ['cdp']);
+  assert.deepEqual(protocolsFor({
+    platform: 'win32',
+    env: {},
+    exists: (p) => p.includes('brave.exe')
+  }), ['cdp']);
+  assert.deepEqual(protocolsFor({
+    platform: 'linux',
+    env: {},
+    exists: () => false
+  }), []);
 });
 
 test('a path in the table never names this machine, so the driver carries no local state', () => {

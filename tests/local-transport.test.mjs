@@ -21,14 +21,28 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { connect, discoverWebSocket, openTab, waitForBrowser } from '../local/transport.js';
+import {
+  connect,
+  discoverWebSocket,
+  openTab,
+  waitForBrowser
+} from '../local/transport.js';
 
 test('a new tab is opened as its own target, so a drive never hijacks the page already open', async () => {
   const calls = [];
   const tab = await openTab(9450, 'https://sheets.google.com/spreadsheets/u/0/create', {
-    fetch: async (target, init) => {
-      calls.push({ target, method: init?.method });
-      return response({ id: 'NEWTAB', webSocketDebuggerUrl: 'ws://127.0.0.1:9450/devtools/page/new' });
+    fetch: async (
+      target,
+      init
+    ) => {
+      calls.push({
+        target,
+        method: init?.method
+      });
+      return response({
+        id: 'NEWTAB',
+        webSocketDebuggerUrl: 'ws://127.0.0.1:9450/devtools/page/new'
+      });
     }
   });
 
@@ -40,9 +54,15 @@ test('a new tab is opened as its own target, so a drive never hijacks the page a
 test('a new tab is opened with PUT, because the endpoint refuses GET', async () => {
   let seen = null;
   await openTab(9450, 'about:blank', {
-    fetch: async (target, init) => {
+    fetch: async (
+      target,
+      init
+    ) => {
       seen = init?.method;
-      return response({ id: 'N', webSocketDebuggerUrl: 'ws://x' });
+      return response({
+        id: 'N',
+        webSocketDebuggerUrl: 'ws://x'
+      });
     }
   });
 
@@ -54,7 +74,10 @@ test('the url is encoded, so a target carrying its own query string survives', a
   await openTab(9450, 'https://docs.google.com/document/d/abc/edit?tab=t.0', {
     fetch: async (target) => {
       seen = target;
-      return response({ id: 'N', webSocketDebuggerUrl: 'ws://x' });
+      return response({
+        id: 'N',
+        webSocketDebuggerUrl: 'ws://x'
+      });
     }
   });
 
@@ -70,12 +93,18 @@ test('a new tab that opens without a websocket url fails loudly, rather than han
 
 test('a browser that refuses the new tab says so in the port it refused on', async () => {
   await assert.rejects(
-    openTab(9450, 'about:blank', { fetch: async () => ({ ok: false, status: 405 }) }),
+    openTab(9450, 'about:blank', { fetch: async () => ({
+      ok: false,
+      status: 405
+    }) }),
     /9450|405/
   );
 });
 
-const response = (body) => ({ ok: true, json: async () => body });
+const response = (body) => ({
+  ok: true,
+  json: async () => body
+});
 
 test('discovery reads the browser websocket url from the version endpoint', async () => {
   const url = await discoverWebSocket(9333, {
@@ -97,7 +126,9 @@ test('discovery fails loudly when the port answers with no browser, rather than 
 
 test('discovery reports a closed port as such, so a caller can tell it from a wrong port', async () => {
   await assert.rejects(
-    discoverWebSocket(9333, { fetch: async () => { throw new Error('fetch failed'); } }),
+    discoverWebSocket(9333, { fetch: async () => {
+      throw new Error('fetch failed');
+    } }),
     /not reachable|9333/i
   );
 });
@@ -120,7 +151,13 @@ test('waiting retries until the browser answers, instead of connecting once and 
 
 test('a wait that times out says how long it tried and which port, because slow and absent need different answers', async () => {
   await assert.rejects(
-    waitForBrowser(9333, { timeoutMs: 60, intervalMs: 10, fetch: async () => { throw new Error('fetch failed'); } }),
+    waitForBrowser(9333, {
+      timeoutMs: 60,
+      intervalMs: 10,
+      fetch: async () => {
+        throw new Error('fetch failed');
+      }
+    }),
     (error) => {
       assert.match(error.message, /9333/);
       assert.match(error.message, /60/, 'the message must carry the budget that was spent');
@@ -135,16 +172,28 @@ test('connecting hands back a transport with the three methods the client inject
   let closed = false;
 
   class FakeSocket {
-    constructor(url) { this.url = url; queueMicrotask(() => this._open?.()); }
-    send(data) { sent.push(data); }
-    close() { closed = true; }
-    set onmessage(fn) { delivered = fn; }
-    set onopen(fn) { this._open = fn; }
+    constructor(url) {
+      this.url = url; queueMicrotask(() => this._open?.());
+    }
+    send(data) {
+      sent.push(data);
+    }
+    close() {
+      closed = true;
+    }
+    set onmessage(fn) {
+      delivered = fn;
+    }
+    set onopen(fn) {
+      this._open = fn;
+    }
   }
 
   const transport = await connect('ws://127.0.0.1:9333/devtools/browser/a', { Socket: FakeSocket });
   let received = null;
-  transport.onMessage((data) => { received = data; });
+  transport.onMessage((data) => {
+    received = data;
+  });
 
   transport.send('{"id":1}');
   delivered('{"id":1,"result":{}}');
@@ -160,13 +209,22 @@ test('a connection that never opens fails rather than leaving the caller waiting
     constructor() {}
     send() {}
     close() {}
-    set onmessage(fn) { this._m = fn; }
-    set onopen(fn) { this._o = fn; }
-    set onerror(fn) { this._e = fn; }
+    set onmessage(fn) {
+      this._m = fn;
+    }
+    set onopen(fn) {
+      this._o = fn;
+    }
+    set onerror(fn) {
+      this._e = fn;
+    }
   }
 
   await assert.rejects(
-    connect('ws://127.0.0.1:1/x', { Socket: DeadSocket, timeoutMs: 80 }),
+    connect('ws://127.0.0.1:1/x', {
+      Socket: DeadSocket,
+      timeoutMs: 80
+    }),
     /connect/i
   );
 });

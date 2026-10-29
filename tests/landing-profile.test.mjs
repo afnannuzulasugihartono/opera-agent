@@ -19,11 +19,21 @@ const block = html.slice(html.indexOf('const esc ='), html.indexOf('async functi
 function render(user) {
   const nodes = {};
   const $ = (id) => ({
-    set textContent(value) { nodes[id] = value; },
-    get textContent() { return nodes[id]; },
-    set innerHTML(value) { nodes[id] = value; },
-    get innerHTML() { return nodes[id]; },
-    set title(value) { nodes[`${id}Title`] = value; }
+    set textContent(value) {
+      nodes[id] = value;
+    },
+    get textContent() {
+      return nodes[id];
+    },
+    set innerHTML(value) {
+      nodes[id] = value;
+    },
+    get innerHTML() {
+      return nodes[id];
+    },
+    set title(value) {
+      nodes[`${id}Title`] = value;
+    }
   });
   const context = vm.createContext({ $ });
   const api = vm.runInContext(`(() => { ${block}\nreturn { renderIdentity }; })()`, context);
@@ -41,7 +51,6 @@ function render(user) {
 }
 
 test('the block the lock executes is the block the page ships', () => {
-
   for (const part of ['PROVIDER_LABEL', 'providerOf', 'linkedProviders', 'initialsOf']) {
     assert.ok(block.includes(part), `the account page block carries ${part}`);
   }
@@ -50,12 +59,21 @@ test('the block the lock executes is the block the page ships', () => {
 });
 
 test('an account created by magic link then signed in with Google still says Google', () => {
-
   const card = render({
     id: '1ec02bc3-7c1b-45a2-b864-837e95ba3b24',
     email: 'afnan@example.com',
-    app_metadata: { provider: 'email', providers: ['email', 'google'] },
-    user_metadata: { full_name: 'Afnan Nuzula Sugihartono', name: 'Afnan Nuzula Sugihartono', avatar_url: 'https://example.com/a.png' }
+    app_metadata: {
+      provider: 'email',
+      providers: [
+        'email',
+        'google'
+      ]
+    },
+    user_metadata: {
+      full_name: 'Afnan Nuzula Sugihartono',
+      name: 'Afnan Nuzula Sugihartono',
+      avatar_url: 'https://example.com/a.png'
+    }
   });
   assert.equal(card.provider, 'Google', 'the named provider wins over the email entry');
   assert.equal(card.factProvider, 'Google', 'the facts row agrees with the card');
@@ -70,8 +88,14 @@ test('a GitHub account with only a login renders its handle, not a blank', () =>
   const card = render({
     id: 'dev-1',
     email: 'dev@example.com',
-    app_metadata: { provider: 'github', providers: ['github'] },
-    user_metadata: { user_name: 'octocat', name: null }
+    app_metadata: {
+      provider: 'github',
+      providers: ['github']
+    },
+    user_metadata: {
+      user_name: 'octocat',
+      name: null
+    }
   });
   assert.equal(card.provider, 'GitHub');
   assert.equal(card.name, 'octocat', 'the handle is used when there is no full name');
@@ -83,7 +107,10 @@ test('a magic-link-only account says so instead of claiming a provider', () => {
   const card = render({
     id: 'solo-1',
     email: 'solo@example.com',
-    app_metadata: { provider: 'email', providers: ['email'] },
+    app_metadata: {
+      provider: 'email',
+      providers: ['email']
+    },
     user_metadata: {}
   });
   assert.equal(card.provider, 'Tautan email');
@@ -92,7 +119,12 @@ test('a magic-link-only account says so instead of claiming a provider', () => {
 });
 
 test('a session missing every name field still renders something', () => {
-  const card = render({ id: 'anon-1', email: '', app_metadata: {}, user_metadata: {} });
+  const card = render({
+    id: 'anon-1',
+    email: '',
+    app_metadata: {},
+    user_metadata: {}
+  });
 
   assert.match(card.initials, /^[A-Z]{2}$/, `the avatar is never blank, got "${card.initials}"`);
   assert.equal(card.name, 'Akun Opera Agent', 'a nameless session gets the product name, not undefined');
@@ -102,7 +134,6 @@ test('a session missing every name field still renders something', () => {
 });
 
 test('the account page never fetches a provider avatar', () => {
-
   assert.doesNotMatch(html, /<img[^>]+src=/, 'no image element is rendered');
   assert.doesNotMatch(html, /avatar_url/, 'not even the provider image URL is read');
   assert.match(html, /class="avatar"/, 'the avatar is drawn locally from initials');

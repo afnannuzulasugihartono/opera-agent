@@ -8,8 +8,17 @@
   if (globalThis.OperaAgentSemanticViews) return;
 
   const hash = (value) => globalThis.OperaAgentSemanticIdentity.stableHash(String(value ?? ''));
-  const bounded = (value, max = 160) => String(value ?? '').replace(/\s+/g, ' ').trim().slice(0, max);
-  const COMPLETION_STATUSES = Object.freeze(['PROVED', 'BOUNDED_COMPLETE', 'PARTIAL', 'BLOCKED', 'UNKNOWN']);
+  const bounded = (
+    value,
+    max = 160
+  ) => String(value ?? '').replace(/\s+/g, ' ').trim().slice(0, max);
+  const COMPLETION_STATUSES = Object.freeze([
+    'PROVED',
+    'BOUNDED_COMPLETE',
+    'PARTIAL',
+    'BLOCKED',
+    'UNKNOWN'
+  ]);
 
   function classifyCompletion(input = {}) {
     const evidence = (Array.isArray(input.evidence) ? input.evidence : []).slice(0, 12).map((value) => bounded(value, 160));
@@ -40,7 +49,10 @@
       revision += 1;
       const regions = (Array.isArray(input.regions) ? input.regions : []).slice(0, maxRegions);
       const items = (Array.isArray(input.items) ? input.items : []).filter((item) => item.logicalId).slice(0, maxEntities);
-      const grouped = new Map(regions.map((region) => [region.regionId, []]));
+      const grouped = new Map(regions.map((region) => [
+        region.regionId,
+        []
+      ]));
       for (const item of items) {
         const regionId = grouped.has(item.regionKey) ? item.regionKey : regions[0]?.regionId;
         if (regionId) grouped.get(regionId).push(item);
@@ -62,7 +74,10 @@
           `${item.logicalId}:${item.semanticRevision}:${item.inViewport ? 1 : 0}`).join('|'));
         const scroll = region.scroll || null;
         const scrollFingerprint = scroll ? hash([
-          scroll.scrollTop, scroll.scrollHeight, scroll.clientHeight, scroll.reachedBottom,
+          scroll.scrollTop,
+          scroll.scrollHeight,
+          scroll.clientHeight,
+          scroll.reachedBottom,
         ].join('|')) : '';
         const previous = states.get(region.regionId);
         const changed = !previous || previous.entityFingerprint !== entityFingerprint || previous.scrollFingerprint !== scrollFingerprint;
@@ -88,7 +103,10 @@
           duplicateKeyCount: [...keyCounts.values()].filter((count) => count > 1).length,
           ambiguityCount: entities.filter((item) => item.identityAmbiguous).length,
           dependencies: {
-            entitySet: { fingerprint: entityFingerprint, count: entities.length },
+            entitySet: {
+              fingerprint: entityFingerprint,
+              count: entities.length
+            },
             scrollState: scroll ? { fingerprint: scrollFingerprint } : null,
           },
           exhaustion: scroll ? {
@@ -101,17 +119,32 @@
           observed: true,
           boundaryStable: view.exhaustion?.status === 'BOUNDED_COMPLETE',
           scope: `rendered entities in region ${region.regionId}`,
-          evidence: [`view-revision:${viewRevision}`, `loaded-entities:${entities.length}`,
-            ...(scroll ? [`stable-boundary-observations:${stableBoundaryObservations}`] : [])],
-          limits: ['DOM_AND_ACCESSIBILITY_OBSERVATION_ONLY', `ENTITY_CAP:${maxEntities}`, `REGION_CAP:${maxRegions}`],
+          evidence: [
+            `view-revision:${viewRevision}`,
+            `loaded-entities:${entities.length}`,
+            ...(scroll ? [`stable-boundary-observations:${stableBoundaryObservations}`] : [])
+          ],
+          limits: [
+            'DOM_AND_ACCESSIBILITY_OBSERVATION_ONLY',
+            `ENTITY_CAP:${maxEntities}`,
+            `REGION_CAP:${maxRegions}`
+          ],
           unresolved: [
             ...(view.exhaustion?.status === 'BOUNDED_COMPLETE' ? [] : ['CONTENT_MAY_EXIST_OUTSIDE_OBSERVED_SCOPE']),
             ...(view.ambiguityCount ? [`IDENTITY_AMBIGUITIES:${view.ambiguityCount}`] : []),
           ],
         });
         if (changed) changedRegionIds.push(region.regionId);
-        if (invalidationCauses.length) invalidatedViews.push({ regionId: region.regionId, causes: invalidationCauses });
-        states.set(region.regionId, { entityFingerprint, scrollFingerprint, stableBoundaryObservations, viewRevision });
+        if (invalidationCauses.length) invalidatedViews.push({
+          regionId: region.regionId,
+          causes: invalidationCauses
+        });
+        states.set(region.regionId, {
+          entityFingerprint,
+          scrollFingerprint,
+          stableBoundaryObservations,
+          viewRevision
+        });
         views.push(view);
       }
       const present = new Set(regions.map((region) => region.regionId));
@@ -143,8 +176,15 @@
       revision = 0;
     }
 
-    return Object.freeze({ observe, reset });
+    return Object.freeze({
+      observe,
+      reset
+    });
   }
 
-  globalThis.OperaAgentSemanticViews = Object.freeze({ COMPLETION_STATUSES, classifyCompletion, createViewEngine });
+  globalThis.OperaAgentSemanticViews = Object.freeze({
+    COMPLETION_STATUSES,
+    classifyCompletion,
+    createViewEngine
+  });
 })();

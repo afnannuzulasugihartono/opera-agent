@@ -13,7 +13,10 @@
   const DEFAULT_MAX_DELTA_CHANGES = 100;
   const DEFAULT_MAX_DELTA_BYTES = 64 * 1024;
 
-  function bounded(value, max = 300) {
+  function bounded(
+    value,
+    max = 300
+  ) {
     return String(value ?? '').replace(/\s+/g, ' ').trim().slice(0, max);
   }
 
@@ -33,11 +36,13 @@
   function canonicalHref(value) {
     try {
       const url = new URL(String(value || ''));
-      if (!['http:', 'https:'].includes(url.protocol)) return '';
+      if (![
+        'http:',
+        'https:'
+      ].includes(url.protocol)) return '';
       url.hash = '';
       return url.toString();
     } catch (error) {
-
       globalThis.OperaAgentLog?.debug?.('HREF_CANONICALIZE_FAILED', error?.message || String(error));
       return '';
     }
@@ -47,31 +52,73 @@
     const stableKey = bounded(item.stableKey, 160);
     const source = bounded(item.stableKeySource, 40).toLowerCase();
     if (stableKey && (source === 'href' || source === 'id')) {
-      return { key: `${source}:${stableKey}`, kind: 'intrinsic', confidence: 0.98 };
+      return {
+        key: `${source}:${stableKey}`,
+        kind: 'intrinsic',
+        confidence: 0.98
+      };
     }
     const href = canonicalHref(item.href);
-    if (href) return { key: `href-hash:${stableHash(href)}`, kind: 'intrinsic', confidence: 0.95 };
-    if (stableKey) return { key: `semantic-key:${stableKey}`, kind: 'semantic', confidence: 0.75 };
-    const fingerprint = [item.tag, item.role, item.name, item.label, item.text, item.structuralKey]
+    if (href) return {
+      key: `href-hash:${stableHash(href)}`,
+      kind: 'intrinsic',
+      confidence: 0.95
+    };
+    if (stableKey) return {
+      key: `semantic-key:${stableKey}`,
+      kind: 'semantic',
+      confidence: 0.75
+    };
+    const fingerprint = [
+      item.tag,
+      item.role,
+      item.name,
+      item.label,
+      item.text,
+      item.structuralKey
+    ]
       .map((part) => bounded(part, 300)).join('|');
-    return { key: `fingerprint:${stableHash(fingerprint)}`, kind: 'semantic', confidence: 0.65 };
+    return {
+      key: `fingerprint:${stableHash(fingerprint)}`,
+      kind: 'semantic',
+      confidence: 0.65
+    };
   }
 
   function signatureFor(item) {
     return stableHash([
-      item.tag, item.role, item.name, item.label, item.text, item.type,
-      item.checked, item.selected, item.disabled, item.ariaPressed,
-      item.ariaChecked, item.ariaExpanded, item.ariaSelected,
+      item.tag,
+      item.role,
+      item.name,
+      item.label,
+      item.text,
+      item.type,
+      item.checked,
+      item.selected,
+      item.disabled,
+      item.ariaPressed,
+      item.ariaChecked,
+      item.ariaExpanded,
+      item.ariaSelected,
     ].map((part) => bounded(part, 300)).join('|'));
   }
 
   function geometrySignatureFor(item) {
     const rect = item?.rect || {};
-    return stableHash([rect.x, rect.y, rect.width, rect.height, item.inViewport]
+    return stableHash([
+      rect.x,
+      rect.y,
+      rect.width,
+      rect.height,
+      item.inViewport
+    ]
       .map((part) => bounded(part, 40)).join('|'));
   }
 
-  function positiveInteger(value, fallback) {
+  function positiveInteger(
+    value,
+    fallback
+  ) {
     return Number.isInteger(value) && value > 0 ? value : fallback;
   }
 
@@ -128,7 +175,10 @@
       for (const record of records.values()) {
         if (timestamp - record.lastSeenAt > maxAgeMs) remove(record.logicalId);
       }
-      const oldest = () => [...records.values()].sort((left, right) =>
+      const oldest = () => [...records.values()].sort((
+        left,
+        right
+      ) =>
         left.lastSeenRevision - right.lastSeenRevision || left.createdOrder - right.createdOrder)[0];
       while (records.size > maxEntities || cacheBytes() > maxCacheBytes) {
         const record = oldest();
@@ -137,7 +187,12 @@
       }
     }
 
-    function createRecord(binding, bindingHash, item, timestamp) {
+    function createRecord(
+      binding,
+      bindingHash,
+      item,
+      timestamp
+    ) {
       logicalCounter += 1;
       const logicalId = `se_${documentScope.slice(0, 4)}_${bindingHash.slice(0, 10)}_${logicalCounter.toString(36)}`;
       const record = {
@@ -173,7 +228,11 @@
       return record;
     }
 
-    function updateRecord(record, item, timestamp) {
+    function updateRecord(
+      record,
+      item,
+      timestamp
+    ) {
       retainedBytes -= record.retainedBytes;
       const signature = signatureFor(item);
       if (signature !== record.signature) {
@@ -200,7 +259,10 @@
       return record;
     }
 
-    function trackStaleness(record, item) {
+    function trackStaleness(
+      record,
+      item
+    ) {
       const rendered = item.visible !== false;
       if (rendered) {
         record.invisibleStreak = 0;
@@ -216,9 +278,17 @@
       const timestamp = Number(now());
       evict(timestamp);
       const items = Array.isArray(inputItems) ? inputItems : [];
-      const candidates = items.map((item, index) => {
+      const candidates = items.map((
+        item,
+        index
+      ) => {
         const binding = bindingFor(item);
-        return { item, index, binding, bindingHash: stableHash(binding.key) };
+        return {
+          item,
+          index,
+          binding,
+          bindingHash: stableHash(binding.key)
+        };
       });
       const currentGroups = new Map();
       for (const candidate of candidates) {
@@ -232,7 +302,12 @@
       const output = items;
 
       for (const candidate of candidates) {
-        const { item, index, binding, bindingHash } = candidate;
+        const {
+          item,
+          index,
+          binding,
+          bindingHash
+        } = candidate;
         if (item?.sensitive) {
           excludedSensitiveCount += 1;
           continue;
@@ -292,25 +367,37 @@
             if (returnedAfterGrace.has(current.logicalId)) {
               returnedAfterGrace.delete(current.logicalId);
               changes.push({
-                type: 'UPDATE', logicalId: current.logicalId, revision: current.revision,
-                reason: 'RETURNED_AFTER_ABSENCE', confidence: current.confidence,
+                type: 'UPDATE',
+                logicalId: current.logicalId,
+                revision: current.revision,
+                reason: 'RETURNED_AFTER_ABSENCE',
+                confidence: current.confidence,
               });
             } else {
               changes.push({
-                type: 'INSERT', logicalId: current.logicalId, revision: current.revision,
-                reason: 'NEW_ENTITY', confidence: current.confidence,
+                type: 'INSERT',
+                logicalId: current.logicalId,
+                revision: current.revision,
+                reason: 'NEW_ENTITY',
+                confidence: current.confidence,
               });
             }
           } else if (current.revision !== previous.revision) {
             changes.push({
-              type: 'UPDATE', logicalId: current.logicalId, revision: current.revision,
-              reason: 'SEMANTIC_FIELDS_CHANGED', confidence: current.confidence,
+              type: 'UPDATE',
+              logicalId: current.logicalId,
+              revision: current.revision,
+              reason: 'SEMANTIC_FIELDS_CHANGED',
+              confidence: current.confidence,
             });
           } else if (current.geometryRevision !== previous.geometryRevision || current.index !== previous.index ||
             current.regionMembership !== previous.regionMembership || current.inViewport !== previous.inViewport) {
             changes.push({
-              type: 'MOVE', logicalId: current.logicalId, revision: current.revision,
-              reason: 'GEOMETRY_OR_ORDER_CHANGED', confidence: current.confidence,
+              type: 'MOVE',
+              logicalId: current.logicalId,
+              revision: current.revision,
+              reason: 'GEOMETRY_OR_ORDER_CHANGED',
+              confidence: current.confidence,
             });
           }
           lastObserved.set(current.logicalId, current);
@@ -321,8 +408,11 @@
           missingObservations.set(logicalId, missed);
           if (missed > removalGraceObservations) {
             changes.push({
-              type: 'REMOVE', logicalId, revision: previous.revision,
-              reason: 'ABSENT_AFTER_GRACE', confidence: previous.confidence,
+              type: 'REMOVE',
+              logicalId,
+              revision: previous.revision,
+              reason: 'ABSENT_AFTER_GRACE',
+              confidence: previous.confidence,
             });
             missingObservations.delete(logicalId);
             lastObserved.delete(logicalId);
@@ -402,7 +492,10 @@
       observationRevision = 0;
       lastResetReason = bounded(reason, 80) || 'EXPLICIT_RESET';
       pendingResetReason = lastResetReason;
-      return { documentGeneration, resetReason: lastResetReason };
+      return {
+        documentGeneration,
+        resetReason: lastResetReason
+      };
     }
 
     function inspect() {
@@ -416,8 +509,15 @@
       };
     }
 
-    return Object.freeze({ observe, reset, inspect });
+    return Object.freeze({
+      observe,
+      reset,
+      inspect
+    });
   }
 
-  globalThis.OperaAgentSemanticIdentity = Object.freeze({ createIdentityEngine, stableHash });
+  globalThis.OperaAgentSemanticIdentity = Object.freeze({
+    createIdentityEngine,
+    stableHash
+  });
 })();

@@ -7,22 +7,37 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createPrimitives } from '../local/primitives.js';
 import { createPointerMethods } from '../local/pointer.js';
-import { pipelinedCdp, recordingCdp } from './helpers/local-page.mjs';
+import {
+  pipelinedCdp,
+  recordingCdp
+} from './helpers/local-page.mjs';
 
 test('a click answers with the element under the point', async () => {
   const cdp = recordingCdp();
 
   const out = await createPrimitives(cdp).clickAt(384, 46);
 
-  assert.deepEqual(out.hit, { tag: 'BUTTON', role: 'button', name: 'Bold', canvas: false });
+  assert.deepEqual(out.hit, {
+    tag: 'BUTTON',
+    role: 'button',
+    name: 'Bold',
+    canvas: false
+  });
 });
 
 
 test('a click on canvas says canvas, because elementFromPoint cannot see through it', async () => {
   const cdp = {
-    send: async (method, params = {}) => {
+    send: async (
+      method,
+      params = {}
+    ) => {
       if (method === 'Runtime.evaluate' && String(params.expression).includes('opera-hit')) {
-        return { result: { value: { tag: 'CANVAS', role: '', name: '' } } };
+        return { result: { value: {
+          tag: 'CANVAS',
+          role: '',
+          name: ''
+        } } };
       }
       return {};
     }
@@ -71,12 +86,31 @@ test('a click on the edge of the viewport is still allowed', async () => {
 test('a click_row says when something else owns the point it clicked', async () => {
   const cdp = {
     calls: [],
-    send: async (method, params = {}) => {
-      cdp.calls.push({ method, params });
-      if (method === 'DOM.getBoxModel') return { model: { content: [100, 200, 300, 200, 300, 260, 100, 260] } };
+    send: async (
+      method,
+      params = {}
+    ) => {
+      cdp.calls.push({
+        method,
+        params
+      });
+      if (method === 'DOM.getBoxModel') return { model: { content: [
+        100,
+        200,
+        300,
+        200,
+        300,
+        260,
+        100,
+        260
+      ] } };
       if (method === 'DOM.resolveNode') return { object: { objectId: 'o-9' } };
       if (method === 'Runtime.callFunctionOn') {
-        return { result: { value: { covered: true, coveredBy: 'div[button]', coveredText: 'Reject the use of cookies and other data' } } };
+        return { result: { value: {
+          covered: true,
+          coveredBy: 'div[button]',
+          coveredText: 'Reject the use of cookies and other data'
+        } } };
       }
       return { result: {} };
     }
@@ -95,9 +129,24 @@ test('a click_row says when something else owns the point it clicked', async () 
 test('a click_row whose point belongs to the row says so, and one that belongs to nothing claims nothing', async () => {
   const owned = {
     calls: [],
-    send: async (method, params = {}) => {
-      owned.calls.push({ method, params });
-      if (method === 'DOM.getBoxModel') return { model: { content: [100, 200, 300, 200, 300, 260, 100, 260] } };
+    send: async (
+      method,
+      params = {}
+    ) => {
+      owned.calls.push({
+        method,
+        params
+      });
+      if (method === 'DOM.getBoxModel') return { model: { content: [
+        100,
+        200,
+        300,
+        200,
+        300,
+        260,
+        100,
+        260
+      ] } };
       if (method === 'DOM.resolveNode') return { object: { objectId: 'o-9' } };
       if (method === 'Runtime.callFunctionOn') return { result: { value: { covered: false } } };
       return { result: {} };
@@ -107,9 +156,24 @@ test('a click_row whose point belongs to the row says so, and one that belongs t
 
   const silent = {
     calls: [],
-    send: async (method, params = {}) => {
-      silent.calls.push({ method, params });
-      if (method === 'DOM.getBoxModel') return { model: { content: [100, 200, 300, 200, 300, 260, 100, 260] } };
+    send: async (
+      method,
+      params = {}
+    ) => {
+      silent.calls.push({
+        method,
+        params
+      });
+      if (method === 'DOM.getBoxModel') return { model: { content: [
+        100,
+        200,
+        300,
+        200,
+        300,
+        260,
+        100,
+        260
+      ] } };
       return { result: {} };
     }
   };
@@ -136,7 +200,11 @@ test('a click is a real press and release at the browser level, not an element c
   await createPrimitives(cdp).clickAt(384, 46);
 
   const events = cdp.calls.filter((c) => c.method === 'Input.dispatchMouseEvent');
-  assert.deepEqual(events.map((e) => e.params.type), ['mouseMoved', 'mousePressed', 'mouseReleased']);
+  assert.deepEqual(events.map((e) => e.params.type), [
+    'mouseMoved',
+    'mousePressed',
+    'mouseReleased'
+  ]);
   assert.equal(events[1].params.x, 384);
   assert.equal(events[2].params.y, 46);
 });
@@ -170,7 +238,10 @@ test('every pointer action marks its spot for the watcher, red for click and blu
   assert.match(marks[0].params.expression, /66,133,244/);
   assert.match(marks[1].params.expression, /255,60,60/);
 
-  const at = (expression, axis) => {
+  const at = (
+    expression,
+    axis
+  ) => {
     const found = new RegExp(`el\\.style\\.${axis} = '(\\d+)px'`).exec(expression);
     return found ? Number(found[1]) : null;
   };
@@ -186,8 +257,14 @@ test('every pointer action marks its spot for the watcher, red for click and blu
 test('a refused spotlight never breaks the click it decorates', async () => {
   const cdp = {
     calls: [],
-    send: async (method, params = {}) => {
-      cdp.calls.push({ method, params });
+    send: async (
+      method,
+      params = {}
+    ) => {
+      cdp.calls.push({
+        method,
+        params
+      });
       if (method === 'Runtime.evaluate') throw new Error('script not allowed here');
       return { result: {} };
     }
@@ -195,7 +272,11 @@ test('a refused spotlight never breaks the click it decorates', async () => {
 
   const out = await createPrimitives(cdp).clickAt(10, 20);
 
-  assert.deepEqual(out, { x: 10, y: 20, hit: null });
+  assert.deepEqual(out, {
+    x: 10,
+    y: 20,
+    hit: null
+  });
   assert.equal(cdp.calls.filter((c) => c.method === 'Input.dispatchMouseEvent').length, 3);
 });
 
@@ -230,11 +311,26 @@ test('a hover waits for the move it dispatched, or it has not hovered', async ()
 test('createPointerMethods exposes the clicks, the hovers and the handles', () => {
   const methods = createPointerMethods({
     cdp: { send: async () => ({}) },
-    primitives: { viewport: async () => ({ width: 1, height: 1 }), settle: async () => ({}), handleBox: async () => ({}) }
+    primitives: {
+      viewport: async () => ({
+        width: 1,
+        height: 1
+      }),
+      settle: async () => ({}),
+      handleBox: async () => ({})
+    }
   });
 
   assert.deepEqual(Object.keys(methods).sort(),
-    ['clickAt', 'clickFraction', 'clickHandle', 'handleBox', 'hover', 'hoverRow', 'resolveHandle']);
+    [
+      'clickAt',
+      'clickFraction',
+      'clickHandle',
+      'handleBox',
+      'hover',
+      'hoverRow',
+      'resolveHandle'
+    ]);
 });
 
 // WHY ALL FOUR ARROWS ARE PINNED.
@@ -246,15 +342,30 @@ function handleCdp(rows) {
   const calls = [];
   return {
     calls,
-    send: async (method, params = {}) => {
-      calls.push({ method, params });
+    send: async (
+      method,
+      params = {}
+    ) => {
+      calls.push({
+        method,
+        params
+      });
       if (method === 'Runtime.evaluate') {
         if (/^window\.__operaNodes\[\d+\]$/.test(params.expression)) return { result: { objectId: 'o-1' } };
         return { result: { value: rows } };
       }
       if (method === 'DOM.describeNode') return { node: { backendNodeId: 4321 } };
       if (method === 'DOM.getBoxModel') {
-        return { model: { content: [100, 200, 300, 200, 300, 260, 100, 260] } };
+        return { model: { content: [
+          100,
+          200,
+          300,
+          200,
+          300,
+          260,
+          100,
+          260
+        ] } };
       }
       return { result: {} };
     }
@@ -264,12 +375,27 @@ function handleCdp(rows) {
 
 test('a row resolves to the node behind it and the handle is that node', async () => {
   const cdp = handleCdp([
-    { role: 'menu', name: 'Upload from computer\nSearch the web', x: 630, y: 87, node: 0 },
-    { role: 'menuitem', name: 'Upload from computer', x: 630, y: 175, node: 1 }
+    {
+      role: 'menu',
+      name: 'Upload from computer\nSearch the web',
+      x: 630,
+      y: 87,
+      node: 0
+    },
+    {
+      role: 'menuitem',
+      name: 'Upload from computer',
+      x: 630,
+      y: 175,
+      node: 1
+    }
   ]);
   const p = createPrimitives(cdp);
 
-  const row = await p.resolveRow({ role: 'menuitem', name: 'Upload from computer' });
+  const row = await p.resolveRow({
+    role: 'menuitem',
+    name: 'Upload from computer'
+  });
 
   assert.equal(row.handle, 'opera-4321');
   const asked = cdp.calls.find((c) => c.method === 'Runtime.evaluate' && c.params.expression.startsWith('window.__operaNodes['));
@@ -278,23 +404,52 @@ test('a row resolves to the node behind it and the handle is that node', async (
 
 
 test('a row with no element behind it is returned without a handle', async () => {
-  const cdp = handleCdp([{ role: 'caret', name: 'text caret', x: 4, y: 5 }]);
+  const cdp = handleCdp([{
+    role: 'caret',
+    name: 'text caret',
+    x: 4,
+    y: 5
+  }]);
   const p = createPrimitives(cdp);
 
-  const row = await p.resolveRow({ role: 'caret', name: 'text caret' });
+  const row = await p.resolveRow({
+    role: 'caret',
+    name: 'text caret'
+  });
 
-  assert.deepEqual(row, { role: 'caret', name: 'text caret', x: 4, y: 5, handle: null });
+  assert.deepEqual(row, {
+    role: 'caret',
+    name: 'text caret',
+    x: 4,
+    y: 5,
+    handle: null
+  });
 });
 
 
 test('a missing row names what is visible instead of guessing', async () => {
   const cdp = handleCdp([
-    { role: 'menuitem', name: 'Insert', x: 1, y: 2, node: 0 },
-    { role: 'menuitem', name: 'Image', x: 3, y: 4, node: 1 }
+    {
+      role: 'menuitem',
+      name: 'Insert',
+      x: 1,
+      y: 2,
+      node: 0
+    },
+    {
+      role: 'menuitem',
+      name: 'Image',
+      x: 3,
+      y: 4,
+      node: 1
+    }
   ]);
   const p = createPrimitives(cdp);
 
-  await assert.rejects(() => p.resolveRow({ role: 'menuitem', name: 'Footnote' }), (error) => {
+  await assert.rejects(() => p.resolveRow({
+    role: 'menuitem',
+    name: 'Footnote'
+  }), (error) => {
     assert.match(error.message, /no menuitem matching "Footnote"/);
     assert.match(error.message, /Insert \| Image/);
     return true;
@@ -307,12 +462,22 @@ test('a missing row names what is visible instead of guessing', async () => {
 
 
 test('a handle is measured from the node at the moment of the click', async () => {
-  const cdp = handleCdp([{ role: 'menuitem', name: 'Image', x: 630, y: 175, node: 0 }]);
+  const cdp = handleCdp([{
+    role: 'menuitem',
+    name: 'Image',
+    x: 630,
+    y: 175,
+    node: 0
+  }]);
   const p = createPrimitives(cdp);
 
   const at = await p.clickHandle('opera-4321');
 
-  assert.deepEqual(at, { x: 200, y: 230, handle: 'opera-4321' });
+  assert.deepEqual(at, {
+    x: 200,
+    y: 230,
+    handle: 'opera-4321'
+  });
   const measured = cdp.calls.find((c) => c.method === 'DOM.getBoxModel');
   assert.deepEqual(measured.params, { backendNodeId: 4321 });
   assert.equal(cdp.calls.filter((c) => c.method === 'Input.dispatchMouseEvent').length, 3, 'move, press and release still go out');
@@ -323,9 +488,21 @@ test('a handle is measured from the node at the moment of the click', async () =
 
 test('a handle that is gone says so instead of clicking a stale point', async () => {
   const cdp = handleCdp([]);
-  cdp.send = async (method, params = {}) => {
-    cdp.calls.push({ method, params });
-    if (method === 'Runtime.evaluate') return { result: { value: [{ role: 'menuitem', name: 'Gone', x: 1, y: 1, node: 0 }] } };
+  cdp.send = async (
+    method,
+    params = {}
+  ) => {
+    cdp.calls.push({
+      method,
+      params
+    });
+    if (method === 'Runtime.evaluate') return { result: { value: [{
+      role: 'menuitem',
+      name: 'Gone',
+      x: 1,
+      y: 1,
+      node: 0
+    }] } };
     if (method === 'DOM.describeNode') return { node: { backendNodeId: 4321 } };
     return {};
   };

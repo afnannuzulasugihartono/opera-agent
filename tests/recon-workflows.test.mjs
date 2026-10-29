@@ -17,15 +17,32 @@ function definition() {
   return JSON.parse(match[1]);
 }
 
-const STRONG = ['recaptcha', 'captcha', 'verify you are human', 'select all images'];
-const WEAK = ['consent', 'privacy notice'];
+const STRONG = [
+  'recaptcha',
+  'captcha',
+  'verify you are human',
+  'select all images'
+];
+const WEAK = [
+  'consent',
+  'privacy notice'
+];
 const COMMAND_BUDGET = 12;
 
-function walk(steps, visit, conditions = []) {
+function walk(
+  steps,
+  visit,
+  conditions = []
+) {
   for (const step of steps || []) {
     visit(step, conditions);
-    const nest = (branch) => walk(branch, visit, [...conditions, step.condition]);
-    if (step.type === 'if') { nest(step.then); nest(step.else); }
+    const nest = (branch) => walk(branch, visit, [
+      ...conditions,
+      step.condition
+    ]);
+    if (step.type === 'if') {
+      nest(step.then); nest(step.else);
+    }
     if (step.type === 'repeat' || step.type === 'foreach') walk(step.steps, visit, conditions);
   }
 }
@@ -34,20 +51,30 @@ const condText = (c) => JSON.stringify(c || {});
 test('recon runs detect, map, act, verify in order with honest failures', () => {
   const def = definition();
   const order = [];
-  walk(def.steps, (s) => { if (s.id) order.push(s.id); });
+  walk(def.steps, (s) => {
+    if (s.id) order.push(s.id);
+  });
   assert.ok(order.indexOf('read0') < order.indexOf('findT'), 'read before map');
   assert.ok(order.indexOf('clickT') < order.indexOf('read1'), 'act click before re-read');
   assert.ok(order.indexOf('fillT') < order.indexOf('read1'), 'act fill before re-read');
   assert.ok(order.indexOf('read1') < order.indexOf('findV'), 're-read before verify find');
   const fails = [];
-  walk(def.steps, (s) => { if (s.type === 'fail') fails.push(s.code); });
-  assert.deepEqual([...new Set(fails)].sort(), ['CAPTCHA_BLOCKED', 'TARGET_NOT_FOUND', 'VERIFY_FAILED']);
+  walk(def.steps, (s) => {
+    if (s.type === 'fail') fails.push(s.code);
+  });
+  assert.deepEqual([...new Set(fails)].sort(), [
+    'CAPTCHA_BLOCKED',
+    'TARGET_NOT_FOUND',
+    'VERIFY_FAILED'
+  ]);
 });
 
 test('every strong pattern blocks alone, weak patterns block only in pairs', () => {
   const def = definition();
   const findText = {};
-  walk(def.steps, (s) => { if (s.type === 'command' && s.method === 'page.find') findText[s.id] = s.params.text; });
+  walk(def.steps, (s) => {
+    if (s.type === 'command' && s.method === 'page.find') findText[s.id] = s.params.text;
+  });
   for (const p of STRONG) assert.ok(Object.values(findText).includes(p), `strong pattern missing: ${p}`);
   for (const p of WEAK) assert.ok(Object.values(findText).includes(p), `weak pattern missing: ${p}`);
   const patternsIn = (conds) => conds
@@ -55,11 +82,20 @@ test('every strong pattern blocks alone, weak patterns block only in pairs', () 
     .map((id) => findText[id])
     .filter(Boolean);
   const violations = [];
-  walk(def.steps, (s, conditions) => {
+  walk(def.steps, (
+    s,
+    conditions
+  ) => {
     if (s.type !== 'if') return;
-    const branches = [...(s.then || []), ...(s.else || [])];
+    const branches = [
+      ...(s.then || []),
+      ...(s.else || [])
+    ];
     if (!branches.some((b) => b.type === 'set' && b.name === 'blocked' && b.value === true)) return;
-    const pats = patternsIn([...conditions, s.condition]);
+    const pats = patternsIn([
+      ...conditions,
+      s.condition
+    ]);
     const strongHits = pats.filter((p) => STRONG.includes(p));
     const weakHits = pats.filter((p) => WEAK.includes(p));
     if (strongHits.length === 0 && weakHits.length < 2) violations.push(pats);
@@ -69,8 +105,21 @@ test('every strong pattern blocks alone, weak patterns block only in pairs', () 
 
 test('recon uses only known runner step types and methods, within budget', () => {
   const def = definition();
-  const types = new Set(['command', 'if', 'set', 'repeat', 'foreach', 'wait', 'fail']);
-  const methods = new Set(['page.read', 'page.find', 'page.click', 'page.fill']);
+  const types = new Set([
+    'command',
+    'if',
+    'set',
+    'repeat',
+    'foreach',
+    'wait',
+    'fail'
+  ]);
+  const methods = new Set([
+    'page.read',
+    'page.find',
+    'page.click',
+    'page.fill'
+  ]);
   let commands = 0;
   walk(def.steps, (s) => {
     assert.ok(types.has(s.type), `unknown step type ${s.type}`);

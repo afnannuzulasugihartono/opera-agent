@@ -21,8 +21,14 @@ const assetCalls = [];
 let answer = () => new Response('');
 
 const realFetch = globalThis.fetch;
-globalThis.fetch = async (url, init = {}) => {
-  calls.push({ url: String(url), init });
+globalThis.fetch = async (
+  url,
+  init = {}
+) => {
+  calls.push({
+    url: String(url),
+    init
+  });
   return answer(String(url), init);
 };
 after(() => {
@@ -33,7 +39,10 @@ const env = {
   ASSETS: {
     async fetch(request) {
       assetCalls.push(request);
-      return new Response('asset', { status: 200, headers: { 'content-type': 'text/plain' } });
+      return new Response('asset', {
+        status: 200,
+        headers: { 'content-type': 'text/plain' }
+      });
     }
   }
 };

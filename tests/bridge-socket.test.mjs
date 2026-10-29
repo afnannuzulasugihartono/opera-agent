@@ -26,12 +26,18 @@ import {
   handshakePayload,
   serveDeviceSocket
 } from '../supabase/functions/opera-agent-bridge/bridge-socket.ts';
-import { FRAME_MAX_BYTES, handshakeFrame } from '../extension/lib/socket-protocol.js';
+import {
+  FRAME_MAX_BYTES,
+  handshakeFrame
+} from '../extension/lib/socket-protocol.js';
 import { MAX_RESULT_BYTES } from '../extension/lib/serialize.js';
 
 const upgradeRequest = (headers = {}) => new Request('https://bridge.example/', {
   method: 'GET',
-  headers: { upgrade: 'websocket', ...headers }
+  headers: {
+    upgrade: 'websocket',
+    ...headers
+  }
 });
 
 // WHY this lock exists.
@@ -51,7 +57,10 @@ test('a keepalive frame asks for nothing, so a device never waits on it', () => 
   const frame = JSON.parse(frameForKeepalive('2026-10-12T00:00:00.000Z'));
   assert.equal(frame.type, 'ping');
   assert.equal(frame.serverTime, '2026-10-12T00:00:00.000Z');
-  assert.deepEqual(Object.keys(frame).sort(), ['serverTime', 'type']);
+  assert.deepEqual(Object.keys(frame).sort(), [
+    'serverTime',
+    'type'
+  ]);
 });
 
 test('a device ignores a keepalive rather than treating it as work', async () => {
@@ -67,11 +76,26 @@ test('a device ignores a keepalive rather than treating it as work', async () =>
 // A ping that is answered proves both directions are alive; a ping that is not answered is the only evidence there is that the peer is gone, so the socket is closed and the device reconnects to a live instance.
 
 test('a keepalive tick with no answer since the last one closes the socket', () => {
-  assert.equal(keepaliveDecision({ pings: 2, pongs: 2 }), 'wait', 'an answered peer was closed anyway');
-  assert.equal(keepaliveDecision({ pings: 1, pongs: 1 }), 'wait', 'one tick of slack, or a slow reply closes a healthy socket');
-  assert.equal(keepaliveDecision({ pings: 2, pongs: 1 }), 'close', 'the latest ping went unanswered for a whole interval');
-  assert.equal(keepaliveDecision({ pings: 1, pongs: 0 }), 'close', 'a peer that never answered must not be waited on forever');
-  assert.equal(keepaliveDecision({ pings: 0, pongs: 0 }), 'wait', 'the first tick has nothing to compare against');
+  assert.equal(keepaliveDecision({
+    pings: 2,
+    pongs: 2
+  }), 'wait', 'an answered peer was closed anyway');
+  assert.equal(keepaliveDecision({
+    pings: 1,
+    pongs: 1
+  }), 'wait', 'one tick of slack, or a slow reply closes a healthy socket');
+  assert.equal(keepaliveDecision({
+    pings: 2,
+    pongs: 1
+  }), 'close', 'the latest ping went unanswered for a whole interval');
+  assert.equal(keepaliveDecision({
+    pings: 1,
+    pongs: 0
+  }), 'close', 'a peer that never answered must not be waited on forever');
+  assert.equal(keepaliveDecision({
+    pings: 0,
+    pongs: 0
+  }), 'wait', 'the first tick has nothing to compare against');
 });
 
 // WHY the transport cap is locked against the product bound.
@@ -105,7 +129,12 @@ test('only a websocket request is treated as an upgrade, or a normal POST would 
 
 test('a command frame carries the id, method, params and timeout the device needs to run it', () => {
   const frame = JSON.parse(frameForCommand(
-    { id: 'cmd-1', method: 'page.key', params: { key: 'a' }, timeoutMs: 15000 },
+    {
+      id: 'cmd-1',
+      method: 'page.key',
+      params: { key: 'a' },
+      timeoutMs: 15000
+    },
     '2026-10-11T00:00:00.000Z'
   ));
 
@@ -117,7 +146,10 @@ test('a command frame carries the id, method, params and timeout the device need
 });
 
 test('a command with no params still carries an object, or the device dereferences undefined', () => {
-  const frame = JSON.parse(frameForCommand({ id: 'c', method: 'browser.ping' }, 'now'));
+  const frame = JSON.parse(frameForCommand({
+    id: 'c',
+    method: 'browser.ping'
+  }, 'now'));
   assert.deepEqual(frame.command.params, {});
   assert.equal(frame.command.timeoutMs, 30000);
 });
@@ -146,17 +178,26 @@ test('a well formed frame is accepted and keeps its type', async () => {
 });
 
 test('a handshake needs both a token and a device name, and never accepts a partial one', () => {
-  assert.equal(handshakePayload({ token: 'secret', deviceName: 'opera' })?.deviceName, 'opera');
+  assert.equal(handshakePayload({
+    token: 'secret',
+    deviceName: 'opera'
+  })?.deviceName, 'opera');
   assert.equal(handshakePayload({ token: 'secret' }), null);
   assert.equal(handshakePayload({ deviceName: 'opera' }), null);
-  assert.equal(handshakePayload({ token: '   ', deviceName: 'opera' }), null);
+  assert.equal(handshakePayload({
+    token: '   ',
+    deviceName: 'opera'
+  }), null);
 });
 
 // WHY the bridge accepts gzip frames.
 // The device sends completions over 2 KiB as versioned gzip, because page JSON shrinks five to fifty times and the transfer dominates on a slow link.
 // The bridge must read exactly what the device writes — same version byte, same cap relation — or large results die in transit with no error the device can act on.
 
-async function gzipFrame(payload, version = 1) {
+async function gzipFrame(
+  payload,
+  version = 1
+) {
   const text = JSON.stringify(payload);
   const stream = new CompressionStream('gzip');
   const writer = stream.writable.getWriter();
@@ -164,7 +205,10 @@ async function gzipFrame(payload, version = 1) {
   const chunks = [];
   const pump = (async () => {
     for (;;) {
-      const { done, value } = await reader.read();
+      const {
+        done,
+        value
+      } = await reader.read();
       if (done) return;
       chunks.push(value);
     }
@@ -172,7 +216,10 @@ async function gzipFrame(payload, version = 1) {
   await writer.write(new TextEncoder().encode(text));
   await writer.close();
   await pump;
-  const total = chunks.reduce((n, c) => n + c.length, 0);
+  const total = chunks.reduce((
+    n,
+    c
+  ) => n + c.length, 0);
   const out = new Uint8Array(total + 1);
   out[0] = version;
   let offset = 1;
@@ -184,7 +231,12 @@ async function gzipFrame(payload, version = 1) {
 }
 
 test('a gzip completion decodes to the message the device sent', async () => {
-  const frame = await gzipFrame({ type: 'complete', commandId: 'c9', ok: true, result: { n: 1 } });
+  const frame = await gzipFrame({
+    type: 'complete',
+    commandId: 'c9',
+    ok: true,
+    result: { n: 1 }
+  });
   const parsed = await parseDeviceFrame(frame);
 
   assert.equal(parsed.ok, true);
@@ -193,7 +245,11 @@ test('a gzip completion decodes to the message the device sent', async () => {
 });
 
 test('a gzip frame with the wrong version is refused, not misparsed', async () => {
-  const frame = await gzipFrame({ type: 'complete', commandId: 'c9', ok: true }, 99);
+  const frame = await gzipFrame({
+    type: 'complete',
+    commandId: 'c9',
+    ok: true
+  }, 99);
   const parsed = await parseDeviceFrame(frame);
 
   assert.equal(parsed.ok, false);
@@ -202,14 +258,28 @@ test('a gzip frame with the wrong version is refused, not misparsed', async () =
 test('a gzip bomb is refused before it can exhaust memory', async () => {
   assert.ok(MAX_DECOMPRESSED_BYTES >= MAX_RESULT_BYTES * 2,
     'the decompressed cap must clear the largest legal result with room');
-  const frame = await gzipFrame({ type: 'complete', commandId: 'c9', ok: true, result: { blob: 'y'.repeat(100) } });
+  const frame = await gzipFrame({
+    type: 'complete',
+    commandId: 'c9',
+    ok: true,
+    result: { blob: 'y'.repeat(100) }
+  });
   const parsed = await parseDeviceFrame(frame, MAX_FRAME_BYTES, 10);
 
   assert.equal(parsed.ok, false);
 });
 
 test('binary garbage that is not gzip is refused, not thrown', async () => {
-  const parsed = await parseDeviceFrame(new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8]));
+  const parsed = await parseDeviceFrame(new Uint8Array([
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8
+  ]));
 
   assert.equal(parsed.ok, false);
 });
@@ -232,9 +302,15 @@ function fakeDeviceSocket() {
     send(text) {
       this.sent.push(String(text));
     },
-    close(code, reason) {
+    close(
+      code,
+      reason
+    ) {
       if (this.closed) return;
-      this.closed = { code, reason };
+      this.closed = {
+        code,
+        reason
+      };
       this.readyState = 3;
       if (typeof this.onclose === 'function') this.onclose();
     }
@@ -243,33 +319,53 @@ function fakeDeviceSocket() {
 
 function installFakeUpgrade(socket) {
   const previous = globalThis.Deno;
-  globalThis.Deno = { upgradeWebSocket: () => ({ socket, response: new Response('upgraded') }) };
+  globalThis.Deno = { upgradeWebSocket: () => ({
+    socket,
+    response: new Response('upgraded')
+  }) };
   return () => {
     if (previous === undefined) delete globalThis.Deno;
     else globalThis.Deno = previous;
   };
 }
 
-function serveTestSocket({ verify, handshakeTimeoutMs, verifyTimeoutMs }) {
+function serveTestSocket({
+  verify,
+  handshakeTimeoutMs,
+  verifyTimeoutMs
+}) {
   const socket = fakeDeviceSocket();
   const restore = installFakeUpgrade(socket);
   serveDeviceSocket(upgradeRequest(), {
     verifyDevice: verify,
     complete: async () => ({}),
     subscribe: () => () => {},
-    log: { info() {}, warn() {}, error() {} },
+    log: {
+      info() {},
+      warn() {},
+      error() {}
+    },
     handshakeTimeoutMs,
     verifyTimeoutMs
   });
-  return { socket, restore };
+  return {
+    socket,
+    restore
+  };
 }
 
-function closeTestSocket({ socket, restore }) {
+function closeTestSocket({
+  socket,
+  restore
+}) {
   socket.close(1000, 'test done');
   restore();
 }
 
-async function waitClosed(socket, limitMs) {
+async function waitClosed(
+  socket,
+  limitMs
+) {
   const started = Date.now();
   while (!socket.closed && Date.now() - started < limitMs) {
     await sleepMs(10);
@@ -281,7 +377,10 @@ test('a hello that verifies slowly still becomes ready instead of timing out', a
   const server = serveTestSocket({
     verify: async () => {
       await sleepMs(80);
-      return { ok: true, deviceId: 'd1' };
+      return {
+        ok: true,
+        deviceId: 'd1'
+      };
     },
     handshakeTimeoutMs: 30,
     verifyTimeoutMs: 400
@@ -299,7 +398,10 @@ test('a hello that verifies slowly still becomes ready instead of timing out', a
 
 test('a socket that never says hello is still timed out and closed', async () => {
   const server = serveTestSocket({
-    verify: async () => ({ ok: true, deviceId: 'd1' }),
+    verify: async () => ({
+      ok: true,
+      deviceId: 'd1'
+    }),
     handshakeTimeoutMs: 30,
     verifyTimeoutMs: 400
   });

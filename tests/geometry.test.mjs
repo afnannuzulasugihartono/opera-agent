@@ -13,19 +13,32 @@ import assert from 'node:assert/strict';
 
 import { createPrimitives } from '../local/primitives.js';
 
-const VIEWPORT = { width: 1186, height: 670, dpr: 1.25 };
+const VIEWPORT = {
+  width: 1186,
+  height: 670,
+  dpr: 1.25
+};
 
 const sizedCdp = (viewport = VIEWPORT) => {
   const calls = [];
   return {
     calls,
-    send: async (method, params = {}) => {
-      calls.push({ method, params });
+    send: async (
+      method,
+      params = {}
+    ) => {
+      calls.push({
+        method,
+        params
+      });
       if (method === 'Runtime.evaluate') {
         if (String(params.expression).includes('devicePixelRatio')) return { result: { value: viewport } };
       }
       if (method === 'Page.captureScreenshot') return { data: 'AAAA' };
-      if (method === 'Page.getLayoutMetrics') return { contentSize: { width: 1440, height: 4000 } };
+      if (method === 'Page.getLayoutMetrics') return { contentSize: {
+        width: 1440,
+        height: 4000
+      } };
       return { result: {} };
     }
   };
@@ -37,7 +50,10 @@ const sizedCdp = (viewport = VIEWPORT) => {
 test('a sized capture reports the viewport, the scale and the picture it took', async () => {
   const shot = await createPrimitives(sizedCdp()).captureSized();
 
-  assert.deepEqual(shot.viewport, { width: 1186, height: 670 });
+  assert.deepEqual(shot.viewport, {
+    width: 1186,
+    height: 670
+  });
   assert.equal(shot.dpr, 1.25);
   assert.match(shot.note, /css pixels times 1.25/);
   assert.ok(shot.data, 'the picture itself is still there for a model to look at');
@@ -47,23 +63,61 @@ test('a sized capture reports the viewport, the scale and the picture it took', 
 // This is the whole point: the window resized between the look and the click, and the aim is still the aim.
 
 test('a fraction is resolved against the viewport as it is at the click', async () => {
-  const before = createPrimitives(sizedCdp({ width: 1144, height: 714, dpr: 1.25 }));
-  const after = createPrimitives(sizedCdp({ width: 1186, height: 670, dpr: 1.25 }));
+  const before = createPrimitives(sizedCdp({
+    width: 1144,
+    height: 714,
+    dpr: 1.25
+  }));
+  const after = createPrimitives(sizedCdp({
+    width: 1186,
+    height: 670,
+    dpr: 1.25
+  }));
 
-  const first = await before.clickFraction({ x: 0.5, y: 0.5 });
-  const second = await after.clickFraction({ x: 0.5, y: 0.5 });
+  const first = await before.clickFraction({
+    x: 0.5,
+    y: 0.5
+  });
+  const second = await after.clickFraction({
+    x: 0.5,
+    y: 0.5
+  });
 
-  assert.deepEqual([first.x, first.y], [572, 357]);
-  assert.deepEqual([second.x, second.y], [593, 335]);
-  assert.deepEqual(second.viewport, { width: 1186, height: 670 }, 'and the answer names the space it landed in');
+  assert.deepEqual([
+    first.x,
+    first.y
+  ], [
+    572,
+    357
+  ]);
+  assert.deepEqual([
+    second.x,
+    second.y
+  ], [
+    593,
+    335
+  ]);
+  assert.deepEqual(second.viewport, {
+    width: 1186,
+    height: 670
+  }, 'and the answer names the space it landed in');
 });
 
 test('a fraction outside the page is clamped to the page, not sent off it', async () => {
   const p = createPrimitives(sizedCdp());
 
-  const out = await p.clickFraction({ x: 1.4, y: -0.2 });
+  const out = await p.clickFraction({
+    x: 1.4,
+    y: -0.2
+  });
 
-  assert.deepEqual([out.x, out.y], [1186, 0]);
+  assert.deepEqual([
+    out.x,
+    out.y
+  ], [
+    1186,
+    0
+  ]);
 });
 
 // WHY A HANDLE STILL WINS.
@@ -76,7 +130,17 @@ test('a click that carries no fraction is unchanged', async () => {
 
   const out = await p.clickAt(120, 240);
 
-  assert.deepEqual(out, { x: 120, y: 240, hit: null });
+  assert.deepEqual(out, {
+    x: 120,
+    y: 240,
+    hit: null
+  });
   const moved = cdp.calls.filter((c) => c.params?.type === 'mouseMoved').at(-1);
-  assert.deepEqual([moved.params.x, moved.params.y], [120, 240]);
+  assert.deepEqual([
+    moved.params.x,
+    moved.params.y
+  ], [
+    120,
+    240
+  ]);
 });

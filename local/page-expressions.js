@@ -20,21 +20,76 @@
 import { Buffer } from 'node:buffer';
 
 const KEY_CODES = Object.freeze({
-  Enter: { windowsVirtualKeyCode: 13, code: 'Enter', key: 'Enter', text: '\r' },
-  Tab: { windowsVirtualKeyCode: 9, code: 'Tab', key: 'Tab' },
-  Backspace: { windowsVirtualKeyCode: 8, code: 'Backspace', key: 'Backspace' },
-  Delete: { windowsVirtualKeyCode: 46, code: 'Delete', key: 'Delete' },
-  Escape: { windowsVirtualKeyCode: 27, code: 'Escape', key: 'Escape' },
-  ArrowDown: { windowsVirtualKeyCode: 40, code: 'ArrowDown', key: 'ArrowDown' },
-  ArrowUp: { windowsVirtualKeyCode: 38, code: 'ArrowUp', key: 'ArrowUp' },
-  ArrowLeft: { windowsVirtualKeyCode: 37, code: 'ArrowLeft', key: 'ArrowLeft' },
-  ArrowRight: { windowsVirtualKeyCode: 39, code: 'ArrowRight', key: 'ArrowRight' },
-  Home: { windowsVirtualKeyCode: 36, code: 'Home', key: 'Home' },
-  End: { windowsVirtualKeyCode: 35, code: 'End', key: 'End' },
-  Space: { windowsVirtualKeyCode: 32, code: 'Space', key: ' ', text: ' ' }
+  Enter: {
+    windowsVirtualKeyCode: 13,
+    code: 'Enter',
+    key: 'Enter',
+    text: '\r'
+  },
+  Tab: {
+    windowsVirtualKeyCode: 9,
+    code: 'Tab',
+    key: 'Tab'
+  },
+  Backspace: {
+    windowsVirtualKeyCode: 8,
+    code: 'Backspace',
+    key: 'Backspace'
+  },
+  Delete: {
+    windowsVirtualKeyCode: 46,
+    code: 'Delete',
+    key: 'Delete'
+  },
+  Escape: {
+    windowsVirtualKeyCode: 27,
+    code: 'Escape',
+    key: 'Escape'
+  },
+  ArrowDown: {
+    windowsVirtualKeyCode: 40,
+    code: 'ArrowDown',
+    key: 'ArrowDown'
+  },
+  ArrowUp: {
+    windowsVirtualKeyCode: 38,
+    code: 'ArrowUp',
+    key: 'ArrowUp'
+  },
+  ArrowLeft: {
+    windowsVirtualKeyCode: 37,
+    code: 'ArrowLeft',
+    key: 'ArrowLeft'
+  },
+  ArrowRight: {
+    windowsVirtualKeyCode: 39,
+    code: 'ArrowRight',
+    key: 'ArrowRight'
+  },
+  Home: {
+    windowsVirtualKeyCode: 36,
+    code: 'Home',
+    key: 'Home'
+  },
+  End: {
+    windowsVirtualKeyCode: 35,
+    code: 'End',
+    key: 'End'
+  },
+  Space: {
+    windowsVirtualKeyCode: 32,
+    code: 'Space',
+    key: ' ',
+    text: ' '
+  }
 });
 
-const MODIFIER_BITS = Object.freeze({ Alt: 1, Control: 2, Meta: 4, Shift: 8 });
+const MODIFIER_BITS = Object.freeze({
+  Alt: 1,
+  Control: 2,
+  Meta: 4,
+  Shift: 8
+});
 
 const TEXT_KEY = /^[A-Za-z0-9]$/;
 
@@ -42,39 +97,283 @@ export function describeKey(name) {
   const known = KEY_CODES[name];
   if (known) return known;
   if (typeof name === 'string' && /^[0-9]$/.test(name)) {
-    return { key: name, code: `Digit${name}`, windowsVirtualKeyCode: name.charCodeAt(0), text: name };
+    return {
+      key: name,
+      code: `Digit${name}`,
+      windowsVirtualKeyCode: name.charCodeAt(0),
+      text: name
+    };
   }
   if (typeof name === 'string' && TEXT_KEY.test(name)) {
-    return { key: name, code: `Key${name.toUpperCase()}`, windowsVirtualKeyCode: name.toUpperCase().charCodeAt(0), text: name };
+    return {
+      key: name,
+      code: `Key${name.toUpperCase()}`,
+      windowsVirtualKeyCode: name.toUpperCase().charCodeAt(0),
+      text: name
+    };
   }
   if (typeof name === 'string' && name.length === 1) {
     const punct = PUNCTUATION.get(name);
-    if (punct) return { key: name, code: punct[0], windowsVirtualKeyCode: punct[1], text: name };
+    if (punct) return {
+      key: name,
+      code: punct[0],
+      windowsVirtualKeyCode: punct[1],
+      text: name
+    };
   }
   throw new Error(`Unknown key: ${JSON.stringify(name)}. Use a named key or a single printable ASCII character.`);
 }
 
 const PUNCTUATION = new Map([
-  ['_', ['Minus', 189]], ['-', ['Minus', 189]],
-  ['=', ['Equal', 187]], ['+', ['Equal', 187]],
-  ['[', ['BracketLeft', 219]], ['{', ['BracketLeft', 219]],
-  [']', ['BracketRight', 221]], ['}', ['BracketRight', 221]],
-  ['\\', ['Backslash', 220]], ['|', ['Backslash', 220]],
-  [';', ['Semicolon', 186]], [':', ['Semicolon', 186]],
-  ["'", ['Quote', 222]], ['"', ['Quote', 222]],
-  ['`', ['Backquote', 192]], ['~', ['Backquote', 192]],
-  [',', ['Comma', 188]], ['<', ['Comma', 188]],
-  ['.', ['Period', 190]], ['>', ['Period', 190]],
-  ['/', ['Slash', 191]], ['?', ['Slash', 191]],
-  ['!', ['Digit1', 49]], ['@', ['Digit2', 50]], ['#', ['Digit3', 51]],
-  ['$', ['Digit4', 52]], ['%', ['Digit5', 53]], ['^', ['Digit6', 54]],
-  ['&', ['Digit7', 55]], ['*', ['Digit8', 56]], ['(', ['Digit9', 57]], [')', ['Digit0', 48]]
+  [
+    '_',
+    [
+      'Minus',
+      189
+    ]
+  ],
+  [
+    '-',
+    [
+      'Minus',
+      189
+    ]
+  ],
+  [
+    '=',
+    [
+      'Equal',
+      187
+    ]
+  ],
+  [
+    '+',
+    [
+      'Equal',
+      187
+    ]
+  ],
+  [
+    '[',
+    [
+      'BracketLeft',
+      219
+    ]
+  ],
+  [
+    '{',
+    [
+      'BracketLeft',
+      219
+    ]
+  ],
+  [
+    ']',
+    [
+      'BracketRight',
+      221
+    ]
+  ],
+  [
+    '}',
+    [
+      'BracketRight',
+      221
+    ]
+  ],
+  [
+    '\\',
+    [
+      'Backslash',
+      220
+    ]
+  ],
+  [
+    '|',
+    [
+      'Backslash',
+      220
+    ]
+  ],
+  [
+    ';',
+    [
+      'Semicolon',
+      186
+    ]
+  ],
+  [
+    ':',
+    [
+      'Semicolon',
+      186
+    ]
+  ],
+  [
+    "'",
+    [
+      'Quote',
+      222
+    ]
+  ],
+  [
+    '"',
+    [
+      'Quote',
+      222
+    ]
+  ],
+  [
+    '`',
+    [
+      'Backquote',
+      192
+    ]
+  ],
+  [
+    '~',
+    [
+      'Backquote',
+      192
+    ]
+  ],
+  [
+    ',',
+    [
+      'Comma',
+      188
+    ]
+  ],
+  [
+    '<',
+    [
+      'Comma',
+      188
+    ]
+  ],
+  [
+    '.',
+    [
+      'Period',
+      190
+    ]
+  ],
+  [
+    '>',
+    [
+      'Period',
+      190
+    ]
+  ],
+  [
+    '/',
+    [
+      'Slash',
+      191
+    ]
+  ],
+  [
+    '?',
+    [
+      'Slash',
+      191
+    ]
+  ],
+  [
+    '!',
+    [
+      'Digit1',
+      49
+    ]
+  ],
+  [
+    '@',
+    [
+      'Digit2',
+      50
+    ]
+  ],
+  [
+    '#',
+    [
+      'Digit3',
+      51
+    ]
+  ],
+  [
+    '$',
+    [
+      'Digit4',
+      52
+    ]
+  ],
+  [
+    '%',
+    [
+      'Digit5',
+      53
+    ]
+  ],
+  [
+    '^',
+    [
+      'Digit6',
+      54
+    ]
+  ],
+  [
+    '&',
+    [
+      'Digit7',
+      55
+    ]
+  ],
+  [
+    '*',
+    [
+      'Digit8',
+      56
+    ]
+  ],
+  [
+    '(',
+    [
+      'Digit9',
+      57
+    ]
+  ],
+  [
+    ')',
+    [
+      'Digit0',
+      48
+    ]
+  ]
 ]);
 
 const SNAPSHOT_ROLES = new Set([
-  'button', 'link', 'menuitem', 'menu', 'toolbar', 'textbox', 'searchbox', 'combobox',
-  'listbox', 'option', 'checkbox', 'radio', 'tab', 'switch', 'slider',
-  'table', 'grid', 'row', 'gridcell', 'cell', 'columnheader', 'rowheader'
+  'button',
+  'link',
+  'menuitem',
+  'menu',
+  'toolbar',
+  'textbox',
+  'searchbox',
+  'combobox',
+  'listbox',
+  'option',
+  'checkbox',
+  'radio',
+  'tab',
+  'switch',
+  'slider',
+  'table',
+  'grid',
+  'row',
+  'gridcell',
+  'cell',
+  'columnheader',
+  'rowheader'
 ]);
 
 // WHY THE SNAPSHOT IS ONE CALL AND NOT ONE PER ELEMENT.
@@ -284,8 +583,14 @@ export const centreOf = (quad) => {
     ys.push(quad[i + 1]);
   }
   return {
-    x: Math.round(xs.reduce((a, b) => a + b, 0) / xs.length),
-    y: Math.round(ys.reduce((a, b) => a + b, 0) / ys.length)
+    x: Math.round(xs.reduce((
+      a,
+      b
+    ) => a + b, 0) / xs.length),
+    y: Math.round(ys.reduce((
+      a,
+      b
+    ) => a + b, 0) / ys.length)
   };
 };
 
@@ -397,7 +702,12 @@ export function dragMimeType(filename) {
 // Chrome decides whether a target accepts a drop from the dragover it just received, so a drop sent straight after a single dragover is refused with the event accepted and nothing delivered.
 // Measured live: one dragover brought the page to "enter" and no file; a second one, and the same page reported the file name and size it had been handed.
 
-export const DROP_PHASES = Object.freeze(['dragEnter', 'dragOver', 'dragOver', 'drop']);
+export const DROP_PHASES = Object.freeze([
+  'dragEnter',
+  'dragOver',
+  'dragOver',
+  'drop'
+]);
 
 export const UPLOAD_INPUT_EXPRESSION = `(() => {
   const seen = new Set();
@@ -493,14 +803,20 @@ export const PAGE_STATE_TEXT_EXPRESSION = `({
 })`;
 
 export function modifierMask(modifiers = []) {
-  return modifiers.reduce((mask, name) => {
+  return modifiers.reduce((
+    mask,
+    name
+  ) => {
     const bit = MODIFIER_BITS[name];
     if (bit === undefined) throw new Error(`Unknown modifier: ${JSON.stringify(name)}. Use one of ${Object.keys(MODIFIER_BITS).join(', ')}.`);
     return mask | bit;
   }, 0);
 }
 
-export function splitText(text, size) {
+export function splitText(
+  text,
+  size
+) {
   const value = String(text ?? '');
   if (value.length === 0) return [];
   const out = [];
@@ -548,12 +864,32 @@ export const KEY_BEAT_MS = 16;
 // A JPEG frame header is SOF0 through SOF15, except the three that carry no frame at all - DHT, JPG and DAC - and those three have no size to read.
 // Reading the first header that has one is why a caller gets 1430 by 963 rather than the width of a Huffman table.
 
-const SOF = [0xc0, 0xc1, 0xc2, 0xc3, 0xc5, 0xc6, 0xc7, 0xc9, 0xca, 0xcb, 0xcd, 0xce, 0xcf];
+const SOF = [
+  0xc0,
+  0xc1,
+  0xc2,
+  0xc3,
+  0xc5,
+  0xc6,
+  0xc7,
+  0xc9,
+  0xca,
+  0xcb,
+  0xcd,
+  0xce,
+  0xcf
+];
 
-export const imageSize = async (data, format) => {
+export const imageSize = async (
+  data,
+  format
+) => {
   const bytes = Buffer.from(String(data ?? ''), 'base64');
   if (format === 'png' && bytes.length > 24) {
-    return { width: bytes.readUInt32BE(16), height: bytes.readUInt32BE(20) };
+    return {
+      width: bytes.readUInt32BE(16),
+      height: bytes.readUInt32BE(20)
+    };
   }
   if (format === 'jpeg') {
     let at = 2;
@@ -562,11 +898,17 @@ export const imageSize = async (data, format) => {
       const marker = bytes[at + 1];
       const length = bytes.readUInt16BE(at + 2);
       const frame = SOF.includes(marker);
-      if (frame) return { height: bytes.readUInt16BE(at + 5), width: bytes.readUInt16BE(at + 7) };
+      if (frame) return {
+        height: bytes.readUInt16BE(at + 5),
+        width: bytes.readUInt16BE(at + 7)
+      };
       at += 2 + length;
     }
   }
-  return { width: 0, height: 0 };
+  return {
+    width: 0,
+    height: 0
+  };
 };
 
 // WHY AN EDIT CHECKS THE PAGE INSTEAD OF TRUSTING ITS OWN SUCCESS.
@@ -611,7 +953,10 @@ export const locateExpression = (probe) => `(() => {
   };
 })() /*opera-locate*/`;
 
-export const hitExpression = (x, y) => `(() => {
+export const hitExpression = (
+  x,
+  y
+) => `(() => {
   const el = document.elementFromPoint(${Math.round(Number(x) || 0)}, ${Math.round(Number(y) || 0)});
   if (!el) return null;
   const get = (name) => (el.getAttribute ? el.getAttribute(name) : null);

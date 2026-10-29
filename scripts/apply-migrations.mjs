@@ -42,7 +42,10 @@ for (const file of files) {
   const name = slug(basename(file).replace(/\.sql$/, ''));
   const response = await fetch(`https://api.supabase.com/v1/projects/${REF}/database/query`, {
     method: 'POST',
-    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    },
     body: JSON.stringify({ query })
   });
   const body = await response.text();

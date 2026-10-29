@@ -9,7 +9,10 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createHash, createHmac } from 'node:crypto';
+import {
+  createHash,
+  createHmac
+} from 'node:crypto';
 import http from 'node:http';
 import fs from 'node:fs';
 
@@ -47,7 +50,13 @@ import {
 const seen = [];
 
 const PRICE_LIST = [
-  { kind: 'statement.client_month', unit: 'delivered client-month', amount_cents: 500000, currency: 'IDR', active: true }
+  {
+    kind: 'statement.client_month',
+    unit: 'delivered client-month',
+    amount_cents: 500000,
+    currency: 'IDR',
+    active: true
+  }
 ];
 
 test('a delivered client-month is priced from the list, not from the code', () => {
@@ -60,8 +69,15 @@ test('a delivered client-month is priced from the list, not from the code', () =
 
 test('the amount is the deliveries multiplied by the price, and nothing else', () => {
   const out = amountFor([
-    { kind: 'statement.client_month', quantity: 5, description: 'Agustus 2026, five clients' },
-    { kind: 'statement.client_month', quantity: 3 }
+    {
+      kind: 'statement.client_month',
+      quantity: 5,
+      description: 'Agustus 2026, five clients'
+    },
+    {
+      kind: 'statement.client_month',
+      quantity: 3
+    }
   ], PRICE_LIST);
   assert.equal(out.amountCents, 8 * 500000);
   assert.equal(out.currency, 'IDR');
@@ -71,8 +87,14 @@ test('the amount is the deliveries multiplied by the price, and nothing else', (
 
 test('a delivery of a kind with no price is reported, not charged and not hidden', () => {
   const out = amountFor([
-    { kind: 'statement.client_month', quantity: 1 },
-    { kind: 'slides.deck', quantity: 2 }
+    {
+      kind: 'statement.client_month',
+      quantity: 1
+    },
+    {
+      kind: 'slides.deck',
+      quantity: 2
+    }
   ], PRICE_LIST);
   assert.equal(out.amountCents, 500000, 'only the priced line is charged');
   assert.equal(out.unpriced.length, 1);
@@ -80,14 +102,20 @@ test('a delivery of a kind with no price is reported, not charged and not hidden
 });
 
 test('a delivery that was not made is not a line, so it is not on the invoice', () => {
-  const delivered = [{ kind: 'statement.client_month', quantity: 2 }];
+  const delivered = [{
+    kind: 'statement.client_month',
+    quantity: 2
+  }];
   const out = amountFor(delivered, PRICE_LIST);
   assert.equal(out.amountCents, 1000000);
   assert.equal(out.priced[0].quantity, 2, 'the invoice says what was delivered');
 });
 
 test('a quantity that is not a number is zero, not a surprise bill', () => {
-  const out = amountFor([{ kind: 'statement.client_month', quantity: 'three' }], PRICE_LIST);
+  const out = amountFor([{
+    kind: 'statement.client_month',
+    quantity: 'three'
+  }], PRICE_LIST);
   assert.equal(out.amountCents, 0);
 });
 
@@ -107,20 +135,43 @@ test('the invoice link carries authority in itself, so it needs no lookup to be 
 
 test('a payment notification is believed only when the provider signed it, by the provider\'s own formula', () => {
   const key = 'SB-Mid-server-test';
-  const notification = { order_id: 'oa-1', status_code: '200', gross_amount: '99000.00' };
+  const notification = {
+    order_id: 'oa-1',
+    status_code: '200',
+    gross_amount: '99000.00'
+  };
   const expected = '878c25a28679403c167be585e7705708901f13ae769009e499d26b379212361e4edcf331ea90680bbb5023e55db87d48b79bfad6eea45364acb045e48dd17f67';
   assert.equal(providerSignature(notification, key), expected, 'SHA-512 of order, status, amount and key, in that order');
-  assert.equal(notificationSignatureValid({ ...notification, signature_key: expected }, key), true);
-  assert.equal(notificationSignatureValid({ ...notification, signature_key: 'wrong' }, key), false);
-  assert.equal(notificationSignatureValid({ ...notification, gross_amount: '1', signature_key: expected }, key), false, 'a bigger claim does not pass');
-  assert.equal(notificationSignatureValid({ ...notification, signature_key: expected }, 'other-key'), false);
-  assert.equal(notificationSignatureValid({ ...notification, signature_key: expected }, ''), false, 'without a key nothing is verified');
+  assert.equal(notificationSignatureValid({
+    ...notification,
+    signature_key: expected
+  }, key), true);
+  assert.equal(notificationSignatureValid({
+    ...notification,
+    signature_key: 'wrong'
+  }, key), false);
+  assert.equal(notificationSignatureValid({
+    ...notification,
+    gross_amount: '1',
+    signature_key: expected
+  }, key), false, 'a bigger claim does not pass');
+  assert.equal(notificationSignatureValid({
+    ...notification,
+    signature_key: expected
+  }, 'other-key'), false);
+  assert.equal(notificationSignatureValid({
+    ...notification,
+    signature_key: expected
+  }, ''), false, 'without a key nothing is verified');
   assert.equal(notificationSignatureValid({ ...notification }, key), false, 'a body with no signature is not signed');
 
   // The retired rule: the key as an HMAC secret over the three fields.
   // This is the value the function computed while every real notification was refused.
   const retired = createHmac('sha512', key).update(`${notification.order_id}${notification.status_code}${notification.gross_amount}`).digest('hex');
-  assert.equal(notificationSignatureValid({ ...notification, signature_key: retired }, key), false, 'an HMAC with the key is not what Midtrans sends');
+  assert.equal(notificationSignatureValid({
+    ...notification,
+    signature_key: retired
+  }, key), false, 'an HMAC with the key is not what Midtrans sends');
 });
 
 // WHY THE PROVIDER'S FIELD NAME HAS A TEST OF ITS OWN.
@@ -146,10 +197,23 @@ test('the signature is read from the field the provider sends, and the field is 
 // The status code answers whether the body was received and understood; the body answers whether money moved.
 
 test('a notification is acknowledged when it is understood, and refused when a human must look', () => {
-  assert.equal(notificationAcknowledged({ ok: true, invoice: 'Toko Sinar Jaya:2026-08' }), true, 'a closed invoice is acknowledged');
-  assert.equal(notificationAcknowledged({ ok: false, why: 'the transaction is not settled', retry: false }), true, 'a signed pending notification is understood, so it is acknowledged');
-  assert.equal(notificationAcknowledged({ ok: false, why: 'no invoice with that order id' }), false, 'an order we cannot place is not something to acknowledge and forget');
-  assert.equal(notificationAcknowledged({ ok: false, why: 'the paid amount is not the invoice amount' }), false, 'a wrong amount is a person\'s problem, not a retry');
+  assert.equal(notificationAcknowledged({
+    ok: true,
+    invoice: 'Toko Sinar Jaya:2026-08'
+  }), true, 'a closed invoice is acknowledged');
+  assert.equal(notificationAcknowledged({
+    ok: false,
+    why: 'the transaction is not settled',
+    retry: false
+  }), true, 'a signed pending notification is understood, so it is acknowledged');
+  assert.equal(notificationAcknowledged({
+    ok: false,
+    why: 'no invoice with that order id'
+  }), false, 'an order we cannot place is not something to acknowledge and forget');
+  assert.equal(notificationAcknowledged({
+    ok: false,
+    why: 'the paid amount is not the invoice amount'
+  }), false, 'a wrong amount is a person\'s problem, not a retry');
   assert.equal(notificationAcknowledged(null), false);
 });
 
@@ -158,9 +222,18 @@ test('a notification is acknowledged when it is understood, and refused when a h
 // The moment money landed is evidence the provider cannot restore, so a second notification may confirm it and must never rewrite it.
 
 test('an invoice that is already paid is not paid again', () => {
-  assert.equal(needsClosing({ status: 'paid', paid_at: '2026-10-26T08:55:13Z' }), false, 'a paid invoice keeps the moment it was paid');
-  assert.equal(needsClosing({ status: 'paid', paid_at: null }), true, 'a paid row with no moment is repaired rather than left blank');
-  assert.equal(needsClosing({ status: 'open', paid_at: null }), true);
+  assert.equal(needsClosing({
+    status: 'paid',
+    paid_at: '2026-10-26T08:55:13Z'
+  }), false, 'a paid invoice keeps the moment it was paid');
+  assert.equal(needsClosing({
+    status: 'paid',
+    paid_at: null
+  }), true, 'a paid row with no moment is repaired rather than left blank');
+  assert.equal(needsClosing({
+    status: 'open',
+    paid_at: null
+  }), true);
   assert.equal(needsClosing(null), false);
 });
 
@@ -173,13 +246,24 @@ test('an invoice that is already paid is not paid again', () => {
 // The provider records the transaction, so its answer is stronger than the body: it is about its own transaction, never about the claim in the request.
 
 test('the status of an order is asked on the host the stated environment names', () => {
-  const sandbox = snapStatusRequest({ orderId: 'oa-1', serverKey: 'k', environment: 'sandbox' });
+  const sandbox = snapStatusRequest({
+    orderId: 'oa-1',
+    serverKey: 'k',
+    environment: 'sandbox'
+  });
   assert.equal(sandbox.url, 'https://api.sandbox.midtrans.com/v2/oa-1/status');
   assert.equal(sandbox.method, 'GET');
   assert.equal(sandbox.headers.Authorization, `Basic ${Buffer.from('k:').toString('base64')}`);
-  const production = snapStatusRequest({ orderId: 'oa-1', serverKey: 'k', environment: 'production' });
+  const production = snapStatusRequest({
+    orderId: 'oa-1',
+    serverKey: 'k',
+    environment: 'production'
+  });
   assert.equal(production.url, 'https://api.midtrans.com/v2/oa-1/status');
-  assert.equal(snapStatusRequest({ orderId: '', serverKey: 'k' }), null, 'without an order there is nothing to ask about');
+  assert.equal(snapStatusRequest({
+    orderId: '',
+    serverKey: 'k'
+  }), null, 'without an order there is nothing to ask about');
 });
 
 // WHY A MISSING TRANSACTION IS READ FROM THE BODY AND NOT THE HTTP STATUS.
@@ -188,16 +272,25 @@ test('the status of an order is asked on the host the stated environment names',
 // The rule is a helper because the call site that uses it runs where no Node test can follow.
 
 test('a transaction the provider says does not exist is read from the body, where the 404 hides', () => {
-  assert.equal(providerSaysMissing({ status_code: '404', status_message: "Transaction doesn't exist." }), true);
+  assert.equal(providerSaysMissing({
+    status_code: '404',
+    status_message: "Transaction doesn't exist."
+  }), true);
   assert.equal(providerSaysMissing({ status_code: 404 }), true, 'the code means the same as a string or a number');
-  assert.equal(providerSaysMissing({ status_code: '201', transaction_status: 'pending' }), false);
-  assert.equal(providerSaysMissing({ status_code: '401', status_message: 'Access denied' }), false, 'a refused key is not a missing transaction');
+  assert.equal(providerSaysMissing({
+    status_code: '201',
+    transaction_status: 'pending'
+  }), false);
+  assert.equal(providerSaysMissing({
+    status_code: '401',
+    status_message: 'Access denied'
+  }), false, 'a refused key is not a missing transaction');
   assert.equal(providerSaysMissing(null), false);
 
   const fn = fs.readFileSync(new URL('../supabase/functions/opera-agent-billing/index.ts', import.meta.url), 'utf8');
-  assert.match(fn, /if \(providerSaysMissing\(payload\)\) return \{ state: "closed", status: "not found" \}/,
+  assert.match(fn, /if \(providerSaysMissing\(payload\)\) return \{\s*state: "closed",\s*status: "not found"\s*\}/,
     'the call site treats a missing transaction as nothing to close before it judges the status');
-  assert.match(fn, /status_code \$\{code\}/, 'a refused status names the provider code an operator needs');
+  assert.match(fn, /status_code \$\{\s*code\s*\}/, 'a refused status names the provider code an operator needs');
 });
 
 // WHY A RETRY ASKS THE PROVIDER TO EXPIRE THE OLD ATTEMPT.
@@ -205,21 +298,46 @@ test('a transaction the provider says does not exist is read from the body, wher
 // The expire call sits beside the status question on the same host, names the order in the path, and carries the key in the header so it never appears in a URL.
 
 test('the expire request closes an attempt on the host the environment names', () => {
-  const sandbox = snapExpireRequest({ orderId: 'oa-1', serverKey: 'k', environment: 'sandbox' });
+  const sandbox = snapExpireRequest({
+    orderId: 'oa-1',
+    serverKey: 'k',
+    environment: 'sandbox'
+  });
   assert.equal(sandbox.url, 'https://api.sandbox.midtrans.com/v2/oa-1/expire');
   assert.equal(sandbox.method, 'POST');
   assert.equal(sandbox.headers.Authorization, `Basic ${Buffer.from('k:').toString('base64')}`);
   assert.equal(sandbox.headers.Accept, 'application/json');
   assert.ok(!sandbox.url.includes('k'), 'the key is a header, never part of the URL');
-  assert.equal(snapExpireRequest({ orderId: 'oa-1', serverKey: 'k' }).url, 'https://api.midtrans.com/v2/oa-1/expire');
-  assert.equal(snapExpireRequest({ orderId: '', serverKey: 'k' }), null, 'without an order there is nothing to expire');
+  assert.equal(snapExpireRequest({
+    orderId: 'oa-1',
+    serverKey: 'k'
+  }).url, 'https://api.midtrans.com/v2/oa-1/expire');
+  assert.equal(snapExpireRequest({
+    orderId: '',
+    serverKey: 'k'
+  }), null, 'without an order there is nothing to expire');
 });
 
 test('only the provider\'s own words for a settlement count as paid', () => {
-  assert.deepEqual(providerSettlement({ transaction_status: 'settlement', gross_amount: '99000.00' }),
-    { settled: true, status: 'settlement', grossAmount: '99000.00', paymentType: '', transactionId: '' });
-  assert.equal(providerSettlement({ transaction_status: 'capture', fraud_status: 'accept' }).settled, true);
-  assert.equal(providerSettlement({ transaction_status: 'capture', fraud_status: 'challenge' }).settled, false, 'a challenged capture is not money');
+  assert.deepEqual(providerSettlement({
+    transaction_status: 'settlement',
+    gross_amount: '99000.00'
+  }),
+    {
+      settled: true,
+      status: 'settlement',
+      grossAmount: '99000.00',
+      paymentType: '',
+      transactionId: ''
+    });
+  assert.equal(providerSettlement({
+    transaction_status: 'capture',
+    fraud_status: 'accept'
+  }).settled, true);
+  assert.equal(providerSettlement({
+    transaction_status: 'capture',
+    fraud_status: 'challenge'
+  }).settled, false, 'a challenged capture is not money');
   assert.equal(providerSettlement({ transaction_status: 'pending' }).settled, false);
   assert.equal(providerSettlement({ transaction_status: 'deny' }).settled, false);
   assert.equal(providerSettlement(null).settled, false);
@@ -230,15 +348,27 @@ test('only the provider\'s own words for a settlement count as paid', () => {
 // The provider names the method and its own transaction in every answer, so both are carried back and stored when the invoice closes, and an absent field is an empty string rather than undefined.
 
 test('a settlement carries the method and the transaction the provider named', () => {
-  const out = providerSettlement({ transaction_status: 'settlement', gross_amount: '99000.00', payment_type: 'qris', transaction_id: 'b1e3-4c' });
+  const out = providerSettlement({
+    transaction_status: 'settlement',
+    gross_amount: '99000.00',
+    payment_type: 'qris',
+    transaction_id: 'b1e3-4c'
+  });
   assert.equal(out.paymentType, 'qris');
   assert.equal(out.transactionId, 'b1e3-4c');
   assert.equal(out.settled, true);
-  const bare = providerSettlement({ transaction_status: 'settlement', gross_amount: '99000.00' });
+  const bare = providerSettlement({
+    transaction_status: 'settlement',
+    gross_amount: '99000.00'
+  });
   assert.equal(bare.paymentType, '');
   assert.equal(bare.transactionId, '');
   assert.equal(providerSettlement(null).transactionId, '');
-  assert.equal(providerSettlement({ transaction_status: 'capture', fraud_status: 'challenge', payment_type: 'credit_card' }).settled, false, 'a challenged capture is still not money');
+  assert.equal(providerSettlement({
+    transaction_status: 'capture',
+    fraud_status: 'challenge',
+    payment_type: 'credit_card'
+  }).settled, false, 'a challenged capture is still not money');
 });
 
 test('a refused signature asks the provider, and the provider formula is the only one believed', () => {
@@ -272,10 +402,25 @@ test('every notification that arrives is written down, refused or accepted', () 
 
 test('the invoice is derived from the manifest: one line per delivered client-month', () => {
   const deliveries = [
-    { client: 'Toko Sinar Jaya', portal: 'bank', period: '2026-08', pages: 2, bytes: 5120 },
-    { client: 'CV Melati', portal: 'bank', period: '2026-08', pages: 4, bytes: 9000 }
+    {
+      client: 'Toko Sinar Jaya',
+      portal: 'bank',
+      period: '2026-08',
+      pages: 2,
+      bytes: 5120
+    },
+    {
+      client: 'CV Melati',
+      portal: 'bank',
+      period: '2026-08',
+      pages: 4,
+      bytes: 9000
+    }
   ];
-  const { lines, refused } = linesFromDeliveries(deliveries);
+  const {
+    lines,
+    refused
+  } = linesFromDeliveries(deliveries);
   assert.equal(refused.length, 0);
   assert.equal(lines.length, 2);
   assert.equal(lines[0].kind, 'statement.client_month');
@@ -287,17 +432,37 @@ test('the invoice is derived from the manifest: one line per delivered client-mo
 
 test('a client-month listed twice is refused, not billed twice and not dropped', () => {
   const twice = [
-    { client: 'Toko Sinar Jaya', portal: 'bank', period: '2026-08' },
-    { client: 'Toko Sinar Jaya', portal: 'bank', period: '2026-08' }
+    {
+      client: 'Toko Sinar Jaya',
+      portal: 'bank',
+      period: '2026-08'
+    },
+    {
+      client: 'Toko Sinar Jaya',
+      portal: 'bank',
+      period: '2026-08'
+    }
   ];
-  const { lines, refused } = linesFromDeliveries(twice);
+  const {
+    lines,
+    refused
+  } = linesFromDeliveries(twice);
   assert.equal(lines.length, 1);
   assert.equal(refused.length, 1);
   assert.match(refused[0].reason, /twice/);
 });
 
 test('a row without a client or a month cannot be billed', () => {
-  const { lines, refused } = linesFromDeliveries([{ client: '', period: '2026-08' }, { client: 'CV Melati' }]);
+  const {
+    lines,
+    refused
+  } = linesFromDeliveries([
+    {
+      client: '',
+      period: '2026-08'
+    },
+    { client: 'CV Melati' }
+  ]);
   assert.equal(lines.length, 0);
   assert.equal(refused.length, 2);
   assert.match(refused[0].reason, /client and a month/);
@@ -307,8 +472,14 @@ test('only a settled notification is a payment, in the spellings a provider uses
   assert.equal(isSettled({ transaction_status: 'settlement' }), true, 'Midtrans calls a settled transfer settlement');
   assert.equal(isSettled({ transaction_status: 'settled' }), true);
   assert.equal(isSettled({ transaction_status: 'capture' }), true);
-  assert.equal(isSettled({ transaction_status: 'capture', fraud_status: 'accept' }), true);
-  assert.equal(isSettled({ transaction_status: 'capture', fraud_status: 'challenge' }), false, 'a card under challenge is not money yet');
+  assert.equal(isSettled({
+    transaction_status: 'capture',
+    fraud_status: 'accept'
+  }), true);
+  assert.equal(isSettled({
+    transaction_status: 'capture',
+    fraud_status: 'challenge'
+  }), false, 'a card under challenge is not money yet');
   assert.equal(isSettled({ transaction_status: 'pending' }), false);
   assert.equal(isSettled({ transaction_status: 'deny' }), false);
   assert.equal(isSettled({}), false);
@@ -387,7 +558,11 @@ const SNAP_INVOICE = {
 };
 
 test('the charge request carries a legal order id, whole rupiah and the QRIS-only list under the threshold', () => {
-  const request = snapChargeRequest({ ...SNAP_INVOICE, enabled: ['other_qris'], serverKey: 'server-key' });
+  const request = snapChargeRequest({
+    ...SNAP_INVOICE,
+    enabled: ['other_qris'],
+    serverKey: 'server-key'
+  });
   assert.ok(request, 'a chargeable invoice produces a request');
   const body = JSON.parse(request.body);
   assert.match(body.transaction_details.order_id, /^[A-Za-z0-9._~-]{1,50}$/);
@@ -400,8 +575,16 @@ test('the charge request carries a legal order id, whole rupiah and the QRIS-onl
 });
 
 test('an invoice the provider cannot charge produces no request at all', () => {
-  assert.equal(snapChargeRequest({ ...SNAP_INVOICE, amountCents: 50, enabled: ['other_qris'] }), null);
-  assert.equal(snapChargeRequest({ ...SNAP_INVOICE, currency: 'USD', enabled: ['other_qris'] }), null);
+  assert.equal(snapChargeRequest({
+    ...SNAP_INVOICE,
+    amountCents: 50,
+    enabled: ['other_qris']
+  }), null);
+  assert.equal(snapChargeRequest({
+    ...SNAP_INVOICE,
+    currency: 'USD',
+    enabled: ['other_qris']
+  }), null);
 });
 
 // WHY THE DEADLINE IS THE PROVIDER'S AND THE PAGE'S AT ONCE.
@@ -409,13 +592,28 @@ test('an invoice the provider cannot charge produces no request at all', () => {
 // The deadline is computed from the same constant the request carries, so the customer reads the provider's own clock rather than a second opinion.
 
 test('the charge carries the expiry only when asked, and the deadline is the same 24 hours', () => {
-  const plain = JSON.parse(snapChargeRequest({ ...SNAP_INVOICE, serverKey: 'server-key' }).body);
+  const plain = JSON.parse(snapChargeRequest({
+    ...SNAP_INVOICE,
+    serverKey: 'server-key'
+  }).body);
   assert.equal(plain.expiry, undefined, 'a charge without an expiry keeps the provider default');
-  const timed = snapChargeRequest({ ...SNAP_INVOICE, serverKey: 'server-key', expiry: PAY_LINK_EXPIRY });
-  assert.deepEqual(JSON.parse(timed.body).expiry, { unit: 'hour', duration: 24 });
+  const timed = snapChargeRequest({
+    ...SNAP_INVOICE,
+    serverKey: 'server-key',
+    expiry: PAY_LINK_EXPIRY
+  });
+  assert.deepEqual(JSON.parse(timed.body).expiry, {
+    unit: 'hour',
+    duration: 24
+  });
   assert.equal(Object.isFrozen(PAY_LINK_EXPIRY), true);
   assert.equal(payLinkDeadline(Date.parse('2026-10-26T00:00:00Z')), '2026-10-27T00:00:00.000Z');
-  const sandbox = snapChargeRequest({ ...SNAP_INVOICE, serverKey: 'SB-Mid-server-4zljU5Q', environment: 'sandbox', expiry: PAY_LINK_EXPIRY });
+  const sandbox = snapChargeRequest({
+    ...SNAP_INVOICE,
+    serverKey: 'SB-Mid-server-4zljU5Q',
+    environment: 'sandbox',
+    expiry: PAY_LINK_EXPIRY
+  });
   assert.match(sandbox.url, /sandbox/, 'the expiry does not change the host the environment names');
   assert.equal(JSON.parse(timed.body).transaction_details.gross_amount, 99000, 'the expiry does not change the amount');
 });
@@ -429,35 +627,70 @@ test('a payment link is none, unknown, live or expired, and one rule says which'
   assert.equal(payLinkState({ pay_url: null }, now), 'none');
   assert.equal(payLinkState(null, now), 'none');
   assert.equal(payLinkState({ pay_url: 'https://pay.test/x' }, now), 'unknown', 'a link with no deadline is not a dead link');
-  assert.equal(payLinkState({ pay_url: 'https://pay.test/x', pay_url_expires_at: 'not a date' }, now), 'unknown');
-  assert.equal(payLinkState({ pay_url: 'https://pay.test/x', pay_url_expires_at: '2026-10-27T09:00:00.000Z' }, now), 'live');
-  assert.equal(payLinkState({ pay_url: 'https://pay.test/x', pay_url_expires_at: '2026-10-25T09:00:00.000Z' }, now), 'expired');
-  assert.equal(payLinkState({ pay_url: 'https://pay.test/x', pay_url_expires_at: '2026-10-26T09:00:00.000Z' }, now), 'expired', 'the deadline itself is the end');
+  assert.equal(payLinkState({
+    pay_url: 'https://pay.test/x',
+    pay_url_expires_at: 'not a date'
+  }, now), 'unknown');
+  assert.equal(payLinkState({
+    pay_url: 'https://pay.test/x',
+    pay_url_expires_at: '2026-10-27T09:00:00.000Z'
+  }, now), 'live');
+  assert.equal(payLinkState({
+    pay_url: 'https://pay.test/x',
+    pay_url_expires_at: '2026-10-25T09:00:00.000Z'
+  }, now), 'expired');
+  assert.equal(payLinkState({
+    pay_url: 'https://pay.test/x',
+    pay_url_expires_at: '2026-10-26T09:00:00.000Z'
+  }, now), 'expired', 'the deadline itself is the end');
 });
 
 test('a redirect without a token is not a way to pay, and a good one is', () => {
   assert.equal(snapRedirect({ redirect_url: 'https://pay.test/x' }), null);
   assert.equal(snapRedirect({ token: 'tok' }), null);
   assert.equal(snapRedirect(null), null);
-  assert.deepEqual(snapRedirect({ redirect_url: 'https://pay.test/x', token: 'tok' }), { payUrl: 'https://pay.test/x', token: 'tok' });
+  assert.deepEqual(snapRedirect({
+    redirect_url: 'https://pay.test/x',
+    token: 'tok'
+  }), {
+    payUrl: 'https://pay.test/x',
+    token: 'tok'
+  });
 });
 
 test('the request is answered by a provider that parses it the way Midtrans does', async () => {
-  const server = http.createServer((req, res) => {
+  const server = http.createServer((
+    req,
+    res
+  ) => {
     const chunks = [];
     req.on('data', (chunk) => chunks.push(chunk));
     req.on('end', () => {
-      seen.push({ method: req.method, url: req.url, authorization: req.headers.authorization, body: Buffer.concat(chunks).toString('utf8') });
+      seen.push({
+        method: req.method,
+        url: req.url,
+        authorization: req.headers.authorization,
+        body: Buffer.concat(chunks).toString('utf8')
+      });
       res.writeHead(200, { 'content-type': 'application/json' });
-      res.end(JSON.stringify({ token: 'snap-token-1', redirect_url: 'https://app.midtrans.com/snap/v1/checkout/snap-token-1' }));
+      res.end(JSON.stringify({
+        token: 'snap-token-1',
+        redirect_url: 'https://app.midtrans.com/snap/v1/checkout/snap-token-1'
+      }));
     });
   });
   await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
   const { port } = server.address();
   try {
-    const request = snapChargeRequest({ ...SNAP_INVOICE, enabled: ['other_qris'], serverKey: 'server-key' });
+    const request = snapChargeRequest({
+      ...SNAP_INVOICE,
+      enabled: ['other_qris'],
+      serverKey: 'server-key'
+    });
     const response = await fetch(`http://127.0.0.1:${port}/snap/v1/transactions`, {
-      method: request.method, headers: request.headers, body: request.body
+      method: request.method,
+      headers: request.headers,
+      body: request.body
     });
     const body = await response.json();
     const redirect = snapRedirect(body);
@@ -487,9 +720,16 @@ test('the charge URL follows the stated environment, and is never inferred from 
   assert.equal(snapUrlFor('production'), 'https://app.midtrans.com/snap/v1/transactions');
   assert.equal(snapUrlFor(''), 'https://app.midtrans.com/snap/v1/transactions', 'an unstated environment is production, and a sandbox key must not reach it by default');
   assert.equal(snapUrlFor('nonsense'), 'https://app.midtrans.com/snap/v1/transactions', 'a typo in the setting is production, not sandbox');
-  const sandbox = snapChargeRequest({ ...SNAP_INVOICE, serverKey: 'SB-Mid-server-4zljU5Q', environment: 'sandbox' });
+  const sandbox = snapChargeRequest({
+    ...SNAP_INVOICE,
+    serverKey: 'SB-Mid-server-4zljU5Q',
+    environment: 'sandbox'
+  });
   assert.match(sandbox.url, /sandbox/, 'a sandbox key with sandbox stated reaches the sandbox host');
-  const production = snapChargeRequest({ ...SNAP_INVOICE, serverKey: 'Mid-server-4zljU5Q' });
+  const production = snapChargeRequest({
+    ...SNAP_INVOICE,
+    serverKey: 'Mid-server-4zljU5Q'
+  });
   assert.match(production.url, /app\.midtrans\.com/, 'a production key with nothing stated stays on production');
 });
 
@@ -540,7 +780,11 @@ test('the operator link names the page host, and falls back to the function', ()
 test('the money rules run where Buffer does not exist, which is where they failed first', () => {
   const saved = globalThis.Buffer;
   const token = invoiceToken('inv-1', 'secret');
-  const notification = { order_id: 'order-1', status_code: '200', gross_amount: '4000000' };
+  const notification = {
+    order_id: 'order-1',
+    status_code: '200',
+    gross_amount: '4000000'
+  };
   const signature_key = createHash('sha512')
     .update(`${notification.order_id}${notification.status_code}${notification.gross_amount}server-key`)
     .digest('hex');
@@ -548,8 +792,14 @@ test('the money rules run where Buffer does not exist, which is where they faile
     delete globalThis.Buffer;
     assert.equal(verifyInvoiceToken('inv-1', token, 'secret'), true);
     assert.equal(verifyInvoiceToken('inv-1', 'x'.repeat(32), 'secret'), false);
-    assert.equal(notificationSignatureValid({ ...notification, signature_key }, 'server-key'), true);
-    assert.equal(notificationSignatureValid({ ...notification, signature_key: 'wrong' }, 'server-key'), false);
+    assert.equal(notificationSignatureValid({
+      ...notification,
+      signature_key
+    }, 'server-key'), true);
+    assert.equal(notificationSignatureValid({
+      ...notification,
+      signature_key: 'wrong'
+    }, 'server-key'), false);
   } finally {
     globalThis.Buffer = saved;
   }
@@ -559,33 +809,59 @@ test('the money rules run where Buffer does not exist, which is where they faile
 // The first customers pay by transfer, because a provider account is not open yet, and an invoice that cannot record that money is a page that lies.
 // The rules are the same as the provider's: only an open invoice, only the amount it says, and a note naming who confirmed it - so the ledger can still be checked a year later.
 
-const OPEN = { id: 'Toko Sinar Jaya:2026-09', status: 'open', amount_cents: 9900000, currency: 'IDR' };
+const OPEN = {
+  id: 'Toko Sinar Jaya:2026-09',
+  status: 'open',
+  amount_cents: 9900000,
+  currency: 'IDR'
+};
 
 test('an open invoice can be settled by a transfer that names who confirmed it', () => {
-  const out = manualSettlement(OPEN, { amountCents: 9900000, note: 'BCA 2026-10-22 Rp 99.000, confirmed by owner' });
+  const out = manualSettlement(OPEN, {
+    amountCents: 9900000,
+    note: 'BCA 2026-10-22 Rp 99.000, confirmed by owner'
+  });
   assert.equal(out.ok, true);
 });
 
 test('a paid invoice is terminal, so a second transfer cannot settle it again', () => {
-  const out = manualSettlement({ ...OPEN, status: 'paid' }, { amountCents: 9900000, note: 'second transfer' });
+  const out = manualSettlement({
+    ...OPEN,
+    status: 'paid'
+  }, {
+    amountCents: 9900000,
+    note: 'second transfer'
+  });
   assert.equal(out.ok, false);
   assert.match(out.why, /paid/);
 });
 
 test('a manual settlement for another amount is refused, not rounded', () => {
-  const out = manualSettlement(OPEN, { amountCents: 9800000, note: 'underpaid' });
+  const out = manualSettlement(OPEN, {
+    amountCents: 9800000,
+    note: 'underpaid'
+  });
   assert.equal(out.ok, false);
   assert.match(out.why, /amount/);
 });
 
 test('a manual settlement without a note is refused, because nobody can check it later', () => {
-  const out = manualSettlement(OPEN, { amountCents: 9900000, note: '  ' });
+  const out = manualSettlement(OPEN, {
+    amountCents: 9900000,
+    note: '  '
+  });
   assert.equal(out.ok, false);
   assert.match(out.why, /note/);
 });
 
 test('a void invoice cannot be settled by hand', () => {
-  const out = manualSettlement({ ...OPEN, status: 'void' }, { amountCents: 9900000, note: 'called off' });
+  const out = manualSettlement({
+    ...OPEN,
+    status: 'void'
+  }, {
+    amountCents: 9900000,
+    note: 'called off'
+  });
   assert.equal(out.ok, false);
   assert.match(out.why, /open/);
 });
@@ -595,12 +871,33 @@ test('a void invoice cannot be settled by hand', () => {
 // So the plan line carries the month, and only the clients beyond the cap carry a second line: a firm never pays twice for the clients the plan already includes.
 
 const PLAN_PRICES = [
-  { kind: 'plan.pilot', unit: 'firm-month, up to 15 clients', amount_cents: 9900000, currency: 'IDR', active: true },
-  { kind: 'plan.firm', unit: 'firm-month, up to 50 clients', amount_cents: 24900000, currency: 'IDR', active: true },
-  { kind: 'statement.client_month', unit: 'delivered client-month above the plan', amount_cents: 1000000, currency: 'IDR', active: true }
+  {
+    kind: 'plan.pilot',
+    unit: 'firm-month, up to 15 clients',
+    amount_cents: 9900000,
+    currency: 'IDR',
+    active: true
+  },
+  {
+    kind: 'plan.firm',
+    unit: 'firm-month, up to 50 clients',
+    amount_cents: 24900000,
+    currency: 'IDR',
+    active: true
+  },
+  {
+    kind: 'statement.client_month',
+    unit: 'delivered client-month above the plan',
+    amount_cents: 1000000,
+    currency: 'IDR',
+    active: true
+  }
 ];
 
-const deliveriesFor = (count) => Array.from({ length: count }, (_, index) => ({
+const deliveriesFor = (count) => Array.from({ length: count }, (
+  _,
+  index
+) => ({
   client: `Klien ${index + 1}`,
   period: '2026-10',
   portal: 'BCA'
@@ -613,7 +910,11 @@ test('a pilot plan charges one plan line and only the clients above fifteen', ()
   assert.equal(out.lines[0].kind, 'plan.pilot');
   assert.equal(out.lines[0].quantity, 1);
   assert.match(out.lines[0].description, /up to 15 client-months/);
-  assert.deepEqual(out.lines.slice(1).map((line) => line.kind), ['statement.client_month', 'statement.client_month', 'statement.client_month']);
+  assert.deepEqual(out.lines.slice(1).map((line) => line.kind), [
+    'statement.client_month',
+    'statement.client_month',
+    'statement.client_month'
+  ]);
   assert.match(out.lines[1].description, /Klien 16/);
   assert.equal(amountFor(out.lines, PLAN_PRICES).amountCents, 9900000 + 3 * 1000000);
 });
@@ -633,7 +934,10 @@ test('a plan nobody can price is refused instead of billed as zero', () => {
 
 test('a duplicate client-month is refused inside a plan too', () => {
   const rows = deliveriesFor(2);
-  const out = planInvoiceLines([...rows, rows[0]], 'plan.pilot', '2026-10');
+  const out = planInvoiceLines([
+    ...rows,
+    rows[0]
+  ], 'plan.pilot', '2026-10');
   assert.equal(out.lines.length, 0);
   assert.match(out.refused[0].reason, /twice/);
 });

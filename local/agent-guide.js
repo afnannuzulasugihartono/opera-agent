@@ -30,7 +30,10 @@ export const RECIPES = Object.freeze([
   },
   {
     task: 'Meet a site you have never seen',
-    do: ['surface_profile', 'read_page'],
+    do: [
+      'surface_profile',
+      'read_page'
+    ],
     note: 'surface_profile costs one call and moves nothing, so it is the safe first step anywhere. Read the strategy it returns before paying for a read.'
   },
   {
@@ -45,12 +48,20 @@ export const RECIPES = Object.freeze([
   },
   {
     task: 'Click something you looked at earlier',
-    do: ['resolve_row', 'click'],
+    do: [
+      'resolve_row',
+      'click'
+    ],
     note: 'resolve_row hands back a handle; click with that handle measures the element again at the click, so a row that moved is still the row that gets clicked.'
   },
   {
     task: 'Open a menu and walk into a submenu',
-    do: ['click_row', 'wait_for_row', 'hover', 'wait_for_row'],
+    do: [
+      'click_row',
+      'wait_for_row',
+      'hover',
+      'wait_for_row'
+    ],
     note: 'Submenus need the pointer to leave and come back. Wait for the row, never for a guessed number of milliseconds.'
   },
   {
@@ -70,7 +81,12 @@ export const RECIPES = Object.freeze([
   },
   {
     task: 'Put a file into a page that has a file input',
-    do: ['intercept_file_chooser', 'click_row', 'upload', 'intercept_file_chooser'],
+    do: [
+      'intercept_file_chooser',
+      'click_row',
+      'upload',
+      'intercept_file_chooser'
+    ],
     note: 'Enable interception first, click the chooser, call upload with the path or the bytes, then disable it. If upload reports inputFound:false, the site has no input — use the drop below.'
   },
   {
@@ -80,12 +96,22 @@ export const RECIPES = Object.freeze([
   },
   {
     task: 'Take a file out of a page',
-    do: ['resolve_row', 'download'],
+    do: [
+      'resolve_row',
+      'download'
+    ],
     note: 'Resolve the control that starts the download, then hand its handle to download with the folder you want. The file landing and stopping growing is the proof; a still-writing file, a viewer that opened instead, and a click that produced nothing each come back downloaded:false with the reason.'
   },
   {
     task: 'Deliver a client statement',
-    do: ['statement_card', 'open_url', 'read_page', 'find_elements', 'download', 'statement_delivered'],
+    do: [
+      'statement_card',
+      'open_url',
+      'read_page',
+      'find_elements',
+      'download',
+      'statement_delivered'
+    ],
     note: 'One client, one portal, one month. The card names the file and the folder before anything is clicked; the drive gets the file; statement_delivered checks it on disk and adds the client-month to the manifest. Never type a password: if the portal asks to sign in, the person signs in in their own browser and the same tab is used again. The answer is the proof another agent can hand to its own user: bytes, the kind of file sniffed from its bytes, the page count, and the closing balance as the portal printed it with the page named as its source. A balance that was not read is reported missing, never invented.'
   },
   {
@@ -105,12 +131,18 @@ export const RECIPES = Object.freeze([
   },
   {
     task: 'Prove it worked',
-    do: ['capture_page', 'read_page'],
+    do: [
+      'capture_page',
+      'read_page'
+    ],
     note: 'A picture and the text, compared against what you expected. A tool saying it succeeded is not proof; the page saying so is.'
   },
   {
     task: 'Bring a window forward',
-    do: ['browser_status', 'focus_window'],
+    do: [
+      'browser_status',
+      'focus_window'
+    ],
     note: 'browser_status names the browser in front and whether it is ours; focus_window takes a piece of the window title. With no match, focus_window answers the state without moving anything — pass a piece of the title to bring one forward. Never an empty match: that used to bring an arbitrary window forward.'
   }
 ]);
@@ -131,7 +163,10 @@ export const SIDE_EFFECTS = Object.freeze({
   list_tabs: [],
   open_url: ['opens a new tab in the same browser'],
   close_tab: ['closes a tab the caller may still be holding'],
-  read_page: ['with allowCaretMove, borrows the selection on a canvas editor to read the text through it, and answers caretRestored as what was measured rather than what was hoped', 'without it, that step is skipped and the reason is reported, because a canvas caret is not in the DOM and cannot be promised back'],
+  read_page: [
+    'with allowCaretMove, borrows the selection on a canvas editor to read the text through it, and answers caretRestored as what was measured rather than what was hoped',
+    'without it, that step is skipped and the reason is reported, because a canvas caret is not in the DOM and cannot be promised back'
+  ],
   surface_profile: [],
   find_elements: [],
   click: ['moves the pointer and presses'],
@@ -143,10 +178,11 @@ export const SIDE_EFFECTS = Object.freeze({
   append: ['moves the caret to the end before inserting, so text lands at the end instead of wherever the caret was left'],
   scroll: ['moves the view, which can load more of a lazy page and move the page out from under coordinates you already hold'],
   get_computed: [],
-
-
   stream_keys: ['sends a key sequence to whatever is focused'],
-  browser_burst: ['runs every step in order and stops at the first failure', 'settles and reads the page once at the end, not after each step'],
+  browser_burst: [
+    'runs every step in order and stops at the first failure',
+    'settles and reads the page once at the end, not after each step'
+  ],
   wait_for: [],
   ask_page: [],
   wait_for_row: [],
@@ -175,7 +211,13 @@ export function guide(topic) {
     : RECIPES;
   return {
     recipes,
-    sideEffects: Object.entries(SIDE_EFFECTS).map(([tool, effects]) => ({ tool, effects })),
+    sideEffects: Object.entries(SIDE_EFFECTS).map(([
+      tool,
+      effects
+    ]) => ({
+      tool,
+      effects
+    })),
     refusals: [
       'A native operating-system dialog cannot be opened, closed or filled from here — it is outside the browser.',
       'ask_page refuses anything that could change the page; the list is in its description.',

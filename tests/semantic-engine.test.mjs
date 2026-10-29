@@ -15,14 +15,21 @@ await import('../extension/semantic-identity.js');
 await import('../extension/semantic-views.js');
 
 const { createIdentityEngine } = globalThis.OperaAgentSemanticIdentity;
-const { COMPLETION_STATUSES, classifyCompletion, createViewEngine } = globalThis.OperaAgentSemanticViews;
+const {
+  COMPLETION_STATUSES,
+  classifyCompletion,
+  createViewEngine
+} = globalThis.OperaAgentSemanticViews;
 
 const corpus = JSON.parse(fs.readFileSync(new URL('./fixtures/semantic-replay-v1.json', import.meta.url), 'utf8'));
 const thresholds = JSON.parse(fs.readFileSync(new URL('./fixtures/semantic-baseline-thresholds-v1.json', import.meta.url), 'utf8'));
 const benchmark = fs.readFileSync(new URL('../scripts/semantic-baseline.mjs', import.meta.url), 'utf8');
 const pkg = JSON.parse(fs.readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
 
-function keysDeep(value, output = []) {
+function keysDeep(
+  value,
+  output = []
+) {
   if (Array.isArray(value)) {
     for (const item of value) keysDeep(item, output);
   } else if (value && typeof value === 'object') {
@@ -128,7 +135,12 @@ test('stable intrinsic identity survives a compatible DOM-node replacement', () 
 test('a genuinely different intrinsic item cannot inherit an identity', () => {
   const engine = createIdentityEngine({ documentId: 'document-a' });
   const first = engine.observe([identityElement()]);
-  const second = engine.observe([identityElement({ ref: 'oa_doc_2', stableKey: 'oa_item_b', label: 'Other item', text: 'Other item' })]);
+  const second = engine.observe([identityElement({
+    ref: 'oa_doc_2',
+    stableKey: 'oa_item_b',
+    label: 'Other item',
+    text: 'Other item'
+  })]);
 
   assert.notEqual(second.items[0].logicalId, first.items[0].logicalId);
 });
@@ -136,8 +148,14 @@ test('a genuinely different intrinsic item cannot inherit an identity', () => {
 test('indistinguishable duplicate candidates are explicit ambiguities', () => {
   const engine = createIdentityEngine({ documentId: 'document-a' });
   const result = engine.observe([
-    identityElement({ ref: 'oa_doc_1', stableKeySource: 'semantic' }),
-    identityElement({ ref: 'oa_doc_2', stableKeySource: 'semantic' }),
+    identityElement({
+      ref: 'oa_doc_1',
+      stableKeySource: 'semantic'
+    }),
+    identityElement({
+      ref: 'oa_doc_2',
+      stableKeySource: 'semantic'
+    }),
   ]);
 
   assert.equal(result.state.ambiguityCount, 2);
@@ -149,7 +167,11 @@ test('indistinguishable duplicate candidates are explicit ambiguities', () => {
 test('semantic changes retain intrinsic identity and increment its revision', () => {
   const engine = createIdentityEngine({ documentId: 'document-a' });
   const first = engine.observe([identityElement()]);
-  const second = engine.observe([identityElement({ ref: 'oa_doc_2', label: 'Close item', text: 'Close item' })]);
+  const second = engine.observe([identityElement({
+    ref: 'oa_doc_2',
+    label: 'Close item',
+    text: 'Close item'
+  })]);
 
   assert.equal(second.items[0].logicalId, first.items[0].logicalId);
   assert.equal(second.items[0].semanticRevision, 2);
@@ -157,8 +179,25 @@ test('semantic changes retain intrinsic identity and increment its revision', ()
 
 test('geometry changes have an independent revision and do not change identity', () => {
   const engine = createIdentityEngine({ documentId: 'document-a' });
-  const first = engine.observe([identityElement({ rect: { x: 10, y: 20, width: 100, height: 30 }, inViewport: true })]);
-  const second = engine.observe([identityElement({ ref: 'oa_doc_2', rect: { x: 10, y: 70, width: 100, height: 30 }, inViewport: true })]);
+  const first = engine.observe([identityElement({
+    rect: {
+      x: 10,
+      y: 20,
+      width: 100,
+      height: 30
+    },
+    inViewport: true
+  })]);
+  const second = engine.observe([identityElement({
+    ref: 'oa_doc_2',
+    rect: {
+      x: 10,
+      y: 70,
+      width: 100,
+      height: 30
+    },
+    inViewport: true
+  })]);
   const cached = engine.inspect().entities[0];
 
   assert.equal(second.items[0].logicalId, first.items[0].logicalId);
@@ -167,7 +206,13 @@ test('geometry changes have an independent revision and do not change identity',
 });
 
 test('fresh engines deterministically replay the same logical identities', () => {
-  const items = [identityElement(), identityElement({ ref: 'oa_doc_2', stableKey: 'oa_item_b' })];
+  const items = [
+    identityElement(),
+    identityElement({
+      ref: 'oa_doc_2',
+      stableKey: 'oa_item_b'
+    })
+  ];
   const left = createIdentityEngine({ documentId: 'document-a' }).observe(items.map((item) => ({ ...item })));
   const right = createIdentityEngine({ documentId: 'document-a' }).observe(items.map((item) => ({ ...item })));
 
@@ -175,8 +220,14 @@ test('fresh engines deterministically replay the same logical identities', () =>
 });
 
 test('bounded corpus-sized observations produce no logical ID collision', () => {
-  const engine = createIdentityEngine({ documentId: 'document-a', maxEntities: 500 });
-  const result = engine.observe(Array.from({ length: 500 }, (_, index) => identityElement({
+  const engine = createIdentityEngine({
+    documentId: 'document-a',
+    maxEntities: 500
+  });
+  const result = engine.observe(Array.from({ length: 500 }, (
+    _,
+    index
+  ) => identityElement({
     ref: `oa_doc_${index}`,
     stableKey: `oa_record_${String(index).padStart(3, '0')}`,
   })));
@@ -193,7 +244,11 @@ test('logical IDs remain observational and are absent from every action schema',
 
 test('sensitive elements are never retained in the semantic identity cache', () => {
   const engine = createIdentityEngine({ documentId: 'document-a' });
-  const result = engine.observe([identityElement({ sensitive: true, label: 'Password', text: '' })]);
+  const result = engine.observe([identityElement({
+    sensitive: true,
+    label: 'Password',
+    text: ''
+  })]);
 
   assert.equal(result.items[0].logicalId, undefined);
   assert.equal(result.state.entityCount, 0);
@@ -210,8 +265,17 @@ test('cache limits and explicit reset bound retained identity state', () => {
     maxAgeMs: 50,
     now: () => now,
   });
-  engine.observe([identityElement({ stableKey: 'oa_a' }), identityElement({ ref: 'oa_2', stableKey: 'oa_b' })]);
-  engine.observe([identityElement({ ref: 'oa_3', stableKey: 'oa_c' })]);
+  engine.observe([
+    identityElement({ stableKey: 'oa_a' }),
+    identityElement({
+      ref: 'oa_2',
+      stableKey: 'oa_b'
+    })
+  ]);
+  engine.observe([identityElement({
+    ref: 'oa_3',
+    stableKey: 'oa_c'
+  })]);
   assert.ok(engine.inspect().entityCount <= 2);
 
   now += 60;
@@ -238,13 +302,53 @@ test('cache inspection stores only hashed bindings, never raw hrefs', () => {
   assert.doesNotMatch(cache, /private_token|secret-value|example\.test/);
 });
 
-const region = (overrides = {}) => ({ regionId: 'region-feed', kind: 'repeated', role: 'feed', label: 'Results', ...overrides });
-const viewItem = (id, overrides = {}) => ({ logicalId: `logical-${id}`, semanticRevision: 1, regionKey: 'region-feed', stableKey: `key-${id}`, stableKeySource: 'id', inViewport: true, ...overrides });
+const region = (overrides = {}) => ({
+  regionId: 'region-feed',
+  kind: 'repeated',
+  role: 'feed',
+  label: 'Results',
+  ...overrides
+});
+const viewItem = (
+  id,
+  overrides = {}
+) => ({
+  logicalId: `logical-${id}`,
+  semanticRevision: 1,
+  regionKey: 'region-feed',
+  stableKey: `key-${id}`,
+  stableKeySource: 'id',
+  inViewport: true,
+  ...overrides
+});
 
 test('a repeated region grows incrementally and only its view revision changes', () => {
   const engine = createViewEngine();
-  const first = engine.observe({ regions: [region(), region({ regionId: 'region-main', kind: 'landmark', role: 'main' })], items: [viewItem('a')] });
-  const second = engine.observe({ regions: [region(), region({ regionId: 'region-main', kind: 'landmark', role: 'main' })], items: [viewItem('a'), viewItem('b')] });
+  const first = engine.observe({
+    regions: [
+      region(),
+      region({
+        regionId: 'region-main',
+        kind: 'landmark',
+        role: 'main'
+      })
+    ],
+    items: [viewItem('a')]
+  });
+  const second = engine.observe({
+    regions: [
+      region(),
+      region({
+        regionId: 'region-main',
+        kind: 'landmark',
+        role: 'main'
+      })
+    ],
+    items: [
+      viewItem('a'),
+      viewItem('b')
+    ]
+  });
   assert.equal(second.regions[0].loadedEntityCount, 2);
   assert.equal(second.regions[0].viewRevision, first.regions[0].viewRevision + 1);
   assert.equal(second.regions[1].viewRevision, first.regions[1].viewRevision);
@@ -253,22 +357,53 @@ test('a repeated region grows incrementally and only its view revision changes',
 
 test('boundary requires two stable observations before bounded completion', () => {
   const engine = createViewEngine();
-  const scroll = { scrollTop: 500, scrollHeight: 600, clientHeight: 100, reachedBottom: true };
-  const first = engine.observe({ regions: [region({ scroll })], items: [viewItem('a')] });
-  const second = engine.observe({ regions: [region({ scroll })], items: [viewItem('a')] });
+  const scroll = {
+    scrollTop: 500,
+    scrollHeight: 600,
+    clientHeight: 100,
+    reachedBottom: true
+  };
+  const first = engine.observe({
+    regions: [region({ scroll })],
+    items: [viewItem('a')]
+  });
+  const second = engine.observe({
+    regions: [region({ scroll })],
+    items: [viewItem('a')]
+  });
   assert.equal(first.regions[0].exhaustion.status, 'PARTIAL');
   assert.equal(second.regions[0].exhaustion.status, 'BOUNDED_COMPLETE');
 });
 
 test('scroll evidence changes only the affected region revision', () => {
   const engine = createViewEngine();
-  const main = region({ regionId: 'region-main', kind: 'landmark', role: 'main' });
+  const main = region({
+    regionId: 'region-main',
+    kind: 'landmark',
+    role: 'main'
+  });
   const first = engine.observe({
-    regions: [region({ scroll: { scrollTop: 0, scrollHeight: 600, clientHeight: 100, reachedBottom: false } }), main],
+    regions: [
+      region({ scroll: {
+        scrollTop: 0,
+        scrollHeight: 600,
+        clientHeight: 100,
+        reachedBottom: false
+      } }),
+      main
+    ],
     items: [viewItem('a')],
   });
   const second = engine.observe({
-    regions: [region({ scroll: { scrollTop: 500, scrollHeight: 600, clientHeight: 100, reachedBottom: true } }), main],
+    regions: [
+      region({ scroll: {
+        scrollTop: 500,
+        scrollHeight: 600,
+        clientHeight: 100,
+        reachedBottom: true
+      } }),
+      main
+    ],
     items: [viewItem('a')],
   });
   assert.equal(second.regions[0].viewRevision, first.regions[0].viewRevision + 1);
@@ -278,11 +413,24 @@ test('scroll evidence changes only the affected region revision', () => {
 
 test('views distinguish loaded, visible, links, duplicates, and ambiguity', () => {
   const engine = createViewEngine();
-  const result = engine.observe({ regions: [region()], items: [
-    viewItem('a', { stableKey: 'href-a', stableKeySource: 'href' }),
-    viewItem('b', { inViewport: false, stableKey: 'duplicate', identityAmbiguous: true }),
-    viewItem('c', { stableKey: 'duplicate', identityAmbiguous: true }),
-  ] }).regions[0];
+  const result = engine.observe({
+    regions: [region()],
+    items: [
+      viewItem('a', {
+        stableKey: 'href-a',
+        stableKeySource: 'href'
+      }),
+      viewItem('b', {
+        inViewport: false,
+        stableKey: 'duplicate',
+        identityAmbiguous: true
+      }),
+      viewItem('c', {
+        stableKey: 'duplicate',
+        identityAmbiguous: true
+      }),
+    ]
+  }).regions[0];
   assert.equal(result.loadedEntityCount, 3);
   assert.equal(result.visibleEntityCount, 2);
   assert.equal(result.uniqueCanonicalLinkCount, 1);
@@ -291,10 +439,21 @@ test('views distinguish loaded, visible, links, duplicates, and ambiguity', () =
 });
 
 test('region and entity bounds are enforced', () => {
-  const engine = createViewEngine({ maxRegions: 2, maxEntities: 2 });
+  const engine = createViewEngine({
+    maxRegions: 2,
+    maxEntities: 2
+  });
   const result = engine.observe({
-    regions: [region(), region({ regionId: 'two' }), region({ regionId: 'three' })],
-    items: [viewItem('a'), viewItem('b'), viewItem('c')],
+    regions: [
+      region(),
+      region({ regionId: 'two' }),
+      region({ regionId: 'three' })
+    ],
+    items: [
+      viewItem('a'),
+      viewItem('b'),
+      viewItem('c')
+    ],
   });
   assert.equal(result.regions.length, 2);
   assert.equal(result.regions[0].loadedEntityCount, 2);
@@ -302,10 +461,28 @@ test('region and entity bounds are enforced', () => {
 
 test('dependency delta invalidates only causally changed views', () => {
   const engine = createViewEngine({ now: () => 1234 });
-  engine.observe({ regions: [region(), region({ regionId: 'region-main', role: 'main' })], items: [viewItem('a')] });
+  engine.observe({
+    regions: [
+      region(),
+      region({
+        regionId: 'region-main',
+        role: 'main'
+      })
+    ],
+    items: [viewItem('a')]
+  });
   const result = engine.observe({
-    regions: [region(), region({ regionId: 'region-main', role: 'main' })],
-    items: [viewItem('a'), viewItem('b')],
+    regions: [
+      region(),
+      region({
+        regionId: 'region-main',
+        role: 'main'
+      })
+    ],
+    items: [
+      viewItem('a'),
+      viewItem('b')
+    ],
     semanticState: { revision: 7 },
     delta: { classification: 'INSERT' },
   });
@@ -313,22 +490,52 @@ test('dependency delta invalidates only causally changed views', () => {
   assert.equal(result.viewDelta.sourceClassification, 'INSERT');
   assert.deepEqual(result.regions[0].dependencies.entitySet.count, 2);
   assert.deepEqual(result.provenance, {
-    category: 'DIRECT_OBSERVATION', observedAt: 1234, sourceRevision: 7, sensor: 'DOM_ACCESSIBILITY', confidence: 0.9,
+    category: 'DIRECT_OBSERVATION',
+    observedAt: 1234,
+    sourceRevision: 7,
+    sensor: 'DOM_ACCESSIBILITY',
+    confidence: 0.9,
   });
 });
 
 test('action success alone can never manufacture a PROVED completion', () => {
-  assert.deepEqual(COMPLETION_STATUSES, ['PROVED', 'BOUNDED_COMPLETE', 'PARTIAL', 'BLOCKED', 'UNKNOWN']);
+  assert.deepEqual(COMPLETION_STATUSES, [
+    'PROVED',
+    'BOUNDED_COMPLETE',
+    'PARTIAL',
+    'BLOCKED',
+    'UNKNOWN'
+  ]);
   assert.equal(classifyCompletion({ actionSuccess: true }).status, 'UNKNOWN');
-  assert.equal(classifyCompletion({ observed: true, actionSuccess: true }).status, 'PARTIAL');
-  assert.equal(classifyCompletion({ observed: true, boundaryStable: true }).status, 'PARTIAL');
-  assert.equal(classifyCompletion({ observed: true, boundaryStable: true, evidence: ['stable boundary'] }).status, 'BOUNDED_COMPLETE');
+  assert.equal(classifyCompletion({
+    observed: true,
+    actionSuccess: true
+  }).status, 'PARTIAL');
+  assert.equal(classifyCompletion({
+    observed: true,
+    boundaryStable: true
+  }).status, 'PARTIAL');
+  assert.equal(classifyCompletion({
+    observed: true,
+    boundaryStable: true,
+    evidence: ['stable boundary']
+  }).status, 'BOUNDED_COMPLETE');
   assert.equal(classifyCompletion({ blockedReason: 'permission denied' }).status, 'BLOCKED');
-  assert.equal(classifyCompletion({ scopeKind: 'closed-world', exhaustiveEvidence: true }).status, 'UNKNOWN');
-  assert.equal(classifyCompletion({ scopeKind: 'closed-world', exhaustiveEvidence: true, evidence: ['enumerated finite set'] }).status, 'PROVED');
+  assert.equal(classifyCompletion({
+    scopeKind: 'closed-world',
+    exhaustiveEvidence: true
+  }).status, 'UNKNOWN');
+  assert.equal(classifyCompletion({
+    scopeKind: 'closed-world',
+    exhaustiveEvidence: true,
+    evidence: ['enumerated finite set']
+  }).status, 'PROVED');
 });
 
-const deltaItem = (key, overrides = {}) => {
+const deltaItem = (
+  key,
+  overrides = {}
+) => {
   return {
     ref: `ref-${key}`,
     stableKey: `key-${key}`,
@@ -337,7 +544,12 @@ const deltaItem = (key, overrides = {}) => {
     role: 'button',
     label: `Item ${key}`,
     text: `Item ${key}`,
-    rect: { x: 0, y: 0, width: 100, height: 30 },
+    rect: {
+      x: 0,
+      y: 0,
+      width: 100,
+      height: 30
+    },
     inViewport: true,
     sensitive: false,
     ...overrides,
@@ -360,7 +572,10 @@ test('first observation and explicit reset require a complete snapshot', () => {
 test('one semantic mutation produces exactly one UPDATE', () => {
   const engine = createIdentityEngine({ documentId: 'delta-document' });
   const first = engine.observe([deltaItem('a')]);
-  const second = engine.observe([deltaItem('a', { label: 'Updated', text: 'Updated' })]);
+  const second = engine.observe([deltaItem('a', {
+    label: 'Updated',
+    text: 'Updated'
+  })]);
 
   assert.equal(second.delta.classification, 'UPDATE');
   assert.equal(second.delta.changes.length, 1);
@@ -383,21 +598,46 @@ test('irrelevant observation churn produces NO_RELEVANT_CHANGE', () => {
 
 test('geometry and ordering changes produce MOVE without changing semantic revision', () => {
   const engine = createIdentityEngine({ documentId: 'delta-document' });
-  const first = engine.observe([deltaItem('a'), deltaItem('b')]);
+  const first = engine.observe([
+    deltaItem('a'),
+    deltaItem('b')
+  ]);
   const moved = engine.observe([
-    deltaItem('b', { ref: 'ref-b-2', rect: { x: 0, y: 40, width: 100, height: 30 } }),
-    deltaItem('a', { ref: 'ref-a-2', rect: { x: 0, y: 80, width: 100, height: 30 } }),
+    deltaItem('b', {
+      ref: 'ref-b-2',
+      rect: {
+        x: 0,
+        y: 40,
+        width: 100,
+        height: 30
+      }
+    }),
+    deltaItem('a', {
+      ref: 'ref-a-2',
+      rect: {
+        x: 0,
+        y: 80,
+        width: 100,
+        height: 30
+      }
+    }),
   ]);
 
   assert.equal(moved.delta.classification, 'MOVE');
   assert.equal(moved.delta.changes.length, 2);
   assert.ok(moved.delta.changes.every((change) => change.type === 'MOVE'));
-  assert.deepEqual(moved.items.map((entry) => entry.semanticRevision), [1, 1]);
+  assert.deepEqual(moved.items.map((entry) => entry.semanticRevision), [
+    1,
+    1
+  ]);
   assert.deepEqual(new Set(moved.items.map((entry) => entry.logicalId)), new Set(first.items.map((entry) => entry.logicalId)));
 });
 
 test('virtualized one-observation detach/reinsert preserves identity without REMOVE/INSERT', () => {
-  const engine = createIdentityEngine({ documentId: 'delta-document', removalGraceObservations: 1 });
+  const engine = createIdentityEngine({
+    documentId: 'delta-document',
+    removalGraceObservations: 1
+  });
   const first = engine.observe([deltaItem('a')]);
   const detached = engine.observe([]);
   assert.equal(detached.delta.classification, 'NO_RELEVANT_CHANGE');
@@ -409,7 +649,10 @@ test('virtualized one-observation detach/reinsert preserves identity without REM
 });
 
 test('a removal is emitted after the bounded grace window', () => {
-  const engine = createIdentityEngine({ documentId: 'delta-document', removalGraceObservations: 1 });
+  const engine = createIdentityEngine({
+    documentId: 'delta-document',
+    removalGraceObservations: 1
+  });
   const first = engine.observe([deltaItem('a')]);
   engine.observe([]);
   const removed = engine.observe([]);
@@ -418,9 +661,17 @@ test('a removal is emitted after the bounded grace window', () => {
 });
 
 test('insertions are bounded and overflow degrades to a safe RESET', () => {
-  const engine = createIdentityEngine({ documentId: 'delta-document', maxDeltaChanges: 2, maxDeltaBytes: 2_000 });
+  const engine = createIdentityEngine({
+    documentId: 'delta-document',
+    maxDeltaChanges: 2,
+    maxDeltaBytes: 2_000
+  });
   engine.observe([]);
-  const overflow = engine.observe([deltaItem('a'), deltaItem('b'), deltaItem('c')]);
+  const overflow = engine.observe([
+    deltaItem('a'),
+    deltaItem('b'),
+    deltaItem('c')
+  ]);
   assert.equal(overflow.delta.classification, 'RESET');
   assert.equal(overflow.delta.resetReason, 'OUTPUT_CAP');
   assert.equal(overflow.delta.completeSnapshotRequired, true);
@@ -429,9 +680,19 @@ test('insertions are bounded and overflow degrades to a safe RESET', () => {
 
 test('a one-item delta is materially smaller than a 100-item snapshot', () => {
   const engine = createIdentityEngine({ documentId: 'delta-document' });
-  const hundred = Array.from({ length: 100 }, (_, index) => deltaItem(String(index).padStart(3, '0')));
+  const hundred = Array.from({ length: 100 }, (
+    _,
+    index
+  ) => deltaItem(String(index).padStart(3, '0')));
   const first = engine.observe(hundred);
-  const changed = hundred.map((entry, index) => index === 50 ? { ...entry, label: 'Changed', text: 'Changed' } : { ...entry });
+  const changed = hundred.map((
+    entry,
+    index
+  ) => index === 50 ? {
+    ...entry,
+    label: 'Changed',
+    text: 'Changed'
+  } : { ...entry });
   const second = engine.observe(changed);
   const ratio = JSON.stringify(second.delta).length / JSON.stringify(first.items).length;
 
@@ -441,7 +702,10 @@ test('a one-item delta is materially smaller than a 100-item snapshot', () => {
 
 const content = contentSource();
 
-const staleItem = (key, overrides = {}) => {
+const staleItem = (
+  key,
+  overrides = {}
+) => {
   return {
     ref: `ref-${key}`,
     stableKey: `key-${key}`,
@@ -450,7 +714,12 @@ const staleItem = (key, overrides = {}) => {
     role: 'button',
     label: `Item ${key}`,
     text: `Item ${key}`,
-    rect: { x: 0, y: 0, width: 100, height: 30 },
+    rect: {
+      x: 0,
+      y: 0,
+      width: 100,
+      height: 30
+    },
     inViewport: true,
     visible: true,
     sensitive: false,
@@ -535,11 +804,28 @@ test('stale tracking is bounded and resets cleanly', () => {
 const contract = JSON.parse(fs.readFileSync(new URL('./fixtures/mcp-contract-v1.json', import.meta.url), 'utf8'));
 const mcpSource = mcpSurfaceSourceSync();
 
-const gateElement = (key, overrides = {}) => {
+const gateElement = (
+  key,
+  overrides = {}
+) => {
   return {
-    ref: `ref-${key}`, stableKey: `key-${key}`, stableKeySource: 'id', tag: 'button', role: 'button',
-    label: `Item ${key}`, text: `Item ${key}`, rect: { x: 0, y: 0, width: 80, height: 24 },
-    inViewport: true, sensitive: false, regionKey: 'feed', ...overrides,
+    ref: `ref-${key}`,
+    stableKey: `key-${key}`,
+    stableKeySource: 'id',
+    tag: 'button',
+    role: 'button',
+    label: `Item ${key}`,
+    text: `Item ${key}`,
+    rect: {
+      x: 0,
+      y: 0,
+      width: 80,
+      height: 24
+    },
+    inViewport: true,
+    sensitive: false,
+    regionKey: 'feed',
+    ...overrides,
   };
 };
 
@@ -558,12 +844,28 @@ test('MCP v1 tool names and input schemas remain locked', () => {
 });
 
 test('legacy and enriched page.read results both survive the unchanged MCP envelope', () => {
-  const envelope = (result) => JSON.parse(JSON.stringify({ ok: true, commandId: 'command', status: 'completed', result }));
-  const legacy = envelope({ page: { title: 'Legacy', elements: [{ ref: 'oa_old' }] } });
+  const envelope = (result) => JSON.parse(JSON.stringify({
+    ok: true,
+    commandId: 'command',
+    status: 'completed',
+    result
+  }));
+  const legacy = envelope({ page: {
+    title: 'Legacy',
+    elements: [{ ref: 'oa_old' }]
+  } });
   const enriched = envelope({ page: {
-    title: 'Candidate', elements: [{ ref: 'oa_new', logicalId: 'se_new' }],
-    semanticState: { observationRevision: 2 }, semanticDelta: { classification: 'UPDATE' },
-    semanticViews: { schemaVersion: 1, regions: [] },
+    title: 'Candidate',
+    elements: [{
+      ref: 'oa_new',
+      logicalId: 'se_new'
+    }],
+    semanticState: { observationRevision: 2 },
+    semanticDelta: { classification: 'UPDATE' },
+    semanticViews: {
+      schemaVersion: 1,
+      regions: []
+    },
   } });
   assert.equal(legacy.result.page.semanticState, undefined);
   assert.equal(enriched.result.page.elements[0].logicalId, 'se_new');
@@ -576,10 +878,19 @@ test('deterministic mutation fuzz preserves bounds, uniqueness, resets, and proo
   const rng = random();
   let clock = 1000;
   const identity = createIdentityEngine({
-    documentId: 'fuzz-document', maxEntities: 40, maxCacheBytes: 40_000, maxAgeMs: 100,
-    maxDeltaChanges: 12, maxDeltaBytes: 8_000, now: () => clock,
+    documentId: 'fuzz-document',
+    maxEntities: 40,
+    maxCacheBytes: 40_000,
+    maxAgeMs: 100,
+    maxDeltaChanges: 12,
+    maxDeltaBytes: 8_000,
+    now: () => clock,
   });
-  const views = createViewEngine({ maxRegions: 4, maxEntities: 40, now: () => clock });
+  const views = createViewEngine({
+    maxRegions: 4,
+    maxEntities: 40,
+    now: () => clock
+  });
   let keys = [];
   for (let step = 0; step < 250; step += 1) {
     clock += 2;
@@ -588,9 +899,13 @@ test('deterministic mutation fuzz preserves bounds, uniqueness, resets, and proo
     else if (choice === 2 && keys.length) keys.splice(Math.floor(rng() * keys.length), 1);
     else if (choice === 3) keys.reverse();
     else if (choice === 4 && step % 31 === 0) identity.reset('FUZZ_RESET');
-    const observed = keys.slice(0, 45).map((key, index) => gateElement(key, {
+    const observed = keys.slice(0, 45).map((
+      key,
+      index
+    ) => gateElement(key, {
       label: `Item ${key} revision ${step % 17 === 0 && index === 0 ? step : 0}`,
-      text: `Item ${key}`, inViewport: index < 8,
+      text: `Item ${key}`,
+      inViewport: index < 8,
     }));
     const result = identity.observe(observed);
     const logicalIds = result.items.map((item) => item.logicalId).filter(Boolean);
@@ -599,9 +914,21 @@ test('deterministic mutation fuzz preserves bounds, uniqueness, resets, and proo
     assert.ok(result.state.cacheBytes <= 40_000);
     assert.ok(result.delta.changes.length <= 12 || result.delta.classification === 'RESET');
     const view = views.observe({
-      regions: [{ regionId: 'feed', kind: 'repeated', role: 'feed', label: 'Results', scroll: {
-        scrollTop: step, scrollHeight: 1000, clientHeight: 100, reachedBottom: false,
-      } }], items: result.items, semanticState: result.state, delta: result.delta,
+      regions: [{
+        regionId: 'feed',
+        kind: 'repeated',
+        role: 'feed',
+        label: 'Results',
+        scroll: {
+          scrollTop: step,
+          scrollHeight: 1000,
+          clientHeight: 100,
+          reachedBottom: false,
+        }
+      }],
+      items: result.items,
+      semanticState: result.state,
+      delta: result.delta,
     });
     assert.ok(view.regions.length <= 4);
     assert.ok(view.regions[0].loadedEntityCount <= 40);
@@ -615,7 +942,13 @@ test('deterministic mutation fuzz preserves bounds, uniqueness, resets, and proo
 test('document engines isolate identical entities and never retain sensitive values', () => {
   const first = createIdentityEngine({ documentId: 'tab-a' });
   const second = createIdentityEngine({ documentId: 'tab-b' });
-  const a = first.observe([gateElement('same'), gateElement('secret', { sensitive: true, value: 'never-retain-me' })]);
+  const a = first.observe([
+    gateElement('same'),
+    gateElement('secret', {
+      sensitive: true,
+      value: 'never-retain-me'
+    })
+  ]);
   const b = second.observe([gateElement('same')]);
   assert.notEqual(a.items[0].logicalId, b.items[0].logicalId);
   assert.equal(a.items[1].logicalId, undefined);

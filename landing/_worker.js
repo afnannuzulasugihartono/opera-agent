@@ -42,7 +42,11 @@ async function askFunction(request) {
     const value = request.headers.get(name);
     if (value) headers.set(name, value);
   }
-  const init = { method: request.method, headers, redirect: 'manual' };
+  const init = {
+    method: request.method,
+    headers,
+    redirect: 'manual'
+  };
   if (request.method !== 'GET' && request.method !== 'HEAD') init.body = await request.arrayBuffer();
   return fetch(target.toString(), init);
 }
@@ -82,7 +86,10 @@ const looksLikePage = (body) => /^\s*(<!doctype html|<html[\s>])/i.test(body);
 
 function failure() {
   const html = '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Invoice</title><style>body{font:16px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif;max-width:44rem;margin:1.5rem auto;padding:0 1rem;color:#111}</style></head><body><h1>The invoice could not be loaded just now.</h1><p>Nothing has changed. Try again in a moment.</p></body></html>';
-  return new Response(html, { status: 502, headers: PAGE_HEADERS });
+  return new Response(html, {
+    status: 502,
+    headers: PAGE_HEADERS
+  });
 }
 
 async function serveInvoice(request) {
@@ -99,12 +106,18 @@ async function serveInvoice(request) {
     const rewritten = pageLocation(location);
     if (rewritten) headers.set('location', rewritten);
     else if (location) headers.set('location', location);
-    return new Response(null, { status: upstream.status, headers });
+    return new Response(null, {
+      status: upstream.status,
+      headers
+    });
   }
   const body = await upstream.text();
   const type = upstream.headers.get('content-type') || '';
   if (type.includes('text/html') || looksLikePage(body)) {
-    return new Response(body, { status: upstream.status, headers: PAGE_HEADERS });
+    return new Response(body, {
+      status: upstream.status,
+      headers: PAGE_HEADERS
+    });
   }
   return new Response(body, {
     status: upstream.status,
@@ -118,7 +131,10 @@ async function serveInvoice(request) {
 }
 
 export default {
-  async fetch(request, env) {
+  async fetch(
+    request,
+    env
+  ) {
     const path = new URL(request.url).pathname;
     if (path === PAGE_PATH || path === `${PAGE_PATH}/`) return serveInvoice(request);
     return env.ASSETS.fetch(request);

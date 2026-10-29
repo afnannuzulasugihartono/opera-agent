@@ -35,10 +35,27 @@ test('watch_summarize opens the given url and returns transcript payload', () =>
 
 test('watch_summarize uses only known runner step types and methods', () => {
   const def = definition();
-  const types = new Set(['command', 'if', 'set', 'repeat', 'foreach', 'wait', 'fail']);
+  const types = new Set([
+    'command',
+    'if',
+    'set',
+    'repeat',
+    'foreach',
+    'wait',
+    'fail'
+  ]);
   const methods = new Set([
-    'tabs.open', 'tabs.get', 'tabs.find', 'tabs.activate',
-    'page.wait_for', 'page.query', 'page.find', 'page.click', 'page.read', 'page.scroll', 'media.state'
+    'tabs.open',
+    'tabs.get',
+    'tabs.find',
+    'tabs.activate',
+    'page.wait_for',
+    'page.query',
+    'page.find',
+    'page.click',
+    'page.read',
+    'page.scroll',
+    'media.state'
   ]);
   const walk = (steps) => {
     for (const step of steps || []) {

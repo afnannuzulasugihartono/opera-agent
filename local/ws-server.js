@@ -7,7 +7,10 @@
 // This handles exactly what the device uses: the upgrade handshake, masked text frames, ping/pong, and close.
 // Binary frames are refused by name, because a command is JSON and anything else on this port is a mistake worth saying out loud.
 
-import { createHash, randomUUID } from 'node:crypto';
+import {
+  createHash,
+  randomUUID
+} from 'node:crypto';
 import { EventEmitter } from 'node:events';
 
 const GUID = '258EAFA5-E914-47DA-95CA-C5AB0DC85B11';
@@ -47,17 +50,29 @@ export function encodeText(text) {
     header.writeBigUInt64BE(BigInt(length), 2);
   }
   header[0] = 0x81;
-  return Buffer.concat([header, payload]);
+  return Buffer.concat([
+    header,
+    payload
+  ]);
 }
 
 function encodeClose(code = 1000) {
   const payload = Buffer.alloc(2);
   payload.writeUInt16BE(code, 0);
-  return Buffer.concat([Buffer.from([0x88, 0x02]), payload]);
+  return Buffer.concat([
+    Buffer.from([
+      0x88,
+      0x02
+    ]),
+    payload
+  ]);
 }
 
 function encodePong() {
-  return Buffer.from([0x8a, 0x00]);
+  return Buffer.from([
+    0x8a,
+    0x00
+  ]);
 }
 
 // A client frame is masked and may be split across TCP reads, so decoding keeps a remainder: the next chunk continues the same frame rather than becoming a second, malformed one.
@@ -68,7 +83,10 @@ function encodePong() {
 // Measured live as captures failing on whichever tab happened to fragment while reads flew everywhere.
 // Reassembly is per RFC 6455: buffer data frames until FIN, let control frames interleave, refuse what overflows or violates.
 
-export function createFrameReader(onText, onControl = () => {}) {
+export function createFrameReader(
+  onText,
+  onControl = () => {}
+) {
   let buffer = Buffer.alloc(0);
   let fragments = null;
   let skipping = false;
@@ -80,12 +98,18 @@ export function createFrameReader(onText, onControl = () => {}) {
     onControl('close', code);
   };
 
-  const dropPayload = (offset, length) => {
+  const dropPayload = (
+    offset,
+    length
+  ) => {
     buffer = buffer.subarray(offset + length);
   };
 
   return (chunk) => {
-    buffer = Buffer.concat([buffer, chunk]);
+    buffer = Buffer.concat([
+      buffer,
+      chunk
+    ]);
     for (;;) {
       if (buffer.length < 2) return;
       const first = buffer[0];
@@ -128,34 +152,56 @@ export function createFrameReader(onText, onControl = () => {}) {
       const payload = Buffer.from(buffer.subarray(offset, offset + length));
       buffer = buffer.subarray(offset + length);
       if (mask) for (let i = 0; i < payload.length; i += 1) payload[i] ^= mask[i % 4];
-      if (opcode === 0x8) { onControl('close', 1000); return; }
-      if (opcode === 0x9) { onControl('ping'); continue; }
+      if (opcode === 0x8) {
+        onControl('close', 1000); return;
+      }
+      if (opcode === 0x9) {
+        onControl('ping'); continue;
+      }
       if (opcode === 0xa) continue;
       if (skipping) {
         if (opcode === 0x0 && fin) skipping = false;
         continue;
       }
       if (opcode === 0x0) {
-        if (!fragments) { fail(1002); return; }
+        if (!fragments) {
+          fail(1002); return;
+        }
         fragments.parts.push(payload);
         fragments.length += payload.length;
         if (fin) {
           const whole = Buffer.concat(fragments.parts);
           const was = fragments.opcode;
           fragments = null;
-          if (was === 0x2) { onControl('binary'); continue; }
+          if (was === 0x2) {
+            onControl('binary'); continue;
+          }
           onText(whole.toString('utf8'));
         }
         continue;
       }
-      if (fragments) { fail(1002); return; }
+      if (fragments) {
+        fail(1002); return;
+      }
       if (opcode === 0x2) {
-        if (!fin) { fragments = { opcode, parts: [payload], length: payload.length }; continue; }
+        if (!fin) {
+          fragments = {
+            opcode,
+            parts: [payload],
+            length: payload.length
+          }; continue;
+        }
         onControl('binary');
         continue;
       }
       if (opcode === 0x1) {
-        if (!fin) { fragments = { opcode, parts: [payload], length: payload.length }; continue; }
+        if (!fin) {
+          fragments = {
+            opcode,
+            parts: [payload],
+            length: payload.length
+          }; continue;
+        }
         onText(payload.toString('utf8'));
       }
     }
@@ -163,7 +209,10 @@ export function createFrameReader(onText, onControl = () => {}) {
 }
 
 export class BridgeSocket extends EventEmitter {
-  constructor(socket, request) {
+  constructor(
+    socket,
+    request
+  ) {
     super();
     this.id = randomUUID();
     this.socket = socket;
@@ -171,7 +220,10 @@ export class BridgeSocket extends EventEmitter {
     this.closed = false;
     this.read = createFrameReader(
       (text) => this.emit('text', text),
-      (kind, code) => {
+      (
+        kind,
+        code
+      ) => {
         if (kind === 'ping') this.raw(encodePong());
         else this.close(code ?? 1000);
       }
@@ -224,7 +276,10 @@ export function isWebSocketUpgrade(request) {
 // Node's own WebSocket client sends none, and so does any other non-browser process on this machine.
 // The server is bound to 127.0.0.1, so an absent Origin means "something local", which is the population this server exists for.
 
-export function isOriginAllowed(origin, allowed) {
+export function isOriginAllowed(
+  origin,
+  allowed
+) {
   if (!origin) return true;
   const host = hostOf(origin);
   if (host === null) return false;

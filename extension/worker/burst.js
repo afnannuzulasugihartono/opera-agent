@@ -13,25 +13,50 @@ import {
   normalizeError,
 } from '../lib/protocol.js';
 import { releaseDebuggerSession } from '../lib/debugger-session.js';
-import { resolveTabId, contentCall } from './tab-content.js';
-import { executionMode, burstStepParams, notReadyError } from './action-focus.js';
+import {
+  resolveTabId,
+  contentCall
+} from './tab-content.js';
+import {
+  executionMode,
+  burstStepParams,
+  notReadyError
+} from './action-focus.js';
 import { dispatch } from '../background.js';
 
 const MAX_BURST_RESULT_BYTES = 256 * 1024;
 
 function burstResultSize(results) {
-  try { return new TextEncoder().encode(JSON.stringify(results)).byteLength; } catch (error) { log.debug('BURST_RESULT_SIZE_FAILED', error?.message || String(error)); return Number.POSITIVE_INFINITY; }
+  try {
+    return new TextEncoder().encode(JSON.stringify(results)).byteLength;
+  } catch (error) {
+    log.debug('BURST_RESULT_SIZE_FAILED', error?.message || String(error)); return Number.POSITIVE_INFINITY;
+  }
 }
 
-export async function runBurst(params, outerContext = {}) {
+export async function runBurst(
+  params,
+  outerContext = {}
+) {
   const tabId = await resolveTabId(params);
   const mode = executionMode(params);
   const startedAt = performance.now();
   const deadline = Math.min(outerContext.deadline || Date.now() + BURST_MAX_TIMEOUT_MS, Date.now() + BURST_MAX_TIMEOUT_MS);
-  const context = { ...outerContext, deadline, debuggerSession: { tabId, attached: false } };
+  const context = {
+    ...outerContext,
+    deadline,
+    debuggerSession: {
+      tabId,
+      attached: false
+    }
+  };
   const results = [];
 
-  const stepFailure = (index, step, error) => ({
+  const stepFailure = (
+    index,
+    step,
+    error
+  ) => ({
     ok: false,
     tabId,
     completedSteps: index,
@@ -62,7 +87,10 @@ export async function runBurst(params, outerContext = {}) {
           completedSteps: results.length,
           failedAt: index,
           executionMode: mode,
-          error: { code: 'BURST_TIMEOUT', message: 'Burst timeout before this step; completed steps may have taken effect.' },
+          error: {
+            code: 'BURST_TIMEOUT',
+            message: 'Burst timeout before this step; completed steps may have taken effect.'
+          },
           results,
           timingMs: Math.round((performance.now() - startedAt) * 100) / 100
         };
@@ -84,18 +112,35 @@ export async function runBurst(params, outerContext = {}) {
       }
       try {
         const result = step.action === 'file'
-          ? await contentCall(stepTabId, 'page.set_files', { filename: step.filename, data: step.data })
+          ? await contentCall(stepTabId, 'page.set_files', {
+            filename: step.filename,
+            data: step.data
+          })
           : await dispatch(method, burstStepParams(step, stepTabId, remainingMs, mode, results), context);
         if ((step.action === 'click' || step.action === 'fill') && step.refFromStep !== undefined && step.refFromStep !== null
           && result && typeof result === 'object' && result.ok === true) {
           result.resolvedFrom = `step:${step.refFromStep}`;
         }
         if (step.action === 'wait' && result?.ok === false) throw new Error(String(result.error || 'wait_for timeout'));
-        const entry = { index, action: step.action, tabId: stepTabId, ok: true, timingMs: Math.round((performance.now() - stepStartedAt) * 100) / 100, result };
+        const entry = {
+          index,
+          action: step.action,
+          tabId: stepTabId,
+          ok: true,
+          timingMs: Math.round((performance.now() - stepStartedAt) * 100) / 100,
+          result
+        };
         if (entry.tabId !== tabId) entry.switchedTab = true;
-        if (burstResultSize([...results, entry]) > MAX_BURST_RESULT_BYTES) throw new Error(`Burst result exceeds ${MAX_BURST_RESULT_BYTES} bytes.`);
+        if (burstResultSize([
+          ...results,
+          entry
+        ]) > MAX_BURST_RESULT_BYTES) throw new Error(`Burst result exceeds ${MAX_BURST_RESULT_BYTES} bytes.`);
         results.push(entry);
-        if (typeof context.onStep === 'function') context.onStep({ index, action: step.action, timingMs: entry.timingMs });
+        if (typeof context.onStep === 'function') context.onStep({
+          index,
+          action: step.action,
+          timingMs: entry.timingMs
+        });
       } catch (error) {
         let burstError = normalizeError(error);
         if (error && error.code === 'TARGET_NOT_READY') {

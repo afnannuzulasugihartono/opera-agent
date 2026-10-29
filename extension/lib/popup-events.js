@@ -12,22 +12,38 @@
 
 export const POPUP_LOG_LIMIT = 8;
 
-export function recordPopup(log, tab, atMs, limit = POPUP_LOG_LIMIT) {
+export function recordPopup(
+  log,
+  tab,
+  atMs,
+  limit = POPUP_LOG_LIMIT
+) {
   if (!log || !tab || tab.openerTabId === undefined || tab.openerTabId === null) return;
   const opener = Number(tab.openerTabId);
   const list = log.get(opener) || [];
-  list.push({ tabId: tab.id, url: String(tab.pendingUrl || tab.url || ''), at: Number(atMs) });
+  list.push({
+    tabId: tab.id,
+    url: String(tab.pendingUrl || tab.url || ''),
+    at: Number(atMs)
+  });
   while (list.length > limit) list.shift();
   log.set(opener, list);
 }
 
-export function popupsSince(log, tabId, sinceMs) {
+export function popupsSince(
+  log,
+  tabId,
+  sinceMs
+) {
   if (!log) return [];
   const list = log.get(Number(tabId)) || [];
   return list.filter((e) => Number.isFinite(Number(e.at)) && Number(e.at) >= Number(sinceMs));
 }
 
-export function resolvePopupOpener(inFlightTabId, tab) {
+export function resolvePopupOpener(
+  inFlightTabId,
+  tab
+) {
   if (!tab) return null;
   if (inFlightTabId != null) return Number(inFlightTabId);
   if (tab.openerTabId != null) return Number(tab.openerTabId);

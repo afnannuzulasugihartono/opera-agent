@@ -11,12 +11,17 @@ import {
 } from '../local/page-expressions.js';
 import { createPrimitives } from '../local/primitives.js';
 import { createWaits } from '../local/waits.js';
-import { recordingCdp, DOC_URL } from './helpers/local-page.mjs';
+import {
+  recordingCdp,
+  DOC_URL
+} from './helpers/local-page.mjs';
 
 test('settle watches the page from Node, so a hidden tab cannot clamp its timer', async () => {
   const cdp = recordingCdp();
   const slept = [];
-  const out = await createPrimitives(cdp, { sleep: async (ms) => { slept.push(ms); } }).settle();
+  const out = await createPrimitives(cdp, { sleep: async (ms) => {
+    slept.push(ms);
+  } }).settle();
 
   const calls = cdp.calls.filter((call) => call.method === 'Runtime.evaluate');
   const arm = calls.find((call) => call.params.expression.includes('opera-settle-arm'));
@@ -38,15 +43,28 @@ test('settle watches the page from Node, so a hidden tab cannot clamp its timer'
 
 test('settle stops at the cap when the page never goes quiet', async () => {
   const cdp = recordingCdp();
-  cdp.send = async (method, params = {}) => {
-    cdp.calls.push({ method, params });
+  cdp.send = async (
+    method,
+    params = {}
+  ) => {
+    cdp.calls.push({
+      method,
+      params
+    });
     if (params.expression.includes('opera-settle-read')) {
-      return { result: { value: { changes: 0, quietMs: 0, elapsedMs: 0, visibility: 'visible' } } };
+      return { result: { value: {
+        changes: 0,
+        quietMs: 0,
+        elapsedMs: 0,
+        visibility: 'visible'
+      } } };
     }
     return { result: { value: true } };
   };
   const slept = [];
-  const out = await createPrimitives(cdp, { sleep: async (ms) => { slept.push(ms); } }).settle();
+  const out = await createPrimitives(cdp, { sleep: async (ms) => {
+    slept.push(ms);
+  } }).settle();
 
   assert.equal(out.why, 'deadline');
   assert.equal(slept.length, SETTLE_MAX_MS / SETTLE_POLL_MS);
@@ -55,21 +73,40 @@ test('settle stops at the cap when the page never goes quiet', async () => {
 
 
 test('a text wait settles the page between checks instead of sleeping a fixed gap', async () => {
-  const texts = ['not yet', 'Heading is here'];
+  const texts = [
+    'not yet',
+    'Heading is here'
+  ];
   let ask = 0;
   const slept = [];
   const cdp = {
     calls: [],
-    send: async (method, params = {}) => {
-      cdp.calls.push({ method, params });
+    send: async (
+      method,
+      params = {}
+    ) => {
+      cdp.calls.push({
+        method,
+        params
+      });
       if (method === 'Runtime.evaluate' && String(params.expression).includes('document.title')) {
-        return { result: { value: { title: 't', url: 'u', text: texts[Math.min(ask++, texts.length - 1)], ready: 'complete' } } };
+        return { result: { value: {
+          title: 't',
+          url: 'u',
+          text: texts[Math.min(ask++, texts.length - 1)],
+          ready: 'complete'
+        } } };
       }
       if (method === 'Runtime.evaluate' && String(params.expression).includes('opera-settle-arm')) {
         return { result: { value: true } };
       }
       if (method === 'Runtime.evaluate' && String(params.expression).includes('opera-settle-read')) {
-        return { result: { value: { changes: 0, quietMs: 40, elapsedMs: 40, visibility: 'visible' } } };
+        return { result: { value: {
+          changes: 0,
+          quietMs: 40,
+          elapsedMs: 40,
+          visibility: 'visible'
+        } } };
       }
       if (method === 'Runtime.evaluate' && String(params.expression).includes('opera-settle-disarm')) {
         return { result: { value: true } };
@@ -77,9 +114,14 @@ test('a text wait settles the page between checks instead of sleeping a fixed ga
       return { result: {} };
     }
   };
-  const p = createPrimitives(cdp, { sleep: async (ms) => { slept.push(ms); } });
+  const p = createPrimitives(cdp, { sleep: async (ms) => {
+    slept.push(ms);
+  } });
 
-  const out = await p.waitForText('Heading', { timeoutMs: 200, intervalMs: 100 });
+  const out = await p.waitForText('Heading', {
+    timeoutMs: 200,
+    intervalMs: 100
+  });
 
   assert.equal(out.text, 'Heading is here');
   assert.ok(cdp.calls.some((call) => call.params?.expression?.includes('opera-settle-arm')), 'the wait waits on a mutation settle');
@@ -90,10 +132,26 @@ test('a text wait settles the page between checks instead of sleeping a fixed ga
 
 test('a row wait settles the page between checks instead of sleeping a fixed gap', async () => {
   const slept = [];
-  const cdp = rowsCdp([[], [{ role: 'menuitem', name: 'Upload', x: 1, y: 1, node: 0 }]]);
-  const p = createPrimitives(cdp, { sleep: async (ms) => { slept.push(ms); } });
+  const cdp = rowsCdp([
+    [],
+    [{
+      role: 'menuitem',
+      name: 'Upload',
+      x: 1,
+      y: 1,
+      node: 0
+    }]
+  ]);
+  const p = createPrimitives(cdp, { sleep: async (ms) => {
+    slept.push(ms);
+  } });
 
-  const out = await p.waitForRow({ role: 'menuitem', name: 'Upload', timeoutMs: 200, intervalMs: 100 });
+  const out = await p.waitForRow({
+    role: 'menuitem',
+    name: 'Upload',
+    timeoutMs: 200,
+    intervalMs: 100
+  });
 
   assert.equal(out.found, true);
   assert.ok(cdp.calls.some((call) => call.params?.expression?.includes('opera-settle-arm')), 'the wait waits on a mutation settle');
@@ -106,7 +164,9 @@ test('a read on a settled page takes two samples and says the text stood still',
   const cdp = recordingCdp();
   const slept = [];
 
-  const out = await createPrimitives(cdp, { sleep: async (ms) => { slept.push(ms); } }).read();
+  const out = await createPrimitives(cdp, { sleep: async (ms) => {
+    slept.push(ms);
+  } }).read();
 
   assert.equal(out.title, 't');
   assert.equal(out.url, 'u');
@@ -133,14 +193,30 @@ test('a read on a settled page takes two samples and says the text stood still',
 
 test('a read on a page still filling in says so, and answers with the later sample', async () => {
   const samples = [
-    { title: 'YouTube', url: 'https://www.youtube.com/', text: 'x'.repeat(871), ready: 'complete' },
-    { title: 'YouTube', url: 'https://www.youtube.com/', text: 'x'.repeat(8478), ready: 'complete' }
+    {
+      title: 'YouTube',
+      url: 'https://www.youtube.com/',
+      text: 'x'.repeat(871),
+      ready: 'complete'
+    },
+    {
+      title: 'YouTube',
+      url: 'https://www.youtube.com/',
+      text: 'x'.repeat(8478),
+      ready: 'complete'
+    }
   ];
   let ask = 0;
   const cdp = {
     calls: [],
-    send: async (method, params = {}) => {
-      cdp.calls.push({ method, params });
+    send: async (
+      method,
+      params = {}
+    ) => {
+      cdp.calls.push({
+        method,
+        params
+      });
       if (method === 'Runtime.evaluate' && String(params.expression).includes('document.title')) {
         return { result: { value: samples[Math.min(ask++, samples.length - 1)] } };
       }
@@ -148,7 +224,12 @@ test('a read on a page still filling in says so, and answers with the later samp
         return { result: { value: true } };
       }
       if (method === 'Runtime.evaluate' && String(params.expression).includes('opera-settle-read')) {
-        return { result: { value: { changes: 1, quietMs: 0, elapsedMs: 8, visibility: 'visible' } } };
+        return { result: { value: {
+          changes: 1,
+          quietMs: 0,
+          elapsedMs: 8,
+          visibility: 'visible'
+        } } };
       }
       if (method === 'Runtime.evaluate' && String(params.expression).includes('opera-settle-disarm')) {
         return { result: { value: true } };
@@ -177,43 +258,130 @@ test('a read on a page still filling in says so, and answers with the later samp
 
 test('a text wait on a canvas surface reaches past the chrome in the DOM', async () => {
   const CANVAS_PROBE = {
-    textInDom: { value: true, evidence: 1312 },
-    canvas: { value: true, evidence: 0.61 },
-    editable: { value: true, evidence: 'true' },
-    focused: { value: true, evidence: 'document.hasFocus() is true' }
+    textInDom: {
+      value: true,
+      evidence: 1312
+    },
+    canvas: {
+      value: true,
+      evidence: 0.61
+    },
+    editable: {
+      value: true,
+      evidence: 'true'
+    },
+    focused: {
+      value: true,
+      evidence: 'document.hasFocus() is true'
+    }
   };
-  const RICH_AX = ['First line', 'Second line', 'Third line', 'Fourth line', 'Fifth line', 'Sixth line', 'Seventh line', 'Eighth line', 'Ninth line', 'Tenth line'];
+  const RICH_AX = [
+    'First line',
+    'Second line',
+    'Third line',
+    'Fourth line',
+    'Fifth line',
+    'Sixth line',
+    'Seventh line',
+    'Eighth line',
+    'Ninth line',
+    'Tenth line'
+  ];
   const axTree = (texts) => {
     const nodes = [
-      { nodeId: 'root', parentId: undefined, childIds: ['chromeRoot', 'docRoot'], role: { value: 'RootWebArea' }, name: { value: '' } },
-      { nodeId: 'chromeRoot', parentId: 'root', childIds: [], role: { value: 'toolbar' }, name: { value: '' } },
-      { nodeId: 'docRoot', parentId: 'root', childIds: [], role: { value: 'generic' }, name: { value: '' } }
+      {
+        nodeId: 'root',
+        parentId: undefined,
+        childIds: [
+          'chromeRoot',
+          'docRoot'
+        ],
+        role: { value: 'RootWebArea' },
+        name: { value: '' }
+      },
+      {
+        nodeId: 'chromeRoot',
+        parentId: 'root',
+        childIds: [],
+        role: { value: 'toolbar' },
+        name: { value: '' }
+      },
+      {
+        nodeId: 'docRoot',
+        parentId: 'root',
+        childIds: [],
+        role: { value: 'generic' },
+        name: { value: '' }
+      }
     ];
-    texts.forEach((text, i) => nodes.push({ nodeId: `doc${i}`, parentId: 'docRoot', childIds: [], role: { value: 'InlineTextBox' }, name: { value: text } }));
+    texts.forEach((
+      text,
+      i
+    ) => nodes.push({
+      nodeId: `doc${i}`,
+      parentId: 'docRoot',
+      childIds: [],
+      role: { value: 'InlineTextBox' },
+      name: { value: text }
+    }));
     return { nodes };
   };
-  const chrome = ['Insert', 'Mode tampilan', 'Share', 'Video', 'Banner hidden', 'Caption', 'Screen reader support enabled', 'Terakhir disunting', 'Comment', 'Edit', 'Format', 'Tools', 'Extensions', 'Help', 'History'].join('\n');
+  const chrome = [
+    'Insert',
+    'Mode tampilan',
+    'Share',
+    'Video',
+    'Banner hidden',
+    'Caption',
+    'Screen reader support enabled',
+    'Terakhir disunting',
+    'Comment',
+    'Edit',
+    'Format',
+    'Tools',
+    'Extensions',
+    'Help',
+    'History'
+  ].join('\n');
   const cdp = {
     calls: [],
-    send: async (method, params = {}) => {
-      cdp.calls.push({ method, params });
+    send: async (
+      method,
+      params = {}
+    ) => {
+      cdp.calls.push({
+        method,
+        params
+      });
       const expression = String(params.expression ?? '');
       if (method === 'Runtime.evaluate' && expression.includes('window.innerHeight')) {
         return { result: { value: CANVAS_PROBE } };
       }
       if (method === 'Accessibility.getFullAXTree') return axTree(RICH_AX);
       if (method === 'Runtime.evaluate' && expression.includes('document.title')) {
-        return { result: { value: { title: 'Doc', url: DOC_URL, text: chrome } } };
+        return { result: { value: {
+          title: 'Doc',
+          url: DOC_URL,
+          text: chrome
+        } } };
       }
       if (method === 'Runtime.evaluate' && expression.includes('opera-settle-read')) {
-        return { result: { value: { changes: 1, quietMs: 40, elapsedMs: 40, visibility: 'visible' } } };
+        return { result: { value: {
+          changes: 1,
+          quietMs: 40,
+          elapsedMs: 40,
+          visibility: 'visible'
+        } } };
       }
       return { result: { value: null } };
     }
   };
   const p = createPrimitives(cdp, { sleep: async () => {} });
 
-  const out = await p.waitForText('Second line', { timeoutMs: 200, intervalMs: 10 });
+  const out = await p.waitForText('Second line', {
+    timeoutMs: 200,
+    intervalMs: 10
+  });
 
   assert.match(out.text, /Second line/, 'the wait ends on the words in the document');
   assert.ok(!out.text.includes('Mode tampilan'), 'and not on the chrome the DOM holds');
@@ -225,10 +393,21 @@ test('waitForMutation uses the page settle between reads instead of a fixed gap'
   const slept = [];
   const cdp = {
     calls: [],
-    send: async (method, params = {}) => {
-      cdp.calls.push({ method, params });
+    send: async (
+      method,
+      params = {}
+    ) => {
+      cdp.calls.push({
+        method,
+        params
+      });
       if (method === 'Runtime.evaluate' && String(params.expression).includes('opera-settle-arm')) return { result: { value: true } };
-      if (method === 'Runtime.evaluate' && String(params.expression).includes('opera-settle-read')) return { result: { value: { changes: 1, quietMs: 40, elapsedMs: 40, visibility: 'visible' } } };
+      if (method === 'Runtime.evaluate' && String(params.expression).includes('opera-settle-read')) return { result: { value: {
+        changes: 1,
+        quietMs: 40,
+        elapsedMs: 40,
+        visibility: 'visible'
+      } } };
       if (method === 'Runtime.evaluate' && String(params.expression).includes('opera-settle-disarm')) return { result: { value: true } };
       return { result: { value: { value: 'wait' } } };
     }
@@ -239,9 +418,14 @@ test('waitForMutation uses the page settle between reads instead of a fixed gap'
     if (asks < 2) return { value: 'wait' };
     return { value: 'go' };
   };
-  const p = createPrimitives(cdp, { sleep: async (ms) => { slept.push(ms); } });
+  const p = createPrimitives(cdp, { sleep: async (ms) => {
+    slept.push(ms);
+  } });
 
-  const out = await p.waitForMutation(read, (state) => state.value === 'go', { timeoutMs: 200, intervalMs: 100 });
+  const out = await p.waitForMutation(read, (state) => state.value === 'go', {
+    timeoutMs: 200,
+    intervalMs: 100
+  });
 
   assert.equal(out.value, 'go');
   assert.ok(slept.includes(SETTLE_POLL_MS), 'the wait waits on the page settle');
@@ -251,16 +435,30 @@ test('waitForMutation uses the page settle between reads instead of a fixed gap'
 
 test('createWaits assembles the settle and the shared waits in one place', () => {
   const methods = createWaits({
-    cdp: { send: async () => ({ result: { value: { quietMs: 40, changes: 0, visibility: 'visible' } } }) },
+    cdp: { send: async () => ({ result: { value: {
+      quietMs: 40,
+      changes: 0,
+      visibility: 'visible'
+    } } }) },
     sleep: async () => {},
     readState: async () => ({}),
     readRows: async () => [],
     read: async () => ({}),
-    primitives: { settle: async () => ({ why: 'quiet' }), evaluate: async () => 'complete' }
+    primitives: {
+      settle: async () => ({ why: 'quiet' }),
+      evaluate: async () => 'complete'
+    }
   });
 
   assert.deepEqual(Object.keys(methods).sort(),
-    ['settle', 'waitForIdle', 'waitForMutation', 'waitForRow', 'waitForStill', 'waitForText']);
+    [
+      'settle',
+      'waitForIdle',
+      'waitForMutation',
+      'waitForRow',
+      'waitForStill',
+      'waitForText'
+    ]);
 });
 
 
@@ -269,13 +467,24 @@ function rowsCdp(reads) {
   const calls = [];
   return {
     calls,
-    send: async (method, params = {}) => {
-      calls.push({ method, params });
+    send: async (
+      method,
+      params = {}
+    ) => {
+      calls.push({
+        method,
+        params
+      });
       if (method === 'Runtime.evaluate' && String(params.expression).includes('opera-settle-arm')) {
         return { result: { value: true } };
       }
       if (method === 'Runtime.evaluate' && String(params.expression).includes('opera-settle-read')) {
-        return { result: { value: { changes: 0, quietMs: 40, elapsedMs: 40, visibility: 'visible' } } };
+        return { result: { value: {
+          changes: 0,
+          quietMs: 40,
+          elapsedMs: 40,
+          visibility: 'visible'
+        } } };
       }
       if (method === 'Runtime.evaluate' && String(params.expression).includes('opera-settle-disarm')) {
         return { result: { value: true } };
@@ -288,10 +497,23 @@ function rowsCdp(reads) {
 
 
 test('a row wait ends on the first read that has the row', async () => {
-  const cdp = rowsCdp([[], [], [{ role: 'menuitem', name: 'Upload from computer', x: 5, y: 6, node: 0 }]]);
+  const cdp = rowsCdp([
+    [],
+    [],
+    [{
+      role: 'menuitem',
+      name: 'Upload from computer',
+      x: 5,
+      y: 6,
+      node: 0
+    }]
+  ]);
   const p = createPrimitives(cdp, { sleep: async () => {} });
 
-  const out = await p.waitForRow({ role: 'menuitem', name: 'Upload from computer' });
+  const out = await p.waitForRow({
+    role: 'menuitem',
+    name: 'Upload from computer'
+  });
 
   assert.equal(out.found, true);
   assert.equal(out.checks, 3, 'it stopped looking the moment the row was there');
@@ -300,10 +522,23 @@ test('a row wait ends on the first read that has the row', async () => {
 
 
 test('a row wait can wait for a row to go away', async () => {
-  const cdp = rowsCdp([[{ role: 'menuitem', name: 'Upload', x: 1, y: 1, node: 0 }], []]);
+  const cdp = rowsCdp([
+    [{
+      role: 'menuitem',
+      name: 'Upload',
+      x: 1,
+      y: 1,
+      node: 0
+    }],
+    []
+  ]);
   const p = createPrimitives(cdp, { sleep: async () => {} });
 
-  const out = await p.waitForRow({ role: 'menuitem', name: 'Upload', absent: true });
+  const out = await p.waitForRow({
+    role: 'menuitem',
+    name: 'Upload',
+    absent: true
+  });
 
   assert.equal(out.found, true, 'gone is what was asked for');
   assert.equal(out.row, null);
@@ -311,11 +546,27 @@ test('a row wait can wait for a row to go away', async () => {
 
 
 test('a row wait that runs out says so and hands back the page', async () => {
-  const cdp = rowsCdp([[{ role: 'menuitem', name: 'Other', x: 1, y: 1, node: 0 }]]);
-  const p = createPrimitives(cdp, { sleep: async (ms) => { clock += ms; }, now: () => clock });
+  const cdp = rowsCdp([[{
+    role: 'menuitem',
+    name: 'Other',
+    x: 1,
+    y: 1,
+    node: 0
+  }]]);
+  const p = createPrimitives(cdp, {
+    sleep: async (ms) => {
+      clock += ms;
+    },
+    now: () => clock
+  });
 
   let clock = 0;
-  const result = await p.waitForRow({ role: 'menuitem', name: 'Upload', timeoutMs: 200, intervalMs: 100 });
+  const result = await p.waitForRow({
+    role: 'menuitem',
+    name: 'Upload',
+    timeoutMs: 200,
+    intervalMs: 100
+  });
 
   assert.equal(result.found, false);
   assert.equal(result.row, null);
@@ -324,12 +575,34 @@ test('a row wait that runs out says so and hands back the page', async () => {
 
 
 test('stillness ends on two identical reads and names how long it took', async () => {
-  const still = [{ role: 'menuitem', name: 'Image', x: 3, y: 4, node: 0 }];
-  const cdp = rowsCdp([[{ role: 'menuitem', name: 'Image', x: 3, y: 4, node: 0 }], still, still]);
+  const still = [{
+    role: 'menuitem',
+    name: 'Image',
+    x: 3,
+    y: 4,
+    node: 0
+  }];
+  const cdp = rowsCdp([
+    [{
+      role: 'menuitem',
+      name: 'Image',
+      x: 3,
+      y: 4,
+      node: 0
+    }],
+    still,
+    still
+  ]);
   const slept = [];
-  const p = createPrimitives(cdp, { sleep: async (ms) => { slept.push(ms); } });
+  const p = createPrimitives(cdp, { sleep: async (ms) => {
+    slept.push(ms);
+  } });
 
-  const out = await p.waitForStill({ quietMs: 0, intervalMs: 1000, timeoutMs: 5000 });
+  const out = await p.waitForStill({
+    quietMs: 0,
+    intervalMs: 1000,
+    timeoutMs: 5000
+  });
 
   assert.equal(out.still, true);
   assert.equal(out.settled, true, 'the wait already settled, so the page look does not pay twice');
@@ -346,28 +619,51 @@ test('a page that never settles says so instead of pretending', async () => {
   let tick = 0;
   const cdp = {
     calls: [],
-    send: async (method, params = {}) => {
-      cdp.calls.push({ method, params });
+    send: async (
+      method,
+      params = {}
+    ) => {
+      cdp.calls.push({
+        method,
+        params
+      });
       if (method === 'Runtime.evaluate' && String(params.expression).includes('opera-settle-arm')) {
         return { result: { value: true } };
       }
       if (method === 'Runtime.evaluate' && String(params.expression).includes('opera-settle-read')) {
-        return { result: { value: { changes: 1, quietMs: 0, elapsedMs: 8, visibility: 'visible' } } };
+        return { result: { value: {
+          changes: 1,
+          quietMs: 0,
+          elapsedMs: 8,
+          visibility: 'visible'
+        } } };
       }
       if (method === 'Runtime.evaluate' && String(params.expression).includes('opera-settle-disarm')) {
         return { result: { value: true } };
       }
       tick += 1;
-      return { result: { value: [{ role: 'menuitem', name: 'Image', x: tick, y: 4, node: 0 }] } };
+      return { result: { value: [{
+        role: 'menuitem',
+        name: 'Image',
+        x: tick,
+        y: 4,
+        node: 0
+      }] } };
     }
   };
   let at = 1000;
   const p = createPrimitives(cdp, {
-    sleep: async (ms) => { at += ms; },
+    sleep: async (ms) => {
+      at += ms;
+    },
     now: () => at
   });
 
-  const out = await p.waitForStill({ quietMs: 50, intervalMs: 10, timeoutMs: 1000 });
+  const out = await p.waitForStill({
+    quietMs: 50,
+    intervalMs: 10,
+    timeoutMs: 1000
+  });
 
   assert.equal(out.still, false);
   assert.ok(out.checks >= 5, `a page moving every read is not still (read ${out.checks} times)`);
@@ -375,10 +671,20 @@ test('a page that never settles says so instead of pretending', async () => {
 
 
 test('stillness watches the rows an agent acts on, not the whole document', async () => {
-  const cdp = rowsCdp([[{ role: 'menuitem', name: 'Image', x: 3, y: 4, node: 0 }]]);
+  const cdp = rowsCdp([[{
+    role: 'menuitem',
+    name: 'Image',
+    x: 3,
+    y: 4,
+    node: 0
+  }]]);
   const p = createPrimitives(cdp, { sleep: async () => {} });
 
-  await p.waitForStill({ quietMs: 0, intervalMs: 1, timeoutMs: 2000 });
+  await p.waitForStill({
+    quietMs: 0,
+    intervalMs: 1,
+    timeoutMs: 2000
+  });
 
   const asked = cdp.calls.find((c) => c.method === 'Runtime.evaluate');
   assert.match(asked.params.expression, /__LIMIT__|getBoundingClientRect/, 'the read is the snapshot the agent already uses');

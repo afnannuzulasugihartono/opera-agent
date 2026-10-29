@@ -6,7 +6,15 @@
 import { log } from '../lib/log.js';
 import { DEFAULT_BRIDGE_URL } from '../lib/endpoints.js';
 
-const STORAGE_KEYS = ['paired', 'deviceName', 'deviceToken', 'bridgeUrl', 'deviceId', 'logLevel', 'listenSession'];
+const STORAGE_KEYS = [
+  'paired',
+  'deviceName',
+  'deviceToken',
+  'bridgeUrl',
+  'deviceId',
+  'logLevel',
+  'listenSession'
+];
 
 export const connectionState = {
   status: 'starting',
@@ -52,7 +60,11 @@ export async function getConfig() {
   const cfg = await chrome.storage.local.get(STORAGE_KEYS);
 
   try {
-    globalThis.OperaAgentLog?.configure?.({ level: ['debug', 'warn', 'error'].includes(cfg.logLevel) ? cfg.logLevel : 'warn' });
+    globalThis.OperaAgentLog?.configure?.({ level: [
+      'debug',
+      'warn',
+      'error'
+    ].includes(cfg.logLevel) ? cfg.logLevel : 'warn' });
   } catch (error) {
     globalThis.OperaAgentLog?.debug?.('LOG_CONFIGURE_FAILED', error?.message || String(error));
   }
@@ -62,12 +74,15 @@ export async function getConfig() {
     deviceToken: String(cfg.deviceToken || ''),
     deviceId: String(cfg.deviceId || ''),
     bridgeUrl: String(cfg.bridgeUrl || DEFAULT_BRIDGE_URL),
-    logLevel: ['debug', 'warn', 'error'].includes(cfg.logLevel) ? cfg.logLevel : 'warn'
+    logLevel: [
+      'debug',
+      'warn',
+      'error'
+    ].includes(cfg.logLevel) ? cfg.logLevel : 'warn'
   };
 }
 
 export async function setState(patch) {
-
   Object.assign(connectionState, patch);
   try {
     await chrome.storage.local.set({ connectionState });

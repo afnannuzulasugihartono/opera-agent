@@ -24,7 +24,6 @@ const CRX = 'https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-u
 const escapeRe = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 test('the hub opens with one giant door to the merged files page', () => {
-
   const curl = /curl\.exe -sI (\S+) \|/.exec(berkas)[1];
   assert.equal(ZIP, curl, 'the verification command reads the URL the cards offer');
 
@@ -43,11 +42,28 @@ test('the also-available row names the other doors without leaving the page', ()
 });
 
 test('every merged card names its own extensions surface and the archive requirement', () => {
-
   const cards = [...berkas.matchAll(/<article class="browser" data-browser="(\w+)">([\s\S]*?)<\/article>/g)];
-  assert.deepEqual(cards.map((m) => m[1]), ['chrome', 'edge', 'brave', 'opera', 'vivaldi']);
-  const names = { chrome: 'Chrome', edge: 'Edge', brave: 'Brave', opera: 'Opera', vivaldi: 'Vivaldi' };
-  const surfaces = { chrome: 'chrome://extensions', edge: 'edge://extensions', brave: 'brave://extensions', opera: 'opera://extensions', vivaldi: 'opera://extensions' };
+  assert.deepEqual(cards.map((m) => m[1]), [
+    'chrome',
+    'edge',
+    'brave',
+    'opera',
+    'vivaldi'
+  ]);
+  const names = {
+    chrome: 'Chrome',
+    edge: 'Edge',
+    brave: 'Brave',
+    opera: 'Opera',
+    vivaldi: 'Vivaldi'
+  };
+  const surfaces = {
+    chrome: 'chrome://extensions',
+    edge: 'edge://extensions',
+    brave: 'brave://extensions',
+    opera: 'opera://extensions',
+    vivaldi: 'opera://extensions'
+  };
   for (const [, key, body] of cards) {
     assert.ok(body.includes(`<h3>${names[key]}</h3>`), `${key} names itself`);
     assert.ok(body.includes('<span class="glyph"'), `${key} carries a text glyph, not an image asset`);
@@ -62,9 +78,14 @@ test('every merged card names its own extensions surface and the archive require
 
 test('every merged card keeps the enterprise frame on its signed file', () => {
   const cards = [...berkas.matchAll(/<article class="browser" data-browser="(\w+)">([\s\S]*?)<\/article>/g)];
-  assert.deepEqual(cards.map((m) => m[1]), ['chrome', 'edge', 'brave', 'opera', 'vivaldi']);
+  assert.deepEqual(cards.map((m) => m[1]), [
+    'chrome',
+    'edge',
+    'brave',
+    'opera',
+    'vivaldi'
+  ]);
   for (const [, key, body] of cards) {
-
     const more = /<details class="more">([\s\S]*?)<\/details>/.exec(body);
     assert.ok(more, `${key} keeps a closed list for its other downloads`);
     assert.match(more[1], new RegExp(`<a\\b[^>]*href="${escapeRe(CRX)}"[^>]*download[^>]*>Unduh \\.crx</a>`), `${key} offers the signed file inside it`);
@@ -88,7 +109,6 @@ test('the merged detection marks the matching card and phones nowhere', () => {
 });
 
 test('the merged script is named by a hash on both hosts', () => {
-
   const vercel = JSON.parse(read('vercel.json'));
   const csp = vercel.headers.find((h) => h.source === '/(.*)').headers
     .find((h) => h.key === 'Content-Security-Policy').value;

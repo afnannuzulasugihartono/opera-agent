@@ -39,8 +39,16 @@
 // The driver does not read pixels and does not pretend to: naming the one tool that returns a picture lets the caller decide, rather than handing back an empty string that looks like an empty page.
 
 import { SELECTION_STATE_EXPRESSION } from './page-expressions.js';
-import { probeSurface, measureAx, buildProfile, describeProfile } from './surface-profile.js';
-import { createCaretGuard, gateRead } from './caret-guard.js';
+import {
+  probeSurface,
+  measureAx,
+  buildProfile,
+  describeProfile
+} from './surface-profile.js';
+import {
+  createCaretGuard,
+  gateRead
+} from './caret-guard.js';
 import {
   HARM_NONE,
   STRATEGY_AX,
@@ -71,7 +79,11 @@ const SETTLED_WHY_COPY = 'the text came from a selection copy; a second copy wou
 const EMPTY_COPY_WHY = 'the selection answered no text, which is not the same as an empty document; the ladder continues to the picture';
 const NO_MARK_WHY = 'the caret could not be remembered, so the borrow was refused';
 
-export function createCanvasMethods({ cdp, primitives, readState }) {
+export function createCanvasMethods({
+  cdp,
+  primitives,
+  readState
+}) {
   // WHY THE COPY READS THE SELECTION AND NOT A SITE'S CLIPBOARD TRICK.
   // The expression this replaces found one site's hidden editable frame by name, asked it to fill itself on a copy event, and stripped the invisible characters that site inserts - which is per-site code, and it is gone.
   // What is left is the technique without the site: borrow the selection, then read it back from whichever frame holds it.
@@ -95,7 +107,10 @@ export function createCanvasMethods({ cdp, primitives, readState }) {
   // WHY THE REGION TEXT IS RETURNED EVEN WHEN THE TREE IS THIN.
   // The rich bar decides which read leads, not whether a text is worth returning.
   // On a page with no canvas the DOM has already answered nothing, so the tree is the only text there is; on a canvas page a thin region is the chrome around the picture, and returning it would name the menu as the document.
-  const readAxText = (ax, surface) => {
+  const readAxText = (
+    ax,
+    surface
+  ) => {
     const text = String(ax?.documentText || '');
     if (text.trim().length === 0) return null;
     if (ax.axRich === true || surface.canvas !== true) return text;
@@ -110,11 +125,20 @@ export function createCanvasMethods({ cdp, primitives, readState }) {
     const copied = await copySelection();
     await primitives.key('End').catch(() => null);
     const caret = await guard.verdict(mark);
-    return { text: copied ?? '', caret };
+    return {
+      text: copied ?? '',
+      caret
+    };
   };
 
   // The caret fields a read that never borrowed carries, and the ones a read that did carries, kept in one place so no answer can claim more than it measured.
-  const untouched = { caretMoved: false, caretRestored: true, viewRestored: true, caretWhy: '', viewWhy: '' };
+  const untouched = {
+    caretMoved: false,
+    caretRestored: true,
+    viewRestored: true,
+    caretWhy: '',
+    viewWhy: ''
+  };
   const afterBorrow = (borrow) => borrow === null
     ? untouched
     : {
@@ -129,16 +153,26 @@ export function createCanvasMethods({ cdp, primitives, readState }) {
     const allowCaretMove = options.allowCaretMove === true;
     const probe = await probeSurface({ evaluate: primitives.evaluate });
     const ax = probe.canvas?.value === true ? await axOf() : {};
-    const surface = buildProfile({ probe, ax });
+    const surface = buildProfile({
+      probe,
+      ax
+    });
     const ladder = readLadder(surface);
     const skipped = [];
     let borrow = null;
 
     for (const step of ladder) {
       if (step.harm !== HARM_NONE) {
-        const gate = gateRead({ harm: step.harm, allowCaretMove });
+        const gate = gateRead({
+          harm: step.harm,
+          allowCaretMove
+        });
         if (!gate.allowed) {
-          skipped.push({ strategy: step.strategy, harm: step.harm, why: gate.why });
+          skipped.push({
+            strategy: step.strategy,
+            harm: step.harm,
+            why: gate.why
+          });
           continue;
         }
       }
@@ -193,7 +227,10 @@ export function createCanvasMethods({ cdp, primitives, readState }) {
       if (step.strategy === STRATEGY_SELECT_ALL) {
         const answer = await guardedSelectAll(allowCaretMove);
         if (answer) {
-          borrow = { caret: answer.caret, text: answer.text };
+          borrow = {
+            caret: answer.caret,
+            text: answer.text
+          };
           if (answer.text.length > 0) {
             return {
               title: '',
@@ -210,10 +247,18 @@ export function createCanvasMethods({ cdp, primitives, readState }) {
               ...afterBorrow(borrow)
             };
           }
-          skipped.push({ strategy: step.strategy, harm: step.harm, why: EMPTY_COPY_WHY });
+          skipped.push({
+            strategy: step.strategy,
+            harm: step.harm,
+            why: EMPTY_COPY_WHY
+          });
           continue;
         }
-        skipped.push({ strategy: step.strategy, harm: step.harm, why: NO_MARK_WHY });
+        skipped.push({
+          strategy: step.strategy,
+          harm: step.harm,
+          why: NO_MARK_WHY
+        });
         continue;
       }
 
@@ -271,5 +316,8 @@ export function createCanvasMethods({ cdp, primitives, readState }) {
     };
   }
 
-  return { read, caretLine };
+  return {
+    read,
+    caretLine
+  };
 }

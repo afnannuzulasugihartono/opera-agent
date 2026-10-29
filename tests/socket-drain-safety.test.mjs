@@ -18,7 +18,7 @@ test('the drain skips an entry it cannot use instead of dereferencing it', () =>
   const drain = source.slice(source.indexOf('const drain = async ()'), source.indexOf('function connect()'));
   assert.match(drain, /const command = takeQueue\.shift\(\);\s*\n\s*if \(!command \|\| typeof command !== 'object'\) \{/,
     'a shifted entry is checked before any field of it is read');
-  assert.match(drain, /onState\(\{ status: 'skipped'/, 'the skip is reported, not swallowed');
+  assert.match(drain, /onState\(\{\s*status: 'skipped'/, 'the skip is reported, not swallowed');
   assert.match(drain, /unsent/, 'an entry that cannot be completed is named by id');
 });
 

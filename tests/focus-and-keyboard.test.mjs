@@ -28,22 +28,46 @@ import {
   resolveModifiers
 } from '../extension/lib/keyboard.js';
 
-const FOCUSED = { tabActive: true, windowFocused: true };
-const TAB_ONLY = { tabActive: true, windowFocused: false };
-const WINDOW_ONLY = { tabActive: false, windowFocused: true };
-const LOST = { tabActive: false, windowFocused: false };
+const FOCUSED = {
+  tabActive: true,
+  windowFocused: true
+};
+const TAB_ONLY = {
+  tabActive: true,
+  windowFocused: false
+};
+const WINDOW_ONLY = {
+  tabActive: false,
+  windowFocused: true
+};
+const LOST = {
+  tabActive: false,
+  windowFocused: false
+};
 
 test('a satisfied foreground sample dispatches on the first attempt with no added latency', () => {
-  const decision = decideFocusGate({ mode: 'foreground', sample: FOCUSED, attempt: 1 });
+  const decision = decideFocusGate({
+    mode: 'foreground',
+    sample: FOCUSED,
+    attempt: 1
+  });
   assert.equal(decision.outcome, 'dispatch');
   assert.equal(decision.recovered, false);
   assert.equal(decision.attempt, 1);
 });
 
 test('a lost-then-restored focus sample dispatches and reports the recovery', () => {
-  const first = decideFocusGate({ mode: 'foreground', sample: TAB_ONLY, attempt: 1 });
+  const first = decideFocusGate({
+    mode: 'foreground',
+    sample: TAB_ONLY,
+    attempt: 1
+  });
   assert.equal(first.outcome, 'retry');
-  const second = decideFocusGate({ mode: 'foreground', sample: FOCUSED, attempt: 2 });
+  const second = decideFocusGate({
+    mode: 'foreground',
+    sample: FOCUSED,
+    attempt: 2
+  });
   assert.equal(second.outcome, 'dispatch');
   assert.equal(second.recovered, true);
   assert.equal(second.attempt, 2);
@@ -52,7 +76,11 @@ test('a lost-then-restored focus sample dispatches and reports the recovery', ()
 test('a focus sample that never satisfies refuses on the final attempt and carries the observed state', () => {
   let decision = null;
   for (let attempt = 1; attempt <= FOCUS_GATE_ATTEMPTS; attempt += 1) {
-    decision = decideFocusGate({ mode: 'foreground', sample: LOST, attempt });
+    decision = decideFocusGate({
+      mode: 'foreground',
+      sample: LOST,
+      attempt
+    });
   }
   assert.equal(decision.outcome, 'refuse');
   assert.equal(decision.attempt, FOCUS_GATE_ATTEMPTS);
@@ -62,9 +90,16 @@ test('a focus sample that never satisfies refuses on the final attempt and carri
 test('the gate never exceeds its attempt budget', () => {
   const decisions = [];
   for (let attempt = 1; attempt <= 10; attempt += 1) {
-    decisions.push(decideFocusGate({ mode: 'foreground', sample: LOST, attempt }).outcome);
+    decisions.push(decideFocusGate({
+      mode: 'foreground',
+      sample: LOST,
+      attempt
+    }).outcome);
   }
-  assert.deepEqual(decisions.slice(0, FOCUS_GATE_ATTEMPTS - 1), ['retry', 'retry']);
+  assert.deepEqual(decisions.slice(0, FOCUS_GATE_ATTEMPTS - 1), [
+    'retry',
+    'retry'
+  ]);
   assert.equal(decisions[FOCUS_GATE_ATTEMPTS - 1], 'refuse');
   assert.ok(decisions.slice(FOCUS_GATE_ATTEMPTS).every((outcome) => outcome === 'refuse'));
 });
@@ -72,7 +107,11 @@ test('the gate never exceeds its attempt budget', () => {
 test('background mode dispatches immediately regardless of the observed focus sample', () => {
   for (const sample of [FOCUSED, LOST, TAB_ONLY, WINDOW_ONLY, null, undefined]) {
     assert.equal(focusSampleSatisfied('background', sample), true);
-    const decision = decideFocusGate({ mode: 'background', sample, attempt: 1 });
+    const decision = decideFocusGate({
+      mode: 'background',
+      sample,
+      attempt: 1
+    });
     assert.equal(decision.outcome, 'dispatch');
     assert.equal(decision.recovered, false);
   }
@@ -84,23 +123,75 @@ test('a partially focused state is never treated as satisfied', () => {
   assert.equal(focusSampleSatisfied('foreground', WINDOW_ONLY), false);
   assert.equal(focusSampleSatisfied('foreground', LOST), false);
   assert.equal(focusSampleSatisfied('foreground', null), false);
-  assert.equal(decideFocusGate({ mode: 'foreground', sample: null, attempt: 1 }).outcome, 'retry');
+  assert.equal(decideFocusGate({
+    mode: 'foreground',
+    sample: null,
+    attempt: 1
+  }).outcome, 'retry');
 });
 
 test('every previously allowlisted unmodified key resolves to the historical CDP payload', () => {
   const historical = {
-    Enter: { key: 'Enter', code: 'Enter', vk: 13 },
-    Tab: { key: 'Tab', code: 'Tab', vk: 9 },
-    Escape: { key: 'Escape', code: 'Escape', vk: 27 },
-    ArrowUp: { key: 'ArrowUp', code: 'ArrowUp', vk: 38 },
-    ArrowDown: { key: 'ArrowDown', code: 'ArrowDown', vk: 40 },
-    ArrowLeft: { key: 'ArrowLeft', code: 'ArrowLeft', vk: 37 },
-    ArrowRight: { key: 'ArrowRight', code: 'ArrowRight', vk: 39 },
-    Home: { key: 'Home', code: 'Home', vk: 36 },
-    End: { key: 'End', code: 'End', vk: 35 },
-    PageUp: { key: 'PageUp', code: 'PageUp', vk: 33 },
-    PageDown: { key: 'PageDown', code: 'PageDown', vk: 34 },
-    Space: { key: ' ', code: 'Space', vk: 32 }
+    Enter: {
+      key: 'Enter',
+      code: 'Enter',
+      vk: 13
+    },
+    Tab: {
+      key: 'Tab',
+      code: 'Tab',
+      vk: 9
+    },
+    Escape: {
+      key: 'Escape',
+      code: 'Escape',
+      vk: 27
+    },
+    ArrowUp: {
+      key: 'ArrowUp',
+      code: 'ArrowUp',
+      vk: 38
+    },
+    ArrowDown: {
+      key: 'ArrowDown',
+      code: 'ArrowDown',
+      vk: 40
+    },
+    ArrowLeft: {
+      key: 'ArrowLeft',
+      code: 'ArrowLeft',
+      vk: 37
+    },
+    ArrowRight: {
+      key: 'ArrowRight',
+      code: 'ArrowRight',
+      vk: 39
+    },
+    Home: {
+      key: 'Home',
+      code: 'Home',
+      vk: 36
+    },
+    End: {
+      key: 'End',
+      code: 'End',
+      vk: 35
+    },
+    PageUp: {
+      key: 'PageUp',
+      code: 'PageUp',
+      vk: 33
+    },
+    PageDown: {
+      key: 'PageDown',
+      code: 'PageDown',
+      vk: 34
+    },
+    Space: {
+      key: ' ',
+      code: 'Space',
+      vk: 32
+    }
   };
   for (const [name, expected] of Object.entries(historical)) {
     const chord = resolveChord(name);
@@ -114,12 +205,26 @@ test('every previously allowlisted unmodified key resolves to the historical CDP
 test('modifiers OR into the CDP bitmask and accept their common aliases', () => {
   assert.equal(resolveChord('a', ['control']).modifiers, MODIFIER_BITS.control);
   assert.equal(resolveChord('a', ['ctrl']).modifiers, MODIFIER_BITS.control);
-  assert.equal(resolveChord('v', ['control', 'shift']).modifiers, MODIFIER_BITS.control | MODIFIER_BITS.shift);
-  assert.equal(resolveChord('Enter', ['control', 'shift', 'alt', 'meta']).modifiers, 15);
+  assert.equal(resolveChord('v', [
+    'control',
+    'shift'
+  ]).modifiers, MODIFIER_BITS.control | MODIFIER_BITS.shift);
+  assert.equal(resolveChord('Enter', [
+    'control',
+    'shift',
+    'alt',
+    'meta'
+  ]).modifiers, 15);
   assert.deepEqual(resolveChord('a', ['control']).modifierNames, ['control']);
 
-  assert.deepEqual(resolveModifiers(['ctrl', 'control']).names, ['control']);
-  assert.equal(resolveModifiers(['ctrl', 'control']).mask, MODIFIER_BITS.control);
+  assert.deepEqual(resolveModifiers([
+    'ctrl',
+    'control'
+  ]).names, ['control']);
+  assert.equal(resolveModifiers([
+    'ctrl',
+    'control'
+  ]).mask, MODIFIER_BITS.control);
   assert.equal(resolveModifiers([]).mask, 0);
   assert.equal(resolveModifiers(undefined).mask, 0);
 });
@@ -128,21 +233,57 @@ test('modifiers OR into the CDP bitmask and accept their common aliases', () => 
 // An uppercase letter implies shift, so resolveChord('F', ['control', 'alt']) silently became Ctrl+Alt+Shift+F — a chord Docs ignores — while the caller meant the footnote shortcut Ctrl+Alt+F. Lowercase with explicit modifiers is the only honest shape.
 
 test('an uppercase letter with shiftless modifiers fails naming lowercase', () => {
-  assert.throws(() => resolveChord('F', ['control', 'alt']), /lowercase f/);
+  assert.throws(() => resolveChord('F', [
+    'control',
+    'alt'
+  ]), /lowercase f/);
   assert.throws(() => resolveChord('F', ['alt']), /lowercase f/);
-  assert.equal(resolveChord('f', ['control', 'alt']).modifiers, MODIFIER_BITS.control | MODIFIER_BITS.alt);
+  assert.equal(resolveChord('f', [
+    'control',
+    'alt'
+  ]).modifiers, MODIFIER_BITS.control | MODIFIER_BITS.alt);
   assert.equal(resolveChord('A').modifiers, MODIFIER_BITS.shift);
-  assert.equal(resolveChord('C', ['control', 'shift']).modifiers, MODIFIER_BITS.control | MODIFIER_BITS.shift);
+  assert.equal(resolveChord('C', [
+    'control',
+    'shift'
+  ]).modifiers, MODIFIER_BITS.control | MODIFIER_BITS.shift);
 });
 
 test('the chords an editor requires now resolve', () => {
   for (const [key, modifiers, expected] of [
-    ['a', ['control'], 2],
-    ['v', ['control'], 2],
-    ['a', ['meta'], 4],
-    ['z', ['control', 'shift'], 10],
-    ['Enter', ['shift'], 8],
-    ['ArrowDown', ['control'], 2]
+    [
+      'a',
+      ['control'],
+      2
+    ],
+    [
+      'v',
+      ['control'],
+      2
+    ],
+    [
+      'a',
+      ['meta'],
+      4
+    ],
+    [
+      'z',
+      [
+        'control',
+        'shift'
+      ],
+      10
+    ],
+    [
+      'Enter',
+      ['shift'],
+      8
+    ],
+    [
+      'ArrowDown',
+      ['control'],
+      2
+    ]
   ]) {
     const chord = resolveChord(key, modifiers);
     assert.equal(chord.modifiers, expected, `${key} + ${modifiers.join('+')}`);
@@ -165,7 +306,13 @@ test('unknown keys and unknown modifiers are rejected, never passed through', ()
     assert.throws(() => resolveChord(bad), /not allowlisted/i, `must reject ${JSON.stringify(bad)}`);
   }
   assert.throws(() => resolveChord('a', ['hyper']), /not allowlisted/i);
-  assert.throws(() => resolveChord('a', ['control', 'control', 'control', 'control', 'control']), /at most 4/i);
+  assert.throws(() => resolveChord('a', [
+    'control',
+    'control',
+    'control',
+    'control',
+    'control'
+  ]), /at most 4/i);
 });
 
 test('text is a bounded, chunked, separate path from a key', () => {
@@ -176,7 +323,11 @@ test('text is a bounded, chunked, separate path from a key', () => {
   assert.deepEqual(resolved.chunks, ['hello world']);
 
   const long = resolveKeyInput({ text: 'x'.repeat(9000) });
-  assert.deepEqual(long.chunks, ['x'.repeat(4000), 'x'.repeat(4000), 'x'.repeat(1000)]);
+  assert.deepEqual(long.chunks, [
+    'x'.repeat(4000),
+    'x'.repeat(4000),
+    'x'.repeat(1000)
+  ]);
   assert.equal(long.chunks.join('').length, 9000);
   assert.equal(long.chunks.length, 3);
 
@@ -189,8 +340,14 @@ test('text is a bounded, chunked, separate path from a key', () => {
 test('a key stream validates every event and carries its own bounds', () => {
   const events = resolveKeyStream([
     { key: 'ArrowDown' },
-    { key: 'a', modifiers: ['control'] },
-    { text: 'hi', gapMs: 500 }
+    {
+      key: 'a',
+      modifiers: ['control']
+    },
+    {
+      text: 'hi',
+      gapMs: 500
+    }
   ]);
 
   assert.equal(events.length, 3);
@@ -202,28 +359,49 @@ test('a key stream validates every event and carries its own bounds', () => {
 
   assert.throws(() => resolveKeyStream([]), /at least one event/);
   assert.throws(() => resolveKeyStream(new Array(101).fill({ key: 'a' })), /at most 100 events/);
-  assert.throws(() => resolveKeyStream([{ key: 'a', gapMs: 2001 }]), /between 0 and 2000/);
-  assert.throws(() => resolveKeyStream([{ key: 'a', gapMs: -1 }]), /between 0 and 2000/);
+  assert.throws(() => resolveKeyStream([{
+    key: 'a',
+    gapMs: 2001
+  }]), /between 0 and 2000/);
+  assert.throws(() => resolveKeyStream([{
+    key: 'a',
+    gapMs: -1
+  }]), /between 0 and 2000/);
   assert.throws(() => resolveKeyStream([null]), /must be an object/);
   assert.throws(() => resolveKeyStream([{ key: 'Nope' }]), /not allowlisted/i);
   assert.throws(
-    () => resolveKeyStream([{ text: 'x'.repeat(15000) }, { text: 'y'.repeat(6000) }]),
+    () => resolveKeyStream([
+      { text: 'x'.repeat(15000) },
+      { text: 'y'.repeat(6000) }
+    ]),
     /total at most 20000/
   );
 });
 
 test('chunking never loses or reorders characters', () => {
-  const value = Array.from({ length: 977 }, (_, index) => String.fromCharCode(33 + (index % 94))).join('');
+  const value = Array.from({ length: 977 }, (
+    _,
+    index
+  ) => String.fromCharCode(33 + (index % 94))).join('');
   assert.equal(chunkText(value, 128).join(''), value);
   assert.deepEqual(chunkText('', 128), []);
 });
 
 test('exactly one of key or text may be requested, and modifiers cannot ride along with text', () => {
-  assert.throws(() => resolveKeyInput({ key: 'a', text: 'b' }), /not both/i);
+  assert.throws(() => resolveKeyInput({
+    key: 'a',
+    text: 'b'
+  }), /not both/i);
   assert.throws(() => resolveKeyInput({}), /requires a key or text/i);
 
-  assert.equal(resolveKeyInput({ key: 'a', text: '' }).kind, 'chord');
-  assert.throws(() => resolveKeyInput({ text: 'abc', modifiers: ['control'] }), /does not accept modifiers/i);
+  assert.equal(resolveKeyInput({
+    key: 'a',
+    text: ''
+  }).kind, 'chord');
+  assert.throws(() => resolveKeyInput({
+    text: 'abc',
+    modifiers: ['control']
+  }), /does not accept modifiers/i);
   assert.equal(resolveKeyInput({ key: 'Enter' }).kind, 'chord');
 
   assert.throws(() => resolveKeyInput({ text: '' }), /requires a key or text/i);
@@ -244,7 +422,6 @@ test('R9: the shared key allowlist is the single source of truth for bursts and 
 });
 
 test('the synthetic path explains its narrower surface instead of a bare rejection', async () => {
-
   const source = contentSource();
   assert.doesNotMatch(source, /throw new Error\('Key is not allowlisted\.'\)/);
   assert.match(source, /Key is not allowlisted for the synthetic path/);

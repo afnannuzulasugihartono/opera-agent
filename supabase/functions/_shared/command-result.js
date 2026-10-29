@@ -11,9 +11,17 @@ function parts(error) {
   if (error && typeof error === 'object' && !Array.isArray(error)) {
     const code = typeof error.code === 'string' && error.code ? error.code : 'COMMAND_FAILED';
     const message = typeof error.message === 'string' && error.message ? error.message : String(code);
-    return { code, message, details: error };
+    return {
+      code,
+      message,
+      details: error
+    };
   }
-  return { code: 'COMMAND_FAILED', message: 'Workflow command failed.', details: null };
+  return {
+    code: 'COMMAND_FAILED',
+    message: 'Workflow command failed.',
+    details: null
+  };
 }
 
 export function commandFailure(result) {

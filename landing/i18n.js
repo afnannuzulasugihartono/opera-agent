@@ -9,8 +9,16 @@
   var KEY = 'oa-lang';
 
   var LANGS = [
-    { code: 'id', text: 'ID', name: 'Bahasa Indonesia' },
-    { code: 'en', text: 'EN', name: 'English' }
+    {
+      code: 'id',
+      text: 'ID',
+      name: 'Bahasa Indonesia'
+    },
+    {
+      code: 'en',
+      text: 'EN',
+      name: 'English'
+    }
   ];
 
   var CSS = '.lang{display:inline-flex;align-items:center;border:1px solid rgba(22,21,19,.14);border-radius:980px;padding:2px;white-space:nowrap}'
@@ -71,9 +79,7 @@
       style.setAttribute('data-oa-i18n', 'lang');
       style.textContent = CSS;
       head.appendChild(style);
-    } catch (error) {
-
-    }
+    } catch (error) {}
   }
 
   var originals = new Map();
@@ -110,7 +116,10 @@
     return originals.get(element);
   }
 
-  function attrOriginalOf(element, attr) {
+  function attrOriginalOf(
+    element,
+    attr
+  ) {
     var saved = attrOriginals.get(element);
 
     if (!saved) {
@@ -193,14 +202,15 @@
 
     try {
       localStorage.setItem(KEY, current);
-    } catch (error) {
-
-    }
+    } catch (error) {}
 
     apply();
   }
 
-  function t(key, fallback) {
+  function t(
+    key,
+    fallback
+  ) {
     var text = table()[key];
 
     if (typeof text === 'string' && text !== '') return text;
@@ -230,7 +240,11 @@
     wire();
   }
 
-  window.OperaAgentI18n = { t: t, setLang: setLang, getLang: getLang };
+  window.OperaAgentI18n = {
+    t: t,
+    setLang: setLang,
+    getLang: getLang
+  };
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);

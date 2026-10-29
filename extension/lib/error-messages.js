@@ -12,11 +12,26 @@
 // Source strings stay English because that is what the background throws; the shown strings are Indonesian because that is what the reader reads.
 
 const KNOWN = new Map([
-  ['Pairing failed.', 'Pairing gagal. Periksa kode lalu coba lagi.'],
-  ['Unable to update tab privacy.', 'Tab ini tidak bisa diperbarui. Muat ulang halaman lalu coba lagi.'],
-  ['Invalid pairing code.', 'Kode pairing itu tidak valid. Periksa kode lalu coba lagi.'],
-  ['Invalid tabId.', 'Tab ini tidak bisa diperbarui. Muat ulang halaman lalu coba lagi.'],
-  ['Invalid bridge URL.', 'Alamat bridge tidak valid. Periksa alamat lalu coba lagi.'],
+  [
+    'Pairing failed.',
+    'Pairing gagal. Periksa kode lalu coba lagi.'
+  ],
+  [
+    'Unable to update tab privacy.',
+    'Tab ini tidak bisa diperbarui. Muat ulang halaman lalu coba lagi.'
+  ],
+  [
+    'Invalid pairing code.',
+    'Kode pairing itu tidak valid. Periksa kode lalu coba lagi.'
+  ],
+  [
+    'Invalid tabId.',
+    'Tab ini tidak bisa diperbarui. Muat ulang halaman lalu coba lagi.'
+  ],
+  [
+    'Invalid bridge URL.',
+    'Alamat bridge tidak valid. Periksa alamat lalu coba lagi.'
+  ],
   [
     'Enter an https:// URL or leave empty to reset.',
     'Masukkan alamat https://, atau kosongkan untuk memakai bridge bawaan.',

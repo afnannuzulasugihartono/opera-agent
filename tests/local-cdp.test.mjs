@@ -26,14 +26,26 @@ function fakeTransport() {
   let closed = false;
   return {
     sent,
-    get closed() { return closed; },
-    transport: {
-      send(raw) { sent.push(JSON.parse(raw)); },
-      onMessage(fn) { onMessage = fn; },
-      close() { closed = true; }
+    get closed() {
+      return closed;
     },
-    reply(message) { onMessage(JSON.stringify(message)); },
-    last() { return sent[sent.length - 1]; }
+    transport: {
+      send(raw) {
+        sent.push(JSON.parse(raw));
+      },
+      onMessage(fn) {
+        onMessage = fn;
+      },
+      close() {
+        closed = true;
+      }
+    },
+    reply(message) {
+      onMessage(JSON.stringify(message));
+    },
+    last() {
+      return sent[sent.length - 1];
+    }
   };
 }
 
@@ -46,7 +58,10 @@ test('a send carries the id and method, and resolves with the matching result', 
   assert.equal(h.last().params.url, 'https://example.com/');
   assert.equal(typeof h.last().id, 'number');
 
-  h.reply({ id: h.last().id, result: { frameId: 'F1' } });
+  h.reply({
+    id: h.last().id,
+    result: { frameId: 'F1' }
+  });
   assert.deepEqual(await pending, { frameId: 'F1' });
 });
 
@@ -59,8 +74,14 @@ test('concurrent sends resolve by id, not by arrival order', async () => {
   const ids = h.sent.map((m) => m.id);
   assert.notEqual(ids[0], ids[1], 'ids must be unique or replies cannot be matched');
 
-  h.reply({ id: ids[1], result: { which: 'second' } });
-  h.reply({ id: ids[0], result: { which: 'first' } });
+  h.reply({
+    id: ids[1],
+    result: { which: 'second' }
+  });
+  h.reply({
+    id: ids[0],
+    result: { which: 'first' }
+  });
 
   assert.deepEqual(await second, { which: 'second' });
   assert.deepEqual(await first, { which: 'first' });
@@ -71,7 +92,13 @@ test('a CDP error rejects with the code and message, so a caller can tell it fro
   const cdp = createCdpClient(h.transport);
 
   const pending = cdp.send('Page.navigate', { url: 'about:blank' });
-  h.reply({ id: h.last().id, error: { code: -32602, message: 'Invalid parameters' } });
+  h.reply({
+    id: h.last().id,
+    error: {
+      code: -32602,
+      message: 'Invalid parameters'
+    }
+  });
 
   await assert.rejects(pending, (error) => {
     assert.equal(error.code, -32602);
@@ -88,8 +115,14 @@ test('an event reaches a registered handler and is not mistaken for a reply', as
   cdp.on('Page.loadEventFired', (params) => seen.push(params));
 
   const pending = cdp.send('Page.enable');
-  h.reply({ method: 'Page.loadEventFired', params: { timestamp: 1 } });
-  h.reply({ id: h.last().id, result: {} });
+  h.reply({
+    method: 'Page.loadEventFired',
+    params: { timestamp: 1 }
+  });
+  h.reply({
+    id: h.last().id,
+    result: {}
+  });
   await pending;
 
   assert.deepEqual(seen, [{ timestamp: 1 }]);
@@ -100,8 +133,14 @@ test('a reply to an unknown id is ignored rather than throwing', async () => {
   const cdp = createCdpClient(h.transport);
 
   const pending = cdp.send('Page.enable');
-  h.reply({ id: 999999, result: { stray: true } });
-  h.reply({ id: h.last().id, result: { ok: true } });
+  h.reply({
+    id: 999999,
+    result: { stray: true }
+  });
+  h.reply({
+    id: h.last().id,
+    result: { ok: true }
+  });
 
   assert.deepEqual(await pending, { ok: true });
 });
@@ -114,7 +153,10 @@ test('ids are unique across many sends, because the browser keys replies on them
   const ids = h.sent.map((m) => m.id);
   assert.equal(new Set(ids).size, ids.length, 'ids repeated');
 
-  for (const message of h.sent) h.reply({ id: message.id, result: {} });
+  for (const message of h.sent) h.reply({
+    id: message.id,
+    result: {}
+  });
 });
 
 test('close detaches handlers and closes the transport exactly once', async () => {

@@ -33,7 +33,6 @@ function enumMembers(name) {
     if (trimmed.startsWith('"')) {
       members.push(trimmed.replace(/^"|"$/g, ''));
     } else {
-
       const source = trimmed.replace(/^\.\.\./, '');
       const literal = mcp.match(new RegExp(`const ${source} = "([^"]*)"`))?.[1];
       assert.ok(literal !== undefined, `${source} must be a declared string literal`);
@@ -81,7 +80,6 @@ test('the public text bound matches the runtime bound, on both entry points', ()
 });
 
 test('the runtime text chunking is documented by the constant it uses', async () => {
-
   const keyboard = await readFile(new URL('../extension/lib/keyboard.js', import.meta.url), 'utf8');
   assert.match(keyboard, new RegExp(`export const TEXT_CHUNK_CHARS = ${TEXT_CHUNK_CHARS};`));
   assert.match(keyboard, new RegExp(`size = TEXT_CHUNK_CHARS`));
@@ -89,7 +87,6 @@ test('the runtime text chunking is documented by the constant it uses', async ()
 });
 
 test('the public surface does not promise a key the runtime would reject', () => {
-
   for (const key of enumMembers('navigationKeySchema')) {
     assert.doesNotThrow(() => resolveChord(key), `public key ${key} must resolve at runtime`);
   }

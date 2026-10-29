@@ -31,16 +31,37 @@ const DEVICE = {
   lastSeenAt: new Date(Date.now() - 7_200_000).toISOString(),
   completedCommands: 8970,
   totalCommands: 9000,
-  commands: [{ method: 'tabs.list', status: 'completed' }]
+  commands: [{
+    method: 'tabs.list',
+    status: 'completed'
+  }]
 };
 const AUTHORIZATION = {
   authorization_id: 'abc123',
   redirect_uri: 'http://127.0.0.1:50365/callback',
-  client: { id: '53e484d7', name: 'opencode' },
+  client: {
+    id: '53e484d7',
+    name: 'opencode'
+  },
   scope: 'openid email'
 };
 
-const CONSENT_ELEMENTS = ['status', 'factsCard', 'signedOutCard', 'signInButton', 'clientName', 'factClient', 'factRedirect', 'redirectNote', 'scopeList', 'factUser', 'approveButton', 'denyButton', 'consentsCard', 'consentList'];
+const CONSENT_ELEMENTS = [
+  'status',
+  'factsCard',
+  'signedOutCard',
+  'signInButton',
+  'clientName',
+  'factClient',
+  'factRedirect',
+  'redirectNote',
+  'scopeList',
+  'factUser',
+  'approveButton',
+  'denyButton',
+  'consentsCard',
+  'consentList'
+];
 
 const HOME_ELEMENTS = {
   heroEyebrow: { textContent: 'Daftar terbuka \u00b7 Gratis dipakai' },
@@ -49,15 +70,20 @@ const HOME_ELEMENTS = {
   quickTiles: { hidden: true }
 };
 
-async function run(page, shape = {}) {
+async function run(
+  page,
+  shape = {}
+) {
   const {
     search = '?authorization_id=abc123',
-    stored = { 'opera-agent-access-token': TOKEN, 'opera-agent-refresh-token': REFRESH },
+    stored = {
+      'opera-agent-access-token': TOKEN,
+      'opera-agent-refresh-token': REFRESH
+    },
     accessOk = true,
     refreshStatus = 200,
     refreshFails = false,
     unreachable = false,
-
     extensionInstalled = false,
     devices = [DEVICE],
     authorization = AUTHORIZATION,
@@ -73,59 +99,132 @@ async function run(page, shape = {}) {
   const nodes = {};
   nodes.__bodyClasses = new Set();
   const element = (id) => (nodes[id] ||= {
-    id, textContent: '', innerHTML: '', className: '', value: '', hidden: true, href: '',
-    disabled: false, dataset: {}, children: [], querySelectorAll: () => [],
-    addEventListener() {}, querySelector: () => null, closest: () => null,
-
-    replaceChildren() { this.children.length = 0; },
-    append(child) { this.children.push(child); return child; }
+    id,
+    textContent: '',
+    innerHTML: '',
+    className: '',
+    value: '',
+    hidden: true,
+    href: '',
+    disabled: false,
+    dataset: {},
+    children: [],
+    querySelectorAll: () => [],
+    addEventListener() {},
+    querySelector: () => null,
+    closest: () => null,
+    replaceChildren() {
+      this.children.length = 0;
+    },
+    append(child) {
+      this.children.push(child); return child;
+    }
   });
 
-  const preCreated = new Set(['status', 'whoami', 'profileCard', 'avatar', 'profileName', 'profileMeta', 'profileProvider', 'factEmail', 'factProvider', 'factLastSignIn', 'factUserId', 'linkedProviders', 'deviceSummary', 'signOutButton', 'runButton', 'runStatus', 'pairButton', 'pairStatus', 'devices', 'sessionStatus', ...CONSENT_ELEMENTS]);
+  const preCreated = new Set([
+    'status',
+    'whoami',
+    'profileCard',
+    'avatar',
+    'profileName',
+    'profileMeta',
+    'profileProvider',
+    'factEmail',
+    'factProvider',
+    'factLastSignIn',
+    'factUserId',
+    'linkedProviders',
+    'deviceSummary',
+    'signOutButton',
+    'runButton',
+    'runStatus',
+    'pairButton',
+    'pairStatus',
+    'devices',
+    'sessionStatus',
+    ...CONSENT_ELEMENTS
+  ]);
   for (const id of preCreated) element(id);
 
   for (const [id, state] of Object.entries(HOME_ELEMENTS)) Object.assign(element(id), state);
 
   const context = vm.createContext({
-    console, Intl, Date, JSON, Math, Number, String, Array, Object, RegExp, Error,
-    URLSearchParams, encodeURIComponent, setTimeout,
-    location: { search, hash: '', pathname: `/${page}`, href: `https://opera-agent.vercel.app/${page}`, replace() {}, assign(url) { context.assigned = url; } },
+    console,
+    Intl,
+    Date,
+    JSON,
+    Math,
+    Number,
+    String,
+    Array,
+    Object,
+    RegExp,
+    Error,
+    URLSearchParams,
+    encodeURIComponent,
+    setTimeout,
+    location: {
+      search,
+      hash: '',
+      pathname: `/${page}`,
+      href: `https://opera-agent.vercel.app/${page}`,
+      replace() {},
+      assign(url) {
+        context.assigned = url;
+      }
+    },
     localStorage: {
       getItem: (key) => store[key] ?? null,
-      setItem: (key, value) => { store[key] = String(value); },
-      removeItem: (key) => { cleared.push(key); context.forgot = true; delete store[key]; }
+      setItem: (
+        key,
+        value
+      ) => {
+        store[key] = String(value);
+      },
+      removeItem: (key) => {
+        cleared.push(key); context.forgot = true; delete store[key];
+      }
     },
     navigator: { clipboard: { writeText: async () => {} } },
     document: {
-
       documentElement: {
         dataset: extensionInstalled ? { operaAgent: 'installed' } : {}
       },
-
       body: {
-
         classes: new Set(),
         classList: {
-          add(c) { nodes.__bodyClasses.add(c); },
-          remove(c) { nodes.__bodyClasses.delete(c); },
-          contains(c) { return nodes.__bodyClasses.has(c); }
+          add(c) {
+            nodes.__bodyClasses.add(c);
+          },
+          remove(c) {
+            nodes.__bodyClasses.delete(c);
+          },
+          contains(c) {
+            return nodes.__bodyClasses.has(c);
+          }
         }
       },
       getElementById: (id) => element(id),
       querySelectorAll: () => [],
-      createElement: (tag) => ({ tagName: String(tag).toUpperCase(), value: '', textContent: '' }),
-
+      createElement: (tag) => ({
+        tagName: String(tag).toUpperCase(),
+        value: '',
+        textContent: ''
+      }),
       querySelector: (sel) => element(`qs:${sel}`),
       addEventListener() {}
     },
     MutationObserver: class {
-      constructor(callback) { this.callback = callback; context.observers.push(this); }
+      constructor(callback) {
+        this.callback = callback; context.observers.push(this);
+      }
       observe() {}
       disconnect() {}
     },
-
     IntersectionObserver: class {
-      constructor() { this.cb = () => {}; }
+      constructor() {
+        this.cb = () => {};
+      }
       observe() {}
       disconnect() {}
     },
@@ -135,33 +234,98 @@ async function run(page, shape = {}) {
       if (unreachable) throw new TypeError('Failed to fetch');
       if (url.includes('/token?grant_type=refresh_token')) {
         if (refreshFails) throw new TypeError('Failed to fetch');
-        if (refreshStatus !== 200) return { ok: false, status: refreshStatus, json: async () => ({}) };
-        return { ok: true, status: 200, json: async () => ({ access_token: RENEWED, refresh_token: 'renewed-refresh-token' }) };
+        if (refreshStatus !== 200) return {
+          ok: false,
+          status: refreshStatus,
+          json: async () => ({})
+        };
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({
+            access_token: RENEWED,
+            refresh_token: 'renewed-refresh-token'
+          })
+        };
       }
       if (url.includes('/auth/v1/user')) {
-
         const usable = accessOk || store['opera-agent-access-token'] === RENEWED;
 
         const user = {
           email: EMAIL,
           id: 'u1',
-          app_metadata: { provider: 'email', providers: ['email', 'google'] },
-          user_metadata: { full_name: 'Afnan Nuzula Sugihartono', name: 'Afnan Nuzula Sugihartono', avatar_url: 'https://example.com/a.png' },
+          app_metadata: {
+            provider: 'email',
+            providers: [
+              'email',
+              'google'
+            ]
+          },
+          user_metadata: {
+            full_name: 'Afnan Nuzula Sugihartono',
+            name: 'Afnan Nuzula Sugihartono',
+            avatar_url: 'https://example.com/a.png'
+          },
           last_sign_in_at: new Date(Date.now() - 3_600_000).toISOString()
         };
-        return { ok: usable, status: usable ? 200 : 401, json: async () => (usable ? user : {}) };
+        return {
+          ok: usable,
+          status: usable ? 200 : 401,
+          json: async () => (usable ? user : {})
+        };
       }
       if (url.includes('/oauth/authorizations/') && url.endsWith('/consent')) {
-        return { ok: true, status: 200, json: async () => ({ redirect_url: `${DEVICE.redirectUri || 'http://127.0.0.1:1/callback'}?code=abc` }) };
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ redirect_url: `${DEVICE.redirectUri || 'http://127.0.0.1:1/callback'}?code=abc` })
+        };
       }
       if (url.includes('/oauth/authorizations/')) {
-        return { ok: true, status: 200, json: async () => ({ ...authorization, redirect_url: authorizationRedirect }) };
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({
+            ...authorization,
+            redirect_url: authorizationRedirect
+          })
+        };
       }
-      if (url.includes('opera_my_devices')) return { ok: true, status: 200, json: async () => ({ ok: true, devices }) };
-      if (url.includes('opera_run_on_my_device')) return { ok: true, status: 200, json: async () => ({ ok: true, status: 'completed' }) };
-      if (url.includes('opera_create_pairing_code')) return { ok: true, status: 200, json: async () => ({ ok: true, deviceName: 'opera', code: 'ABCD' }) };
-      if (url.includes('opera_revoke_my_device')) return { ok: true, status: 200, json: async () => ({ ok: true }) };
-      return { ok: false, status: 404, json: async () => ({}) };
+      if (url.includes('opera_my_devices')) return {
+        ok: true,
+        status: 200,
+        json: async () => ({
+          ok: true,
+          devices
+        })
+      };
+      if (url.includes('opera_run_on_my_device')) return {
+        ok: true,
+        status: 200,
+        json: async () => ({
+          ok: true,
+          status: 'completed'
+        })
+      };
+      if (url.includes('opera_create_pairing_code')) return {
+        ok: true,
+        status: 200,
+        json: async () => ({
+          ok: true,
+          deviceName: 'opera',
+          code: 'ABCD'
+        })
+      };
+      if (url.includes('opera_revoke_my_device')) return {
+        ok: true,
+        status: 200,
+        json: async () => ({ ok: true })
+      };
+      return {
+        ok: false,
+        status: 404,
+        json: async () => ({})
+      };
     }
   });
   context.globalThis = context;
@@ -171,13 +335,26 @@ async function run(page, shape = {}) {
   } finally {
     process.off('unhandledRejection', onRejection);
   }
-  return { nodes, store, cleared, rejected, context };
+  return {
+    nodes,
+    store,
+    cleared,
+    rejected,
+    context
+  };
 }
 
-const SIGNED_IN_PAGES = ['akun.html', 'dashboard.html', 'oauth/consent.html'];
+const SIGNED_IN_PAGES = [
+  'akun.html',
+  'dashboard.html',
+  'oauth/consent.html'
+];
 
 test('the dashboard renders a device card for a paired device', async () => {
-  const { nodes, rejected } = await run('dashboard.html');
+  const {
+    nodes,
+    rejected
+  } = await run('dashboard.html');
   assert.deepEqual(rejected, [], `the module rejected: ${rejected.join('; ')}`);
   assert.match(nodes.status.textContent, /1 device ter-pairing/, 'the status line counts the device');
 
@@ -193,7 +370,10 @@ test('the dashboard renders a device card for a paired device', async () => {
 });
 
 test('the dashboard names the extension when the browser does not have it', async () => {
-  const { nodes, rejected } = await run('dashboard.html', { extensionInstalled: false });
+  const {
+    nodes,
+    rejected
+  } = await run('dashboard.html', { extensionInstalled: false });
   assert.deepEqual(rejected, [], `the module rejected: ${rejected.join('; ')}`);
 
   assert.match(nodes.installState.textContent, /Opera Agent belum terpasang di browser ini/,
@@ -202,15 +382,21 @@ test('the dashboard names the extension when the browser does not have it', asyn
 });
 
 test('the dashboard confirms the extension once the content script has marked the page', async () => {
-  const { nodes, rejected } = await run('dashboard.html', { extensionInstalled: true });
+  const {
+    nodes,
+    rejected
+  } = await run('dashboard.html', { extensionInstalled: true });
   assert.deepEqual(rejected, [], `the module rejected: ${rejected.join('; ')}`);
   assert.match(nodes.installState.textContent, /Opera Agent terpasang di browser ini/,
     'the installed case is stated, so the line is not a permanent warning');
 });
 
 test('the dashboard reacts to the marker landing after it has already read the page', async () => {
-
-  const { nodes, rejected, context } = await run('dashboard.html', { extensionInstalled: false });
+  const {
+    nodes,
+    rejected,
+    context
+  } = await run('dashboard.html', { extensionInstalled: false });
   assert.deepEqual(rejected, [], `the module rejected: ${rejected.join('; ')}`);
   assert.match(nodes.installState.textContent, /belum terpasang/, 'the page starts by reporting it missing');
   assert.ok(context.observers.length > 0, 'the page watches for the marker instead of reading once');
@@ -222,7 +408,10 @@ test('the dashboard reacts to the marker landing after it has already read the p
 });
 
 test('the account page renders the identity facts and the device count', async () => {
-  const { nodes, rejected } = await run('akun.html');
+  const {
+    nodes,
+    rejected
+  } = await run('akun.html');
   assert.deepEqual(rejected, [], `the module rejected: ${rejected.join('; ')}`);
   assert.equal(nodes.factEmail.textContent, EMAIL, 'the address is rendered');
   assert.equal(nodes.factProvider.textContent, 'Google', 'the resolved provider is rendered');
@@ -232,7 +421,6 @@ test('the account page renders the identity facts and the device count', async (
 });
 
 test('home swaps to member actions on a stored session, and stays put without one', async () => {
-
   const signed = await run('beranda.html');
   assert.deepEqual(signed.rejected, [], `the module rejected: ${signed.rejected.join('; ')}`);
   assert.ok(signed.context.document.body.classList.contains('signed-in'), 'the body is marked');
@@ -246,7 +434,10 @@ test('home swaps to member actions on a stored session, and stays put without on
 });
 
 test('a pending permission request shows the real client name and the facts to judge', async () => {
-  const { nodes, rejected } = await run('oauth/consent.html');
+  const {
+    nodes,
+    rejected
+  } = await run('oauth/consent.html');
   assert.deepEqual(rejected, [], `the module rejected: ${rejected.join('; ')}`);
   assert.equal(nodes.factsCard.hidden, false, 'the permission card is shown');
   assert.equal(nodes.factClient.textContent, 'opencode', 'the application name is the one the server reported');
@@ -267,20 +458,30 @@ test('a person with no session is offered sign-in with the request intact', asyn
 });
 
 test('a client that sent no name is not replaced with a guess', async () => {
-  const { nodes } = await run('oauth/consent.html', { authorization: { ...AUTHORIZATION, client: { id: 'x', name: null } } });
+  const { nodes } = await run('oauth/consent.html', { authorization: {
+    ...AUTHORIZATION,
+    client: {
+      id: 'x',
+      name: null
+    }
+  } });
   assert.equal(nodes.clientName.textContent, 'Nama aplikasi tidak diberikan');
 });
 
 test('a request Supabase already decided is followed, not asked again', async () => {
-
-  const { nodes, context } = await run('oauth/consent.html', { authorizationRedirect: 'http://127.0.0.1:1/callback?code=already' });
+  const {
+    nodes,
+    context
+  } = await run('oauth/consent.html', { authorizationRedirect: 'http://127.0.0.1:1/callback?code=already' });
   assert.equal(context.assigned, 'http://127.0.0.1:1/callback?code=already');
   assert.equal(nodes.factsCard.hidden, true, 'nothing is asked for');
 });
 
 test('an unreachable Auth does not offer a sign-in form, and says the session is safe', async () => {
-
-  const { nodes, context } = await run('oauth/consent.html', { unreachable: true });
+  const {
+    nodes,
+    context
+  } = await run('oauth/consent.html', { unreachable: true });
   assert.equal(nodes.signedOutCard.hidden, true, 'no sign-in form while the network is down');
   assert.match(nodes.status.textContent, /Sesi Anda tetap aman/, 'and the page reassures rather than alarms');
   assert.equal(context.forgot, undefined, 'and nothing is forgotten');
@@ -288,7 +489,11 @@ test('an unreachable Auth does not offer a sign-in form, and says the session is
 
 test('an aged access token is renewed rather than deleted', async () => {
   for (const page of SIGNED_IN_PAGES) {
-    const { store, cleared, rejected } = await run(page, { accessOk: false });
+    const {
+      store,
+      cleared,
+      rejected
+    } = await run(page, { accessOk: false });
     assert.deepEqual(rejected, [], `${page} rejected: ${rejected.join('; ')}`);
     assert.equal(store['opera-agent-access-token'], RENEWED, `${page} stores the renewed access token`);
     assert.equal(store['opera-agent-refresh-token'], 'renewed-refresh-token', `${page} rotates the refresh token`);
@@ -297,9 +502,14 @@ test('an aged access token is renewed rather than deleted', async () => {
 });
 
 test('a renewal that cannot reach Auth is not a sign-out', async () => {
-
   for (const page of SIGNED_IN_PAGES) {
-    const { store, cleared } = await run(page, { accessOk: false, refreshFails: true });
+    const {
+      store,
+      cleared
+    } = await run(page, {
+      accessOk: false,
+      refreshFails: true
+    });
     assert.deepEqual(cleared, [], `${page} forgets nothing when Auth is unreachable`);
     assert.equal(store['opera-agent-access-token'], TOKEN, `${page} leaves the stored token alone`);
     assert.equal(store['opera-agent-refresh-token'], REFRESH, `${page} keeps the refresh token for the retry`);
@@ -308,15 +518,20 @@ test('a renewal that cannot reach Auth is not a sign-out', async () => {
 
 test('a server error from the renewal endpoint is treated as temporary', async () => {
   for (const page of SIGNED_IN_PAGES) {
-    const { cleared } = await run(page, { accessOk: false, refreshStatus: 503 });
+    const { cleared } = await run(page, {
+      accessOk: false,
+      refreshStatus: 503
+    });
     assert.deepEqual(cleared, [], `${page} keeps the session when Auth is having a bad day`);
   }
 });
 
 test('a refused refresh token is the only thing that ends a session, and both halves of it', async () => {
-
   for (const page of SIGNED_IN_PAGES) {
-    const { cleared } = await run(page, { accessOk: false, refreshStatus: 401 });
+    const { cleared } = await run(page, {
+      accessOk: false,
+      refreshStatus: 401
+    });
     for (const key of ['opera-agent-access-token', 'opera-agent-refresh-token']) {
       assert.ok(cleared.includes(key), `${page} forgets ${key} when the refresh token is refused`);
     }
@@ -325,7 +540,10 @@ test('a refused refresh token is the only thing that ends a session, and both ha
 
 test('a valid access token is not renewed at all', async () => {
   for (const page of SIGNED_IN_PAGES) {
-    const { store, cleared } = await run(page);
+    const {
+      store,
+      cleared
+    } = await run(page);
     assert.equal(store['opera-agent-access-token'], TOKEN, `${page} keeps a token that still works`);
     assert.deepEqual(cleared, [], `${page} forgets nothing`);
   }

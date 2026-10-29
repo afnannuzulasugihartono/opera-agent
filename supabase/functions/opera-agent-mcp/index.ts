@@ -10,8 +10,14 @@ import { AsyncLocalStorage } from "node:async_hooks";
 import { streamCommandEvents } from "../_shared/command-stream.ts";
 import * as z from "zod/v4";
 import { createEdgeLog } from "../_shared/edge-log.js";
-import { CORS_DEFAULT_ORIGINS, resolveAllowedOrigin } from "../_shared/cors.js";
-import { CommandFailure, sealVmProgram } from "../_shared/seal-vm-program.js";
+import {
+  CORS_DEFAULT_ORIGINS,
+  resolveAllowedOrigin
+} from "../_shared/cors.js";
+import {
+  CommandFailure,
+  sealVmProgram
+} from "../_shared/seal-vm-program.js";
 import { compileAdhocGraph } from "../_shared/adhoc-compile.js";
 import { registerTools } from "./tools.ts";
 
@@ -62,7 +68,10 @@ let clientPromise: Promise<import("@supabase/supabase-js").SupabaseClient> | nul
 async function db() {
   if (!clientPromise) {
     clientPromise = import("@supabase/supabase-js").then(({ createClient }) => createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
-      auth: { persistSession: false, autoRefreshToken: false }
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false
+      }
     }));
   }
   return clientPromise;
@@ -95,10 +104,15 @@ function corsHeadersFor(req: Request): Record<string, string> {
   const origin = resolveAllowedOrigin(req, CORS_DEFAULT_ORIGINS);
   return origin === null
     ? { ...CORS_BASE_HEADERS }
-    : { ...CORS_BASE_HEADERS, "Access-Control-Allow-Origin": origin };
+    : {
+      ...CORS_BASE_HEADERS,
+      "Access-Control-Allow-Origin": origin
+    };
 }
 
-type AuthContext = { type: "static" } | { type: "user"; userId: string };
+type AuthContext = { type: "static" } | {
+  type: "user"; userId: string
+};
 export type VmCaller = { userId: string; token: string };
 async function resolveDeviceName(auth: AuthContext, req?: Request): Promise<string | null> {
   if (auth.type === "static") return DEVICE_NAME;
@@ -115,24 +129,78 @@ async function resolveDeviceName(auth: AuthContext, req?: Request): Promise<stri
   return null;
 }
 
-const PROVIDER_PATTERNS: Array<[RegExp, string]> = [
-  [/opencode/i, "opencode"],
-  [/\bkilo/i, "kilo"],
-  [/chatgpt|openai-connector|oai-mcp/i, "chatgpt"],
-  [/claude/i, "claude"],
-  [/\bcursor/i, "cursor"],
-  [/windsurf/i, "windsurf"],
-  [/\bcline\b/i, "cline"],
-  [/roo[ -]?code/i, "roo"],
-  [/\baider\b/i, "aider"],
-  [/\bgoose\b/i, "goose"],
-  [/\bzed\b/i, "zed"],
-  [/vscode|visual studio code/i, "vscode"],
-  [/mcp-inspector/i, "inspector"],
-  [/postman/i, "postman"],
-  [/\bcurl\b/i, "curl"],
-  [/python|httpx|urllib|aiohttp/i, "script"],
-  [/node|undici|deno/i, "script"],
+const PROVIDER_PATTERNS: Array<[
+  RegExp,
+  string
+]> = [
+  [
+    /opencode/i,
+    "opencode"
+  ],
+  [
+    /\bkilo/i,
+    "kilo"
+  ],
+  [
+    /chatgpt|openai-connector|oai-mcp/i,
+    "chatgpt"
+  ],
+  [
+    /claude/i,
+    "claude"
+  ],
+  [
+    /\bcursor/i,
+    "cursor"
+  ],
+  [
+    /windsurf/i,
+    "windsurf"
+  ],
+  [
+    /\bcline\b/i,
+    "cline"
+  ],
+  [
+    /roo[ -]?code/i,
+    "roo"
+  ],
+  [
+    /\baider\b/i,
+    "aider"
+  ],
+  [
+    /\bgoose\b/i,
+    "goose"
+  ],
+  [
+    /\bzed\b/i,
+    "zed"
+  ],
+  [
+    /vscode|visual studio code/i,
+    "vscode"
+  ],
+  [
+    /mcp-inspector/i,
+    "inspector"
+  ],
+  [
+    /postman/i,
+    "postman"
+  ],
+  [
+    /\bcurl\b/i,
+    "curl"
+  ],
+  [
+    /python|httpx|urllib|aiohttp/i,
+    "script"
+  ],
+  [
+    /node|undici|deno/i,
+    "script"
+  ],
 ];
 
 function slugifyProvider(name: string): string {
@@ -155,20 +223,31 @@ async function resolveProvider(req: Request, auth?: AuthContext | null): Promise
         const slug = typeof name === "string" ? slugifyProvider(name) : "";
         if (slug) return slug;
       }
-    } catch {
-    }
+    } catch {}
   }
   return "unknown";
 }
 
-function json(req: Request, data: unknown, status = 200, extraHeaders: HeadersInit = {}) {
+function json(
+  req: Request,
+  data: unknown,
+  status = 200,
+  extraHeaders: HeadersInit = {}
+) {
   return new Response(JSON.stringify(data), {
     status,
-    headers: { ...corsHeadersFor(req), "Content-Type": "application/json", ...extraHeaders }
+    headers: {
+      ...corsHeadersFor(req),
+      "Content-Type": "application/json",
+      ...extraHeaders
+    }
   });
 }
 
-function secureEqual(left: string, right: string) {
+function secureEqual(
+  left: string,
+  right: string
+) {
   const a = new TextEncoder().encode(left);
   const b = new TextEncoder().encode(right);
   if (a.length !== b.length) return false;
@@ -188,11 +267,17 @@ async function authenticate(req: Request): Promise<AuthContext | null> {
   if (STATIC_TOKEN && secureEqual(token, STATIC_TOKEN)) return { type: "static" };
   if (ALLOWED_USER_IDS.size === 0 && ALLOWED_USER_EMAILS.size === 0) return null;
   const supabase = await db();
-  const { data, error } = await supabase.auth.getUser(token);
+  const {
+    data,
+    error
+  } = await supabase.auth.getUser(token);
   if (error || !data.user?.email) return null;
   const email = data.user.email.toLowerCase();
   if (!ALLOWED_USER_IDS.has(data.user.id) && !ALLOWED_USER_EMAILS.has(email)) return null;
-  return { type: "user", userId: data.user.id };
+  return {
+    type: "user",
+    userId: data.user.id
+  };
 }
 
 function publicBaseUrl() {
@@ -203,7 +288,10 @@ function unauthorized(req: Request) {
   const metadata = `${publicBaseUrl()}/.well-known/oauth-protected-resource`;
   return json(
     req,
-    { error: "unauthorized", error_description: "A valid Opera Agent access token is required." },
+    {
+      error: "unauthorized",
+      error_description: "A valid Opera Agent access token is required."
+    },
     401,
     { "WWW-Authenticate": `Bearer resource_metadata="${metadata}"` }
   );
@@ -216,13 +304,15 @@ function errorMessage(error: unknown) {
 function textResult(value: unknown) {
   const structuredContent = value && typeof value === "object" ? value as Record<string, unknown> : { value };
   return {
-    content: [{ type: "text" as const, text: JSON.stringify(structuredContent) }],
+    content: [{
+      type: "text" as const,
+      text: JSON.stringify(structuredContent)
+    }],
     structuredContent
   };
 }
 
 function toolError(error: unknown) {
-
   const raw = errorMessage(error);
   if (/statement timeout/i.test(raw)) {
     const unknownFailure = {
@@ -230,23 +320,41 @@ function toolError(error: unknown) {
       outcome: "unknown",
       message: "The action result is unknown: the server stopped waiting before the browser reported back. The action may still have succeeded — verify the page state before repeating the action."
     };
-    const structuredContent = { ok: false, error: unknownFailure };
+    const structuredContent = {
+      ok: false,
+      error: unknownFailure
+    };
     return {
-      content: [{ type: "text" as const, text: JSON.stringify(structuredContent) }],
+      content: [{
+        type: "text" as const,
+        text: JSON.stringify(structuredContent)
+      }],
       structuredContent,
       isError: true
     };
   }
   const failure = error instanceof CommandFailure
     ? {
-        code: error.code, message: error.message,
-        ...(error.details && (error.details as { outcome?: unknown }).outcome === "unknown" ? { outcome: "unknown" } : {}),
-        ...(error.details ? { details: error.details } : {})
-      }
-    : { code: "MCP_EXECUTION_ERROR", message: errorMessage(error) };
-  const structuredContent = { ok: false, error: failure };
+      code: error.code,
+      message: error.message,
+      ...(error.details && (error.details as {
+        outcome?: unknown
+      }).outcome === "unknown" ? { outcome: "unknown" } : {}),
+      ...(error.details ? { details: error.details } : {})
+    }
+    : {
+      code: "MCP_EXECUTION_ERROR",
+      message: errorMessage(error)
+    };
+  const structuredContent = {
+    ok: false,
+    error: failure
+  };
   return {
-    content: [{ type: "text" as const, text: JSON.stringify(structuredContent) }],
+    content: [{
+      type: "text" as const,
+      text: JSON.stringify(structuredContent)
+    }],
     structuredContent,
     isError: true
   };
@@ -263,24 +371,39 @@ function toolError(error: unknown) {
 // So when a direct connection exists, these same calls ride it instead.
 // The function invoked, its arguments and its return shape are identical either way; only the road changes, and a direct call that fails falls back to the gateway rather than failing the command.
 
-let directDb: { sql: (...args: unknown[]) => Promise<unknown[]> } | null = null;
+let directDb: {
+  sql: (...args: unknown[]) => Promise<unknown[]>
+} | null = null;
 let directFailReason = "";
 
-async function rpcViaDirect(name: string, args: Record<string, unknown>) {
+async function rpcViaDirect(
+  name: string,
+  args: Record<string,
+  unknown>
+) {
   if (!directDb) throw new Error("no direct connection");
   if (!/^[a-z_][a-z0-9_]*$/.test(name)) throw new Error(`refused function name: ${name}`);
   const keys = Object.keys(args);
   const values = keys.map((k) => args[k] === undefined ? null : args[k]);
-  const placeholders = keys.map((k, i) => {
+  const placeholders = keys.map((
+    k,
+    i
+  ) => {
     if (!/^[a-z_][a-z0-9_]*$/.test(k)) throw new Error(`refused argument name: ${k}`);
     return `${k} := $${i + 1}`;
   }).join(", ");
-  const rows = await directDb.sql(`select public."${name}"(${placeholders}) as data`, values) as Array<{ data: unknown }>;
+  const rows = await directDb.sql(`select public."${name}"(${placeholders}) as data`, values) as Array<{
+    data: unknown
+  }>;
   if (!rows.length) return null;
   return rows[0].data as Record<string, unknown> | null;
 }
 
-async function rpcViaPostgrest(name: string, args: Record<string, unknown>) {
+async function rpcViaPostgrest(
+  name: string,
+  args: Record<string,
+  unknown>
+) {
   const response = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${name}`, {
     method: "POST",
     headers: {
@@ -296,14 +419,17 @@ async function rpcViaPostgrest(name: string, args: Record<string, unknown>) {
     try {
       const parsed = JSON.parse(text);
       detail = parsed.message || parsed.error_description || parsed.msg || detail;
-    } catch {
-    }
+    } catch {}
     throw new Error(`${name} failed: ${detail}`);
   }
   return text ? JSON.parse(text) as Record<string, unknown> : null;
 }
 
-async function rpc(name: string, args: Record<string, unknown>) {
+async function rpc(
+  name: string,
+  args: Record<string,
+  unknown>
+) {
   if (directDb) {
     try {
       return await rpcViaDirect(name, args);
@@ -322,7 +448,11 @@ type ProgressEmitter = {
 
 const progressScope = new AsyncLocalStorage<ProgressEmitter>();
 
-function forwardCommandProgress(commandId: string, timeoutMs: number, progress: (() => ProgressEmitter | null) | null) {
+function forwardCommandProgress(
+  commandId: string,
+  timeoutMs: number,
+  progress: (() => ProgressEmitter | null) | null
+) {
   const emitter = progress?.();
   if (!emitter?.sendNotification) return Promise.resolve();
   const token = emitter._meta?.progressToken;
@@ -336,7 +466,10 @@ function forwardCommandProgress(commandId: string, timeoutMs: number, progress: 
       const message = String(event?.kind ?? 'progress');
       return Promise.resolve(emitter.sendNotification({
         method: "notifications/progress",
-        params: { progressToken: token, message }
+        params: {
+          progressToken: token,
+          message
+        }
       })).catch(() => {});
     }
   }).catch(() => ({ ok: false }));
@@ -374,7 +507,15 @@ let awaitMs = 0;
 // Passing null skips that lookup without changing idempotency, because there was none to begin with: a retry arrives with a new id, not the old one.
 // The provider used to be stamped with a second write after the command finished, a full data-API crossing on the critical path after the answer was already known; it is now set by the enqueue itself, and the update that used to follow it is gone.
 
-async function runCommand(method: string, params: Record<string, unknown> = {}, timeoutMs = 12000, deviceName: string = DEVICE_NAME, provider = "", progress: (() => ProgressEmitter | null) | null = () => progressScope.getStore() ?? null) {
+async function runCommand(
+  method: string,
+  params: Record<string,
+  unknown> = {},
+  timeoutMs = 12000,
+  deviceName: string = DEVICE_NAME,
+  provider = "",
+  progress: (() => ProgressEmitter | null) | null = () => progressScope.getStore() ?? null
+) {
   const boundedTimeout = Math.max(500, Math.min(30000, timeoutMs));
   const beganAt = edgeClock();
   const queued = await rpc("opera_enqueue", {
@@ -394,35 +535,54 @@ async function runCommand(method: string, params: Record<string, unknown> = {}, 
   const progressStartedAt = edgeClock();
   const [, completed] = await Promise.all([
     forwardCommandProgress(queued.commandId, boundedTimeout, progress)
-      .then((result) => { progressMs = edgeClock() - progressStartedAt; return result; }),
+      .then((result) => {
+        progressMs = edgeClock() - progressStartedAt; return result;
+      }),
     rpc(awaitFunction, {
       p_command_id: queued.commandId,
       p_timeout_ms: Math.min(32000, boundedTimeout + 2000)
-    }).then((result) => { awaitMs = edgeClock() - progressStartedAt; return result; })
+    }).then((result) => {
+      awaitMs = edgeClock() - progressStartedAt; return result;
+    })
   ]);
   const finishedAt = edgeClock();
 
   if (!completed?.ok) {
     const detail = completed?.error;
     const code = detail && typeof detail === "object" && "code" in detail
-      ? String((detail as { code?: unknown }).code || "COMMAND_FAILED")
+      ? String((detail as {
+        code?: unknown
+      }).code || "COMMAND_FAILED")
       : "COMMAND_FAILED";
     const message = detail && typeof detail === "object" && "message" in detail
-      ? String((detail as { message?: unknown }).message)
+      ? String((detail as {
+        message?: unknown
+      }).message)
       : String(detail || `${method} failed.`);
     const details = detail && typeof detail === "object" && "details" in detail
-      && (detail as { details?: unknown }).details && typeof (detail as { details?: unknown }).details === "object"
-      ? (detail as { details: Record<string, unknown> }).details
+      && (detail as {
+        details?: unknown
+      }).details && typeof (detail as {
+        details?: unknown
+      }).details === "object"
+      ? (detail as {
+        details: Record<string, unknown>
+      }).details
       : undefined;
     if (code === "AWAIT_TIMEOUT") {
-
       throw new CommandFailure(
         "AWAIT_OUTCOME_UNKNOWN",
         "The action result is unknown: the server stopped waiting before the browser reported back. The action may still have succeeded — verify the page state before repeating the action.",
-        { method, outcome: "unknown" }
+        {
+          method,
+          outcome: "unknown"
+        }
       );
     }
-    throw new CommandFailure(code, message, { method, ...(details || {}) });
+    throw new CommandFailure(code, message, {
+      method,
+      ...(details || {})
+    });
   }
 
   return {
@@ -442,35 +602,78 @@ async function runCommand(method: string, params: Record<string, unknown> = {}, 
   };
 }
 
-function execute(method: string, params: Record<string, unknown>, timeoutMs?: number, deviceName: string = DEVICE_NAME, provider = "") {
+function execute(
+  method: string,
+  params: Record<string,
+  unknown>,
+  timeoutMs?: number,
+  deviceName: string = DEVICE_NAME,
+  provider = ""
+) {
   return runCommand(method, params, timeoutMs, deviceName, provider).then(textResult).catch(toolError);
 }
 
-function executeScreenshot(params: Record<string, unknown>, timeoutMs?: number, deviceName: string = DEVICE_NAME, provider = "") {
+function executeScreenshot(
+  params: Record<string,
+  unknown>,
+  timeoutMs?: number,
+  deviceName: string = DEVICE_NAME,
+  provider = ""
+) {
   return runCommand("page.capture", params, timeoutMs, deviceName, provider).then(screenshotResult).catch(toolError);
 }
 
-function screenshotResult(value: Record<string, unknown>) {
+function screenshotResult(
+  value: Record<string,
+  unknown>
+) {
   const result = value.result && typeof value.result === "object" ? value.result as Record<string, unknown> : {};
   const screenshot = result.screenshot && typeof result.screenshot === "object" ? result.screenshot as Record<string, unknown> : {};
   const data = typeof screenshot.data === "string" ? screenshot.data : "";
   const mimeType = typeof screenshot.mimeType === "string" ? screenshot.mimeType : "image/jpeg";
   const metadataScreenshot = { ...screenshot };
   delete metadataScreenshot.data;
-  const structuredContent = { ...value, result: { ...result, screenshot: metadataScreenshot } };
+  const structuredContent = {
+    ...value,
+    result: {
+      ...result,
+      screenshot: metadataScreenshot
+    }
+  };
   const content: Array<
-    { type: "text"; text: string } |
-    { type: "image"; data: string; mimeType: string }
-  > = [{ type: "text", text: JSON.stringify(structuredContent) }];
-  if (data) content.unshift({ type: "image", data, mimeType });
-  return { content, structuredContent };
+    {
+      type: "text"; text: string
+    } |
+    {
+      type: "image"; data: string; mimeType: string
+    }
+  > = [{
+    type: "text",
+    text: JSON.stringify(structuredContent)
+  }];
+  if (data) content.unshift({
+    type: "image",
+    data,
+    mimeType
+  });
+  return {
+    content,
+    structuredContent
+  };
 }
 
 function sleepMs(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-async function runWorkflow(name: string, input: Record<string, unknown>, waitTimeoutMs: number, deviceName: string = DEVICE_NAME, provider = "") {
+async function runWorkflow(
+  name: string,
+  input: Record<string,
+  unknown>,
+  waitTimeoutMs: number,
+  deviceName: string = DEVICE_NAME,
+  provider = ""
+) {
   const started = await rpc("opera_start_workflow", {
     p_name: name,
     p_input: input,
@@ -480,10 +683,14 @@ async function runWorkflow(name: string, input: Record<string, unknown>, waitTim
   if (!started?.ok || !started.runId) {
     const detail = started?.error;
     const code = detail && typeof detail === "object" && "code" in detail
-      ? String((detail as { code?: unknown }).code || "WORKFLOW_START_FAILED")
+      ? String((detail as {
+        code?: unknown
+      }).code || "WORKFLOW_START_FAILED")
       : "WORKFLOW_START_FAILED";
     const message = detail && typeof detail === "object" && "message" in detail
-      ? String((detail as { message?: unknown }).message)
+      ? String((detail as {
+        message?: unknown
+      }).message)
       : "Unable to start workflow.";
     throw new CommandFailure(code, message);
   }
@@ -492,15 +699,17 @@ async function runWorkflow(name: string, input: Record<string, unknown>, waitTim
     try {
       const supabase = await db();
       await supabase.from("opera_workflow_runs").update({ provider }).eq("id", runId);
-    } catch {
-    }
+    } catch {}
   }
   const startedAt = Date.now();
   let last: Record<string, unknown> | null = null;
   while (Date.now() - startedAt < waitTimeoutMs + 8000) {
     await sleepMs(400);
     last = await rpc("opera_get_workflow_run", { p_run_id: runId }) as Record<string, unknown> | null;
-    if (last?.ok && !["queued", "running"].includes(String(last.status))) break;
+    if (last?.ok && ![
+      "queued",
+      "running"
+    ].includes(String(last.status))) break;
   }
   if (!last?.ok) {
     throw new CommandFailure("WORKFLOW_RUN_LOST", "Workflow run could not be read.");
@@ -518,21 +727,36 @@ async function runWorkflow(name: string, input: Record<string, unknown>, waitTim
   };
 }
 
-function rpcErrorParts(error: unknown, fallbackCode: string) {
+function rpcErrorParts(
+  error: unknown,
+  fallbackCode: string
+) {
   if (error && typeof error === "object" && !Array.isArray(error)) {
-    const record = error as { code?: unknown; message?: unknown };
+    const record = error as {
+      code?: unknown; message?: unknown
+    };
     const code = typeof record.code === "string" && record.code ? record.code : fallbackCode;
     const message = typeof record.message === "string" && record.message ? record.message : String(code);
-    return { code, message };
+    return {
+      code,
+      message
+    };
   }
-  if (typeof error === "string" && error) return { code: error, message: error };
-  return { code: fallbackCode, message: fallbackCode };
+  if (typeof error === "string" && error) return {
+    code: error,
+    message: error
+  };
+  return {
+    code: fallbackCode,
+    message: fallbackCode
+  };
 }
 
 async function runAdhoc(
   graph: unknown,
   requestId: unknown,
-  input: Record<string, unknown> | undefined,
+  input: Record<string,
+  unknown> | undefined,
   waitTimeoutMs: number | undefined,
   deviceName: string = DEVICE_NAME,
   provider = ""
@@ -547,8 +771,7 @@ async function runAdhoc(
   const waitMs = Math.max(1000, Math.min(120000, waitTimeoutMs ?? 60000));
   try {
     await rpc("opera_sweep_ephemeral_workflows", {});
-  } catch {
-  }
+  } catch {}
   const registered = await rpc("opera_register_ephemeral_workflow", {
     p_request_id: requestId,
     p_definition: compiled.definition,
@@ -574,30 +797,39 @@ async function runAdhoc(
     try {
       const supabase = await db();
       await supabase.from("opera_workflow_runs").update({ provider }).eq("id", runId);
-    } catch {
-    }
+    } catch {}
   }
   const startedAt = Date.now();
   let last: Record<string, unknown> | null = null;
   while (Date.now() - startedAt < waitMs + 10000) {
     await sleepMs(400);
     last = await rpc("opera_get_workflow_run", { p_run_id: runId }) as Record<string, unknown> | null;
-    if (last?.ok && !["queued", "running"].includes(String(last.status))) break;
+    if (last?.ok && ![
+      "queued",
+      "running"
+    ].includes(String(last.status))) break;
   }
   if (!last?.ok) {
     throw new CommandFailure("WORKFLOW_RUN_LOST", "Workflow run could not be read.");
   }
   let deleted = false;
-  let deleteError: { code: string; message: string } | undefined;
+  let deleteError: {
+    code: string; message: string
+  } | undefined;
   try {
     const removed = await rpc("opera_delete_workflow", { p_name: name });
     if (removed?.ok) {
-      deleted = (removed as { deleted?: unknown }).deleted !== false;
+      deleted = (removed as {
+        deleted?: unknown
+      }).deleted !== false;
     } else {
       deleteError = rpcErrorParts(removed?.error, "WORKFLOW_DELETE_FAILED");
     }
   } catch (error) {
-    deleteError = { code: "WORKFLOW_DELETE_FAILED", message: errorMessage(error) };
+    deleteError = {
+      code: "WORKFLOW_DELETE_FAILED",
+      message: errorMessage(error)
+    };
   }
   const status = String(last.status);
   const timing = last.timing && typeof last.timing === "object" ? last.timing as Record<string, unknown> : {};
@@ -616,7 +848,9 @@ async function runAdhoc(
 
 async function callVmHost(
   operation: string,
-  body: { program: unknown; requestId: unknown },
+  body: {
+    program: unknown; requestId: unknown
+  },
   deviceName: string = DEVICE_NAME,
   provider = "",
   caller: VmCaller | null = null
@@ -640,7 +874,15 @@ async function callVmHost(
   if (provider) headers["x-opera-provider"] = provider;
   let res: Response;
   try {
-    res = await fetch(url, { method: "POST", headers, body: JSON.stringify({ operation, program, requestId: body.requestId }) });
+    res = await fetch(url, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        operation,
+        program,
+        requestId: body.requestId
+      })
+    });
   } catch (error) {
     throw new CommandFailure("VM_HOST_UNREACHABLE", errorMessage(error));
   }
@@ -651,8 +893,12 @@ async function callVmHost(
     envelope = null;
   }
   if (!res.ok || !envelope || typeof envelope !== "object" || Array.isArray(envelope)) {
-    const detail = envelope && typeof envelope === "object" ? (envelope as { error?: unknown }).error : null;
-    const inner = detail && typeof detail === "object" ? (detail as { code?: unknown; message?: unknown }) : {};
+    const detail = envelope && typeof envelope === "object" ? (envelope as {
+      error?: unknown
+    }).error : null;
+    const inner = detail && typeof detail === "object" ? (detail as {
+      code?: unknown; message?: unknown
+    }) : {};
     const code = typeof inner.code === "string" && inner.code
       ? inner.code.toUpperCase().replace(/[^A-Z0-9_]/g, "_").slice(0, 64)
       : `VM_HOST_${res.status}`;
@@ -692,16 +938,34 @@ async function connectDirectDb(): Promise<void> {
   const url = Deno.env.get("SUPABASE_DB_URL") ?? "";
   if (!url) throw new Error("No direct database url is configured.");
   const { default: postgres } = await import("postgres");
-  const pg = postgres(url, { max: 3, connect_timeout: 10, idle_timeout: 30 });
+  const pg = postgres(url, {
+    max: 3,
+    connect_timeout: 10,
+    idle_timeout: 30
+  });
   await pg`select 1`;
-  directDb = { sql: (text: unknown, values: unknown) => pg.unsafe(text as string, values as unknown[], { prepare: true }) as unknown as Promise<unknown[]> };
+  directDb = { sql: (
+    text: unknown,
+    values: unknown
+  ) => pg.unsafe(text as string, values as unknown[], { prepare: true }) as unknown as Promise<unknown[]> };
 }
 
-async function handleWsMessage(message: unknown, ctx: { deviceName: string; provider: string; caller: VmCaller | null }) {
+async function handleWsMessage(
+  message: unknown,
+  ctx: {
+    deviceName: string; provider: string; caller: VmCaller | null
+  }
+) {
   if (!message || typeof message !== "object" || Array.isArray(message)) {
     throw new CommandFailure("INVALID_REQUEST", "The message must be a JSON object.");
   }
-  const { id, method, params } = message as { id?: unknown; method?: unknown; params?: unknown };
+  const {
+    id,
+    method,
+    params
+  } = message as {
+    id?: unknown; method?: unknown; params?: unknown
+  };
   if (method === "ping") {
     let dbHost = "";
     try {
@@ -716,12 +980,27 @@ async function handleWsMessage(message: unknown, ctx: { deviceName: string; prov
       AWS_REGION: Deno.env.get("AWS_REGION") ?? null,
       FLY_ALLOC_ID: Deno.env.get("FLY_ALLOC_ID") ? "set" : null
     };
-    return { id: id ?? null, result: { ok: true, pong: true, direct: directDb !== null, directFailReason, dbHost, edgeRegion: region } };
+    return {
+      id: id ?? null,
+      result: {
+        ok: true,
+        pong: true,
+        direct: directDb !== null,
+        directFailReason,
+        dbHost,
+        edgeRegion: region
+      }
+    };
   }
   if (method !== "tools/call") {
     throw new CommandFailure("INVALID_REQUEST", `Unsupported socket method: ${String(method)}.`);
   }
-  const { name, args } = (params ?? {}) as { name?: unknown; args?: unknown };
+  const {
+    name,
+    args
+  } = (params ?? {}) as {
+    name?: unknown; args?: unknown
+  };
   if (typeof name !== "string" || !name) {
     throw new CommandFailure("INVALID_REQUEST", "A tools/call message needs a tool name.");
   }
@@ -731,25 +1010,44 @@ async function handleWsMessage(message: unknown, ctx: { deviceName: string; prov
       "content-type": "application/json",
       accept: "application/json, text/event-stream"
     },
-    body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/call", params: { name, arguments: (args ?? {}) as Record<string, unknown> } })
+    body: JSON.stringify({
+      jsonrpc: "2.0",
+      id: 1,
+      method: "tools/call",
+      params: {
+        name,
+        arguments: (args ?? {}) as Record<string,
+        unknown>
+      }
+    })
   });
   const server = createServer(ctx.deviceName, ctx.provider, ctx.caller);
   const transport = new WebStandardStreamableHTTPServerTransport({ enableJsonResponse: true });
   await server.connect(transport);
   const response = await transport.handleRequest(request);
-  const envelope = await response.json() as { result?: unknown; error?: { code?: unknown; message?: unknown } };
+  const envelope = await response.json() as {
+    result?: unknown; error?: { code?: unknown; message?: unknown }
+  };
   if (envelope.error) {
     throw new CommandFailure("COMMAND_FAILED", String(envelope.error.message ?? "The tool call failed."));
   }
-  return { id: id ?? null, result: envelope.result ?? null };
+  return {
+    id: id ?? null,
+    result: envelope.result ?? null
+  };
 }
 
 function serveMcpSocket(req: Request) {
-  const { socket, response } = Deno.upgradeWebSocket(req, { idleTimeout: 0 });
+  const {
+    socket,
+    response
+  } = Deno.upgradeWebSocket(req, { idleTimeout: 0 });
 
   let resolveClosed: (() => void) | null = null;
   if (typeof EdgeRuntime !== "undefined" && typeof EdgeRuntime.waitUntil === "function") {
-    const closed = new Promise<void>((resolve) => { resolveClosed = resolve; });
+    const closed = new Promise<void>((resolve) => {
+      resolveClosed = resolve;
+    });
     EdgeRuntime.waitUntil(closed);
   }
   const teardown = () => {
@@ -760,30 +1058,48 @@ function serveMcpSocket(req: Request) {
     }
   };
 
-  let authed: { deviceName: string; provider: string; caller: VmCaller | null } | null = null;
+  let authed: {
+    deviceName: string; provider: string; caller: VmCaller | null
+  } | null = null;
   let queue: Promise<void> = Promise.resolve();
 
   socket.onmessage = (event: MessageEvent) => {
     const run = queue.then(async () => {
       const text = typeof event.data === "string" ? event.data : "";
       if (!text || text.length > WS_MAX_MESSAGE_BYTES) {
-        socket.send(JSON.stringify({ id: null, error: { code: "INVALID_REQUEST", message: "The message is empty or too large." } }));
+        socket.send(JSON.stringify({
+          id: null,
+          error: {
+            code: "INVALID_REQUEST",
+            message: "The message is empty or too large."
+          }
+        }));
         return;
       }
       let message: unknown;
       try {
         message = JSON.parse(text);
       } catch {
-        socket.send(JSON.stringify({ id: null, error: { code: "INVALID_REQUEST", message: "The message is not JSON." } }));
+        socket.send(JSON.stringify({
+          id: null,
+          error: {
+            code: "INVALID_REQUEST",
+            message: "The message is not JSON."
+          }
+        }));
         return;
       }
-      const m = message as { id?: unknown; method?: unknown; params?: unknown };
+      const m = message as {
+        id?: unknown; method?: unknown; params?: unknown
+      };
       if (!authed) {
         if (m.method !== "auth") {
           socket.close(4401, "authenticate first");
           return;
         }
-        const p = (m.params ?? {}) as { token?: unknown; device?: unknown; provider?: unknown };
+        const p = (m.params ?? {}) as {
+          token?: unknown; device?: unknown; provider?: unknown
+        };
         const fake = new Request("https://socket/auth", {
           headers: {
             authorization: `Bearer ${typeof p.token === "string" ? p.token : ""}`,
@@ -803,15 +1119,28 @@ function serveMcpSocket(req: Request) {
         }
         const provider = await resolveProvider(fake, authContext);
         const caller: VmCaller | null = authContext.type === "user"
-          ? { userId: authContext.userId, token: bearerToken(fake) }
+          ? {
+            userId: authContext.userId,
+            token: bearerToken(fake)
+          }
           : null;
-        authed = { deviceName, provider, caller };
+        authed = {
+          deviceName,
+          provider,
+          caller
+        };
         try {
           await connectDirectDb();
         } catch {
           directDb = null;
         }
-        socket.send(JSON.stringify({ id: m.id ?? null, result: { ok: true, direct: directDb !== null } }));
+        socket.send(JSON.stringify({
+          id: m.id ?? null,
+          result: {
+            ok: true,
+            direct: directDb !== null
+          }
+        }));
         return;
       }
       try {
@@ -819,23 +1148,43 @@ function serveMcpSocket(req: Request) {
         socket.send(JSON.stringify(reply));
       } catch (error) {
         const failure = error instanceof CommandFailure
-          ? { code: error.code, message: error.message }
-          : { code: "COMMAND_FAILED", message: errorMessage(error) };
-        socket.send(JSON.stringify({ id: m.id ?? null, error: failure }));
+          ? {
+            code: error.code,
+            message: error.message
+          }
+          : {
+            code: "COMMAND_FAILED",
+            message: errorMessage(error)
+          };
+        socket.send(JSON.stringify({
+          id: m.id ?? null,
+          error: failure
+        }));
       }
     });
     queue = run.then(() => {}, () => {});
   };
 
-  socket.onclose = () => { teardown(); };
-  socket.onerror = () => { teardown(); };
+  socket.onclose = () => {
+    teardown();
+  };
+  socket.onerror = () => {
+    teardown();
+  };
 
   return response;
 }
 
-function createServer(deviceName: string = DEVICE_NAME, provider = "", caller: VmCaller | null = null) {
+function createServer(
+  deviceName: string = DEVICE_NAME,
+  provider = "",
+  caller: VmCaller | null = null
+) {
   const server = new McpServer(
-    { name: "opera-agent", version: SERVER_VERSION },
+    {
+      name: "opera-agent",
+      version: SERVER_VERSION
+    },
     {
       instructions: "Use Opera Agent whenever the user asks to open, navigate, inspect, click, type, scroll, visually inspect, or otherwise operate their local Opera browser. Check browser_status first. Keep normal automation in background: open_url defaults to an inactive tab, retain its returned tabId, and pass that exact tabId to every later page or navigation tool. Never substitute the user's active tab during a multi-step task. Prefer run_browser_burst for two or more dependent actions on one target tab and prefer element references from read_page/find_elements. For dynamic or fast-changing UIs (video players, ad overlays, countdown controls) run find, click, and a wait verification inside ONE run_browser_burst call, passing the found ref to the click step via refFromStep so the reference is consumed within milliseconds of being minted; do not split find and click into separate round trips there. The same rule applies to MENUS and DIALOGS, which re-render their own DOM every time they open: a ref for a menu entry or a dialog control is usually stale by the next round trip. Open a menu, then immediately find the entry and click it by refFromStep inside one burst rather than reading it in a separate call. For multi-level menus, use a hover burst step with the found ref via refFromStep, passing text for the submenu entry you expect it to reveal, so each level is one step that hovers and settles, and then find the submenu entry by text in the next step of the same burst; chain the levels in a single burst rather than hovering by coordinate across separate calls. Use capture_page adaptively only for initial visual observation, canvas/dynamic interfaces, low-confidence targeting, meaningful state changes, or failed verification; pass previousHash to avoid retransmitting unchanged images. Treat coordinates as stale when documentId, viewport, zoomFactor, visualScale, or screenshot hash changes. For lazy result lists, call pointer with pointerAction wheel inside the intended list, inspect scroll.after, moved, contentChanged, and reachedBoundary, collect stableKey/href values, and repeat only with an explicit bound until the boundary is reached and no new stable keys appear. Coordinate actions default to background CDP input and draw a visible cursor marker; use them only when no reliable element ref exists and verify the resulting page state. A visible pointer is a foreground diagnostic: call activate_tab only when the user explicitly asks to watch or permits foreground interaction, then pass executionMode foreground. Never use activate_tab as an implicit recovery step. If a tool returns FOREGROUND_REQUIRED, explain the limitation and request foreground permission instead of activating anything. Never enter passwords, OTPs, payment data, upload files, publish, purchase, send, or delete without the user's explicit instruction. Surfaces rendered as canvas, editors, games, or remote screens expose little or no DOM: when read_page returns little or no useful text while the task needs visual content, use capture_page and reason from the screenshot. Icon-only controls expose a computed accessibleName that find_elements matches; when a text-poor canvas-class page still returns almost no text, read_page also includes a read-only axSummary accessibility snapshot (role and name facts only, never field values; entries are not clickable refs). If find_elements returns nothing while read_page shows the text, target an ancestor clickable element or capture the page instead of retrying the same query. Maps search results are viewport-scoped: after panning or zooming, re-read or re-search rather than trusting the earlier list, and re-find targets after any large page redraw before clicking them. When a tool reports a timeout or an unknown outcome, verify the page state before repeating the action. For OAuth/login/SSO flows, click the login control and read openedTabs in the click result: if a popup tab opened, continue inside that popup by passing its exact tabId to every later page tool — never activate it as an implicit recovery step, and ask before bringing it to the foreground. Verification on state-changing clicks and fills is expect-based: a result with verified:false means the expectation did not pass within the bounded post-action window, so re-check the page instead of immediately repeating the action; a slow SPA or OAuth redirect may still be settling. In a rich editor or canvas surface, click the editing surface first so it takes focus, then use press_key with key \"a\" and modifiers [\"control\"] to select all, key \"Delete\" to clear that selection, and only then pass text to type into the surface. Typed text is inserted at the caret and does NOT replace an active selection: selecting all and then typing appends instead of overwriting, duplicating the content silently with no error to notice. Use key \"v\" and modifiers [\"control\"] to paste, key \"Enter\" with modifiers [\"shift\"] for a line break, and capture_page to confirm the result rather than assuming the keystroke landed, because a canvas surface returns little or no DOM text to re-read. Two further rules were measured against a live Google Docs canvas and both return success while doing nothing, so neither is visible without a capture: a paragraph break must be carried as a newline INSIDE the text payload, because press_key with key \"Enter\" is ignored by that editor and merges every paragraph into one; and a paragraph style must be applied to the EMPTY paragraph before its text is written (press_key the digit with modifiers [\"control\",\"alt\"] first, then pass the heading text), because styling a paragraph that already holds text does not take. Style the paragraph, type its heading, pass a newline, reset with press_key key \"0\" modifiers [\"control\",\"alt\"], then type the body. Two more were measured the same way, one per surface. In a sheet a cell ignores inserted text until a character keystroke opens the editor, and the opening character joins the value, so press a letter, press key \"Backspace\" to erase it, then pass the value; clicking the next cell commits the last one, and reading the cell reference from the name box before each write is the only way to know the click landed. In a deck a placeholder takes text straight after a click with no such trick, press_key key \"m\" modifiers [\"control\"] adds a slide, and key \"Escape\" leaves the box so the next placeholder can be clicked. Three traps are shared by all three. The first key event after a write is swallowed, so send one harmless key before the real one: a dispatched Enter never breaks a paragraph and a toggle never switches off until something has absorbed that event. Clearing a surface removes its text but NOT its formatting, so the next paragraph inherits the old bullets; clear, then send the formatting toggle once, then write. And a menu item that owns a submenu opens on hover, so use pointer hover and settle there rather than pressing, because the press closes the menu instead. If a click reports that the ref moved beyond its geometry tolerance, that stale ref is refused on purpose; the error carries candidates, each entry holding a freshRef that already passed validation, so act on one of those freshRef values directly instead of re-running find_elements. For a page that changes on its own — video players, ad overlays, countdown controls, live lists — prefer start_watch to arm a device-local trigger and then wait_events to collect what it fired. The device acts locally, so no model round trip sits between the page changing and the action happening, and you learn of it once in a single wait_events result instead of re-reading the page to notice. Arm a trigger you expect to fire later, then wait, rather than polling. For an intent you run repeatedly on a known site, prefer run_workflow, which executes the whole versioned sequence server-side, including its own re-queries and retries, instead of hand-driving each click and risking a stale reference. Supabase is internal transport and should not be mentioned to the user unless troubleshooting.",
       capabilities: { logging: {} }
@@ -843,11 +1192,26 @@ function createServer(deviceName: string = DEVICE_NAME, provider = "", caller: V
   );
 
   const defineTool = server.registerTool.bind(server) as (
-    name: string, config: unknown, handler: (args: never, extra: ProgressEmitter) => unknown
+    name: string,
+    config: unknown,
+    handler: (
+      args: never,
+      extra: ProgressEmitter
+    ) => unknown
   ) => unknown;
-  (server as unknown as { registerTool: unknown }).registerTool = (
-    name: string, config: unknown, handler: (args: never, extra: ProgressEmitter) => unknown
-  ) => defineTool(name, config, (args: never, extra: ProgressEmitter) =>
+  (server as unknown as {
+    registerTool: unknown
+  }).registerTool = (
+    name: string,
+    config: unknown,
+    handler: (
+      args: never,
+      extra: ProgressEmitter
+    ) => unknown
+  ) => defineTool(name, config, (
+    args: never,
+    extra: ProgressEmitter
+  ) =>
     progressScope.run(extra, () => handler(args, extra)));
 
   registerTools(server, {
@@ -871,12 +1235,20 @@ function createServer(deviceName: string = DEVICE_NAME, provider = "", caller: V
 }
 
 Deno.serve(async (req: Request) => {
-  if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeadersFor(req) });
+  if (req.method === "OPTIONS") return new Response(null, {
+    status: 204,
+    headers: corsHeadersFor(req)
+  });
   if (isWsUpgrade(req)) return serveMcpSocket(req);
   const url = new URL(req.url);
 
   if (url.pathname.endsWith("/health")) {
-    return json(req, { ok: true, service: "opera-agent-mcp", transport: "streamable-http", authConfigured: !!STATIC_TOKEN || ALLOWED_USER_IDS.size > 0 || ALLOWED_USER_EMAILS.size > 0 });
+    return json(req, {
+      ok: true,
+      service: "opera-agent-mcp",
+      transport: "streamable-http",
+      authConfigured: !!STATIC_TOKEN || ALLOWED_USER_IDS.size > 0 || ALLOWED_USER_EMAILS.size > 0
+    });
   }
 
   if (url.pathname.endsWith("/.well-known/oauth-protected-resource")) {
@@ -884,14 +1256,23 @@ Deno.serve(async (req: Request) => {
       resource: publicBaseUrl(),
       authorization_servers: [`${SUPABASE_URL}/auth/v1`],
       bearer_methods_supported: ["header"],
-      scopes_supported: ["openid", "email"]
+      scopes_supported: [
+        "openid",
+        "email"
+      ]
     });
   }
 
-  if (req.method !== "POST") return json(req, { error: "method_not_allowed", error_description: "Use POST for stateless Streamable HTTP MCP." }, 405);
+  if (req.method !== "POST") return json(req, {
+    error: "method_not_allowed",
+    error_description: "Use POST for stateless Streamable HTTP MCP."
+  }, 405);
 
   if (!SUPABASE_URL) {
-    return json(req, { error: "server_misconfigured", error_description: "MCP authentication is not configured." }, 503);
+    return json(req, {
+      error: "server_misconfigured",
+      error_description: "MCP authentication is not configured."
+    }, 503);
   }
   const requestStartedAt = Date.now();
   const authContext = await authenticate(req);
@@ -900,7 +1281,10 @@ Deno.serve(async (req: Request) => {
   if (!deviceName) return unauthorized(req);
   const provider = await resolveProvider(req, authContext);
   const caller: VmCaller | null = authContext.type === "user"
-    ? { userId: authContext.userId, token: bearerToken(req) }
+    ? {
+      userId: authContext.userId,
+      token: bearerToken(req)
+    }
     : null;
   const identityDoneAt = Date.now();
 
@@ -921,9 +1305,20 @@ Deno.serve(async (req: Request) => {
     headers.set("x-opera-edge-build-ms", String(serverBuiltAt - identityDoneAt));
     headers.set("x-opera-edge-connect-ms", String(connectedAt - serverBuiltAt));
     headers.set("x-opera-edge-handle-ms", String(handledAt - connectedAt));
-    return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
+    return new Response(response.body, {
+      status: response.status,
+      statusText: response.statusText,
+      headers
+    });
   } catch (error) {
     createEdgeLog({}).error("opera-agent-mcp", errorMessage(error));
-    return json(req, { jsonrpc: "2.0", error: { code: -32603, message: "Internal server error." }, id: null }, 500);
+    return json(req, {
+      jsonrpc: "2.0",
+      error: {
+        code: -32603,
+        message: "Internal server error."
+      },
+      id: null
+    }, 500);
   }
 });

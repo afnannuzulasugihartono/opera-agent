@@ -10,13 +10,22 @@ import { readFile } from 'node:fs/promises';
 import { contentSource } from './helpers/content-source.mjs';
 
 const surfaces = [
-  { name: 'popup.html', url: new URL('../extension/popup.html', import.meta.url) },
-  { name: 'options.html', url: new URL('../extension/options.html', import.meta.url) }
+  {
+    name: 'popup.html',
+    url: new URL('../extension/popup.html', import.meta.url)
+  },
+  {
+    name: 'options.html',
+    url: new URL('../extension/options.html', import.meta.url)
+  }
 ];
 
 const tagPattern = (name) => new RegExp(`<${name}\\b(?:"[^"]*"|'[^']*'|[^>"'])*>`, 'gi');
 
-function tags(src, name) {
+function tags(
+  src,
+  name
+) {
   return [...src.matchAll(tagPattern(name))].map((m) => m[0]);
 }
 
@@ -24,7 +33,10 @@ function anyTags(src) {
   return [...src.matchAll(/<[a-z][a-z0-9-]*\b(?:"[^"]*"|'[^']*'|[^>"'])*>/gi)].map((m) => m[0]);
 }
 
-function attr(tag, name) {
+function attr(
+  tag,
+  name
+) {
   const m = tag.match(new RegExp(`\\b${name}\\s*=\\s*"([^"]*)"`, 'i'));
   if (m) return m[1];
   const single = tag.match(new RegExp(`\\b${name}\\s*=\\s*'([^']*)'`, 'i'));
@@ -34,7 +46,10 @@ function attr(tag, name) {
   return bare ? bare[1] : null;
 }
 
-function hasAttr(tag, name) {
+function hasAttr(
+  tag,
+  name
+) {
   return new RegExp(`\\b${name}\\s*=`, 'i').test(tag);
 }
 
@@ -52,7 +67,11 @@ function hasIntrinsicName(tag) {
   return false;
 }
 
-function textOf(src, tag, from) {
+function textOf(
+  src,
+  tag,
+  from
+) {
   const name = tagNameOf(tag);
   const close = new RegExp(`</${name}\\s*>`, 'i');
   const rest = src.slice(from + tag.length);
@@ -85,7 +104,10 @@ function hiddenRanges(src) {
       if (token[1]) {
         depth -= 1;
         if (depth === 0) {
-          ranges.push([m.index, token.index + token[0].length]);
+          ranges.push([
+            m.index,
+            token.index + token[0].length
+          ]);
           break;
         }
       } else {
@@ -154,7 +176,10 @@ for (const surface of surfaces) {
     }
     for (const m of src.matchAll(tagPattern('svg'))) {
       const svg = m[0];
-      const insideHiddenWrapper = hidden.some(([start, end]) => m.index >= start && m.index < end);
+      const insideHiddenWrapper = hidden.some(([
+        start,
+        end
+      ]) => m.index >= start && m.index < end);
 
       const hiddenSelf = (attr(svg, 'aria-hidden') ?? '').toLowerCase() === 'true';
       assert.ok(
@@ -252,10 +277,10 @@ test('popup keeps its controls accessible and responsive in narrow Opera panels'
 const content = contentSource();
 
 test('I1: action-ref descriptors carry mint-time geometry and mutation version', () => {
-  assert.match(content, /function actionRefDescriptor\(el, options = \{\}\)/);
+  assert.match(content, /function actionRefDescriptor\(\s*el,\s*options = \{\}\s*\)/);
   assert.match(content, /rectAtMint:/);
   assert.match(content, /mutationVersionAtMint:/);
-  assert.match(content, /actionRefDescriptor\(el, \{ rectAtMint: documentRectOf\(el\), mutationVersionAtMint: mutationVersion \}\)/);
+  assert.match(content, /actionRefDescriptor\(\s*el,\s*\{\s*rectAtMint: documentRectOf\(el\),\s*mutationVersionAtMint: mutationVersion\s*\}\s*\)/);
 });
 
 test('I1: rebind requires geometry continuity and rejects drift with current candidates', () => {
@@ -284,7 +309,6 @@ test('I3: visible text without an interactive element surfaces a nearby actionab
 });
 
 test('I4: rebind falls back to a unique intrinsic-signature successor when the keyed node loses its id', () => {
-
   assert.match(content, /function signatureRebindCandidates/);
   assert.match(content, /signatureRebindCandidates\(descriptor\)/);
   assert.match(content, /return keyed\.concat\(signatureRebindCandidates\(descriptor\)\)/);

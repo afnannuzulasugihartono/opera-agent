@@ -22,12 +22,23 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { stripTypeScriptTypes } from 'node:module';
 import vm from 'node:vm';
-import { CORS_DEFAULT_ORIGINS, resolveAllowedOrigin } from '../supabase/functions/_shared/cors.js';
-import { isUpgradeRequest, serveDeviceSocket } from '../supabase/functions/opera-agent-bridge/bridge-socket.ts';
+import {
+  CORS_DEFAULT_ORIGINS,
+  resolveAllowedOrigin
+} from '../supabase/functions/_shared/cors.js';
+import {
+  isUpgradeRequest,
+  serveDeviceSocket
+} from '../supabase/functions/opera-agent-bridge/bridge-socket.ts';
 
 const bridgeSource = stripTypeScriptTypes(readFileSync(
   new URL('../supabase/functions/opera-agent-bridge/index.ts', import.meta.url), 'utf8'
-).replace(/^import .*;\r?\n/gm, ''));
+
+// WHY THE IMPORT STRIP SPANS LINES.
+// A list of specifiers is written one per line, so the statement begins with `import {` and ends with `} from '...';` on a line of its own.
+// Matching only a one-line import left the statement in the harness, and the vm refuses it as an import outside a module.
+
+).replace(/^import [\s\S]*?;\r?\n/gm, ''));
 
 const COMMAND_ID = 'a2f0f239-aa99-4d1c-a168-4a5ca51be777';
 
@@ -39,20 +50,38 @@ const upgradedSockets = [];
 const upgradeOptions = [];
 const realDeno = globalThis.Deno;
 globalThis.Deno = {
-  upgradeWebSocket(req, options) {
+  upgradeWebSocket(
+    req,
+    options
+  ) {
     upgradeOptions.push(options);
     const socket = {
       readyState: 1,
       sent: [],
       closed: null,
-      send(text) { this.sent.push(text); },
-      close(code, reason) { this.closed = { code, reason }; }
+      send(text) {
+        this.sent.push(text);
+      },
+      close(
+        code,
+        reason
+      ) {
+        this.closed = {
+          code,
+          reason
+        };
+      }
     };
     upgradedSockets.push(socket);
-    return { socket, response: { status: 101 } };
+    return {
+      socket,
+      response: { status: 101 }
+    };
   }
 };
-process.on('exit', () => { globalThis.Deno = realDeno; });
+process.on('exit', () => {
+  globalThis.Deno = realDeno;
+});
 
 // WHY the runtime is stubbed globally alongside Deno.
 // serveDeviceSocket keeps one promise pending through EdgeRuntime.waitUntil until the socket closes, which is what stops the platform retiring the isolate while a device is connected.
@@ -61,9 +90,13 @@ process.on('exit', () => { globalThis.Deno = realDeno; });
 const waitedPromises = [];
 const realEdgeRuntime = globalThis.EdgeRuntime;
 globalThis.EdgeRuntime = {
-  waitUntil(promise) { waitedPromises.push(promise); }
+  waitUntil(promise) {
+    waitedPromises.push(promise);
+  }
 };
-process.on('exit', () => { globalThis.EdgeRuntime = realEdgeRuntime; });
+process.on('exit', () => {
+  globalThis.EdgeRuntime = realEdgeRuntime;
+});
 
 // WHY the timers are stubbed globally too.
 // serveDeviceSocket is the real module, so its setInterval and setTimeout are the globals, exactly like its Deno.
@@ -76,19 +109,31 @@ process.on('exit', () => { globalThis.EdgeRuntime = realEdgeRuntime; });
 let nextTimerId = 0;
 let activeTimers = null;
 
-globalThis.setInterval = function stubbedSetInterval(fn, ms) {
+globalThis.setInterval = function stubbedSetInterval(
+  fn,
+  ms
+) {
   const id = ++nextTimerId;
   activeTimers?.intervals.add(id);
-  activeTimers?.intervalsById.set(id, { fn, ms });
+  activeTimers?.intervalsById.set(id, {
+    fn,
+    ms
+  });
   return id;
 };
 globalThis.clearInterval = function stubbedClearInterval(id) {
   activeTimers?.intervals.delete(id);
   activeTimers?.cleared.push(id);
 };
-globalThis.setTimeout = function stubbedSetTimeout(fn, ms) {
+globalThis.setTimeout = function stubbedSetTimeout(
+  fn,
+  ms
+) {
   const id = ++nextTimerId;
-  activeTimers?.timeouts.push({ id, ms });
+  activeTimers?.timeouts.push({
+    id,
+    ms
+  });
   return id;
 };
 globalThis.clearTimeout = function stubbedClearTimeout(id) {
@@ -98,57 +143,105 @@ globalThis.clearTimeout = function stubbedClearTimeout(id) {
 // WHY the sandbox shares the stubbed timers.
 // The bridge source runs inside the vm context with its own globals, so the outer stubs are invisible to it — without sharing, the drain poll would be a real interval the test can neither see nor stop, and the suite would hang on exit.
 
-function harness(emit = { ok: true, eventId: 7 }) {
+function harness(emit = {
+  ok: true,
+  eventId: 7
+}) {
   const calls = [];
   let handler;
   const sockets = [];
-  const timers = { intervals: new Set(), intervalsById: new Map(), cleared: [], timeouts: [] };
+  const timers = {
+    intervals: new Set(),
+    intervalsById: new Map(),
+    cleared: [],
+    timeouts: []
+  };
   activeTimers = timers;
   upgradedSockets.length = 0;
   const client = {
-    async rpc(name, args) {
-      calls.push({ name, args });
+    async rpc(
+      name,
+      args
+    ) {
+      calls.push({
+        name,
+        args
+      });
       if (name === 'opera_emit_command_event') return { data: emit };
       if (name === 'opera_auth_device') return { data: 'device-uuid' };
-      if (name === 'opera_claim_next_wait') return { data: { ok: true, command: null } };
+      if (name === 'opera_claim_next_wait') return { data: {
+        ok: true,
+        command: null
+      } };
       throw new Error(`Unexpected RPC ${name}`);
     },
-    async removeChannel() { }
+    async removeChannel() {}
   };
   vm.runInNewContext(bridgeSource, {
     createClient: () => client,
     createEdgeLog: () => ({ error() {} }),
-    CORS_DEFAULT_ORIGINS, resolveAllowedOrigin,
-    isUpgradeRequest, serveDeviceSocket,
+    CORS_DEFAULT_ORIGINS,
+    resolveAllowedOrigin,
+    isUpgradeRequest,
+    serveDeviceSocket,
     WebSocket: { OPEN: 1 },
     Deno: {
       env: { get: () => 'test' },
-      serve: (fn) => { handler = fn; },
+      serve: (fn) => {
+        handler = fn;
+      },
       upgradeWebSocket() {
         const socket = {
           readyState: 1,
           sent: [],
           closed: null,
-          send(text) { this.sent.push(text); },
-          close(code, reason) { this.closed = { code, reason }; }
+          send(text) {
+            this.sent.push(text);
+          },
+          close(
+            code,
+            reason
+          ) {
+            this.closed = {
+              code,
+              reason
+            };
+          }
         };
         sockets.push(socket);
-        return { socket, response: { status: 101 } };
+        return {
+          socket,
+          response: { status: 101 }
+        };
       },
-      setTimeout(fn, ms) {
-        timers.timeouts.push({ fn, ms });
+      setTimeout(
+        fn,
+        ms
+      ) {
+        timers.timeouts.push({
+          fn,
+          ms
+        });
         return -1;
       },
-      clearTimeout() { }
+      clearTimeout() {}
     },
     setInterval: globalThis.setInterval,
     clearInterval: globalThis.clearInterval,
     setTimeout: globalThis.setTimeout,
     clearTimeout: globalThis.clearTimeout,
-    Request, Response, Headers, URL, TextEncoder, TextDecoder, crypto
+    Request,
+    Response,
+    Headers,
+    URL,
+    TextEncoder,
+    TextDecoder,
+    crypto
   });
   const post = (payload) => handler(new Request('https://example.test/functions/v1/opera-agent-bridge', {
-    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
   }));
   const openSocket = async () => {
     await handler(new Request('https://example.test/functions/v1/opera-agent-bridge', {
@@ -156,7 +249,13 @@ function harness(emit = { ok: true, eventId: 7 }) {
     }));
     return upgradedSockets[0];
   };
-  return { calls, post, openSocket, sockets, timers };
+  return {
+    calls,
+    post,
+    openSocket,
+    sockets,
+    timers
+  };
 }
 
 // Every socket test opens the same way and waits for the same settled state.
@@ -165,7 +264,11 @@ function harness(emit = { ok: true, eventId: 7 }) {
 async function handshakenSocket(h) {
   const socket = await h.openSocket();
   socket.onopen();
-  await socket.onmessage({ data: JSON.stringify({ type: 'hello', token: 'a'.repeat(64), deviceName: 'opera' }) });
+  await socket.onmessage({ data: JSON.stringify({
+    type: 'hello',
+    token: 'a'.repeat(64),
+    deviceName: 'opera'
+  }) });
   for (let turn = 0; turn < 5000; turn += 1) {
     if ([...h.timers.intervalsById.values()].some((t) => t.ms === 20000)) break;
     await new Promise((resolve) => setImmediate(resolve));
@@ -174,7 +277,10 @@ async function handshakenSocket(h) {
 }
 
 function pollTick(h) {
-  const poll = [...h.timers.intervalsById.entries()].find(([, t]) => t.ms !== 20000);
+  const poll = [...h.timers.intervalsById.entries()].find(([
+    ,
+    t
+  ]) => t.ms !== 20000);
   assert.ok(poll, 'no drain poll interval to drive');
   assert.ok(poll[1].ms >= 50 && poll[1].ms <= 300,
     `a ${poll[1].ms}ms poll is either wasteful or felt`);
@@ -182,8 +288,13 @@ function pollTick(h) {
 }
 
 const validBody = (extra = {}) => ({
-  action: 'command_event', token: 'a'.repeat(64), deviceName: 'opera',
-  commandId: COMMAND_ID, kind: 'step', envelope: { n: 1 }, ...extra
+  action: 'command_event',
+  token: 'a'.repeat(64),
+  deviceName: 'opera',
+  commandId: COMMAND_ID,
+  kind: 'step',
+  envelope: { n: 1 },
+  ...extra
 });
 
 test('a well-formed emit reaches the RPC with the device token hashed, never in the clear', async () => {
@@ -199,10 +310,26 @@ test('a well-formed emit reaches the RPC with the device token hashed, never in 
 });
 
 const REFUSALS = [
-  ['an emit with a bad token never reaches the database', { token: 'short' }, 401],
-  ['a commandId that is not a uuid never reaches the database', { commandId: 'not-a-uuid' }, 400],
-  ['an unknown kind never reaches the database', { kind: 'exfiltrate' }, 400],
-  ['an oversized envelope never reaches the database', { envelope: { blob: 'x'.repeat(64 * 1024) } }, 400]
+  [
+    'an emit with a bad token never reaches the database',
+    { token: 'short' },
+    401
+  ],
+  [
+    'a commandId that is not a uuid never reaches the database',
+    { commandId: 'not-a-uuid' },
+    400
+  ],
+  [
+    'an unknown kind never reaches the database',
+    { kind: 'exfiltrate' },
+    400
+  ],
+  [
+    'an oversized envelope never reaches the database',
+    { envelope: { blob: 'x'.repeat(64 * 1024) } },
+    400
+  ]
 ];
 
 for (const [name, override, status] of REFUSALS) {
@@ -222,7 +349,11 @@ test('the handshake authenticates without claiming, so no queued command is swal
   const h = harness();
   const socket = await h.openSocket();
 
-  await socket.onmessage({ data: JSON.stringify({ type: 'hello', token: 'a'.repeat(64), deviceName: 'opera' }) });
+  await socket.onmessage({ data: JSON.stringify({
+    type: 'hello',
+    token: 'a'.repeat(64),
+    deviceName: 'opera'
+  }) });
 
   const names = h.calls.map((c) => c.name);
   assert.ok(names.includes('opera_auth_device'), `the handshake authenticated through ${names.join(', ')}`);
@@ -234,7 +365,13 @@ test('a socket that fails the handshake is closed unread and never receives work
   const h = harness();
   const socket = await h.openSocket();
 
-  await socket.onmessage({ data: JSON.stringify({ type: 'command', command: { id: 'x', method: 'browser.ping' } }) });
+  await socket.onmessage({ data: JSON.stringify({
+    type: 'command',
+    command: {
+      id: 'x',
+      method: 'browser.ping'
+    }
+  }) });
 
   assert.ok(!socket.sent.some((text) => text.includes('"command"')),
     'a command went out before the bridge accepted this device');
@@ -273,14 +410,20 @@ test('closing the socket stops the keepalive, so a gone device leaks no timer', 
   const h = harness();
   const socket = await handshakenSocket(h);
 
-  const keepalive = [...h.timers.intervalsById.entries()].find(([, t]) => t.ms === 20000);
+  const keepalive = [...h.timers.intervalsById.entries()].find(([
+    ,
+    t
+  ]) => t.ms === 20000);
   assert.ok(keepalive, 'a handshaken socket runs no keepalive at all');
   assert.equal(h.timers.timeouts.length, 2, 'the handshake ran without both of its deadlines');
   for (const { id } of h.timers.timeouts) {
     assert.ok(h.timers.cleared.includes(id), 'a ready socket still holds a handshake deadline');
   }
 
-  socket.onclose({ code: 1006, reason: 'worker stopped' });
+  socket.onclose({
+    code: 1006,
+    reason: 'worker stopped'
+  });
 
   assert.ok(!h.timers.intervals.has(keepalive[0]), 'the keepalive survived the socket it belonged to');
   assert.equal(h.timers.cleared.length, 4,
@@ -299,8 +442,13 @@ test('an upgraded socket holds the worker until it closes, or the platform retir
   assert.equal(waitedPromises.length, 1, 'the upgrade held no promise, so the worker looks idle');
 
   let released = false;
-  waitedPromises[0].then(() => { released = true; });
-  socket.onclose({ code: 1006, reason: '' });
+  waitedPromises[0].then(() => {
+    released = true;
+  });
+  socket.onclose({
+    code: 1006,
+    reason: ''
+  });
   await new Promise((resolve) => setImmediate(resolve));
   await new Promise((resolve) => setImmediate(resolve));
 
@@ -369,7 +517,10 @@ test('closing the socket stops the poll, so a gone device costs no queries', asy
   const poll = pollTick(h);
   assert.ok(h.timers.intervals.has(poll[0]), 'the poll is not running');
 
-  socket.onclose({ code: 1006, reason: '' });
+  socket.onclose({
+    code: 1006,
+    reason: ''
+  });
 
   assert.ok(!h.timers.intervals.has(poll[0]), 'the poll survived the socket it belonged to');
 });

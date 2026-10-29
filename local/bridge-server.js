@@ -13,7 +13,13 @@ import { createServer } from 'node:http';
 import { EventEmitter } from 'node:events';
 
 import { parseFrame } from '../extension/lib/socket-protocol.js';
-import { BridgeSocket, acceptKey, encodeText, isOriginAllowed, isWebSocketUpgrade } from './ws-server.js';
+import {
+  BridgeSocket,
+  acceptKey,
+  encodeText,
+  isOriginAllowed,
+  isWebSocketUpgrade
+} from './ws-server.js';
 import { createLeaseTable } from './leases.js';
 
 const DEVICE_PROTOCOL_VERSION = 1;
@@ -101,17 +107,26 @@ export function createBridgeServer({
 
   function deliver(command) {
     if (!socket || socket.closed || !handshaken) return false;
-    return send(JSON.stringify({ type: 'command', command }));
+    return send(JSON.stringify({
+      type: 'command',
+      command
+    }));
   }
 
-  function attach(next, request) {
+  function attach(
+    next,
+    request
+  ) {
     if (socket && socket !== next) socket.close(1000);
     socket = next;
     handshaken = false;
     connectedAt = now();
     lastHeardAt = now();
     attached.add(next);
-    devices.set(next.id, { id: next.id, connectedAt });
+    devices.set(next.id, {
+      id: next.id,
+      connectedAt
+    });
 
     next.on('text', (raw) => {
       lastHeardAt = now();
@@ -120,7 +135,11 @@ export function createBridgeServer({
       const message = parsed.message;
       if (message.type === 'hello') {
         handshaken = true;
-        send(JSON.stringify({ type: 'ready', protocolVersion: DEVICE_PROTOCOL_VERSION, serverTime: now() }));
+        send(JSON.stringify({
+          type: 'ready',
+          protocolVersion: DEVICE_PROTOCOL_VERSION,
+          serverTime: now()
+        }));
         flush();
         return;
       }
@@ -131,8 +150,19 @@ export function createBridgeServer({
       if (!entry) return;
       waiting.delete(String(message.commandId));
       entry.resolve(message.ok === true
-        ? { ok: true, result: message.result ?? {}, ms: now() - entry.sentAt }
-        : { ok: false, error: message.error ?? { code: 'EXECUTION_ERROR', message: 'Command failed.' }, ms: now() - entry.sentAt });
+        ? {
+          ok: true,
+          result: message.result ?? {},
+          ms: now() - entry.sentAt
+        }
+        : {
+          ok: false,
+          error: message.error ?? {
+            code: 'EXECUTION_ERROR',
+            message: 'Command failed.'
+          },
+          ms: now() - entry.sentAt
+        });
     });
 
     next.on('close', () => {
@@ -149,7 +179,10 @@ export function createBridgeServer({
       waiting.clear();
     });
 
-    state.emit('state', { status: 'ready', id: next.id });
+    state.emit('state', {
+      status: 'ready',
+      id: next.id
+    });
   }
 
   function flush() {
@@ -159,11 +192,28 @@ export function createBridgeServer({
     }
   }
 
-  function command(method, params = {}, { timeoutMs = 60000 } = {}) {
+  function command(
+    method,
+    params = {},
+    { timeoutMs = 60000 } = {}
+  ) {
     const id = `${now().toString(36)}-${randomUUID().slice(0, 13)}`;
-    const frame = { id, method, params, timeoutMs };
-    return new Promise((resolve, reject) => {
-      const entry = { resolve, reject, method, sentAt: now() };
+    const frame = {
+      id,
+      method,
+      params,
+      timeoutMs
+    };
+    return new Promise((
+      resolve,
+      reject
+    ) => {
+      const entry = {
+        resolve,
+        reject,
+        method,
+        sentAt: now()
+      };
       waiting.set(id, entry);
       queue.push(frame);
       flush();
@@ -188,7 +238,9 @@ export function createBridgeServer({
 
   const readJson = (req) => new Promise((resolve) => {
     let body = '';
-    req.on('data', (piece) => { body += piece; });
+    req.on('data', (piece) => {
+      body += piece;
+    });
     req.on('end', () => {
       try {
         resolve(JSON.parse(body || '{}'));
@@ -198,12 +250,19 @@ export function createBridgeServer({
     });
   });
 
-  const json = (res, status, payload) => {
+  const json = (
+    res,
+    status,
+    payload
+  ) => {
     res.writeHead(status, { 'content-type': 'application/json' });
     res.end(JSON.stringify(payload));
   };
 
-  const server = createServer((req, res) => {
+  const server = createServer((
+    req,
+    res
+  ) => {
     if (req.url === '/health') {
       res.writeHead(200, { 'content-type': 'application/json' });
       res.end(JSON.stringify({
@@ -220,14 +279,20 @@ export function createBridgeServer({
       void (async () => {
         const body = await readJson(req);
         if (!body?.method) {
-          json(res, 400, { ok: false, error: { message: 'a command needs a method' } });
+          json(res, 400, {
+            ok: false,
+            error: { message: 'a command needs a method' }
+          });
           return;
         }
                 const timeoutMs = Number(body.timeoutMs) > 0 ? Number(body.timeoutMs) : 60000;
         try {
           json(res, 200, await command(body.method, body.params ?? {}, { timeoutMs }));
         } catch (error) {
-          json(res, 200, { ok: false, error: { message: String(error?.message ?? error) } });
+          json(res, 200, {
+            ok: false,
+            error: { message: String(error?.message ?? error) }
+          });
         }
       })();
       return;
@@ -238,17 +303,30 @@ export function createBridgeServer({
       void (async () => {
         const body = await readJson(req);
         if (!body?.action || !body?.tabId || !body?.owner) {
-          json(res, 400, { ok: false, error: { message: 'a lease needs an action, a tab and an owner' } });
+          json(res, 400, {
+            ok: false,
+            error: { message: 'a lease needs an action, a tab and an owner' }
+          });
           return;
         }
         try {
           if (body.action === 'release') {
-            json(res, 200, { ok: true, granted: leases.release(body.tabId, body.owner), released: true });
+            json(res, 200, {
+              ok: true,
+              granted: leases.release(body.tabId, body.owner),
+              released: true
+            });
             return;
           }
-          json(res, 200, { ok: true, ...leases.claim(body.tabId, body.owner, body.ttlMs) });
+          json(res, 200, {
+            ok: true,
+            ...leases.claim(body.tabId, body.owner, body.ttlMs)
+          });
         } catch (error) {
-          json(res, 200, { ok: false, error: { message: String(error?.message ?? error) } });
+          json(res, 200, {
+            ok: false,
+            error: { message: String(error?.message ?? error) }
+          });
         }
       })();
       return;
@@ -257,7 +335,11 @@ export function createBridgeServer({
     res.end();
   });
 
-  server.on('upgrade', (req, socketHandle, head) => {
+  server.on('upgrade', (
+    req,
+    socketHandle,
+    head
+  ) => {
     const key = req.headers['sec-websocket-key'];
     if (!isWebSocketUpgrade(req) || !key || !isOriginAllowed(req.headers.origin, allowedOrigins)) {
       socketHandle.write('HTTP/1.1 400 Bad Request\r\n\r\n');
@@ -271,7 +353,8 @@ export function createBridgeServer({
       'Upgrade: websocket',
       'Connection: Upgrade',
       `Sec-WebSocket-Accept: ${acceptKey(key)}`,
-      '', ''
+      '',
+      ''
     ].join('\r\n'));
     if (head?.length) next.read(head);
     clearTimeout(timer);
@@ -281,10 +364,16 @@ export function createBridgeServer({
   return {
     address() {
       const bound = server.address();
-      return bound ? { port: bound.port, host: bound.address } : null;
+      return bound ? {
+        port: bound.port,
+        host: bound.address
+      } : null;
     },
     async listen() {
-      await new Promise((resolve, reject) => {
+      await new Promise((
+        resolve,
+        reject
+      ) => {
         server.once('error', reject);
         server.listen(port, host, () => {
           server.off('error', reject);
@@ -292,7 +381,10 @@ export function createBridgeServer({
         });
       });
       const bound = server.address();
-      return { port: bound.port, host: bound.address };
+      return {
+        port: bound.port,
+        host: bound.address
+      };
     },
     async close() {
       clearTimeout(timer);
@@ -305,8 +397,15 @@ export function createBridgeServer({
       return Boolean(socket && !socket.closed);
     },
     leases,
-    send: (method, params, options) => command(method, params, options),
-    on: (event, handler) => state.on(event, handler),
+    send: (
+      method,
+      params,
+      options
+    ) => command(method, params, options),
+    on: (
+      event,
+      handler
+    ) => state.on(event, handler),
     state: () => ({
       linked: Boolean(socket && !socket.closed),
       deviceId: socket ? socket.id : null,

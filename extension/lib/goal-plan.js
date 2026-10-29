@@ -16,8 +16,15 @@ import { ALLOWED_METHODS } from './protocol.js';
 const GOAL_MAX_CHARS = 1200;
 const PAGE_ELEMENT_LIMIT = 40;
 
-function refuseRequest(code, message) {
-  return { ok: false, code, message };
+function refuseRequest(
+  code,
+  message
+) {
+  return {
+    ok: false,
+    code,
+    message
+  };
 }
 
 function summarizePage(page) {
@@ -37,7 +44,14 @@ function summarizePage(page) {
   };
 }
 
-export function buildPlanRequest(goal, { page, methods = ALLOWED_METHODS, maxCommands = 12 } = {}) {
+export function buildPlanRequest(
+  goal,
+  {
+    page,
+    methods = ALLOWED_METHODS,
+    maxCommands = 12
+  } = {}
+) {
   const text = String(goal ?? '').trim();
   if (!text) return refuseRequest('GOAL_EMPTY', 'A plan needs a goal.');
   if (text.length > GOAL_MAX_CHARS) {
@@ -60,18 +74,43 @@ export function buildPlanRequest(goal, { page, methods = ALLOWED_METHODS, maxCom
     `GOAL: ${text}`,
     `OBSERVED PAGE: ${JSON.stringify(observed)}`
   ].join('\n\n');
-  return { ok: true, system, user };
+  return {
+    ok: true,
+    system,
+    user
+  };
 }
 
-const OWNED_FIELDS = new Set(['tenantId', 'goalId', 'target', 'budgets', 'root']);
+const OWNED_FIELDS = new Set([
+  'tenantId',
+  'goalId',
+  'target',
+  'budgets',
+  'root'
+]);
 
 const DEFAULT_DEPTH = 12;
 
-function refuse(code, message) {
-  return { ok: false, code, message };
+function refuse(
+  code,
+  message
+) {
+  return {
+    ok: false,
+    code,
+    message
+  };
 }
 
-function measure(node, maxDepth, depth = 1, counter = { commands: 0, tooDeep: false }) {
+function measure(
+  node,
+  maxDepth,
+  depth = 1,
+  counter = {
+    commands: 0,
+    tooDeep: false
+  }
+) {
   if (node === null || typeof node !== 'object') return counter;
   if (depth > maxDepth) {
     counter.tooDeep = true;
@@ -89,7 +128,15 @@ function measure(node, maxDepth, depth = 1, counter = { commands: 0, tooDeep: fa
   return counter;
 }
 
-export function compileGoalPlan(rawText, { target, budgets, programId = 'goal-plan', goalRevision = 1 } = {}) {
+export function compileGoalPlan(
+  rawText,
+  {
+    target,
+    budgets,
+    programId = 'goal-plan',
+    goalRevision = 1
+  } = {}
+) {
   if (!target || typeof target !== 'object') {
     return refuse('PLAN_NO_TARGET', 'The caller must supply a device and tab target.');
   }
@@ -103,7 +150,6 @@ export function compileGoalPlan(rawText, { target, budgets, programId = 'goal-pl
     return refuse('PLAN_NOT_JSON', 'The plan must be a JSON object.');
   }
   if (!parsed.root || typeof parsed.root !== 'object') {
-
     const reason = typeof parsed.reason === 'string' && parsed.reason.trim() ? ` Model: ${parsed.reason.trim().slice(0, 300)}` : '';
     return refuse('PLAN_MISSING_ROOT', `The plan has no root node.${reason}`);
   }
@@ -151,7 +197,10 @@ export function compileGoalPlan(rawText, { target, budgets, programId = 'goal-pl
   };
 }
 
-function findOwnedField(node, depth = 0) {
+function findOwnedField(
+  node,
+  depth = 0
+) {
   if (node === null || typeof node !== 'object' || depth > 64) return null;
   for (const key of Object.keys(node)) {
     if (OWNED_FIELDS.has(key)) return key;
@@ -173,7 +222,10 @@ function findOwnedField(node, depth = 0) {
 
 function findCommandMethod(root) {
   let found = null;
-  const visit = (node, depth = 1) => {
+  const visit = (
+    node,
+    depth = 1
+  ) => {
     if (found || node === null || typeof node !== 'object' || depth > 64) return;
     if (node.type === 'COMMAND' && typeof node.method === 'string') {
       found = node.method;

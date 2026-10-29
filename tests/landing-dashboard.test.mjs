@@ -20,7 +20,10 @@ const read = (name) => fs.readFileSync(new URL(`landing/${name}`, root), 'utf8')
 const css = read('dashboard.css');
 const app = read('app.css');
 const vercel = JSON.parse(fs.readFileSync(new URL('landing/vercel.json', root), 'utf8'));
-const bySource = Object.fromEntries(vercel.headers.map((h) => [h.source, h.headers]));
+const bySource = Object.fromEntries(vercel.headers.map((h) => [
+  h.source,
+  h.headers
+]));
 
 test('the dashboard reads through scoped RPCs, never raw tables', () => {
   const html = read('dashboard.html');
@@ -134,7 +137,14 @@ test('the dashboard is about devices, not a profile page', () => {
 test('the dashboard has a rail, because it has five jobs and no divider', () => {
   const html = read('dashboard.html');
 
-  const sections = ['#ringkasan', '#device', '#dengar', '#pairing', '#aksi', '#akun'];
+  const sections = [
+    '#ringkasan',
+    '#device',
+    '#dengar',
+    '#pairing',
+    '#aksi',
+    '#akun'
+  ];
   for (const href of sections) {
     assert.ok(html.includes(`href="${href}"`), `the rail links to ${href}`);
     assert.ok(html.includes(`id="${href.slice(1)}"`), `and ${href} names a section that exists`);
@@ -341,7 +351,6 @@ test('the migration binds devices without touching existing grants', () => {
 });
 
 test('the summary answers in numbers, not in a sentence that repeats the list', () => {
-
   const html = read('dashboard.html');
   for (const id of ['statDevices', 'statOnline', 'statCommands']) {
     assert.ok(html.includes(`id="${id}"`), `the summary carries #${id}`);
@@ -351,7 +360,6 @@ test('the summary answers in numbers, not in a sentence that repeats the list', 
 });
 
 test('a failed command looks failed, not like every other row', () => {
-
   const html = read('dashboard.html');
 
   assert.match(html, /commandInk = \(status\) => status === 'completed' \? 'online' : status === 'failed' \? 'offline' : ''/, 'completed reads green, failed reads amber, anything else stays muted');
@@ -361,14 +369,12 @@ test('a failed command looks failed, not like every other row', () => {
 });
 
 test('a device card leads with its state, not its name alone', () => {
-
   const html = read('dashboard.html');
   assert.match(html, /class="dot \$\{device\.status === 'online' \? 'online' : 'offline'\}"/, 'the name carries a state dot');
   assert.match(html, /class="chip"/, 'and the build rides beside it, not rows down');
 });
 
 test('pairing and run share one wrapper, and one verb at a time takes the row', () => {
-
   const html = read('dashboard.html');
   assert.match(html, /class="duo"/, 'one wrapper holds both verbs');
   assert.match(css, /\.duo \{[^}]*grid-template-columns: 1fr 1fr/, 'the wrapper knows its two-column form');
@@ -390,14 +396,12 @@ test('a view nobody opened takes no room from the view that is open', () => {
 });
 
 test('the rail counts what it links to', () => {
-
   const html = read('dashboard.html');
   assert.match(html, /#device/, 'the device anchor exists');
   assert.match(html, /Device \(\$|Device \($|`Device \(/, 'the rail names the count');
 });
 
 test('a new account sees three steps, not a blank console', () => {
-
   const html = read('dashboard.html');
   assert.match(html, /id="checklist"/, 'the steps have an element of their own');
   assert.match(html, /renderChecklist/, 'and a function that derives them from loaded data');
@@ -408,7 +412,6 @@ test('a new account sees three steps, not a blank console', () => {
 });
 
 test('the pairing code is shown, not told', () => {
-
   const html = read('dashboard.html');
   assert.match(html, /id="pairCodeBox"/, 'the code has a box, not a sentence');
   assert.match(html, /id="pairCopy"/, 'with its own copy control');
@@ -418,7 +421,6 @@ test('the pairing code is shown, not told', () => {
 });
 
 test('the console uses the screen, the prose keeps its measure', () => {
-
   const html = read('dashboard.html');
   assert.match(html, /class="wrap wide console"/, 'the console breaks out of the prose column');
   assert.match(css, /\.wrap\.wide \{[^}]*max-width: 1200px/, 'the other wide pages keep the named twelve-hundred measure');
@@ -546,7 +548,11 @@ test('the rail groups its links instead of listing eight equals', () => {
   const rail = html.slice(html.indexOf('<nav class="rail"'), html.indexOf('</nav>', html.indexOf('<nav class="rail"')));
   const groups = [...rail.matchAll(/<p class="railGroup">([^<]+)<\/p>/g)].map((match) => match[1]);
 
-  assert.deepEqual(groups.filter((group) => group !== 'Tabel data'), ['Pantau', 'Kelola', 'Akun'], 'three named view groups, in reading order');
+  assert.deepEqual(groups.filter((group) => group !== 'Tabel data'), [
+    'Pantau',
+    'Kelola',
+    'Akun'
+  ], 'three named view groups, in reading order');
   assert.equal(groups.length, 4, 'and one contextual group, which only the view that needs it asks for');
   assert.match(rail, /<p class="railGroup">Tabel data<\/p>/, 'that group names the tables, so views and objects never read as one list');
   assert.match(css, /\.railGroup \{/, 'and a rule that sets them apart from the links');

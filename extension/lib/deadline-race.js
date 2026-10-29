@@ -11,13 +11,20 @@
 
 const DEFAULT_ERROR_MESSAGE = 'Deadline exceeded.';
 
-export async function raceWithTimeout(work, timeoutMs, makeError) {
+export async function raceWithTimeout(
+  work,
+  timeoutMs,
+  makeError
+) {
   const build = typeof makeError === 'function' ? makeError : () => new Error(DEFAULT_ERROR_MESSAGE);
   let timer;
   try {
     return await Promise.race([
       work(),
-      new Promise((_, reject) => {
+      new Promise((
+        _,
+        reject
+      ) => {
         timer = setTimeout(() => reject(build()), Math.max(1, timeoutMs));
       })
     ]);

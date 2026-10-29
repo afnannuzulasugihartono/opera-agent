@@ -39,7 +39,10 @@ test('a hung command still releases the queue for the next one', async () => {
     const slow = () => new Promise(() => {});
     await assert.rejects(() => module.withExecuteTimeout(slow, '2026-10-14T00:00:00Z'), /no answer from the tab within 40 ms/);
 
-    const after = await module.withExecuteTimeout(async () => ({ ok: true, tabs: [] }), '2026-10-14T00:00:01Z');
+    const after = await module.withExecuteTimeout(async () => ({
+      ok: true,
+      tabs: []
+    }), '2026-10-14T00:00:01Z');
     assert.equal(after.ok, true, 'the queue walks free behind the abandoned command');
   } finally {
     if (previous === undefined) delete globalThis.OPERA_SOCKET_EXECUTE_TIMEOUT_MS;

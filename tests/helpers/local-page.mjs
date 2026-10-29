@@ -10,12 +10,23 @@
 export function recordingCdp() {
   const calls = [];
 
-  const page = { body: '9:body text', value: '', holds: true, tail: '' };
+  const page = {
+    body: '9:body text',
+    value: '',
+    holds: true,
+    tail: ''
+  };
   return {
     calls,
     page,
-    send: async (method, params = {}) => {
-      calls.push({ method, params });
+    send: async (
+      method,
+      params = {}
+    ) => {
+      calls.push({
+        method,
+        params
+      });
       if (method === 'Input.insertText') {
         const held = page.body.slice(page.body.indexOf(':') + 1);
         const grown = held + String(params.text ?? '');
@@ -23,11 +34,20 @@ export function recordingCdp() {
       }
       if (method === 'Runtime.evaluate') {
         if (params.expression.includes('document.title')) {
-          return { result: { value: { title: 't', url: 'u', text: 'body text', ready: 'complete' } } };
+          return { result: { value: {
+            title: 't',
+            url: 'u',
+            text: 'body text',
+            ready: 'complete'
+          } } };
         }
         if (params.expression.includes('readyState')) return { result: { value: 'complete' } };
         if (params.expression.includes('devicePixelRatio')) {
-          return { result: { value: { width: 1136, height: 770, dpr: 1.25 } } };
+          return { result: { value: {
+            width: 1136,
+            height: 770,
+            dpr: 1.25
+          } } };
         }
         if (params.expression.includes('opera-locate')) {
           const held = page.body.slice(page.body.indexOf(':') + 1).replace(/\s+/g, ' ');
@@ -45,17 +65,41 @@ export function recordingCdp() {
         if (params.expression.includes('isContentEditable')) return { result: { value: { ...page } } };
         if (params.expression.includes('opera-settle-arm')) return { result: { value: { ok: true } } };
         if (params.expression.includes('opera-settle-read')) {
-          return { result: { value: { changes: 1, quietMs: 40, elapsedMs: 40, visibility: 'hidden' } } };
+          return { result: { value: {
+            changes: 1,
+            quietMs: 40,
+            elapsedMs: 40,
+            visibility: 'hidden'
+          } } };
         }
         if (params.expression.includes('opera-settle-disarm')) return { result: { value: true } };
         if (params.expression.includes('opera-hit')) {
-          return { result: { value: { tag: 'BUTTON', role: 'button', name: 'Bold' } } };
+          return { result: { value: {
+            tag: 'BUTTON',
+            role: 'button',
+            name: 'Bold'
+          } } };
         }
-        return { result: { value: { title: 't', url: 'u', text: 'body text' } } };
+        return { result: { value: {
+          title: 't',
+          url: 'u',
+          text: 'body text'
+        } } };
       }
       if (method === 'Page.captureScreenshot') return { data: 'BASE64' };
       if (method === 'Page.getLayoutMetrics') {
-        return { cssVisualViewport: { pageX: 0, pageY: 0 }, contentSize: { x: 0, y: 0, width: 1136, height: 2400 } };
+        return {
+          cssVisualViewport: {
+            pageX: 0,
+            pageY: 0
+          },
+          contentSize: {
+            x: 0,
+            y: 0,
+            width: 1136,
+            height: 2400
+          }
+        };
       }
       return { result: {} };
     }
@@ -69,13 +113,23 @@ export function pipelinedCdp(handler = () => ({})) {
   const calls = [];
   let inflight = 0;
   let max = 0;
-  const page = { body: '9:body text', value: '', holds: true };
+  const page = {
+    body: '9:body text',
+    value: '',
+    holds: true
+  };
   return {
     calls,
     page,
     stats: () => ({ max }),
-    send: async (method, params = {}) => {
-      calls.push({ method, params });
+    send: async (
+      method,
+      params = {}
+    ) => {
+      calls.push({
+        method,
+        params
+      });
       if (method === 'Input.insertText') {
         const held = page.body.slice(page.body.indexOf(':') + 1);
         const grown = held + String(params.text ?? '');
@@ -90,7 +144,13 @@ export function pipelinedCdp(handler = () => ({})) {
         const held = page.body.slice(page.body.indexOf(':') + 1).replace(/\s+/g, ' ');
         const probe = JSON.parse(/const probe = ("(?:[^"\\]|\\.)*")/.exec(params.expression)[1]).replace(/\s+/g, ' ');
         const at = held.lastIndexOf(probe);
-        return { result: { value: { index: at, field: false, before: '', after: '', len: held.length } } };
+        return { result: { value: {
+          index: at,
+          field: false,
+          before: '',
+          after: '',
+          len: held.length
+        } } };
       }
       if (method === 'Runtime.evaluate' && String(params.expression).includes('isContentEditable')) {
         return { result: { value: { ...page } } };

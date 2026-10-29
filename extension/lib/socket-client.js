@@ -82,11 +82,18 @@ const MAX_RETRY_MS = 30000;
 // A fresh attempt does not erase the reason the previous one ended, and merging a null over it did exactly that: observed live, a device cycling ready to connecting every minute with no error anywhere, which made the cycle itself undiagnosable.
 // Only a connection clears the slate.
 
-export function connectionPatch(event, stamp) {
+export function connectionPatch(
+  event,
+  stamp
+) {
   const status = event?.status;
 
   if (status === 'connected') {
-    return { status: 'ready', lastConnectedAt: stamp, lastError: null };
+    return {
+      status: 'ready',
+      lastConnectedAt: stamp,
+      lastError: null
+    };
   }
 
   if (status === 'error') {
@@ -94,15 +101,23 @@ export function connectionPatch(event, stamp) {
   }
 
   if (status === 'rejected') {
-    return { status: 'rejected', lastError: 'Bridge refused this device.' };
+    return {
+      status: 'rejected',
+      lastError: 'Bridge refused this device.'
+    };
   }
 
   if (status === 'recycling') {
-    return { status: 'reconnecting', lastError: null };
+    return {
+      status: 'reconnecting',
+      lastError: null
+    };
   }
 
   const closed = event?.code
-    ? `Socket closed ${event.code}${event.reason ? `: ${event.reason}` : ''}.`
+    ? `Socket closed ${event.code}${event.reason ? `: ${
+      event.reason
+    }` : ''}.`
     : null;
   const stale = status === 'stale'
     ? `Silent for ${Math.round(Number(event.silenceMs) || 0)}ms; reconnecting.`
@@ -159,13 +174,22 @@ export function executeBoundMs() {
   return Number(globalThis.OPERA_SOCKET_EXECUTE_TIMEOUT_MS ?? DEFAULT_EXECUTE_TIMEOUT_MS);
 }
 
-export async function withExecuteTimeout(run, command) {
+export async function withExecuteTimeout(
+  run,
+  command
+) {
   const ms = executeBoundMs();
   let timer = null;
-  const bound = new Promise((_, reject) => {
+  const bound = new Promise((
+    _,
+    reject
+  ) => {
     timer = setTimeout(() => reject(new Error(`no answer from the tab within ${ms} ms`)), ms);
   });
-  return Promise.race([Promise.resolve(run(command)).finally(() => clearTimeout(timer)), bound]);
+  return Promise.race([
+    Promise.resolve(run(command)).finally(() => clearTimeout(timer)),
+    bound
+  ]);
 }
 
 export function createSocketClient({
@@ -176,7 +200,10 @@ export function createSocketClient({
   onState = () => {},
   WebSocketImpl = globalThis.WebSocket,
   now = () => Date.now(),
-  setTimer = (fn, ms) => setTimeout(fn, ms),
+  setTimer = (
+    fn,
+    ms
+  ) => setTimeout(fn, ms),
   setWatchTimer = setTimer
 } = {}) {
   let socket = null;
@@ -206,10 +233,16 @@ export function createSocketClient({
   const watch = () => {
     if (closedByUs) return;
     if (ready && lastHeardAt && now() - lastHeardAt > SILENCE_LIMIT_MS) {
-      replaceSocket({ status: 'stale', silenceMs: now() - lastHeardAt });
+      replaceSocket({
+        status: 'stale',
+        silenceMs: now() - lastHeardAt
+      });
     } else if (ready && connectedAt && !draining && takeQueue.length === 0
       && now() - connectedAt > RECYCLE_AGE_MS) {
-      replaceSocket({ status: 'recycling', ageMs: now() - connectedAt });
+      replaceSocket({
+        status: 'recycling',
+        ageMs: now() - connectedAt
+      });
     }
     setWatchTimer(watch, WATCHDOG_MS);
   };
@@ -221,7 +254,7 @@ export function createSocketClient({
   const sendFrame = (text) => {
     try {
       frame(text);
-    } catch { }
+    } catch {}
   };
 
   const closeSocket = (target) => {
@@ -237,14 +270,16 @@ export function createSocketClient({
         target.onerror = null;
         target.onclose = null;
       }
-    } catch { }
+    } catch {}
   };
 
   const scheduleRetry = (gen) => {
     if (closedByUs) return;
     const wait = retryMs;
     retryMs = Math.min(retryMs * 2, MAX_RETRY_MS);
-    setTimer(() => { if (gen === generation) connect(); }, wait);
+    setTimer(() => {
+      if (gen === generation) connect();
+    }, wait);
   };
 
   const drain = async () => {
@@ -254,14 +289,23 @@ export function createSocketClient({
       while (takeQueue.length) {
         const command = takeQueue.shift();
         if (!command || typeof command !== 'object') {
-          onState({ status: 'skipped', reason: 'queue entry was not a command' });
+          onState({
+            status: 'skipped',
+            reason: 'queue entry was not a command'
+          });
           continue;
         }
         let outcome;
         try {
           outcome = await withExecuteTimeout(execute, command);
         } catch (error) {
-          outcome = { ok: false, error: { code: 'EXECUTION_ERROR', message: String(error?.message || error).slice(0, 300) } };
+          outcome = {
+            ok: false,
+            error: {
+              code: 'EXECUTION_ERROR',
+              message: String(error?.message || error).slice(0, 300)
+            }
+          };
         }
         try {
           sendFrame(completionFrame(
@@ -271,7 +315,11 @@ export function createSocketClient({
             outcome?.error
           ));
         } catch (error) {
-          onState({ status: 'unsent', id: command.id, message: String(error?.message || error).slice(0, 200) });
+          onState({
+            status: 'unsent',
+            id: command.id,
+            message: String(error?.message || error).slice(0, 200)
+          });
         }
       }
     } finally {
@@ -314,7 +362,10 @@ export function createSocketClient({
       }
 
       if (message.type === 'error') {
-        onState({ status: 'error', message: String(message.error || 'bridge error').slice(0, 200) });
+        onState({
+          status: 'error',
+          message: String(message.error || 'bridge error').slice(0, 200)
+        });
         return;
       }
 
@@ -342,10 +393,18 @@ export function createSocketClient({
       const reason = String(event?.reason || '').slice(0, 200);
       if (isFatalClose(code)) {
         closedByUs = true;
-        onState({ status: 'rejected', code, reason });
+        onState({
+          status: 'rejected',
+          code,
+          reason
+        });
         return;
       }
-      onState({ status: 'reconnecting', code, reason });
+      onState({
+        status: 'reconnecting',
+        code,
+        reason
+      });
       scheduleRetry(gen);
     };
 

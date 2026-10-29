@@ -17,8 +17,19 @@ export const AX_SUMMARY_LIMITS = Object.freeze({
   maxNameChars: 200
 });
 
-const SKIP_ROLES = new Set(['RootWebArea', 'InlineTextBox', 'none', 'presentation']);
-const EDITABLE_ROLES = new Set(['textbox', 'searchbox', 'spinbutton', 'combobox', 'entry']);
+const SKIP_ROLES = new Set([
+  'RootWebArea',
+  'InlineTextBox',
+  'none',
+  'presentation'
+]);
+const EDITABLE_ROLES = new Set([
+  'textbox',
+  'searchbox',
+  'spinbutton',
+  'combobox',
+  'entry'
+]);
 
 function roleOf(node) {
   return String(node?.role?.value ?? '').trim();
@@ -33,7 +44,10 @@ function hasValue(node) {
   return value !== undefined && value !== null && String(value).length > 0;
 }
 
-export function buildAxSummary(nodes, options = {}) {
+export function buildAxSummary(
+  nodes,
+  options = {}
+) {
   const maxEntries = Number.isInteger(options.maxEntries) && options.maxEntries > 0
     ? options.maxEntries
     : AX_SUMMARY_LIMITS.maxEntries;
@@ -69,7 +83,10 @@ export function buildAxSummary(nodes, options = {}) {
     const key = `${role}|${name}`;
     if (seen.has(key)) continue;
     seen.add(key);
-    items.push({ role, name });
+    items.push({
+      role,
+      name
+    });
     if (items.length >= maxEntries) break;
   }
 

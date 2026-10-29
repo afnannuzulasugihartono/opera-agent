@@ -6,21 +6,52 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { listPageWebSockets, pageWebSocketById } from '../local/transport.js';
+import {
+  listPageWebSockets,
+  pageWebSocketById
+} from '../local/transport.js';
 import { openSession } from '../local/driver.js';
 
 const PAGES = [
-  { id: 'AAA', type: 'page', title: 'Untitled document', url: 'https://docs.google.com/a', webSocketDebuggerUrl: 'ws://x/aaa' },
-  { id: 'BBB', type: 'page', title: 'Create account', url: 'https://auth.wikimedia.org/b', webSocketDebuggerUrl: 'ws://x/bbb' },
-  { id: 'CCC', type: 'iframe', title: 'frame', webSocketDebuggerUrl: 'ws://x/ccc' },
-  { id: 'DDD', type: 'page', title: 'no socket', webSocketDebuggerUrl: undefined }
+  {
+    id: 'AAA',
+    type: 'page',
+    title: 'Untitled document',
+    url: 'https://docs.google.com/a',
+    webSocketDebuggerUrl: 'ws://x/aaa'
+  },
+  {
+    id: 'BBB',
+    type: 'page',
+    title: 'Create account',
+    url: 'https://auth.wikimedia.org/b',
+    webSocketDebuggerUrl: 'ws://x/bbb'
+  },
+  {
+    id: 'CCC',
+    type: 'iframe',
+    title: 'frame',
+    webSocketDebuggerUrl: 'ws://x/ccc'
+  },
+  {
+    id: 'DDD',
+    type: 'page',
+    title: 'no socket',
+    webSocketDebuggerUrl: undefined
+  }
 ];
 
-const fakeFetch = (body) => async () => ({ ok: true, json: async () => body });
+const fakeFetch = (body) => async () => ({
+  ok: true,
+  json: async () => body
+});
 
 test('only page targets with a websocket are listed', async () => {
   const pages = await listPageWebSockets(1, { fetch: fakeFetch(PAGES) });
-  assert.deepEqual(pages.map((p) => p.id), ['AAA', 'BBB']);
+  assert.deepEqual(pages.map((p) => p.id), [
+    'AAA',
+    'BBB'
+  ]);
 });
 
 test('a named tab resolves to its own socket', async () => {
@@ -48,7 +79,11 @@ test('an unknown tab is refused with the open tabs named', async () => {
 
 test('a browser with no page target fails loudly', async () => {
   await assert.rejects(
-    () => pageWebSocketById(1, 'AAA', { fetch: fakeFetch([{ id: 'Z', type: 'iframe', webSocketDebuggerUrl: 'ws://x/z' }]) }),
+    () => pageWebSocketById(1, 'AAA', { fetch: fakeFetch([{
+      id: 'Z',
+      type: 'iframe',
+      webSocketDebuggerUrl: 'ws://x/z'
+    }]) }),
     /no page target to drive/
   );
 });
@@ -78,7 +113,12 @@ test('a session that names its tab connects to that tab, never the first page', 
   const sockets = [];
   const restore = stubBrowser(sockets);
   try {
-    const session = await openSession({ port: 1, targetId: 'BBB', launch: false, env: { OPERA_LOCAL_TRANSPORT: 'cdp' } });
+    const session = await openSession({
+      port: 1,
+      targetId: 'BBB',
+      launch: false,
+      env: { OPERA_LOCAL_TRANSPORT: 'cdp' }
+    });
     assert.deepEqual(sockets, ['ws://x/bbb']);
     assert.equal(session.reused, true);
     session.close();
@@ -91,7 +131,11 @@ test('a session that names nothing keeps the first page', async () => {
   const sockets = [];
   const restore = stubBrowser(sockets);
   try {
-    const session = await openSession({ port: 1, launch: false, env: { OPERA_LOCAL_TRANSPORT: 'cdp' } });
+    const session = await openSession({
+      port: 1,
+      launch: false,
+      env: { OPERA_LOCAL_TRANSPORT: 'cdp' }
+    });
     assert.deepEqual(sockets, ['ws://x/aaa']);
     session.close();
   } finally {
@@ -105,7 +149,15 @@ test('a session that names an unknown tab fails without launching anything', asy
   let spawned = 0;
   try {
     await assert.rejects(
-      () => openSession({ port: 1, targetId: 'NOPE', launch: true, spawnBrowser: () => { spawned += 1; }, env: { OPERA_LOCAL_TRANSPORT: 'cdp' } }),
+      () => openSession({
+        port: 1,
+        targetId: 'NOPE',
+        launch: true,
+        spawnBrowser: () => {
+          spawned += 1;
+        },
+        env: { OPERA_LOCAL_TRANSPORT: 'cdp' }
+      }),
       /No page target NOPE/
     );
     assert.equal(spawned, 0);

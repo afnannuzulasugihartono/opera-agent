@@ -24,7 +24,6 @@ const CRX = 'https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-u
 const escapeRe = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 test('the hub carries exactly one giant door opening the merged files page', () => {
-
   const doors = [...hub.matchAll(/<a\b[^>]*class="btn giant"[^>]*href="([^"]+)"[^>]*>([^<]*)<\/a>/g)];
   assert.equal(doors.length, 1, 'exactly one giant door');
   assert.equal(doors[0][1], './unduh-berkas.html', 'the door opens the merged page');
@@ -34,7 +33,6 @@ test('the hub carries exactly one giant door opening the merged files page', () 
 });
 
 test('the hub also-available row names the other doors without leaving the page', () => {
-
   const rows = [...hub.matchAll(/<p\b[^>]*class="also"[^>]*>([\s\S]*?)<\/p>/g)];
   assert.equal(rows.length, 1, 'exactly one also-available row');
   const [, row] = rows[0];
@@ -45,12 +43,23 @@ test('the hub also-available row names the other doors without leaving the page'
 });
 
 test('the merged page carries one card per browser, each offering both files', () => {
-
   const zipButton = /class="btn" href="([^"]+)"/.exec(berkas)[1];
   assert.equal(ZIP, zipButton, 'the shared archive URL is the one the page verifies');
   const cards = [...berkas.matchAll(/<article class="browser" data-browser="(\w+)">([\s\S]*?)<\/article>/g)];
-  assert.deepEqual(cards.map((m) => m[1]), ['chrome', 'edge', 'brave', 'opera', 'vivaldi'], 'unduh-berkas.html names every browser once');
-  const names = { chrome: 'Chrome', edge: 'Edge', brave: 'Brave', opera: 'Opera', vivaldi: 'Vivaldi' };
+  assert.deepEqual(cards.map((m) => m[1]), [
+    'chrome',
+    'edge',
+    'brave',
+    'opera',
+    'vivaldi'
+  ], 'unduh-berkas.html names every browser once');
+  const names = {
+    chrome: 'Chrome',
+    edge: 'Edge',
+    brave: 'Brave',
+    opera: 'Opera',
+    vivaldi: 'Vivaldi'
+  };
   for (const [, key, body] of cards) {
     assert.ok(body.includes(`<h3>${names[key]}</h3>`), `${key} names itself`);
     assert.ok(body.includes('<span class="glyph"'), `${key} carries a text glyph, not an image asset`);
@@ -67,7 +76,6 @@ test('the merged page carries one card per browser, each offering both files', (
 });
 
 test('the merged detection marks the matching card and phones nowhere', () => {
-
   const script = /<script type="module">([\s\S]*?)<\/script>/.exec(berkas)[1];
   assert.ok(script.includes('navigator.userAgentData?.brands'), 'reads brands first');
   assert.ok(script.includes('navigator.userAgent'), 'falls back to the UA string');
@@ -93,7 +101,6 @@ test('the hero states the value in one sentence, and the steps live on the merge
 });
 
 test('the CRX section is framed enterprise-only, with the button untouched', () => {
-
   assert.match(berkas, /enterprise-managed/, 'policy installs are the audience');
   assert.match(berkas, /drag-and-drop/, 'manual installs are named as rejected');
   assert.match(berkas, /BLOCKED/, 'the unmanaged status is stated');
@@ -104,7 +111,6 @@ test('the CRX section is framed enterprise-only, with the button untouched', () 
 });
 
 test('the hub needs no script hash, and the shared policy still names the merged script', () => {
-
   assert.doesNotMatch(hub, /<script type="module">/, 'the hub carries no inline module to name');
   const vercel = JSON.parse(read('vercel.json'));
   const csp = vercel.headers.find((h) => h.source === '/(.*)').headers
@@ -120,7 +126,6 @@ test('the hub needs no script hash, and the shared policy still names the merged
 });
 
 test('the hub stats show live source counts, never stale copy', () => {
-
   const mcp = mcpSurfaceSourceSync();
   const tools = (mcp.match(/registerTool\("/g) || []).length;
   const proto = fs.readFileSync(new URL('../extension/lib/protocol.js', import.meta.url), 'utf8');
@@ -128,5 +133,8 @@ test('the hub stats show live source counts, never stale copy', () => {
   const prims = (specs.match(/^\s*'[a-z][a-z0-9_.]*': \{ timeoutMs:/gm) || []).length;
   assert.ok(tools > 30 && prims >= 28, `sanity: ${tools} tools, ${prims} primitives`);
   const stats = [...hub.matchAll(/<span class="stat-num">(\d+)<\/span>/g)].map((m) => Number(m[1]));
-  assert.deepEqual(stats, [tools, prims], 'hub stats equal live source counts in order');
+  assert.deepEqual(stats, [
+    tools,
+    prims
+  ], 'hub stats equal live source counts in order');
 });

@@ -17,34 +17,113 @@
 // - text is a SEPARATE path from a key, is length-bounded, and is chunked
 // - exactly one of key or text may be requested
 
-export const MODIFIER_BITS = Object.freeze({ alt: 1, control: 2, meta: 4, shift: 8 });
+export const MODIFIER_BITS = Object.freeze({
+  alt: 1,
+  control: 2,
+  meta: 4,
+  shift: 8
+});
 export const MODIFIER_ALIASES = Object.freeze({
-  alt: 'alt', option: 'alt',
-  ctrl: 'control', control: 'control',
-  cmd: 'meta', command: 'meta', meta: 'meta', super: 'meta', win: 'meta',
+  alt: 'alt',
+  option: 'alt',
+  ctrl: 'control',
+  control: 'control',
+  cmd: 'meta',
+  command: 'meta',
+  meta: 'meta',
+  super: 'meta',
+  win: 'meta',
   shift: 'shift'
 });
 export const MAX_TEXT_CHARS = 20000;
 export const TEXT_CHUNK_CHARS = 4000;
 
 const NAMED_KEYS = Object.freeze({
-  Enter: { key: 'Enter', code: 'Enter', vk: 13 },
-  Tab: { key: 'Tab', code: 'Tab', vk: 9 },
-  Escape: { key: 'Escape', code: 'Escape', vk: 27 },
-  ArrowUp: { key: 'ArrowUp', code: 'ArrowUp', vk: 38 },
-  ArrowDown: { key: 'ArrowDown', code: 'ArrowDown', vk: 40 },
-  ArrowLeft: { key: 'ArrowLeft', code: 'ArrowLeft', vk: 37 },
-  ArrowRight: { key: 'ArrowRight', code: 'ArrowRight', vk: 39 },
-  Home: { key: 'Home', code: 'Home', vk: 36 },
-  End: { key: 'End', code: 'End', vk: 35 },
-  PageUp: { key: 'PageUp', code: 'PageUp', vk: 33 },
-  PageDown: { key: 'PageDown', code: 'PageDown', vk: 34 },
-  Space: { key: ' ', code: 'Space', vk: 32 },
-  Backspace: { key: 'Backspace', code: 'Backspace', vk: 8 },
-  Delete: { key: 'Delete', code: 'Delete', vk: 46 },
-  Comma: { key: ',', code: 'Comma', vk: 188 },
-  Period: { key: '.', code: 'Period', vk: 190 },
-  Slash: { key: '/', code: 'Slash', vk: 191 }
+  Enter: {
+    key: 'Enter',
+    code: 'Enter',
+    vk: 13
+  },
+  Tab: {
+    key: 'Tab',
+    code: 'Tab',
+    vk: 9
+  },
+  Escape: {
+    key: 'Escape',
+    code: 'Escape',
+    vk: 27
+  },
+  ArrowUp: {
+    key: 'ArrowUp',
+    code: 'ArrowUp',
+    vk: 38
+  },
+  ArrowDown: {
+    key: 'ArrowDown',
+    code: 'ArrowDown',
+    vk: 40
+  },
+  ArrowLeft: {
+    key: 'ArrowLeft',
+    code: 'ArrowLeft',
+    vk: 37
+  },
+  ArrowRight: {
+    key: 'ArrowRight',
+    code: 'ArrowRight',
+    vk: 39
+  },
+  Home: {
+    key: 'Home',
+    code: 'Home',
+    vk: 36
+  },
+  End: {
+    key: 'End',
+    code: 'End',
+    vk: 35
+  },
+  PageUp: {
+    key: 'PageUp',
+    code: 'PageUp',
+    vk: 33
+  },
+  PageDown: {
+    key: 'PageDown',
+    code: 'PageDown',
+    vk: 34
+  },
+  Space: {
+    key: ' ',
+    code: 'Space',
+    vk: 32
+  },
+  Backspace: {
+    key: 'Backspace',
+    code: 'Backspace',
+    vk: 8
+  },
+  Delete: {
+    key: 'Delete',
+    code: 'Delete',
+    vk: 46
+  },
+  Comma: {
+    key: ',',
+    code: 'Comma',
+    vk: 188
+  },
+  Period: {
+    key: '.',
+    code: 'Period',
+    vk: 190
+  },
+  Slash: {
+    key: '/',
+    code: 'Slash',
+    vk: 191
+  }
 });
 
 function namedKeySpec(name) {
@@ -52,13 +131,26 @@ function namedKeySpec(name) {
   if (spec) return { ...spec };
   if (/^[a-z]$/.test(name)) {
     const upper = name.toUpperCase();
-    return { key: name, code: `Key${upper}`, vk: upper.charCodeAt(0) };
+    return {
+      key: name,
+      code: `Key${upper}`,
+      vk: upper.charCodeAt(0)
+    };
   }
   if (/^[0-9]$/.test(name)) {
-    return { key: name, code: `Digit${name}`, vk: name.charCodeAt(0) };
+    return {
+      key: name,
+      code: `Digit${name}`,
+      vk: name.charCodeAt(0)
+    };
   }
   if (/^[A-Z]$/.test(name)) {
-    return { key: name.toLowerCase(), code: `Key${name}`, vk: name.charCodeAt(0), requiresShift: true };
+    return {
+      key: name.toLowerCase(),
+      code: `Key${name}`,
+      vk: name.charCodeAt(0),
+      requiresShift: true
+    };
   }
   return null;
 }
@@ -75,7 +167,10 @@ export function keyNames() {
 export const KEY_ALLOWLIST = Object.freeze(keyNames());
 
 export function resolveModifiers(modifiers) {
-  if (modifiers == null) return { mask: 0, names: [] };
+  if (modifiers == null) return {
+    mask: 0,
+    names: []
+  };
   const list = Array.isArray(modifiers) ? modifiers : [modifiers];
   if (list.length > 4) throw new Error('At most 4 modifiers are allowed.');
   const names = [];
@@ -86,24 +181,48 @@ export function resolveModifiers(modifiers) {
     if (!names.includes(canonical)) names.push(canonical);
     mask |= MODIFIER_BITS[canonical];
   }
-  return { mask, names };
-}
-
-function withImplicitShift(spec, mask, names) {
-  if (!spec.requiresShift) return { spec, mask, names };
-  if (mask & MODIFIER_BITS.shift) return { spec, mask, names };
   return {
-    spec,
-    mask: mask | MODIFIER_BITS.shift,
-    names: [...names, 'shift']
+    mask,
+    names
   };
 }
 
-export function resolveChord(key, modifiers) {
+function withImplicitShift(
+  spec,
+  mask,
+  names
+) {
+  if (!spec.requiresShift) return {
+    spec,
+    mask,
+    names
+  };
+  if (mask & MODIFIER_BITS.shift) return {
+    spec,
+    mask,
+    names
+  };
+  return {
+    spec,
+    mask: mask | MODIFIER_BITS.shift,
+    names: [
+      ...names,
+      'shift'
+    ]
+  };
+}
+
+export function resolveChord(
+  key,
+  modifiers
+) {
   const name = String(key ?? '').trim();
   const spec = namedKeySpec(name);
   if (!spec) throw new Error('Key is not allowlisted.');
-  const { mask, names } = resolveModifiers(modifiers);
+  const {
+    mask,
+    names
+  } = resolveModifiers(modifiers);
   if (spec.requiresShift && names.length > 0 && !(mask & MODIFIER_BITS.shift)) {
     throw new Error(`Key ${name} with modifiers needs lowercase ${name.toLowerCase()} (uppercase adds shift).`);
   }
@@ -120,7 +239,10 @@ export function resolveChord(key, modifiers) {
   };
 }
 
-export function chunkText(text, size = TEXT_CHUNK_CHARS) {
+export function chunkText(
+  text,
+  size = TEXT_CHUNK_CHARS
+) {
   const value = String(text ?? '');
   const width = Math.max(1, Math.floor(Number(size) || TEXT_CHUNK_CHARS));
   const chunks = [];
@@ -128,7 +250,11 @@ export function chunkText(text, size = TEXT_CHUNK_CHARS) {
   return chunks;
 }
 
-export function resolveKeyInput({ key, modifiers, text } = {}) {
+export function resolveKeyInput({
+  key,
+  modifiers,
+  text
+} = {}) {
   const hasKey = key != null && String(key).trim() !== '';
   const hasText = text != null && String(text) !== '';
   if (hasKey && hasText) throw new Error('Request either a key chord or text, not both.');
@@ -138,7 +264,12 @@ export function resolveKeyInput({ key, modifiers, text } = {}) {
     if (value.length > MAX_TEXT_CHARS) throw new Error(`Text must be at most ${MAX_TEXT_CHARS} characters.`);
 
     if (modifiers != null) throw new Error('Text entry does not accept modifiers.');
-    return { kind: 'text', text: value, chunks: chunkText(value), chars: value.length };
+    return {
+      kind: 'text',
+      text: value,
+      chunks: chunkText(value),
+      chars: value.length
+    };
   }
   return resolveChord(key, modifiers);
 }
@@ -160,7 +291,10 @@ export function resolveKeyStream(events) {
   }
 
   let chars = 0;
-  return events.map((event, index) => {
+  return events.map((
+    event,
+    index
+  ) => {
     if (!event || typeof event !== 'object' || Array.isArray(event)) {
       throw new Error(`Stream event ${index} must be an object.`);
     }
@@ -173,7 +307,10 @@ export function resolveKeyStream(events) {
     if (chars > MAX_TEXT_CHARS) {
       throw new Error(`Stream text must total at most ${MAX_TEXT_CHARS} characters.`);
     }
-    return { ...resolved, gapMs };
+    return {
+      ...resolved,
+      gapMs
+    };
   });
 }
 
@@ -183,54 +320,247 @@ export function resolveKeyStream(events) {
 // The map is US ASCII plus newline; anything else fails naming its code point, so the caller picks insertText for it instead of guessing a layout.
 
 const TEXT_KEY_EXTRA = Object.freeze({
-  '.': { key: '.', code: 'Period', vk: 190, shift: false },
-  ',': { key: ',', code: 'Comma', vk: 188, shift: false },
-  '/': { key: '/', code: 'Slash', vk: 191, shift: false },
-  '-': { key: '-', code: 'Minus', vk: 189, shift: false },
-  '=': { key: '=', code: 'Equal', vk: 187, shift: false },
-  ';': { key: ';', code: 'Semicolon', vk: 186, shift: false },
-  "'": { key: "'", code: 'Quote', vk: 222, shift: false },
-  '[': { key: '[', code: 'BracketLeft', vk: 219, shift: false },
-  ']': { key: ']', code: 'BracketRight', vk: 221, shift: false },
-  '\\': { key: '\\', code: 'Backslash', vk: 220, shift: false },
-  '`': { key: '`', code: 'Backquote', vk: 192, shift: false },
-  '!': { key: '!', code: 'Digit1', vk: 49, shift: true },
-  '@': { key: '@', code: 'Digit2', vk: 50, shift: true },
-  '#': { key: '#', code: 'Digit3', vk: 51, shift: true },
-  $: { key: '$', code: 'Digit4', vk: 52, shift: true },
-  '%': { key: '%', code: 'Digit5', vk: 53, shift: true },
-  '^': { key: '^', code: 'Digit6', vk: 54, shift: true },
-  '&': { key: '&', code: 'Digit7', vk: 55, shift: true },
-  '*': { key: '*', code: 'Digit8', vk: 56, shift: true },
-  '(': { key: '(', code: 'Digit9', vk: 57, shift: true },
-  ')': { key: ')', code: 'Digit0', vk: 48, shift: true },
-  _: { key: '_', code: 'Minus', vk: 189, shift: true },
-  '+': { key: '+', code: 'Equal', vk: 187, shift: true },
-  ':': { key: ':', code: 'Semicolon', vk: 186, shift: true },
-  '"': { key: '"', code: 'Quote', vk: 222, shift: true },
-  '<': { key: '<', code: 'Comma', vk: 188, shift: true },
-  '>': { key: '>', code: 'Period', vk: 190, shift: true },
-  '?': { key: '?', code: 'Slash', vk: 191, shift: true },
-  '{': { key: '{', code: 'BracketLeft', vk: 219, shift: true },
-  '}': { key: '}', code: 'BracketRight', vk: 221, shift: true },
-  '|': { key: '|', code: 'Backslash', vk: 220, shift: true },
-  '~': { key: '~', code: 'Backquote', vk: 192, shift: true }
+  '.': {
+    key: '.',
+    code: 'Period',
+    vk: 190,
+    shift: false
+  },
+  ',': {
+    key: ',',
+    code: 'Comma',
+    vk: 188,
+    shift: false
+  },
+  '/': {
+    key: '/',
+    code: 'Slash',
+    vk: 191,
+    shift: false
+  },
+  '-': {
+    key: '-',
+    code: 'Minus',
+    vk: 189,
+    shift: false
+  },
+  '=': {
+    key: '=',
+    code: 'Equal',
+    vk: 187,
+    shift: false
+  },
+  ';': {
+    key: ';',
+    code: 'Semicolon',
+    vk: 186,
+    shift: false
+  },
+  "'": {
+    key: "'",
+    code: 'Quote',
+    vk: 222,
+    shift: false
+  },
+  '[': {
+    key: '[',
+    code: 'BracketLeft',
+    vk: 219,
+    shift: false
+  },
+  ']': {
+    key: ']',
+    code: 'BracketRight',
+    vk: 221,
+    shift: false
+  },
+  '\\': {
+    key: '\\',
+    code: 'Backslash',
+    vk: 220,
+    shift: false
+  },
+  '`': {
+    key: '`',
+    code: 'Backquote',
+    vk: 192,
+    shift: false
+  },
+  '!': {
+    key: '!',
+    code: 'Digit1',
+    vk: 49,
+    shift: true
+  },
+  '@': {
+    key: '@',
+    code: 'Digit2',
+    vk: 50,
+    shift: true
+  },
+  '#': {
+    key: '#',
+    code: 'Digit3',
+    vk: 51,
+    shift: true
+  },
+  $: {
+    key: '$',
+    code: 'Digit4',
+    vk: 52,
+    shift: true
+  },
+  '%': {
+    key: '%',
+    code: 'Digit5',
+    vk: 53,
+    shift: true
+  },
+  '^': {
+    key: '^',
+    code: 'Digit6',
+    vk: 54,
+    shift: true
+  },
+  '&': {
+    key: '&',
+    code: 'Digit7',
+    vk: 55,
+    shift: true
+  },
+  '*': {
+    key: '*',
+    code: 'Digit8',
+    vk: 56,
+    shift: true
+  },
+  '(': {
+    key: '(',
+    code: 'Digit9',
+    vk: 57,
+    shift: true
+  },
+  ')': {
+    key: ')',
+    code: 'Digit0',
+    vk: 48,
+    shift: true
+  },
+  _: {
+    key: '_',
+    code: 'Minus',
+    vk: 189,
+    shift: true
+  },
+  '+': {
+    key: '+',
+    code: 'Equal',
+    vk: 187,
+    shift: true
+  },
+  ':': {
+    key: ':',
+    code: 'Semicolon',
+    vk: 186,
+    shift: true
+  },
+  '"': {
+    key: '"',
+    code: 'Quote',
+    vk: 222,
+    shift: true
+  },
+  '<': {
+    key: '<',
+    code: 'Comma',
+    vk: 188,
+    shift: true
+  },
+  '>': {
+    key: '>',
+    code: 'Period',
+    vk: 190,
+    shift: true
+  },
+  '?': {
+    key: '?',
+    code: 'Slash',
+    vk: 191,
+    shift: true
+  },
+  '{': {
+    key: '{',
+    code: 'BracketLeft',
+    vk: 219,
+    shift: true
+  },
+  '}': {
+    key: '}',
+    code: 'BracketRight',
+    vk: 221,
+    shift: true
+  },
+  '|': {
+    key: '|',
+    code: 'Backslash',
+    vk: 220,
+    shift: true
+  },
+  '~': {
+    key: '~',
+    code: 'Backquote',
+    vk: 192,
+    shift: true
+  }
 });
 
 function charKeySpec(char) {
-  if (char === '\n') return { key: 'Enter', code: 'Enter', vk: 13, shift: false, text: '\r' };
-  if (char === ' ') return { key: ' ', code: 'Space', vk: 32, shift: false, text: ' ' };
+  if (char === '\n') return {
+    key: 'Enter',
+    code: 'Enter',
+    vk: 13,
+    shift: false,
+    text: '\r'
+  };
+  if (char === ' ') return {
+    key: ' ',
+    code: 'Space',
+    vk: 32,
+    shift: false,
+    text: ' '
+  };
   if (/^[a-z]$/.test(char)) {
-    return { key: char, code: `Key${char.toUpperCase()}`, vk: char.toUpperCase().charCodeAt(0), shift: false, text: char };
+    return {
+      key: char,
+      code: `Key${char.toUpperCase()}`,
+      vk: char.toUpperCase().charCodeAt(0),
+      shift: false,
+      text: char
+    };
   }
   if (/^[A-Z]$/.test(char)) {
-    return { key: char, code: `Key${char}`, vk: char.charCodeAt(0), shift: true, text: char };
+    return {
+      key: char,
+      code: `Key${char}`,
+      vk: char.charCodeAt(0),
+      shift: true,
+      text: char
+    };
   }
   if (/^[0-9]$/.test(char)) {
-    return { key: char, code: `Digit${char}`, vk: char.charCodeAt(0), shift: false, text: char };
+    return {
+      key: char,
+      code: `Digit${char}`,
+      vk: char.charCodeAt(0),
+      shift: false,
+      text: char
+    };
   }
   const extra = TEXT_KEY_EXTRA[char];
-  if (extra) return { ...extra, text: char };
+  if (extra) return {
+    ...extra,
+    text: char
+  };
   const point = char.codePointAt(0).toString(16).toUpperCase().padStart(4, '0');
   throw new Error(`Text key event not allowlisted: U+${point}.`);
 }

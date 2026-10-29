@@ -30,32 +30,142 @@ const root = new URL('..', import.meta.url);
 const repo = (p) => new URL(p, root);
 
 const LANGUAGES = {
-  js: { line: ['//'], block: [['/*', '*/']], strings: ['\'', '"', '`'], brace: true, regex: true },
-  mjs: { line: ['//'], block: [['/*', '*/']], strings: ['\'', '"', '`'], brace: true, regex: true },
-  ts: { line: ['//'], block: [['/*', '*/']], strings: ['\'', '"', '`'], brace: true, regex: true },
-  py: { line: ['#'], block: [], strings: ['\'', '"'], triple: true, indent: true },
-  sql: { line: ['--'], block: [['/*', '*/']], strings: ['\''], keyword: /\b(begin|declare|do|create\s+or\s+replace\s+function|create\s+function)\b/i },
-  css: { line: [], block: [['/*', '*/']], strings: ['\'', '"'], brace: true },
-  html: { line: [], block: [['<!--', '-->']], strings: [] },
-  yml: { line: ['#'], block: [], strings: ['\'', '"'], indent: true },
-  toml: { line: ['#'], block: [], strings: ['\'', '"'], indent: true }
+  js: {
+    line: ['//'],
+    block: [[
+      '/*',
+      '*/'
+    ]],
+    strings: [
+      '\'',
+      '"',
+      '`'
+    ],
+    brace: true,
+    regex: true
+  },
+  mjs: {
+    line: ['//'],
+    block: [[
+      '/*',
+      '*/'
+    ]],
+    strings: [
+      '\'',
+      '"',
+      '`'
+    ],
+    brace: true,
+    regex: true
+  },
+  ts: {
+    line: ['//'],
+    block: [[
+      '/*',
+      '*/'
+    ]],
+    strings: [
+      '\'',
+      '"',
+      '`'
+    ],
+    brace: true,
+    regex: true
+  },
+  py: {
+    line: ['#'],
+    block: [],
+    strings: [
+      '\'',
+      '"'
+    ],
+    triple: true,
+    indent: true
+  },
+  sql: {
+    line: ['--'],
+    block: [[
+      '/*',
+      '*/'
+    ]],
+    strings: ['\''],
+    keyword: /\b(begin|declare|do|create\s+or\s+replace\s+function|create\s+function)\b/i
+  },
+  css: {
+    line: [],
+    block: [[
+      '/*',
+      '*/'
+    ]],
+    strings: [
+      '\'',
+      '"'
+    ],
+    brace: true
+  },
+  html: {
+    line: [],
+    block: [[
+      '<!--',
+      '-->'
+    ]],
+    strings: []
+  },
+  yml: {
+    line: ['#'],
+    block: [],
+    strings: [
+      '\'',
+      '"'
+    ],
+    indent: true
+  },
+  toml: {
+    line: ['#'],
+    block: [],
+    strings: [
+      '\'',
+      '"'
+    ],
+    indent: true
+  }
 };
 
 const tracked = () => {
-  const listed = execFileSync('git', ['ls-files'], { cwd: repo('.'), encoding: 'utf8' })
+  const listed = execFileSync('git', ['ls-files'], {
+    cwd: repo('.'),
+    encoding: 'utf8'
+  })
     .split('\n').filter(Boolean);
   const known = (f) => LANGUAGES[path.extname(f).slice(1).toLowerCase()];
 
-  const untracked = execFileSync('git', ['ls-files', '--others', '--exclude-standard'],
-    { cwd: repo('.'), encoding: 'utf8' }).split('\n').filter(Boolean);
-  return [...new Set([...listed, ...untracked])].filter(known);
+  const untracked = execFileSync('git', [
+    'ls-files',
+    '--others',
+    '--exclude-standard'
+  ],
+    {
+      cwd: repo('.'),
+      encoding: 'utf8'
+    }).split('\n').filter(Boolean);
+  return [...new Set([
+    ...listed,
+    ...untracked
+  ])].filter(known);
 };
 
 // WHY A TEMPLATE IS SKIPPED WHOLE, INTERPOLATIONS INCLUDED.
 // A template spans lines, and the code inside it is not this repository's code: it is the page's.
 // Reading it as code once put a block comment inside a page expression in the middle of a file, and the scanner believed it until the next block-comment end somewhere else, which is how the depth counter in the biggest file in the tree ended up negative and the rule below it went unmeasured.
 
-function findComments(source, language) {
+// WHY A NESTED TEMPLATE COUNTS ITS OWN NEWLINES.
+// A template inside an interpolation is still text on this file's lines, and a scan that skipped them left the line counter behind by one for every line the nested template held.
+// A drifting counter reads the wrong line as the next code line, and the brace depth with it, which is how a comment that stands above a declaration came to read as standing inside a body.
+
+function findComments(
+  source,
+  language
+) {
   const spec = LANGUAGES[language];
   const found = [];
   let i = 0;
@@ -72,7 +182,9 @@ function findComments(source, language) {
       line += 1; i += 1; col = 0;
       let j = i;
       let indent = 0;
-      while (source[j] === ' ' || source[j] === '\t') { indent += 1; j += 1; }
+      while (source[j] === ' ' || source[j] === '\t') {
+        indent += 1; j += 1;
+      }
       if (source[j] !== '\n' && source[j] !== undefined && spec.indent) {
         if (indent === 0) lastCodeIndent = 0;
         else if (indent > lastCodeIndent) lastCodeIndent = indent;
@@ -80,28 +192,50 @@ function findComments(source, language) {
       continue;
     }
 
-    if (c === ' ' || c === '\t' || c === '\r') { i += 1; col += 1; continue; }
+    if (c === ' ' || c === '\t' || c === '\r') {
+      i += 1; col += 1; continue;
+    }
 
     const blockOpen = spec.block.find(([open]) => source.startsWith(open, i));
     if (blockOpen) {
       const [open, close] = blockOpen;
-      const start = { line: line + 1, col, depth, indent: lastCodeIndent };
+      const start = {
+        line: line + 1,
+        col,
+        depth,
+        indent: lastCodeIndent
+      };
       i += open.length;
       while (i < source.length && !source.startsWith(close, i)) {
-        if (source[i] === '\n') { line += 1; }
+        if (source[i] === '\n') {
+          line += 1;
+        }
         i += 1;
       }
       i += close.length;
-      found.push({ ...start, text: source.slice(start.col, start.col + 60).trim() });
+      found.push({
+        ...start,
+        text: source.slice(start.col, start.col + 60).trim()
+      });
       continue;
     }
 
     const lineOpen = spec.line.find((open) => source.startsWith(open, i));
     if (lineOpen) {
-      const start = { line: line + 1, col, depth, indent: lastCodeIndent };
+      const start = {
+        line: line + 1,
+        col,
+        depth,
+        indent: lastCodeIndent
+      };
       let text = '';
-      while (i < source.length && source[i] !== '\n') { text += source[i]; i += 1; }
-      found.push({ ...start, text: text.trim().slice(0, 70) });
+      while (i < source.length && source[i] !== '\n') {
+        text += source[i]; i += 1;
+      }
+      found.push({
+        ...start,
+        text: text.trim().slice(0, 70)
+      });
       continue;
     }
 
@@ -110,21 +244,35 @@ function findComments(source, language) {
       let braces = 0;
       while (i < source.length) {
         const ch = source[i];
-        if (ch === '\\') { i += 2; continue; }
-        if (ch === '$' && source[i + 1] === '{') { braces += 1; i += 2; continue; }
+        if (ch === '\\') {
+          i += 2; continue;
+        }
+        if (ch === '$' && source[i + 1] === '{') {
+          braces += 1; i += 2; continue;
+        }
         if (braces > 0) {
-          if (ch === '{') { braces += 1; i += 1; continue; }
-          if (ch === '}') { braces -= 1; i += 1; continue; }
+          if (ch === '{') {
+            braces += 1; i += 1; continue;
+          }
+          if (ch === '}') {
+            braces -= 1; i += 1; continue;
+          }
           if (ch === '`') {
             i += 1;
-            while (i < source.length && source[i] !== '`') { if (source[i] === '\\') i += 1; i += 1; }
+            while (i < source.length && source[i] !== '`') {
+              if (source[i] === '\\') i += 1;
+              if (source[i] === '\n') line += 1;
+              i += 1;
+            }
             i += 1;
             continue;
           }
           if (ch === '\'' || ch === '"') {
             const quote = ch;
             i += 1;
-            while (i < source.length && source[i] !== quote) { if (source[i] === '\\') i += 1; i += 1; }
+            while (i < source.length && source[i] !== quote) {
+              if (source[i] === '\\') i += 1; i += 1;
+            }
             i += 1;
             continue;
           }
@@ -132,7 +280,9 @@ function findComments(source, language) {
           i += 1;
           continue;
         }
-        if (ch === '`') { i += 1; break; }
+        if (ch === '`') {
+          i += 1; break;
+        }
         if (ch === '\n') line += 1;
         i += 1;
       }
@@ -143,15 +293,23 @@ function findComments(source, language) {
       if (spec.triple && (source.startsWith("'''", i) || source.startsWith('"""', i))) {
         const open = source.slice(i, i + 3);
         i += 3;
-        while (i < source.length && !source.startsWith(open, i)) { if (source[i] === '\n') line += 1; i += 1; }
+        while (i < source.length && !source.startsWith(open, i)) {
+          if (source[i] === '\n') line += 1; i += 1;
+        }
         i += 3;
         continue;
       }
       i += 1;
       while (i < source.length) {
-        if (source[i] === '\\') { i += 2; continue; }
-        if (source[i] === c) { i += 1; break; }
-        if (source[i] === '\n') { line += 1; break; }
+        if (source[i] === '\\') {
+          i += 2; continue;
+        }
+        if (source[i] === c) {
+          i += 1; break;
+        }
+        if (source[i] === '\n') {
+          line += 1; break;
+        }
         i += 1;
       }
       continue;
@@ -164,11 +322,17 @@ function findComments(source, language) {
         i += 1;
         let inClass = false;
         while (i < source.length) {
-          if (source[i] === '\\') { i += 2; continue; }
+          if (source[i] === '\\') {
+            i += 2; continue;
+          }
           if (source[i] === '[') inClass = true;
           else if (source[i] === ']') inClass = false;
-          else if (source[i] === '/' && !inClass) { i += 1; break; }
-          else if (source[i] === '\n') { break; }
+          else if (source[i] === '/' && !inClass) {
+            i += 1; break;
+          }
+          else if (source[i] === '\n') {
+            break;
+          }
           i += 1;
         }
         continue;
@@ -188,7 +352,10 @@ function findComments(source, language) {
   return found;
 }
 
-const insideABody = (comment, language) => {
+const insideABody = (
+  comment,
+  language
+) => {
   const spec = LANGUAGES[language];
   if (spec.brace) return comment.depth > 0 && !comment.aboveDeclaration;
   if (spec.keyword) return false;
@@ -208,7 +375,10 @@ const DECLARATION = [
   /^(async\s+)?[A-Za-z_$][\w$]*\s*\($/
 ];
 
-const documentsADeclaration = (sourceLines, comment) => {
+const documentsADeclaration = (
+  sourceLines,
+  comment
+) => {
   const own = sourceLines[comment.line - 1] ?? '';
   const ownIndent = own.length - own.trimStart().length;
   let index = comment.line; // the line after the comment's own line
@@ -268,26 +438,131 @@ test('a comment that interrupts a statement sequence is still caught', () => {
 });
 
 test('the scanner knows a comment from a string, and a body from a top level', () => {
-
-  const at = (source, language) => findComments(source, language)
-    .map((c) => ({ line: c.line, depth: c.depth, indent: c.indent }));
+  const at = (
+    source,
+    language
+  ) => findComments(source, language)
+    .map((c) => ({
+      line: c.line,
+      depth: c.depth,
+      indent: c.indent
+    }));
 
   const cases = [
-    ['a URL is not a comment', 'js', "const u = 'https://x.test/a//b';", []],
-    ['a glob is not a comment', 'js', 'const g = "/* not a comment */";', []],
-    ['a template is not a comment', 'js', 'const t = `a // b`;', []],
-    ['a shebang inside a string is not a shebang', 'mjs', 'const h = "#!/usr/bin/env node";', []],
-    ['a base64 slashes pair is a regex, not a comment', 'js', "return btoa(b).replace(/\\+/g, '-').replace(/\\//g, '_');", []],
-    ['a comment one brace deep is inside a body', 'js', 'function f() {\n  const a = 1;\n  // inside\n}', [{ line: 3, depth: 1, indent: 0 }]],
-    ['a comment above a declaration is at the top level', 'js', '// above\nexport function f() {\n  return 1;\n}\n', [{ line: 1, depth: 0, indent: 0 }]],
-    ['an indented comment in Python is inside a body', 'py', 'def f():\n    a = 1\n    # inside\n', [{ line: 3, depth: 0, indent: 4 }]],
-    ['a column-zero comment in Python is top level', 'py', '# above\ndef f():\n    return 1\n', [{ line: 1, depth: 0, indent: 0 }]],
-    ['a SQL string is not a comment', 'sql', "select '-- not a comment';", []],
-    ['a SQL comment at column zero is found', 'sql', '-- above\nselect 1;', [{ line: 1, depth: 0, indent: 0 }]],
-    ['CSS strings are not comments', 'css', 'a { content: "/* x */"; }', []],
-    ['an HTML comment is found', 'html', '<p>t</p><!-- real -->', [{ line: 1, depth: 0, indent: 0 }]],
-    ['a YAML value is not a comment', 'yml', 'key: "# not a comment"', []],
-    ['a TOML value is not a comment', 'toml', 'key = "# not a comment"', []]
+    [
+      'a URL is not a comment',
+      'js',
+      "const u = 'https://x.test/a//b';",
+      []
+    ],
+    [
+      'a glob is not a comment',
+      'js',
+      'const g = "/* not a comment */";',
+      []
+    ],
+    [
+      'a template is not a comment',
+      'js',
+      'const t = `a // b`;',
+      []
+    ],
+    [
+      'a shebang inside a string is not a shebang',
+      'mjs',
+      'const h = "#!/usr/bin/env node";',
+      []
+    ],
+    [
+      'a base64 slashes pair is a regex, not a comment',
+      'js',
+      "return btoa(b).replace(/\\+/g, '-').replace(/\\//g, '_');",
+      []
+    ],
+    [
+      'a comment one brace deep is inside a body',
+      'js',
+      'function f() {\n  const a = 1;\n  // inside\n}',
+      [{
+        line: 3,
+        depth: 1,
+        indent: 0
+      }]
+    ],
+    [
+      'a comment above a declaration is at the top level',
+      'js',
+      '// above\nexport function f() {\n  return 1;\n}\n',
+      [{
+        line: 1,
+        depth: 0,
+        indent: 0
+      }]
+    ],
+    [
+      'an indented comment in Python is inside a body',
+      'py',
+      'def f():\n    a = 1\n    # inside\n',
+      [{
+        line: 3,
+        depth: 0,
+        indent: 4
+      }]
+    ],
+    [
+      'a column-zero comment in Python is top level',
+      'py',
+      '# above\ndef f():\n    return 1\n',
+      [{
+        line: 1,
+        depth: 0,
+        indent: 0
+      }]
+    ],
+    [
+      'a SQL string is not a comment',
+      'sql',
+      "select '-- not a comment';",
+      []
+    ],
+    [
+      'a SQL comment at column zero is found',
+      'sql',
+      '-- above\nselect 1;',
+      [{
+        line: 1,
+        depth: 0,
+        indent: 0
+      }]
+    ],
+    [
+      'CSS strings are not comments',
+      'css',
+      'a { content: "/* x */"; }',
+      []
+    ],
+    [
+      'an HTML comment is found',
+      'html',
+      '<p>t</p><!-- real -->',
+      [{
+        line: 1,
+        depth: 0,
+        indent: 0
+      }]
+    ],
+    [
+      'a YAML value is not a comment',
+      'yml',
+      'key: "# not a comment"',
+      []
+    ],
+    [
+      'a TOML value is not a comment',
+      'toml',
+      'key = "# not a comment"',
+      []
+    ]
   ];
 
   for (const [label, language, source, expected] of cases) {

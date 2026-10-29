@@ -18,29 +18,58 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { stripTypeScriptTypes } from 'node:module';
 
+// WHY THE IMPORT STRIP SPANS LINES.
+// A list of specifiers is written one per line, so the statement begins with `import {` and ends with `} from '...';` on a line of its own.
+// Matching only a one-line import left the statement in the harness, and the vm refuses it as an import outside a module.
+
 const source = stripTypeScriptTypes(readFileSync(
   new URL('../supabase/functions/_shared/command-stream.ts', import.meta.url), 'utf8'
-).replace(/^import .*;\r?\n/gm, ''));
+).replace(/^import [\s\S]*?;\r?\n/gm, ''));
 
-const { streamCommandEvents, TERMINAL_COMMAND_STATUSES } = await import(
+const {
+  streamCommandEvents,
+  TERMINAL_COMMAND_STATUSES
+} = await import(
   `data:text/javascript;base64,${Buffer.from(source).toString('base64')}`
 );
 
-const slice = (events, status) => ({ ok: true, events, status, cursor: events.at(-1)?.id ?? 0 });
+const slice = (
+  events,
+  status
+) => ({
+  ok: true,
+  events,
+  status,
+  cursor: events.at(-1)?.id ?? 0
+});
 
 function scriptedRpc(script) {
   const calls = [];
-  const rpc = async (name, args) => {
-    calls.push({ name, args });
+  const rpc = async (
+    name,
+    args
+  ) => {
+    calls.push({
+      name,
+      args
+    });
     const next = script.shift();
     if (!next) throw new Error('rpc called more often than the script allows');
     return next;
   };
-  return { rpc, calls };
+  return {
+    rpc,
+    calls
+  };
 }
 
 test('the terminal statuses are the four the command table can end on', () => {
-  assert.deepEqual([...TERMINAL_COMMAND_STATUSES].sort(), ['cancelled', 'completed', 'expired', 'failed']);
+  assert.deepEqual([...TERMINAL_COMMAND_STATUSES].sort(), [
+    'cancelled',
+    'completed',
+    'expired',
+    'failed'
+  ]);
   assert.ok(!TERMINAL_COMMAND_STATUSES.includes('queued'), 'queued is not terminal');
   assert.ok(!TERMINAL_COMMAND_STATUSES.includes('claimed'), 'claimed is not terminal');
 });
@@ -48,10 +77,16 @@ test('the terminal statuses are the four the command table can end on', () => {
 test('an empty first pass does not end the stream, because the command is still running', async () => {
   const { rpc } = scriptedRpc([
     slice([], 'queued'),
-    slice([{ id: '1', kind: 'step' }], 'claimed'),
+    slice([{
+      id: '1',
+      kind: 'step'
+    }], 'claimed'),
     slice([], 'completed')
   ]);
-  const out = await streamCommandEvents({ rpc, commandId: 'c1' });
+  const out = await streamCommandEvents({
+    rpc,
+    commandId: 'c1'
+  });
   assert.equal(out.ok, true);
   assert.equal(out.status, 'completed');
   assert.equal(out.events.length, 1, 'the empty passes dropped the one real event');
@@ -60,47 +95,106 @@ test('an empty first pass does not end the stream, because the command is still 
 test('every event reaches the consumer as it arrives, not batched at the end', async () => {
   const seen = [];
   const { rpc } = scriptedRpc([
-    slice([{ id: '1', kind: 'step' }], 'claimed'),
-    slice([{ id: '2', kind: 'step' }], 'claimed'),
-    slice([{ id: '3', kind: 'done' }], 'completed')
+    slice([{
+      id: '1',
+      kind: 'step'
+    }], 'claimed'),
+    slice([{
+      id: '2',
+      kind: 'step'
+    }], 'claimed'),
+    slice([{
+      id: '3',
+      kind: 'done'
+    }], 'completed')
   ]);
-  await streamCommandEvents({ rpc, commandId: 'c1', onEvent: (e) => seen.push(e.kind) });
-  assert.deepEqual(seen, ['step', 'step', 'done']);
+  await streamCommandEvents({
+    rpc,
+    commandId: 'c1',
+    onEvent: (e) => seen.push(e.kind)
+  });
+  assert.deepEqual(seen, [
+    'step',
+    'step',
+    'done'
+  ]);
 });
 
 test('the cursor advances, so a later slice never replays what was already delivered', async () => {
-  const { rpc, calls } = scriptedRpc([
-    slice([{ id: '7', kind: 'step' }], 'claimed'),
-    slice([{ id: '9', kind: 'step' }], 'claimed'),
+  const {
+    rpc,
+    calls
+  } = scriptedRpc([
+    slice([{
+      id: '7',
+      kind: 'step'
+    }], 'claimed'),
+    slice([{
+      id: '9',
+      kind: 'step'
+    }], 'claimed'),
     slice([], 'completed')
   ]);
-  await streamCommandEvents({ rpc, commandId: 'c1' });
+  await streamCommandEvents({
+    rpc,
+    commandId: 'c1'
+  });
   const afterIds = calls.slice(1).map((c) => c.args.p_after_id);
-  assert.deepEqual(afterIds, [7, 9], 'the cursor did not move with the highest id seen');
+  assert.deepEqual(afterIds, [
+    7,
+    9
+  ], 'the cursor did not move with the highest id seen');
 });
 
 test('a consumer that throws does not strand the command', async () => {
-  const { rpc } = scriptedRpc([slice([{ id: '1', kind: 'step' }], 'claimed'), slice([], 'completed')]);
+  const { rpc } = scriptedRpc([
+    slice([{
+      id: '1',
+      kind: 'step'
+    }], 'claimed'),
+    slice([], 'completed')
+  ]);
   const out = await streamCommandEvents({
     rpc,
     commandId: 'c1',
-    onEvent: () => { throw new Error('consumer gone'); }
+    onEvent: () => {
+      throw new Error('consumer gone');
+    }
   });
   assert.equal(out.ok, true);
   assert.equal(out.status, 'completed');
 });
 
 test('a lost stream is reported rather than retried forever', async () => {
-  const { rpc, calls } = scriptedRpc([{ ok: false, error: 'Command stream lost.' }]);
-  const out = await streamCommandEvents({ rpc, commandId: 'c1' });
+  const {
+    rpc,
+    calls
+  } = scriptedRpc([{
+    ok: false,
+    error: 'Command stream lost.'
+  }]);
+  const out = await streamCommandEvents({
+    rpc,
+    commandId: 'c1'
+  });
   assert.equal(out.ok, false);
   assert.equal(out.error, 'Command stream lost.');
   assert.equal(calls.length, 1, 'a dead stream was retried');
 });
 
 test('the wait slice is bounded so one call cannot pin a connection past the deadline', async () => {
-  const { rpc, calls } = scriptedRpc([slice([], 'queued'), slice([], 'completed')]);
-  await streamCommandEvents({ rpc, commandId: 'c1', deadlineMs: 30000 });
+  const {
+    rpc,
+    calls
+  } = scriptedRpc([
+    slice([], 'queued'),
+    slice([], 'completed')
+  ]);
+  await streamCommandEvents({
+    rpc,
+    commandId: 'c1',
+    deadlineMs: 30000
+  });
   for (const c of calls) {
     assert.ok(c.args.p_timeout_ms <= 30000, `slice ${c.args.p_timeout_ms} exceeds the database ceiling`);
     assert.ok(c.args.p_timeout_ms >= 100, `slice ${c.args.p_timeout_ms} is below the database floor`);
@@ -115,7 +209,11 @@ test('a command that never terminates exits on the deadline instead of spinning 
     await new Promise((r) => setTimeout(r, 20));
     return slice([], 'claimed');
   };
-  const out = await streamCommandEvents({ rpc, commandId: 'c1', deadlineMs: 300 });
+  const out = await streamCommandEvents({
+    rpc,
+    commandId: 'c1',
+    deadlineMs: 300
+  });
   assert.equal(out.ok, false);
   assert.equal(out.error?.code, 'AWAIT_TIMEOUT');
   assert.ok(calls > 1, 'the deadline was only reached by returning early, not by looping');

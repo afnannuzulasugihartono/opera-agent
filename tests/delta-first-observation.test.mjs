@@ -23,7 +23,11 @@ const identity = (overrides = {}) => ({
   ...overrides,
 });
 
-function entity(logicalId, revision = 1, overrides = {}) {
+function entity(
+  logicalId,
+  revision = 1,
+  overrides = {}
+) {
   return {
     logicalId,
     semanticRevision: revision,
@@ -43,7 +47,10 @@ function entity(logicalId, revision = 1, overrides = {}) {
   };
 }
 
-function view(revision = 1, overrides = {}) {
+function view(
+  revision = 1,
+  overrides = {}
+) {
   return {
     regionId: 'rg_feed',
     kind: 'repeated',
@@ -58,11 +65,24 @@ function view(revision = 1, overrides = {}) {
     duplicateKeyCount: 0,
     ambiguityCount: 0,
     dependencies: {
-      entitySet: { fingerprint: `entities-${revision}`, count: 8 },
+      entitySet: {
+        fingerprint: `entities-${revision}`,
+        count: 8
+      },
       scrollState: { fingerprint: `scroll-${revision}` },
     },
-    exhaustion: { reachedBoundary: false, stableObservations: 0, status: 'PARTIAL' },
-    completion: { status: 'PARTIAL', scope: 'RAW_PRIVATE_COMPLETION_SCOPE', evidence: [], limits: [], unresolved: [] },
+    exhaustion: {
+      reachedBoundary: false,
+      stableObservations: 0,
+      status: 'PARTIAL'
+    },
+    completion: {
+      status: 'PARTIAL',
+      scope: 'RAW_PRIVATE_COMPLETION_SCOPE',
+      evidence: [],
+      limits: [],
+      unresolved: []
+    },
     ...overrides,
   };
 }
@@ -72,7 +92,16 @@ function observation({
   resultingRevision = 1,
   classification = 'RESET',
   changes = [],
-  entities = [entity('a'), entity('b'), entity('c'), entity('d'), entity('e'), entity('f'), entity('g'), entity('h')],
+  entities = [
+    entity('a'),
+    entity('b'),
+    entity('c'),
+    entity('d'),
+    entity('e'),
+    entity('f'),
+    entity('g'),
+    entity('h')
+  ],
   regions = [view(resultingRevision)],
   changedRegionIds = ['rg_feed'],
   removedRegionIds = [],
@@ -136,16 +165,19 @@ function observation({
   };
 }
 
-function nextObservation(previous, {
-  type = 'UPDATE',
-  logicalId = 'a',
-  classification = type,
-  entityOverrides = {},
-  changedRegionIds = ['rg_feed'],
-  removedRegionIds = [],
-  regions,
-  changes,
-} = {}) {
+function nextObservation(
+  previous,
+  {
+    type = 'UPDATE',
+    logicalId = 'a',
+    classification = type,
+    entityOverrides = {},
+    changedRegionIds = ['rg_feed'],
+    removedRegionIds = [],
+    regions,
+    changes,
+  } = {}
+) {
   const sourceRevision = previous.semanticDelta.resultingRevision;
   const resultingRevision = sourceRevision + 1;
   const priorEntities = previous.elements.filter((item) => !item.sensitive).map((item) => structuredClone(item));
@@ -154,15 +186,31 @@ function nextObservation(previous, {
   if (!effectiveChanges) {
     if (type === 'INSERT') {
       entities.push(entity(logicalId, resultingRevision, entityOverrides));
-      effectiveChanges = [{ type, logicalId, revision: resultingRevision }];
+      effectiveChanges = [{
+        type,
+        logicalId,
+        revision: resultingRevision
+      }];
     } else if (type === 'REMOVE') {
       entities = entities.filter((item) => item.logicalId !== logicalId);
-      effectiveChanges = [{ type, logicalId, revision: resultingRevision }];
+      effectiveChanges = [{
+        type,
+        logicalId,
+        revision: resultingRevision
+      }];
     } else {
       entities = entities.map((item) => item.logicalId === logicalId
-        ? { ...item, semanticRevision: resultingRevision, ...entityOverrides }
+        ? {
+          ...item,
+          semanticRevision: resultingRevision,
+          ...entityOverrides
+        }
         : item);
-      effectiveChanges = [{ type, logicalId, revision: resultingRevision }];
+      effectiveChanges = [{
+        type,
+        logicalId,
+        revision: resultingRevision
+      }];
     }
   }
   return observation({
@@ -179,7 +227,11 @@ function nextObservation(previous, {
   });
 }
 
-function bootstrap(pipeline, id = identity(), obs = observation()) {
+function bootstrap(
+  pipeline,
+  id = identity(),
+  obs = observation()
+) {
   const result = pipeline.observe(id, obs);
   assert.equal(result.reasoningObservation.kind, 'FULL_SNAPSHOT');
   return result;
@@ -193,13 +245,15 @@ function patch(result) {
 }
 
 function sha1Blob(bytes) {
-
   const content = Buffer.from(bytes.toString('utf8').replace(/\r\n/g, '\n'), 'utf8');
   return createHash('sha1').update(Buffer.from(`blob ${content.length}\0`)).update(content).digest('hex');
 }
 
 function median(values) {
-  const sorted = [...values].sort((a, b) => a - b);
+  const sorted = [...values].sort((
+    a,
+    b
+  ) => a - b);
   return sorted[Math.floor(sorted.length / 2)];
 }
 
@@ -219,7 +273,11 @@ test('valid contiguous UPDATE emits changed entity/view patch instead of full sn
   const pipeline = createDeltaFirstObservationPipeline({ now: () => 1000 });
   const first = observation();
   bootstrap(pipeline, identity(), first);
-  const second = nextObservation(first, { type: 'UPDATE', logicalId: 'a', entityOverrides: { inViewport: false } });
+  const second = nextObservation(first, {
+    type: 'UPDATE',
+    logicalId: 'a',
+    entityOverrides: { inViewport: false }
+  });
   const result = pipeline.observe(identity(), second);
   const out = patch(result);
   assert.equal(out.sourceRevision, 1);
@@ -236,18 +294,28 @@ test('INSERT, MOVE, and REMOVE are represented without direct action handles', (
   let current = observation();
   bootstrap(pipeline, identity(), current);
 
-  const inserted = nextObservation(current, { type: 'INSERT', logicalId: 'new' });
+  const inserted = nextObservation(current, {
+    type: 'INSERT',
+    logicalId: 'new'
+  });
   let out = patch(pipeline.observe(identity(), inserted));
   assert.deepEqual(out.patch.insertedEntities.map((item) => item.logicalId), ['new']);
   assert.equal('ref' in out.patch.insertedEntities[0], false);
   current = inserted;
 
-  const moved = nextObservation(current, { type: 'MOVE', logicalId: 'new', entityOverrides: { regionKey: 'rg_feed' } });
+  const moved = nextObservation(current, {
+    type: 'MOVE',
+    logicalId: 'new',
+    entityOverrides: { regionKey: 'rg_feed' }
+  });
   out = patch(pipeline.observe(identity(), moved));
   assert.deepEqual(out.patch.movedEntities.map((item) => item.logicalId), ['new']);
   current = moved;
 
-  const removed = nextObservation(current, { type: 'REMOVE', logicalId: 'new' });
+  const removed = nextObservation(current, {
+    type: 'REMOVE',
+    logicalId: 'new'
+  });
   out = patch(pipeline.observe(identity(), removed));
   assert.deepEqual(out.patch.removedLogicalIds, ['new']);
   assert.deepEqual(out.patch.insertedEntities, []);
@@ -260,8 +328,16 @@ test('MIXED delta carries inserted/updated/moved/removed entities and affected v
   bootstrap(pipeline, identity(), first);
   const entities = first.elements
     .filter((item) => item.logicalId !== 'd')
-    .map((item) => item.logicalId === 'a' ? { ...item, semanticRevision: 2, inViewport: false }
-      : item.logicalId === 'b' ? { ...item, semanticRevision: 2, regionKey: 'rg_feed' }
+    .map((item) => item.logicalId === 'a' ? {
+      ...item,
+      semanticRevision: 2,
+      inViewport: false
+    }
+      : item.logicalId === 'b' ? {
+        ...item,
+        semanticRevision: 2,
+        regionKey: 'rg_feed'
+      }
       : item);
   entities.push(entity('new', 2));
   const mixed = observation({
@@ -272,10 +348,26 @@ test('MIXED delta carries inserted/updated/moved/removed entities and affected v
     resetReason: undefined,
     entities,
     changes: [
-      { type: 'UPDATE', logicalId: 'a', revision: 2 },
-      { type: 'MOVE', logicalId: 'b', revision: 2 },
-      { type: 'REMOVE', logicalId: 'd', revision: 2 },
-      { type: 'INSERT', logicalId: 'new', revision: 2 },
+      {
+        type: 'UPDATE',
+        logicalId: 'a',
+        revision: 2
+      },
+      {
+        type: 'MOVE',
+        logicalId: 'b',
+        revision: 2
+      },
+      {
+        type: 'REMOVE',
+        logicalId: 'd',
+        revision: 2
+      },
+      {
+        type: 'INSERT',
+        logicalId: 'new',
+        revision: 2
+      },
     ],
   });
   const out = patch(pipeline.observe(identity(), mixed));
@@ -325,9 +417,31 @@ test('exact replay is idempotent and does not resend changed facts', () => {
 
 test('incompatible duplicate, revision gap, and out-of-order input fail closed to full snapshot/reset-required', () => {
   for (const makeBad of [
-    (second) => { const bad = structuredClone(second); bad.elements[0].inViewport = !bad.elements[0].inViewport; return bad; },
-    (second) => observation({ sourceRevision: 4, resultingRevision: 5, classification: 'NO_RELEVANT_CHANGE', changes: [], entities: second.elements, regions: second.semanticViews.regions, changedRegionIds: [], completeSnapshotRequired: false, resetReason: undefined }),
-    (second) => observation({ sourceRevision: 0, resultingRevision: 0, classification: 'NO_RELEVANT_CHANGE', changes: [], entities: second.elements, regions: second.semanticViews.regions, changedRegionIds: [], completeSnapshotRequired: false, resetReason: undefined }),
+    (second) => {
+      const bad = structuredClone(second); bad.elements[0].inViewport = !bad.elements[0].inViewport; return bad;
+    },
+    (second) => observation({
+      sourceRevision: 4,
+      resultingRevision: 5,
+      classification: 'NO_RELEVANT_CHANGE',
+      changes: [],
+      entities: second.elements,
+      regions: second.semanticViews.regions,
+      changedRegionIds: [],
+      completeSnapshotRequired: false,
+      resetReason: undefined
+    }),
+    (second) => observation({
+      sourceRevision: 0,
+      resultingRevision: 0,
+      classification: 'NO_RELEVANT_CHANGE',
+      changes: [],
+      entities: second.elements,
+      regions: second.semanticViews.regions,
+      changedRegionIds: [],
+      completeSnapshotRequired: false,
+      resetReason: undefined
+    }),
   ]) {
     const pipeline = createDeltaFirstObservationPipeline({ now: () => 1000 });
     const first = observation();
@@ -362,7 +476,10 @@ test('cross-tab/document/runtime epoch input never inherits another continuity c
 });
 
 test('ambiguity and working-state overflow fail closed without stale continuation', () => {
-  const pipeline = createDeltaFirstObservationPipeline({ now: () => 1000, maxEntitiesPerState: 8 });
+  const pipeline = createDeltaFirstObservationPipeline({
+    now: () => 1000,
+    maxEntitiesPerState: 8
+  });
   const first = observation();
   bootstrap(pipeline, identity(), first);
   const ambiguous = nextObservation(first);
@@ -372,7 +489,10 @@ test('ambiguity and working-state overflow fail closed without stale continuatio
   assert.equal(ambiguity.reasoningObservation.resetRequired, true);
   assert.equal(pipeline.hasContinuity(identity()), false);
 
-  const overflowPipeline = createDeltaFirstObservationPipeline({ now: () => 1000, maxEntitiesPerState: 2 });
+  const overflowPipeline = createDeltaFirstObservationPipeline({
+    now: () => 1000,
+    maxEntitiesPerState: 2
+  });
   const overflow = overflowPipeline.observe(identity(), observation());
   assert.equal(overflow.reasoningObservation.kind, 'FULL_SNAPSHOT');
   assert.equal(overflow.reasoningObservation.resetRequired, true);
@@ -382,7 +502,10 @@ test('ambiguity and working-state overflow fail closed without stale continuatio
 
 test('expired and evicted persisted state requires reset/full snapshot before continuity can resume', () => {
   let now = 1000;
-  const expiring = createDeltaFirstObservationPipeline({ now: () => now, maxAgeMs: 10 });
+  const expiring = createDeltaFirstObservationPipeline({
+    now: () => now,
+    maxAgeMs: 10
+  });
   const first = observation();
   bootstrap(expiring, identity(), first);
   now = 1100;
@@ -391,7 +514,10 @@ test('expired and evicted persisted state requires reset/full snapshot before co
   assert.equal(result.reasoningObservation.resetRequired, true);
   assert.equal(expiring.hasContinuity(identity()), false);
 
-  const evicting = createDeltaFirstObservationPipeline({ now: () => 1000, maxStates: 1 });
+  const evicting = createDeltaFirstObservationPipeline({
+    now: () => 1000,
+    maxStates: 1
+  });
   bootstrap(evicting, identity({ tabId: 'tab-1' }), first);
   bootstrap(evicting, identity({ tabId: 'tab-2' }), first);
   result = evicting.observe(identity({ tabId: 'tab-1' }), nextObservation(first));
@@ -421,8 +547,12 @@ test('RESET always delivers full snapshot and rebuilds a fresh canonical chain',
 
 test('delta and view mismatch never silently advances canonical state', () => {
   for (const mutate of [
-    (obs) => { obs.elements[0].semanticRevision = 2; obs.elements[0].inViewport = false; },
-    (obs) => { obs.semanticViews.regions[0].viewRevision = 2; },
+    (obs) => {
+      obs.elements[0].semanticRevision = 2; obs.elements[0].inViewport = false;
+    },
+    (obs) => {
+      obs.semanticViews.regions[0].viewRevision = 2;
+    },
   ]) {
     const pipeline = createDeltaFirstObservationPipeline({ now: () => 1000 });
     const first = observation();
@@ -447,7 +577,10 @@ test('delta and view mismatch never silently advances canonical state', () => {
 });
 
 test('compact patch is bounded and excludes raw/sensitive page data', () => {
-  const pipeline = createDeltaFirstObservationPipeline({ now: () => 1000, maxPatchBytes: 8192 });
+  const pipeline = createDeltaFirstObservationPipeline({
+    now: () => 1000,
+    maxPatchBytes: 8192
+  });
   const safe = observation();
   bootstrap(pipeline, identity(), safe);
   const sensitive = entity('sensitive', 2, {
@@ -457,7 +590,11 @@ test('compact patch is bounded and excludes raw/sensitive page data', () => {
     href: 'https://example.test/?secret=TOP_SECRET_HREF',
     value: 'TOP_SECRET_VALUE',
   });
-  const second = nextObservation(safe, { type: 'UPDATE', logicalId: 'a', entityOverrides: { inViewport: false } });
+  const second = nextObservation(safe, {
+    type: 'UPDATE',
+    logicalId: 'a',
+    entityOverrides: { inViewport: false }
+  });
   second.elements.push(sensitive);
   second.semanticState.excludedSensitiveCount = 1;
   const out = patch(pipeline.observe(identity(), second));
@@ -471,10 +608,16 @@ test('compact patch is bounded and excludes raw/sensitive page data', () => {
 });
 
 test('patch overflow falls back to full snapshot and discards unsafe continuity', () => {
-  const pipeline = createDeltaFirstObservationPipeline({ now: () => 1000, maxPatchBytes: 300 });
+  const pipeline = createDeltaFirstObservationPipeline({
+    now: () => 1000,
+    maxPatchBytes: 300
+  });
   const first = observation();
   bootstrap(pipeline, identity(), first);
-  const second = nextObservation(first, { type: 'UPDATE', logicalId: 'a' });
+  const second = nextObservation(first, {
+    type: 'UPDATE',
+    logicalId: 'a'
+  });
   const result = pipeline.observe(identity(), second);
   assert.equal(result.reasoningObservation.kind, 'FULL_SNAPSHOT');
   assert.equal(result.reasoningObservation.resetRequired, true);
@@ -487,17 +630,40 @@ test('canonical reconstructed state remains equal to the trusted rich observatio
   const pipeline = createDeltaFirstObservationPipeline({ now: () => 1000 });
   let current = observation();
   bootstrap(pipeline, identity(), current);
-  current = nextObservation(current, { type: 'UPDATE', logicalId: 'a', entityOverrides: { inViewport: false } });
+  current = nextObservation(current, {
+    type: 'UPDATE',
+    logicalId: 'a',
+    entityOverrides: { inViewport: false }
+  });
   pipeline.observe(identity(), current);
-  current = nextObservation(current, { type: 'INSERT', logicalId: 'new' });
+  current = nextObservation(current, {
+    type: 'INSERT',
+    logicalId: 'new'
+  });
   pipeline.observe(identity(), current);
-  current = nextObservation(current, { type: 'MOVE', logicalId: 'new', entityOverrides: { inViewport: false } });
+  current = nextObservation(current, {
+    type: 'MOVE',
+    logicalId: 'new',
+    entityOverrides: { inViewport: false }
+  });
   pipeline.observe(identity(), current);
-  current = nextObservation(current, { type: 'REMOVE', logicalId: 'new' });
+  current = nextObservation(current, {
+    type: 'REMOVE',
+    logicalId: 'new'
+  });
   const result = pipeline.observe(identity(), current);
   assert.deepEqual(result.canonicalState, pipeline.inspect(identity()));
   const ids = result.canonicalState.entities.map((item) => item.logicalId);
-  assert.deepEqual(ids, ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']);
+  assert.deepEqual(ids, [
+    'a',
+    'b',
+    'c',
+    'd',
+    'e',
+    'f',
+    'g',
+    'h'
+  ]);
   assert.equal(result.canonicalState.entities.find((item) => item.logicalId === 'a').inViewport, false);
 });
 
@@ -507,18 +673,43 @@ test('fallback never silently continues stale state and requires a trusted reset
   bootstrap(pipeline, identity(), first);
   const second = nextObservation(first);
   pipeline.observe(identity(), second);
-  const gap = observation({ sourceRevision: 4, resultingRevision: 5, classification: 'NO_RELEVANT_CHANGE', changes: [], entities: second.elements, regions: second.semanticViews.regions, changedRegionIds: [], completeSnapshotRequired: false, resetReason: undefined });
+  const gap = observation({
+    sourceRevision: 4,
+    resultingRevision: 5,
+    classification: 'NO_RELEVANT_CHANGE',
+    changes: [],
+    entities: second.elements,
+    regions: second.semanticViews.regions,
+    changedRegionIds: [],
+    completeSnapshotRequired: false,
+    resetReason: undefined
+  });
   let result = pipeline.observe(identity(), gap);
   assert.equal(result.reasoningObservation.resetRequired, true);
   assert.equal(pipeline.hasContinuity(identity()), false);
 
-  const stillNotReset = observation({ sourceRevision: 5, resultingRevision: 6, classification: 'NO_RELEVANT_CHANGE', changes: [], entities: second.elements, regions: second.semanticViews.regions, changedRegionIds: [], completeSnapshotRequired: false, resetReason: undefined });
+  const stillNotReset = observation({
+    sourceRevision: 5,
+    resultingRevision: 6,
+    classification: 'NO_RELEVANT_CHANGE',
+    changes: [],
+    entities: second.elements,
+    regions: second.semanticViews.regions,
+    changedRegionIds: [],
+    completeSnapshotRequired: false,
+    resetReason: undefined
+  });
   result = pipeline.observe(identity(), stillNotReset);
   assert.equal(result.reasoningObservation.resetRequired, true);
   assert.equal(result.reasoningObservation.resetReason, 'MISSING_CONTINUITY');
   assert.equal(pipeline.hasContinuity(identity()), false);
 
-  const reset = observation({ sourceRevision: 0, resultingRevision: 1, classification: 'RESET', resetReason: 'EXPLICIT_RECOVERY' });
+  const reset = observation({
+    sourceRevision: 0,
+    resultingRevision: 1,
+    classification: 'RESET',
+    resetReason: 'EXPLICIT_RECOVERY'
+  });
   result = pipeline.observe(identity(), reset);
   assert.equal(result.reasoningObservation.resetRequired, false);
   assert.equal(pipeline.hasContinuity(identity()), true);
@@ -531,7 +722,10 @@ test('explicit verification/fresh-observation requirement keeps full snapshot wi
   const first = observation();
   bootstrap(pipeline, identity(), first);
   const second = nextObservation(first);
-  const result = pipeline.observe(identity(), second, { freshObservationRequired: true, verificationReason: 'PROOF_RECHECK' });
+  const result = pipeline.observe(identity(), second, {
+    freshObservationRequired: true,
+    verificationReason: 'PROOF_RECHECK'
+  });
   assert.equal(result.reasoningObservation.kind, 'FULL_SNAPSHOT');
   assert.equal(result.reasoningObservation.fullSnapshotIncluded, true);
   assert.equal(result.reasoningObservation.resetRequired, false);
@@ -554,7 +748,6 @@ test('does not synthesize completion or foreground/browser authority', () => {
 });
 
 test('keeps the R4-authorized read_page projection inside the frozen public MCP boundary', async () => {
-
   const files = new Map(PUBLIC_SURFACE_LOCKS);
   for (const [relativePath, expected] of files) {
     const bytes = await readFile(new URL(relativePath, import.meta.url));
@@ -562,13 +755,16 @@ test('keeps the R4-authorized read_page projection inside the frozen public MCP 
   }
   const mcp = await mcpSurfaceSource();
   assert.match(mcp, /server\.registerTool\("read_page"/);
-  assert.match(mcp, /execute\("page\.read", \{ \.\.\.args, view: "compact" \}, undefined, deviceName, provider\)\);/);
+  assert.match(mcp, /execute\("page\.read", \{\s*\.\.\.args,\s*view: "compact"\s*\}, undefined, deviceName, provider\)\);/);
   assert.doesNotMatch(mcp, /view:\s*z\./);
   assert.doesNotMatch(mcp, /delta-first-observation/);
 });
 
 test('paired controlled small-change benchmark reduces median reasoning payload >= 75% with exact state agreement and zero safety regressions', () => {
-  const pipeline = createDeltaFirstObservationPipeline({ now: () => 1000, maxPatchBytes: 8192 });
+  const pipeline = createDeltaFirstObservationPipeline({
+    now: () => 1000,
+    maxPatchBytes: 8192
+  });
   let current = observation();
   bootstrap(pipeline, identity(), current);
   const reductions = [];
@@ -581,7 +777,11 @@ test('paired controlled small-change benchmark reduces median reasoning payload 
 
   for (let index = 0; index < 9; index += 1) {
     const logicalId = String.fromCharCode(97 + (index % 8));
-    current = nextObservation(current, { type: 'UPDATE', logicalId, entityOverrides: { inViewport: index % 2 === 0 } });
+    current = nextObservation(current, {
+      type: 'UPDATE',
+      logicalId,
+      entityOverrides: { inViewport: index % 2 === 0 }
+    });
     const result = pipeline.observe(identity(), current);
     const out = result.reasoningObservation;
     if (out.kind !== 'COMPACT_PATCH') fallbackCount += 1;

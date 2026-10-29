@@ -17,9 +17,16 @@
 // An advice line that needed three calls is a plan, and a plan inside an error message is read once and forgotten.
 // Each move below is a single tool call that answers the question the failure raised.
 
-const MENU_ROLES = ['menuitem', 'menuitemcheckbox', 'menuitemradio'];
+const MENU_ROLES = [
+  'menuitem',
+  'menuitemcheckbox',
+  'menuitemradio'
+];
 
-const trim = (text, at = 60) => {
+const trim = (
+  text,
+  at = 60
+) => {
   const one = String(text ?? '').replace(/\s+/g, ' ').trim();
   return one.length > at ? `${one.slice(0, at)}...` : one;
 };
@@ -28,7 +35,11 @@ const trim = (text, at = 60) => {
 // The caller asked for one thing and the page offers another that starts the same way — "Upload" against "Upload from computer".
 // An agent that sees the difference spelled out does not have to guess whether its own spelling was wrong or the page's.
 
-const rowAdvice = (role, name, rows) => {
+const rowAdvice = (
+  role,
+  name,
+  rows
+) => {
   const wanted = String(name ?? '').toLowerCase();
   const sameRole = rows.filter((row) => row.role === role);
   const begins = sameRole.find((row) => String(row.name ?? '').toLowerCase().startsWith(wanted));
@@ -160,7 +171,10 @@ export const RULES = Object.freeze([
   },
   {
     when: (error) => /^no \w+ matching/.test(error),
-    next: (error, context) => {
+    next: (
+      error,
+      context
+    ) => {
       const asked = /^no (\w+) matching "([^"]*)"/.exec(error);
       const role = asked?.[1] ?? 'row';
       const name = asked?.[2] ?? '';
@@ -172,7 +186,10 @@ export const RULES = Object.freeze([
 // WHY THE FIRST WORD IS KEPT.
 // "no menuitem matching" says what was looked for and what class of thing it was, and an agent that reads only the first line still knows whether to look for a menu, a button or a text field.
 
-export function withAdvice(error, context = {}) {
+export function withAdvice(
+  error,
+  context = {}
+) {
   const text = String(error?.message ?? error ?? '');
   if (!text) return text;
   const rule = RULES.find((entry) => entry.when(text));

@@ -43,35 +43,83 @@ test('a completion reports success without an error key, or a reader cannot tell
 });
 
 test('a failed completion always carries an error, so a failure is never a silent success', () => {
-  const frame = JSON.parse(completionFrame('c-2', false, null, { code: 'BOOM', message: 'no' }));
+  const frame = JSON.parse(completionFrame('c-2', false, null, {
+    code: 'BOOM',
+    message: 'no'
+  }));
   assert.equal(frame.ok, false);
   assert.equal(frame.result, undefined);
   assert.equal(frame.error.code, 'BOOM');
 });
 
 test('a command is only runnable with an id and a method, because both are needed to act', () => {
-  assert.equal(isRunnableCommand({ type: 'command', command: { id: 'a', method: 'browser.ping' } }), true);
-  assert.equal(isRunnableCommand({ type: 'command', command: { method: 'browser.ping' } }), false);
-  assert.equal(isRunnableCommand({ type: 'command', command: { id: 'a' } }), false);
-  assert.equal(isRunnableCommand({ type: 'command', command: { id: '', method: 'a' } }), false);
+  assert.equal(isRunnableCommand({
+    type: 'command',
+    command: {
+      id: 'a',
+      method: 'browser.ping'
+    }
+  }), true);
+  assert.equal(isRunnableCommand({
+    type: 'command',
+    command: { method: 'browser.ping' }
+  }), false);
+  assert.equal(isRunnableCommand({
+    type: 'command',
+    command: { id: 'a' }
+  }), false);
+  assert.equal(isRunnableCommand({
+    type: 'command',
+    command: {
+      id: '',
+      method: 'a'
+    }
+  }), false);
 });
 
 test('a non-command frame is never runnable, so an ack or an error cannot execute anything', () => {
   assert.equal(isRunnableCommand({ type: 'ready' }), false);
-  assert.equal(isRunnableCommand({ type: 'ack', command: { id: 'a', method: 'browser.ping' } }), false);
+  assert.equal(isRunnableCommand({
+    type: 'ack',
+    command: {
+      id: 'a',
+      method: 'browser.ping'
+    }
+  }), false);
   assert.equal(isRunnableCommand(null), false);
 });
 
 test('a command arrives with params defaulted and a timeout that cannot be zero or negative', () => {
-  const bare = normalizeCommand({ type: 'command', command: { id: 'a', method: 'browser.ping' } });
+  const bare = normalizeCommand({
+    type: 'command',
+    command: {
+      id: 'a',
+      method: 'browser.ping'
+    }
+  });
   assert.deepEqual(bare.params, {});
   assert.equal(bare.timeoutMs, 30000);
 
-  const given = normalizeCommand({ type: 'command', command: { id: 'b', method: 'page.key', params: { key: 'a' }, timeoutMs: 9000 } });
+  const given = normalizeCommand({
+    type: 'command',
+    command: {
+      id: 'b',
+      method: 'page.key',
+      params: { key: 'a' },
+      timeoutMs: 9000
+    }
+  });
   assert.deepEqual(given.params, { key: 'a' });
   assert.equal(given.timeoutMs, 9000);
 
-  const bad = normalizeCommand({ type: 'command', command: { id: 'c', method: 'x', timeoutMs: -5 } });
+  const bad = normalizeCommand({
+    type: 'command',
+    command: {
+      id: 'c',
+      method: 'x',
+      timeoutMs: -5
+    }
+  });
   assert.equal(bad.timeoutMs, 30000);
 });
 
@@ -93,7 +141,11 @@ test('a frame near the product bound parses on the device side too', () => {
   assert.ok(FRAME_MAX_BYTES >= MAX_RESULT_BYTES * 1.5);
   const frame = JSON.stringify({
     type: 'command',
-    command: { id: 'cmd-big', method: 'page.read', params: { blob: 'y'.repeat(400 * 1024) } }
+    command: {
+      id: 'cmd-big',
+      method: 'page.read',
+      params: { blob: 'y'.repeat(400 * 1024) }
+    }
   });
   assert.equal(parseFrame(frame).ok, true);
 });

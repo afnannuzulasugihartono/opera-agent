@@ -30,7 +30,10 @@
 
 import "@supabase/edge-runtime";
 import { createEdgeLog } from "../_shared/edge-log.js";
-import { CORS_DEFAULT_ORIGINS, resolveAllowedOrigin } from "../_shared/cors.js";
+import {
+  CORS_DEFAULT_ORIGINS,
+  resolveAllowedOrigin
+} from "../_shared/cors.js";
 import { invoicePage } from "../_shared/invoice-page.js";
 import {
   amountFor,
@@ -87,10 +90,18 @@ type Link = {
   provider_order_ids: string[];
 };
 type AttemptClose =
-  | { state: "none" }
-  | { state: "paid"; status: string; grossAmount: string; paymentType: string; transactionId: string }
-  | { state: "closed"; status: string }
-  | { state: "refused"; why: string };
+  | {
+    state: "none"
+  }
+  | {
+    state: "paid"; status: string; grossAmount: string; paymentType: string; transactionId: string
+  }
+  | {
+    state: "closed"; status: string
+  }
+  | {
+    state: "refused"; why: string
+  };
 type BillingClient = Awaited<ReturnType<typeof db>>;
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
@@ -122,7 +133,10 @@ let clientPromise: Promise<import("@supabase/supabase-js").SupabaseClient> | nul
 function db() {
   if (!clientPromise) {
     clientPromise = import("@supabase/supabase-js").then(({ createClient }) => createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
-      auth: { persistSession: false, autoRefreshToken: false }
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false
+      }
     }));
   }
   return clientPromise;
@@ -165,7 +179,10 @@ function pageHeaders(cors: Record<string, string>): Record<string, string> {
 }
 
 async function priceList(supabase: BillingClient): Promise<PriceRow[]> {
-  const { data, error } = await supabase.from("opera_price_list").select("kind, unit, amount_cents, currency, active");
+  const {
+    data,
+    error
+  } = await supabase.from("opera_price_list").select("kind, unit, amount_cents, currency, active");
   if (error) throw new Error(`price list unreadable: ${error.message}`);
   return data || [];
 }
@@ -173,7 +190,10 @@ async function priceList(supabase: BillingClient): Promise<PriceRow[]> {
 async function readInvoice(invoiceId: string, token: string): Promise<InvoiceRow> {
   if (!verifyInvoiceToken(invoiceId, token, BILLING_SECRET)) throw new HttpError(401, "that link does not open that invoice.");
   const supabase = await db();
-  const { data, error } = await supabase.from("opera_invoices").select("*").eq("id", invoiceId).single();
+  const {
+    data,
+    error
+  } = await supabase.from("opera_invoices").select("*").eq("id", invoiceId).single();
   if (error || !data) throw new HttpError(404, "no such invoice.");
   return data;
 }
@@ -188,42 +208,106 @@ async function readInvoice(invoiceId: string, token: string): Promise<InvoiceRow
 
 async function closeAttempt(orderId: string | null | undefined): Promise<AttemptClose> {
   if (!orderId) return { state: "none" };
-  const request = snapStatusRequest({ orderId, serverKey: MIDTRANS_SERVER_KEY, environment: MIDTRANS_ENVIRONMENT });
+  const request = snapStatusRequest({
+    orderId,
+    serverKey: MIDTRANS_SERVER_KEY,
+    environment: MIDTRANS_ENVIRONMENT
+  });
   if (!request) return { state: "none" };
   let response: Response;
   let payload: Record<string, unknown> | null;
   try {
-    response = await fetch(request.url, { method: request.method, headers: request.headers });
+    response = await fetch(request.url, {
+      method: request.method,
+      headers: request.headers
+    });
     payload = await response.json().catch(() => null);
   } catch (error) {
-    return { state: "refused", why: `the provider could not be asked: ${(error as Error).message}` };
+    return {
+      state: "refused",
+      why: `the provider could not be asked: ${(error as Error).message}`
+    };
   }
   if (!response.ok) {
-    if (response.status === 404) return { state: "closed", status: "not found" };
-    return { state: "refused", why: `the provider answered ${response.status} when asked about that order` };
+    if (response.status === 404) return {
+      state: "closed",
+      status: "not found"
+    };
+    return {
+      state: "refused",
+      why: `the provider answered ${response.status} when asked about that order`
+    };
   }
-  if (!payload) return { state: "refused", why: "the provider answered with a body that is not JSON" };
-  if (providerSaysMissing(payload)) return { state: "closed", status: "not found" };
+  if (!payload) return {
+    state: "refused",
+    why: "the provider answered with a body that is not JSON"
+  };
+  if (providerSaysMissing(payload)) return {
+    state: "closed",
+    status: "not found"
+  };
   const answer = providerSettlement(payload);
   if (answer.settled) {
-    return { state: "paid", status: answer.status, grossAmount: answer.grossAmount, paymentType: answer.paymentType, transactionId: answer.transactionId };
+    return {
+      state: "paid",
+      status: answer.status,
+      grossAmount: answer.grossAmount,
+      paymentType: answer.paymentType,
+      transactionId: answer.transactionId
+    };
   }
   const status = String(answer.status || "").toLowerCase();
-  if (["expire", "deny", "cancel", "failure"].includes(status)) return { state: "closed", status };
+  if ([
+    "expire",
+    "deny",
+    "cancel",
+    "failure"
+  ].includes(status)) return {
+    state: "closed",
+    status
+  };
   if (status !== "pending") {
     const code = String(payload.status_code || "");
     const message = String(payload.status_message || "");
-    return { state: "refused", why: `the provider reports ${answer.status || "nothing"} for that order${code ? ` (status_code ${code}${message ? `: ${message}` : ""})` : ""}` };
+    return {
+      state: "refused",
+      why: `the provider reports ${answer.status || "nothing"} for that order${code ? ` (status_code ${
+        code
+      }${
+        message ? `: ${message}` : ""
+      })` : ""}`
+    };
   }
-  const expire = snapExpireRequest({ orderId, serverKey: MIDTRANS_SERVER_KEY, environment: MIDTRANS_ENVIRONMENT });
-  if (!expire) return { state: "refused", why: "the expire request could not be built" };
+  const expire = snapExpireRequest({
+    orderId,
+    serverKey: MIDTRANS_SERVER_KEY,
+    environment: MIDTRANS_ENVIRONMENT
+  });
+  if (!expire) return {
+    state: "refused",
+    why: "the expire request could not be built"
+  };
   try {
-    const closed = await fetch(expire.url, { method: expire.method, headers: expire.headers });
+    const closed = await fetch(expire.url, {
+      method: expire.method,
+      headers: expire.headers
+    });
     const body = await closed.json().catch(() => null) as Record<string, unknown> | null;
-    if (closed.ok && String(body?.status_code || "") !== "412") return { state: "closed", status: "expired" };
-    return { state: "refused", why: `the provider answered ${closed.status} to the expire request${body ? `: ${JSON.stringify(body).slice(0, 200)}` : ""}` };
+    if (closed.ok && String(body?.status_code || "") !== "412") return {
+      state: "closed",
+      status: "expired"
+    };
+    return {
+      state: "refused",
+      why: `the provider answered ${closed.status} to the expire request${body ? `: ${
+        JSON.stringify(body).slice(0, 200)
+      }` : ""}`
+    };
   } catch (error) {
-    return { state: "refused", why: `the expire request failed: ${(error as Error).message}` };
+    return {
+      state: "refused",
+      why: `the expire request failed: ${(error as Error).message}`
+    };
   }
 }
 
@@ -249,7 +333,13 @@ function nextAttempt(invoice: InvoiceRow): number {
 // A charge built from the row would ask the customer for yesterday's price and then write the new amount beside it, and the settlement would be refused by the amount check.
 // The refresh path passes nothing and gets the row's own amount, which is what it means.
 
-async function openNewAttempt(invoice: InvoiceRow, { customerId, amountCents = Number(invoice.amount_cents), currency = invoice.currency }: { customerId: string; amountCents?: number; currency?: string }): Promise<Link | null> {
+async function openNewAttempt(invoice: InvoiceRow, {
+  customerId,
+  amountCents = Number(invoice.amount_cents),
+  currency = invoice.currency
+}: {
+  customerId: string; amountCents?: number; currency?: string
+}): Promise<Link | null> {
   const previous = invoice.provider_order_id || null;
   if (previous) {
     const closed = await closeAttempt(previous);
@@ -261,7 +351,9 @@ async function openNewAttempt(invoice: InvoiceRow, { customerId, amountCents = N
         payment_type: closed.paymentType,
         transaction_id: closed.transactionId
       });
-      throw new HttpError(409, `${invoice.id} has just been paid${settled.ok ? "" : `, and the record could not be closed: ${settled.why}`}; no second charge was opened.`);
+      throw new HttpError(409, `${invoice.id} has just been paid${settled.ok ? "" : `, and the record could not be closed: ${
+        settled.why
+      }`}; no second charge was opened.`);
     }
     if (closed.state === "refused") {
       throw new HttpError(409, `the previous payment link could not be closed: ${closed.why}`);
@@ -281,7 +373,11 @@ async function openNewAttempt(invoice: InvoiceRow, { customerId, amountCents = N
     expiry: PAY_LINK_EXPIRY
   });
   if (!charge) return null;
-  const response = await fetch(charge.url, { method: charge.method, headers: charge.headers, body: charge.body });
+  const response = await fetch(charge.url, {
+    method: charge.method,
+    headers: charge.headers,
+    body: charge.body
+  });
   const body = await response.json().catch(() => ({})) as Record<string, unknown>;
   const redirect = response.ok ? snapRedirect(body) : null;
   if (!redirect) {
@@ -301,7 +397,10 @@ async function openNewAttempt(invoice: InvoiceRow, { customerId, amountCents = N
     provider: "midtrans",
     provider_ref: redirect.token || orderId,
     provider_order_id: orderId,
-    provider_order_ids: [...history, orderId]
+    provider_order_ids: [
+      ...history,
+      orderId
+    ]
   };
 }
 
@@ -325,20 +424,33 @@ async function invoiceRow(id: string): Promise<InvoiceRow | null> {
 async function abandonOrphan(opened: unknown, fresh: InvoiceRow | null): Promise<void> {
   const orderId = typeof opened === "string" ? opened : "";
   if (!orderId || !fresh) return;
-  const recorded = new Set([fresh.provider_order_id, ...(fresh.provider_order_ids || [])].filter(Boolean));
+  const recorded = new Set([
+    fresh.provider_order_id,
+    ...(fresh.provider_order_ids || [])
+  ].filter(Boolean));
   if (recorded.has(orderId)) return;
   const closed = await closeAttempt(orderId);
   if (closed.state === "refused") {
-    log.warn("PAYMENT_ATTEMPT_ORPHANED", JSON.stringify({ orderId, why: closed.why }));
+    log.warn("PAYMENT_ATTEMPT_ORPHANED", JSON.stringify({
+      orderId,
+      why: closed.why
+    }));
   } else if (closed.state === "paid") {
-    log.error("PAYMENT_ATTEMPT_PAID_UNRECORDED", JSON.stringify({ orderId, grossAmount: closed.grossAmount, status: closed.status }));
+    log.error("PAYMENT_ATTEMPT_PAID_UNRECORDED", JSON.stringify({
+      orderId,
+      grossAmount: closed.grossAmount,
+      status: closed.status
+    }));
   }
 }
 
 async function writeInvoice(row: Record<string, unknown>, existing: InvoiceRow | null): Promise<InvoiceRow> {
   const supabase = await db();
   if (!existing) {
-    const { data, error } = await supabase.from("opera_invoices").insert(row).select().single();
+    const {
+      data,
+      error
+    } = await supabase.from("opera_invoices").insert(row).select().single();
     if (!error) return data;
     if (error.code !== "23505") throw new Error(`invoice not written: ${error.message}`);
     const fresh = await invoiceRow(String(row.id));
@@ -347,14 +459,20 @@ async function writeInvoice(row: Record<string, unknown>, existing: InvoiceRow |
     await abandonOrphan(row.provider_order_id, fresh);
     return fresh;
   }
-  const { id, ...fields } = row;
+  const {
+    id,
+    ...fields
+  } = row;
   const expected = existing.provider_order_id || null;
   let query = supabase.from("opera_invoices")
     .update(fields)
     .eq("id", String(id))
     .is("paid_at", null);
   query = expected ? query.eq("provider_order_id", expected) : query.is("provider_order_id", null);
-  const { data, error } = await query.select().maybeSingle();
+  const {
+    data,
+    error
+  } = await query.select().maybeSingle();
   if (error) throw new Error(`invoice not written: ${error.message}`);
   if (data) return data;
   const fresh = await invoiceRow(String(id));
@@ -364,7 +482,15 @@ async function writeInvoice(row: Record<string, unknown>, existing: InvoiceRow |
   return fresh;
 }
 
-async function createInvoice({ customer_id, period, lines }: { customer_id: string; period: string; lines: Line[] }): Promise<{ invoice: InvoiceRow; token: string }> {
+async function createInvoice({
+  customer_id,
+  period,
+  lines
+}: {
+  customer_id: string; period: string; lines: Line[]
+}): Promise<{
+  invoice: InvoiceRow; token: string
+}> {
   if (!BILLING_SECRET) throw new HttpError(500, "BILLING_SECRET is not set; invoices cannot be signed.");
   const supabase = await db();
   const prices = await priceList(supabase);
@@ -424,8 +550,15 @@ async function createInvoice({ customer_id, period, lines }: { customer_id: stri
       status: "open",
       amount_cents: out.amountCents,
       currency: out.currency,
-      lines: { priced: out.priced, unpriced: out.unpriced }
-    }, { customerId: customer_id, amountCents: out.amountCents, currency: out.currency });
+      lines: {
+        priced: out.priced,
+        unpriced: out.unpriced
+      }
+    }, {
+      customerId: customer_id,
+      amountCents: out.amountCents,
+      currency: out.currency
+    });
     if (opened) link = opened;
   }
 
@@ -436,19 +569,34 @@ async function createInvoice({ customer_id, period, lines }: { customer_id: stri
     status: "open",
     amount_cents: out.amountCents,
     currency: out.currency,
-    lines: { priced: out.priced, unpriced: out.unpriced },
+    lines: {
+      priced: out.priced,
+      unpriced: out.unpriced
+    },
     ...link
   }, existing ?? null);
-  return { invoice: data, token };
+  return {
+    invoice: data,
+    token
+  };
 }
 
 // WHY A TRANSFER IS RECORDED WITH THE SAME CARE AS A CALLBACK.
 // The money can arrive before a provider account exists, and the ledger still has to show who confirmed it and when.
 // The note is stored on the invoice itself, so the page the customer already holds shows the same record the operator sees.
 
-async function settleManual({ invoice_id, amount_cents, note }: { invoice_id: string; amount_cents?: unknown; note?: unknown }): Promise<InvoiceRow> {
+async function settleManual({
+  invoice_id,
+  amount_cents,
+  note
+}: {
+  invoice_id: string; amount_cents?: unknown; note?: unknown
+}): Promise<InvoiceRow> {
   const supabase = await db();
-  const { data: invoice, error } = await supabase.from("opera_invoices").select("*").eq("id", invoice_id).maybeSingle();
+  const {
+    data: invoice,
+    error
+  } = await supabase.from("opera_invoices").select("*").eq("id", invoice_id).maybeSingle();
   if (error) throw new Error(`invoice unreadable: ${error.message}`);
   const check = manualSettlement(invoice, {
     amountCents: amount_cents === undefined || amount_cents === null || amount_cents === "" ? null : Number(amount_cents),
@@ -457,12 +605,21 @@ async function settleManual({ invoice_id, amount_cents, note }: { invoice_id: st
   if (!check.ok) throw new HttpError(409, check.why);
   const text = String(note || "").trim();
   const at = new Date().toISOString();
-  const { data, error: updateError } = await supabase.from("opera_invoices")
+  const {
+    data,
+    error: updateError
+  } = await supabase.from("opera_invoices")
     .update({
       status: "paid",
       paid_at: at,
       provider: invoice.provider || "manual",
-      lines: { ...(invoice.lines || {}), manual: { note: text, at } }
+      lines: {
+        ...(invoice.lines || {}),
+        manual: {
+          note: text,
+          at
+        }
+      }
     })
     .eq("id", invoice.id)
     .eq("status", "open")
@@ -511,20 +668,47 @@ async function noteNotification(
 // It stays as the answer to a refusal now that the formula matches, because a rotated key and a forged body must both end somewhere honest.
 // The status code and the key never leave the function; only the settlement and the amount it reports come back.
 
-async function providerSaysSettled(orderId: string): Promise<{ settled: boolean; status: string; grossAmount: string; paymentType: string; transactionId: string; why: string }> {
-  const empty = { settled: false, status: "", grossAmount: "", paymentType: "", transactionId: "" };
-  const request = snapStatusRequest({ orderId, serverKey: MIDTRANS_SERVER_KEY, environment: MIDTRANS_ENVIRONMENT });
-  if (!request) return { ...empty, why: "there is no order id to ask about" };
+async function providerSaysSettled(orderId: string): Promise<{
+  settled: boolean; status: string; grossAmount: string; paymentType: string; transactionId: string; why: string
+}> {
+  const empty = {
+    settled: false,
+    status: "",
+    grossAmount: "",
+    paymentType: "",
+    transactionId: ""
+  };
+  const request = snapStatusRequest({
+    orderId,
+    serverKey: MIDTRANS_SERVER_KEY,
+    environment: MIDTRANS_ENVIRONMENT
+  });
+  if (!request) return {
+    ...empty,
+    why: "there is no order id to ask about"
+  };
   try {
-    const response = await fetch(request.url, { method: request.method, headers: request.headers });
+    const response = await fetch(request.url, {
+      method: request.method,
+      headers: request.headers
+    });
     const payload = await response.json().catch(() => null);
     if (!response.ok) {
-      return { ...empty, why: `the provider answered ${response.status} when asked about that order` };
+      return {
+        ...empty,
+        why: `the provider answered ${response.status} when asked about that order`
+      };
     }
     const answer = providerSettlement(payload);
-    return { ...answer, why: `the provider reports ${answer.status || "nothing"} for that order` };
+    return {
+      ...answer,
+      why: `the provider reports ${answer.status || "nothing"} for that order`
+    };
   } catch (error) {
-    return { ...empty, why: `the provider could not be asked: ${(error as Error).message}` };
+    return {
+      ...empty,
+      why: `the provider could not be asked: ${(error as Error).message}`
+    };
   }
 }
 
@@ -555,37 +739,68 @@ async function invoiceForOrder(orderId: string): Promise<InvoiceRow | null> {
 // Clearing the link a customer is holding because an older attempt died would take away the one way to pay that still works.
 // So the row is left open and only the current attempt's link is removed; a pending or settled notification never clears a link, because one means money may still arrive and the other means it did.
 
-async function markPaid(notification: Record<string, unknown>): Promise<{ ok: boolean; why?: string; invoice?: string; retry?: boolean }> {
+async function markPaid(notification: Record<string, unknown>): Promise<{
+  ok: boolean; why?: string; invoice?: string; retry?: boolean
+}> {
   const supabase = await db();
   const orderId = String(notification.order_id || "");
   const invoice = await invoiceForOrder(orderId);
-  if (!invoice) return { ok: false, why: "no invoice with that order id" };
+  if (!invoice) return {
+    ok: false,
+    why: "no invoice with that order id"
+  };
 
   if (!isSettled(notification)) {
     const status = String(notification.transaction_status || notification.status || "").toLowerCase();
-    const terminal = ["expire", "deny", "cancel", "failure"].includes(status);
+    const terminal = [
+      "expire",
+      "deny",
+      "cancel",
+      "failure"
+    ].includes(status);
     const current = String(invoice.provider_order_id || "") === orderId;
     if (terminal && current) {
       const { error } = await supabase.from("opera_invoices")
-        .update({ pay_url: null, pay_url_expires_at: null })
+        .update({
+          pay_url: null,
+          pay_url_expires_at: null
+        })
         .eq("id", invoice.id)
         .eq("status", "open");
       if (error) throw new Error(`the payment link was not cleared: ${error.message}`);
-      return { ok: false, why: "the transaction is not settled; the provider closed the current payment link", retry: false };
+      return {
+        ok: false,
+        why: "the transaction is not settled; the provider closed the current payment link",
+        retry: false
+      };
     }
-    return { ok: false, why: "the transaction is not settled", retry: false };
+    return {
+      ok: false,
+      why: "the transaction is not settled",
+      retry: false
+    };
   }
 
   const paidCents = paidAmountCents(notification.gross_amount, invoice.currency);
   if (paidCents === null || paidCents !== Number(invoice.amount_cents)) {
-    return { ok: false, why: `the paid amount (${String(notification.gross_amount)}) is not the invoice amount (${invoice.amount_cents} cents)` };
+    return {
+      ok: false,
+      why: `the paid amount (${String(notification.gross_amount)}) is not the invoice amount (${invoice.amount_cents} cents)`
+    };
   }
   if (!needsClosing(invoice)) {
-    return { ok: true, invoice: invoice.id, why: `the invoice was already paid at ${invoice.paid_at}` };
+    return {
+      ok: true,
+      invoice: invoice.id,
+      why: `the invoice was already paid at ${invoice.paid_at}`
+    };
   }
   const paidMethod = String(notification.payment_type || "").trim();
   const transactionId = String(notification.transaction_id || "").trim();
-  const { data: closed, error: updateError } = await supabase.from("opera_invoices")
+  const {
+    data: closed,
+    error: updateError
+  } = await supabase.from("opera_invoices")
     .update({
       status: "paid",
       paid_at: new Date().toISOString(),
@@ -596,21 +811,39 @@ async function markPaid(notification: Record<string, unknown>): Promise<{ ok: bo
     .is("paid_at", null)
     .select("id");
   if (updateError) throw new Error(`invoice not closed: ${updateError.message}`);
-  if (!closed || closed.length === 0) return { ok: true, invoice: invoice.id, why: "another notification closed the invoice first" };
-  return { ok: true, invoice: invoice.id };
+  if (!closed || closed.length === 0) return {
+    ok: true,
+    invoice: invoice.id,
+    why: "another notification closed the invoice first"
+  };
+  return {
+    ok: true,
+    invoice: invoice.id
+  };
 }
 
 class HttpError extends Error {
   status: number;
-  constructor(status: number, message: string) {
+  constructor(
+    status: number,
+    message: string
+  ) {
     super(message);
     this.status = status;
   }
 }
 
-const json = (data: unknown, status = 200, headers: Record<string, string> = {}) => new Response(JSON.stringify(data), {
+const json = (
+  data: unknown,
+  status = 200,
+  headers: Record<string,
+  string> = {}
+) => new Response(JSON.stringify(data), {
   status,
-  headers: { "content-type": "application/json; charset=utf-8", ...headers }
+  headers: {
+    "content-type": "application/json; charset=utf-8",
+    ...headers
+  }
 });
 
 Deno.serve(async (req: Request) => {
@@ -620,7 +853,10 @@ Deno.serve(async (req: Request) => {
     "access-control-allow-methods": "GET, POST, OPTIONS",
     "cache-control": "no-store"
   };
-  if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: cors });
+  if (req.method === "OPTIONS") return new Response(null, {
+    status: 204,
+    headers: cors
+  });
   const url = new URL(req.url);
   try {
     if (req.method === "GET") {
@@ -657,7 +893,10 @@ Deno.serve(async (req: Request) => {
           const provider = await providerSaysSettled(String(notification.order_id || ""));
           if (!provider.settled) {
             await noteNotification(notification, signatureField, false, `the signature did not match (${KEY_SHAPE}) and ${provider.why}`, req);
-            return json({ ok: false, error: "the notification was not signed by the provider" }, 400, cors);
+            return json({
+              ok: false,
+              error: "the notification was not signed by the provider"
+            }, 400, cors);
           }
           judged = {
             order_id: notification.order_id,
@@ -683,7 +922,10 @@ Deno.serve(async (req: Request) => {
         const invoiceId = String(body.invoice_id || "");
         const token = String(body.token || "");
         const page = new URL(req.url);
-        page.search = new URLSearchParams({ invoice_id: invoiceId, token }).toString();
+        page.search = new URLSearchParams({
+          invoice_id: invoiceId,
+          token
+        }).toString();
         const invoice = await readInvoice(invoiceId, token);
         const status = String(invoice.status || "");
         let failed = false;
@@ -692,7 +934,10 @@ Deno.serve(async (req: Request) => {
             try {
               const opened = await openNewAttempt(invoice, { customerId: invoice.customer_id });
               if (opened) {
-                await writeInvoice({ id: invoice.id, ...opened }, invoice);
+                await writeInvoice({
+                  id: invoice.id,
+                  ...opened
+                }, invoice);
               } else {
                 failed = true;
               }
@@ -707,7 +952,13 @@ Deno.serve(async (req: Request) => {
           }
         }
         if (failed) page.searchParams.set("refresh", "failed");
-        return new Response(null, { status: 303, headers: { location: `${page.pathname}${page.search}`, ...cors } });
+        return new Response(null, {
+          status: 303,
+          headers: {
+            location: `${page.pathname}${page.search}`,
+            ...cors
+          }
+        });
       }
       if (body.action === "settle-manual") {
         const token = req.headers.get("authorization") || "";
@@ -716,8 +967,15 @@ Deno.serve(async (req: Request) => {
         }
         const invoiceId = String(body.invoice_id || "");
         if (!invoiceId) return json({ error: "invoice_id is required" }, 400, cors);
-        const invoice = await settleManual({ invoice_id: invoiceId, amount_cents: body.amount_cents, note: body.note });
-        return json({ ok: true, invoice }, 200, cors);
+        const invoice = await settleManual({
+          invoice_id: invoiceId,
+          amount_cents: body.amount_cents,
+          note: body.note
+        });
+        return json({
+          ok: true,
+          invoice
+        }, 200, cors);
       }
       if (body.action === "invoice") {
         const token = req.headers.get("authorization") || "";
@@ -745,21 +1003,34 @@ Deno.serve(async (req: Request) => {
         if (plan) {
           const derived = planInvoiceLines(deliveries, plan, period);
           if (derived.refused.length) {
-            return json({ error: "the plan cannot be billed", refused: derived.refused.map((row) => row.reason) }, 400, cors);
+            return json({
+              error: "the plan cannot be billed",
+              refused: derived.refused.map((row) => row.reason)
+            }, 400, cors);
           }
           lines = derived.lines;
         } else if (deliveries.length) {
           const derived = linesFromDeliveries(deliveries);
           if (derived.refused.length) {
-            return json({ error: "some deliveries cannot be billed", refused: derived.refused.map((row) => row.reason) }, 400, cors);
+            return json({
+              error: "some deliveries cannot be billed",
+              refused: derived.refused.map((row) => row.reason)
+            }, 400, cors);
           }
           lines = derived.lines;
         }
         if (!lines.length) return json({ error: "no deliveries to charge for" }, 400, cors);
-        const out = await createInvoice({ customer_id: customerId, period, lines });
+        const out = await createInvoice({
+          customer_id: customerId,
+          period,
+          lines
+        });
         const base = BILLING_PAGE_URL || `${SUPABASE_URL}/functions/v1/opera-agent-billing`;
         const link = `${base}?invoice_id=${encodeURIComponent(out.invoice.id)}&token=${out.token}`;
-        return json({ invoice: out.invoice, url: link }, 200, cors);
+        return json({
+          invoice: out.invoice,
+          url: link
+        }, 200, cors);
       }
       return json({ error: "unknown action" }, 400, cors);
     }

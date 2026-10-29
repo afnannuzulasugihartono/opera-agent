@@ -5,15 +5,29 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { loadOptions, saveBridgeUrl, saveLogLevel, saveModelEndpoint, saveModelKey, saveModelName, readModelConfig, MODEL_PROVIDERS, DEFAULT_PROVIDER_ID } from '../extension/lib/options-store.js';
+import {
+  loadOptions,
+  saveBridgeUrl,
+  saveLogLevel,
+  saveModelEndpoint,
+  saveModelKey,
+  saveModelName,
+  readModelConfig,
+  MODEL_PROVIDERS,
+  DEFAULT_PROVIDER_ID
+} from '../extension/lib/options-store.js';
 import { DEFAULT_BRIDGE_URL } from '../extension/lib/endpoints.js';
 
 const fake = (seed = {}) => {
   const data = { ...seed };
   return {
     data,
-    async get(keys) { const out = {}; for (const k of keys) out[k] = data[k]; return out; },
-    async set(patch) { Object.assign(data, patch); }
+    async get(keys) {
+      const out = {}; for (const k of keys) out[k] = data[k]; return out;
+    },
+    async set(patch) {
+      Object.assign(data, patch);
+    }
   };
 };
 
@@ -42,7 +56,10 @@ test('saveLogLevel accepts only the three levels', async () => {
 });
 
 test('stored values round-trip verbatim', async () => {
-  const s = fake({ bridgeUrl: 'https://x.example/', logLevel: 'error' });
+  const s = fake({
+    bridgeUrl: 'https://x.example/',
+    logLevel: 'error'
+  });
   const loaded = await loadOptions(s);
   assert.equal(loaded.bridgeUrl, 'https://x.example/');
   assert.equal(loaded.logLevel, 'error');
@@ -76,7 +93,11 @@ test('an empty key clears it, which is how a user revokes it', async () => {
 });
 
 test('loadOptions never hands the key back to the page, only that one is set', async () => {
-  const s = fake({ modelEndpoint: 'https://api.example/v1', modelName: 'm', modelKey: 'sk-live-123' });
+  const s = fake({
+    modelEndpoint: 'https://api.example/v1',
+    modelName: 'm',
+    modelKey: 'sk-live-123'
+  });
   const loaded = await loadOptions(s);
   assert.equal(loaded.modelKeySet, true);
   assert.equal('modelKey' in loaded, false);
@@ -84,7 +105,10 @@ test('loadOptions never hands the key back to the page, only that one is set', a
 });
 
 test('readModelConfig fails closed until all three are set', async () => {
-  const s = fake({ modelEndpoint: 'https://api.example/v1', modelName: 'm' });
+  const s = fake({
+    modelEndpoint: 'https://api.example/v1',
+    modelName: 'm'
+  });
   const missing = await readModelConfig(s);
   assert.equal(missing.configured, false);
   assert.equal(missing.code, 'MODEL_NOT_CONFIGURED');
@@ -118,7 +142,13 @@ test('readModelConfig on empty storage misses only the user-supplied key', async
 
 test('MODEL_PROVIDERS is frozen, and every listed endpoint passes its own rule', async () => {
   assert.equal(Object.isFrozen(MODEL_PROVIDERS), true);
-  assert.deepEqual(MODEL_PROVIDERS.map((entry) => entry.id), ['nvidia', 'groq', 'ollama', 'lmstudio', 'custom']);
+  assert.deepEqual(MODEL_PROVIDERS.map((entry) => entry.id), [
+    'nvidia',
+    'groq',
+    'ollama',
+    'lmstudio',
+    'custom'
+  ]);
   const s = fake();
   for (const provider of MODEL_PROVIDERS) {
     assert.equal(Object.isFrozen(provider), true, `${provider.id} is frozen`);
@@ -133,7 +163,10 @@ test('MODEL_PROVIDERS is frozen, and every listed endpoint passes its own rule',
 });
 
 test('the cloud providers name their exact endpoints and models', async () => {
-  const byId = Object.fromEntries(MODEL_PROVIDERS.map((entry) => [entry.id, entry]));
+  const byId = Object.fromEntries(MODEL_PROVIDERS.map((entry) => [
+    entry.id,
+    entry
+  ]));
   assert.equal(byId.nvidia.endpoint, 'https://integrate.api.nvidia.com/v1/chat/completions');
   assert.deepEqual(byId.nvidia.models.map((entry) => entry.id), [
     'meta/llama-3.2-11b-vision-instruct',
@@ -150,7 +183,10 @@ test('the cloud providers name their exact endpoints and models', async () => {
 });
 
 test('the local providers name loopback endpoints and guess no model name', async () => {
-  const byId = Object.fromEntries(MODEL_PROVIDERS.map((entry) => [entry.id, entry]));
+  const byId = Object.fromEntries(MODEL_PROVIDERS.map((entry) => [
+    entry.id,
+    entry
+  ]));
   assert.equal(byId.ollama.endpoint, 'http://127.0.0.1:11434/v1/chat/completions');
   assert.equal(byId.lmstudio.endpoint, 'http://127.0.0.1:1234/v1/chat/completions');
   assert.deepEqual(byId.ollama.models, []);
@@ -162,7 +198,11 @@ test('the local providers name loopback endpoints and guess no model name', asyn
 });
 
 test('stored endpoint and model still override the provider defaults', async () => {
-  const s = fake({ modelEndpoint: 'https://custom.example/v1', modelName: 'custom-model', modelKey: 'sk-live-123' });
+  const s = fake({
+    modelEndpoint: 'https://custom.example/v1',
+    modelName: 'custom-model',
+    modelKey: 'sk-live-123'
+  });
   const loaded = await loadOptions(s);
   assert.equal(loaded.modelEndpoint, 'https://custom.example/v1');
   assert.equal(loaded.modelName, 'custom-model');

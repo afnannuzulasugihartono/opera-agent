@@ -26,7 +26,10 @@
 // WHY IT IS BUILT RATHER THAN WRITTEN.
 // The rules are one closure over the two things a test can hold still - the machine and the clock - so the claims below are checked without launching a shell and without waiting a second.
 
-import { focusWindow, windowState } from './window-focus.js';
+import {
+  focusWindow,
+  windowState
+} from './window-focus.js';
 
 export function createFocusGuard({
   focus = focusWindow,
@@ -36,24 +39,48 @@ export function createFocusGuard({
   sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
   clock = () => Date.now()
 } = {}) {
-  let seen = { at: 0, state: null };
-
-  const machine = async () => {
-    if (clock() - seen.at < machineTtlMs && seen.state) return { state: seen.state, asked: false };
-    const state = await read().catch(() => null);
-    seen = { at: clock(), state };
-    return { state, asked: true };
+  let seen = {
+    at: 0,
+    state: null
   };
 
-  return async function ensureFront({ hasFocus, match = '' } = {}) {
+  const machine = async () => {
+    if (clock() - seen.at < machineTtlMs && seen.state) return {
+      state: seen.state,
+      asked: false
+    };
+    const state = await read().catch(() => null);
+    seen = {
+      at: clock(),
+      state
+    };
+    return {
+      state,
+      asked: true
+    };
+  };
+
+  return async function ensureFront({
+    hasFocus,
+    match = ''
+  } = {}) {
     if (typeof hasFocus !== 'function') {
-      return { window: 'this driver cannot tell whether the window is there', checked: 'nothing' };
+      return {
+        window: 'this driver cannot tell whether the window is there',
+        checked: 'nothing'
+      };
     }
     if (await hasFocus().catch(() => false)) {
-      return { window: 'the page hears input', checked: 'page' };
+      return {
+        window: 'the page hears input',
+        checked: 'page'
+      };
     }
 
-    const { state, asked } = await machine();
+    const {
+      state,
+      asked
+    } = await machine();
     const wanted = String(match ?? '').trim().toLowerCase();
 
     // WHY NO BLIND FALLBACK TO THE FIRST MINIMIZED WINDOW.
@@ -74,7 +101,10 @@ export function createFocusGuard({
     // The answer said it had brought a window back while the page still could not hear input, so the page is asked again before the drive is allowed to send anything.
     if (minimized) {
       const out = await focus(minimized);
-      seen = { at: clock(), state: null };
+      seen = {
+        at: clock(),
+        state: null
+      };
       if (!out?.focused) {
         return {
           window: `the window is on the taskbar and the machine would not bring ${minimized} back: ${out?.why ?? 'it said nothing'}`,

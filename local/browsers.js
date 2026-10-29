@@ -20,56 +20,94 @@ const CHROMIUM_FLAGS = Object.freeze([
   '--disable-renderer-backgrounding'
 ]);
 
-const browser = (id, name, paths) => Object.freeze({ id, name, family: 'chromium', protocol: 'cdp', paths });
+const browser = (
+  id,
+  name,
+  paths
+) => Object.freeze({
+  id,
+  name,
+  family: 'chromium',
+  protocol: 'cdp',
+  paths
+});
 
 export const BROWSERS = Object.freeze([
   browser('chrome', 'Google Chrome', {
-    win32: ['C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+    win32: [
+      'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
       'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
-      '%LOCALAPPDATA%\\Google\\Chrome\\Application\\chrome.exe'],
+      '%LOCALAPPDATA%\\Google\\Chrome\\Application\\chrome.exe'
+    ],
     darwin: ['/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'],
-    linux: ['/usr/bin/google-chrome', '/usr/bin/google-chrome-stable', '/usr/bin/chromium-browser']
+    linux: [
+      '/usr/bin/google-chrome',
+      '/usr/bin/google-chrome-stable',
+      '/usr/bin/chromium-browser'
+    ]
   }),
   browser('edge', 'Microsoft Edge', {
-    win32: ['C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe',
-      'C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe'],
+    win32: [
+      'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe',
+      'C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe'
+    ],
     darwin: ['/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge'],
     linux: ['/usr/bin/microsoft-edge']
   }),
   browser('brave', 'Brave', {
-    win32: ['C:\\Program Files\\BraveSoftware\\Brave-Browser\\Application\\brave.exe',
-      '%LOCALAPPDATA%\\BraveSoftware\\Brave-Browser\\Application\\brave.exe'],
+    win32: [
+      'C:\\Program Files\\BraveSoftware\\Brave-Browser\\Application\\brave.exe',
+      '%LOCALAPPDATA%\\BraveSoftware\\Brave-Browser\\Application\\brave.exe'
+    ],
     darwin: ['/Applications/Brave Browser.app/Contents/MacOS/Brave Browser'],
     linux: ['/usr/bin/brave-browser']
   }),
   browser('opera', 'Opera', {
-    win32: ['C:\\Program Files\\Opera\\launcher.exe', '%LOCALAPPDATA%\\Programs\\Opera\\launcher.exe'],
+    win32: [
+      'C:\\Program Files\\Opera\\launcher.exe',
+      '%LOCALAPPDATA%\\Programs\\Opera\\launcher.exe'
+    ],
     darwin: ['/Applications/Opera.app/Contents/MacOS/Opera'],
     linux: ['/usr/bin/opera']
   }),
   browser('vivaldi', 'Vivaldi', {
-    win32: ['C:\\Program Files\\Vivaldi\\Application\\vivaldi.exe',
-      '%LOCALAPPDATA%\\Vivaldi\\Application\\vivaldi.exe'],
+    win32: [
+      'C:\\Program Files\\Vivaldi\\Application\\vivaldi.exe',
+      '%LOCALAPPDATA%\\Vivaldi\\Application\\vivaldi.exe'
+    ],
     darwin: ['/Applications/Vivaldi.app/Contents/MacOS/Vivaldi'],
     linux: ['/usr/bin/vivaldi']
   }),
   browser('chromium', 'Chromium', {
     win32: ['C:\\Program Files\\Chromium\\Application\\chrome.exe'],
     darwin: ['/Applications/Chromium.app/Contents/MacOS/Chromium'],
-    linux: ['/usr/bin/chromium', '/usr/bin/chromium-browser']
+    linux: [
+      '/usr/bin/chromium',
+      '/usr/bin/chromium-browser'
+    ]
   })
 ]);
 
 const normalise = (value) => String(value).replace(/\\/g, '/').toLowerCase();
 
-export function expandPath(path, env = process.env) {
-  return String(path).replace(/%([A-Za-z_][A-Za-z0-9_]*)%/g, (whole, name) => {
+export function expandPath(
+  path,
+  env = process.env
+) {
+  return String(path).replace(/%([A-Za-z_][A-Za-z0-9_]*)%/g, (
+    whole,
+    name
+  ) => {
     const value = env[name];
     return value === undefined || value === '' ? whole : value;
   });
 }
 
-export function detectBrowsers({ platform, exists, env = process.env }) {
+export function detectBrowsers({
+  platform,
+  exists,
+  env = process.env
+}) {
   return BROWSERS.filter((entry) =>
     (entry.paths[platform] || []).some((path) => exists(normalise(expandPath(path, env))))
   ).map((entry) => entry);
@@ -83,7 +121,11 @@ export function protocolsFor(options) {
   return [...new Set(detectBrowsers(options).map((entry) => entry.protocol))];
 }
 
-export function launchArgs({ browser: entry, port, userDataDir }) {
+export function launchArgs({
+  browser: entry,
+  port,
+  userDataDir
+}) {
   if (!entry) return [];
 
   return [

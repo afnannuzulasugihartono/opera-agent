@@ -5,7 +5,12 @@
 
 import { log } from '../lib/log.js';
 import { buildAxSummary } from '../lib/ax-summary.js';
-import { registerDebuggerSession, releaseDebuggerSession, touchDebuggerSession, getDebuggerSessions } from '../lib/debugger-session.js';
+import {
+  registerDebuggerSession,
+  releaseDebuggerSession,
+  touchDebuggerSession,
+  getDebuggerSessions
+} from '../lib/debugger-session.js';
 
 const SCREENSHOT_CACHE_MS = 750;
 const SCREENSHOT_CACHE_LIMIT = 8;
@@ -39,7 +44,10 @@ function captureFramePrivacyProbe() {
 export async function assertCaptureFramesSafe(tabId) {
   try {
     const frames = await chrome.scripting.executeScript({
-      target: { tabId, allFrames: true },
+      target: {
+        tabId,
+        allFrames: true
+      },
       func: captureFramePrivacyProbe
     });
     if (frames.some((frame) => frame.result?.sensitive)) {
@@ -69,7 +77,11 @@ export async function assertCaptureFramesSafe(tabId) {
 // Healing on attach cannot catch it, because the attach was skipped and the failure belongs to the call itself.
 // So the call heals once: correct the flag, re-attach, and try again; a second failure is the honest answer, and a foreign error never triggers a detach at all.
 
-export async function withAttachHeal(tabId, work, heal) {
+export async function withAttachHeal(
+  tabId,
+  work,
+  heal
+) {
   try {
     return await work();
   } catch (error) {
@@ -90,15 +102,17 @@ async function attachResilient(target) {
   }
   try {
     await chrome.debugger.detach(target);
-  } catch {
-  }
+  } catch {}
   await chrome.debugger.attach(target, '1.3');
 }
 
-export async function withDebugger(tabId, context, work) {
+export async function withDebugger(
+  tabId,
+  context,
+  work
+) {
   const shared = context?.debuggerSession;
   if (shared) {
-
     if (shared.tabId !== tabId) {
       await releaseDebuggerSession(shared, log);
     }
@@ -126,27 +140,46 @@ export async function withDebugger(tabId, context, work) {
     return await work(target);
   } finally {
     if (attached) {
-      try { await chrome.debugger.detach(target); } catch (error) { log.debug('DEBUGGER_DETACH_FAILED', error?.message || String(error)); }
+      try {
+        await chrome.debugger.detach(target);
+      } catch (error) {
+        log.debug('DEBUGGER_DETACH_FAILED', error?.message || String(error));
+      }
     }
   }
 }
 
-export function codedError(code, message, details = {}) {
+export function codedError(
+  code,
+  message,
+  details = {}
+) {
   const error = new Error(message);
   error.code = code;
   error.details = details;
   return error;
 }
 
-export async function collectAxSummary(tabId, context) {
+export async function collectAxSummary(
+  tabId,
+  context
+) {
   try {
     return await withDebugger(tabId, context, async (target) => {
-      try { await chrome.debugger.sendCommand(target, 'Accessibility.enable'); } catch (error) { log.warn('ACCESSIBILITY_ENABLE_FAILED', error?.message || String(error)); }
+      try {
+        await chrome.debugger.sendCommand(target, 'Accessibility.enable');
+      } catch (error) {
+        log.warn('ACCESSIBILITY_ENABLE_FAILED', error?.message || String(error));
+      }
       let tree;
       try {
         tree = await chrome.debugger.sendCommand(target, 'Accessibility.getFullAXTree');
       } finally {
-        try { await chrome.debugger.sendCommand(target, 'Accessibility.disable'); } catch (error) { log.debug('ACCESSIBILITY_DISABLE_FAILED', error?.message || String(error)); }
+        try {
+          await chrome.debugger.sendCommand(target, 'Accessibility.disable');
+        } catch (error) {
+          log.debug('ACCESSIBILITY_DISABLE_FAILED', error?.message || String(error));
+        }
       }
       const summary = buildAxSummary(tree?.nodes || []);
       return summary.items.length > 0 ? summary : null;
@@ -158,7 +191,11 @@ export async function collectAxSummary(tabId, context) {
 }
 
 export function screenshotBytes(data) {
-  try { return atob(data).length; } catch (error) { log.debug('SCREENSHOT_BYTES_PARSE_FAILED', error?.message || String(error)); return Number.POSITIVE_INFINITY; }
+  try {
+    return atob(data).length;
+  } catch (error) {
+    log.debug('SCREENSHOT_BYTES_PARSE_FAILED', error?.message || String(error)); return Number.POSITIVE_INFINITY;
+  }
 }
 
 export async function screenshotHash(data) {
@@ -170,7 +207,10 @@ export async function screenshotHash(data) {
 }
 
 export async function screenshotLooksBlank(data) {
-  if (typeof createImageBitmap !== 'function' || typeof OffscreenCanvas !== 'function') return { checked: false, blank: false };
+  if (typeof createImageBitmap !== 'function' || typeof OffscreenCanvas !== 'function') return {
+    checked: false,
+    blank: false
+  };
   try {
     const raw = atob(data);
     const bytes = new Uint8Array(raw.length);
@@ -191,17 +231,32 @@ export async function screenshotLooksBlank(data) {
     }
     const mean = sum / count;
     const variance = Math.max(0, sumSquares / count - mean * mean);
-    return { checked: true, blank: variance < 2 && (mean < 3 || mean > 252), mean, variance };
+    return {
+      checked: true,
+      blank: variance < 2 && (mean < 3 || mean > 252),
+      mean,
+      variance
+    };
   } catch (error) {
     log.debug('SCREENSHOT_BLANK_CHECK_FAILED', error?.message || String(error));
-    return { checked: false, blank: false };
+    return {
+      checked: false,
+      blank: false
+    };
   }
 }
 
-export function cachedScreenshot(tabId, cacheKey, previousHash) {
+export function cachedScreenshot(
+  tabId,
+  cacheKey,
+  previousHash
+) {
   const cached = screenshotCache.get(tabId);
   if (!cached || cached.cacheKey !== cacheKey || Date.now() - cached.savedAt > SCREENSHOT_CACHE_MS) return null;
-  const screenshot = { ...cached.screenshot, cached: true };
+  const screenshot = {
+    ...cached.screenshot,
+    cached: true
+  };
   if (previousHash && previousHash.toLowerCase() === screenshot.sha256) {
     delete screenshot.data;
     screenshot.unchanged = true;
@@ -209,8 +264,16 @@ export function cachedScreenshot(tabId, cacheKey, previousHash) {
   return screenshot;
 }
 
-export function rememberScreenshot(tabId, cacheKey, screenshot) {
+export function rememberScreenshot(
+  tabId,
+  cacheKey,
+  screenshot
+) {
   screenshotCache.delete(tabId);
-  screenshotCache.set(tabId, { cacheKey, savedAt: Date.now(), screenshot });
+  screenshotCache.set(tabId, {
+    cacheKey,
+    savedAt: Date.now(),
+    screenshot
+  });
   while (screenshotCache.size > SCREENSHOT_CACHE_LIMIT) screenshotCache.delete(screenshotCache.keys().next().value);
 }

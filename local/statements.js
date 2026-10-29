@@ -23,7 +23,10 @@ const EXT_SHAPE = /^[a-z0-9]{2,5}$/;
 // The periods and clients are text, and the default comparison is text too, but an unstated one reads like an accident and would sort a future numeric field as text.
 // So the comparison is written down, and the order is intended rather than inherited.
 
-const byText = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
+const byText = (
+  a,
+  b
+) => (a < b ? -1 : a > b ? 1 : 0);
 
 // WHY THE NAME IS DERIVED AND NOT TYPED.
 // A person typing file names produces "BCA Sept'26 (2).pdf" once and then never again the same way, and a manifest full of near-duplicates cannot be billed.
@@ -63,8 +66,19 @@ function jobShape(job) {
   }
 }
 
-export function statementCard({ client, portal, period, root = null, url = null, ext = 'pdf' } = {}) {
-  jobShape({ client, portal, period });
+export function statementCard({
+  client,
+  portal,
+  period,
+  root = null,
+  url = null,
+  ext = 'pdf'
+} = {}) {
+  jobShape({
+    client,
+    portal,
+    period
+  });
   if (!EXT_SHAPE.test(String(ext))) {
     throw new Error(`ext must be a file extension like pdf or csv; got "${ext}"`);
   }
@@ -150,9 +164,19 @@ function readManifest(file) {
 }
 
 export function statementDelivered({
-  client, portal, period, path: file, balance = null, manifest = null, replace = false
+  client,
+  portal,
+  period,
+  path: file,
+  balance = null,
+  manifest = null,
+  replace = false
 } = {}) {
-  jobShape({ client, portal, period });
+  jobShape({
+    client,
+    portal,
+    period
+  });
   if (!file || String(file).trim() === '') {
     throw new Error('statement_delivered needs path: the file download answered with. Without it there is nothing to verify.');
   }
@@ -189,7 +213,10 @@ export function statementDelivered({
         : 'counted from the file structure',
     balance: balance === null || balance === undefined || String(balance).trim() === ''
       ? null
-      : { raw: String(balance).trim(), digits },
+      : {
+        raw: String(balance).trim(),
+        digits
+      },
     balanceFrom: balance === null || balance === undefined || String(balance).trim() === '' ? null : 'the page the statement was downloaded from',
     deliveredAt: new Date().toISOString()
   };
@@ -204,12 +231,18 @@ export function statementDelivered({
     return {
       duplicate: true,
       record: existing,
-      manifest: { path: where2, delivered: rows.length },
+      manifest: {
+        path: where2,
+        delivered: rows.length
+      },
       why: `${record.client} ${record.portal} ${record.period} is already in the manifest; a second line would bill the same client-month twice. Pass replace:true only when the first file was wrong.`
     };
   }
 
-  const next = existing ? rows.map((row) => (same(row) ? record : row)) : [...rows, record];
+  const next = existing ? rows.map((row) => (same(row) ? record : row)) : [
+    ...rows,
+    record
+  ];
   fs.mkdirSync(path.dirname(where2), { recursive: true });
   const tmp = `${where2}.writing`;
   fs.writeFileSync(tmp, `${JSON.stringify(next, null, 1)}\n`);

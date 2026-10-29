@@ -18,7 +18,10 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createServer, request as httpRequest } from 'node:http';
+import {
+  createServer,
+  request as httpRequest
+} from 'node:http';
 
 import {
   bridgeAddress,
@@ -34,7 +37,12 @@ import {
 } from '../local/bridge.js';
 import { createCdpClient } from '../local/cdp.js';
 import { createBridgeServer } from '../local/bridge-server.js';
-import { completionFrame, handshakeFrame, normalizeCommand, pongFrame } from '../extension/lib/socket-protocol.js';
+import {
+  completionFrame,
+  handshakeFrame,
+  normalizeCommand,
+  pongFrame
+} from '../extension/lib/socket-protocol.js';
 
 process.env.OPERA_BRIDGE_PORT = '0';
 
@@ -47,12 +55,22 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 // The real client announces itself the moment the socket opens, and the server holds every command until it hears it — which is the whole point, since the device drops anything that arrives before it has been given a `ready`.
 // A device that waited for `ready` before saying hello would wait forever, and every command with it.
 
-function scriptedDevice(url, handle, { answerProof = true, deaf = false } = {}) {
+function scriptedDevice(
+  url,
+  handle,
+  {
+    answerProof = true,
+    deaf = false
+  } = {}
+) {
   const seen = [];
   let socket = null;
   let open = false;
 
-  const connected = new Promise((resolve, reject) => {
+  const connected = new Promise((
+    resolve,
+    reject
+  ) => {
     socket = new WebSocket(url);
     socket.addEventListener('open', () => {
       open = true;
@@ -60,7 +78,9 @@ function scriptedDevice(url, handle, { answerProof = true, deaf = false } = {}) 
       resolve();
     });
     socket.addEventListener('error', () => reject(new Error('the scripted device could not connect')));
-    socket.addEventListener('close', () => { open = false; });
+    socket.addEventListener('close', () => {
+      open = false;
+    });
     socket.addEventListener('message', (event) => {
       let frame;
       try {
@@ -100,7 +120,10 @@ function scriptedDevice(url, handle, { answerProof = true, deaf = false } = {}) 
     connected,
     async stop() {
       if (open) socket.close();
-      await Promise.race([connected, sleep(250)]);
+      await Promise.race([
+        connected,
+        sleep(250)
+      ]);
     }
   };
 }
@@ -115,7 +138,10 @@ test.afterEach(async () => {
   await closeBridge();
 });
 
-async function startDevice(handle, options) {
+async function startDevice(
+  handle,
+  options
+) {
   const { url } = await bridgeAddress();
   const device = scriptedDevice(url, handle, options);
   live.push(device);
@@ -142,18 +168,44 @@ test('tab operations round-trip through the device', async () => {
   const seen = [];
   const device = await startDevice((command) => {
     seen.push(command);
-    if (command.method === 'tabs.list') return [{ id: 7, url: 'https://x/', title: 'X' }];
-    if (command.method === 'tabs.open') return { id: 8, url: command.params.url, title: '' };
-    return { id: command.params.tabId, closed: true };
+    if (command.method === 'tabs.list') return [{
+      id: 7,
+      url: 'https://x/',
+      title: 'X'
+    }];
+    if (command.method === 'tabs.open') return {
+      id: 8,
+      url: command.params.url,
+      title: ''
+    };
+    return {
+      id: command.params.tabId,
+      closed: true
+    };
   });
 
-  assert.deepEqual(await listBridgeTargets(), [{ id: 7, url: 'https://x/', title: 'X' }]);
-  assert.deepEqual(await openBridgeTarget('https://y/'), { id: 8, url: 'https://y/', title: '' },
+  assert.deepEqual(await listBridgeTargets(), [{
+    id: 7,
+    url: 'https://x/',
+    title: 'X'
+  }]);
+  assert.deepEqual(await openBridgeTarget('https://y/'), {
+    id: 8,
+    url: 'https://y/',
+    title: ''
+  },
     'an opened tab answers with the same shape a listed one has');
-  assert.deepEqual(await closeBridgeTarget(8), { id: 8, closed: true });
+  assert.deepEqual(await closeBridgeTarget(8), {
+    id: 8,
+    closed: true
+  });
 
   const operations = seen.filter((command) => command.method !== 'ping').map((command) => command.method);
-  assert.deepEqual(operations, ['tabs.list', 'tabs.open', 'tabs.close'], 'one vocabulary, in order');
+  assert.deepEqual(operations, [
+    'tabs.list',
+    'tabs.open',
+    'tabs.close'
+  ], 'one vocabulary, in order');
   assert.ok(seen.every((command) => typeof command.id === 'string' && command.id.length > 0),
     'every command carries an id the completion can settle against');
 });
@@ -186,11 +238,24 @@ test('two sessions on one tab do not steal each other replies', async () => {
   const second = createCdpClient(connectBridgeTarget(77));
 
   const order = [];
-  const slow = first.send('slow', {}).then((value) => { order.push('first'); return value; });
-  const quick = second.send('quick', {}).then((value) => { order.push('second'); return value; });
+  const slow = first.send('slow', {}).then((value) => {
+    order.push('first'); return value;
+  });
+  const quick = second.send('quick', {}).then((value) => {
+    order.push('second'); return value;
+  });
 
-  assert.deepEqual(await Promise.all([slow, quick]), [{ echo: 'slow' }, { echo: 'quick' }]);
-  assert.deepEqual(order, ['second', 'first'], 'the answers came back out of order');
+  assert.deepEqual(await Promise.all([
+    slow,
+    quick
+  ]), [
+    { echo: 'slow' },
+    { echo: 'quick' }
+  ]);
+  assert.deepEqual(order, [
+    'second',
+    'first'
+  ], 'the answers came back out of order');
   first.close();
   second.close();
 });
@@ -254,8 +319,14 @@ test('a CDP call is proved before it is sent, like every other command', async (
 // RFC 6455 opens with the nonce 'the sample nonce', and the secret scanner reads any base64 sitting next to the word key as a credential - correctly, and wrongly here.
 // The server accepts any sixteen-byte key, so these use sixteen zero bytes.
 
-function upgradeStatus(port, origin) {
-  return new Promise((resolve, reject) => {
+function upgradeStatus(
+  port,
+  origin
+) {
+  return new Promise((
+    resolve,
+    reject
+  ) => {
     const headers = {
       Connection: 'Upgrade',
       Upgrade: 'websocket',
@@ -263,7 +334,12 @@ function upgradeStatus(port, origin) {
       'Sec-WebSocket-Key': 'AAAAAAAAAAAAAAAAAAAAAA=='
     };
     if (origin !== undefined) headers.Origin = origin;
-    const req = httpRequest({ host: '127.0.0.1', port, path: '/', headers });
+    const req = httpRequest({
+      host: '127.0.0.1',
+      port,
+      path: '/',
+      headers
+    });
     const guard = setTimeout(() => {
       req.destroy();
       reject(new Error(`the upgrade for ${origin} was never answered`));
@@ -272,9 +348,18 @@ function upgradeStatus(port, origin) {
       clearTimeout(guard);
       resolve(status);
     };
-    req.on('upgrade', (res, socket) => { socket.destroy(); settle(res.statusCode); });
-    req.on('response', (res) => { res.resume(); settle(res.statusCode); });
-    req.on('error', (error) => { clearTimeout(guard); reject(error); });
+    req.on('upgrade', (
+      res,
+      socket
+    ) => {
+      socket.destroy(); settle(res.statusCode);
+    });
+    req.on('response', (res) => {
+      res.resume(); settle(res.statusCode);
+    });
+    req.on('error', (error) => {
+      clearTimeout(guard); reject(error);
+    });
     req.end();
   });
 }
@@ -309,7 +394,10 @@ test('a lookalike host and an ordinary site are both refused', async () => {
 // The name now says the holder is not a bridge, which is the only case that still refuses: a real bridge next door is adopted, not fought over.
 
 test('a port held by something that is not a bridge is named, and freeing it heals the next try', async () => {
-  const squatter = createServer((req, res) => res.end());
+  const squatter = createServer((
+    req,
+    res
+  ) => res.end());
   await new Promise((resolve) => squatter.listen(0, '127.0.0.1', resolve));
   const taken = squatter.address().port;
   process.env.OPERA_BRIDGE_PORT = String(taken);
@@ -327,7 +415,11 @@ test('a port held by something that is not a bridge is named, and freeing it hea
 // A clock assertion would be flaky under load; the ping count is exact: one proof costs exactly one ping against a healthy device, and a trusted call costs none.
 
 test('a trusted window skips the proof ping, and zero trust proves every call', async () => {
-  const device = await startDevice(() => [{ id: 7, url: 'https://x/', title: 'X' }]);
+  const device = await startDevice(() => [{
+    id: 7,
+    url: 'https://x/',
+    title: 'X'
+  }]);
   const previous = process.env.OPERA_BRIDGE_TRUST_MS;
   try {
     delete process.env.OPERA_BRIDGE_TRUST_MS;
@@ -353,7 +445,10 @@ test('a trusted window skips the proof ping, and zero trust proves every call', 
 // Adopting a real bridge does not weaken it: adoption is proven only against a server that answers as a bridge, so a stranger on the port is still refused.
 
 test('a port held by a stranger is named, not swallowed into a wrong pipe', async () => {
-  const squatter = createServer((req, res) => res.end());
+  const squatter = createServer((
+    req,
+    res
+  ) => res.end());
   await new Promise((resolve) => squatter.listen(0, '127.0.0.1', resolve));
   const taken = squatter.address().port;
   process.env.OPERA_BRIDGE_PORT = String(taken);
@@ -379,9 +474,16 @@ test('a port held by a stranger is named, not swallowed into a wrong pipe', asyn
 // This drives the real thing: a bridge server with a scripted device behind it, reached only through the door.
 
 test('a driver that loses the port adopts the bridge that won it', async () => {
-  const owner = createBridgeServer({ port: 0, heartbeatMs: 50 });
+  const owner = createBridgeServer({
+    port: 0,
+    heartbeatMs: 50
+  });
   const { port } = await owner.listen();
-  const device = scriptedDevice(`ws://127.0.0.1:${port}/`, () => [{ id: 11, url: 'https://y/', title: 'Y' }]);
+  const device = scriptedDevice(`ws://127.0.0.1:${port}/`, () => [{
+    id: 11,
+    url: 'https://y/',
+    title: 'Y'
+  }]);
   live.push(device);
   await device.connected;
   const until = Date.now() + 3000;
@@ -392,7 +494,11 @@ test('a driver that loses the port adopts the bridge that won it', async () => {
   try {
     assert.equal(await bridgeReachable(), true, 'the loser sees the link the winner holds');
     const tabs = await listBridgeTargets();
-    assert.deepEqual(tabs, [{ id: 11, url: 'https://y/', title: 'Y' }], 'and drives it');
+    assert.deepEqual(tabs, [{
+      id: 11,
+      url: 'https://y/',
+      title: 'Y'
+    }], 'and drives it');
 
     await device.stop();
     const started = Date.now();
@@ -400,13 +506,21 @@ test('a driver that loses the port adopts the bridge that won it', async () => {
       'a dead device is named instead of waited out');
     assert.ok(Date.now() - started < 5000, 'and named without burning the command budget');
 
-    const revived = scriptedDevice(`ws://127.0.0.1:${port}/`, () => [{ id: 12, url: 'https://z/', title: 'Z' }]);
+    const revived = scriptedDevice(`ws://127.0.0.1:${port}/`, () => [{
+      id: 12,
+      url: 'https://z/',
+      title: 'Z'
+    }]);
     live.push(revived);
     await revived.connected;
     const until = Date.now() + 3000;
     while (!owner.linked() && Date.now() < until) await sleep(25);
     assert.equal(await bridgeReachable(), true, 'the guest sees the link come back');
-    assert.deepEqual(await listBridgeTargets(), [{ id: 12, url: 'https://z/', title: 'Z' }], 'and drives again');
+    assert.deepEqual(await listBridgeTargets(), [{
+      id: 12,
+      url: 'https://z/',
+      title: 'Z'
+    }], 'and drives again');
   } finally {
     await closeBridge();
     await owner.close();
@@ -457,25 +571,54 @@ test('the lease door grants a free tab, refuses a held one, and frees it on rele
     return response.json();
   };
   try {
-    const first = await ask({ action: 'claim', tabId: '12', owner: 'agent-a', ttlMs: 5000 });
+    const first = await ask({
+      action: 'claim',
+      tabId: '12',
+      owner: 'agent-a',
+      ttlMs: 5000
+    });
     assert.equal(first.ok, true);
     assert.equal(first.granted, true, 'a free tab is granted to the agent that asked');
     assert.equal(first.holder.owner, 'agent-a');
 
-    const second = await ask({ action: 'claim', tabId: '12', owner: 'agent-b' });
+    const second = await ask({
+      action: 'claim',
+      tabId: '12',
+      owner: 'agent-b'
+    });
     assert.equal(second.granted, false, 'a held tab is refused');
     assert.equal(second.holder.owner, 'agent-a', 'and the refusal names the holder');
 
-    const again = await ask({ action: 'claim', tabId: '12', owner: 'agent-a' });
+    const again = await ask({
+      action: 'claim',
+      tabId: '12',
+      owner: 'agent-a'
+    });
     assert.equal(again.granted, true, 'the holder renews its own claim');
 
-    const foreign = await ask({ action: 'release', tabId: '12', owner: 'agent-b' });
+    const foreign = await ask({
+      action: 'release',
+      tabId: '12',
+      owner: 'agent-b'
+    });
     assert.equal(foreign.granted, false, 'another agent cannot evict the holder');
-    assert.equal((await ask({ action: 'claim', tabId: '12', owner: 'agent-b' })).granted, false, 'and the claim stands');
+    assert.equal((await ask({
+      action: 'claim',
+      tabId: '12',
+      owner: 'agent-b'
+    })).granted, false, 'and the claim stands');
 
-    const released = await ask({ action: 'release', tabId: '12', owner: 'agent-a' });
+    const released = await ask({
+      action: 'release',
+      tabId: '12',
+      owner: 'agent-a'
+    });
     assert.equal(released.granted, true, 'the holder releases');
-    assert.equal((await ask({ action: 'claim', tabId: '12', owner: 'agent-b' })).granted, true, 'and the tab is free');
+    assert.equal((await ask({
+      action: 'claim',
+      tabId: '12',
+      owner: 'agent-b'
+    })).granted, true, 'and the tab is free');
 
     const refused = await fetch(`http://127.0.0.1:${port}/lease`, {
       method: 'POST',

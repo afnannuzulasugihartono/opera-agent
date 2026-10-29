@@ -24,14 +24,23 @@ function replayFingerprint() {
   return crypto.createHash('sha256').update(JSON.stringify(replay)).digest('hex');
 }
 
-function argument(name, fallback) {
+function argument(
+  name,
+  fallback
+) {
   const prefix = `--${name}=`;
   const item = process.argv.slice(2).find((value) => value.startsWith(prefix));
   return item ? item.slice(prefix.length) : fallback;
 }
 
-function percentile(values, fraction) {
-  const sorted = [...values].sort((left, right) => left - right);
+function percentile(
+  values,
+  fraction
+) {
+  const sorted = [...values].sort((
+    left,
+    right
+  ) => left - right);
   if (!sorted.length) return null;
   const index = Math.max(0, Math.ceil(sorted.length * fraction) - 1);
   return Math.round(sorted[index] * 100) / 100;
@@ -55,7 +64,10 @@ const pythonPrefix = process.env.OA_PYTHON ? [] : process.platform === 'win32' ?
 const runResults = [];
 
 for (let index = 0; index < runs; index += 1) {
-  const child = spawnSync(python, [...pythonPrefix, 'tests/browser_extension_test.py'], {
+  const child = spawnSync(python, [
+    ...pythonPrefix,
+    'tests/browser_extension_test.py'
+  ], {
     cwd: root,
     env: process.env,
     encoding: 'utf8',
@@ -118,7 +130,10 @@ const report = {
     semanticCausalProof: runResults.every((run) => run.semanticCausalProof === true),
   },
   invariants: {
-    focusChanges: runResults.reduce((count, run) => count + run.backgroundFocusAudit.filter((item) => !item.focusPreserved).length, 0),
+    focusChanges: runResults.reduce((
+      count,
+      run
+    ) => count + run.backgroundFocusAudit.filter((item) => !item.focusPreserved).length, 0),
     sensitiveValuesPersisted: 0,
     pairedExtensionIdAgreement: runResults.every((run) => run.extensionId === 'ofgemipoobcnbjkfanmofjbdonjapmgl'),
     browserRunsPassed: runResults.every((run) => run.ok === true),

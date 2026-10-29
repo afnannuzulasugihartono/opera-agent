@@ -17,7 +17,10 @@ test('a wrong path lands on the site instead of a host error page', () => {
   const catchAll = rewrites.find((r) => r.source === '/(.*)' && r.destination === '/404.html');
   assert.ok(catchAll, 'every unknown path rewrites to the site 404');
 
-  assert.deepEqual(rewrites, [{ source: '/(.*)', destination: '/404.html' }], 'exactly one catch-all rewrite, nothing before it');
+  assert.deepEqual(rewrites, [{
+    source: '/(.*)',
+    destination: '/404.html'
+  }], 'exactly one catch-all rewrite, nothing before it');
 });
 
 test('the 404 page helps instead of apologising', () => {

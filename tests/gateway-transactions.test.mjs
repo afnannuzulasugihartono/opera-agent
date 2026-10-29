@@ -8,41 +8,96 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { stripTypeScriptTypes } from 'node:module';
 import vm from 'node:vm';
-import { CORS_DEFAULT_ORIGINS, resolveAllowedOrigin } from '../supabase/functions/_shared/cors.js';
+import {
+  CORS_DEFAULT_ORIGINS,
+  resolveAllowedOrigin
+} from '../supabase/functions/_shared/cors.js';
+
+// WHY THE IMPORT STRIP SPANS LINES.
+// A list of specifiers is written one per line, so the statement begins with `import {` and ends with `} from '...';` on a line of its own.
+// Matching only a one-line import left the statement in the harness, and the vm refuses it as an import outside a module.
 
 const source = stripTypeScriptTypes(readFileSync(new URL('../supabase/functions/opera-agent-gateway/index.ts', import.meta.url), 'utf8')
-  .replace(/^import .*;\r?\n/gm, ''));
+  .replace(/^import [\s\S]*?;\r?\n/gm, ''));
 const commandId = '00000000-0000-4000-8000-000000000001';
 
-function harness({ merged = { ok: true, commandId }, user = null, enqueue = { ok: true, commandId }, result = { ok: true, commandId, result: { tabs: [] } }, fail, release, env = {} } = {}) {
+function harness({
+  merged = {
+    ok: true,
+    commandId
+  },
+  user = null,
+  enqueue = {
+    ok: true,
+    commandId
+  },
+  result = {
+    ok: true,
+    commandId,
+    result: { tabs: [] }
+  },
+  fail,
+  release,
+  env = {}
+} = {}) {
   const calls = [];
   let handler;
   let committed = false;
   const client = {
     auth: {
       async getUser() {
-        if (user) return { data: { user }, error: null };
-        return { data: { user: null }, error: { message: 'invalid token' } };
+        if (user) return {
+          data: { user },
+          error: null
+        };
+        return {
+          data: { user: null },
+          error: { message: 'invalid token' }
+        };
       }
     },
     from(table) {
       if (user && table === 'opera_devices') {
         return {
-          select() { return this; },
-          eq() { return this; },
-          neq() { return this; },
-          order() { return this; },
-          limit() { return this; },
-          async single() { return { data: { device_name: user.device, last_seen_at: new Date().toISOString() } }; }
+          select() {
+            return this;
+          },
+          eq() {
+            return this;
+          },
+          neq() {
+            return this;
+          },
+          order() {
+            return this;
+          },
+          limit() {
+            return this;
+          },
+          async single() {
+            return { data: {
+              device_name: user.device,
+              last_seen_at: new Date().toISOString()
+            } };
+          }
         };
       }
 
       throw new Error(`REST read removed: gateway must not query ${table}`);
     },
-    async rpc(name, args) {
-      calls.push({ name, args });
+    async rpc(
+      name,
+      args
+    ) {
+      calls.push({
+        name,
+        args
+      });
       if (name === 'opera_await_adaptive' && fail === 'transport') throw new Error('connection reset');
-      if (name === fail) return { data: null, error: { message: 'RPC failed' } };
+      if (name === fail) return {
+        data: null,
+        error: { message: 'RPC failed' }
+      };
       if (name === 'opera_verify_enqueue') {
         if (release) await release;
         if (merged?.ok) committed = true;
@@ -60,18 +115,56 @@ function harness({ merged = { ok: true, commandId }, user = null, enqueue = { ok
     }
   };
 
-  vm.runInNewContext(source, { createClient: () => client, CORS_DEFAULT_ORIGINS, resolveAllowedOrigin, Deno: { env: { get: (key) => (key in env ? env[key] : 'test') }, serve: (fn) => { handler = fn; } }, Request, Response, URL, TextEncoder, TextDecoder, crypto });
-  return { calls, request: (body = {}, headers = {}) => handler(new Request('https://example.test/functions/v1/opera-agent-gateway/command', {
-    method: 'POST', headers: { 'Content-Type': 'application/json', ...headers },
-    body: JSON.stringify({ apiKey: 'TEST-TOKEN', method: 'tabs.list', ...body })
-  })), raw: (req) => handler(req), getOpenApi: () => handler(new Request('https://proxy.test/opera-agent-gateway/openapi.json')) };
+  vm.runInNewContext(source, {
+    createClient: () => client,
+    CORS_DEFAULT_ORIGINS,
+    resolveAllowedOrigin,
+    Deno: {
+      env: { get: (key) => (key in env ? env[key] : 'test') },
+      serve: (fn) => {
+        handler = fn;
+      }
+    },
+    Request,
+    Response,
+    URL,
+    TextEncoder,
+    TextDecoder,
+    crypto
+  });
+  return {
+    calls,
+    request: (
+      body = {},
+      headers = {}
+    ) => handler(new Request('https://example.test/functions/v1/opera-agent-gateway/command', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...headers
+      },
+      body: JSON.stringify({
+        apiKey: 'TEST-TOKEN',
+        method: 'tabs.list',
+        ...body
+      })
+    })),
+    raw: (req) => handler(req),
+    getOpenApi: () => handler(new Request('https://proxy.test/opera-agent-gateway/openapi.json'))
+  };
 }
 
 test('one caller request authenticates and enqueues in a single call, then adaptive await with unchanged arguments', async () => {
   let release;
-  const gate = new Promise((resolve) => { release = resolve; });
+  const gate = new Promise((resolve) => {
+    release = resolve;
+  });
   const h = harness({ release: gate });
-  const response = h.request({ params: { active: false }, waitMs: 2000, requestId: 'retry-1' });
+  const response = h.request({
+    params: { active: false },
+    waitMs: 2000,
+    requestId: 'retry-1'
+  });
   const deadline = Date.now() + 2000;
   while (!h.calls.some((c) => c.name === 'opera_verify_enqueue')) {
     assert.ok(Date.now() < deadline, 'gateway did not reach verify-enqueue');
@@ -83,15 +176,34 @@ test('one caller request authenticates and enqueues in a single call, then adapt
   release();
   assert.equal((await response).status, 200);
   const calls = JSON.parse(JSON.stringify(h.calls));
-  assert.deepEqual(calls.map((c) => c.name || c), ['opera_verify_enqueue', 'opera_await_adaptive']);
+  assert.deepEqual(calls.map((c) => c.name || c), [
+    'opera_verify_enqueue',
+    'opera_await_adaptive'
+  ]);
   assert.match(calls[0].args.p_token_hash, /^[a-f0-9]{64}$/);
-  assert.deepEqual({ ...calls[0].args, p_token_hash: 'hash' }, { p_token_hash: 'hash', p_device_name: 'opera', p_method: 'tabs.list', p_params: { active: false }, p_timeout_ms: 2000, p_request_id: 'retry-1' });
-  assert.deepEqual(calls[1].args, { p_command_id: commandId, p_timeout_ms: 2000 });
+  assert.deepEqual({
+    ...calls[0].args,
+    p_token_hash: 'hash'
+  }, {
+    p_token_hash: 'hash',
+    p_device_name: 'opera',
+    p_method: 'tabs.list',
+    p_params: { active: false },
+    p_timeout_ms: 2000,
+    p_request_id: 'retry-1'
+  });
+  assert.deepEqual(calls[1].args, {
+    p_command_id: commandId,
+    p_timeout_ms: 2000
+  });
 });
 
 test('missing and invalid tokens cannot read devices or enqueue', async () => {
   for (const missing of [true, false]) {
-    const h = harness({ merged: { ok: false, error: 'Unauthorized device.' } });
+    const h = harness({ merged: {
+      ok: false,
+      error: 'Unauthorized device.'
+    } });
     assert.equal((await h.request(missing ? { apiKey: null } : {})).status, 401);
     assert.equal(h.calls.length, missing ? 0 : 1);
   }
@@ -99,7 +211,10 @@ test('missing and invalid tokens cannot read devices or enqueue', async () => {
 
 test('gateway 401 responses never echo the submitted token', async () => {
   const marker = 'TEST-TOKEN-UNIQUE-12345';
-  const h = harness({ merged: { ok: false, error: 'Unauthorized device.' } });
+  const h = harness({ merged: {
+    ok: false,
+    error: 'Unauthorized device.'
+  } });
   const r1 = await h.request({ apiKey: marker });
   assert.equal(r1.status, 401);
   assert.doesNotMatch(await r1.text(), /TEST-TOKEN-UNIQUE-12345/);
@@ -109,16 +224,22 @@ test('gateway 401 responses never echo the submitted token', async () => {
 });
 
 test('unpaired and offline devices are rejected before enqueue', async () => {
-
   {
-    const h = harness({ merged: { ok: false, error: 'Unauthorized device.' } });
+    const h = harness({ merged: {
+      ok: false,
+      error: 'Unauthorized device.'
+    } });
     const response = await h.request();
     assert.equal(response.status, 401);
     assert.equal((await response.json()).error.code, 'UNAUTHORIZED');
     assert.equal(h.calls.some((c) => c.name === 'opera_enqueue'), false);
   }
   for (const lastSeenAt of [null, '2000-01-01T00:00:00Z']) {
-    const h = harness({ merged: { ok: false, error: 'Device is offline.', lastSeenAt } });
+    const h = harness({ merged: {
+      ok: false,
+      error: 'Device is offline.',
+      lastSeenAt
+    } });
     const response = await h.request();
     assert.equal(response.status, 200);
     assert.equal((await response.json()).error, 'Device is offline.');
@@ -127,8 +248,16 @@ test('unpaired and offline devices are rejected before enqueue', async () => {
 });
 
 test('a user JWT resolves the caller device, never the fixed name', async () => {
-
-  const h = harness({ merged: { ok: false, error: 'Unauthorized device.' }, user: { id: 'user-1', device: 'opera-brave' } });
+  const h = harness({
+    merged: {
+      ok: false,
+      error: 'Unauthorized device.'
+    },
+    user: {
+      id: 'user-1',
+      device: 'opera-brave'
+    }
+  });
   const response = await h.request();
   assert.equal(response.status, 200);
   const enqueue = h.calls.find((c) => c.name === 'opera_enqueue');
@@ -137,7 +266,13 @@ test('a user JWT resolves the caller device, never the fixed name', async () => 
 });
 
 test('enqueue rejection is preserved and never followed by await', async () => {
-  for (const merged of [{ ok: false, error: 'Method is not allowlisted.' }, { ok: false, error: 'Device is not paired.' }, null]) {
+  for (const merged of [{
+    ok: false,
+    error: 'Method is not allowlisted.'
+  }, {
+    ok: false,
+    error: 'Device is not paired.'
+  }, null]) {
     const h = harness({ merged });
     const response = await h.request();
     assert.equal(response.status, merged?.error.includes('not paired') ? 401 : 200);
@@ -149,9 +284,29 @@ test('enqueue rejection is preserved and never followed by await', async () => {
 });
 
 test('reused command IDs, result envelopes and timeout semantics are preserved', async () => {
-  for (const result of [{ ok: true, result: { value: 1 } }, { ok: false, error: { code: 'STALE_REF' } }, { ok: false, error: { code: 'AWAIT_TIMEOUT' } }]) {
-    const h = harness({ merged: { ok: true, commandId, reused: true }, result });
-    const response = await h.request({ apiKey: null, requestId: 'same-key', waitMs: 999999 }, { authorization: 'Bearer TEST-TOKEN' });
+  for (const result of [{
+    ok: true,
+    result: { value: 1 }
+  }, {
+    ok: false,
+    error: { code: 'STALE_REF' }
+  }, {
+    ok: false,
+    error: { code: 'AWAIT_TIMEOUT' }
+  }]) {
+    const h = harness({
+      merged: {
+        ok: true,
+        commandId,
+        reused: true
+      },
+      result
+    });
+    const response = await h.request({
+      apiKey: null,
+      requestId: 'same-key',
+      waitMs: 999999
+    }, { authorization: 'Bearer TEST-TOKEN' });
     assert.equal(response.status, result.error?.code === 'AWAIT_TIMEOUT' ? 504 : 200);
     const body = await response.json();
     if (response.status === 504) assert.match(body.error.message, /may still have succeeded/);
@@ -198,12 +353,19 @@ test('openapi servers url is the full public base path from SUPABASE_URL, never 
   assert.equal(spec.servers[0].url, 'https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-gateway');
 });
 
-function streamRequest(payload, { chunked = true } = {}) {
-
+function streamRequest(
+  payload,
+  { chunked = true } = {}
+) {
   const bytes = new TextEncoder().encode(payload);
-  const stream = new ReadableStream({ start(controller) { controller.enqueue(bytes); controller.close(); } });
+  const stream = new ReadableStream({ start(controller) {
+    controller.enqueue(bytes); controller.close();
+  } });
   return new Request('https://example.test/functions/v1/opera-agent-gateway/command', {
-    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: stream, duplex: 'half'
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: stream,
+    duplex: 'half'
   });
 }
 
@@ -217,7 +379,10 @@ test('a chunked body without content-length is still capped at 256 KiB', async (
 
 test('a small chunked body still parses and runs the normal path', async () => {
   const h = harness({});
-  const response = await h.raw(streamRequest(JSON.stringify({ apiKey: 'TEST-TOKEN', method: 'tabs.list' })));
+  const response = await h.raw(streamRequest(JSON.stringify({
+    apiKey: 'TEST-TOKEN',
+    method: 'tabs.list'
+  })));
   assert.equal(response.status, 200);
   assert.ok(h.calls.some((c) => c.name === 'opera_verify_enqueue'), 'legit chunked traffic is unaffected');
 });
@@ -231,20 +396,24 @@ test('a declared content-length over 256 KiB is still rejected before parsing', 
 });
 
 test('an oversize chunked body aborts at the cap instead of buffering whole', async () => {
-
   const TOTAL = 64;
   const CHUNK = 16 * 1024;
   let pulled = 0;
   const stream = new ReadableStream({
     pull(controller) {
       pulled += 1;
-      if (pulled > TOTAL) { controller.close(); return; }
+      if (pulled > TOTAL) {
+        controller.close(); return;
+      }
       controller.enqueue(new Uint8Array(CHUNK));
     }
   });
   const h = harness({});
   const response = await h.raw(new Request('https://example.test/functions/v1/opera-agent-gateway/command', {
-    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: stream, duplex: 'half'
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: stream,
+    duplex: 'half'
   }));
   assert.equal(response.status, 413);
   assert.equal((await response.json()).error.code, 'TOO_LARGE');

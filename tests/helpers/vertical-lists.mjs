@@ -247,9 +247,23 @@ function classify(
 }
 
 export function listViolations(text) {
+  return walkLists(text).violations;
+}
+
+// WHY LIST ITEMS ARE COUNTED OUT.
+// A list written one item per line makes a file longer without making it bigger, so a gate that counts lines charges a file for the shape of its data.
+// The lines between a list's opener and its closer are that list's items, and counting them out leaves the lines that carry code.
+// The measure then means the same thing before and after a list is reflowed, which is what lets a size gate survive the rule that makes the lists vertical.
+
+export function listItemLines(text) {
+  return walkLists(text).items;
+}
+
+function walkLists(text) {
   const masked = mask(text);
   const stack = [];
   const violations = [];
+  const items = new Set();
   let line = 1;
   for (let i = 0; i < masked.length; i += 1) {
     const ch = masked[i];
@@ -272,18 +286,25 @@ export function listViolations(text) {
       const kind = classify(masked, open, {
         index: i
       });
-      if (kind && open.commas >= 1 && line === open.line) {
+      if (!kind) continue;
+      if (open.commas >= 1 && line === open.line) {
         violations.push({
           line: open.line,
           kind,
           items: open.commas + 1
         });
       }
+      if (line > open.line) {
+        for (let item = open.line + 1; item < line; item += 1) items.add(item);
+      }
       continue;
     }
     if (ch === ',' && stack.length) stack[stack.length - 1].commas += 1;
   }
-  return violations;
+  return {
+    violations,
+    items
+  };
 }
 
 // WHY INDENTATION IS MEASURED WITH THE SAME MASK.

@@ -13,7 +13,11 @@ const body = fs.readdirSync(dir)
   .map((n) => fs.readFileSync(new URL(`../supabase/migrations/${n}`, import.meta.url), 'utf8'))
   .join('\n');
 
-const RPCS = ['opera_vm_enqueue', 'opera_vm_get', 'opera_vm_cancel'];
+const RPCS = [
+  'opera_vm_enqueue',
+  'opera_vm_get',
+  'opera_vm_cancel'
+];
 
 function definitionsOf(fn) {
   return body

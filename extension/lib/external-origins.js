@@ -8,7 +8,11 @@
 
 import { SITE_ORIGIN } from './endpoints.js';
 
-export const EXTERNAL_CONFIG_ORIGINS = Object.freeze(['http://localhost:', 'https://localhost:', SITE_ORIGIN]);
+export const EXTERNAL_CONFIG_ORIGINS = Object.freeze([
+  'http://localhost:',
+  'https://localhost:',
+  SITE_ORIGIN
+]);
 
 export function originAllowed(from) {
   const value = String(from || '');

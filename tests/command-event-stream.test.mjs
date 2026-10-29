@@ -75,7 +75,13 @@ test('emit refuses a kind outside the allowlist, so a device cannot ship arbitra
   assert.ok(kinds, 'the allowlist must be enforced with an array membership test');
 
   const listed = [...kinds[1].matchAll(/'([a-z_]+)'/g)].map((m) => m[1]);
-  assert.deepEqual(listed.sort(), ['done', 'note', 'observation', 'received', 'step'],
+  assert.deepEqual(listed.sort(), [
+    'done',
+    'note',
+    'observation',
+    'received',
+    'step'
+  ],
     'the allowlist drifted from the documented set');
 });
 

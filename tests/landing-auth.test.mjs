@@ -33,17 +33,40 @@ test('the auth page takes no password, only a magic link', () => {
 });
 
 test('the landing page itself stays network-free while auth may reach only Supabase', () => {
-
   assert.deepEqual(
     vercel.headers.map((h) => h.source),
-    ['/(.*)', '/', '/index.html', '/beranda', '/beranda.html', '/akun', '/akun/:path*', '/akun.html', '/dashboard', '/dashboard/:path*', '/dashboard.html', '/oauth/consent', '/oauth/consent.html', '/robots.txt', '/sitemap.xml'],
+    [
+      '/(.*)',
+      '/',
+      '/index.html',
+      '/beranda',
+      '/beranda.html',
+      '/akun',
+      '/akun/:path*',
+      '/akun.html',
+      '/dashboard',
+      '/dashboard/:path*',
+      '/dashboard.html',
+      '/oauth/consent',
+      '/oauth/consent.html',
+      '/robots.txt',
+      '/sitemap.xml'
+    ],
     'the catch-all stays first and the page entries follow'
   );
-  const bySource = Object.fromEntries(vercel.headers.map((h) => [h.source, h.headers]));
+  const bySource = Object.fromEntries(vercel.headers.map((h) => [
+    h.source,
+    h.headers
+  ]));
   const rootCsp = bySource['/(.*)'].find((h) => h.key === 'Content-Security-Policy').value;
   assert.match(rootCsp, /connect-src 'none'/, 'the marketing page still connects nowhere');
 
-  const authSources = ['/', '/index.html', '/oauth/consent', '/oauth/consent.html'];
+  const authSources = [
+    '/',
+    '/index.html',
+    '/oauth/consent',
+    '/oauth/consent.html'
+  ];
   for (const source of authSources) {
     const entry = bySource[source];
     assert.ok(entry, `vercel.json must define a header entry for ${source}`);
@@ -55,7 +78,6 @@ test('the landing page itself stays network-free while auth may reach only Supab
 });
 
 test('the sign-in page can return a person to where they came from, and nowhere else', () => {
-
   assert.match(html, /const RETURNABLE = \/\^\\\.\\\//, 'only a same-site relative path is accepted');
   assert.match(html, /returnTo\(\) !== '\.\/beranda\.html'/, 'the return path changes what the page offers');
   assert.match(html, /redirect_to.*encodeURIComponent\(target\)/, 'the provider buttons carry the return path to Supabase');
@@ -76,13 +98,11 @@ test('the two pages navigate both ways as one site', () => {
 });
 
 test('the auth page says sign-up is open, because it is', () => {
-
   assert.match(html, /Daftar terbuka/i, 'open sign-up is stated, not rationed');
   assert.doesNotMatch(html, /undangan/i, 'no invitation wording remains');
 });
 
 test('a returning login completes on the page instead of stranding the visitor', () => {
-
   assert.match(html, /access_token/, 'the page reads the returning session from the URL');
   assert.ok(html.includes('https://nenmkmtvjremqphfqnfw.supabase.co/auth/v1'), 'the session is proven against the project Auth host');
   assert.match(html, /\$\{AUTH_HOST\}\/user/, 'the page proves the session through the user endpoint');
@@ -120,7 +140,6 @@ test('every auth control has an accessible name', () => {
 });
 
 test('the gate splits brand from form, and stacks on a narrow screen', () => {
-
   assert.match(html, /<div class="split">/, 'brand and gate share one row');
   assert.match(html, /<div class="brand">/, 'the brand panel stands on the left');
   const mark = 'M5.2 2.2v10.2l2.5-2.3 1.5 3.6 1.9-.8-1.6-3.6h3.1L5.2 2.2Z';
@@ -132,7 +151,6 @@ test('the gate splits brand from form, and stacks on a narrow screen', () => {
 });
 
 test('the register tab swaps copy only, never the endpoint', () => {
-
   assert.match(html, /role="tablist"/, 'the tabs announce themselves as tabs');
   assert.match(html, /id="loginTab"[^>]*aria-selected="true"/, 'Masuk starts selected');
   assert.match(html, /id="registerTab"[^>]*aria-selected="false"/, 'Daftar starts idle');
@@ -145,21 +163,18 @@ test('the register tab swaps copy only, never the endpoint', () => {
 });
 
 test('the resend line resubmits the same form instead of growing an endpoint', () => {
-
   assert.match(html, /Tidak menerima email\? Kirim ulang/, 'the centered line names the retry');
   assert.match(html, /<button[^>]*form="magicForm"/, 'it submits the existing form');
   assert.doesNotMatch(html, /\/(signup|register|resend|invite)/i, 'no second auth endpoint exists to call');
 });
 
 test('the language footer reuses the shared choice without inventing a control', () => {
-
   assert.match(html, />Bahasa Indonesia<\/button>/, 'Indonesian names itself');
   assert.match(html, />English<\/button>/, 'English names itself');
   assert.match(html, /<p class="langlist">[\s\S]*data-lang="id"[\s\S]*data-lang="en"[\s\S]*<\/p>/, 'both write through the shared mechanism');
 });
 
 test('the provider entries keep their addresses and their marks', () => {
-
   for (const provider of ['google', 'github']) {
     assert.ok(
       html.includes(`https://nenmkmtvjremqphfqnfw.supabase.co/auth/v1/authorize?provider=${provider}&redirect_to=https://opera-agent.pages.dev/"`),
@@ -170,7 +185,6 @@ test('the provider entries keep their addresses and their marks', () => {
 });
 
 test('the signed-in view keeps its elements and its ids', () => {
-
   for (const id of ['pageTitle', 'pageSub', 'signedOut', 'signedIn', 'returning', 'continueButton', 'whoami', 'sessionStatus', 'signOutButton']) {
     assert.ok(html.includes(`id="${id}"`), `#${id} survives the restyle`);
   }

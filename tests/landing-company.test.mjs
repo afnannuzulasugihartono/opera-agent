@@ -12,7 +12,19 @@ import fs from 'node:fs';
 
 const root = new URL('..', import.meta.url);
 const read = (name) => fs.readFileSync(new URL(name, root), 'utf8');
-const pages = ['beranda.html', 'akun.html', 'index.html', 'dashboard.html', 'unduh.html', 'unduh-berkas.html', 'privasi.html', 'syarat.html', '404.html', 'fitur.html', 'dukungan.html'];
+const pages = [
+  'beranda.html',
+  'akun.html',
+  'index.html',
+  'dashboard.html',
+  'unduh.html',
+  'unduh-berkas.html',
+  'privasi.html',
+  'syarat.html',
+  '404.html',
+  'fitur.html',
+  'dukungan.html'
+];
 
 test('every head carries the mark, so no tab looks unfinished', () => {
   for (const page of pages) {
@@ -58,7 +70,6 @@ test('a shared link carries a title, not a bare URL', () => {
 });
 
 test('every page renders in standards mode with its own theme color', () => {
-
   const raw = (page) => fs.readFileSync(new URL(`landing/${page}`, root), 'utf8');
   for (const page of [...pages, 'oauth/consent.html']) {
     const full = raw(page);
@@ -69,7 +80,6 @@ test('every page renders in standards mode with its own theme color', () => {
 });
 
 test('every nav marks the page being read', () => {
-
   const marked = {
     'beranda.html': './beranda.html',
     'akun.html': './akun.html',
@@ -88,7 +98,6 @@ test('every nav marks the page being read', () => {
 });
 
 test('no page claims invite-only access while sign-up stands open', () => {
-
   const copy = (page) => read(`landing/${page}`).replace(/<!--[\s\S]*?-->/g, '');
   for (const page of ['index.html', 'syarat.html', 'beranda.html']) {
     assert.doesNotMatch(copy(page), /undangan/i, `${page} no longer rations access that is open`);
@@ -98,7 +107,6 @@ test('no page claims invite-only access while sign-up stands open', () => {
 });
 
 test('no page points at support that does not exist', () => {
-
   const index = read('landing/beranda.html').replace(/<!--[\s\S]*?-->/g, '');
   assert.doesNotMatch(index, /bertanya ke dukungan/, 'the FAQ does not promise a help desk');
   assert.doesNotMatch(index, /lewat kontak/, 'and the exit row does not point at one either');
@@ -109,7 +117,6 @@ test('no page points at support that does not exist', () => {
 });
 
 test('no page sells billing that does not exist', () => {
-
   const index = read('landing/beranda.html').replace(/<!--[\s\S]*?-->/g, '');
   assert.doesNotMatch(index, /bayar per hasil/i, 'no per-result billing is promised');
   assert.match(index, /penyedia model Anda|penyedia Anda/, 'the reader pays their provider, nobody else');

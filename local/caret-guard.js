@@ -17,7 +17,10 @@
 // The expression that reads it is shared with the copy, so both answer from the same frame.
 
 import { SELECTION_STATE_EXPRESSION } from './page-expressions.js';
-import { HARM_CARET_MOVE, HARM_NONE } from './read-strategy.js';
+import {
+  HARM_CARET_MOVE,
+  HARM_NONE
+} from './read-strategy.js';
 
 // WHY A MISSING ANSWER IS A STATE AND NOT A CRASH.
 // The expression runs in a page that may have navigated, or may refuse the evaluation, and a read that throws on a null answer takes the whole drive down over a question it could have answered with "there was nothing to remember".
@@ -39,26 +42,53 @@ export function rememberedState(selection) {
   };
 }
 
-export function gateRead({ harm = HARM_NONE, allowCaretMove = false } = {}) {
-  if (harm === HARM_NONE) return { allowed: true, why: 'this read asks nothing of the page' };
+export function gateRead({
+  harm = HARM_NONE,
+  allowCaretMove = false
+} = {}) {
+  if (harm === HARM_NONE) return {
+    allowed: true,
+    why: 'this read asks nothing of the page'
+  };
   if (harm === HARM_CARET_MOVE) {
     return allowCaretMove === true
-      ? { allowed: true, why: 'the caller recorded consent on this call' }
-      : { allowed: false, why: 'this read moves the caret, and no consent was recorded on the call' };
+      ? {
+        allowed: true,
+        why: 'the caller recorded consent on this call'
+      }
+      : {
+        allowed: false,
+        why: 'this read moves the caret, and no consent was recorded on the call'
+      };
   }
-  return { allowed: false, why: 'this read changes content and is not a read' };
+  return {
+    allowed: false,
+    why: 'this read changes content and is not a read'
+  };
 }
 
-export function restoreVerdict({ before, after } = {}) {
+export function restoreVerdict({
+  before,
+  after
+} = {}) {
   if (!before || before.restorable !== true) {
-    return { restored: false, why: before?.why || 'there was no restorable position to return to' };
+    return {
+      restored: false,
+      why: before?.why || 'there was no restorable position to return to'
+    };
   }
   const same = before.hostPath === after?.hostPath
     && before.anchorOffset === after?.anchorOffset
     && before.hostTextLength === after?.hostTextLength;
   return same
-    ? { restored: true, why: 'the selection is where it was left' }
-    : { restored: false, why: 'the selection is not where it was left, so the restore did not take' };
+    ? {
+      restored: true,
+      why: 'the selection is where it was left'
+    }
+    : {
+      restored: false,
+      why: 'the selection is not where it was left, so the restore did not take'
+    };
 }
 
 // WHY THE DRIVER IS ASKED FOR ONE THING.
@@ -68,13 +98,22 @@ export function restoreVerdict({ before, after } = {}) {
 export function createCaretGuard({ evaluate }) {
   const remember = async () => {
     const selection = await evaluate(SELECTION_STATE_EXPRESSION);
-    return { ...rememberedState(selection), selection };
+    return {
+      ...rememberedState(selection),
+      selection
+    };
   };
 
   const verdict = async (mark) => {
     const after = await evaluate(SELECTION_STATE_EXPRESSION);
-    return restoreVerdict({ before: mark, after });
+    return restoreVerdict({
+      before: mark,
+      after
+    });
   };
 
-  return { remember, verdict };
+  return {
+    remember,
+    verdict
+  };
 }

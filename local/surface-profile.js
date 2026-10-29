@@ -43,10 +43,22 @@ export const SURFACE_PROBE_EXPRESSION = `(() => {
 export async function probeSurface({ evaluate }) {
   const probe = await evaluate(SURFACE_PROBE_EXPRESSION);
   return {
-    textInDom: probe?.textInDom ?? { value: false, evidence: 0 },
-    canvas: probe?.canvas ?? { value: false, evidence: 0 },
-    editable: probe?.editable ?? { value: false, evidence: 'the probe did not answer' },
-    focused: probe?.focused ?? { value: false, evidence: 'the probe did not answer' }
+    textInDom: probe?.textInDom ?? {
+      value: false,
+      evidence: 0
+    },
+    canvas: probe?.canvas ?? {
+      value: false,
+      evidence: 0
+    },
+    editable: probe?.editable ?? {
+      value: false,
+      evidence: 'the probe did not answer'
+    },
+    focused: probe?.focused ?? {
+      value: false,
+      evidence: 'the probe did not answer'
+    }
   };
 }
 
@@ -63,7 +75,10 @@ export async function probeSurface({ evaluate }) {
 // The parent's total is the sum of every child, so no child ever outgrows it and a descent that compares against the parent stops at the root and takes the chrome with the document.
 // A region is the document when it holds more than the rest of the page put together, so that is the comparison.
 
-const TEXT_ROLES = new Set(['InlineTextBox', 'StaticText']);
+const TEXT_ROLES = new Set([
+  'InlineTextBox',
+  'StaticText'
+]);
 
 // WHY THE CHILDREN ARE BUILT FROM parentId AND NOT READ FROM childIds.
 // A tree can answer with one and not the other, and a walk that trusts only childIds finds nothing in a tree that carries only parentId - which answers exactly like a page with no text.
@@ -95,19 +110,41 @@ const documentRegion = (nodes) => {
   const measured = new Map();
   const textOf = (id) => {
     const node = byId.get(id);
-    if (!node || !TEXT_ROLES.has(node.role?.value ?? '')) return { count: 0, length: 0, parts: [] };
+    if (!node || !TEXT_ROLES.has(node.role?.value ?? '')) return {
+      count: 0,
+      length: 0,
+      parts: []
+    };
     const name = String(node.name?.value ?? '');
-    return { count: 1, length: name.length, parts: [name] };
+    return {
+      count: 1,
+      length: name.length,
+      parts: [name]
+    };
   };
-  const total = (id, seen) => {
+  const total = (
+    id,
+    seen
+  ) => {
     if (measured.has(id)) return measured.get(id);
-    if (seen.has(id)) return { count: 0, length: 0, parts: [] };
+    if (seen.has(id)) return {
+      count: 0,
+      length: 0,
+      parts: []
+    };
     seen.add(id);
     let sum = textOf(id);
     for (const childId of children.get(id) || []) {
       if (!byId.has(childId)) continue;
       const inner = total(childId, seen);
-      sum = { count: sum.count + inner.count, length: sum.length + inner.length, parts: [...sum.parts, ...inner.parts] };
+      sum = {
+        count: sum.count + inner.count,
+        length: sum.length + inner.length,
+        parts: [
+          ...sum.parts,
+          ...inner.parts
+        ]
+      };
     }
     measured.set(id, sum);
     return sum;
@@ -120,9 +157,17 @@ const documentRegion = (nodes) => {
   let here = null;
   for (const id of roots) {
     const sum = total(id, new Set());
-    if (!here || sum.count > here.sum.count) here = { id, sum };
+    if (!here || sum.count > here.sum.count) here = {
+      id,
+      sum
+    };
   }
-  if (!here) return { count: 0, length: 0, parts: [], deepest: 0 };
+  if (!here) return {
+    count: 0,
+    length: 0,
+    parts: [],
+    deepest: 0
+  };
   // WHY THE DESCENT CARRIES A VISITED SET AND NOT A COUNTER.
   // A tree that names a node's ancestor as its child makes a cycle, and the descent follows it: a node in the cycle holds as much text as everything beside it, so it keeps winning the comparison against its own siblings.
   // Measured with a three-node tree hanging off a real root: measureAx never returned, and the hang is synchronous, so read, surface_profile and wait_for_text all stopped with no error and no timeout.
@@ -132,11 +177,20 @@ const documentRegion = (nodes) => {
     const kids = [];
     for (const childId of children.get(here.id) || []) {
       if (!byId.has(childId) || visited.has(childId)) continue;
-      kids.push({ id: childId, sum: total(childId, new Set()) });
+      kids.push({
+        id: childId,
+        sum: total(childId, new Set())
+      });
     }
     if (!kids.length) break;
-    kids.sort((a, b) => b.sum.count - a.sum.count);
-    const siblings = kids.reduce((sum, kid) => sum + kid.sum.count, 0);
+    kids.sort((
+      a,
+      b
+    ) => b.sum.count - a.sum.count);
+    const siblings = kids.reduce((
+      sum,
+      kid
+    ) => sum + kid.sum.count, 0);
     if (kids[0].sum.count * 2 <= siblings) break;
     here = kids[0];
     visited.add(here.id);
@@ -159,7 +213,12 @@ const documentRegion = (nodes) => {
     if (next.length) deepest += 1;
     frontier = next;
   }
-  return { count: here.sum.count, length: here.sum.length, parts: here.sum.parts, deepest };
+  return {
+    count: here.sum.count,
+    length: here.sum.length,
+    parts: here.sum.parts,
+    deepest
+  };
 };
 
 // WHY THE TREE IS ASKED FOR AT A STATED DEPTH.
@@ -167,8 +226,17 @@ const documentRegion = (nodes) => {
 
 const MAX_AX_DEPTH = 60;
 
-export async function measureAx({ ask, method = 'Accessibility.getFullAXTree' }) {
-  const empty = { axRich: false, textBoxes: 0, textLength: 0, documentText: '', truncated: false };
+export async function measureAx({
+  ask,
+  method = 'Accessibility.getFullAXTree'
+}) {
+  const empty = {
+    axRich: false,
+    textBoxes: 0,
+    textLength: 0,
+    documentText: '',
+    truncated: false
+  };
   let tree;
   try {
     tree = await ask(method, { maxDepth: MAX_AX_DEPTH });
@@ -194,7 +262,10 @@ export async function measureAx({ ask, method = 'Accessibility.getFullAXTree' })
   };
 }
 
-export function buildProfile({ probe = {}, ax = {} }) {
+export function buildProfile({
+  probe = {},
+  ax = {}
+}) {
   return {
     textInDom: probe.textInDom?.value === true,
     canvas: probe.canvas?.value === true,

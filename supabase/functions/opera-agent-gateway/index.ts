@@ -5,12 +5,18 @@
 
 import "@supabase/edge-runtime";
 import { createClient } from "@supabase/supabase-js";
-import { CORS_DEFAULT_ORIGINS, resolveAllowedOrigin } from "../_shared/cors.js";
+import {
+  CORS_DEFAULT_ORIGINS,
+  resolveAllowedOrigin
+} from "../_shared/cors.js";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
-  auth: { persistSession: false, autoRefreshToken: false }
+  auth: {
+    persistSession: false,
+    autoRefreshToken: false
+  }
 });
 
 const CORS_BASE_HEADERS = {
@@ -31,7 +37,10 @@ function corsHeaders(req: Request): Record<string, string> {
   const origin = resolveAllowedOrigin(req, CORS_DEFAULT_ORIGINS);
   return origin === null
     ? { ...CORS_BASE_HEADERS }
-    : { ...CORS_BASE_HEADERS, "Access-Control-Allow-Origin": origin };
+    : {
+      ...CORS_BASE_HEADERS,
+      "Access-Control-Allow-Origin": origin
+    };
 }
 
 const DEVICE_NAME = "opera";
@@ -41,10 +50,17 @@ const MAX_BODY = 256 * 1024;
 const WAIT_MIN = 500;
 const WAIT_MAX = 32000;
 
-function json(req: Request, data: unknown, status = 200) {
+function json(
+  req: Request,
+  data: unknown,
+  status = 200
+) {
   return new Response(JSON.stringify(data), {
     status,
-    headers: { ...corsHeaders(req), "Content-Type": "application/json; charset=utf-8" }
+    headers: {
+      ...corsHeaders(req),
+      "Content-Type": "application/json; charset=utf-8"
+    }
   });
 }
 
@@ -61,25 +77,35 @@ function extractToken(req: Request, body: Record<string, unknown> | null): strin
   return null;
 }
 
-async function rpc(name: string, args: Record<string, unknown>) {
-  const { data, error } = await supabase.rpc(name, args);
+async function rpc(
+  name: string,
+  args: Record<string,
+  unknown>
+) {
+  const {
+    data,
+    error
+  } = await supabase.rpc(name, args);
   if (error) throw new Error(`${name} failed: ${error.message}`);
   return data as Record<string, unknown> | null;
 }
 
 async function readBoundedBody(req: Request, maxBytes: number): Promise<string | null> {
-
   if (!req.body) return "";
   const reader = req.body.getReader();
   const chunks: Uint8Array[] = [];
   let total = 0;
   for (;;) {
-    const { done, value } = await reader.read();
+    const {
+      done,
+      value
+    } = await reader.read();
     if (done) break;
     total += value.byteLength;
     if (total > maxBytes) {
-      try { await reader.cancel(); } catch {
-      }
+      try {
+        await reader.cancel();
+      } catch {}
       return null;
     }
     chunks.push(value);
@@ -93,30 +119,63 @@ async function readBoundedBody(req: Request, maxBytes: number): Promise<string |
   return new TextDecoder().decode(out);
 }
 
-async function command(req: Request, _url: URL) {
+async function command(
+  req: Request,
+  _url: URL
+) {
   let raw: string | null;
   try {
     raw = await readBoundedBody(req, MAX_BODY);
   } catch {
-    return json(req, { ok: false, error: { code: "INVALID_JSON", message: "Body must be JSON." } }, 400);
+    return json(req, {
+      ok: false,
+      error: {
+        code: "INVALID_JSON",
+        message: "Body must be JSON."
+      }
+    }, 400);
   }
 
   if (raw === null) {
-    return json(req, { ok: false, error: { code: "TOO_LARGE", message: "Request too large." } }, 413);
+    return json(req, {
+      ok: false,
+      error: {
+        code: "TOO_LARGE",
+        message: "Request too large."
+      }
+    }, 413);
   }
   let body: Record<string, unknown> | null = null;
   try {
     body = JSON.parse(raw) as Record<string, unknown>;
   } catch {
-    return json(req, { ok: false, error: { code: "INVALID_JSON", message: "Body must be JSON." } }, 400);
+    return json(req, {
+      ok: false,
+      error: {
+        code: "INVALID_JSON",
+        message: "Body must be JSON."
+      }
+    }, 400);
   }
   const token = extractToken(req, body);
   if (!token) {
-    return json(req, { ok: false, error: { code: "UNAUTHORIZED", message: "Missing token (x-opera-agent-token header or body.apiKey)." } }, 401);
+    return json(req, {
+      ok: false,
+      error: {
+        code: "UNAUTHORIZED",
+        message: "Missing token (x-opera-agent-token header or body.apiKey)."
+      }
+    }, 401);
   }
   const method = typeof body!.method === "string" ? body!.method.trim() : "";
   if (!METHOD_RE.test(method)) {
-    return json(req, { ok: false, error: { code: "INVALID_METHOD", message: "Missing/invalid method." } }, 400);
+    return json(req, {
+      ok: false,
+      error: {
+        code: "INVALID_METHOD",
+        message: "Missing/invalid method."
+      }
+    }, 400);
   }
   const params = (body!.params && typeof body!.params === "object") ? body!.params as Record<string, unknown> : {};
   const timeoutMs = Math.max(WAIT_MIN, Math.min(WAIT_MAX, Number(body!.waitMs) || 12000));
@@ -135,15 +194,16 @@ async function command(req: Request, _url: URL) {
   let deviceName = DEVICE_NAME;
   let tokenClientId = "";
   if (result && result.ok === false && result.error === "Unauthorized device.") {
-
-    const { data, error } = await supabase.auth.getUser(token);
+    const {
+      data,
+      error
+    } = await supabase.auth.getUser(token);
     const userId = !error ? data.user?.id : null;
     if (userId) {
       try {
         const payload = JSON.parse(atob(token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")));
         if (typeof payload.client_id === "string") tokenClientId = payload.client_id;
-      } catch {
-      }
+      } catch {}
       const { data: device } = await supabase.from("opera_devices")
         .select("device_name, last_seen_at")
         .eq("user_id", userId).neq("status", "disabled")
@@ -161,22 +221,40 @@ async function command(req: Request, _url: URL) {
     }
   }
   if (result && result.ok === false && result.error === "Unauthorized device.") {
-    return json(req, { ok: false, error: { code: "UNAUTHORIZED", message: "Invalid token for device." } }, 401);
+    return json(req, {
+      ok: false,
+      error: {
+        code: "UNAUTHORIZED",
+        message: "Invalid token for device."
+      }
+    }, 401);
   }
   if (result && result.ok === false && result.error === "Device is not paired.") {
-    return json(req, { ok: false, error: { code: "DEVICE_NOT_PAIRED", message: "Device is not paired." } }, 401);
+    return json(req, {
+      ok: false,
+      error: {
+        code: "DEVICE_NOT_PAIRED",
+        message: "Device is not paired."
+      }
+    }, 401);
   }
   if (result && result.ok === false && typeof result.error === "string") {
-    const body = { ok: false, error: result.error };
+    const body = {
+      ok: false,
+      error: result.error
+    };
     if (result.lastSeenAt !== undefined) body.lastSeenAt = result.lastSeenAt;
     return json(req, body, 200);
   }
   if (!result?.ok) {
-    return json(req, result || { ok: false, error: { code: "GATEWAY_ERROR", message: "Empty result." } }, 200);
+    return json(req, result || {
+      ok: false, error: {
+        code: "GATEWAY_ERROR", message: "Empty result."
+      }
+    }, 200);
   }
 
   if (result?.ok === true && result.commandId) {
-
     try {
       const ua = req.headers.get("user-agent") || "";
       let provider = /chatgpt|openai/i.test(ua) ? "chatgpt" : "";
@@ -185,8 +263,7 @@ async function command(req: Request, _url: URL) {
         if (typeof name === "string" && name) provider = name.toLowerCase().replace(/[^a-z0-9]+/g, "").slice(0, 32);
       }
       if (provider) await supabase.from("opera_commands").update({ provider }).eq("id", String(result.commandId));
-    } catch {
-    }
+    } catch {}
   }
   if (result?.ok === true) {
     const commandId = result.commandId;
@@ -196,27 +273,44 @@ async function command(req: Request, _url: URL) {
         p_timeout_ms: timeoutMs
       });
     } catch {
-
       return json(req, {
         ok: false,
         commandId,
         outcome: "unknown",
-        error: { code: "GATEWAY_ERROR", message: "Unable to retrieve the command result. The action may still have succeeded; verify page state before repeating it." }
+        error: {
+          code: "GATEWAY_ERROR",
+          message: "Unable to retrieve the command result. The action may still have succeeded; verify page state before repeating it."
+        }
       }, 502);
     }
   }
 
   if (result && result.ok === false && typeof result.error === "string" && result.error.includes("not paired")) {
-    return json(req, { ok: false, error: { code: "DEVICE_NOT_PAIRED", message: "Device is not paired." } }, 401);
-  }
-  if (result && result.ok === false && result.error && typeof result.error === "object" && (result.error as { code?: unknown }).code === "AWAIT_TIMEOUT") {
     return json(req, {
       ok: false,
-      error: { code: "AWAIT_TIMEOUT", message: "The device did not report back before waitMs. The action may still have succeeded — verify page state before repeating it." }
+      error: {
+        code: "DEVICE_NOT_PAIRED",
+        message: "Device is not paired."
+      }
+    }, 401);
+  }
+  if (result && result.ok === false && result.error && typeof result.error === "object" && (result.error as {
+    code?: unknown
+  }).code === "AWAIT_TIMEOUT") {
+    return json(req, {
+      ok: false,
+      error: {
+        code: "AWAIT_TIMEOUT",
+        message: "The device did not report back before waitMs. The action may still have succeeded — verify page state before repeating it."
+      }
     }, 504);
   }
 
-  return json(req, result || { ok: false, error: { code: "GATEWAY_ERROR", message: "Empty result." } }, 200);
+  return json(req, result || {
+    ok: false, error: {
+      code: "GATEWAY_ERROR", message: "Empty result."
+    }
+  }, 200);
 }
 
 function openApiSpec(basePath: string) {
@@ -241,18 +335,39 @@ function openApiSpec(basePath: string) {
                   type: "object",
                   required: ["method"],
                   properties: {
-                    apiKey: { type: "string", description: "Device token (x-opera-agent-token header also accepted)." },
-                    method: { type: "string", examples: ["tabs.list", "page.find", "browser.burst"] },
+                    apiKey: {
+                      type: "string",
+                      description: "Device token (x-opera-agent-token header also accepted)."
+                    },
+                    method: {
+                      type: "string",
+                      examples: [
+                        "tabs.list",
+                        "page.find",
+                        "browser.burst"
+                      ]
+                    },
                     params: { type: "object" },
-                    waitMs: { type: "integer", minimum: 500, maximum: 32000, default: 12000 },
-                    requestId: { type: "string", description: "Optional idempotency key." }
+                    waitMs: {
+                      type: "integer",
+                      minimum: 500,
+                      maximum: 32000,
+                      default: 12000
+                    },
+                    requestId: {
+                      type: "string",
+                      description: "Optional idempotency key."
+                    }
                   }
                 }
               }
             }
           },
           responses: {
-            "200": { description: "Command result: ok true on success, or ok false with a structured error the caller can act on (e.g. stale element, element not found).", content: { "application/json": { schema: { type: "object" } } } },
+            "200": {
+              description: "Command result: ok true on success, or ok false with a structured error the caller can act on (e.g. stale element, element not found).",
+              content: { "application/json": { schema: { type: "object" } } }
+            },
             "401": { description: "Missing or invalid device token." },
             "504": { description: "Device did not report back within waitMs; the action may still have succeeded — verify page state before repeating."
             }
@@ -273,24 +388,50 @@ function health(req: Request) {
 }
 
 Deno.serve(async (req: Request) => {
-  if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders(req) });
+  if (req.method === "OPTIONS") return new Response(null, {
+    status: 204,
+    headers: corsHeaders(req)
+  });
   if (req.method === "GET") {
     const url = new URL(req.url);
     if (url.pathname.endsWith("/openapi.json")) {
-
       return json(req, openApiSpec(`${SUPABASE_URL}/functions/v1/opera-agent-gateway`), 200);
     }
     if (url.pathname.endsWith("/health")) return health(req);
   }
-  if (req.method !== "POST") return json(req, { ok: false, error: { code: "METHOD_NOT_ALLOWED", message: "POST /command only." } }, 405);
+  if (req.method !== "POST") return json(req, {
+    ok: false,
+    error: {
+      code: "METHOD_NOT_ALLOWED",
+      message: "POST /command only."
+    }
+  }, 405);
   const url = new URL(req.url);
   const length = Number(req.headers.get("content-length") || 0);
-  if (length > MAX_BODY) return json(req, { ok: false, error: { code: "TOO_LARGE", message: "Request too large." } }, 413);
+  if (length > MAX_BODY) return json(req, {
+    ok: false,
+    error: {
+      code: "TOO_LARGE",
+      message: "Request too large."
+    }
+  }, 413);
   try {
     if (url.pathname.endsWith("/command")) return await command(req, url);
-    return json(req, { ok: false, error: { code: "NOT_FOUND", message: "Unknown path." } }, 404);
+    return json(req, {
+      ok: false,
+      error: {
+        code: "NOT_FOUND",
+        message: "Unknown path."
+      }
+    }, 404);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    return json(req, { ok: false, error: { code: "GATEWAY_ERROR", message: message.slice(0, 300) } }, 502);
+    return json(req, {
+      ok: false,
+      error: {
+        code: "GATEWAY_ERROR",
+        message: message.slice(0, 300)
+      }
+    }, 502);
   }
 });

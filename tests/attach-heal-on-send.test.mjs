@@ -35,7 +35,11 @@ test('a send that fails as detached is retried once behind a heal', async () => 
 test('any other failure propagates untouched and heals nothing', async () => {
   let heals = 0;
   await assert.rejects(
-    () => withAttachHeal(7, async () => { throw new Error('Target closed.'); }, async () => { heals += 1; }),
+    () => withAttachHeal(7, async () => {
+      throw new Error('Target closed.');
+    }, async () => {
+      heals += 1;
+    }),
     /Target closed/
   );
   assert.equal(heals, 0, 'a foreign error must not trigger a detach');
@@ -44,7 +48,11 @@ test('any other failure propagates untouched and heals nothing', async () => {
 test('a second detached failure gives up instead of healing forever', async () => {
   let heals = 0;
   await assert.rejects(
-    () => withAttachHeal(7, async () => { throw NOT_ATTACHED; }, async () => { heals += 1; }),
+    () => withAttachHeal(7, async () => {
+      throw NOT_ATTACHED;
+    }, async () => {
+      heals += 1;
+    }),
     /not attached/
   );
   assert.equal(heals, 1, 'exactly one heal, then the honest failure reaches the caller');

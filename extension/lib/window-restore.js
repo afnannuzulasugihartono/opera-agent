@@ -11,10 +11,16 @@
 // chrome.windows.update with state:'normal' on a window that is already normal is a no-op that still costs a round trip and still says nothing about whether the focus ask worked.
 // Reading first means the answer can name which of the three cases it was, and a caller can tell a restore from a focus from nothing at all.
 
-export function windowUpdateFor(window, options = {}) {
+export function windowUpdateFor(
+  window,
+  options = {}
+) {
   if (options.focus === false) return null;
   const state = String(window?.state || '');
-  if (state === 'minimized') return { focused: true, state: 'normal' };
+  if (state === 'minimized') return {
+    focused: true,
+    state: 'normal'
+  };
   if (window?.focused === true) return null;
   return { focused: true };
 }

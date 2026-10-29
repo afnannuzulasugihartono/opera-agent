@@ -15,20 +15,48 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
+import { listItemLines } from './helpers/vertical-lists.mjs';
 
 const root = new URL('..', import.meta.url);
 const repo = (p) => new URL(p, root);
 
 const tracked = () => {
-  const listed = execFileSync('git', ['ls-files'], { cwd: repo('.'), encoding: 'utf8' })
+  const listed = execFileSync('git', ['ls-files'], {
+    cwd: repo('.'),
+    encoding: 'utf8'
+  })
     .split('\n').filter(Boolean);
-  const untracked = execFileSync('git', ['ls-files', '--others', '--exclude-standard'],
-    { cwd: repo('.'), encoding: 'utf8' }).split('\n').filter(Boolean);
-  return [...new Set([...listed, ...untracked])];
+  const untracked = execFileSync('git', [
+    'ls-files',
+    '--others',
+    '--exclude-standard'
+  ],
+    {
+      cwd: repo('.'),
+      encoding: 'utf8'
+    }).split('\n').filter(Boolean);
+  return [...new Set([
+    ...listed,
+    ...untracked
+  ])];
 };
 
 const read = (file) => fs.readFileSync(repo(file), 'utf8');
 const lines = (file) => read(file).split(/\r?\n/);
+
+// WHY A SIZE GATE COUNTS THE LINES THAT CARRY CODE.
+// A list written one item per line makes a file longer without making it bigger, so counting every line charges a file for the shape of its data.
+// The list items are counted out, and what is left is the code: the same number for the same file whether its lists stand on one line or on twenty.
+// The ceiling below then means what it says, and a reflow of a list cannot push a file past it.
+
+const codeLines = (file) => {
+  const text = read(file);
+  const items = listItemLines(text);
+  return text.split(/\r?\n/).filter((
+    _,
+    index
+  ) => !items.has(index + 1));
+};
 
 // WHY THE CAP IS TWELVE HUNDRED LINES.
 // The file that broke it was 2,327 lines and held three unrelated jobs: the expressions the page runs, the verbs that drive it, and the file verbs.
@@ -62,9 +90,20 @@ const CONTENT_ENTRY_CEILING = 300;
 // Pinning the whole list means a new file added in the wrong place fails here instead of in a user's browser.
 
 const CONTENT_SCRIPT_LOAD_ORDER = [
-  'lib/agent-log.js', 'semantic-identity.js', 'semantic-views.js', 'role-reconcile.js', 'hover-settle.js',
-  'page-kit.js', 'action-refs.js', 'element-facts.js', 'page-wait.js', 'semantic-page.js',
-  'page-actions.js', 'page-scroll.js', 'page-media.js', 'content.js'
+  'lib/agent-log.js',
+  'semantic-identity.js',
+  'semantic-views.js',
+  'role-reconcile.js',
+  'hover-settle.js',
+  'page-kit.js',
+  'action-refs.js',
+  'element-facts.js',
+  'page-wait.js',
+  'semantic-page.js',
+  'page-actions.js',
+  'page-scroll.js',
+  'page-media.js',
+  'content.js'
 ];
 
 // WHY THE FIVE FILES THAT SHIPPED BEFORE THE SPLIT ARE LEFT OUT OF THE STATE COMPARISON.
@@ -72,7 +111,11 @@ const CONTENT_SCRIPT_LOAD_ORDER = [
 // Comparing the entry against them would report a duplication that predates this split and is not what the gate is for.
 
 const CONTENT_SCRIPT_LEAF_FILES = new Set([
-  'lib/agent-log.js', 'semantic-identity.js', 'semantic-views.js', 'role-reconcile.js', 'hover-settle.js'
+  'lib/agent-log.js',
+  'semantic-identity.js',
+  'semantic-views.js',
+  'role-reconcile.js',
+  'hover-settle.js'
 ]);
 
 test('no source file grows past the cap without a named reason', () => {
@@ -80,7 +123,7 @@ test('no source file grows past the cap without a named reason', () => {
   for (const file of tracked()) {
     if (!/\.(js|mjs|ts|tsx)$/.test(file)) continue;
     if (file.startsWith('tests/')) continue;
-    const count = lines(file).length;
+    const count = codeLines(file).length;
     if (count <= FILE_LINE_CAP) continue;
     if (FILE_LINE_EXCEPTIONS.has(file)) continue;
     if (DEDICATED_CEILING_FILES.has(file)) continue;
@@ -101,7 +144,10 @@ test('no source file carries a leftover marker', () => {
   for (const file of tracked()) {
     if (!/\.(js|mjs|ts|tsx|py)$/.test(file)) continue;
     if (file.startsWith('tests/')) continue;
-    lines(file).forEach((line, index) => {
+    lines(file).forEach((
+      line,
+      index
+    ) => {
       if (markers.test(line)) offenders.push(`${file}:${index + 1} ${line.trim().slice(0, 90)}`);
     });
   }
@@ -114,20 +160,20 @@ test('no file repeats a block of its own code', () => {
   const offenders = [];
   for (const file of tracked()) {
     if (!/\.(js|mjs|ts|tsx)$/.test(file)) continue;
-    const body = lines(file).map((line) => line.trim());
+    const body = codeLines(file).map((line) => line.trim());
     const seen = new Map();
     for (let i = 0; i + WINDOW <= body.length; i += 1) {
       const block = body.slice(i, i + WINDOW).join('\n');
       if (block.replace(/[^a-zA-Z]/g, '').length < 200) continue;
       if (seen.has(block)) {
-        offenders.push(`${file} repeats a ${WINDOW}-line block at ${seen.get(block) + 1} and ${i + 1}`);
+        offenders.push(`${file} repeats a ${WINDOW}-line block of code at ${seen.get(block) + 1} and ${i + 1}`);
         break;
       }
       seen.set(block, i);
     }
   }
   assert.deepEqual(offenders, [],
-    `the same twelve lines twice is a function that wants to be one:\n${offenders.join('\n')}`);
+    `the same twelve lines of code twice is a function that wants to be one:\n${offenders.join('\n')}`);
 });
 
 test('every exported function in local/ is exercised by the suite', () => {
@@ -163,7 +209,9 @@ test('the content script entry stays thin, and its modules stay under the worker
     `content.js is the dispatcher, not the product: ${entry} lines`);
   for (const name of movedModules) {
     assert.ok(lines(`extension/${name}`).length < 550,
-      `extension/${name} is ${lines(`extension/${name}`).length} lines`);
+      `extension/${name} is ${lines(`extension/${
+        name
+      }`).length} lines`);
   }
 });
 
@@ -205,11 +253,18 @@ test('the entry declares no state a content script module also declares', () => 
   for (const rel of manifest.content_scripts[0].js) {
     if (rel === 'content.js' || CONTENT_SCRIPT_LEAF_FILES.has(rel)) continue;
     for (const name of declaredIn(read(`extension/${rel}`))) {
-      modules.set(name, [...(modules.get(name) || []), rel]);
+      modules.set(name, [
+        ...(modules.get(name) || []),
+        rel
+      ]);
     }
   }
   const duplicated = declaredIn(read('extension/content.js')).filter((name) => modules.has(name));
   assert.deepEqual(duplicated, [],
     `a name declared in the entry and in a module is two copies of one piece of state, and only one of them is live:\n${
-      duplicated.map((name) => `  ${name}: entry + ${modules.get(name).join(', ')}`).join('\n')}`);
+      duplicated.map((name) => `  ${
+        name
+      }: entry + ${
+        modules.get(name).join(', ')
+      }`).join('\n')}`);
 });

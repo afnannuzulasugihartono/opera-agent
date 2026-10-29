@@ -15,7 +15,10 @@ const FALLBACK_ORIGINS = Object.freeze([
 
 export const CORS_DEFAULT_ORIGINS = FALLBACK_ORIGINS;
 
-export function resolveAllowedOrigin(req, defaults) {
+export function resolveAllowedOrigin(
+  req,
+  defaults
+) {
   const list = Array.isArray(defaults) && defaults.length > 0 ? defaults : FALLBACK_ORIGINS;
 
   const raw = typeof Deno !== 'undefined' && Deno.env

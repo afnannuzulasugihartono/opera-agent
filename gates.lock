@@ -156,26 +156,26 @@
 #    tests/helpers/canonical-source-hash.mjs strips the comment lines and collapses
 #    the whitespace before hashing a tool schema, so the pin holds the tool's
 #    contract and not its indentation.
-scripts/check.mjs 9956a22ad675b3907659725f7d3fab509cfbe03c
-scripts/scope.mjs 2293857de17bf0077a368729555f3af5a13a6ff5
-scripts/scope-check.mjs d6359cc409244f0fdc13cc7ef496daddd5981910
+scripts/check.mjs 216fbde6eb630c5c97565c143e9c13c0c47cb455
+scripts/scope.mjs 1debb2e0f0a1ca54376794505b1a74d9de0494c4
+scripts/scope-check.mjs 0c3f5feb1534fbe4f9326c590eb91bb5cc650edb
 
 # --- the pins themselves: editing these is how a drift goes unnoticed ---
-tests/helpers/boundary-locks.mjs 514062db5040ba66910e83489caf10e75d7335bb
-tests/helpers/canonical-source-hash.mjs a4ebaa0d40122afce47a52cba39309d7dfdb1af1
-tests/helpers/comment-format.mjs bced9e4c9b7a58b56e3317067d5e6717dd2040bf
-tests/comment-format.test.mjs 0231619043033b07c22f725feee511d6ebb34bd4
-tests/comment-claims.test.mjs 09b2944f3ca73f2304752df2423ab67a35a462e6
+tests/helpers/boundary-locks.mjs 78510d08bc20cae13ee2bbc4a5ae69e0a8da0fae
+tests/helpers/canonical-source-hash.mjs b52c1667c53e366373b4a59dcc17092d177a70f2
+tests/helpers/comment-format.mjs efef51b20bfe78c5bc346293c3314893ccc2b762
+tests/comment-format.test.mjs 25014b3d1f2fe984bf44640e692570a9960ba87c
+tests/comment-claims.test.mjs e5f0823e6e3da45e6056465491f434a3d3ff3398
 
 # --- structural rules a human reviewer would otherwise have to remember ---
-tests/hygiene.test.mjs 0433fa39ac510e6cc103d607ad51299a257c314c
-tests/structure-gates.test.mjs ec52d654f4491f21dd559919ca7f55207edc544a
-tests/boundary-locks.test.mjs c1c4d51cf50abe2c286c8664885ff0ca09603669
+tests/hygiene.test.mjs d85960e1bdf20932b60e9d53367cb356593d40ce
+tests/structure-gates.test.mjs d49e88e6e78ec9fdf4d1b82bd81a9e9392b0ca9c
+tests/boundary-locks.test.mjs d55d1494099db430b78f320d3b9e572a84b4af39
 
 # --- controls that decide what the product accepts at runtime ---
-extension/lib/protocol.js 344893e1cbb5b6a9309097af933e5fd2cbb897aa
+extension/lib/protocol.js 0048f1d6b0e9e04b8af0319b6d2ccdd38651f3f8
 lib/secret-pattern.js 06386015c5756f83c08ee06cc571b9ae897d850a
-supabase/functions/_shared/cors.js 1563203a5f18b359e2831e52839cfcb935086bf9
+supabase/functions/_shared/cors.js 8777f38c4fc811797fca8da4866f8317b99b5d90
 
 # --- surfaces an owner, not an agent, should have to look at ---
 extension/manifest.json 39d65cb3c5b1c2262b58dc5d8bab57c673f15650

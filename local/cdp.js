@@ -45,23 +45,43 @@ export function createCdpClient(transport) {
   transport.onMessage(dispatch);
 
   const client = {
-    send(method, params = {}, sessionId) {
+    send(
+      method,
+      params = {},
+      sessionId
+    ) {
       if (closed) return Promise.reject(new Error(CLOSED));
       nextId += 1;
       const id = nextId;
-      const frame = sessionId ? { id, method, params, sessionId } : { id, method, params };
-      return new Promise((resolve, reject) => {
-        pending.set(id, { resolve, reject });
+      const frame = sessionId ? {
+        id,
+        method,
+        params,
+        sessionId
+      } : {
+        id,
+        method,
+        params
+      };
+      return new Promise((
+        resolve,
+        reject
+      ) => {
+        pending.set(id, {
+          resolve,
+          reject
+        });
         transport.send(JSON.stringify(frame));
       });
     },
-
-    on(method, handler) {
+    on(
+      method,
+      handler
+    ) {
       if (!handlers.has(method)) handlers.set(method, new Set());
       handlers.get(method).add(handler);
       return () => handlers.get(method)?.delete(handler);
     },
-
     close() {
       if (closed) return;
       closed = true;
@@ -71,8 +91,9 @@ export function createCdpClient(transport) {
       handlers.clear();
       transport.close();
     },
-
-    get closed() { return closed; }
+    get closed() {
+      return closed;
+    }
   };
 
   return client;

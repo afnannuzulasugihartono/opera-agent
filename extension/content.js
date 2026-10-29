@@ -15,7 +15,6 @@
   globalThis.__operaAgentContentV1 = true;
 
   function markInstalled() {
-
     if (!document.documentElement) return;
     document.documentElement.dataset.operaAgent = 'installed';
     const browser = globalThis.OperaAgentBrowserId?.browserName || '';
@@ -42,11 +41,24 @@
   const hoverSettle = hoverRuntime && typeof hoverRuntime.plan === 'function'
     ? hoverRuntime
     : {
-        normalize: (args) => args,
-        plan: () => ({ done: false, reason: 'hover-settle-unavailable' })
-      };
+      normalize: (args) => args,
+      plan: () => ({
+        done: false,
+        reason: 'hover-settle-unavailable'
+      })
+    };
 
-  const { clamp, clean, normalizeObservableText, normalizeText, currentRouteKey, MAX_TEXT_CHUNK, MAX_ELEMENTS, MAX_QUERY, MAX_LINKS } = globalThis.OperaAgentPageKit;
+  const {
+    clamp,
+    clean,
+    normalizeObservableText,
+    normalizeText,
+    currentRouteKey,
+    MAX_TEXT_CHUNK,
+    MAX_ELEMENTS,
+    MAX_QUERY,
+    MAX_LINKS
+  } = globalThis.OperaAgentPageKit;
   const documentId = crypto.randomUUID();
   const semanticIdentity = globalThis.OperaAgentSemanticIdentity?.createIdentityEngine({ documentId });
   if (!semanticIdentity) throw new Error('Semantic identity runtime is unavailable.');
@@ -65,16 +77,35 @@
     mutationVersion += 1;
     scheduleWatchCheck();
   });
-  mutationObserver.observe(document, { subtree: true, childList: true, attributes: true, characterData: true });
+  mutationObserver.observe(document, {
+    subtree: true,
+    childList: true,
+    attributes: true,
+    characterData: true
+  });
 
   const NAV_KEYS = new Set([
-    'Enter', 'Tab', 'Escape', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight',
-    'Home', 'End', 'PageUp', 'PageDown', 'Space', ' '
+    'Enter',
+    'Tab',
+    'Escape',
+    'ArrowUp',
+    'ArrowDown',
+    'ArrowLeft',
+    'ArrowRight',
+    'Home',
+    'End',
+    'PageUp',
+    'PageDown',
+    'Space',
+    ' '
   ]);
 
   const SENSITIVE_RE = /(?:password|passwd|passcode|pin\b|one[-_ ]?time|otp\b|2fa|two[-_ ]?factor|verification\s*code|security\s*code|cvv|cvc|card\s*(?:code|number)|credit\s*card|expiry|expiration|payment)/i;
 
-  function actionRefDescriptor(el, options = {}) {
+  function actionRefDescriptor(
+    el,
+    options = {}
+  ) {
     const identity = stableElementIdentity(el);
     return {
       documentId,
@@ -94,7 +125,10 @@
     };
   }
 
-  function descriptorMatchesElement(descriptor, el) {
+  function descriptorMatchesElement(
+    descriptor,
+    el
+  ) {
     if (!descriptor || !el?.isConnected) return false;
     if (descriptor.documentId !== documentId || descriptor.routeKey !== currentRouteKey()) return false;
     const current = actionRefDescriptor(el);
@@ -118,10 +152,18 @@
 
   function documentRectOf(el) {
     const rect = el.getBoundingClientRect();
-    return { x: rect.x + scrollX, y: rect.y + scrollY, width: rect.width, height: rect.height };
+    return {
+      x: rect.x + scrollX,
+      y: rect.y + scrollY,
+      width: rect.width,
+      height: rect.height
+    };
   }
 
-  function geometryMatchesMint(el, descriptor) {
+  function geometryMatchesMint(
+    el,
+    descriptor
+  ) {
     if (!descriptor?.rectAtMint) return true;
     const rect = documentRectOf(el);
     const mint = descriptor.rectAtMint;
@@ -192,7 +234,10 @@
       ref = `oa_${documentId.slice(0, 8)}_${refCounter.toString(36)}`;
       refs.set(el, ref);
       reverseRefs.set(ref, el);
-      actionRefDescriptors.set(ref, actionRefDescriptor(el, { rectAtMint: documentRectOf(el), mutationVersionAtMint: mutationVersion }));
+      actionRefDescriptors.set(ref, actionRefDescriptor(el, {
+        rectAtMint: documentRectOf(el),
+        mutationVersionAtMint: mutationVersion
+      }));
     }
     return ref;
   }
@@ -235,7 +280,6 @@
 
     const replacement = candidates[0];
     if (!geometryMatchesMint(replacement, descriptor)) {
-
       const driftPx = Math.max(
         Math.abs(documentRectOf(replacement).x - descriptor.rectAtMint.x),
         Math.abs(documentRectOf(replacement).y - descriptor.rectAtMint.y)
@@ -246,7 +290,6 @@
           label: s.label || s.text,
           tag: s.tag,
           role: s.role,
-
           rect: rectOf(el),
           freshRef: getRef(el),
           actionable: s.actionable,
@@ -325,7 +368,10 @@
     return hosts;
   }
 
-  function hitTestAcceptable(el, hit) {
+  function hitTestAcceptable(
+    el,
+    hit
+  ) {
     if (!hit) return false;
     if (hit === el || el.contains(hit)) return true;
     for (const host of composedHostChain(el)) {
@@ -334,7 +380,10 @@
     return false;
   }
 
-  function hitTestReachable(el, rect) {
+  function hitTestReachable(
+    el,
+    rect
+  ) {
     const left = Math.max(0, rect.left);
     const right = Math.min(innerWidth, rect.right);
     const top = Math.max(0, rect.top);
@@ -343,23 +392,49 @@
     const insetX = Math.min(1, (right - left) / 4);
     const insetY = Math.min(1, (bottom - top) / 4);
     const points = [
-      [(left + right) / 2, (top + bottom) / 2],
-      [left + insetX, top + insetY],
-      [right - insetX, top + insetY],
-      [left + insetX, bottom - insetY],
-      [right - insetX, bottom - insetY]
+      [
+        (left + right) / 2,
+        (top + bottom) / 2
+      ],
+      [
+        left + insetX,
+        top + insetY
+      ],
+      [
+        right - insetX,
+        top + insetY
+      ],
+      [
+        left + insetX,
+        bottom - insetY
+      ],
+      [
+        right - insetX,
+        bottom - insetY
+      ]
     ];
-    return points.some(([x, y]) => {
+    return points.some(([
+      x,
+      y
+    ]) => {
       const hit = document.elementFromPoint(x, y);
       return hitTestAcceptable(el, hit);
     });
   }
 
   function viewportFlags(el) {
-    if (!isVisible(el)) return { inViewport: false, fullyInViewport: false, viewportClipped: false };
+    if (!isVisible(el)) return {
+      inViewport: false,
+      fullyInViewport: false,
+      viewportClipped: false
+    };
     const rect = el.getBoundingClientRect();
     if (rect.right <= 0 || rect.bottom <= 0 || rect.left >= innerWidth || rect.top >= innerHeight) {
-      return { inViewport: false, fullyInViewport: false, viewportClipped: false };
+      return {
+        inViewport: false,
+        fullyInViewport: false,
+        viewportClipped: false
+      };
     }
     let left = rect.left;
     let right = rect.right;
@@ -379,9 +454,17 @@
       if (newRight <= newLeft || newBottom <= newTop) {
         if (hitTestReachable(el, rect)) {
           const fully = rect.left >= 0 && rect.top >= 0 && rect.right <= innerWidth && rect.bottom <= innerHeight;
-          return { inViewport: true, fullyInViewport: fully, viewportClipped: false };
+          return {
+            inViewport: true,
+            fullyInViewport: fully,
+            viewportClipped: false
+          };
         }
-        return { inViewport: false, fullyInViewport: false, viewportClipped: true };
+        return {
+          inViewport: false,
+          fullyInViewport: false,
+          viewportClipped: true
+        };
       }
       if (newLeft !== left || newRight !== right || newTop !== top || newBottom !== bottom) clippedByAncestor = true;
       left = newLeft;
@@ -390,16 +473,27 @@
       bottom = newBottom;
     }
     const fully = left >= 0 && top >= 0 && right <= innerWidth && bottom <= innerHeight;
-    return { inViewport: true, fullyInViewport: fully, viewportClipped: clippedByAncestor };
+    return {
+      inViewport: true,
+      fullyInViewport: fully,
+      viewportClipped: clippedByAncestor
+    };
   }
 
   function isInViewport(el) {
     return viewportFlags(el).inViewport;
   }
 
-  function actionabilityState(el, sensitiveReason = undefined) {
+  function actionabilityState(
+    el,
+    sensitiveReason = undefined
+  ) {
     const visible = isVisible(el);
-    const viewport = visible ? viewportFlags(el) : { inViewport: false, fullyInViewport: false, viewportClipped: false };
+    const viewport = visible ? viewportFlags(el) : {
+      inViewport: false,
+      fullyInViewport: false,
+      viewportClipped: false
+    };
     const sensitive = sensitiveReason === undefined ? !!sensitiveDescriptor(el) : !!sensitiveReason;
     const ariaDisabled = clean(el?.getAttribute?.('aria-disabled'), 20).toLowerCase() === 'true';
     const nativeDisabled = !!(el && 'disabled' in el && el.disabled);
@@ -430,8 +524,18 @@
 
   function prioritizeActionableNodes(nodes) {
     return nodes
-      .map((el, index) => ({ el, index, rank: actionabilityRank(el) }))
-      .sort((left, right) => left.rank - right.rank || left.index - right.index)
+      .map((
+        el,
+        index
+      ) => ({
+        el,
+        index,
+        rank: actionabilityRank(el)
+      }))
+      .sort((
+        left,
+        right
+      ) => left.rank - right.rank || left.index - right.index)
       .map((entry) => entry.el);
   }
 
@@ -460,9 +564,21 @@
     const text = clean(el.innerText || el.textContent || '', 300);
     const semantic = `semantic:${tag}|${role}|${name}|${label}|${text}`;
     const [source, sourceKind] = href
-      ? [`href:${href}`, 'href']
-      : id ? [`id:${id}`, 'id'] : [semantic, 'semantic'];
-    return { stableKey: `oa_${stableHash(source)}`, stableKeySource: sourceKind };
+      ? [
+        `href:${href}`,
+        'href'
+      ]
+      : id ? [
+        `id:${id}`,
+        'id'
+      ] : [
+        semantic,
+        'semantic'
+      ];
+    return {
+      stableKey: `oa_${stableHash(source)}`,
+      stableKeySource: sourceKind
+    };
   }
 
   function viewportState() {
@@ -484,7 +600,12 @@
 
   let lastUserInputAt = 0;
   for (const type of ['pointerdown', 'keydown', 'wheel', 'touchstart', 'input']) {
-    addEventListener(type, () => { lastUserInputAt = Date.now(); }, { capture: true, passive: true });
+    addEventListener(type, () => {
+      lastUserInputAt = Date.now();
+    }, {
+      capture: true,
+      passive: true
+    });
   }
 
   function userInputState() {
@@ -524,7 +645,10 @@
     if (el.disabled || el.readOnly) throw new Error('Element is disabled or read-only.');
   }
 
-  function serialize(el, options = {}) {
+  function serialize(
+    el,
+    options = {}
+  ) {
     const includeValue = !!options.includeValue;
     const blocked = sensitiveDescriptor(el);
     const actionability = actionabilityState(el, blocked);
@@ -577,9 +701,21 @@
   }
 
   const INTERACTIVE_SELECTOR = [
-    'a[href]', 'button', 'input', 'textarea', 'select', 'option', 'summary',
-    '[role="button"]', '[role="link"]', '[role="checkbox"]', '[role="radio"]',
-    '[role="menuitem"]', '[role="menuitemradio"]', '[role="tab"]', '[contenteditable="true"]'
+    'a[href]',
+    'button',
+    'input',
+    'textarea',
+    'select',
+    'option',
+    'summary',
+    '[role="button"]',
+    '[role="link"]',
+    '[role="checkbox"]',
+    '[role="radio"]',
+    '[role="menuitem"]',
+    '[role="menuitemradio"]',
+    '[role="tab"]',
+    '[contenteditable="true"]'
   ].join(',');
 
   const MAX_SHADOW_ROOTS = 120;
@@ -590,7 +726,11 @@
     let shadowRoots = 0;
     const visit = (root) => {
       let matches;
-      try { matches = [...root.querySelectorAll(INTERACTIVE_SELECTOR)]; } catch (error) { globalThis.OperaAgentLog?.debug?.('SHADOW_COLLECT_FAILED', error?.message || String(error)); return; }
+      try {
+        matches = [...root.querySelectorAll(INTERACTIVE_SELECTOR)];
+      } catch (error) {
+        globalThis.OperaAgentLog?.debug?.('SHADOW_COLLECT_FAILED', error?.message || String(error)); return;
+      }
       for (const el of matches) {
         if (!el.isConnected || seen.has(el)) continue;
         seen.add(el);
@@ -650,22 +790,50 @@
     const regions = boundedRegions.map((node) => {
       if (node === document.body || node === document.documentElement) {
         regionIds.set(node, 'rg_document');
-        return { regionId: 'rg_document', kind: 'document', role: 'document', label: document.title, scroll: scrollState(node) };
+        return {
+          regionId: 'rg_document',
+          kind: 'document',
+          role: 'document',
+          label: document.title,
+          scroll: scrollState(node)
+        };
       }
       const tag = String(node.tagName || '').toLowerCase();
       const role = clean(node.getAttribute?.('role'), 80);
       const label = getAssociatedLabel(node);
       const kind = tag === 'form' ? 'form' : tag === 'dialog' || role === 'dialog' ? 'dialog'
-        : ['feed', 'list', 'listbox', 'grid', 'table'].includes(role) ? 'repeated'
-          : ['main', 'nav', 'aside', 'header', 'footer'].includes(tag) ? 'landmark' : 'scroll';
+        : [
+          'feed',
+          'list',
+          'listbox',
+          'grid',
+          'table'
+        ].includes(role) ? 'repeated'
+          : [
+            'main',
+            'nav',
+            'aside',
+            'header',
+            'footer'
+          ].includes(tag) ? 'landmark' : 'scroll';
       const intrinsic = clean(node.id, 120);
       const regionKey = intrinsic ? `id:${intrinsic}` : `${tag}|${role}|${label}`;
       const ordinal = regionKeyCounts.get(regionKey) || 0;
       regionKeyCounts.set(regionKey, ordinal + 1);
-      const regionId = `rg_${stableHash(ordinal ? `${regionKey}|${ordinal}` : regionKey)}`;
+      const regionId = `rg_${stableHash(ordinal ? `${
+        regionKey
+      }|${
+        ordinal
+      }` : regionKey)}`;
       regionIds.set(node, regionId);
       const scrollable = node.scrollHeight - node.clientHeight > 2 || node.scrollWidth - node.clientWidth > 2;
-      return { regionId, kind, role: role || tag, label, scroll: scrollable ? scrollState(node) : null };
+      return {
+        regionId,
+        kind,
+        role: role || tag,
+        label,
+        scroll: scrollable ? scrollState(node) : null
+      };
     });
     const items = nodes.map((node) => {
       const item = serialize(node);
@@ -674,11 +842,13 @@
       item.regionKey = regionIds.get(region) || 'rg_document';
       return item;
     });
-    return { regions, items };
+    return {
+      regions,
+      items
+    };
   }
 
   function resetActionRefs() {
-
     refs = new WeakMap();
     reverseRefs = new Map();
     actionRefDescriptors = new Map();
@@ -714,7 +884,11 @@
       semanticState: observation.state,
       delta: observation.delta,
     });
-    return { regional, observation, views };
+    return {
+      regional,
+      observation,
+      views
+    };
   }
 
   function compactElementProjection(item) {
@@ -744,11 +918,18 @@
       rect: item.rect
     };
     return Object.fromEntries(
-      Object.entries(projected).filter(([, value]) => value !== undefined && value !== null && value !== '')
+      Object.entries(projected).filter(([
+        ,
+        value
+      ]) => value !== undefined && value !== null && value !== '')
     );
   }
 
-  function compactObservationElements(items, delta, limit = 16) {
+  function compactObservationElements(
+    items,
+    delta,
+    limit = 16
+  ) {
     const changed = new Set((Array.isArray(delta?.changes) ? delta.changes : [])
       .map((change) => String(change?.logicalId || ''))
       .filter(Boolean)
@@ -791,7 +972,6 @@
         ariaExpanded: el ? el.getAttribute?.('aria-expanded') ?? null : null,
         previousAriaExpanded,
         mutationVersion,
-
         previousMutationVersion: rounds > 0 ? beforeMutationVersion : -1,
         elapsedMs,
         timeoutMs: options.timeoutMs,
@@ -855,7 +1035,6 @@
       const regional = semanticRegionObservation(args.maxElements);
       const observation = semanticIdentity.observe(regional.items);
       if (compactView) {
-
         semanticViews.observe({
           regions: regional.regions,
           items: observation.items,
@@ -905,7 +1084,10 @@
     };
   }
 
-  function findDisambiguationHint(el, position) {
+  function findDisambiguationHint(
+    el,
+    position
+  ) {
     const state = actionabilityState(el);
     const facts = [];
     facts.push(state.actionable ? 'actionable' : 'not actionable');
@@ -948,32 +1130,60 @@
     const tag = clean(args.tag, 80).toLowerCase();
     const exact = !!args.exact;
     const limit = clamp(args.limit, 1, MAX_QUERY, 30);
-    let entries = collectInteractiveNodes().map((el, index) => {
+    let entries = collectInteractiveNodes().map((
+      el,
+      index
+    ) => {
       const s = serialize(el);
-      const fields = [s.label, s.text, s.placeholder, s.accessibleName].map((value) => String(value || '').trim().toLowerCase());
-      return { el, index, s, fields, hay: fields.join(' '), exactTextMatch: !!text && fields.includes(text) };
+      const fields = [
+        s.label,
+        s.text,
+        s.placeholder,
+        s.accessibleName
+      ].map((value) => String(value || '').trim().toLowerCase());
+      return {
+        el,
+        index,
+        s,
+        fields,
+        hay: fields.join(' '),
+        exactTextMatch: !!text && fields.includes(text)
+      };
     });
     if (args.visibleOnly !== false) entries = entries.filter(({ el }) => isVisible(el));
-    entries = entries.filter(({ s, hay, exactTextMatch }) => {
+    entries = entries.filter(({
+      s,
+      hay,
+      exactTextMatch
+    }) => {
       if (role && String(s.role).toLowerCase() !== role) return false;
       if (tag && String(s.tag).toLowerCase() !== tag) return false;
       if (!text) return true;
       return exact ? exactTextMatch || hay.trim() === text : hay.includes(text);
     });
     entries = entries
-      .map((entry) => ({ ...entry, rank: actionabilityRank(entry.el) }))
-      .sort((left, right) => left.rank - right.rank || left.index - right.index);
+      .map((entry) => ({
+        ...entry,
+        rank: actionabilityRank(entry.el)
+      }))
+      .sort((
+        left,
+        right
+      ) => left.rank - right.rank || left.index - right.index);
     const dominant = entries.filter((entry) => entry.exactTextMatch && entry.rank === 0);
     let projected = entries;
     if (args.limit == null && args.index == null && dominant.length === 1) projected = dominant;
     const rawItems = projected.slice(0, limit).map(({ el }) => serialize(el, { includeValue: !!args.includeValue }));
 
     const items = rawItems.length > 1
-      ? rawItems.map((entry, position) => ({
-          ...entry,
-          candidateRank: position + 1,
-          hint: findDisambiguationHint(projected[position].el, position)
-        }))
+      ? rawItems.map((
+        entry,
+        position
+      ) => ({
+        ...entry,
+        candidateRank: position + 1,
+        hint: findDisambiguationHint(projected[position].el, position)
+      }))
       : rawItems;
     const index = Number.isInteger(args.index) ? args.index : 0;
     const item = args.index == null && dominant.length === 1
@@ -989,14 +1199,23 @@
         return {
           ok: true,
           count: 0,
-          item: { ...serialized, candidateRank: 1, hint: findDisambiguationHint(fallbackEl, 0) },
+          item: {
+            ...serialized,
+            candidateRank: 1,
+            hint: findDisambiguationHint(fallbackEl, 0)
+          },
           items: [],
           fuzzy: true,
           hint: 'No exact field match; exact-match fallback from fuzzy text match. Verify the target before acting.'
         };
       }
     }
-    return { ok: true, count: entries.length, item, items };
+    return {
+      ok: true,
+      count: entries.length,
+      item,
+      items
+    };
   }
 
   function collectLinks(args) {
@@ -1006,31 +1225,56 @@
     const links = [];
     for (const a of document.querySelectorAll('a[href]')) {
       let url;
-      try { url = new URL(a.href, location.href); } catch (error) { globalThis.OperaAgentLog?.debug?.('LINK_URL_PARSE_FAILED', error?.message || String(error)); continue; }
-      if (!['http:', 'https:'].includes(url.protocol)) continue;
+      try {
+        url = new URL(a.href, location.href);
+      } catch (error) {
+        globalThis.OperaAgentLog?.debug?.('LINK_URL_PARSE_FAILED', error?.message || String(error)); continue;
+      }
+      if (![
+        'http:',
+        'https:'
+      ].includes(url.protocol)) continue;
       if (sameOrigin && url.origin !== location.origin) continue;
       url.hash = '';
       const key = url.toString();
       if (seen.has(key)) continue;
       seen.add(key);
-      links.push({ url: key, text: clean(a.innerText || a.textContent || a.getAttribute('aria-label') || '', 300) });
+      links.push({
+        url: key,
+        text: clean(a.innerText || a.textContent || a.getAttribute('aria-label') || '', 300)
+      });
       if (links.length >= max) break;
     }
-    return { ok: true, links, count: links.length };
+    return {
+      ok: true,
+      links,
+      count: links.length
+    };
   }
 
-  function nativeSetValue(el, value) {
+  function nativeSetValue(
+    el,
+    value
+  ) {
     if (el.isContentEditable) {
       el.focus();
       el.textContent = value;
-      el.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'insertText', data: value }));
+      el.dispatchEvent(new InputEvent('input', {
+        bubbles: true,
+        inputType: 'insertText',
+        data: value
+      }));
       el.dispatchEvent(new Event('change', { bubbles: true }));
       return;
     }
     const proto = el instanceof HTMLTextAreaElement ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype;
     const setter = Object.getOwnPropertyDescriptor(proto, 'value')?.set;
     if (setter) setter.call(el, value); else el.value = value;
-    el.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'insertText', data: value }));
+    el.dispatchEvent(new InputEvent('input', {
+      bubbles: true,
+      inputType: 'insertText',
+      data: value
+    }));
     el.dispatchEvent(new Event('change', { bubbles: true }));
   }
 
@@ -1061,28 +1305,51 @@
     return Object.keys(spec).length ? spec : null;
   }
 
-  function evaluateExpectations(spec, before) {
+  function evaluateExpectations(
+    spec,
+    before
+  ) {
     const expectations = [];
     let verified = true;
-    const check = (key, pass) => {
-      expectations.push({ key, pass: pass === true });
+    const check = (
+      key,
+      pass
+    ) => {
+      expectations.push({
+        key,
+        pass: pass === true
+      });
       verified = verified && pass === true;
     };
     const url = String(location.href);
     if ('urlContains' in spec) check('urlContains', url.toLowerCase().includes(spec.urlContains));
     if ('urlChanged' in spec) check('urlChanged', url !== String(before.url || ''));
     if ('selectorAppears' in spec) {
-      try { check('selectorAppears', document.querySelector(spec.selectorAppears) != null); } catch (error) { globalThis.OperaAgentLog?.debug?.('EXPECT_SELECTOR_APPEARS_FAILED', error?.message || String(error)); check('selectorAppears', false); }
+      try {
+        check('selectorAppears', document.querySelector(spec.selectorAppears) != null);
+      } catch (error) {
+        globalThis.OperaAgentLog?.debug?.('EXPECT_SELECTOR_APPEARS_FAILED', error?.message || String(error)); check('selectorAppears', false);
+      }
     }
     if ('selectorGone' in spec) {
-      try { check('selectorGone', document.querySelector(spec.selectorGone) == null); } catch (error) { globalThis.OperaAgentLog?.debug?.('EXPECT_SELECTOR_GONE_FAILED', error?.message || String(error)); check('selectorGone', false); }
+      try {
+        check('selectorGone', document.querySelector(spec.selectorGone) == null);
+      } catch (error) {
+        globalThis.OperaAgentLog?.debug?.('EXPECT_SELECTOR_GONE_FAILED', error?.message || String(error)); check('selectorGone', false);
+      }
     }
     if ('textGone' in spec) check('textGone', !(document.body?.innerText || '').toLowerCase().includes(spec.textGone));
     if ('minMutationDelta' in spec) check('minMutationDelta', (mutationVersion - Number(before.beforeMutationVersion ?? mutationVersion)) >= spec.minMutationDelta);
-    return { verified, expectations };
+    return {
+      verified,
+      expectations
+    };
   }
 
-  async function waitForPostActionSettle(maxWaitMs = 400, stableRoundsRequired = 2) {
+  async function waitForPostActionSettle(
+    maxWaitMs = 400,
+    stableRoundsRequired = 2
+  ) {
     const startedAt = performance.now();
     let stableRounds = 0;
     let previousMutationVersion = mutationVersion;
@@ -1100,7 +1367,11 @@
 
   const EXPECT_VERIFY_WINDOW_MS = 2000;
 
-  async function waitForExpectVerification(spec, before, budgetMs = EXPECT_VERIFY_WINDOW_MS) {
+  async function waitForExpectVerification(
+    spec,
+    before,
+    budgetMs = EXPECT_VERIFY_WINDOW_MS
+  ) {
     const startedAt = performance.now();
     let verification = evaluateExpectations(spec, before);
     while (!verification.verified && performance.now() - startedAt < budgetMs) {
@@ -1168,7 +1439,10 @@
         present: !!target
       },
       completionClaim: false,
-      ...(verification ? { verified: verification.verified, expectations: verification.expectations } : {}),
+      ...(verification ? {
+        verified: verification.verified,
+        expectations: verification.expectations
+      } : {}),
       ...(fallbackHref ? { fallbackHref } : {})
     };
   }
@@ -1184,11 +1458,25 @@
       el = resolveActionRef(args.ref);
       if (!el) break;
       const before = preparePostAction(args.ref);
-      el.scrollIntoView({ block: 'center', inline: 'center', behavior: 'instant' });
+      el.scrollIntoView({
+        block: 'center',
+        inline: 'center',
+        behavior: 'instant'
+      });
       el.focus?.({ preventScroll: true });
       el.click();
-      const postAction = await postActionEvidence({ ref: args.ref, before, expect: args.expect });
-      result = { ok: true, ref: args.ref, method: 'synthetic', attempts: attempt, postAction };
+      const postAction = await postActionEvidence({
+        ref: args.ref,
+        before,
+        expect: args.expect
+      });
+      result = {
+        ok: true,
+        ref: args.ref,
+        method: 'synthetic',
+        attempts: attempt,
+        postAction
+      };
       if (postAction.verified !== false) break;
       if (el instanceof HTMLAnchorElement && el.href) result.fallbackHref = String(el.href);
       if (attempt < attempts) await new Promise((resolve) => setTimeout(resolve, 150));
@@ -1204,11 +1492,25 @@
       const el = resolveRef(args.ref);
       assertEditableSafe(el);
       const before = preparePostAction(args.ref);
-      el.scrollIntoView({ block: 'center', inline: 'center', behavior: 'instant' });
+      el.scrollIntoView({
+        block: 'center',
+        inline: 'center',
+        behavior: 'instant'
+      });
       el.focus({ preventScroll: true });
       nativeSetValue(el, value);
-      const postAction = await postActionEvidence({ ref: args.ref, before, expect: args.expect });
-      result = { ok: true, ref: args.ref, valueLength: value.length, attempts: attempt, postAction };
+      const postAction = await postActionEvidence({
+        ref: args.ref,
+        before,
+        expect: args.expect
+      });
+      result = {
+        ok: true,
+        ref: args.ref,
+        valueLength: value.length,
+        attempts: attempt,
+        postAction
+      };
       if (postAction.verified !== false) break;
       if (attempt < attempts) await new Promise((resolve) => setTimeout(resolve, 150));
     }
@@ -1227,13 +1529,20 @@
     input.files = transfer.files;
     input.dispatchEvent(new Event('input', { bubbles: true }));
     input.dispatchEvent(new Event('change', { bubbles: true }));
-    return { ok: true, files: input.files.length };
+    return {
+      ok: true,
+      files: input.files.length
+    };
   }
 
   function fillInfo(args) {
     const el = resolveRef(args.ref);
     assertEditableSafe(el);
-    el.scrollIntoView({ block: 'center', inline: 'center', behavior: 'instant' });
+    el.scrollIntoView({
+      block: 'center',
+      inline: 'center',
+      behavior: 'instant'
+    });
     el.focus({ preventScroll: true });
     if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) {
       el.select();
@@ -1244,16 +1553,29 @@
       selection?.removeAllRanges();
       selection?.addRange(range);
     }
-    return { ok: true, ref: args.ref, contentEditable: !!el.isContentEditable, postActionBefore: preparePostAction(args.ref) };
+    return {
+      ok: true,
+      ref: args.ref,
+      contentEditable: !!el.isContentEditable,
+      postActionBefore: preparePostAction(args.ref)
+    };
   }
 
   function focus(args) {
     const el = resolveRef(args.ref);
     if (!el) throw new Error('Element not found or reference is stale.');
     if (sensitiveDescriptor(el) === 'file') throw new Error('File upload fields are blocked.');
-    el.scrollIntoView({ block: 'center', inline: 'center', behavior: 'instant' });
+    el.scrollIntoView({
+      block: 'center',
+      inline: 'center',
+      behavior: 'instant'
+    });
     el.focus({ preventScroll: true });
-    return { ok: true, ref: args.ref, sensitive: !!sensitiveDescriptor(el) };
+    return {
+      ok: true,
+      ref: args.ref,
+      sensitive: !!sensitiveDescriptor(el)
+    };
   }
 
   function clickInfo(args) {
@@ -1262,9 +1584,19 @@
     if (sensitiveDescriptor(el) === 'file') throw new Error('File upload fields are blocked.');
     if (!isVisible(el)) throw new Error('Element is not visible.');
     const postActionBefore = preparePostAction(args.ref);
-    el.scrollIntoView({ block: 'center', inline: 'center', behavior: 'instant' });
+    el.scrollIntoView({
+      block: 'center',
+      inline: 'center',
+      behavior: 'instant'
+    });
     const rect = rectOf(el);
-    return { ok: true, ref: args.ref, rect, sensitive: !!sensitiveDescriptor(el), postActionBefore };
+    return {
+      ok: true,
+      ref: args.ref,
+      rect,
+      sensitive: !!sensitiveDescriptor(el),
+      postActionBefore
+    };
   }
 
   function actionState(args) {
@@ -1278,27 +1610,50 @@
       if (msg.includes('refusing automatic rebind')) {
         const m = msg.match(/candidates: (\[.*?\])/);
         let candidates;
-        try { candidates = m ? JSON.parse(m[1]) : []; } catch (error) { globalThis.OperaAgentLog?.debug?.('REBIND_CANDIDATES_PARSE_FAILED', error?.message || String(error)); candidates = []; }
-        return { present: true, actionable: false, ambiguous: true, candidates, refusal: msg };
+        try {
+          candidates = m ? JSON.parse(m[1]) : [];
+        } catch (error) {
+          globalThis.OperaAgentLog?.debug?.('REBIND_CANDIDATES_PARSE_FAILED', error?.message || String(error)); candidates = [];
+        }
+        return {
+          present: true,
+          actionable: false,
+          ambiguous: true,
+          candidates,
+          refusal: msg
+        };
       }
       throw error;
     }
     if (!el) {
-
       if (before && sensitiveDescriptor(before)) {
-        return { present: true, actionable: false, ambiguous: false, masked: true };
+        return {
+          present: true,
+          actionable: false,
+          ambiguous: false,
+          masked: true
+        };
       }
-      return { present: false, actionable: false, ambiguous: false, refState: refStateFor(key) };
+      return {
+        present: false,
+        actionable: false,
+        ambiguous: false,
+        refState: refStateFor(key)
+      };
     }
     const state = actionabilityState(el);
 
     return {
       present: true,
-
       actionable: state.visible && state.enabled && state.pointerEnabled,
       ambiguous: false,
-      gates: { visible: state.visible, enabled: state.enabled, sensitive: state.sensitive, pointerEnabled: state.pointerEnabled, inViewport: state.inViewport },
-
+      gates: {
+        visible: state.visible,
+        enabled: state.enabled,
+        sensitive: state.sensitive,
+        pointerEnabled: state.pointerEnabled,
+        inViewport: state.inViewport
+      },
       ...(before == null && el != null ? { rebound: true } : {})
     };
   }
@@ -1313,7 +1668,6 @@
     const blocked = el && sensitiveDescriptor(el);
     if (blocked) throw new Error(`Pointer blocked on sensitive target (${blocked}).`);
     if (args.showCursor) {
-
       let cursor = document.getElementById('__opera_agent_pointer_cursor');
       if (!cursor) {
         cursor = document.createElement('div');
@@ -1338,7 +1692,12 @@
       documentId,
       viewport: viewportState(),
       mutationVersion,
-      target: el ? { ref: getRef(el), tag: el.tagName.toLowerCase(), label: getAssociatedLabel(el), ...stableElementIdentity(el) } : null,
+      target: el ? {
+        ref: getRef(el),
+        tag: el.tagName.toLowerCase(),
+        label: getAssociatedLabel(el),
+        ...stableElementIdentity(el)
+      } : null,
       scrollTarget: scrollState(findScrollTarget(el))
     };
   }
@@ -1409,7 +1768,10 @@
     };
   }
 
-  function sameScrollPosition(left, right) {
+  function sameScrollPosition(
+    left,
+    right
+  ) {
     return !!left && !!right && left.kind === right.kind && left.ref === right.ref &&
       Math.abs(left.scrollTop - right.scrollTop) <= 1 && Math.abs(left.scrollLeft - right.scrollLeft) <= 1 &&
       left.scrollHeight === right.scrollHeight && left.scrollWidth === right.scrollWidth;
@@ -1466,13 +1828,28 @@
     const x = clamp(args.deltaX, -1200, 1200, 0);
     const y = clamp(args.deltaY, -1200, 1200, 0);
     if (target === root || target === document.body || target === document.documentElement) {
-      scrollBy({ left: x, top: y, behavior: 'instant' });
+      scrollBy({
+        left: x,
+        top: y,
+        behavior: 'instant'
+      });
       document.dispatchEvent(new Event('scroll'));
     } else {
-      target.scrollBy({ left: x, top: y, behavior: 'instant' });
+      target.scrollBy({
+        left: x,
+        top: y,
+        behavior: 'instant'
+      });
       target.dispatchEvent(new Event('scroll'));
     }
-    return settleScroll({ before, beforeMutationVersion, x: args.x, y: args.y, maxWaitMs: 600, stableRounds: 3 });
+    return settleScroll({
+      before,
+      beforeMutationVersion,
+      x: args.x,
+      y: args.y,
+      maxWaitMs: 600,
+      stableRounds: 3
+    });
   }
 
   async function scroll(args) {
@@ -1486,27 +1863,49 @@
       if (!el) throw new Error('Element not found or reference is stale.');
       target = findScrollTarget(el.parentElement);
       const before = scrollState(target);
-      el.scrollIntoView({ block: args.block || 'center', inline: args.inline || 'center', behavior });
-      return settleScroll({ before, beforeMutationVersion, maxWaitMs: behavior === 'smooth' ? 1000 : 500 });
+      el.scrollIntoView({
+        block: args.block || 'center',
+        inline: args.inline || 'center',
+        behavior
+      });
+      return settleScroll({
+        before,
+        beforeMutationVersion,
+        maxWaitMs: behavior === 'smooth' ? 1000 : 500
+      });
     } else if (args.absolute) {
       const before = scrollState(target);
-      scrollTo({ left: x, top: y, behavior });
-      return settleScroll({ before, beforeMutationVersion, maxWaitMs: behavior === 'smooth' ? 1000 : 500 });
+      scrollTo({
+        left: x,
+        top: y,
+        behavior
+      });
+      return settleScroll({
+        before,
+        beforeMutationVersion,
+        maxWaitMs: behavior === 'smooth' ? 1000 : 500
+      });
     } else {
       const before = scrollState(target);
-      scrollBy({ left: x, top: y, behavior });
-      return settleScroll({ before, beforeMutationVersion, maxWaitMs: behavior === 'smooth' ? 1000 : 500 });
+      scrollBy({
+        left: x,
+        top: y,
+        behavior
+      });
+      return settleScroll({
+        before,
+        beforeMutationVersion,
+        maxWaitMs: behavior === 'smooth' ? 1000 : 500
+      });
     }
   }
 
   function key(args) {
-
     if (args?.modifiers != null || args?.text != null) {
       throw new Error('Key chords and text entry require the trusted path.');
     }
     const keyName = args.key === 'Space' ? ' ' : String(args.key || '');
     if (!NAV_KEYS.has(args.key) && !NAV_KEYS.has(keyName)) {
-
       throw new Error(
         'Key is not allowlisted for the synthetic path. Chords, text, and '
         + 'non-navigation keys require the trusted path (page.key with trusted: true).'
@@ -1515,13 +1914,24 @@
     const target = document.activeElement || document.body;
     const blocked = target && sensitiveDescriptor(target);
     if (blocked) throw new Error(`Keyboard input blocked on sensitive field (${blocked}).`);
-    const common = { key: keyName, code: args.code || '', bubbles: true, cancelable: true };
+    const common = {
+      key: keyName,
+      code: args.code || '',
+      bubbles: true,
+      cancelable: true
+    };
     target.dispatchEvent(new KeyboardEvent('keydown', common));
     target.dispatchEvent(new KeyboardEvent('keyup', common));
-    return { ok: true, key: args.key };
+    return {
+      ok: true,
+      key: args.key
+    };
   }
 
-  function stateMatches(el, state) {
+  function stateMatches(
+    el,
+    state
+  ) {
     if (!state) return true;
     for (const [key, expected] of Object.entries(state)) {
       let actual;
@@ -1556,7 +1966,11 @@
         const el = resolveRef(args.ref);
         if (el) candidates = [el];
       } else if (args.selector) {
-        try { candidates = [...document.querySelectorAll(String(args.selector))]; } catch (error) { globalThis.OperaAgentLog?.warn?.('WAIT_INVALID_SELECTOR', error?.message || String(error)); throw new Error('Invalid CSS selector.'); }
+        try {
+          candidates = [...document.querySelectorAll(String(args.selector))];
+        } catch (error) {
+          globalThis.OperaAgentLog?.warn?.('WAIT_INVALID_SELECTOR', error?.message || String(error)); throw new Error('Invalid CSS selector.');
+        }
       } else {
         candidates = collectInteractiveNodes();
       }
@@ -1570,7 +1984,11 @@
         return stateMatches(el, args.state);
       });
       if (absent) {
-        if (!found) return { ok: true, waitedMs: Date.now() - startedAt, absent: true };
+        if (!found) return {
+          ok: true,
+          waitedMs: Date.now() - startedAt,
+          absent: true
+        };
       } else if (found) {
         return {
           ok: true,
@@ -1582,8 +2000,17 @@
     }
     const waitedMs = Date.now() - startedAt;
     return absent
-      ? { ok: false, waitedMs, error: 'wait_for timeout', stillPresent: true }
-      : { ok: false, waitedMs, error: 'wait_for timeout' };
+      ? {
+        ok: false,
+        waitedMs,
+        error: 'wait_for timeout',
+        stillPresent: true
+      }
+      : {
+        ok: false,
+        waitedMs,
+        error: 'wait_for timeout'
+      };
   }
 
   function mediaElement(index = 0) {
@@ -1592,10 +2019,20 @@
 
   const LISTEN_WINDOW_MS = 10000;
 
-  const listenCapture = { ctx: null, stream: null, recorder: null, seq: 0, active: false, mime: 'audio/webm' };
+  const listenCapture = {
+    ctx: null,
+    stream: null,
+    recorder: null,
+    seq: 0,
+    active: false,
+    mime: 'audio/webm'
+  };
 
   function listenArmedRecorder() {
-    const recorder = new MediaRecorder(listenCapture.stream, { mimeType: listenCapture.mime, audioBitsPerSecond: 64000 });
+    const recorder = new MediaRecorder(listenCapture.stream, {
+      mimeType: listenCapture.mime,
+      audioBitsPerSecond: 64000
+    });
     recorder.ondataavailable = (event) => {
       if (!event.data || event.data.size === 0) return;
       const blob = event.data;
@@ -1633,7 +2070,9 @@
           listenStop().catch(() => {});
         }
       } else if (listenCapture.ctx) {
-        try { listenCapture.ctx.close(); } catch {}
+        try {
+          listenCapture.ctx.close();
+        } catch {}
         listenCapture.ctx = null;
       }
     };
@@ -1655,7 +2094,9 @@
       source.connect(dest);
       stream = dest.stream;
     } catch (error) {
-      try { ctx.close(); } catch {}
+      try {
+        ctx.close();
+      } catch {}
       throw new Error(`This media cannot be tapped: ${error?.message || error}`);
     }
 
@@ -1673,7 +2114,9 @@
     const scheduleEnd = () => {
       setTimeout(() => {
         if (!listenCapture.active) return;
-        try { listenCapture.recorder?.stop(); } catch {}
+        try {
+          listenCapture.recorder?.stop();
+        } catch {}
       }, LISTEN_WINDOW_MS);
     };
     listenCapture.scheduleEnd = scheduleEnd;
@@ -1681,7 +2124,9 @@
     try {
       recorder = listenArmedRecorder();
     } catch (error) {
-      try { ctx.close(); } catch {}
+      try {
+        ctx.close();
+      } catch {}
       listenCapture.ctx = null;
       listenCapture.active = false;
       throw new Error(`Recording is not supported here: ${error?.message || error}`);
@@ -1692,33 +2137,55 @@
     } catch (error) {
       listenCapture.recorder = null;
       listenCapture.active = false;
-      try { ctx.close(); } catch {}
+      try {
+        ctx.close();
+      } catch {}
       listenCapture.ctx = null;
       throw new Error(`Capture did not start: ${error?.message || error}`);
     }
     scheduleEnd();
-    return { ok: true, mime: mimeType, chunkMs: LISTEN_WINDOW_MS, audioState: ctx.state };
+    return {
+      ok: true,
+      mime: mimeType,
+      chunkMs: LISTEN_WINDOW_MS,
+      audioState: ctx.state
+    };
   }
 
   async function listenStop() {
-
     const recorder = listenCapture.recorder;
     if (recorder && recorder.state !== 'inactive') {
-      try { recorder.stop(); } catch {}
-      return { ok: true, flushed: true };
+      try {
+        recorder.stop();
+      } catch {}
+      return {
+        ok: true,
+        flushed: true
+      };
     }
     listenCapture.recorder = null;
     if (listenCapture.ctx) {
-      try { listenCapture.ctx.close(); } catch {}
+      try {
+        listenCapture.ctx.close();
+      } catch {}
       listenCapture.ctx = null;
     }
-    return { ok: true, flushed: false };
+    return {
+      ok: true,
+      flushed: false
+    };
   }
 
   function mediaState(args) {
     const all = [...document.querySelectorAll('video,audio')];
     const el = all[clamp(args.index, 0, Math.max(0, all.length - 1), 0)] || null;
-    if (!el) return { ok: true, media: { present: false, count: 0 } };
+    if (!el) return {
+      ok: true,
+      media: {
+        present: false,
+        count: 0
+      }
+    };
     return {
       ok: true,
       media: {
@@ -1736,14 +2203,16 @@
     };
   }
 
-  async function mediaAction(method, args) {
+  async function mediaAction(
+    method,
+    args
+  ) {
     const el = mediaElement(args.index);
     if (!el) throw new Error('No media element found.');
     if (method === 'media.play') {
       try {
         await el.play();
       } catch (error) {
-
         if (error && error.name === 'NotAllowedError') {
           throw new Error(
             'The browser blocked playback because the document has no user gesture. '
@@ -1777,20 +2246,34 @@
         facts[rule.ruleId] = { present: !!el };
       } catch (error) {
         globalThis.OperaAgentLog?.warn?.('WATCH_FACTS_SELECTOR_FAILED', error?.message || String(error));
-        facts[rule.ruleId] = { present: false, invalidSelector: true };
+        facts[rule.ruleId] = {
+          present: false,
+          invalidSelector: true
+        };
       }
     }
     let text = null;
     if (rules.some((r) => r.trigger?.kind === 'textMatch')) {
-      try { text = String(document.body?.innerText || '').slice(0, 20000); } catch (error) { globalThis.OperaAgentLog?.debug?.('WATCH_TEXT_SNAPSHOT_FAILED', error?.message || String(error)); text = ''; }
+      try {
+        text = String(document.body?.innerText || '').slice(0, 20000);
+      } catch (error) {
+        globalThis.OperaAgentLog?.debug?.('WATCH_TEXT_SNAPSHOT_FAILED', error?.message || String(error)); text = '';
+      }
     }
-    return { facts, text };
+    return {
+      facts,
+      text
+    };
   }
 
   function adShowingNow(adSelectors) {
     const list = Array.isArray(adSelectors) ? adSelectors.filter((s) => typeof s === 'string').slice(0, 8) : [];
     return list.some((sel) => {
-      try { return !!document.querySelector(sel); } catch (error) { globalThis.OperaAgentLog?.debug?.('AD_SELECTOR_PROBE_FAILED', error?.message || String(error)); return false; }
+      try {
+        return !!document.querySelector(sel);
+      } catch (error) {
+        globalThis.OperaAgentLog?.debug?.('AD_SELECTOR_PROBE_FAILED', error?.message || String(error)); return false;
+      }
     });
   }
 
@@ -1803,7 +2286,10 @@
     if (disposed || watchChecking || !watchRules.length) return;
     watchChecking = true;
     try {
-      const { facts, text } = watchFacts(watchRules);
+      const {
+        facts,
+        text
+      } = watchFacts(watchRules);
       const snapshot = {
         rules: watchRules,
         facts,
@@ -1814,7 +2300,11 @@
         now: Date.now(),
         state: watchState
       };
-      const r = await chrome.runtime.sendMessage({ scope: 'opera-agent-watch', method: 'watch.facts', params: snapshot });
+      const r = await chrome.runtime.sendMessage({
+        scope: 'opera-agent-watch',
+        method: 'watch.facts',
+        params: snapshot
+      });
       if (r && r.state) watchState = r.state;
     } catch (watchError) {
       log.debug('WATCH_FACTS_FAILED', watchError?.message || String(watchError));
@@ -1829,13 +2319,14 @@
     watchCheckQueued = true;
     setTimeout(() => {
       watchCheckQueued = false;
-      checkWatches().catch(() => {
-
-      });
+      checkWatches().catch(() => {});
     }, 100);
   }
 
-  async function handle(method, args = {}) {
+  async function handle(
+    method,
+    args = {}
+  ) {
     if (disposed) throw new Error('Extension context invalidated.');
     switch (method) {
       case 'watch.arm': {
@@ -1846,9 +2337,16 @@
         }
         watchState = args.state || {};
         scheduleWatchCheck();
-        return { ok: true, armed: watchRules.length };
+        return {
+          ok: true,
+          armed: watchRules.length
+        };
       }
-      case 'content.ping': return { ok: true, documentId, readyState: document.readyState };
+      case 'content.ping': return {
+        ok: true,
+        documentId,
+        readyState: document.readyState
+      };
       case 'page.read': return pageRead(args);
       case 'page.query': return pageQuery(args);
       case 'page.find': return pageFind(args);
@@ -1871,7 +2369,11 @@
       case 'page.wait_for': return waitFor(args);
       case 'page.active_state': {
         const el = document.activeElement;
-        return { ok: true, active: el ? serialize(el, { includeValue: false }) : null, sensitive: !!(el && sensitiveDescriptor(el)) };
+        return {
+          ok: true,
+          active: el ? serialize(el, { includeValue: false }) : null,
+          sensitive: !!(el && sensitiveDescriptor(el))
+        };
       }
       case 'media.state': return mediaState(args);
       case 'media.play':
@@ -1883,11 +2385,18 @@
     }
   }
 
-  function onMessage(message, _sender, sendResponse) {
+  function onMessage(
+    message,
+    _sender,
+    sendResponse
+  ) {
     if (!message || message.scope !== 'opera-agent-content') return false;
     Promise.resolve(handle(message.method, message.params || {}))
       .then((result) => sendResponse(result))
-      .catch((error) => sendResponse({ ok: false, error: String(error?.message || error).slice(0, 1000) }));
+      .catch((error) => sendResponse({
+        ok: false,
+        error: String(error?.message || error).slice(0, 1000)
+      }));
     return true;
   }
 

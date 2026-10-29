@@ -14,7 +14,10 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createSocketClient, connectionPatch } from '../extension/lib/socket-client.js';
+import {
+  createSocketClient,
+  connectionPatch
+} from '../extension/lib/socket-client.js';
 
 class FakeSocket {
   static OPEN = 1;
@@ -25,12 +28,30 @@ class FakeSocket {
     this.closes = 0;
     FakeSocket.last = this;
   }
-  open() { this.readyState = 1; this.onopen?.(); }
-  receive(data) { this.onmessage?.({ data }); }
-  send(text) { this.sent.push(text); }
-  close() { this.closes += 1; this.readyState = 3; }
-  peerClosing() { this.readyState = 2; }
-  drop(code = 1006, reason = '') { this.readyState = 3; this.onclose?.({ code, reason }); }
+  open() {
+    this.readyState = 1; this.onopen?.();
+  }
+  receive(data) {
+    this.onmessage?.({ data });
+  }
+  send(text) {
+    this.sent.push(text);
+  }
+  close() {
+    this.closes += 1; this.readyState = 3;
+  }
+  peerClosing() {
+    this.readyState = 2;
+  }
+  drop(
+    code = 1006,
+    reason = ''
+  ) {
+    this.readyState = 3; this.onclose?.({
+      code,
+      reason
+    });
+  }
 }
 
 function harness(overrides = {}) {
@@ -51,21 +72,52 @@ function harness(overrides = {}) {
     },
     execute: async (command) => {
       executed.push(command);
-      return { ok: true, result: { done: true } };
+      return {
+        ok: true,
+        result: { done: true }
+      };
     },
     onState: (s) => states.push(s),
-    setTimer: (fn, ms) => { timers.push({ fn, ms }); },
-    setWatchTimer: (fn, ms) => { watchTimers.push({ fn, ms }); },
+    setTimer: (
+      fn,
+      ms
+    ) => {
+      timers.push({
+        fn,
+        ms
+      });
+    },
+    setWatchTimer: (
+      fn,
+      ms
+    ) => {
+      watchTimers.push({
+        fn,
+        ms
+      });
+    },
     ...overrides
   });
 
-  return { client, timers, watchTimers, states, executed, sockets };
+  return {
+    client,
+    timers,
+    watchTimers,
+    states,
+    executed,
+    sockets
+  };
 }
 
 // Each watchdog tick schedules the next one, so only the last recorded timer is ever live.
 // Every timing test drives the same crank, which is why it lives here instead of being copied into each one.
 
-function runTicks(env, time, count, stepMs = 10000) {
+function runTicks(
+  env,
+  time,
+  count,
+  stepMs = 10000
+) {
   for (let tick = 0; tick < count; tick += 1) {
     time.now += stepMs;
     env.watchTimers[env.watchTimers.length - 1].fn();
@@ -77,7 +129,10 @@ function trackTime() {
 }
 
 test('an opening socket sends the handshake before anything else', () => {
-  const { client, sockets } = harness();
+  const {
+    client,
+    sockets
+  } = harness();
   client.start();
   sockets[0].open();
 
@@ -88,23 +143,44 @@ test('an opening socket sends the handshake before anything else', () => {
 });
 
 test('work arriving before the bridge says ready is refused, because an open socket has not proven the device', async () => {
-  const { client, sockets, executed } = harness();
+  const {
+    client,
+    sockets,
+    executed
+  } = harness();
   client.start();
   sockets[0].open();
 
-  sockets[0].receive(JSON.stringify({ type: 'command', command: { id: 'c1', method: 'browser.ping' } }));
+  sockets[0].receive(JSON.stringify({
+    type: 'command',
+    command: {
+      id: 'c1',
+      method: 'browser.ping'
+    }
+  }));
   await Promise.resolve();
 
   assert.deepEqual(executed, [], 'a command ran against an unproven identity');
 });
 
 test('after ready a command runs exactly once and its result goes back up the same socket', async () => {
-  const { client, sockets, executed } = harness();
+  const {
+    client,
+    sockets,
+    executed
+  } = harness();
   client.start();
   sockets[0].open();
   sockets[0].receive(JSON.stringify({ type: 'ready' }));
 
-  sockets[0].receive(JSON.stringify({ type: 'command', command: { id: 'c1', method: 'page.key', params: { key: 'a' } } }));
+  sockets[0].receive(JSON.stringify({
+    type: 'command',
+    command: {
+      id: 'c1',
+      method: 'page.key',
+      params: { key: 'a' }
+    }
+  }));
   await new Promise((r) => setImmediate(r));
 
   assert.equal(executed.length, 1);
@@ -117,13 +193,24 @@ test('after ready a command runs exactly once and its result goes back up the sa
 });
 
 test('a command that throws still produces a completion, so the bridge is never left waiting', async () => {
-  const { client, sockets } = harness({
-    execute: async () => { throw new Error('boom'); }
+  const {
+    client,
+    sockets
+  } = harness({
+    execute: async () => {
+      throw new Error('boom');
+    }
   });
   client.start();
   sockets[0].open();
   sockets[0].receive(JSON.stringify({ type: 'ready' }));
-  sockets[0].receive(JSON.stringify({ type: 'command', command: { id: 'c2', method: 'page.key' } }));
+  sockets[0].receive(JSON.stringify({
+    type: 'command',
+    command: {
+      id: 'c2',
+      method: 'page.key'
+    }
+  }));
   await new Promise((r) => setImmediate(r));
 
   const done = JSON.parse(sockets[0].sent[sockets[0].sent.length - 1]);
@@ -132,7 +219,11 @@ test('a command that throws still produces a completion, so the bridge is never 
 });
 
 test('a dropped connection reconnects on a backoff that grows and is capped', () => {
-  const { client, sockets, timers } = harness();
+  const {
+    client,
+    sockets,
+    timers
+  } = harness();
   client.start();
   sockets[0].open();
   sockets[0].receive(JSON.stringify({ type: 'ready' }));
@@ -190,7 +281,12 @@ test('a socket that has opened is closed, because that is the only way to end it
 // The socket opened, so the network is proven and the wait does not grow when it drops.
 
 test('an open socket resets the backoff, because the network is the thing the backoff guesses at', () => {
-  const { client, sockets, timers, states } = harness();
+  const {
+    client,
+    sockets,
+    timers,
+    states
+  } = harness();
   client.start();
   sockets[0].open();
   sockets[0].receive(JSON.stringify({ type: 'ready' }));
@@ -206,7 +302,11 @@ test('an open socket resets the backoff, because the network is the thing the ba
 // The socket never opens: the network is down, and each attempt costs more than the last.
 
 test('a socket that never opened keeps growing the backoff, so a downed bridge is not hammered', () => {
-  const { client, sockets, timers } = harness();
+  const {
+    client,
+    sockets,
+    timers
+  } = harness();
   client.start();
 
   sockets[0].drop(1006, 'network went away');
@@ -222,7 +322,12 @@ test('a socket that never opened keeps growing the backoff, so a downed bridge i
 });
 
 test('a rejected handshake stops the device for good instead of retrying forever', () => {
-  const { client, sockets, timers, states } = harness();
+  const {
+    client,
+    sockets,
+    timers,
+    states
+  } = harness();
   client.start();
   sockets[0].open();
 
@@ -236,7 +341,12 @@ test('a rejected handshake stops the device for good instead of retrying forever
 // A timeout answers to a retry; only a refusal stops the device, because only a refusal says the credentials are wrong.
 
 test('a timed out handshake reconnects with backoff instead of stopping the device', () => {
-  const { client, sockets, timers, states } = harness();
+  const {
+    client,
+    sockets,
+    timers,
+    states
+  } = harness();
   client.start();
   sockets[0].open();
 
@@ -252,7 +362,11 @@ test('a timed out handshake reconnects with backoff instead of stopping the devi
 });
 
 test('a malformed frame is ignored rather than allowed to throw inside the socket', async () => {
-  const { client, sockets, executed } = harness();
+  const {
+    client,
+    sockets,
+    executed
+  } = harness();
   client.start();
   sockets[0].open();
   sockets[0].receive(JSON.stringify({ type: 'ready' }));
@@ -265,18 +379,28 @@ test('a malformed frame is ignored rather than allowed to throw inside the socke
 });
 
 test('send refuses before ready, so a stored completion cannot race the handshake', () => {
-  const { client, sockets } = harness();
+  const {
+    client,
+    sockets
+  } = harness();
   client.start();
   sockets[0].open();
 
   assert.equal(client.isReady(), false);
-  assert.equal(client.send(JSON.stringify({ type: 'complete', commandId: 'x' })), false);
+  assert.equal(client.send(JSON.stringify({
+    type: 'complete',
+    commandId: 'x'
+  })), false);
 });
 
 // The reconnect path is the one that matters for correctness: a completion stored just before a drop is owed, and the reconnected socket is the only place it fits.
 
 test('a stored completion goes out on the reconnected socket once the bridge is ready again', () => {
-  const { client, sockets, timers } = harness();
+  const {
+    client,
+    sockets,
+    timers
+  } = harness();
   client.start();
   sockets[0].open();
   sockets[0].receive(JSON.stringify({ type: 'ready' }));
@@ -286,7 +410,10 @@ test('a stored completion goes out on the reconnected socket once the bridge is 
   sockets[1].open();
   sockets[1].receive(JSON.stringify({ type: 'ready' }));
 
-  assert.equal(client.send(JSON.stringify({ type: 'complete', commandId: 'c-lost' })), true);
+  assert.equal(client.send(JSON.stringify({
+    type: 'complete',
+    commandId: 'c-lost'
+  })), true);
 
   const last = JSON.parse(sockets[1].sent[sockets[1].sent.length - 1]);
   assert.equal(last.type, 'complete');
@@ -299,22 +426,42 @@ test('a stored completion goes out on the reconnected socket once the bridge is 
 test('a command that is still running blocks the next one, so work stays ordered', async () => {
   const order = [];
   let release;
-  const gate = new Promise((resolve) => { release = resolve; });
-  const { client, sockets } = harness({
+  const gate = new Promise((resolve) => {
+    release = resolve;
+  });
+  const {
+    client,
+    sockets
+  } = harness({
     execute: async (command) => {
       order.push(`start:${command.id}`);
       if (command.id === 'first') await gate;
       order.push(`end:${command.id}`);
-      return { ok: true, result: {} };
+      return {
+        ok: true,
+        result: {}
+      };
     }
   });
 
   client.start();
   sockets[0].open();
   sockets[0].receive(JSON.stringify({ type: 'ready' }));
-  sockets[0].receive(JSON.stringify({ type: 'command', command: { id: 'first', method: 'page.key' } }));
+  sockets[0].receive(JSON.stringify({
+    type: 'command',
+    command: {
+      id: 'first',
+      method: 'page.key'
+    }
+  }));
   await new Promise((r) => setImmediate(r));
-  sockets[0].receive(JSON.stringify({ type: 'command', command: { id: 'second', method: 'page.key' } }));
+  sockets[0].receive(JSON.stringify({
+    type: 'command',
+    command: {
+      id: 'second',
+      method: 'page.key'
+    }
+  }));
   await new Promise((r) => setImmediate(r));
 
   assert.deepEqual(order, ['start:first'], 'the second command started before the first finished');
@@ -323,22 +470,40 @@ test('a command that is still running blocks the next one, so work stays ordered
   await new Promise((r) => setImmediate(r));
   await new Promise((r) => setImmediate(r));
 
-  assert.deepEqual(order, ['start:first', 'end:first', 'start:second', 'end:second']);
+  assert.deepEqual(order, [
+    'start:first',
+    'end:first',
+    'start:second',
+    'end:second'
+  ]);
 });
 
 test('a dropped socket keeps the work it already took, so a completion is not lost', async () => {
   const executed = [];
-  const { client, sockets, timers } = harness({
+  const {
+    client,
+    sockets,
+    timers
+  } = harness({
     execute: async (command) => {
       executed.push(command.id);
-      return { ok: true, result: {} };
+      return {
+        ok: true,
+        result: {}
+      };
     }
   });
 
   client.start();
   sockets[0].open();
   sockets[0].receive(JSON.stringify({ type: 'ready' }));
-  sockets[0].receive(JSON.stringify({ type: 'command', command: { id: 'lost', method: 'page.key' } }));
+  sockets[0].receive(JSON.stringify({
+    type: 'command',
+    command: {
+      id: 'lost',
+      method: 'page.key'
+    }
+  }));
   await new Promise((r) => setImmediate(r));
 
   sockets[0].drop();
@@ -353,21 +518,41 @@ test('a dropped socket keeps the work it already took, so a completion is not lo
 test('stop ends a drain that is already running, so queued work is not run for a stopped device', async () => {
   const executed = [];
   let release;
-  const gate = new Promise((resolve) => { release = resolve; });
-  const { client, sockets } = harness({
+  const gate = new Promise((resolve) => {
+    release = resolve;
+  });
+  const {
+    client,
+    sockets
+  } = harness({
     execute: async (command) => {
       executed.push(command.id);
       if (command.id === 'running') await gate;
-      return { ok: true, result: {} };
+      return {
+        ok: true,
+        result: {}
+      };
     }
   });
 
   client.start();
   sockets[0].open();
   sockets[0].receive(JSON.stringify({ type: 'ready' }));
-  sockets[0].receive(JSON.stringify({ type: 'command', command: { id: 'running', method: 'page.key' } }));
+  sockets[0].receive(JSON.stringify({
+    type: 'command',
+    command: {
+      id: 'running',
+      method: 'page.key'
+    }
+  }));
   await new Promise((r) => setImmediate(r));
-  sockets[0].receive(JSON.stringify({ type: 'command', command: { id: 'queued', method: 'page.key' } }));
+  sockets[0].receive(JSON.stringify({
+    type: 'command',
+    command: {
+      id: 'queued',
+      method: 'page.key'
+    }
+  }));
   await new Promise((r) => setImmediate(r));
 
   client.stop();
@@ -382,7 +567,11 @@ test('stop ends a drain that is already running, so queued work is not run for a
 // A device that reconnects forever with no reason in any log is indistinguishable from a device that is working, which is the one failure this transport cannot afford.
 
 test('a dropped socket says why, so a reconnect loop is not silent', () => {
-  const { client, sockets, states } = harness();
+  const {
+    client,
+    sockets,
+    states
+  } = harness();
   client.start();
   sockets[0].open();
   sockets[0].receive(JSON.stringify({ type: 'ready' }));
@@ -401,13 +590,19 @@ test('a dropped socket says why, so a reconnect loop is not silent', () => {
 // The device has to answer, so the bridge can tell an open socket from a dead one.
 
 test('a ping is answered, because a one-way keepalive cannot detect a dead bridge', () => {
-  const { client, sockets } = harness();
+  const {
+    client,
+    sockets
+  } = harness();
   client.start();
   sockets[0].open();
   sockets[0].receive(JSON.stringify({ type: 'ready' }));
   const before = sockets[0].sent.length;
 
-  sockets[0].receive(JSON.stringify({ type: 'ping', serverTime: '2026-10-12T00:00:00.000Z' }));
+  sockets[0].receive(JSON.stringify({
+    type: 'ping',
+    serverTime: '2026-10-12T00:00:00.000Z'
+  }));
 
   const reply = sockets[0].sent.slice(before).map((text) => JSON.parse(text));
   assert.equal(reply.length, 1, 'the device read a keepalive and said nothing back');
@@ -425,7 +620,10 @@ test('a ping is answered, because a one-way keepalive cannot detect a dead bridg
 test('a socket that stops hearing anything is torn down and replaced', () => {
   const time = trackTime();
   const env = harness({ now: () => time.now });
-  const { client, sockets } = env;
+  const {
+    client,
+    sockets
+  } = env;
   client.start();
   sockets[0].open();
   sockets[0].receive(JSON.stringify({ type: 'ready' }));
@@ -440,14 +638,20 @@ test('a socket that stops hearing anything is torn down and replaced', () => {
 test('a ping from the bridge is proof the peer is alive, so the deadline resets', () => {
   const time = trackTime();
   const env = harness({ now: () => time.now });
-  const { client, sockets } = env;
+  const {
+    client,
+    sockets
+  } = env;
   client.start();
   sockets[0].open();
   sockets[0].receive(JSON.stringify({ type: 'ready' }));
 
   for (let round = 0; round < 4; round += 1) {
     runTicks(env, time, 4, 5000);
-    sockets[sockets.length - 1].receive(JSON.stringify({ type: 'ping', serverTime: 'now' }));
+    sockets[sockets.length - 1].receive(JSON.stringify({
+      type: 'ping',
+      serverTime: 'now'
+    }));
   }
 
   assert.equal(sockets.length, 1, 'a device that keeps hearing from the bridge was still replaced');
@@ -466,26 +670,40 @@ test('a connected socket reports ready and stamps the moment it connected', () =
 });
 
 test('an error frame reports only its message, because the socket it arrived on is alive', () => {
-  const patch = connectionPatch({ status: 'error', message: 'Dispatch failed.' }, 'stamp');
+  const patch = connectionPatch({
+    status: 'error',
+    message: 'Dispatch failed.'
+  }, 'stamp');
   assert.equal(patch.lastError, 'Bridge: Dispatch failed.');
   assert.equal(patch.status, undefined, 'an error frame must not rewrite the connection status');
   assert.equal(patch.lastConnectedAt, undefined, 'an error is not a fresh connection');
 });
 
 test('a rejected handshake says the bridge refused this device, not a code', () => {
-  const patch = connectionPatch({ status: 'rejected', code: 4001, reason: 'unauthorized' }, 'stamp');
+  const patch = connectionPatch({
+    status: 'rejected',
+    code: 4001,
+    reason: 'unauthorized'
+  }, 'stamp');
   assert.equal(patch.status, 'rejected');
   assert.equal(patch.lastError, 'Bridge refused this device.');
 });
 
 test('a dropped socket carries its reason into the reported state', () => {
-  const patch = connectionPatch({ status: 'reconnecting', code: 1006, reason: '' }, 'stamp');
+  const patch = connectionPatch({
+    status: 'reconnecting',
+    code: 1006,
+    reason: ''
+  }, 'stamp');
   assert.equal(patch.status, 'reconnecting');
   assert.match(patch.lastError, /1006/);
 });
 
 test('a stale socket reports reconnecting, because a new socket is already opening', () => {
-  const patch = connectionPatch({ status: 'stale', silenceMs: 61400 }, 'stamp');
+  const patch = connectionPatch({
+    status: 'stale',
+    silenceMs: 61400
+  }, 'stamp');
   assert.equal(patch.status, 'reconnecting');
   assert.match(patch.lastError, /61400/);
 });
@@ -505,7 +723,10 @@ test('a fresh attempt never erases why the previous one ended', () => {
 test('tearing down a socket the peer is already closing sends no second close', () => {
   const time = trackTime();
   const env = harness({ now: () => time.now });
-  const { client, sockets } = env;
+  const {
+    client,
+    sockets
+  } = env;
   client.start();
   sockets[0].open();
   sockets[0].receive(JSON.stringify({ type: 'ready' }));
@@ -518,7 +739,10 @@ test('tearing down a socket the peer is already closing sends no second close', 
 });
 
 test('stop does not close a socket that is already closed', () => {
-  const { client, sockets } = harness();
+  const {
+    client,
+    sockets
+  } = harness();
   client.start();
   sockets[0].open();
   sockets[0].drop();
@@ -536,13 +760,20 @@ test('stop does not close a socket that is already closed', () => {
 test('an idle socket past its age is replaced before the platform kills it', () => {
   const time = trackTime();
   const env = harness({ now: () => time.now });
-  const { client, sockets, states } = env;
+  const {
+    client,
+    sockets,
+    states
+  } = env;
   client.start();
   sockets[0].open();
   sockets[0].receive(JSON.stringify({ type: 'ready' }));
 
   for (let tick = 0; tick < 14; tick += 1) {
-    sockets[sockets.length - 1].receive(JSON.stringify({ type: 'ping', serverTime: 'now' }));
+    sockets[sockets.length - 1].receive(JSON.stringify({
+      type: 'ping',
+      serverTime: 'now'
+    }));
     runTicks(env, time, 1);
   }
 
@@ -558,7 +789,9 @@ test('an idle socket past its age is replaced before the platform kills it', () 
 
 test('a socket past its age keeps serving while a command is running', async () => {
   let release;
-  const gate = new Promise((resolve) => { release = resolve; });
+  const gate = new Promise((resolve) => {
+    release = resolve;
+  });
   const executed = [];
   const time = trackTime();
   const env = harness({
@@ -566,18 +799,33 @@ test('a socket past its age keeps serving while a command is running', async () 
     execute: async (command) => {
       executed.push(command.id);
       await gate;
-      return { ok: true, result: {} };
+      return {
+        ok: true,
+        result: {}
+      };
     }
   });
-  const { client, sockets } = env;
+  const {
+    client,
+    sockets
+  } = env;
   client.start();
   sockets[0].open();
   sockets[0].receive(JSON.stringify({ type: 'ready' }));
-  sockets[0].receive(JSON.stringify({ type: 'command', command: { id: 'long', method: 'page.read' } }));
+  sockets[0].receive(JSON.stringify({
+    type: 'command',
+    command: {
+      id: 'long',
+      method: 'page.read'
+    }
+  }));
   await new Promise((r) => setImmediate(r));
 
   for (let tick = 0; tick < 14; tick += 1) {
-    sockets[sockets.length - 1].receive(JSON.stringify({ type: 'ping', serverTime: 'now' }));
+    sockets[sockets.length - 1].receive(JSON.stringify({
+      type: 'ping',
+      serverTime: 'now'
+    }));
     runTicks(env, time, 1);
   }
 
@@ -593,13 +841,20 @@ test('a socket past its age keeps serving while a command is running', async () 
 });
 
 test('a recycled socket reports reconnecting with no error, because nothing failed', () => {
-  const patch = connectionPatch({ status: 'recycling', ageMs: 121000 }, 'stamp');
+  const patch = connectionPatch({
+    status: 'recycling',
+    ageMs: 121000
+  }, 'stamp');
   assert.equal(patch.status, 'reconnecting');
   assert.equal(patch.lastError, null);
 });
 
 test('stop leaves nothing running, so a paused worker does not keep a socket alive', () => {
-  const { client, sockets, states } = harness();
+  const {
+    client,
+    sockets,
+    states
+  } = harness();
   client.start();
   sockets[0].open();
   sockets[0].receive(JSON.stringify({ type: 'ready' }));

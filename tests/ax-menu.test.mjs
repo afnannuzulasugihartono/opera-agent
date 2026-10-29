@@ -6,20 +6,72 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { axChildren, axFind, axRowIndex, axSubmenu, clickMenuRow, menuAccel, menuWalkPlan, openSubmenu, pressMenuAccel, waitAx } from '../lib/ax-menu.js';
+import {
+  axChildren,
+  axFind,
+  axRowIndex,
+  axSubmenu,
+  clickMenuRow,
+  menuAccel,
+  menuWalkPlan,
+  openSubmenu,
+  pressMenuAccel,
+  waitAx
+} from '../lib/ax-menu.js';
 
 // A reduced fixture from the live Insert menu: node ids, roles, names, and the one open submenu.
 // Shaped exactly like CDP Accessibility.getFullAXTree nodes.
 
 function fixture() {
   return [
-    { nodeId: '1', role: { value: 'menu' }, childIds: ['2', '3', '4'] },
-    { nodeId: '2', role: { value: 'menuitem' }, name: { value: 'Image i ►' }, childIds: [] },
-    { nodeId: '3', role: { value: 'menuitem' }, name: { value: 'Page elements Updated p ►' }, childIds: ['5'] },
-    { nodeId: '4', role: { value: 'menuitem' }, name: { value: 'Comment m Ctrl+Alt+M' }, childIds: [] },
-    { nodeId: '5', role: { value: 'menu' }, childIds: ['6', '7'] },
-    { nodeId: '6', role: { value: 'menuitem' }, name: { value: 'Table of contents' }, childIds: [], backendDOMNodeId: 99 },
-    { nodeId: '7', role: { value: 'menuitem' }, name: { value: 'Header' }, childIds: [] }
+    {
+      nodeId: '1',
+      role: { value: 'menu' },
+      childIds: [
+        '2',
+        '3',
+        '4'
+      ]
+    },
+    {
+      nodeId: '2',
+      role: { value: 'menuitem' },
+      name: { value: 'Image i ►' },
+      childIds: []
+    },
+    {
+      nodeId: '3',
+      role: { value: 'menuitem' },
+      name: { value: 'Page elements Updated p ►' },
+      childIds: ['5']
+    },
+    {
+      nodeId: '4',
+      role: { value: 'menuitem' },
+      name: { value: 'Comment m Ctrl+Alt+M' },
+      childIds: []
+    },
+    {
+      nodeId: '5',
+      role: { value: 'menu' },
+      childIds: [
+        '6',
+        '7'
+      ]
+    },
+    {
+      nodeId: '6',
+      role: { value: 'menuitem' },
+      name: { value: 'Table of contents' },
+      childIds: [],
+      backendDOMNodeId: 99
+    },
+    {
+      nodeId: '7',
+      role: { value: 'menuitem' },
+      name: { value: 'Header' },
+      childIds: []
+    }
   ];
 }
 
@@ -30,7 +82,10 @@ test('children resolve by id and find filters by role and name', () => {
 
   assert.equal(kids.length, 3);
   assert.deepEqual(axFind(nodes, { role: 'menu' }).length, 2);
-  assert.equal(axFind(nodes, { role: 'menuitem', nameIncludes: 'page ELEM' })[0].nodeId, '3');
+  assert.equal(axFind(nodes, {
+    role: 'menuitem',
+    nameIncludes: 'page ELEM'
+  })[0].nodeId, '3');
   assert.equal(axSubmenu(nodes, kids[1]).nodeId, '5');
   assert.equal(axSubmenu(nodes, kids[0]), null);
   assert.equal(axRowIndex(kids, kids[2]), 2);
@@ -45,18 +100,27 @@ test('a walk plan downs to the 1-based row: nothing selected, Down lands on firs
 test('opening a submenu walks to the named row and proves a new menu appeared', async () => {
   const closed = fixture().filter((n) => n.nodeId !== '5' && n.nodeId !== '6' && n.nodeId !== '7');
   const opened = fixture();
-  const trees = [closed, opened];
+  const trees = [
+    closed,
+    opened
+  ];
   const keys = [];
   const submenu = await openSubmenu(
     {
       ax: async () => ({ nodes: trees.shift() ?? opened }),
-      key: async (k) => { keys.push(k); }
+      key: async (k) => {
+        keys.push(k);
+      }
     },
     closed[0],
     'page elements'
   );
 
-  assert.deepEqual(keys, ['ArrowDown', 'ArrowDown', 'ArrowRight']);
+  assert.deepEqual(keys, [
+    'ArrowDown',
+    'ArrowDown',
+    'ArrowRight'
+  ]);
   assert.equal(submenu.nodeId, '5');
 });
 
@@ -65,14 +129,25 @@ test('a submenu that never appears fails naming the row, not hammering keys', as
   const keys = [];
   await assert.rejects(
     () => openSubmenu(
-      { ax: async () => ({ nodes }), key: async (k) => { keys.push(k); }, sleep: async () => {} },
+      {
+        ax: async () => ({ nodes }),
+        key: async (k) => {
+          keys.push(k);
+        },
+        sleep: async () => {}
+      },
       nodes[0],
       'comment',
       { timeoutMs: 30 }
     ),
     /did not open after Right/
   );
-  assert.deepEqual(keys, ['ArrowDown', 'ArrowDown', 'ArrowDown', 'ArrowRight']);
+  assert.deepEqual(keys, [
+    'ArrowDown',
+    'ArrowDown',
+    'ArrowDown',
+    'ArrowRight'
+  ]);
 });
 
 test('a missing row aborts naming what is visible instead of hammering keys', async () => {
@@ -80,7 +155,12 @@ test('a missing row aborts naming what is visible instead of hammering keys', as
   let keys = 0;
   await assert.rejects(
     () => openSubmenu(
-      { ax: async () => ({ nodes }), key: async () => { keys += 1; } },
+      {
+        ax: async () => ({ nodes }),
+        key: async () => {
+          keys += 1;
+        }
+      },
       nodes[0],
       'Footnote'
     ),
@@ -113,23 +193,34 @@ test('a wait returns the satisfying tree, or null when the budget runs out', asy
       return { nodes: polls < 3 ? [] : [{ nodeId: 'x' }] };
     },
     (candidates) => candidates.length > 0,
-    { sleep: async () => {}, timeoutMs: 1000 }
+    {
+      sleep: async () => {},
+      timeoutMs: 1000
+    }
   );
   assert.equal(nodes.length, 1);
   assert.equal(polls, 3);
-  const missed = await waitAx(async () => ({ nodes: [] }), (candidates) => candidates.length > 0, { sleep: async () => {}, timeoutMs: 30 });
+  const missed = await waitAx(async () => ({ nodes: [] }), (candidates) => candidates.length > 0, {
+    sleep: async () => {},
+    timeoutMs: 30
+  });
   assert.equal(missed, null);
 });
 
 test('an accelerator opens the submenu with one keypress', async () => {
   const closed = fixture().filter((n) => n.nodeId !== '5' && n.nodeId !== '6' && n.nodeId !== '7');
   const opened = fixture();
-  const trees = [closed, opened];
+  const trees = [
+    closed,
+    opened
+  ];
   const keys = [];
   const submenu = await pressMenuAccel(
     {
       ax: async () => ({ nodes: trees.shift() ?? opened }),
-      key: async (k) => { keys.push(k); },
+      key: async (k) => {
+        keys.push(k);
+      },
       sleep: async () => {}
     },
     closed[0],
@@ -142,13 +233,27 @@ test('an accelerator opens the submenu with one keypress', async () => {
 
 test('a row without an accelerator refuses before any key moves', async () => {
   const nodes = [
-    { nodeId: '1', role: { value: 'menu' }, childIds: ['2'] },
-    { nodeId: '2', role: { value: 'menuitem' }, name: { value: 'Table of contents' }, childIds: [] }
+    {
+      nodeId: '1',
+      role: { value: 'menu' },
+      childIds: ['2']
+    },
+    {
+      nodeId: '2',
+      role: { value: 'menuitem' },
+      name: { value: 'Table of contents' },
+      childIds: []
+    }
   ];
   let keys = 0;
   await assert.rejects(
     () => pressMenuAccel(
-      { ax: async () => ({ nodes }), key: async () => { keys += 1; } },
+      {
+        ax: async () => ({ nodes }),
+        key: async () => {
+          keys += 1;
+        }
+      },
       nodes[0],
       'contents'
     ),
@@ -167,11 +272,22 @@ test('a row click resolves a fresh box and clicks its center', async () => {
         assert.equal(id, 99);
         return [100, 200, 300, 200, 300, 240, 100, 240];
       },
-      click: async (x, y) => { clicked = [x, y]; }
+      click: async (
+        x,
+        y
+      ) => {
+        clicked = [
+          x,
+          y
+        ];
+      }
     },
     nodes[4],
     'table of contents'
   );
 
-  assert.deepEqual(clicked, [200, 220]);
+  assert.deepEqual(clicked, [
+    200,
+    220
+  ]);
 });

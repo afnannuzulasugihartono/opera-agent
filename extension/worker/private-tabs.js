@@ -18,7 +18,10 @@ export async function isPrivateTab(tabId) {
   return (await privateTabIds()).has(tabId);
 }
 
-export async function setPrivateTab(tabId, value) {
+export async function setPrivateTab(
+  tabId,
+  value
+) {
   const ids = await privateTabIds();
   if (value) ids.add(tabId); else ids.delete(tabId);
   await chrome.storage.local.set({ [PRIVATE_TABS_KEY]: [...ids].slice(-200) });

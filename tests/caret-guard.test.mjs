@@ -6,36 +6,72 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { HARM_CARET_MOVE, HARM_NONE } from '../local/read-strategy.js';
-import { createCaretGuard, gateRead, rememberedState, restoreVerdict } from '../local/caret-guard.js';
+import {
+  HARM_CARET_MOVE,
+  HARM_NONE
+} from '../local/read-strategy.js';
+import {
+  createCaretGuard,
+  gateRead,
+  rememberedState,
+  restoreVerdict
+} from '../local/caret-guard.js';
 
 test('a read that harms nothing is always allowed', () => {
-  const gate = gateRead({ harm: HARM_NONE, allowCaretMove: false });
+  const gate = gateRead({
+    harm: HARM_NONE,
+    allowCaretMove: false
+  });
   assert.equal(gate.allowed, true);
   assert.ok(gate.why.length > 0);
 });
 
 test('a caret-move read with no evidence of restoration is refused', () => {
-  const gate = gateRead({ harm: HARM_CARET_MOVE, allowCaretMove: false });
+  const gate = gateRead({
+    harm: HARM_CARET_MOVE,
+    allowCaretMove: false
+  });
   assert.equal(gate.allowed, false);
   assert.match(gate.why, /caret/i);
 });
 
 test('a caret-move read runs only with consent recorded on the call', () => {
-  const gate = gateRead({ harm: HARM_CARET_MOVE, allowCaretMove: true });
+  const gate = gateRead({
+    harm: HARM_CARET_MOVE,
+    allowCaretMove: true
+  });
   assert.equal(gate.allowed, true);
 });
 
 test('consent is per call and never carried', () => {
-  assert.equal(gateRead({ harm: HARM_CARET_MOVE, allowCaretMove: true }).allowed, true);
-  assert.equal(gateRead({ harm: HARM_CARET_MOVE, allowCaretMove: false }).allowed, false);
+  assert.equal(gateRead({
+    harm: HARM_CARET_MOVE,
+    allowCaretMove: true
+  }).allowed, true);
+  assert.equal(gateRead({
+    harm: HARM_CARET_MOVE,
+    allowCaretMove: false
+  }).allowed, false);
   assert.equal(gateRead({ harm: HARM_CARET_MOVE }).allowed, false);
 });
 
 test('a canvas caret that is not in the DOM cannot be promised back', () => {
-  const mark = rememberedState({ rangeCount: 1, collapsed: true, anchorOffset: 0, hostTextLength: 0 });
+  const mark = rememberedState({
+    rangeCount: 1,
+    collapsed: true,
+    anchorOffset: 0,
+    hostTextLength: 0
+  });
   assert.equal(mark.restorable, false);
-  const verdict = restoreVerdict({ before: mark, after: { rangeCount: 1, collapsed: true, anchorOffset: 0, hostTextLength: 0 } });
+  const verdict = restoreVerdict({
+    before: mark,
+    after: {
+      rangeCount: 1,
+      collapsed: true,
+      anchorOffset: 0,
+      hostTextLength: 0
+    }
+  });
   assert.equal(verdict.restored, false);
   assert.ok(verdict.why.length > 0);
 });
@@ -45,21 +81,66 @@ test('a canvas caret that is not in the DOM cannot be promised back', () => {
 // Measured on a real page while writing the verdict: two adjacent paragraphs of equal length hold the same anchorOffset, and only the path to the host tells them apart.
 
 test('a DOM selection with a real position is restorable', () => {
-  const mark = rememberedState({ rangeCount: 1, collapsed: true, anchorOffset: 42, hostTextLength: 300, hostPath: '0/3/2:1' });
+  const mark = rememberedState({
+    rangeCount: 1,
+    collapsed: true,
+    anchorOffset: 42,
+    hostTextLength: 300,
+    hostPath: '0/3/2:1'
+  });
   assert.equal(mark.restorable, true);
-  const verdict = restoreVerdict({ before: mark, after: { rangeCount: 1, collapsed: true, anchorOffset: 42, hostTextLength: 300, hostPath: '0/3/2:1' } });
+  const verdict = restoreVerdict({
+    before: mark,
+    after: {
+      rangeCount: 1,
+      collapsed: true,
+      anchorOffset: 42,
+      hostTextLength: 300,
+      hostPath: '0/3/2:1'
+    }
+  });
   assert.equal(verdict.restored, true);
 });
 
 test('a DOM selection that moved is reported as moved, not as restored', () => {
-  const mark = rememberedState({ rangeCount: 1, collapsed: true, anchorOffset: 42, hostTextLength: 300, hostPath: '0/3/2:1' });
-  const verdict = restoreVerdict({ before: mark, after: { rangeCount: 1, collapsed: true, anchorOffset: 900, hostTextLength: 300, hostPath: '0/3/2:1' } });
+  const mark = rememberedState({
+    rangeCount: 1,
+    collapsed: true,
+    anchorOffset: 42,
+    hostTextLength: 300,
+    hostPath: '0/3/2:1'
+  });
+  const verdict = restoreVerdict({
+    before: mark,
+    after: {
+      rangeCount: 1,
+      collapsed: true,
+      anchorOffset: 900,
+      hostTextLength: 300,
+      hostPath: '0/3/2:1'
+    }
+  });
   assert.equal(verdict.restored, false);
 });
 
 test('a caret that moved to another node of the same length is reported as moved', () => {
-  const mark = rememberedState({ rangeCount: 1, collapsed: true, anchorOffset: 42, hostTextLength: 300, hostPath: '0/3/2:1' });
-  const verdict = restoreVerdict({ before: mark, after: { rangeCount: 1, collapsed: true, anchorOffset: 42, hostTextLength: 300, hostPath: '0/3/2:5' } });
+  const mark = rememberedState({
+    rangeCount: 1,
+    collapsed: true,
+    anchorOffset: 42,
+    hostTextLength: 300,
+    hostPath: '0/3/2:1'
+  });
+  const verdict = restoreVerdict({
+    before: mark,
+    after: {
+      rangeCount: 1,
+      collapsed: true,
+      anchorOffset: 42,
+      hostTextLength: 300,
+      hostPath: '0/3/2:5'
+    }
+  });
   assert.equal(verdict.restored, false, 'the offset and the length matched, and the caret is still somewhere else');
 });
 
@@ -82,7 +163,12 @@ test('the guard remembers a position and reports it back', async () => {
 });
 
 test('the guard reports a canvas caret as something it cannot put back', async () => {
-  const evaluate = async () => ({ rangeCount: 1, collapsed: true, anchorOffset: 0, hostTextLength: 0 });
+  const evaluate = async () => ({
+    rangeCount: 1,
+    collapsed: true,
+    anchorOffset: 0,
+    hostTextLength: 0
+  });
   const guard = createCaretGuard({ evaluate });
   const mark = await guard.remember();
   assert.equal(mark.restorable, false);

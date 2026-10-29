@@ -17,7 +17,10 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { createMcpServer, TOOLS } from '../local/mcp-server.js';
+import {
+  createMcpServer,
+  TOOLS
+} from '../local/mcp-server.js';
 
 // WHY every method here is async.
 // The real driver is async on every call, and a synchronous fake made the server's missing await invisible: it serialised a promise as {} and the lock still passed.
@@ -27,38 +30,189 @@ function fakeDriver() {
   const calls = [];
   return {
     calls,
-    tabs: async () => [{ id: 't1', url: 'https://docs.google.com/', title: 'Docs' }],
-    open: async (url) => { calls.push(['open', url]); return { id: 't2', url, title: '' }; },
-    close: async (tabId) => { calls.push(['close', tabId]); return { id: tabId, closed: true }; },
-    read: async () => ({ url: 'https://docs.google.com/document/d/1', title: 'Paper', text: 'canvas text' }),
-    find: async () => [{ ref: 'r1', text: 'Click to add title', x: 482, y: 396 }],
-    click: async (x, y, handle = null) => { calls.push(['click', x, y, handle]); return { x, y, handle }; },
-    hover: async (x, y) => { calls.push(['hover', x, y]); return { x, y }; },
-    clickRow: async (role, name) => { calls.push(['clickRow', role, name]); return { role, name, x: 1, y: 2 }; },
-    key: async (name, mods) => { calls.push(['key', name, mods]); return { key: name }; },
-    type: async (text) => { calls.push(['type', text]); return { chars: text.length }; },
-    keys: async (events) => { calls.push(['keys', events]); return { events: events.length }; },
-    settle: async (options) => { calls.push(['settle', options]); return { waitedMs: 1, why: 'quiet' }; },
-    waitForText: async (text, options) => {
-      calls.push(['waitForText', text, options]);
-      return { url: 'https://docs.google.com/document/d/1', title: 'Paper', text: `the ${text} is here` };
+    tabs: async () => [{
+      id: 't1',
+      url: 'https://docs.google.com/',
+      title: 'Docs'
+    }],
+    open: async (url) => {
+      calls.push([
+        'open',
+        url
+      ]); return {
+        id: 't2',
+        url,
+        title: ''
+      };
     },
-    snapshot: async () => [{ role: 'menuitem', name: 'Insert', x: 204, y: 46 }],
-    pageState: async () => ({ url: 'https://docs.google.com/document/d/1', title: 'Paper', textChars: 11, focus: null }),
-    caretLine: async () => ({ line: 'Kajian pustaka mencakup', caretMoved: true, caretRestored: true }),
-    capture: async (opts) => { calls.push(['capture', opts]); return 'BASE64JPEG'; },
-    navigate: async (url) => { calls.push(['navigate', url]); return { url, waited: true }; },
+    close: async (tabId) => {
+      calls.push([
+        'close',
+        tabId
+      ]); return {
+        id: tabId,
+        closed: true
+      };
+    },
+    read: async () => ({
+      url: 'https://docs.google.com/document/d/1',
+      title: 'Paper',
+      text: 'canvas text'
+    }),
+    find: async () => [{
+      ref: 'r1',
+      text: 'Click to add title',
+      x: 482,
+      y: 396
+    }],
+    click: async (
+      x,
+      y,
+      handle = null
+    ) => {
+      calls.push([
+        'click',
+        x,
+        y,
+        handle
+      ]); return {
+        x,
+        y,
+        handle
+      };
+    },
+    hover: async (
+      x,
+      y
+    ) => {
+      calls.push([
+        'hover',
+        x,
+        y
+      ]); return {
+        x,
+        y
+      };
+    },
+    clickRow: async (
+      role,
+      name
+    ) => {
+      calls.push([
+        'clickRow',
+        role,
+        name
+      ]); return {
+        role,
+        name,
+        x: 1,
+        y: 2
+      };
+    },
+    key: async (
+      name,
+      mods
+    ) => {
+      calls.push([
+        'key',
+        name,
+        mods
+      ]); return { key: name };
+    },
+    type: async (text) => {
+      calls.push([
+        'type',
+        text
+      ]); return { chars: text.length };
+    },
+    keys: async (events) => {
+      calls.push([
+        'keys',
+        events
+      ]); return { events: events.length };
+    },
+    settle: async (options) => {
+      calls.push([
+        'settle',
+        options
+      ]); return {
+        waitedMs: 1,
+        why: 'quiet'
+      };
+    },
+    waitForText: async (
+      text,
+      options
+    ) => {
+      calls.push([
+        'waitForText',
+        text,
+        options
+      ]);
+      return {
+        url: 'https://docs.google.com/document/d/1',
+        title: 'Paper',
+        text: `the ${text} is here`
+      };
+    },
+    snapshot: async () => [{
+      role: 'menuitem',
+      name: 'Insert',
+      x: 204,
+      y: 46
+    }],
+    pageState: async () => ({
+      url: 'https://docs.google.com/document/d/1',
+      title: 'Paper',
+      textChars: 11,
+      focus: null
+    }),
+    caretLine: async () => ({
+      line: 'Kajian pustaka mencakup',
+      caretMoved: true,
+      caretRestored: true
+    }),
+    capture: async (opts) => {
+      calls.push([
+        'capture',
+        opts
+      ]); return 'BASE64JPEG';
+    },
+    navigate: async (url) => {
+      calls.push([
+        'navigate',
+        url
+      ]); return {
+        url,
+        waited: true
+      };
+    },
     ensureFront: async (opts) => {
-      calls.push(['ensureFront', opts]);
-      return { window: 'the page hears input', checked: 'page' };
+      calls.push([
+        'ensureFront',
+        opts
+      ]);
+      return {
+        window: 'the page hears input',
+        checked: 'page'
+      };
     },
     captureSized: async (opts) => {
-      calls.push(['capture', opts]);
+      calls.push([
+        'capture',
+        opts
+      ]);
       return {
         data: 'BASE64JPEG',
-        viewport: { width: 1186, height: 670 },
+        viewport: {
+          width: 1186,
+          height: 670
+        },
         dpr: 1.25,
-        image: { width: 1483, height: 838 },
+        image: {
+          width: 1483,
+          height: 838
+        },
         note: 'image pixels are css pixels times 1.25'
       };
     },
@@ -73,27 +227,59 @@ const openLease = () => {
   const claims = [];
   return {
     claims,
-    claim: async (tabId, owner, ttlMs) => {
-      claims.push([String(tabId), owner, ttlMs]);
-      return { granted: true, holder: { owner, expiresAt: Date.now() + (ttlMs ?? 60000) } };
+    claim: async (
+      tabId,
+      owner,
+      ttlMs
+    ) => {
+      claims.push([
+        String(tabId),
+        owner,
+        ttlMs
+      ]);
+      return {
+        granted: true,
+        holder: {
+          owner,
+          expiresAt: Date.now() + (ttlMs ?? 60000)
+        }
+      };
     },
-    release: async (tabId, owner) => {
-      claims.push(['release', String(tabId), owner]);
+    release: async (
+      tabId,
+      owner
+    ) => {
+      claims.push([
+        'release',
+        String(tabId),
+        owner
+      ]);
       return true;
     }
   };
 };
 
-const ctx = (driver = fakeDriver(), lease = openLease()) => ({
+const ctx = (
+  driver = fakeDriver(),
+  lease = openLease()
+) => ({
   driver,
-  browsers: [{ id: 'chrome', binary: 'C:/chrome.exe' }],
+  browsers: [{
+    id: 'chrome',
+    binary: 'C:/chrome.exe'
+  }],
   port: 9450,
   lease
 });
 
 test('initialize answers with a protocol version and who this server is', async () => {
   const server = createMcpServer(ctx());
-  const res = await server.handle({ jsonrpc: '2.0', id: 1, method: 'initialize', params: {} });
+  const res = await server.handle({
+    jsonrpc: '2.0',
+    id: 1,
+    method: 'initialize',
+    params: {}
+  });
 
   assert.equal(res.jsonrpc, '2.0');
   assert.equal(res.id, 1);
@@ -103,7 +289,12 @@ test('initialize answers with a protocol version and who this server is', async 
 
 test('every advertised tool carries a schema, or a client cannot call it', async () => {
   const server = createMcpServer(ctx());
-  const res = await server.handle({ jsonrpc: '2.0', id: 2, method: 'tools/list', params: {} });
+  const res = await server.handle({
+    jsonrpc: '2.0',
+    id: 2,
+    method: 'tools/list',
+    params: {}
+  });
 
   assert.ok(res.result.tools.length > 0);
   for (const tool of res.result.tools) {
@@ -115,7 +306,12 @@ test('every advertised tool carries a schema, or a client cannot call it', async
 
 test('the surface covers what the driver can actually do', async () => {
   const server = createMcpServer(ctx());
-  const { result } = await server.handle({ jsonrpc: '2.0', id: 3, method: 'tools/list', params: {} });
+  const { result } = await server.handle({
+    jsonrpc: '2.0',
+    id: 3,
+    method: 'tools/list',
+    params: {}
+  });
   const names = result.tools.map((t) => t.name).sort();
 
   for (const required of ['browser_status', 'open_url', 'close_tab', 'list_tabs', 'read_page', 'find_elements', 'click', 'click_row', 'hover', 'press_key', 'type', 'append', 'scroll', 'get_computed', 'stream_keys', 'wait_for', 'caret_line', 'upload', 'drop_file', 'intercept_file_chooser', 'download', 'capture_page', 'ax_snapshot', 'browser_burst']) {
@@ -134,7 +330,9 @@ test('report_build turns an exported sheet into a checked report without a brows
   try {
     const server = createMcpServer(ctx());
     const res = await server.handle({
-      jsonrpc: '2.0', id: 7, method: 'tools/call',
+      jsonrpc: '2.0',
+      id: 7,
+      method: 'tools/call',
       params: {
         name: 'report_build',
         arguments: {
@@ -154,7 +352,10 @@ test('report_build turns an exported sheet into a checked report without a brows
     assert.equal(payload.report.figures.find((figure) => figure.id === 'total').cents, 325000000);
     assert.ok(fs.existsSync(payload.out), 'the report file is written beside the source');
   } finally {
-    fs.rmSync(dir, { recursive: true, force: true });
+    fs.rmSync(dir, {
+      recursive: true,
+      force: true
+    });
   }
 });
 
@@ -165,19 +366,49 @@ test('document_build turns a JSON paper into a checked document without a browse
     title: 'Menu inventory',
     sections: [{
       heading: 'Insert menu',
-      tables: [{ headers: ['Item', 'Shortcut'], rows: [['Image', 'Ctrl+Alt+I'], ['Table', '']] }],
+      tables: [{
+        headers: [
+          'Item',
+          'Shortcut'
+        ],
+        rows: [
+          [
+            'Image',
+            'Ctrl+Alt+I'
+          ],
+          [
+            'Table',
+            ''
+          ]
+        ]
+      }],
       graphs: [{
         kind: 'count',
         title: 'Items',
-        source: { table: 0, labelColumn: 'Item', aggregate: 'count' },
-        data: [{ label: 'Image', value: 1 }, { label: 'Table', value: 1 }]
+        source: {
+          table: 0,
+          labelColumn: 'Item',
+          aggregate: 'count'
+        },
+        data: [
+          {
+            label: 'Image',
+            value: 1
+          },
+          {
+            label: 'Table',
+            value: 1
+          }
+        ]
       }]
     }]
   }));
   try {
     const server = createMcpServer(ctx());
     const res = await server.handle({
-      jsonrpc: '2.0', id: 71, method: 'tools/call',
+      jsonrpc: '2.0',
+      id: 71,
+      method: 'tools/call',
       params: {
         name: 'document_build',
         arguments: { source }
@@ -186,10 +417,16 @@ test('document_build turns a JSON paper into a checked document without a browse
     assert.equal(res.result.isError, undefined);
     const payload = JSON.parse(res.result.content[0].text);
     assert.equal(payload.verified.ok, true);
-    assert.deepEqual(payload.document.figures[0].source.rows, [0, 1]);
+    assert.deepEqual(payload.document.figures[0].source.rows, [
+      0,
+      1
+    ]);
     assert.ok(fs.existsSync(payload.out), 'the document file is written beside the source');
   } finally {
-    fs.rmSync(dir, { recursive: true, force: true });
+    fs.rmSync(dir, {
+      recursive: true,
+      force: true
+    });
   }
 });
 
@@ -200,18 +437,44 @@ test('document_build refuses a graph with no source and writes nothing', async (
     title: 'Menu inventory',
     sections: [{
       heading: 'Insert menu',
-      tables: [{ headers: ['Item', 'Shortcut'], rows: [['Image', 'Ctrl+Alt+I'], ['Table', '']] }],
+      tables: [{
+        headers: [
+          'Item',
+          'Shortcut'
+        ],
+        rows: [
+          [
+            'Image',
+            'Ctrl+Alt+I'
+          ],
+          [
+            'Table',
+            ''
+          ]
+        ]
+      }],
       graphs: [{
         kind: 'count',
         title: 'Items',
-        data: [{ label: 'Image', value: 1 }, { label: 'Table', value: 1 }]
+        data: [
+          {
+            label: 'Image',
+            value: 1
+          },
+          {
+            label: 'Table',
+            value: 1
+          }
+        ]
       }]
     }]
   }));
   try {
     const server = createMcpServer(ctx());
     const res = await server.handle({
-      jsonrpc: '2.0', id: 72, method: 'tools/call',
+      jsonrpc: '2.0',
+      id: 72,
+      method: 'tools/call',
       params: {
         name: 'document_build',
         arguments: { source }
@@ -221,7 +484,10 @@ test('document_build refuses a graph with no source and writes nothing', async (
     assert.match(res.error.message, /source/);
     assert.ok(!fs.existsSync(path.join(dir, 'bad.document.json')), 'no artifact is written for an invalid paper');
   } finally {
-    fs.rmSync(dir, { recursive: true, force: true });
+    fs.rmSync(dir, {
+      recursive: true,
+      force: true
+    });
   }
 });
 
@@ -253,7 +519,10 @@ test('the append says how it decides it reached the end, and when it cannot know
   assert.match(append.description, /atEnd is measured, not assumed/);
   assert.match(append.description, /found:false/);
   assert.match(append.description, /table cell/);
-  assert.deepEqual(Object.keys(append.inputSchema.properties).sort(), ['tabId', 'text']);
+  assert.deepEqual(Object.keys(append.inputSchema.properties).sort(), [
+    'tabId',
+    'text'
+  ]);
   assert.deepEqual(append.inputSchema.required, ['text']);
 });
 
@@ -270,28 +539,62 @@ test('the computed read is described by the questions it settles, not by its fie
   assert.match(tool.description, /turned blue/);
   assert.match(tool.description, /on screen/);
   assert.match(tool.description, /never changes anything/);
-  assert.deepEqual(Object.keys(tool.inputSchema.properties).sort(), ['selector', 'tabId', 'x', 'y']);
+  assert.deepEqual(Object.keys(tool.inputSchema.properties).sort(), [
+    'selector',
+    'tabId',
+    'x',
+    'y'
+  ]);
   assert.equal(tool.inputSchema.required, undefined);
 });
 
 test('the computed read reaches the driver and answers what it read', async () => {
   const c = ctx();
   const server = createMcpServer(c);
-  c.driver.computed = async (options) => { c.driver.calls.push(['computed', options]); return { found: true, tag: 'BUTTON', name: 'Bold', background: 'rgb(26, 115, 232)', rect: { onScreen: true } }; };
+  c.driver.computed = async (options) => {
+    c.driver.calls.push([
+      'computed',
+      options
+    ]); return {
+      found: true,
+      tag: 'BUTTON',
+      name: 'Bold',
+      background: 'rgb(26, 115, 232)',
+      rect: { onScreen: true }
+    };
+  };
 
   const res = await server.handle({
-    jsonrpc: '2.0', id: 99, method: 'tools/call',
-    params: { name: 'get_computed', arguments: { selector: 'button.bold' } }
+    jsonrpc: '2.0',
+    id: 99,
+    method: 'tools/call',
+    params: {
+      name: 'get_computed',
+      arguments: { selector: 'button.bold' }
+    }
   });
 
-  assert.deepEqual(c.driver.calls.filter(([name]) => name === 'computed'), [['computed', { selector: 'button.bold', x: undefined, y: undefined }]]);
+  assert.deepEqual(c.driver.calls.filter(([name]) => name === 'computed'), [[
+    'computed',
+    {
+      selector: 'button.bold',
+      x: undefined,
+      y: undefined
+    }
+  ]]);
   assert.match(res.result.content[0].text, /"name": "Bold"/);
 });
 
 test('scroll takes pixels, the end, a target text or a selector, and nothing is required', () => {
   const scroll = TOOLS.find((tool) => tool.name === 'scroll');
 
-  assert.deepEqual(Object.keys(scroll.inputSchema.properties).sort(), ['end', 'selector', 'tabId', 'text', 'y']);
+  assert.deepEqual(Object.keys(scroll.inputSchema.properties).sort(), [
+    'end',
+    'selector',
+    'tabId',
+    'text',
+    'y'
+  ]);
   assert.equal(scroll.inputSchema.required, undefined, 'a scroll needs no argument to be refused: it must be answerable either way');
   assert.match(scroll.description, /which scroll container moved/);
   assert.match(scroll.description, /travelPx/);
@@ -302,38 +605,86 @@ test('scroll reaches the driver with the arguments it was given', async () => {
   const c = ctx();
   const server = createMcpServer(c);
   c.driver.scroll = async (options) => {
-    c.driver.calls.push(['scroll', options]);
+    c.driver.calls.push([
+      'scroll',
+      options
+    ]);
     return {
       movedPx: 1400,
-      from: { x: 0, y: 0 },
-      to: { x: 0, y: 1400 },
+      from: {
+        x: 0,
+        y: 0
+      },
+      to: {
+        x: 0,
+        y: 1400
+      },
       atEnd: false,
       root: 'document',
-      target: { found: false, visible: false, y: 0, text: '' },
+      target: {
+        found: false,
+        visible: false,
+        y: 0,
+        text: ''
+      },
       why: ''
     };
   };
 
   const res = await server.handle({
-    jsonrpc: '2.0', id: 98, method: 'tools/call',
-    params: { name: 'scroll', arguments: { y: 1400 } }
+    jsonrpc: '2.0',
+    id: 98,
+    method: 'tools/call',
+    params: {
+      name: 'scroll',
+      arguments: { y: 1400 }
+    }
   });
 
-  assert.deepEqual(c.driver.calls.filter(([name]) => name === 'scroll'), [['scroll', { y: 1400, end: false, text: undefined, selector: undefined }]]);
+  assert.deepEqual(c.driver.calls.filter(([name]) => name === 'scroll'), [[
+    'scroll',
+    {
+      y: 1400,
+      end: false,
+      text: undefined,
+      selector: undefined
+    }
+  ]]);
   assert.match(res.result.content[0].text, /"movedPx": 1400/);
 });
 
 test('append reaches the driver as one call with the text intact', async () => {
   const c = ctx();
   const server = createMcpServer(c);
-  c.driver.append = async (text) => { c.driver.calls.push(['append', text]); return { chars: text.length, landed: true, atEnd: true, placed: { found: true, index: 9 } }; };
+  c.driver.append = async (text) => {
+    c.driver.calls.push([
+      'append',
+      text
+    ]); return {
+      chars: text.length,
+      landed: true,
+      atEnd: true,
+      placed: {
+        found: true,
+        index: 9
+      }
+    };
+  };
 
   const res = await server.handle({
-    jsonrpc: '2.0', id: 97, method: 'tools/call',
-    params: { name: 'append', arguments: { text: 'one more line' } }
+    jsonrpc: '2.0',
+    id: 97,
+    method: 'tools/call',
+    params: {
+      name: 'append',
+      arguments: { text: 'one more line' }
+    }
   });
 
-  assert.deepEqual(c.driver.calls.filter(([name]) => name === 'append'), [['append', 'one more line']]);
+  assert.deepEqual(c.driver.calls.filter(([name]) => name === 'append'), [[
+    'append',
+    'one more line'
+  ]]);
   assert.match(res.result.content[0].text, /"atEnd": true/);
 });
 
@@ -341,32 +692,65 @@ test('a call runs the tool and returns its result as text content', async () => 
   const c = ctx();
   const server = createMcpServer(c);
   const res = await server.handle({
-    jsonrpc: '2.0', id: 4, method: 'tools/call',
-    params: { name: 'open_url', arguments: { url: 'https://sheets.google.com/' } }
+    jsonrpc: '2.0',
+    id: 4,
+    method: 'tools/call',
+    params: {
+      name: 'open_url',
+      arguments: { url: 'https://sheets.google.com/' }
+    }
   });
 
   assert.ok(res.result.content[0].text.includes('sheets.google.com'));
-  assert.deepEqual(c.driver.calls[0], ['open', 'https://sheets.google.com/']);
+  assert.deepEqual(c.driver.calls[0], [
+    'open',
+    'https://sheets.google.com/'
+  ]);
 });
 
 test('a stream reaches the driver as one call with its events intact', async () => {
   const c = ctx();
   const server = createMcpServer(c);
-  const events = [{ key: '1', modifiers: ['Control', 'Alt'] }, { text: 'Hi' }];
+  const events = [
+    {
+      key: '1',
+      modifiers: [
+        'Control',
+        'Alt'
+      ]
+    },
+    { text: 'Hi' }
+  ];
   const res = await server.handle({
-    jsonrpc: '2.0', id: 9, method: 'tools/call',
-    params: { name: 'stream_keys', arguments: { events } }
+    jsonrpc: '2.0',
+    id: 9,
+    method: 'tools/call',
+    params: {
+      name: 'stream_keys',
+      arguments: { events }
+    }
   });
 
   assert.match(res.result.content[0].text, /"events": 2/);
-  assert.deepEqual(c.driver.calls.filter(([name]) => !['ensureFront', 'settle'].includes(name)), [['keys', events]]);
+  assert.deepEqual(c.driver.calls.filter(([name]) => ![
+    'ensureFront',
+    'settle'
+  ].includes(name)), [[
+    'keys',
+    events
+  ]]);
 });
 
 test('a snapshot reaches the driver and comes back as readable text', async () => {
   const server = createMcpServer(ctx());
   const res = await server.handle({
-    jsonrpc: '2.0', id: 10, method: 'tools/call',
-    params: { name: 'ax_snapshot', arguments: {} }
+    jsonrpc: '2.0',
+    id: 10,
+    method: 'tools/call',
+    params: {
+      name: 'ax_snapshot',
+      arguments: {}
+    }
   });
 
   assert.match(res.result.content[0].text, /Insert/);
@@ -386,8 +770,16 @@ test('an input action brings the window forward and says so', async () => {
   const server = createMcpServer(c);
 
   const res = await server.handle({
-    jsonrpc: '2.0', id: 81, method: 'tools/call',
-    params: { name: 'click', arguments: { x: 100, y: 200 } }
+    jsonrpc: '2.0',
+    id: 81,
+    method: 'tools/call',
+    params: {
+      name: 'click',
+      arguments: {
+        x: 100,
+        y: 200
+      }
+    }
   });
 
   assert.ok(c.driver.calls.some(([name]) => name === 'ensureFront'), 'the click asked about the window first');
@@ -410,8 +802,13 @@ test('an input action is refused when the window came forward but the page is st
   const server = createMcpServer(c);
 
   const res = await server.handle({
-    jsonrpc: '2.0', id: 97, method: 'tools/call',
-    params: { name: 'type', arguments: { text: 'hello' } }
+    jsonrpc: '2.0',
+    id: 97,
+    method: 'tools/call',
+    params: {
+      name: 'type',
+      arguments: { text: 'hello' }
+    }
   });
 
   assert.match(res.error.message, /refused: brought Paper - Google Chrome back from the taskbar, but the page still cannot hear input/);
@@ -424,8 +821,13 @@ test('a read pays nothing for the window, because it changes nothing about it', 
   const server = createMcpServer(c);
 
   await server.handle({
-    jsonrpc: '2.0', id: 82, method: 'tools/call',
-    params: { name: 'read_page', arguments: {} }
+    jsonrpc: '2.0',
+    id: 82,
+    method: 'tools/call',
+    params: {
+      name: 'read_page',
+      arguments: {}
+    }
   });
 
   assert.ok(!c.driver.calls.some(([name]) => name === 'ensureFront'), 'reading does not steal the human attention');
@@ -435,16 +837,56 @@ test('a read pays nothing for the window, because it changes nothing about it', 
 // Measured live on this machine: browser_status answered focused true with Brave in front while the drive was on a Chrome tab, because the answer asked "is any browser in front" and the machine had three browsers on it.
 // An agent that reads that never learns the window it is driving is somewhere else, so the answer now names the browser in front and means "ours" by the titles of the tabs we actually drive.
 
-const statusCtx = (foreground, titles) => {
+const statusCtx = (
+  foreground,
+  titles
+) => {
   const driver = fakeDriver();
-  driver.windowState = async () => ({ platform: 'win32', foreground, windows: [foreground, 'Paper - Google Chrome'], focused: false, why: '' });
-  driver.tabs = async () => titles.map((title, index) => ({ id: `t${index}`, url: `https://docs.google.com/${index}`, title }));
-  return { driver, browsers: [{ id: 'chrome', name: 'Google Chrome' }, { id: 'brave', name: 'Brave' }], port: 9450 };
+  driver.windowState = async () => ({
+    platform: 'win32',
+    foreground,
+    windows: [
+      foreground,
+      'Paper - Google Chrome'
+    ],
+    focused: false,
+    why: ''
+  });
+  driver.tabs = async () => titles.map((
+    title,
+    index
+  ) => ({
+    id: `t${index}`,
+    url: `https://docs.google.com/${index}`,
+    title
+  }));
+  return {
+    driver,
+    browsers: [
+      {
+        id: 'chrome',
+        name: 'Google Chrome'
+      },
+      {
+        id: 'brave',
+        name: 'Brave'
+      }
+    ],
+    port: 9450
+  };
 };
 
 const statusOf = async (context) => {
   const server = createMcpServer(context);
-  const res = await server.handle({ jsonrpc: '2.0', id: 90, method: 'tools/call', params: { name: 'browser_status', arguments: {} } });
+  const res = await server.handle({
+    jsonrpc: '2.0',
+    id: 90,
+    method: 'tools/call',
+    params: {
+      name: 'browser_status',
+      arguments: {}
+    }
+  });
   return JSON.parse(res.result.content[0].text).window;
 };
 
@@ -483,7 +925,10 @@ const namedCtx = (tabs) => {
   driver.tabs = async () => tabs;
   return {
     driver,
-    browsers: [{ id: 'chrome', name: 'Google Chrome' }],
+    browsers: [{
+      id: 'chrome',
+      name: 'Google Chrome'
+    }],
     port: 9450,
     resolveTab: async () => tabs.map((page) => page.id),
     open: async () => driver,
@@ -492,16 +937,40 @@ const namedCtx = (tabs) => {
 };
 
 const PAGES = [
-  { id: '111', url: 'https://opera-agent.pages.dev/beranda', title: 'Opera Agent' },
-  { id: '222', url: 'https://docs.google.com/document/d/one', title: 'Thesis - Google Docs' },
-  { id: '333', url: 'https://docs.google.com/document/d/two', title: 'Notes - Google Docs' }
+  {
+    id: '111',
+    url: 'https://opera-agent.pages.dev/beranda',
+    title: 'Opera Agent'
+  },
+  {
+    id: '222',
+    url: 'https://docs.google.com/document/d/one',
+    title: 'Thesis - Google Docs'
+  },
+  {
+    id: '333',
+    url: 'https://docs.google.com/document/d/two',
+    title: 'Notes - Google Docs'
+  }
 ];
 
-const clickOn = async (context, tabId) => {
+const clickOn = async (
+  context,
+  tabId
+) => {
   const server = createMcpServer(context);
   const res = await server.handle({
-    jsonrpc: '2.0', id: 95, method: 'tools/call',
-    params: { name: 'click', arguments: { tabId, x: 10, y: 20 } }
+    jsonrpc: '2.0',
+    id: 95,
+    method: 'tools/call',
+    params: {
+      name: 'click',
+      arguments: {
+        tabId,
+        x: 10,
+        y: 20
+      }
+    }
   });
   if (res.error) return { failed: String(res.error.message) };
   return JSON.parse(res.result.content[0].text);
@@ -512,7 +981,11 @@ test('a tab named by its title is found, and the answer says which tab it was', 
 
   const out = await clickOn(c, 'Thesis');
 
-  assert.deepEqual(out.tab, { id: '222', title: 'Thesis - Google Docs', named: true });
+  assert.deepEqual(out.tab, {
+    id: '222',
+    title: 'Thesis - Google Docs',
+    named: true
+  });
   assert.ok(c.driver.calls.some(([name]) => name === 'ensureFront'), 'and the click went through the window check with that tab in hand');
 });
 
@@ -547,7 +1020,11 @@ test('a number that is a tab is used as itself and says nothing about names', as
 
   const out = await clickOn(c, '333');
 
-  assert.deepEqual(out.tab, { id: '333', title: 'Notes - Google Docs', named: false });
+  assert.deepEqual(out.tab, {
+    id: '333',
+    title: 'Notes - Google Docs',
+    named: false
+  });
 });
 
 // WHY THE WINDOW MATCH HAS TO BE THE TAB'S TITLE, AS A STRING.
@@ -590,12 +1067,23 @@ test('open_url with a named tab navigates that tab instead of opening another on
   const server = createMcpServer(c);
 
   const res = await server.handle({
-    jsonrpc: '2.0', id: 96, method: 'tools/call',
-    params: { name: 'open_url', arguments: { tabId: '333', url: 'https://example.com/beranda' } }
+    jsonrpc: '2.0',
+    id: 96,
+    method: 'tools/call',
+    params: {
+      name: 'open_url',
+      arguments: {
+        tabId: '333',
+        url: 'https://example.com/beranda'
+      }
+    }
   });
 
   const out = JSON.parse(res.result.content[0].text);
-  assert.deepEqual(c.driver.calls.filter(([name]) => name === 'navigate'), [['navigate', 'https://example.com/beranda']]);
+  assert.deepEqual(c.driver.calls.filter(([name]) => name === 'navigate'), [[
+    'navigate',
+    'https://example.com/beranda'
+  ]]);
   assert.equal(out.action.navigated.url, 'https://example.com/beranda');
   assert.equal(out.action.tab, '333', 'and the answer says which tab it moved');
   assert.ok(!c.driver.calls.some(([name]) => name === 'open'), 'no second tab was opened');
@@ -604,28 +1092,55 @@ test('open_url with a named tab navigates that tab instead of opening another on
 test('a capture comes back as image content a model can see, not base64 text', async () => {
   const server = createMcpServer(ctx());
   const res = await server.handle({
-    jsonrpc: '2.0', id: 11, method: 'tools/call',
-    params: { name: 'capture_page', arguments: {} }
+    jsonrpc: '2.0',
+    id: 11,
+    method: 'tools/call',
+    params: {
+      name: 'capture_page',
+      arguments: {}
+    }
   });
 
-  assert.deepEqual(res.result.content[0], { type: 'image', data: 'BASE64JPEG', mimeType: 'image/jpeg' });
+  assert.deepEqual(res.result.content[0], {
+    type: 'image',
+    data: 'BASE64JPEG',
+    mimeType: 'image/jpeg'
+  });
   assert.match(res.result.content.at(-1).text, /^[0-9]+ ms$/);
   const geometry = JSON.parse(res.result.content.at(-2).text);
-  assert.deepEqual(geometry.viewport, { width: 1186, height: 670 });
+  assert.deepEqual(geometry.viewport, {
+    width: 1186,
+    height: 670
+  });
   assert.equal(geometry.dpr, 1.25);
-  assert.deepEqual(geometry.image, { width: 1483, height: 838 });
+  assert.deepEqual(geometry.image, {
+    width: 1483,
+    height: 838
+  });
 });
 
 test('a full-page capture reaches the driver as a flag, not a second tool', async () => {
   const c = ctx();
   const server = createMcpServer(c);
   const res = await server.handle({
-    jsonrpc: '2.0', id: 12, method: 'tools/call',
-    params: { name: 'capture_page', arguments: { fullPage: true } }
+    jsonrpc: '2.0',
+    id: 12,
+    method: 'tools/call',
+    params: {
+      name: 'capture_page',
+      arguments: { fullPage: true }
+    }
   });
 
-  assert.deepEqual(c.driver.calls[0], ['capture', { fullPage: true }]);
-  assert.deepEqual(res.result.content[0], { type: 'image', data: 'BASE64JPEG', mimeType: 'image/jpeg' });
+  assert.deepEqual(c.driver.calls[0], [
+    'capture',
+    { fullPage: true }
+  ]);
+  assert.deepEqual(res.result.content[0], {
+    type: 'image',
+    data: 'BASE64JPEG',
+    mimeType: 'image/jpeg'
+  });
   assert.match(res.result.content.at(-1).text, /^[0-9]+ ms$/);
 });
 
@@ -633,43 +1148,86 @@ test('a row click resolves and clicks in one call', async () => {
   const c = ctx();
   const server = createMcpServer(c);
   const res = await server.handle({
-    jsonrpc: '2.0', id: 12, method: 'tools/call',
-    params: { name: 'click_row', arguments: { role: 'menuitem', name: 'Insert' } }
+    jsonrpc: '2.0',
+    id: 12,
+    method: 'tools/call',
+    params: {
+      name: 'click_row',
+      arguments: {
+        role: 'menuitem',
+        name: 'Insert'
+      }
+    }
   });
 
   assert.match(res.result.content[0].text, /Insert/);
-  assert.deepEqual(c.driver.calls.filter(([name]) => !['ensureFront', 'settle'].includes(name)), [['clickRow', 'menuitem', 'Insert']]);
+  assert.deepEqual(c.driver.calls.filter(([name]) => ![
+    'ensureFront',
+    'settle'
+  ].includes(name)), [[
+    'clickRow',
+    'menuitem',
+    'Insert'
+  ]]);
 });
 
 test('a hover reaches the driver without pressing anything', async () => {
   const c = ctx();
   const server = createMcpServer(c);
   const res = await server.handle({
-    jsonrpc: '2.0', id: 13, method: 'tools/call',
-    params: { name: 'hover', arguments: { x: 10, y: 20 } }
+    jsonrpc: '2.0',
+    id: 13,
+    method: 'tools/call',
+    params: {
+      name: 'hover',
+      arguments: {
+        x: 10,
+        y: 20
+      }
+    }
   });
 
   assert.match(res.result.content[0].text, /10/);
-  assert.deepEqual(c.driver.calls.filter(([name]) => !['ensureFront', 'settle'].includes(name)), [['hover', 10, 20]]);
+  assert.deepEqual(c.driver.calls.filter(([name]) => ![
+    'ensureFront',
+    'settle'
+  ].includes(name)), [[
+    'hover',
+    10,
+    20
+  ]]);
 });
 
 test('closing a tab drives the browser and drops the cached session', async () => {
   const c = ctx();
   const server = createMcpServer(c);
   const res = await server.handle({
-    jsonrpc: '2.0', id: 14, method: 'tools/call',
-    params: { name: 'close_tab', arguments: { tabId: 't9' } }
+    jsonrpc: '2.0',
+    id: 14,
+    method: 'tools/call',
+    params: {
+      name: 'close_tab',
+      arguments: { tabId: 't9' }
+    }
   });
 
   assert.match(res.result.content[0].text, /t9/);
-  assert.deepEqual(c.driver.calls[0], ['close', 't9']);
+  assert.deepEqual(c.driver.calls[0], [
+    'close',
+    't9'
+  ]);
 });
 
 test('an unknown tool is an error, not a crash, because a model will ask for one', async () => {
   const server = createMcpServer(ctx());
   const res = await server.handle({
-    jsonrpc: '2.0', id: 5, method: 'tools/call',
-    params: { name: 'teleport', arguments: {} }
+    jsonrpc: '2.0',
+    id: 5,
+    method: 'tools/call',
+    params: {
+      name: 'teleport',
+      arguments: {}
+    }
   });
 
   assert.ok(res.error, 'an unknown tool must answer with an error');
@@ -680,8 +1238,13 @@ test('a missing required argument is refused before the driver is touched', asyn
   const c = ctx();
   const server = createMcpServer(c);
   const res = await server.handle({
-    jsonrpc: '2.0', id: 6, method: 'tools/call',
-    params: { name: 'type', arguments: {} }
+    jsonrpc: '2.0',
+    id: 6,
+    method: 'tools/call',
+    params: {
+      name: 'type',
+      arguments: {}
+    }
   });
 
   assert.ok(res.error);
@@ -697,15 +1260,53 @@ test('every action hands back the page it acted on, so looking costs no extra ca
   const server = createMcpServer(ctx());
 
   for (const [name, args] of [
-    ['click', { x: 10, y: 20 }],
-    ['click_row', { role: 'menuitem', name: 'Insert' }],
-    ['hover', { x: 30, y: 40 }],
-    ['press_key', { key: 'Enter' }],
-    ['type', { text: 'hi' }],
-    ['stream_keys', { events: [{ key: 'a' }] }],
-    ['open_url', { url: 'https://sheets.google.com/' }]
+    [
+      'click',
+      {
+        x: 10,
+        y: 20
+      }
+    ],
+    [
+      'click_row',
+      {
+        role: 'menuitem',
+        name: 'Insert'
+      }
+    ],
+    [
+      'hover',
+      {
+        x: 30,
+        y: 40
+      }
+    ],
+    [
+      'press_key',
+      { key: 'Enter' }
+    ],
+    [
+      'type',
+      { text: 'hi' }
+    ],
+    [
+      'stream_keys',
+      { events: [{ key: 'a' }] }
+    ],
+    [
+      'open_url',
+      { url: 'https://sheets.google.com/' }
+    ]
   ]) {
-    const res = await server.handle({ jsonrpc: '2.0', id: 9, method: 'tools/call', params: { name, arguments: args } });
+    const res = await server.handle({
+      jsonrpc: '2.0',
+      id: 9,
+      method: 'tools/call',
+      params: {
+        name,
+        arguments: args
+      }
+    });
     const payload = JSON.parse(res.result.content[0].text);
 
     assert.ok('action' in payload, `${name} returned no action result`);
@@ -718,13 +1319,30 @@ test('every action hands back the page it acted on, so looking costs no extra ca
 
 test('an action on a sixty-row page answers in a thousand characters, not five thousand', async () => {
   const c = ctx();
-  const rows = Array.from({ length: 60 }, (_, i) => ({
-    role: 'button', name: `Row number ${i} with a name`, x: 10, y: 20 + i * 30
+  const rows = Array.from({ length: 60 }, (
+    _,
+    i
+  ) => ({
+    role: 'button',
+    name: `Row number ${i} with a name`,
+    x: 10,
+    y: 20 + i * 30
   }));
   c.driver.snapshot = async () => rows;
   const server = createMcpServer(c);
 
-  const res = await server.handle({ jsonrpc: '2.0', id: 91, method: 'tools/call', params: { name: 'click', arguments: { x: 1, y: 1 } } });
+  const res = await server.handle({
+    jsonrpc: '2.0',
+    id: 91,
+    method: 'tools/call',
+    params: {
+      name: 'click',
+      arguments: {
+        x: 1,
+        y: 1
+      }
+    }
+  });
   const text = res.result.content[0].text;
   const out = JSON.parse(text);
 
@@ -737,22 +1355,55 @@ test('an action on a sixty-row page answers in a thousand characters, not five t
 test('the page that rides along is smaller than the page you ask for', async () => {
   const asked = [];
   const c = ctx();
-  c.driver.snapshot = async (limit) => { asked.push(limit); return [{ role: 'button', name: 'b', x: 1, y: 1 }]; };
+  c.driver.snapshot = async (limit) => {
+    asked.push(limit); return [{
+      role: 'button',
+      name: 'b',
+      x: 1,
+      y: 1
+    }];
+  };
   const server = createMcpServer(c);
 
-  await server.handle({ jsonrpc: '2.0', id: 10, method: 'tools/call', params: { name: 'click', arguments: { x: 1, y: 1 } } });
-  await server.handle({ jsonrpc: '2.0', id: 11, method: 'tools/call', params: { name: 'ax_snapshot', arguments: { limit: 120 } } });
+  await server.handle({
+    jsonrpc: '2.0',
+    id: 10,
+    method: 'tools/call',
+    params: {
+      name: 'click',
+      arguments: {
+        x: 1,
+        y: 1
+      }
+    }
+  });
+  await server.handle({
+    jsonrpc: '2.0',
+    id: 11,
+    method: 'tools/call',
+    params: {
+      name: 'ax_snapshot',
+      arguments: { limit: 120 }
+    }
+  });
 
   assert.ok(asked[0] < asked[1], `an action asks for fewer rows (${asked[0]}) than a deliberate read (${asked[1]})`);
 });
 
 test('a driver that throws becomes an error result, not a dead server', async () => {
   const c = ctx();
-  c.driver.read = () => { throw new Error('target closed'); };
+  c.driver.read = () => {
+    throw new Error('target closed');
+  };
   const server = createMcpServer(c);
   const res = await server.handle({
-    jsonrpc: '2.0', id: 7, method: 'tools/call',
-    params: { name: 'read_page', arguments: {} }
+    jsonrpc: '2.0',
+    id: 7,
+    method: 'tools/call',
+    params: {
+      name: 'read_page',
+      arguments: {}
+    }
   });
 
   assert.ok(res.error);
@@ -762,8 +1413,13 @@ test('a driver that throws becomes an error result, not a dead server', async ()
 test('a driver that is still pending is awaited, or its result serialises as {}', async () => {
   const server = createMcpServer(ctx());
   const res = await server.handle({
-    jsonrpc: '2.0', id: 8, method: 'tools/call',
-    params: { name: 'read_page', arguments: {} }
+    jsonrpc: '2.0',
+    id: 8,
+    method: 'tools/call',
+    params: {
+      name: 'read_page',
+      arguments: {}
+    }
   });
 
   const text = res.result.content[0].text;
@@ -773,7 +1429,10 @@ test('a driver that is still pending is awaited, or its result serialises as {}'
 
 test('a notification is answered with nothing at all, because JSON-RPC says so', async () => {
   const server = createMcpServer(ctx());
-  const res = await server.handle({ jsonrpc: '2.0', method: 'notifications/initialized' });
+  const res = await server.handle({
+    jsonrpc: '2.0',
+    method: 'notifications/initialized'
+  });
 
   assert.equal(res, undefined);
 });
@@ -789,14 +1448,25 @@ test('a notification is answered with nothing at all, because JSON-RPC says so',
 test('a tab another agent holds is refused, with the holder and the expiry named', async () => {
   const c = ctx();
   c.lease = {
-    claim: async () => ({ granted: false, holder: { owner: 'agent-b', expiresAt: Date.now() + 5000 } }),
+    claim: async () => ({
+      granted: false,
+      holder: {
+        owner: 'agent-b',
+        expiresAt: Date.now() + 5000
+      }
+    }),
     release: async () => true
   };
   const server = createMcpServer(c);
 
   const res = await server.handle({
-    jsonrpc: '2.0', id: 31, method: 'tools/call',
-    params: { name: 'ax_snapshot', arguments: { tabId: 't1' } }
+    jsonrpc: '2.0',
+    id: 31,
+    method: 'tools/call',
+    params: {
+      name: 'ax_snapshot',
+      arguments: { tabId: 't1' }
+    }
   });
 
   assert.match(res.error.message, /agent-b/, 'the refusal names who holds the tab');
@@ -808,14 +1478,41 @@ test('the claim is renewed by every call, and released when the tab is closed', 
   const c = ctx();
   const server = createMcpServer(c);
 
-  await server.handle({ jsonrpc: '2.0', id: 32, method: 'tools/call', params: { name: 'ax_snapshot', arguments: { tabId: 't1' } } });
-  await server.handle({ jsonrpc: '2.0', id: 33, method: 'tools/call', params: { name: 'ax_snapshot', arguments: { tabId: 't1' } } });
+  await server.handle({
+    jsonrpc: '2.0',
+    id: 32,
+    method: 'tools/call',
+    params: {
+      name: 'ax_snapshot',
+      arguments: { tabId: 't1' }
+    }
+  });
+  await server.handle({
+    jsonrpc: '2.0',
+    id: 33,
+    method: 'tools/call',
+    params: {
+      name: 'ax_snapshot',
+      arguments: { tabId: 't1' }
+    }
+  });
 
-  assert.deepEqual(c.lease.claims.map((entry) => entry[0]), ['t1', 't1'], 'each call asks again, which is the renewal');
+  assert.deepEqual(c.lease.claims.map((entry) => entry[0]), [
+    't1',
+    't1'
+  ], 'each call asks again, which is the renewal');
   assert.ok(c.lease.claims.every((entry) => /^driver-/.test(entry[1])), 'and names this agent, by label and number');
   assert.ok(c.lease.claims.every((entry) => entry[2] === undefined), 'and asks for the default window unless one was configured');
 
-  await server.handle({ jsonrpc: '2.0', id: 34, method: 'tools/call', params: { name: 'close_tab', arguments: { tabId: 't1' } } });
+  await server.handle({
+    jsonrpc: '2.0',
+    id: 34,
+    method: 'tools/call',
+    params: {
+      name: 'close_tab',
+      arguments: { tabId: 't1' }
+    }
+  });
   assert.equal(c.lease.claims.at(-1)[0], 'release', 'and closing the tab gives it up');
   assert.equal(c.lease.claims.at(-1)[1], 't1');
 });
@@ -827,7 +1524,15 @@ test('a configured window is the one the claim asks for', async () => {
     const c = ctx();
     const server = createMcpServer(c);
 
-    await server.handle({ jsonrpc: '2.0', id: 35, method: 'tools/call', params: { name: 'ax_snapshot', arguments: { tabId: 't1' } } });
+    await server.handle({
+      jsonrpc: '2.0',
+      id: 35,
+      method: 'tools/call',
+      params: {
+        name: 'ax_snapshot',
+        arguments: { tabId: 't1' }
+      }
+    });
 
     assert.equal(c.lease.claims[0][2], 1234, 'the claim carries the configured window');
   } finally {
@@ -839,13 +1544,21 @@ test('a configured window is the one the claim asks for', async () => {
 test('a tab id is found whether the caller sends a number or a string', async () => {
   for (const tabId of ['1', 1]) {
     const c = ctx();
-    c.resolveTab = async () => ['1', '8'];
+    c.resolveTab = async () => [
+      '1',
+      '8'
+    ];
     c.open = async () => c.driver;
     const server = createMcpServer(c);
 
     const res = await server.handle({
-      jsonrpc: '2.0', id: 12, method: 'tools/call',
-      params: { name: 'ax_snapshot', arguments: { tabId } }
+      jsonrpc: '2.0',
+      id: 12,
+      method: 'tools/call',
+      params: {
+        name: 'ax_snapshot',
+        arguments: { tabId }
+      }
     });
 
     assert.ok(res.result, `an id sent as ${typeof tabId} was refused: ${res.error?.message ?? ''}`);
@@ -857,11 +1570,31 @@ test('a tab id is found whether the caller sends a number or a string', async ()
 
 test('a wait ends on the same evidence a read would show', async () => {
   const c = ctx();
-  const texts = ['nothing yet', 'nothing yet', 'the outline now holds Heading'];
-  c.driver.read = async () => ({ url: 'https://x/', title: 't', text: texts.shift() ?? '' });
+  const texts = [
+    'nothing yet',
+    'nothing yet',
+    'the outline now holds Heading'
+  ];
+  c.driver.read = async () => ({
+    url: 'https://x/',
+    title: 't',
+    text: texts.shift() ?? ''
+  });
   const server = createMcpServer(c);
 
-  const res = await server.handle({ jsonrpc: '2.0', id: 20, method: 'tools/call', params: { name: 'wait_for', arguments: { text: 'Heading', timeoutMs: 2000, intervalMs: 100 } } });
+  const res = await server.handle({
+    jsonrpc: '2.0',
+    id: 20,
+    method: 'tools/call',
+    params: {
+      name: 'wait_for',
+      arguments: {
+        text: 'Heading',
+        timeoutMs: 2000,
+        intervalMs: 100
+      }
+    }
+  });
   const payload = JSON.parse(res.result.content[0].text);
 
   assert.equal(payload.action.found, true);
@@ -872,14 +1605,37 @@ test('a wait ends on the same evidence a read would show', async () => {
 
 test('a wait that runs out of budget reports instead of failing', async () => {
   const c = ctx();
-  c.driver.waitForText = async (text, options) => {
-    c.driver.calls.push(['waitForText', text, options]);
+  c.driver.waitForText = async (
+    text,
+    options
+  ) => {
+    c.driver.calls.push([
+      'waitForText',
+      text,
+      options
+    ]);
     await new Promise((r) => setTimeout(r, options.timeoutMs));
-    return { url: 'https://x/', title: 't', text: 'never the text' };
+    return {
+      url: 'https://x/',
+      title: 't',
+      text: 'never the text'
+    };
   };
   const server = createMcpServer(c);
 
-  const res = await server.handle({ jsonrpc: '2.0', id: 21, method: 'tools/call', params: { name: 'wait_for', arguments: { text: 'Heading', timeoutMs: 500, intervalMs: 100 } } });
+  const res = await server.handle({
+    jsonrpc: '2.0',
+    id: 21,
+    method: 'tools/call',
+    params: {
+      name: 'wait_for',
+      arguments: {
+        text: 'Heading',
+        timeoutMs: 500,
+        intervalMs: 100
+      }
+    }
+  });
   const payload = JSON.parse(res.result.content[0].text);
 
   assert.equal(payload.action.found, false);
@@ -890,10 +1646,24 @@ test('a wait that runs out of budget reports instead of failing', async () => {
 test('a wait with nothing to wait for is refused before the first read', async () => {
   const c = ctx();
   let waits = 0;
-  c.driver.waitForText = async () => { waits += 1; return { url: 'u', title: 't', text: '' }; };
+  c.driver.waitForText = async () => {
+    waits += 1; return {
+      url: 'u',
+      title: 't',
+      text: ''
+    };
+  };
   const server = createMcpServer(c);
 
-  const res = await server.handle({ jsonrpc: '2.0', id: 22, method: 'tools/call', params: { name: 'wait_for', arguments: {} } });
+  const res = await server.handle({
+    jsonrpc: '2.0',
+    id: 22,
+    method: 'tools/call',
+    params: {
+      name: 'wait_for',
+      arguments: {}
+    }
+  });
 
   assert.ok(res.error);
   assert.equal(waits, 0, 'a refused wait touches nothing');
@@ -902,7 +1672,15 @@ test('a wait with nothing to wait for is refused before the first read', async (
 test('every call reports how long the browser took', async () => {
   const server = createMcpServer(ctx());
 
-  const res = await server.handle({ jsonrpc: '2.0', id: 23, method: 'tools/call', params: { name: 'ax_snapshot', arguments: {} } });
+  const res = await server.handle({
+    jsonrpc: '2.0',
+    id: 23,
+    method: 'tools/call',
+    params: {
+      name: 'ax_snapshot',
+      arguments: {}
+    }
+  });
   const last = res.result.content.at(-1);
 
   assert.match(last.text, /^[0-9]+ ms$/, 'the final block names the cost');
@@ -910,11 +1688,29 @@ test('every call reports how long the browser took', async () => {
 
 test('key vocabularies are enumerated so a misspelling fails before the browser', async () => {
   const server = createMcpServer(ctx());
-  const { result } = await server.handle({ jsonrpc: '2.0', id: 24, method: 'tools/list', params: {} });
-  const byName = Object.fromEntries(result.tools.map((t) => [t.name, t]));
+  const { result } = await server.handle({
+    jsonrpc: '2.0',
+    id: 24,
+    method: 'tools/list',
+    params: {}
+  });
+  const byName = Object.fromEntries(result.tools.map((t) => [
+    t.name,
+    t
+  ]));
 
-  assert.deepEqual(byName.press_key.inputSchema.properties.modifiers.items.enum, ['Control', 'Alt', 'Shift', 'Meta']);
-  assert.deepEqual(byName.stream_keys.inputSchema.properties.events.items.properties.modifiers.items.enum, ['Control', 'Alt', 'Shift', 'Meta']);
+  assert.deepEqual(byName.press_key.inputSchema.properties.modifiers.items.enum, [
+    'Control',
+    'Alt',
+    'Shift',
+    'Meta'
+  ]);
+  assert.deepEqual(byName.stream_keys.inputSchema.properties.events.items.properties.modifiers.items.enum, [
+    'Control',
+    'Alt',
+    'Shift',
+    'Meta'
+  ]);
   assert.match(byName.press_key.inputSchema.properties.key.description, /Enter.*ArrowLeft.*ArrowRight.*single printable ASCII/s);
 });
 
@@ -922,12 +1718,41 @@ test('key vocabularies are enumerated so a misspelling fails before the browser'
 // The full page rides every action so the agent is never stranded; changed names what moved since the last look at the same tab.
 // Rows match by value — role, name, position — and the first look reports null, because its elements ARE the baseline.
 
-const ROW_FILE = { role: 'menuitem', name: 'File', x: 73, y: 46 };
-const ROW_INSERT = { role: 'menuitem', name: 'Insert', x: 204, y: 46 };
-const ROW_TABLE = { role: 'menuitem', name: 'Table', x: 312, y: 180 };
+const ROW_FILE = {
+  role: 'menuitem',
+  name: 'File',
+  x: 73,
+  y: 46
+};
+const ROW_INSERT = {
+  role: 'menuitem',
+  name: 'Insert',
+  x: 204,
+  y: 46
+};
+const ROW_TABLE = {
+  role: 'menuitem',
+  name: 'Table',
+  x: 312,
+  y: 180
+};
 
-async function actOn(server, pages) {
-  const res = await server.handle({ jsonrpc: '2.0', id: 30, method: 'tools/call', params: { name: 'click', arguments: { x: 1, y: 1 } } });
+async function actOn(
+  server,
+  pages
+) {
+  const res = await server.handle({
+    jsonrpc: '2.0',
+    id: 30,
+    method: 'tools/call',
+    params: {
+      name: 'click',
+      arguments: {
+        x: 1,
+        y: 1
+      }
+    }
+  });
   return JSON.parse(res.result.content[0].text);
 }
 
@@ -943,7 +1768,10 @@ test('the first look at a tab carries the baseline rows, because there is nothin
 
 test('an unchanged page reports nothing changed', async () => {
   const c = ctx();
-  c.driver.snapshot = async () => [ROW_FILE, ROW_INSERT];
+  c.driver.snapshot = async () => [
+    ROW_FILE,
+    ROW_INSERT
+  ];
   const server = createMcpServer(c);
   await actOn(server);
 
@@ -959,8 +1787,27 @@ test('an unchanged page reports nothing changed', async () => {
 test('added and moved rows are named', async () => {
   const c = ctx();
   const pages = [
-    [ROW_FILE, ROW_INSERT, { role: 'button', name: 'Share', x: 1386, y: 30 }],
-    [ROW_FILE, ROW_INSERT, { role: 'button', name: 'Share', x: 1390, y: 30 }, ROW_TABLE]
+    [
+      ROW_FILE,
+      ROW_INSERT,
+      {
+        role: 'button',
+        name: 'Share',
+        x: 1386,
+        y: 30
+      }
+    ],
+    [
+      ROW_FILE,
+      ROW_INSERT,
+      {
+        role: 'button',
+        name: 'Share',
+        x: 1390,
+        y: 30
+      },
+      ROW_TABLE
+    ]
   ];
   c.driver.snapshot = async () => pages.shift() ?? [];
   const server = createMcpServer(c);
@@ -969,14 +1816,25 @@ test('added and moved rows are named', async () => {
   const out = await actOn(server);
 
   assert.deepEqual(out.changed.added, [ROW_TABLE]);
-  assert.deepEqual(out.changed.moved, [{ role: 'button', name: 'Share', x: 1390, y: 30 }]);
+  assert.deepEqual(out.changed.moved, [{
+    role: 'button',
+    name: 'Share',
+    x: 1390,
+    y: 30
+  }]);
   assert.equal(out.changed.removed, 0);
   assert.equal(out.changed.reshaped, false);
 });
 
 test('removed rows count without riding along', async () => {
   const c = ctx();
-  const pages = [[ROW_FILE, ROW_TABLE], [ROW_FILE]];
+  const pages = [
+    [
+      ROW_FILE,
+      ROW_TABLE
+    ],
+    [ROW_FILE]
+  ];
   c.driver.snapshot = async () => pages.shift() ?? [];
   const server = createMcpServer(c);
   await actOn(server);
@@ -990,8 +1848,25 @@ test('removed rows count without riding along', async () => {
 test('a replaced page says reshaped instead of listing sixty new rows', async () => {
   const c = ctx();
   const pages = [
-    [ROW_FILE, ROW_INSERT, ROW_TABLE],
-    [{ role: 'button', name: 'Unrelated', x: 1, y: 1 }, { role: 'link', name: 'Other', x: 2, y: 2 }]
+    [
+      ROW_FILE,
+      ROW_INSERT,
+      ROW_TABLE
+    ],
+    [
+      {
+        role: 'button',
+        name: 'Unrelated',
+        x: 1,
+        y: 1
+      },
+      {
+        role: 'link',
+        name: 'Other',
+        x: 2,
+        y: 2
+      }
+    ]
   ];
   c.driver.snapshot = async () => pages.shift() ?? [];
   const server = createMcpServer(c);
@@ -1012,11 +1887,28 @@ test('an action that already settled does not pay for a second settle', async ()
   const c = ctx();
   c.driver.keys = async () => {
     c.driver.calls.push(['keys']);
-    return { events: 1, chords: 1, chars: 0, moved: false, settled: true };
+    return {
+      events: 1,
+      chords: 1,
+      chars: 0,
+      moved: false,
+      settled: true
+    };
   };
   const server = createMcpServer(c);
 
-  await server.handle({ jsonrpc: '2.0', id: 36, method: 'tools/call', params: { name: 'stream_keys', arguments: { events: [{ key: 'a', modifiers: ['Control'] }] } } });
+  await server.handle({
+    jsonrpc: '2.0',
+    id: 36,
+    method: 'tools/call',
+    params: {
+      name: 'stream_keys',
+      arguments: { events: [{
+        key: 'a',
+        modifiers: ['Control']
+      }] }
+    }
+  });
 
   assert.equal(c.driver.calls.filter(([name]) => name === 'settle').length, 0, 'the action settled once, and the page look trusts it');
 });
@@ -1024,34 +1916,87 @@ test('an action that already settled does not pay for a second settle', async ()
 test('an action settles on the page before looking, not on a timer', async () => {
   const c = ctx();
   const order = [];
-  c.driver.settle = async () => { order.push('settle'); return { waitedMs: 1, why: 'quiet' }; };
-  c.driver.snapshot = async () => { order.push('snapshot'); return []; };
+  c.driver.settle = async () => {
+    order.push('settle'); return {
+      waitedMs: 1,
+      why: 'quiet'
+    };
+  };
+  c.driver.snapshot = async () => {
+    order.push('snapshot'); return [];
+  };
   const server = createMcpServer(c);
 
-  await server.handle({ jsonrpc: '2.0', id: 31, method: 'tools/call', params: { name: 'click', arguments: { x: 1, y: 1 } } });
+  await server.handle({
+    jsonrpc: '2.0',
+    id: 31,
+    method: 'tools/call',
+    params: {
+      name: 'click',
+      arguments: {
+        x: 1,
+        y: 1
+      }
+    }
+  });
 
-  assert.deepEqual(order.slice(0, 2), ['settle', 'snapshot']);
+  assert.deepEqual(order.slice(0, 2), [
+    'settle',
+    'snapshot'
+  ]);
 });
 
 test('a burst runs dependent steps in one call and looks at the page once', async () => {
   const c = ctx();
-  c.driver.resolve = async (role, name) => {
-    c.driver.calls.push(['resolve', role, name]);
-    return { role, name, x: 10, y: 20, handle: 'opera-9' };
+  c.driver.resolve = async (
+    role,
+    name
+  ) => {
+    c.driver.calls.push([
+      'resolve',
+      role,
+      name
+    ]);
+    return {
+      role,
+      name,
+      x: 10,
+      y: 20,
+      handle: 'opera-9'
+    };
   };
   let snapshots = 0;
-  c.driver.snapshot = async () => { snapshots += 1; return [{ role: 'menuitem', name: 'Insert', x: 204, y: 46 }]; };
+  c.driver.snapshot = async () => {
+    snapshots += 1; return [{
+      role: 'menuitem',
+      name: 'Insert',
+      x: 204,
+      y: 46
+    }];
+  };
   const server = createMcpServer(c);
 
   const res = await server.handle({
-    jsonrpc: '2.0', id: 32, method: 'tools/call',
+    jsonrpc: '2.0',
+    id: 32,
+    method: 'tools/call',
     params: {
       name: 'browser_burst',
       arguments: {
         steps: [
-          { action: 'resolve', role: 'menuitem', name: 'Insert' },
-          { action: 'click', refFromStep: 0 },
-          { action: 'type', text: 'hello' }
+          {
+            action: 'resolve',
+            role: 'menuitem',
+            name: 'Insert'
+          },
+          {
+            action: 'click',
+            refFromStep: 0
+          },
+          {
+            action: 'type',
+            text: 'hello'
+          }
         ]
       }
     }
@@ -1061,7 +2006,12 @@ test('a burst runs dependent steps in one call and looks at the page once', asyn
 
   assert.equal(out.action.ok, true);
   assert.equal(out.action.completedSteps, 3);
-  assert.deepEqual(c.driver.calls.filter(([name]) => name === 'click'), [['click', null, null, 'opera-9']]);
+  assert.deepEqual(c.driver.calls.filter(([name]) => name === 'click'), [[
+    'click',
+    null,
+    null,
+    'opera-9'
+  ]]);
   assert.equal(c.driver.calls.filter(([name]) => name === 'settle').length, 1, 'the burst settles once');
   assert.equal(snapshots, 1, 'the burst looks once');
   assert.ok(out.page, 'the one look rides along with the burst');
@@ -1069,14 +2019,28 @@ test('a burst runs dependent steps in one call and looks at the page once', asyn
 
 test('a burst that fails keeps its finished steps and still reports the page', async () => {
   const c = ctx();
-  c.driver.clickRow = async () => { throw new Error('menu is gone'); };
+  c.driver.clickRow = async () => {
+    throw new Error('menu is gone');
+  };
   const server = createMcpServer(c);
 
   const res = await server.handle({
-    jsonrpc: '2.0', id: 33, method: 'tools/call',
+    jsonrpc: '2.0',
+    id: 33,
+    method: 'tools/call',
     params: {
       name: 'browser_burst',
-      arguments: { steps: [{ action: 'click_row', role: 'menuitem', name: 'Insert' }, { action: 'type', text: 'no' }] }
+      arguments: { steps: [
+        {
+          action: 'click_row',
+          role: 'menuitem',
+          name: 'Insert'
+        },
+        {
+          action: 'type',
+          text: 'no'
+        }
+      ] }
     }
   });
 
@@ -1091,15 +2055,37 @@ test('a burst that fails keeps its finished steps and still reports the page', a
 
 test('a read-only burst does not take the window away from the person', async () => {
   const c = ctx();
-  c.driver.resolve = async (role, name) => {
-    c.driver.calls.push(['resolve', role, name]);
-    return { role, name, x: 10, y: 20, handle: 'opera-9' };
+  c.driver.resolve = async (
+    role,
+    name
+  ) => {
+    c.driver.calls.push([
+      'resolve',
+      role,
+      name
+    ]);
+    return {
+      role,
+      name,
+      x: 10,
+      y: 20,
+      handle: 'opera-9'
+    };
   };
   const server = createMcpServer(c);
 
   await server.handle({
-    jsonrpc: '2.0', id: 34, method: 'tools/call',
-    params: { name: 'browser_burst', arguments: { steps: [{ action: 'resolve', role: 'menuitem', name: 'Insert' }] } }
+    jsonrpc: '2.0',
+    id: 34,
+    method: 'tools/call',
+    params: {
+      name: 'browser_burst',
+      arguments: { steps: [{
+        action: 'resolve',
+        role: 'menuitem',
+        name: 'Insert'
+      }] }
+    }
   });
 
   assert.ok(!c.driver.calls.some(([name]) => name === 'ensureFront'));
@@ -1110,8 +2096,13 @@ test('an invalid burst is refused before the browser is touched', async () => {
   const server = createMcpServer(c);
 
   const res = await server.handle({
-    jsonrpc: '2.0', id: 35, method: 'tools/call',
-    params: { name: 'browser_burst', arguments: { steps: [] } }
+    jsonrpc: '2.0',
+    id: 35,
+    method: 'tools/call',
+    params: {
+      name: 'browser_burst',
+      arguments: { steps: [] }
+    }
   });
 
   assert.match(res.error.message, /1-8 steps/);
@@ -1121,7 +2112,15 @@ test('an invalid burst is refused before the browser is touched', async () => {
 test('caret_line reports the line without moving past it', async () => {
   const server = createMcpServer(ctx());
 
-  const res = await server.handle({ jsonrpc: '2.0', id: 32, method: 'tools/call', params: { name: 'caret_line', arguments: {} } });
+  const res = await server.handle({
+    jsonrpc: '2.0',
+    id: 32,
+    method: 'tools/call',
+    params: {
+      name: 'caret_line',
+      arguments: {}
+    }
+  });
 
   assert.deepEqual(JSON.parse(res.result.content[0].text), {
     line: 'Kajian pustaka mencakup',
@@ -1136,14 +2135,23 @@ test('caret_line reports the line without moving past it', async () => {
 
 test('upload on a page with no file input fails and says which road is left', async () => {
   const without = fakeDriver();
-  without.upload = async () => ({ inputFound: false, filename: 'a.png' });
+  without.upload = async () => ({
+    inputFound: false,
+    filename: 'a.png'
+  });
   const server = createMcpServer(ctx(without));
 
   const res = await server.handle({
     jsonrpc: '2.0',
     id: 71,
     method: 'tools/call',
-    params: { name: 'upload', arguments: { filename: 'a.png', data: 'x' } }
+    params: {
+      name: 'upload',
+      arguments: {
+        filename: 'a.png',
+        data: 'x'
+      }
+    }
   });
 
   assert.match(res.error.message, /inputFound: false/);
@@ -1152,13 +2160,32 @@ test('upload on a page with no file input fails and says which road is left', as
 
 test('upload carries a file without touching the native dialog', async () => {
   const c = ctx();
-  c.driver.upload = async (options) => ({ inputFound: true, filename: options.filename, bytes: 5 });
+  c.driver.upload = async (options) => ({
+    inputFound: true,
+    filename: options.filename,
+    bytes: 5
+  });
   const server = createMcpServer(c);
 
-  const res = await server.handle({ jsonrpc: '2.0', id: 33, method: 'tools/call', params: { name: 'upload', arguments: { filename: 'pic.png', path: '/files/pic.png' } } });
+  const res = await server.handle({
+    jsonrpc: '2.0',
+    id: 33,
+    method: 'tools/call',
+    params: {
+      name: 'upload',
+      arguments: {
+        filename: 'pic.png',
+        path: '/files/pic.png'
+      }
+    }
+  });
   const payload = JSON.parse(res.result.content[0].text);
 
-  assert.deepEqual(payload.action, { inputFound: true, filename: 'pic.png', bytes: 5 });
+  assert.deepEqual(payload.action, {
+    inputFound: true,
+    filename: 'pic.png',
+    bytes: 5
+  });
   assert.ok(payload.page && payload.changed, 'the page state comes back with the result');
 });
 
@@ -1167,7 +2194,15 @@ test('intercept_file_chooser toggles without touching the page', async () => {
   c.driver.interceptFileChooser = async (enabled) => ({ intercepting: enabled });
   const server = createMcpServer(c);
 
-  const res = await server.handle({ jsonrpc: '2.0', id: 34, method: 'tools/call', params: { name: 'intercept_file_chooser', arguments: { enabled: true } } });
+  const res = await server.handle({
+    jsonrpc: '2.0',
+    id: 34,
+    method: 'tools/call',
+    params: {
+      name: 'intercept_file_chooser',
+      arguments: { enabled: true }
+    }
+  });
 
   assert.deepEqual(JSON.parse(res.result.content[0].text), { intercepting: true });
 });
@@ -1182,39 +2217,89 @@ test('intercept_file_chooser toggles without touching the page', async () => {
 test('a drop Chrome answered by opening the file closes that tab and says so', async () => {
   const c = ctx();
   let refused = false;
-  const base = [{ id: 't1', url: 'https://docs.google.com/', title: 'Docs' }];
+  const base = [{
+    id: 't1',
+    url: 'https://docs.google.com/',
+    title: 'Docs'
+  }];
   c.driver.tabs = async () => (refused
-    ? [...base, { id: 't9', url: 'file:///files/pic.png', title: 'pic.png' }]
+    ? [
+      ...base,
+      {
+        id: 't9',
+        url: 'file:///files/pic.png',
+        title: 'pic.png'
+      }
+    ]
     : base);
   c.driver.dropFile = async () => {
     refused = true;
-    return { dropped: true, filename: 'pic.png', bytes: 5, x: 1, y: 2, mimeType: 'image/png' };
+    return {
+      dropped: true,
+      filename: 'pic.png',
+      bytes: 5,
+      x: 1,
+      y: 2,
+      mimeType: 'image/png'
+    };
   };
   c.resolveTab = async () => ['t1'];
   c.open = async () => c.driver;
   const server = createMcpServer(c);
 
   const res = await server.handle({
-    jsonrpc: '2.0', id: 41, method: 'tools/call',
-    params: { name: 'drop_file', arguments: { tabId: 't1', x: 1, y: 2, filename: 'pic.png', path: '/files/pic.png' } }
+    jsonrpc: '2.0',
+    id: 41,
+    method: 'tools/call',
+    params: {
+      name: 'drop_file',
+      arguments: {
+        tabId: 't1',
+        x: 1,
+        y: 2,
+        filename: 'pic.png',
+        path: '/files/pic.png'
+      }
+    }
   });
   const payload = JSON.parse(res.result.content[0].text);
 
   assert.equal(payload.action.dropped, true);
   assert.equal(payload.action.openedInstead, true, 'the drop did not land and says so');
-  assert.deepEqual(c.driver.calls.filter((call) => call[0] === 'close'), [['close', 't9']], 'and the tab it opened is closed');
+  assert.deepEqual(c.driver.calls.filter((call) => call[0] === 'close'), [[
+    'close',
+    't9'
+  ]], 'and the tab it opened is closed');
 });
 
 test('a drop the page took leaves no tab and reports a clean drop', async () => {
   const c = ctx();
   c.resolveTab = async () => ['t1'];
   c.open = async () => c.driver;
-  c.driver.dropFile = async () => ({ dropped: true, filename: 'pic.png', bytes: 5, x: 1, y: 2, mimeType: 'image/png' });
+  c.driver.dropFile = async () => ({
+    dropped: true,
+    filename: 'pic.png',
+    bytes: 5,
+    x: 1,
+    y: 2,
+    mimeType: 'image/png'
+  });
   const server = createMcpServer(c);
 
   const res = await server.handle({
-    jsonrpc: '2.0', id: 42, method: 'tools/call',
-    params: { name: 'drop_file', arguments: { tabId: 't1', x: 1, y: 2, filename: 'pic.png', path: '/files/pic.png' } }
+    jsonrpc: '2.0',
+    id: 42,
+    method: 'tools/call',
+    params: {
+      name: 'drop_file',
+      arguments: {
+        tabId: 't1',
+        x: 1,
+        y: 2,
+        filename: 'pic.png',
+        path: '/files/pic.png'
+      }
+    }
   });
   const payload = JSON.parse(res.result.content[0].text);
 
@@ -1228,30 +2313,64 @@ test('a drop the page took leaves no tab and reports a clean drop', async () => 
 
 test('ask_page returns a raw read and hands the method its own params', async () => {
   const c = ctx();
-  c.driver.ask = async (method, params) => ({ asked: method, params });
+  c.driver.ask = async (
+    method,
+    params
+  ) => ({
+    asked: method,
+    params
+  });
   c.resolveTab = async () => ['t1'];
   c.open = async () => c.driver;
   const server = createMcpServer(c);
 
   const res = await server.handle({
-    jsonrpc: '2.0', id: 51, method: 'tools/call',
-    params: { name: 'ask_page', arguments: { tabId: 't1', method: 'Page.getFrameTree' } }
+    jsonrpc: '2.0',
+    id: 51,
+    method: 'tools/call',
+    params: {
+      name: 'ask_page',
+      arguments: {
+        tabId: 't1',
+        method: 'Page.getFrameTree'
+      }
+    }
   });
   const payload = JSON.parse(res.result.content[0].text);
 
-  assert.deepEqual(payload, { method: 'Page.getFrameTree', result: { asked: 'Page.getFrameTree', params: {} } });
+  assert.deepEqual(payload, {
+    method: 'Page.getFrameTree',
+    result: {
+      asked: 'Page.getFrameTree',
+      params: {}
+    }
+  });
 });
 
 test('ask_page defaults a screenshot to png, which is how a test image is made', async () => {
   const c = ctx();
-  c.driver.ask = async (method, params) => ({ asked: method, params });
+  c.driver.ask = async (
+    method,
+    params
+  ) => ({
+    asked: method,
+    params
+  });
   c.resolveTab = async () => ['t1'];
   c.open = async () => c.driver;
   const server = createMcpServer(c);
 
   const res = await server.handle({
-    jsonrpc: '2.0', id: 52, method: 'tools/call',
-    params: { name: 'ask_page', arguments: { tabId: 't1', method: 'Page.captureScreenshot' } }
+    jsonrpc: '2.0',
+    id: 52,
+    method: 'tools/call',
+    params: {
+      name: 'ask_page',
+      arguments: {
+        tabId: 't1',
+        method: 'Page.captureScreenshot'
+      }
+    }
   });
   const payload = JSON.parse(res.result.content[0].text);
 
@@ -1267,8 +2386,16 @@ test('ask_page refuses anything that could act, and says what it may ask', async
 
   for (const method of ['Runtime.evaluate', 'Input.dispatchKeyEvent', 'Page.navigate', 'DOM.setFileInputFiles']) {
     const res = await server.handle({
-      jsonrpc: '2.0', id: 53, method: 'tools/call',
-      params: { name: 'ask_page', arguments: { tabId: 't1', method } }
+      jsonrpc: '2.0',
+      id: 53,
+      method: 'tools/call',
+      params: {
+        name: 'ask_page',
+        arguments: {
+          tabId: 't1',
+          method
+        }
+      }
     });
     assert.match(res.error?.message ?? '', /read-only/, `${method} must be refused as an action`);
     assert.match(res.error?.message ?? '', /Page.getFrameTree/, 'and the refusal lists what is allowed');

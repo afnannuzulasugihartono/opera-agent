@@ -6,7 +6,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { RECIPES, SIDE_EFFECTS, guide } from '../local/agent-guide.js';
+import {
+  RECIPES,
+  SIDE_EFFECTS,
+  guide
+} from '../local/agent-guide.js';
 import { TOOLS } from '../local/mcp-server.js';
 
 const names = new Set(TOOLS.map((tool) => tool.name));

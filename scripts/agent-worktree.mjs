@@ -17,19 +17,34 @@
 // The tag keeps it addressable forever, so a delete is a housekeeping act and never a loss.
 
 import { execFileSync } from 'node:child_process';
-import { existsSync, readdirSync, copyFileSync } from 'node:fs';
+import {
+  existsSync,
+  readdirSync,
+  copyFileSync
+} from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { dirname, join, resolve } from 'node:path';
+import {
+  dirname,
+  join,
+  resolve
+} from 'node:path';
 
 const repo = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
-const git = (...args) => execFileSync('git', args, { cwd: repo, encoding: 'utf8' }).trim();
+const git = (...args) => execFileSync('git', args, {
+  cwd: repo,
+  encoding: 'utf8'
+}).trim();
 
 const name = process.argv[2];
 const arg = process.argv[3];
 
 const commands = {
-  create(wanted, base = 'main', topic = wanted) {
+  create(
+    wanted,
+    base = 'main',
+    topic = wanted
+  ) {
     if (!wanted || wanted.startsWith('-')) throw new Error('usage: agent-worktree.mjs create <name> [base-branch] [topic]');
     const branch = `agent/${wanted}/${topic}`;
     const path = join(repo, '..', `opera-agent-${wanted}`);
@@ -49,22 +64,27 @@ const commands = {
     // npm runs through a shell on Windows because an agent types npm and that is npm.cmd, which Node refuses to spawn bare since the 2024 security fix.
 
     const npm = process.platform === 'win32' ? 'npm.cmd' : 'npm';
-    execFileSync(npm, ['install'], { cwd: path, stdio: 'inherit', shell: process.platform === 'win32' });
+    execFileSync(npm, ['install'], {
+      cwd: path,
+      stdio: 'inherit',
+      shell: process.platform === 'win32'
+    });
     console.log(`${path} is ready: dependencies installed, env copied, gates runnable`);
   },
-
   list() {
     const worktrees = git('worktree', 'list', '--porcelain')
       .split('\n\n')
       .filter(Boolean)
-      .map((entry) => Object.fromEntries(entry.split('\n').map((line) => [line.split(' ')[0], line.split(' ').slice(1).join(' ')])));
+      .map((entry) => Object.fromEntries(entry.split('\n').map((line) => [
+        line.split(' ')[0],
+        line.split(' ').slice(1).join(' ')
+      ])));
     for (const entry of worktrees) {
       const branch = entry.branch?.replace('refs/heads/', '') ?? '(detached)';
       const isThis = entry.worktree === repo;
       console.log(`${branch.padEnd(44)} ${entry.worktree}${isThis ? '  <- main checkout, never drive from here' : ''}`);
     }
   },
-
   remove(wanted) {
     if (!wanted) throw new Error('usage: agent-worktree.mjs remove <name>');
     const path = join(repo, '..', `opera-agent-${wanted}`);
