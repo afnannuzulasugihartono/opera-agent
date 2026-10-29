@@ -112,6 +112,7 @@ test('every inline module script is named by a hash, and the CSP offers no unsaf
 });
 
 test('every page may load the stylesheet and script it names', () => {
+
   // WHY THE POLICY IS CHECKED AGAINST THE ASSETS AND NOT ONLY AGAINST THE OTHER HOST.
   // Measured live on 2026-10-26: every page linked /site.css, every CSP said style-src 'unsafe-inline' without 'self', and both hosts blocked the site's own stylesheet.
   // The only symptom was a console error: the header computed as display:block and the nav lost its layout.
@@ -142,6 +143,7 @@ test('every page may load the stylesheet and script it names', () => {
 });
 
 test('the features page states the counts and the permissions the product has', () => {
+
   // WHY THE FEATURES PAGE IS READ AGAINST THE CODE.
   // Measured on 2026-10-26: the page said 31 tools and 29 primitives, its meta said 39 and 28, and it named five permissions while the manifest declares six.
   // A marketing page that undercounts its own permissions is not a rounding error: it describes a product with less access than the one it ships.

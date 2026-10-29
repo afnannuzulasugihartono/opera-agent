@@ -39,8 +39,10 @@ begin
       return jsonb_build_object('ok',true,'commandId',v_cmd.id,'status',v_cmd.status,'reused',true);
     end if;
   end if;
+
   -- Unchanged in meaning: this is the "nobody ever claims it" deadline.
   -- The claim below restarts the clock for the command's actual execution budget.
+
   insert into public.opera_commands(device_id,request_id,method,params,status,timeout_ms,expires_at,provider) values(v_device.id,case when p_request_id is null then null else left(p_request_id,128) end,p_method,coalesce(p_params,'{}'::jsonb),'queued',v_timeout,clock_timestamp()+make_interval(secs=>(v_timeout/1000.0)+5),case when p_provider is null then '' else left(p_provider,64) end) returning * into v_cmd;
   insert into public.opera_audit(event_type,device_id,command_id,details) values('command.queued',v_device.id,v_cmd.id,jsonb_build_object('method',v_cmd.method,'timeoutMs',v_timeout));
   return jsonb_build_object('ok',true,'commandId',v_cmd.id,'status',v_cmd.status,'reused',false);

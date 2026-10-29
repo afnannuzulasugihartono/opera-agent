@@ -87,6 +87,7 @@
     // WHY plain fetch and not the Supabase SDK from a CDN: every page here may reach one origin, pinned in vercel.json and _headers.
     // The old consent screen imported supabase-js from esm.sh, which added a second origin and a third party to a page whose entire job is asking for browser control.
     // The two REST calls it needed are written out here instead, so the page reaches Supabase and nothing else.
+
     const AUTH_HOST = 'https://nenmkmtvjremqphfqnfw.supabase.co/auth/v1';
     const PUBLISHABLE_KEY = 'sb_publishable_jAbS_QIQsmXQA-Rj8RWPcg_JVeBedJ6';
 
@@ -109,6 +110,7 @@
     // WHY the session renews itself: a Supabase access token lasts about an hour and this page holds no SDK to renew it, so an expired token used to read as "signed out" and the stored copy was deleted.
     // A person pressing a permission toggle after an hour was therefore asked to sign in again with no explanation, which is what made this look like the site forgetting them.
     // The refresh token is the same one the sign-in page stored, and renewing it is one POST to the Auth host this page already reaches.
+
     const forget = () => {
       localStorage.removeItem('opera-agent-access-token');
       localStorage.removeItem('opera-agent-refresh-token');
@@ -119,6 +121,7 @@
 
       // WHY the three outcomes and not a boolean: "the refresh token was refused" and "we could not reach Auth" look identical to a caller that only sees null, and treating the second as the first deletes a working session over a dropped packet.
       // Every other user on a phone loses signal, so this distinction is the difference between a session that survives a tunnel and one that does not.
+
       if (!refreshToken) return { ok: false, dead: true, why: 'no-refresh-token' };
       let response;
       try {
@@ -147,12 +150,14 @@
     // WHY the token is proven before it is used, and renewed once if it has aged: this page is the one place where an expired session silently became a fresh sign-in request, so the retry lives here rather than only on the sign-in page.
     // WHY the token is proven before it is used, and renewed once if it has aged.
     // The result carries whether the session is truly gone, so a network failure shows a message instead of pretending the reader signed out.
+
     async function usableToken() {
       const token = localStorage.getItem('opera-agent-access-token');
       if (!token) return { token: null, dead: false };
       const probe = await fetch(`${AUTH_HOST}/user`, { headers: { apikey: PUBLISHABLE_KEY, authorization: `Bearer ${token}` } }).catch(() => null);
 
       // WHY a failed probe is offline rather than usable: we learned nothing about the token, and reporting it as working would let the page fail one call later with a message that looks like a refusal.
+
       if (!probe) return { token: null, dead: false, offline: true };
       if (probe.ok) return { token, dead: false };
       const renewed = await renewAccessToken();
@@ -165,12 +170,14 @@
     }
 
     // WHY the return path carries the id: the sign-in page drops the query string when it swaps a token out of the URL fragment, so the request must be carried in ?next.
+
     $('signInButton').href = `/index.html?next=${encodeURIComponent(`./oauth/consent.html?authorization_id=${authorizationId || ''}`)}`;
 
     const REST = AUTH_HOST.replace('/auth/v1', '/rest/v1');
 
     // WHY words instead of the raw string: "openid email offline_access" tells a person nothing, and offline_access is the one scope that keeps working after they leave.
     // Each scope is named in plain language, and the lasting one is marked so the grant is understood, not just clicked through.
+
     const SCOPE_TEXT = {
       openid: 'Identitas dasar — ID akun unik Anda, tanpa data lain.',
       email: 'Alamat email Anda.',
@@ -188,6 +195,7 @@
 
       // WHY no invented name: the separate screen hardcoded "ChatGPT", so a person granting browser control was told the wrong application was asking.
       // If the name is missing, say so plainly rather than guessing.
+
       $('clientName').textContent = name || 'Nama aplikasi tidak diberikan';
       $('factClient').textContent = name || '—';
       const redirect = details.redirect_uri || '';
@@ -252,8 +260,10 @@
     });
 
     async function load() {
+
       // WHY consents load before the request check: this page is also where a signed-in reader comes to see and cut old grants.
       // A missing authorization_id only means there is nothing new to decide, not that the management section must hide.
+
       const early = await usableToken();
       if (early.token) loadConsents(early.token);
       if (!authorizationId) {
@@ -270,11 +280,14 @@
       }
       const session = early.token ? early : await usableToken();
       if (!session.token) {
+
         // WHY two different answers: telling a reader whose session is intact that they are signed out is the bug this page had.
         // Offline, the stored session is untouched.
+
         setStatus(session.offline ? 'Tidak bisa menghubungi layanan auth. Sesi Anda tetap aman.' : 'Masuk dulu untuk memberi izin ini.', 'warn');
 
         // WHY the card is hidden only when offline: offering a sign-in form to a reader whose session is intact is the wrong answer, and hiding it from a reader who genuinely has no session leaves them with nothing to do.
+
         $('signedOutCard').hidden = Boolean(session.offline);
         return;
       }
@@ -286,7 +299,9 @@
         if (!response.ok) throw Object.assign(new Error('refused'), { message: (await response.json().catch(() => ({}))).msg || `http ${response.status}` });
         details = await response.json();
       } catch (error) {
+
         // WHY the token is cleared only when renewal also failed: usableToken already renewed once, so reaching here means the session really is gone rather than merely old.
+
         if (/jwt|bad_jwt|expired/i.test(String(error.message))) forget();
         setStatus(say(error), 'warn');
         $('signedOutCard').hidden = /jwt|expired/i.test(String(error.message)) ? false : true;
@@ -294,6 +309,7 @@
       }
 
       // An authorization that is already decided comes back with a redirect to follow, which is how a repeat consent request resolves without asking again.
+
       if (details.redirect_url) {
         globalThis.location.assign(details.redirect_url);
         return;
@@ -303,8 +319,10 @@
         const response = await fetch(`${AUTH_HOST}/user`, { headers: headersFor(token) });
         if (response.ok) user = await response.json();
       } catch (error) {
+
         // WHY tolerate this: the account line is a comfort, not the decision.
         // Refusing to show the screen because an optional field could not be read would be worse.
+
       }
       renderDetails(details, user);
       setStatus('Tinjau dan pilih izin.');

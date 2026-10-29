@@ -495,7 +495,9 @@ async function createInvoice({
   const supabase = await db();
   const prices = await priceList(supabase);
   const out = amountFor(lines, prices);
+
   // A plan is one price; if its row is missing, charging only the overage would undercharge the month and still look like a bill.
+
   if (out.unpriced.length && lines.some((line) => String(line.kind).startsWith("plan."))) {
     throw new HttpError(409, `the plan cannot be priced: ${out.unpriced.map((line) => line.kind).join(", ")}`);
   }
@@ -506,6 +508,7 @@ async function createInvoice({
   // Creating a payment link is the moment money can move.
   // If a paid invoice were priced and sent to the provider first, a later call would open a second payable transaction and then refuse to write it: the customer could pay twice and the database would never know.
   // So the row is read first, a paid invoice is refused before any provider call, and an unchanged open invoice keeps the link its customer already has.
+
   const { data: existing } = await supabase.from("opera_invoices").select("*").eq("id", id).maybeSingle();
   if (existing?.status === "paid") {
     throw new HttpError(409, `${id} is paid; a later call does not reopen an invoice that has been paid.`);
@@ -525,6 +528,7 @@ async function createInvoice({
   // WHY THE LAST ATTEMPT SURVIVES A WRITE THAT OPENS NO NEW LINK.
   // A row written between the migration and the deploy carries its attempt in the scalar and an empty array; counting only the array would lose the order id a later close has to ask about.
   // And when a re-price cannot open a charge, the old attempt is still the thing the provider may be holding, so its pointer stays: the next opener closes it before it charges.
+
   const history = Array.isArray(existing?.provider_order_ids) && existing.provider_order_ids.length
     ? existing.provider_order_ids.filter((orderId) => typeof orderId === "string" && orderId)
     : existing?.provider_order_id ? [existing.provider_order_id] : [];
@@ -876,9 +880,11 @@ Deno.serve(async (req: Request) => {
     }
     if (req.method === "POST") {
       const body = await readBody(req);
+
       // WHY A NOTIFICATION IS RECOGNISED BY THE ORDER AND THE STATUS CODE.
       // Recognition used to demand a signature field, so a provider payload whose signature arrived under a different name fell through to "unknown action" and left no trace anywhere.
       // What makes a body a notification is what the provider says happened; whether it is believed is a separate question, answered by the signature.
+
       const looksLikeNotification = body.action === "notify"
         || (!body.action && Boolean(body.order_id) && Boolean(body.status_code));
       if (looksLikeNotification) {

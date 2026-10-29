@@ -108,7 +108,9 @@ test('every number a comment quotes exists somewhere in the tree', () => {
 });
 
 test('the rule has teeth: a number nothing holds is refused', () => {
+
   // The number is computed, so this file does not put it in the tree either.
+
   const fabricated = String(9876543 + files.length);
   assert.equal(treeText.includes(fabricated), false, 'the fabricated number must be absent from the tree');
   const source = [
@@ -140,8 +142,10 @@ test('the rule has teeth: a measurement with no source is refused', () => {
 });
 
 test('the rule lets a measurement through when it says where it was taken', () => {
+
   // The escape is for a number that is genuinely new, and it is the honest limit of the rule: no gate can tell a real measurement from an invented one, so the rule asks for the source instead.
   // A reader can then go and check it.
+
   const fabricated = String(9876543 + files.length);
   const source = [
     '// @state: probe.',

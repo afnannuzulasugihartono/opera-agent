@@ -167,6 +167,7 @@ test('a payment notification is believed only when the provider signed it, by th
 
   // The retired rule: the key as an HMAC secret over the three fields.
   // This is the value the function computed while every real notification was refused.
+
   const retired = createHmac('sha512', key).update(`${notification.order_id}${notification.status_code}${notification.gross_amount}`).digest('hex');
   assert.equal(notificationSignatureValid({
     ...notification,
@@ -185,6 +186,7 @@ test('the signature is read from the field the provider sends, and the field is 
   assert.match(shared, /notification\.signature_key\s*\?\?/, 'the provider field is read first, and the alias is the fallback');
 
   // The same field name decides whether a notification is recognised at all.
+
   const fn = fs.readFileSync(new URL('../supabase/functions/opera-agent-billing/index.ts', import.meta.url), 'utf8');
   assert.match(fn, /signature_key/, 'the function must look for the field the provider sends');
   assert.doesNotMatch(fn, /Boolean\(body\.signature\)/, 'looking for a field the provider never sends turns every notification into "unknown action"');

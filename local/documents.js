@@ -378,6 +378,7 @@ export function verifyDocument({
   const sections = Array.isArray(doc.sections) ? doc.sections : [];
 
   // The count comes from the source, not from the artifact: a plan that dropped a figure cannot hide behind a totals line it also dropped.
+
   const expectedGraphs = sections.reduce((
     count,
     section

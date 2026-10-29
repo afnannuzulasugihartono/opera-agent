@@ -441,7 +441,9 @@ test('the profile the ladder reads carries the evidence under every claim', () =
 });
 
 test('a tree cut at the depth cap says so, so short text is not read as a whole document', async () => {
+
   // One node per level down to the cap, with the text on the last one: a document this deep has almost certainly been cut by the request.
+
   const nodes = [{
     nodeId: 'root',
     parentId: undefined,

@@ -57,6 +57,7 @@
 <script>
 
   // R9-E hover behaviour: opening a level closes its siblings, so the caller has to hover each level in turn rather than clicking once.
+
   const root = document.getElementById('menu-root');
   const insert = document.getElementById('insert');
   const pageElements = document.getElementById('page-elements');
@@ -81,6 +82,7 @@
   // R9-D relocation: a maps-style redraw.
   // The original control is DESTROYED and an identical replacement is appended far away, so the minted ref's element is genuinely disconnected.
   // A CSS transform would not do: a connected element always resolves, and the geometry guard only applies to replacements.
+
   const moved = document.getElementById('moved');
   document.getElementById('relocate-trigger').addEventListener('click', () => {
     const rect = moved.getBoundingClientRect();

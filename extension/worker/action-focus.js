@@ -502,6 +502,7 @@ export async function trustedPointer(
         // A wheel that moved down asks whether the bottom was reached, and a wheel that moved up asks about the top; asking the wrong one reports a scroll that stopped when it had room.
         // Written as one expression over four directions it is unreadable, and the answer it gives is what the caller uses to decide whether to scroll again.
         // It is read after the fallback rather than before it, so the boundary describes the scroll the caller ended up with rather than the one the debugger attempted.
+
         const boundaryFor = (
           axis,
           delta

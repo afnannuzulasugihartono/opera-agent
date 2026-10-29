@@ -1244,6 +1244,7 @@ export function registerTools(
   // WHY THE DELIVERY IS ONE TOOL AND NOT FOUR CALLS.
   // A client-month is the unit that is delivered and the unit that is billed, so the agent that sells it should spend one call per client-month: name the file, let the device fetch and name it, and read back the proof.
   // The proof is what makes the sale defensible, so it travels with the answer instead of being assembled from three other calls.
+
   server.registerTool("statement_deliver", {
     title: "Deliver a client statement",
     description: "Download one client's statement for one month to the user's own disk, under a name you choose, and return the proof: bytes, the kind of file read from its own bytes, the page count, and the closing balance with the page named as its source. The file lands in the user's download folder; nothing is uploaded. A second delivery of the same client-month is refused, because a second line would bill the same month twice.",

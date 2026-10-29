@@ -91,6 +91,7 @@ export function createFocusGuard({
     // WHY THE SESSION'S OWN WINDOW IS THE EXCEPTION.
     // Browser.getWindowForTarget says whether the window this session is attached to is minimized, and it carries no title because there is nothing to tell apart: that window is the one and only answer.
     // So it is restored on the session's word, while the OS list - which holds every application on the machine - still needs a name.
+
     const own = state?.ownWindow === true ? (state?.minimized ?? [])[0] ?? '' : '';
     const minimized = own || (wanted
       ? (state?.minimized ?? []).find((title) => title.toLowerCase().includes(wanted)) ?? ''
@@ -99,6 +100,7 @@ export function createFocusGuard({
     // WHY A RESTORE IS NOT THE END OF THE CHECK.
     // A title can name two windows at once: measured live on this machine, two Chrome windows both held "Untitled document - Google Docs - Google Chrome", the machine brought forward the one that was awake, and the minimized one stayed on the taskbar.
     // The answer said it had brought a window back while the page still could not hear input, so the page is asked again before the drive is allowed to send anything.
+
     if (minimized) {
       const out = await focus(minimized);
       seen = {

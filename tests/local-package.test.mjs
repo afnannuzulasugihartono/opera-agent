@@ -55,6 +55,7 @@ test('every module the bin can reach is inside the published files', () => {
   ].map((name) => `${name}.js`);
 
   // An entry point is carried by the "bin" directory itself rather than by a module name, so a file sitting directly in bin/ is exempt and nothing under it is.
+
   const missing = needed.filter((name) => !shipped.includes(name) && !(name.startsWith('bin/') && shipped.includes('bin')));
   assert.deepEqual(missing, [], `npx opera-local would install a package that dies on import: ${missing.join(', ')}`);
 });

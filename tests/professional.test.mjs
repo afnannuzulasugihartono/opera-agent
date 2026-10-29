@@ -103,7 +103,9 @@ test('a live document names no file that is not in the tree', () => {
   })
     .split('\n').filter(Boolean);
   const set = new Set(tracked);
+
   // Dated records describe a point in time; the live documents must be true now.
+
   const live = tracked.filter((file) => {
     if (file === 'README.md' || file === 'AGENTS.md') return true;
     if (!file.startsWith('docs/')) return false;
@@ -120,7 +122,9 @@ test('a live document names no file that is not in the tree', () => {
     for (const match of body.matchAll(/\[[^\]]*\]\(([^)\s]+)\)/g)) {
       const target = match[1].split('#')[0];
       if (!target || /^(?:[a-z]+:|\/)/i.test(target)) continue;
+
       // A link may point at a directory, which git does not list.
+
       const resolved = path.posix.normalize(path.posix.join(dir, target));
       if (set.has(resolved)) continue;
       if (fs.existsSync(repo(resolved))) continue;

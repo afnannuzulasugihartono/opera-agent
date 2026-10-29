@@ -90,7 +90,9 @@ const documentRegion = (nodes) => {
     if (node?.nodeId === undefined || node.nodeId === null) continue;
     byId.set(String(node.nodeId), node);
   }
+
   // Two passes, because a tree does not promise its parents before its children.
+
   const children = new Map();
   for (const [id, node] of byId) {
     const parent = node.parentId === undefined || node.parentId === null ? null : String(node.parentId);
@@ -168,10 +170,12 @@ const documentRegion = (nodes) => {
     parts: [],
     deepest: 0
   };
+
   // WHY THE DESCENT CARRIES A VISITED SET AND NOT A COUNTER.
   // A tree that names a node's ancestor as its child makes a cycle, and the descent follows it: a node in the cycle holds as much text as everything beside it, so it keeps winning the comparison against its own siblings.
   // Measured with a three-node tree hanging off a real root: measureAx never returned, and the hang is synchronous, so read, surface_profile and wait_for_text all stopped with no error and no timeout.
   // A visited set ends the walk at the first node it has already stood on, which is the answer a depth cap would reach only after walking the same loop.
+
   const visited = new Set([here.id]);
   for (;;) {
     const kids = [];
@@ -195,9 +199,11 @@ const documentRegion = (nodes) => {
     here = kids[0];
     visited.add(here.id);
   }
+
   // WHY THE DEPTH OF THE WHOLE TREE IS MEASURED AS WELL.
   // The tree is requested with a depth cap, and a document deeper than the cap comes back cut: its text ends early and nothing in the answer says so.
   // Reaching the cap is the only evidence available that the text may be incomplete, so it is reported rather than guessed at.
+
   let deepest = 0;
   const walked = new Set(roots);
   let frontier = roots;
@@ -247,11 +253,13 @@ export async function measureAx({
   if (!nodes.length) return empty;
 
   const region = documentRegion(nodes);
+
   // WHY THE BAR IS TEN TEXT BOXES.
   // Measured on a real Google Doc: the document region carries 155 of them and the chrome around it carries 60, so a document clears this by an order of magnitude.
   // A toolbar alone carries a handful, and reading that first would answer with menu labels - so below this the DOM is the cheaper and the cleaner answer.
   // The bar decides which read leads.
   // It does not decide whether the text exists: that is what the region itself says.
+
   const rich = region.count >= 10;
   return {
     axRich: rich,
@@ -273,9 +281,11 @@ export function buildProfile({
     axRich: ax.axRich === true,
     truncated: ax.truncated === true,
     focused: probe.focused?.value === true,
+
     // WHY THE NUMBERS RIDE ALONG WITH THE BOOLEANS.
     // A boolean is the decision; the number is why the decision was made, and the number is what a reader needs when the decision turns out wrong.
     // Without it a misclassification is silent again, which is the exact thing this profile exists to end.
+
     evidence: {
       textInDom: probe.textInDom?.evidence ?? null,
       canvas: probe.canvas?.evidence ?? null,

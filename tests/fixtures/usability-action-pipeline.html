@@ -30,6 +30,7 @@
 
     // Test controller: arm sets t0 so the 2.5s delay is measured from the test's explicit arm click, not from page load (deterministic timing).
     // Generous margin: relay latency between arm-click and the click command arriving must eat into the 8s deadline, not into the assertion margin.
+
     let uvArmedAt = 0;
     document.getElementById('uv-arm').addEventListener('click', () => { uvArmedAt = performance.now(); }, { once: true });
     setInterval(() => {
@@ -45,6 +46,7 @@
     });
 
     // (b) same-place successor: Kill destroys Victim and recreates an identical button at the same document position without an id.
+
     document.getElementById('uv-kill').addEventListener('click', () => {
       const v = document.getElementById('uv-victim');
       const rect = v.getBoundingClientRect();
@@ -66,6 +68,7 @@
     });
 
     // (c) expect-verifiable toggle: the click appends a checkable node.
+
     document.getElementById('uv-tog').addEventListener('click', () => {
       const t = document.getElementById('uv-tog');
       t.setAttribute('aria-pressed', t.getAttribute('aria-pressed') === 'true' ? 'false' : 'true');
@@ -76,6 +79,7 @@
     });
 
     // (d) never-ready target: Goner removes Gone with no successor.
+
     document.getElementById('uv-goner').addEventListener('click', () => {
       document.getElementById('uv-gone').remove();
     });

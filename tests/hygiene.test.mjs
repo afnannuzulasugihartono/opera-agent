@@ -555,6 +555,7 @@ test('a module with its own code is reached by the product, not only by its own 
   }
 
   // The entry points: what the product actually runs.
+
   const roots = new Set();
   for (const file of present) {
     if (/^supabase\/functions\/[^/]+\/index\.ts$/.test(file)) roots.add(file);
@@ -579,6 +580,7 @@ test('a module with its own code is reached by the product, not only by its own 
   }
 
   // A file that only re-exports another module is a bridge to live code, not dead code.
+
   const isShim = (text) => {
     const code = text.split('\n').filter((line) => !/^\s*(\/\/|\/\*|\*|#)/.test(line)).join('\n');
     const withoutReexports = code.replace(/export\s*\*\s*from\s*['"][^'"]+['"];?/g, '').replace(/export\s*\{[^}]*\}\s*from\s*['"][^'"]+['"];?/g, '').trim();

@@ -466,6 +466,14 @@ function statementStart
   return 0;
 }
 
+// WHY A COMMENT LINE IS RECOGNISED BY ITS MARKER AND NOT BY THE MASK.
+// The mask blanks comments out, so a comment line looks like an empty line to it; the raw line is the only place the marker survives.
+
+function isCommentLine(line) {
+  const trimmed = line.trimStart();
+  return trimmed.startsWith('//') || trimmed.startsWith('/*') || trimmed.startsWith('*');
+}
+
 function indentAt
 (
   text,
@@ -651,6 +659,10 @@ function renderRange
   return out;
 }
 
+// WHY A BLANK LINE NEXT TO A COMMENT IS NEVER STRIPPED.
+// The comment rule puts a blank line around every comment block, and a comment can be the first thing in a body or an item inside a list, so the blank line beside it is that rule working, not stray space.
+// Stripping it made the two formatters fight over the same line: the comment formatter put the blank line back, this one took it away, and neither ever reached a fixed point.
+
 function renderPair
 (
   text,
@@ -667,17 +679,21 @@ function renderPair
 
   if (pair.kind === 'block')
   {
+
     // WHY THE WHOLE BODY IS SHIFTED, NOT ONLY ITS FIRST LINE.
     // A body's first line is re-indented to one level below the brace, and every line after it is shifted by the same distance, so a source that was already one level shallow comes out level instead of half-corrected.
     // The distance is measured from the first thing in the body, because that is the line the correction is anchored to.
+
     let first = pair.open + 1;
     while (first < pair.close && /\s/.test(text[first])) first += 1;
     const firstIndent = first < pair.close ? indentAt(text, ctx.starts, first) : pair.indent;
+
     // WHY AN EMPTY BLOCK STAYS ON ONE LINE.
     // A brace and its closer with nothing between them carry no body to announce, so a line each says less than the pair does on one.
+
     const body = renderRange(text, ctx, pair.open + 1, pair.close, (out + 2) - firstIndent);
     const lines = body.split('\n');
-    while (lines.length && lines[0].trim() === '') lines.shift();
+    while (lines.length && lines[0].trim() === '' && !isCommentLine(lines[1] ?? '')) lines.shift();
     while (lines.length && lines[lines.length - 1].trim() === '') lines.pop();
     if (!lines.length) return '{}';
     lines[0] = lines[0].replace(/^[ \t]*/, '');
@@ -691,6 +707,13 @@ function renderPair
   }
 
   let textOut = opener;
+
+  const firstGap = text.slice(pair.open + 1, pair.items[0] ? pair.items[0].start : pair.close);
+  const firstGapLine = firstGap.split('\n').find((line) => line.trim() !== '');
+  if (firstGapLine && isCommentLine(firstGapLine)) textOut += '\n';
+  const lastGap = text.slice(pair.items.length ? pair.items[pair.items.length - 1].end + 1 : pair.open + 1, pair.close);
+  const lastGapLine = [...lastGap.split('\n')].reverse().find((line) => line.trim() !== '');
+  const closingBlank = lastGapLine && isCommentLine(lastGapLine);
   let hugged = false;
   for (const
   [
@@ -711,10 +734,11 @@ function renderPair
     const itemSource = indentAt(text, ctx.starts, item.start);
     const itemDelta = (out + 2) - itemSource;
     const rendered = renderRange(text, ctx, item.start, item.end, itemDelta);
+    if (isCommentLine(item.text.split('\n')[0])) textOut += '\n';
     textOut += `\n${pad}  ${rendered}`;
     if (index < pair.items.length - 1 || pair.trailingComma) textOut += ',';
   }
-  textOut += hugged ? closer : `\n${pad}${closer}`;
+  textOut += hugged ? closer : `\n${pad}${closingBlank ? '\n' + pad : ''}${closer}`;
   return textOut;
 }
 

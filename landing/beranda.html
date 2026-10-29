@@ -384,6 +384,7 @@
 
     // WHY the extension id is written here and pinned by a test: the page must be able to name the extension it configures.
     // The id is derived from the manifest key and is already asserted in scripts/check.mjs, so the two cannot drift apart silently.
+
     const EXTENSION_ID = 'ofgemipoobcnbjkfanmofjbdonjapmgl';
 
     const $ = (id) => document.getElementById(id);
@@ -394,6 +395,7 @@
 
     // WHY localStorage and zero network: the key is typed on this page, so the no-network promise is load-bearing.
     // Presence of a stored session is enough to swap acquisition actions for member actions; the name is never shown because it cannot be known without a request, and one must not be made.
+
     try {
       if (globalThis.localStorage?.getItem('opera-agent-access-token')) {
         document.body.classList.add('signed-in');
@@ -403,10 +405,13 @@
         $('quickTiles').hidden = false;
       }
     } catch (error) {
+
       // Private mode without storage keeps the acquisition hero, which is true.
+
     }
 
     // WHY a provider map and not option values: the select names the provider and the map owns its endpoint plus its model list, so one choice fills both inputs.
+
     const MODEL_PROVIDERS = {
       nvidia: {
         endpoint: 'https://integrate.api.nvidia.com/v1/chat/completions',
@@ -476,6 +481,7 @@
     $('modelName').addEventListener('input', syncProviderSelect);
 
     // WHY match on load instead of filling for the default option: the inputs start empty, which matches no known provider, so the select must say Kustom from the first paint — showing NVIDIA against empty fields would name a lie.
+
     syncProviderSelect();
 
     function collect() {
@@ -500,6 +506,7 @@
 
       // One message, one destination: the installed extension.
       // There is no fetch here on purpose, because a fetch is where a key would leak.
+
       globalThis.chrome.runtime.sendMessage(EXTENSION_ID, { type: 'applyModelConfig', ...config }, (response) => {
         const error = globalThis.chrome.runtime.lastError;
         if (error || !response?.ok) {
@@ -528,6 +535,7 @@
 
     // WHY last and fenced: motion must never gate content.
     // The js class goes on <html> first so every hiding rule requires it, and a reader without JS — or with reduced motion — gets the full page with no animation at all.
+
     try {
       document.documentElement.classList.add('js');
       const reduce = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -540,7 +548,9 @@
         for (const el of document.querySelectorAll('.reveal')) seen.observe(el);
       }
     } catch (error) {
+
       // Content stays visible; only the entrance motion is lost.
+
     }
   </script>
 </body>

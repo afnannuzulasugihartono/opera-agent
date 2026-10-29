@@ -106,6 +106,7 @@ export function createPointerMethods({
 
     // WHY THE DOM AGENT IS SWITCHED ON FIRST.
     // Measured live: without it resolveNode answers an error, the catch below swallowed it, and the click reported no fact at all - a silent fallback that looks the same as a page that cannot answer.
+
     try {
       await cdp.send('DOM.enable').catch(() => null);
       const resolved = await cdp.send('DOM.resolveNode', { backendNodeId });
@@ -184,6 +185,7 @@ export function createPointerMethods({
   // WHY A CLICK TAKES A FRACTION AS WELL AS A PIXEL.
   // Measured live by resizing this machine's browser window: the viewport went 1144x714 to 1186x670 while the device scale stayed at 1.25, so the same CSS pixel stopped meaning the same place.
   // A fraction is resolved against the viewport as it is at the moment of the click, which survives that, and the answer says which pixels it became and in what space - so a caller that meant a fixed pixel still gets the truth about the space it landed in.
+
   async function clickFraction(at) {
     const view = await primitives.viewport();
     const asked = {
@@ -233,6 +235,7 @@ export function createPointerMethods({
   // WHY THE POINTER LEAVES FIRST.
   // Measured live: a submenu that would not open on hover opened once the pointer was sent somewhere else first and came back.
   // A menu that has never seen the pointer arrive from outside does not treat the hover as entering it, so the away-and-back is not politeness, it is the enter transition the menu is waiting for.
+
   async function hoverRow(row) {
     const away = {
       x: Math.max(2, row.x - 80),
@@ -248,6 +251,7 @@ export function createPointerMethods({
 
   // WHY A MENU ROW RESOLVES THE SAME WAY A SNAPSHOT ROW DOES.
   // Both are places on the screen that stop being true when the menu closes, so both are held on to as elements and measured again at the moment of the click.
+
   async function resolveHandle(row) {
     if (row.handle || row.node === undefined) return row;
     const { result } = await cdp.send('Runtime.evaluate', {

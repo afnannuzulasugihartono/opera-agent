@@ -1,7 +1,6 @@
 // @last-edited: 2026-10-21 UTC+7.
 // @title: comment-format — one structural rule for comment spacing and sentence lines.
-// @state: A comment block at column zero is a section header and gets a blank line before and after.
-// An indented block documents the code below it and is left alone.
+// @state: A comment block, at any indent, is a paragraph and gets a blank line before and after it.
 // A sentence is written on one line; the formatter joins a wrapped sentence and splits a line that holds two.
 // The classifier tracks block comments, templates, Python docstrings and YAML block scalars so embedded data is never rewritten.
 // @dependencies: none.
@@ -270,6 +269,10 @@ function markerOf(
   return null;
 }
 
+// WHY AN EMBEDDED COMMENT IS MARKED.
+// A `//` line inside a `node -e` script in a YAML block scalar is part of the script text handed to node, so a blank line added around it would become part of that text.
+// The sentence rule may reach such a line; the spacing rule must not, so the record says which it is.
+
 function record(
   text,
   ext
@@ -323,6 +326,7 @@ function record(
           indent,
           text: trimmed.slice(2).replace(/^\s/, ''),
           raw: line,
+          embedded: true
         };
       }
       continue;
@@ -746,12 +750,14 @@ function addSpacing(
     }
 
     const first = group.records[0];
-    const header = first.indent === '' && !directiveTexts(group.records.map((line) => line.text));
-    if (header && out.length > 0 && out[out.length - 1].trim() !== '' && records[i - 1] === null) {
+    const directive = directiveTexts(group.records.map((line) => line.text));
+    const embedded = group.records.some((line) => line.embedded);
+    if (!directive && !embedded && out.length > 0 && out[out.length - 1].trim() !== '' && records[i - 1] === null) {
       out.push('');
     }
     for (let n = group.start; n <= group.end; n += 1) out.push(lines[n]);
-    if (header
+    if (!directive
+      && !embedded
       && group.end + 1 < lines.length
       && lines[group.end + 1].trim() !== ''
       && records[group.end + 1] === null) {

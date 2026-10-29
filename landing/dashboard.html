@@ -55,6 +55,7 @@
         <!-- WHY a contextual part: the object of the Tabel view is a list of tables, and a second sidebar inside the content made the one view with two left columns. -->
         <!-- WHY it opens under Tabel and not at the end of the rail: measured against Cline, the objects of a view open directly under that view's item. -->
         <!-- The reader arrived at Tabel and found its tables below "Akun". -->
+
         <div class="railContext" id="railTables" hidden>
           <p class="railGroup">Tabel data</p>
           <div class="railList" id="konsolList" role="group" aria-label="Daftar tabel"></div>
@@ -66,7 +67,9 @@
       </nav>
 
       <div class="content tabbed">
+
         <!-- WHY a head of its own: the numbers and the status line belong to the console, not to one view, and a view that scrolls must not take them with it. -->
+
         <div class="contentHead">
           <div class="appBar">
             <p class="appWho" id="whoami">Memeriksa sesi…</p>
@@ -219,6 +222,7 @@
 
     // WHY reader RPCs and no table paths: opera_my_devices returns the caller's devices with their ten latest commands, method and status only, and the opera_konsol_* pair returns one page of one table with the ownership filter, the page caps and the masking already applied server-side.
     // A page that queried raw tables would need grants the project deliberately never hands out.
+
     const REST = 'https://nenmkmtvjremqphfqnfw.supabase.co/rest/v1';
     const AUTH_HOST = 'https://nenmkmtvjremqphfqnfw.supabase.co/auth/v1';
     const PUBLISHABLE_KEY = 'sb_publishable_jAbS_QIQsmXQA-Rj8RWPcg_JVeBedJ6';
@@ -228,6 +232,7 @@
 
     // WHY the session renews itself: a Supabase access token lasts about an hour and this page holds no SDK to renew it, so an expired token read as "signed out" and the stored copy was deleted.
     // Renewing is one POST to the Auth host this page already reaches, so a reader who stays signed in is not asked to sign in again every hour.
+
     const forgetSession = () => {
       localStorage.removeItem('opera-agent-access-token');
       localStorage.removeItem('opera-agent-refresh-token');
@@ -238,6 +243,7 @@
 
       // WHY the three outcomes and not a boolean: "the refresh token was refused" and "we could not reach Auth" look identical to a caller that only sees null, and treating the second as the first deletes a working session over a dropped packet.
       // Every other user on a phone loses signal, so this distinction is the difference between a session that survives a tunnel and one that does not.
+
       if (!refreshToken) return { ok: false, dead: true, why: 'no-refresh-token' };
       let response;
       try {
@@ -266,15 +272,19 @@
 
     // WHY relative time: a raw 2026-10-05T03:51:03 timestamp is a database leak into the UI.
     // People read "2 jam lalu", not ISO strings.
+
     const relativeTime = (() => {
       try {
         const format = new Intl.RelativeTimeFormat('id', { numeric: 'auto' });
 
         // WHY the English unit keys and not Indonesian words: format() takes CLDR unit identifiers and localises them through the locale itself.
         // Passing "menit" throws "Invalid unit argument" at call time, and because the throw happened while building the device list, the live dashboard rendered zero device cards while its status line still said one was paired.
+
         const steps = [[60, 1, 'second'], [3600, 60, 'minute'], [86400, 3600, 'hour'], [2592000, 86400, 'day'], [31536000, 604800, 'week']];
         return (iso) => {
+
           // WHY the empty check and not just the NaN check below: new Date(null) is the epoch, not NaN, so a device that never checked in rendered as "57 tahun yang lalu" instead of never.
+
           if (iso === null || iso === undefined || iso === '') return 'belum pernah';
           const then = new Date(iso).getTime();
           if (Number.isNaN(then)) return 'belum pernah';
@@ -291,10 +301,12 @@
 
     // WHY the session is read here and not shown: this page is about devices, and the account itself lives on its own page.
     // Only the address is echoed, so the reader can tell which account's devices they are looking at.
+
     async function currentSession() {
       let token = localStorage.getItem('opera-agent-access-token');
 
       // WHY the probe before the work: a token that aged out says nothing about the account, and treating it as signed out is what made the session feel temporary.
+
       let temporary = null;
       if (token) {
         const probe = await fetch(`${AUTH_HOST}/user`, { headers: { apikey: PUBLISHABLE_KEY, authorization: `Bearer ${token}` } }).catch(() => null);
@@ -304,12 +316,14 @@
 
           // WHY only a refused refresh clears the session: a failure to reach Auth is a dropped packet, not a signed-out reader, and clearing here would end sessions on a train.
           // The answer is carried on, because the call that follows would otherwise clear the session for the very same dropped packet.
+
           else if (renewed.dead) forgetSession();
           else temporary = renewed.why;
         }
       }
 
       // No token, no dashboard: a stranger gets the sign-in page, never an empty state that looks like a broken product.
+
       if (!token && !temporary) {
         globalThis.location.replace('./index.html');
         return null;
@@ -319,7 +333,9 @@
         if (!response.ok) throw new Error(`auth ${response.status}`);
         return { token, user: await response.json() };
       } catch (error) {
+
         // WHY the temporary branch comes first: a renewal that could not reach Auth is a network problem, and answering it with a sign-out is what made every reader look like the product had forgotten them.
+
         if (temporary) {
           $('status').textContent = 'Tidak bisa menghubungi layanan auth. Sesi Anda tetap aman; coba lagi sebentar.';
           $('status').className = 'status warn';
@@ -346,10 +362,12 @@
 
     // WHY the map: the server speaks English and the page speaks Indonesian.
     // Showing a raw server string to an operator reads as a broken product, and the rate-limit refusal is the one message they will actually meet.
+
     const say = (raw) => TRANSLATED[String(raw)] || String(raw);
 
     // WHY the account facts live here and not only on akun.html: this page is where a reader lands to answer "is this the right account", and the address is the one fact that answers it.
     // Nothing here is editable, so it cannot drift from the account page, which owns every write.
+
     function renderAccountFacts(user, devices) {
       const online = devices.filter((device) => device.status === 'online').length;
       const facts = [
@@ -364,6 +382,7 @@
 
     // WHY stored and re-rendered: the install marker can land after the device list has loaded, and step one must flip without refetching.
     // The same payload feeds the stats, so one object carries all three.
+
     let lastSeen = { installed: false, devices: [], total: 0, browser: '' };
     let liveToken = null;
     let liveUser = null;
@@ -388,6 +407,7 @@
 
     // WHY the action follows the state: the biggest button on a finished install was still "Pasang extension", so the page offered work the reader had already done.
     // The next real step is the one thing the page already knows from the same payload the metrics sum.
+
     function paintPrimaryAction() {
       const cta = $('primaryCta');
       if (!cta) return;
@@ -460,6 +480,7 @@
       $('whoami').textContent = `Device milik ${user.email}.`;
 
       // WHY the sign-in link leaves a signed-in page: "Masuk" beside a live session is a contradiction the reader has to resolve, and the app bar already offers the account.
+
       const navCta = document.querySelector('header .navCta');
       if (navCta) navCta.hidden = true;
 
@@ -467,6 +488,7 @@
       // WHY this is a function and not a single read: the content script runs at document_idle, so the marker can land after this module has already read the document.
       // Reading once would show "not installed" on a browser that has it, and the reader would go and install a second copy.
       // The attribute change is the one event that means the answer changed.
+
       const reportInstallState = () => {
         const installed = document.documentElement.dataset.operaAgent === 'installed';
         $('installState').textContent = installed
@@ -491,6 +513,7 @@
       // WHY polling and not a push channel: pairing completes in the extension popup, a separate context this page cannot hear, so a list read once stays frozen on "offline" after a successful pairing.
       // Re-reading the owner-scoped list every 10 seconds (and on every return to the tab) is what makes the list move on its own.
       // The capability check keeps environments without timers on the single-load path.
+
       if (typeof setInterval !== 'undefined' && !livePoll) {
         livePoll = true;
         setInterval(() => { if (!document.hidden) refreshDevices(); }, 10000);
@@ -502,6 +525,7 @@
 
     // WHY a duration and not two timestamps: "2 dtk" answers how long a command took; two ISO strings make the reader do the subtraction.
     // Pending has no completed stamp, so it reads as an en dash, never as zero.
+
     function formatDuration(createdAt, completedAt) {
       if (!createdAt || !completedAt) return '–';
       const ms = new Date(completedAt).getTime() - new Date(createdAt).getTime();
@@ -516,6 +540,7 @@
 
     // WHY the history keeps its rows in memory and paints from them: the filter and the search box both narrow one list, and refetching on every keystroke would make a local question wait on the network.
     // Method, status and timestamps only — never a payload field.
+
     let historyAll = [];
     let historyFilter = '';
     let historyQuery = '';
@@ -557,6 +582,7 @@
         const status = ink ? `<span class="${ink}">${esc(row.status)}</span>` : `<span>${esc(row.status)}</span>`;
 
         // WHY the relative time keeps the absolute one in its title: "15 jam yang lalu" answers "how fresh", and the exact minute is what a support thread asks for next.
+
         return `
         <tr>
           <td title="${esc(absoluteTime(row.createdAt))}">${esc(relativeTime(row.createdAt))}</td>
@@ -615,6 +641,7 @@
 
       // WHY the numbers live here and not in a second fetch: they are sums over the same payload the list renders, so the summary can never disagree with it.
       // The rail count rides along for the same reason.
+
       const total = data.devices.length;
       const up = data.devices.filter((device) => device.status === 'online').length;
       const done = data.devices.reduce((n, device) => n + (device.completedCommands ?? 0), 0);
@@ -631,6 +658,7 @@
 
       // WHY metadata only: a screenshot of this page must not leak speech, so the section names sessions without quoting them.
       // The text travels only in media_listen_read results to the paired agent.
+
       try {
         const listenResponse = await fetch(`${REST}/rpc/opera_my_listen`, { method: 'POST', headers: headersFor(token), body: '{}' });
         const listenData = await listenResponse.json();
@@ -663,6 +691,7 @@
 
       // WHY the state rides the first line: two stacked cards once differed only in a middle row, so the down device hid in plain sight.
       // The build moves up beside the name for the same reason; the facts below keep the rest.
+
       $('devices').innerHTML = data.devices.map((device) => `
         <div class="card">
           <div class="cardHead">
@@ -853,6 +882,7 @@
 
       // WHY the second pass through currentSession: an access token ages out in about an hour and this pane can be open across that hour.
       // One renew here is the difference between a page that kept working and a console that signed the reader out mid-read over a token it could have refreshed itself.
+
       if (response && response.status === 401) {
         konsolToken = null;
         const session = await currentSession();
@@ -872,6 +902,7 @@
       if (!konsol.table) return;
 
       // WHY the sequence check: a fast reader can switch tables or pages while a response is still crossing the wire, and without it the older answer lands last and the grid shows page one of the table the reader just left.
+
       const seq = ++konsol.seq;
       konsolSay('Memuat…');
       const data = await konsolRpc('opera_konsol_table', {
@@ -887,6 +918,7 @@
 
         // WHY the clear: the static header row says "Memuat…" only while the first load is in flight; a first load that fails must not leave it promising data that never arrived.
         // A later failure keeps the last good grid.
+
         if (!$('konsolRows').children.length) $('konsolHead').innerHTML = '';
         konsolSay(say(data?.error || 'Konsol tidak bisa membaca tabel itu.'), 'warn');
         return;
@@ -917,6 +949,7 @@
       const pageCount = Math.max(1, Math.ceil(konsol.total / konsol.limit));
 
       // WHY the page position and the row span together: "1–50 dari 28.745" says how much exists and "Halaman 2 dari 575" says where the reader stands — the footer of totals every production table closes with.
+
       $('konsolPage').textContent = konsol.total === 0 ? '0 baris' : `Halaman ${pageNo} dari ${pageCount} · ${konsolNf(from)}–${konsolNf(to)} dari ${konsolNf(konsol.total)} baris`;
       $('konsolPrev').disabled = konsol.offset <= 0;
       $('konsolNext').disabled = to >= konsol.total;
@@ -944,6 +977,7 @@
       if (!data?.ok) {
 
         // WHY the clear: the static header row exists only for the first-load state; a list that never arrived means no table ever will, and "Memuat…" would promise otherwise.
+
         $('konsolHead').innerHTML = '';
         konsolSay('Konsol data belum bisa dimuat. Muat ulang halaman sebentar lagi.', 'warn');
         return;
@@ -952,6 +986,7 @@
 
       // WHY grouped and not one flat wall: sixteen names read as a list of tables only when the two rules behind them are visible — nine belong to this account, seven to the operator.
       // The server sends the scope; the page shows it.
+
       const groupOf = { owner: 'Milik akun ini', operator: 'Operator' };
       let lastScope = null;
       $('konsolList').innerHTML = entries.map((entry) => {
@@ -997,6 +1032,7 @@
 
       // WHY a toggle and not a one-way open: the pane is the reader's magnifier, and a magnifier you cannot put down becomes the thing in the way.
       // The tinted row says which row the pane is showing, so closing it never leaves a stale doubt.
+
       const open = tr.getAttribute('aria-selected') === 'true';
       for (const row of $('konsolRows').querySelectorAll('[aria-selected]')) row.removeAttribute('aria-selected');
       if (open) { $('konsolJson').hidden = true; return; }
@@ -1019,6 +1055,7 @@
 
     // WHY debounced from the first keystroke: every character is a server round trip over a table that may hold twenty-eight thousand rows, and a search that starts from page four lands on nothing.
     // 300ms sits past a fast typist's burst and still reads as immediate to the eye.
+
     let konsolDebounce = null;
     $('konsolSearch').addEventListener('input', () => {
       clearTimeout(konsolDebounce);
@@ -1031,6 +1068,7 @@
 
     // WHY escape: a search box that swallowed a keystroke mid-word leaves the grid filtered by something the reader can no longer see.
     // Escape empties the box and returns the table to its own first page, the way every filter bar does.
+
     $('konsolSearch').addEventListener('keydown', (event) => {
       if (event.key !== 'Escape' || !$('konsolSearch').value) return;
       clearTimeout(konsolDebounce);
@@ -1042,6 +1080,7 @@
 
     // WHY the 5,000-row bound and pages of 200: the reader is a person, not a pipeline.
     // An unbounded export would ask the browser to hold a file it cannot, and the server caps every page at 200 anyway — the loop just walks that cap until the filter drains or the bound is hit, one cell-masked row at a time.
+
     $('konsolCsv').addEventListener('click', async () => {
       if (!konsol.table) return;
       const cap = 5000;
@@ -1091,6 +1130,7 @@
 
     // WHY one visible section: eight stacked jobs read as a form nobody finished.
     // Tabs show one at a time, deep-linked by hash so #riwayat is shareable.
+
     function showSection() {
       const sections = [...document.querySelectorAll('main section[id]')];
       if (!sections.length) return;
@@ -1099,6 +1139,7 @@
       for (const section of sections) section.classList.toggle('active', section.id === target);
 
       // WHY the document title follows the view: eight views share one URL, so the tab strip is the only place a reader with several tabs open can tell them apart.
+
       const heading = sections.find((section) => section.id === target)?.querySelector('h1')?.textContent?.trim();
       if (heading) document.title = `${heading} — Opera Agent`;
       for (const link of document.querySelectorAll('.rail a, .tabs a')) {
@@ -1108,17 +1149,20 @@
 
       // WHY the rail carries the view's own list: the object of the Tabel view is a table, and a second sidebar inside the content gave that one view two left columns.
       // The list is loaded once and kept, so moving between views costs no request.
+
       const context = $('railTables');
       if (context) context.hidden = target !== 'tabel';
 
       // WHY lazy: the sidebar is sixteen counts over tables nobody who opens #riwayat asked about.
       // The editor pays for them once, on first visit, and the rest of the session is local state plus one page per click.
+
       if (target === 'tabel') konsolInit();
     }
     if (typeof globalThis.addEventListener === 'function') globalThis.addEventListener('hashchange', showSection);
 
     // WHY the rail can be put away: the table grid is the widest thing on the console, and a 196px column of navigation is 196px it cannot spend.
     // The label goes and the mark stays, so a collapsed rail is still navigable — which is also why the count writes the label and never the link.
+
     const collapse = $('railCollapse');
     if (collapse) {
       collapse.addEventListener('click', () => {

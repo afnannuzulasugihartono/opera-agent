@@ -85,7 +85,9 @@ const fakeCdp = ({
         expression: params.expression
       });
       const expression = String(params.expression ?? '');
+
       // The probe is keyed on the canvas-coverage arithmetic, which no other expression in the driver contains, so readState is not mistaken for it.
+
       if (method === 'Runtime.evaluate' && expression.includes('window.innerHeight')) {
         return { result: { value: probe } };
       }
@@ -98,7 +100,9 @@ const fakeCdp = ({
           ready: 'complete'
         } } };
       }
+
       // The one selection state, read by both the copy and the caret guard.
+
       if (method === 'Runtime.evaluate' && expression.includes('richest')) {
         return { result: { value: {
           ...(caret ?? {
@@ -166,7 +170,9 @@ test('a read with no consent skips the caret-moving step and says why', async ()
 });
 
 test('a read with consent runs the caret-moving step', async () => {
+
   // A canvas caret: offset 0 on a node with no text, which is what the real measurement found, so the verdict must report it could not be restored.
+
   const canvasCaret = {
     rangeCount: 1,
     collapsed: true,

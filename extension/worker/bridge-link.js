@@ -269,7 +269,9 @@ export function ensureBridgeLink() {
   startedAt = Date.now();
   trace = [];
   const mine = ++generation;
+
   // The port is found before the socket is opened, so a stale build lands on the road that is actually listening rather than on the one it remembers.
+
   discoverBridge().then((found) => {
     if (mine !== generation) return;
     bridgePort = found.port;

@@ -127,7 +127,9 @@ const canvasCdp = ({
         return { result: { value: probe } };
       }
       if (method === 'Accessibility.getFullAXTree') return axTree(ax);
+
       // The one selection state: the text the copy reads and the caret position the guard measures, from the same frame.
+
       if (method === 'Runtime.evaluate' && expression.includes('richest')) {
         return { result: { value: {
           ...caret,

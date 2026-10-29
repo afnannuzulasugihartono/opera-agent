@@ -29,9 +29,11 @@ export function createWaits({
   primitives,
   now = Date.now
 }) {
+
   // WHY SETTLE IS A PRIMITIVE AND NOT A TOOL.
   // Every action needs the same short look before the page is read, so the wait belongs beside the actions, not in the surface where a caller has to remember it.
   // The page expression resolves with what it saw, which makes the cost inspectable instead of a blind sleep: quiet means the last change was at least 32ms ago, deadline means the page was still moving when the 120ms cap arrived.
+
   async function settle() {
     const started = Date.now();
     const answer = (
@@ -118,6 +120,7 @@ export function createWaits({
   // This used to ask the url whether the page was a document editor and then read the document for it, which is the site recognition the drive no longer carries.
   // A length bar is not the decision either: measured on a real Google Doc, the chrome around the canvas holds 1,312 characters of its own, so a wait that only measures length polls the toolbar forever and reports found:false for text that is right there in the document.
   // So the probe decides once: a page with no canvas takes the cheap DOM answer, and a canvas page is read through the ladder, which reaches past the chrome.
+
   async function waitForText(
     text,
     {

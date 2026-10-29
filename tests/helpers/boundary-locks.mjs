@@ -28,7 +28,7 @@
 export const PUBLIC_SURFACE_LOCKS = Object.freeze([
   [
     '../extension/content.js',
-    'c3ff09df6107f794d9259f225dc9bdf452d5b84d'
+    'b5b3e40afaec1bc8e496cad2126887ae210874d7'
   ],
   [
     '../extension/page-kit.js',
@@ -36,7 +36,7 @@ export const PUBLIC_SURFACE_LOCKS = Object.freeze([
   ],
   [
     '../extension/background.js',
-    '8cff50ebecd4cf905aad8c95f587503be0f7ba0d'
+    '654c163e3ecdaf40d2ab08b62b28bc838469b26e'
   ],
   [
     '../extension/manifest.json',
@@ -48,7 +48,7 @@ export const PUBLIC_SURFACE_LOCKS = Object.freeze([
   ],
   [
     '../supabase/functions/opera-agent-mcp/tools.ts',
-    'bbbe1151345fecc37a2cf0ed47f665741bce619c'
+    'e8f37c84dcd711bf137fd895ab7bc9396791ba9d'
   ],
 ]);
 

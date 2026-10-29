@@ -84,6 +84,7 @@ test('the nav survives a 390px phone without wrapping ragged', () => {
 });
 
 test('the header is never squeezed by a page that keeps a narrow column', () => {
+
   // WHY THE HEADER HAS ITS OWN WIDTH.
   // Measured live on 2026-10-26: index.html sets .wrap to 560px, and the header shares that wrap, so at a 912px window the last nav item ended at 936px and the document scrolled sideways by 24px.
   // The nav row measures 747px, and the wrap spends 40px of padding inside the viewport margin, so the row needs 835px; the old 800px rule counted only the margin and left 801-835 overflowing.

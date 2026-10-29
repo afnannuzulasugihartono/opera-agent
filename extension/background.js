@@ -250,6 +250,7 @@ export async function dispatch(
         // Measured live on this machine: chrome.windows.update with focused:true alone leaves a window on the taskbar minimized, and chrome.debugger serves no Browser domain on a bridge session, so nothing else in the tree can bring it back.
         // A drive that typed after that went nowhere, which is the one failure the focus gate refuses rather than guessing about.
         // state:'normal' is the only call that takes a window off the taskbar, so the rule is one pure decision and the window is read again to say what actually happened.
+
         if (update) {
           await chrome.windows.update(tab.windowId, update);
           reused = false;

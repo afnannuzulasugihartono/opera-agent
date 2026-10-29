@@ -63,7 +63,7 @@ const CASES = [
     expected: 'const a = 1;\n\n// why this exists\n\nconst b = 2;\n',
   },
   {
-    name: 'an indented comment documents the code under it, and its spacing is left alone',
+    name: 'an indented comment is a paragraph too, and it is spaced from the code around it',
     ext: '.mjs',
     lines: [
       'function f() {',
@@ -72,6 +72,7 @@ const CASES = [
       '  return a;',
       '}'
     ],
+    expected: 'function f() {\n  const a = 1;\n\n  // why this exists\n\n  return a;\n}\n',
   },
   {
     name: 'a line that holds two sentences becomes two lines',
@@ -262,7 +263,7 @@ const CASES = [
     expected: 'const s = fmt(a / b // nothing closed here\n  , c);\n\n// this comment is visible to the rule\n\nconst z = 1;\n',
   },
   {
-    name: 'the body of a script tag is JavaScript, and its indented comment is documentation',
+    name: 'the body of a script tag is JavaScript, and its comment is spaced like any other',
     ext: '.html',
     lines: [
       '<script type="module">',
@@ -270,6 +271,7 @@ const CASES = [
       '  const x = 1;',
       '</script>'
     ],
+    expected: '<script type="module">\n\n  // WHY this is a real comment inside a module script\n\n  const x = 1;\n</script>\n',
   },
   {
     name: 'every line of a comment that opens on its own line is a comment',
@@ -290,6 +292,7 @@ const CASES = [
       '        || exit 1',
       '      # a shell comment afterwards'
     ],
+    expected: '      node -e "process.exit(1)" \\\n        || exit 1\n\n      # a shell comment afterwards\n',
   },
   {
     name: 'a dialect with no file extension still comments with #',

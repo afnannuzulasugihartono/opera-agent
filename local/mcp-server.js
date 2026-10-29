@@ -234,7 +234,9 @@ const afterAction = async (
   lastSeen = seen;
   const tab = tabSaid.get(driver) ?? null;
   const diff = diffElements(prev ?? [], seen);
+
   // A comparison needs both sides: the first action on a driver has no previous page, so url and textGrow are null rather than a difference against nothing.
+
   const bothStates = Boolean(prevState && state);
   return asText({
     action,
@@ -450,6 +452,7 @@ const windowMatch = async (
     requireArguments(args, TOOLS.find((t) => t.name === name)?.inputSchema.required ?? []);
 
     // The burst is checked before a tab is resolved, so a malformed step list cannot touch a browser, and a caller learns which step was wrong before any page is changed.
+
     const burst = name === 'browser_burst' ? normalizeBurst(args) : null;
 
     if (name === 'statement_card') {
@@ -503,6 +506,7 @@ const windowMatch = async (
     // WHY A DEAF PAGE STOPS THE ACTION.
     // Measured live on this machine: two windows can carry one page title, and the window that comes forward may not be the one holding this tab.
     // The guard now confirms the page hears input after a restore; when it does not, sending the keystroke anyway is the silent loss this product exists to remove.
+
     if (front?.blocked) {
       throw new Error(`refused: ${front.window}. Nothing was sent, because input into a window that cannot hear it is lost without a word. Bring the window back with focus_window, or name the tab, then try again.`);
     }

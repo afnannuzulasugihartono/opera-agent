@@ -151,6 +151,7 @@
 
     // WHY fetch is allowed exactly one destination here: the project Auth host.
     // The page CSP forbids every other origin, and the lock test pins that split, so a second destination cannot be added without turning the suite red.
+
     const AUTH_HOST = 'https://nenmkmtvjremqphfqnfw.supabase.co/auth/v1';
     const PUBLISHABLE_KEY = 'sb_publishable_jAbS_QIQsmXQA-Rj8RWPcg_JVeBedJ6';
 
@@ -166,6 +167,7 @@
 
     // WHY a same-site relative path and nothing else: the sign-in page is the one page an attacker can send a stranger to with a query string, so ?next must not become an open redirect.
     // A value that does not start with "./" is discarded, which leaves "./beranda.html" as the only reachable destination.
+
     const RETURNABLE = /^\.\/[A-Za-z0-9._~/?=&%-]*$/;
     const returnTo = () => {
       const asked = new URLSearchParams(globalThis.location.search).get('next') || '';
@@ -173,6 +175,7 @@
     };
 
     // WHY the provider buttons carry next in redirect_to: Supabase sends the browser back to that exact URL, so without it a person who followed an OAuth request would land on the home page with their authorization_id dropped on the floor.
+
     function wireReturnPath() {
       const target = returnTo();
       for (const id of ['googleButton', 'githubButton']) {
@@ -189,6 +192,7 @@
 
     // WHY the tabs swap copy and nothing else: registering is the same one-time code request as signing in — Auth creates the account for a new address — so both tabs share one form, one endpoint, and one handler.
     // The two copies live in marked blocks the language swap translates; this only flips which block shows, so tabs and languages never fight over the same text.
+
     function selectTab(login) {
       $('loginTab').setAttribute('aria-selected', login ? 'true' : 'false');
       $('registerTab').setAttribute('aria-selected', login ? 'false' : 'true');
@@ -212,6 +216,7 @@
 
       // WHY a refresh token is kept: a Supabase access token lasts about an hour, and this site holds no SDK to renew it, so storing only the access token signed the reader out roughly every hour with no warning.
       // Renewal is one POST against the Auth host, which the page's CSP already allows and no other origin would need.
+
       const refreshed = user.session?.refresh_token;
       if (refreshed) localStorage.setItem('opera-agent-refresh-token', refreshed);
       if (!user?.email) return { error: 'tanpa-email' };
@@ -226,6 +231,7 @@
 
       // WHY the three outcomes and not a boolean: "the refresh token was refused" and "we could not reach Auth" look identical to a caller that only sees null, and treating the second as the first deletes a working session over a dropped packet.
       // Every other user on a phone loses signal, so this distinction is the difference between a session that survives a tunnel and one that does not.
+
       if (!refreshToken) return { ok: false, dead: true, why: 'no-refresh-token' };
       let response;
       try {
@@ -252,8 +258,10 @@
     }
 
     function showSignedIn(email) {
+
       // WHY the heading changes too: a signed-in visitor opening the account page must see an account page, not a login page wearing a status line.
       // WHY the helper and not literals: literals pinned EN mode to Indonesian here, so the three strings render through the shared helper with the exact Indonesian as the fallback default.
+
       var t = window.OperaAgentI18n && typeof window.OperaAgentI18n.t === 'function'
         ? window.OperaAgentI18n.t.bind(window.OperaAgentI18n)
         : function (key, fallback) { return typeof fallback === 'string' ? fallback : key; };
@@ -269,6 +277,7 @@
     // Read it, prove it against Auth, remember it across this browser's tabs like every other site, and hand the visitor back to the home page.
     // Keluar forgets it.
     // The token never leaves this browser except toward Auth.
+
     async function completeReturningLogin() {
       const fragment = new URLSearchParams(globalThis.location.hash.replace(/^#/, ''));
       const accessToken = fragment.get('access_token');
@@ -277,6 +286,7 @@
       // WHY keep the search string: the OAuth consent sends the browser to this page with ?next=<the consent URL>, and a replaceState to location.pathname strips that query, so after a provider login the reader landed on the home page with their authorization_id on the floor.
       // Strip only the fragment (the token).
       // The next URL survives into returnTo().
+
       globalThis.history.replaceState(null, '', `${globalThis.location.pathname}${globalThis.location.search}`);
       let proof = null;
       try {
@@ -293,12 +303,14 @@
       // WHY the refresh token is kept: a Supabase access token lasts about an hour and this site holds no SDK to renew it.
       // Storing only the access token meant the reader was silently signed out roughly every hour, which is what "sering keluar sendiri" was.
       // The refresh token is what turns that into a session that lasts.
+
       const refreshToken = fragment.get('refresh_token');
       if (refreshToken) localStorage.setItem('opera-agent-refresh-token', refreshToken);
       globalThis.location.replace(returnTo());
     }
 
     // A signed-in visitor who opens this page again sees their state, not a stranger's login form: the remembered token is proven again before anything is shown.
+
     async function proveStoredSession() {
       let accessToken = localStorage.getItem('opera-agent-access-token');
       if (!accessToken) return;
@@ -311,6 +323,7 @@
 
       // WHY renew rather than sign out: an expired access token says nothing about the reader's account.
       // Signing them out on the first 401 is what made this feel like the product forgot them, so the refresh token is tried before anything is cleared.
+
       if (!proof?.user && localStorage.getItem('opera-agent-refresh-token')) {
         const renewed = await renewAccessToken();
         if (renewed.ok) {
@@ -330,6 +343,7 @@
 
       // WHY the extra card: a person who arrived here from the OAuth consent page has a pending request.
       // Telling them "you are signed in" and dropping them on the home page loses the request; offering the return path keeps it.
+
       if (proof?.user && returnTo() !== './beranda.html') $('returning').hidden = false;
     }
 

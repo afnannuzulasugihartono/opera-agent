@@ -49,9 +49,11 @@ import { createFocusGuard } from './focus-guard.js';
 // Anything the click measured now travels with the row it was aimed at.
 
 export function asDriver(session) {
+
   // WHY THE GUARD IS PER SESSION NOW.
   // The machine read used to be one OS shell for the whole process.
   // A CDP session can answer the same question in under a millisecond, so the guard is built over this session's window methods and the OS shell stays only as the fallback inside them.
+
   const focusGuard = createFocusGuard({
     read: () => session.windowState(),
     focus: (match) => session.focusWindow(match)

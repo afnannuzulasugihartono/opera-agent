@@ -89,6 +89,7 @@ test('the toggle is one identical mount on every page that may carry it', () => 
 });
 
 test('the toggle announces the text it shows, so the eye and the ear hear the same control', () => {
+
   // WHY THE VISIBLE TEXT MUST SIT INSIDE THE ACCESSIBLE NAME.
   // Lighthouse measured label-content-name-mismatch on 2026-10-26: the ID button's name was "Bahasa Indonesia" while its face says "ID", so a screen reader announced a different control from the one on screen.
   // The rule is a substring rule, and it also makes voice control work: "click ID" only lands if "ID" is part of the name.

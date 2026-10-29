@@ -158,6 +158,7 @@ export function createObserveMethods({
   // Measured live by resizing this machine's browser window: the viewport went 1144x714 -> 1186x670 and the capture went 1430x963 -> 1483x838, with the scale factor constant at 1.25.
   // So the picture is the CSS viewport times the device's scale, and both move under the agent's feet: a window resized, a window dragged to a monitor with another scale.
   // An agent given a picture and nothing else has to guess that number, and it guesses wrong - which is how a click lands on the wrong thing while every answer says the click was delivered.
+
   async function captureSized({
     format = 'jpeg',
     quality = 60,
@@ -332,10 +333,12 @@ export function createObserveMethods({
       const alreadyOpen = Boolean(node.expanded) && here.some((r) => r.depth === index + 1);
       let acted = false;
       if (!alreadyOpen) {
+
         // WHY A TOP-LEVEL MENU IS CLICKED AND EVERYTHING BELOW IT IS HOVERED.
         // Measured live on Google Docs: a menu on the bar is a toggle - hover does nothing and it only opens on a click - while a submenu opens on hover.
         // And a leaf that turns out to be a command is never clicked on the way to anywhere else: "Upload from computer" opens the operating system's own file dialog, which nothing here can close again.
         // So a click goes out for the bar item that opens the menu, and for a leaf only when the caller said this item is the command to run.
+
         if (index === 0) {
           await primitives.clickAt(row.x, row.y);
           acted = true;
@@ -381,6 +384,7 @@ export function createObserveMethods({
   // WHY "AT THE END" CAN BE FALSE AND MEANS NOTHING MOVED.
   // Measured live on a Google Doc: an end scroll moved the document element 56 pixels and answered atEnd true, because the document is not what scrolls on a canvas editor.
   // So atEnd is true only when the page reports its last text on screen, and the scroller that answers is named - a refusal to claim an end it did not reach is the whole value here.
+
   async function scroll({
     y,
     end = false,

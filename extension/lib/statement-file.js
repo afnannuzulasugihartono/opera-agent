@@ -50,6 +50,7 @@
 
   // WHY FOUR ANSWERS.
   // A PDF, a workbook, an old Office file, and "something else" are the four kinds a statement arrives as, and the four magic numbers are enough to tell them apart without a parser.
+
   const kindOf = (bytes) => {
     if (startsWith(bytes, PDF_HEAD)) return 'pdf';
     if (startsWith(bytes, ZIP_HEAD)) return 'zip';
@@ -68,6 +69,7 @@
 
   // WHY THE PAGE COUNT IS COUNTED AND NOT PARSED.
   // A PDF states each page as /Type /Page, and counting that token is honest about its own limit: a file that packs its objects into a compressed stream shows none, and then the answer is zero with the reason, never a number that reads like a count.
+
   const countPages = (bytes) => {
     const text = latin1(bytes);
     const found = text.match(/\/Type\s*\/Page(?![s])/g);
@@ -76,6 +78,7 @@
 
   // WHY THE REASON IS PART OF THE ANSWER.
   // "Two pages" and "the file packs its pages into a compressed stream" are different facts, and only one of them tells a bookkeeper that the statement is short.
+
   const pagesFrom = (
     kind,
     pages
@@ -89,6 +92,7 @@
   // A bookkeeper checks the manifest by eye, so the text the portal printed is kept; a machine compares two months, so the digits are derived.
   // This rule mirrors the one in local/statements.js: Indonesian money groups thousands with a dot and sen with a comma, so a trailing ",00" is cents and is dropped, and a figure in brackets is negative.
   // The two copies of this rule are a known pair: if they ever disagree, the same raw text produces two different digit strings, which the proof contract would show.
+
   const balanceDigits = (raw) => {
     let text = String(raw ?? '').trim();
     if (text === '') return null;

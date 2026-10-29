@@ -554,6 +554,7 @@
   // WHY AN ELEMENT IS NAMED BY THE STRONGEST THING IT HAS.
   // A key has to survive the page redrawing the same element, so it is built from what is most stable about it: a link's address, then its id, then what it says.
   // The order is a ranking rather than a formula, and a reader checking that the ranking is right should not have to parse a ternary inside a ternary inside a template literal.
+
   function stableElementIdentity(el) {
     const tag = String(el.tagName || '').toLowerCase();
     const href = el instanceof HTMLAnchorElement ? clean(el.href, 1200) : '';

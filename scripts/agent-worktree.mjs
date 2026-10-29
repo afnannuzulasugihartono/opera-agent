@@ -55,9 +55,11 @@ const commands = {
     // WHY THE ENV FILES TRAVEL WITH THE WORKTREE.
     // A fresh worktree has no node_modules and no env, and the first thing an agent does in it is run the gates, which need both.
     // The env files are the machine's own, so they are copied rather than generated, and they stay out of git.
+
     for (const file of readdirSync(repo)) {
       if (/^\.env(\..+)?$/.test(file)) copyFileSync(join(repo, file), join(path, file));
     }
+
     // WHY THE INSTALL IS npm install AND NOT npm ci.
     // This repo ships no package lock: it has no runtime dependencies to pin, and the lock the tree does carry is gates.lock, which pins hashes and says nothing about packages.
     // npm ci refuses a project with no lock, so a fresh worktree would fail on the one command that makes it usable.

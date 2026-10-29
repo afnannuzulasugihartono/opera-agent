@@ -41,6 +41,7 @@ export function filePrimitives(
     readState
   }
 ) {
+
   // WHY THE FILE IS PREPARED IN ONE PLACE.
   // Upload and drop take the same two inputs - a base64 payload or a path - and must answer the same three questions: where the bytes are, how many there are, and how to remove the temporary copy.
   // Two copies of that answer drift the moment one gains a guard the other lacks, so it lives here.
@@ -229,6 +230,7 @@ export function filePrimitives(
       // WHY DRAGS ARE INTERCEPTED FIRST AND RELEASED ON EVERY WAY OUT.
       // Chrome only accepts a dispatched drag while interception is on, and a page left in that state stops believing real ones — the pointer would do nothing on this tab until it was released, which is worse than the problem being solved.
       // So the release is in the finally, where a failure still reaches.
+
       try {
         await cdp.send('Page.bringToFront');
         await sleep(DROP_FRONT_SETTLE_MS);
@@ -260,6 +262,7 @@ export function filePrimitives(
       await cdp.send('Page.setInterceptFileChooserDialog', { enabled: enabled === true });
       return { intercepting: enabled === true };
     },
+
     // WHY THE FILE ON DISK IS THE PROOF, NOT THE PROTOCOL EVENT.
     // The bridge road forwards commands and not events, so a listener here would fire on a debugging port and stay silent on the signed-in profile - the one road that matters.
     // The directory is therefore read until a new file stops growing, which is true on every road and survives a browser that lies about finishing.
@@ -277,6 +280,7 @@ export function filePrimitives(
     // WHY THE FILE IS RENAMED ONLY AFTER IT STOPS GROWING.
     // Renaming a download mid-write would leave Chrome writing to a path that no longer exists, so the new name is given at the only moment the file is whole.
     // The old file goes first because Windows refuses a rename onto an existing file, and pulling the same client-month twice is the normal case - a re-download is a deliberate replace.
+
     async download({
       handle = null,
       role = null,

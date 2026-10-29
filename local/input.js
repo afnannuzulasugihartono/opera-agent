@@ -223,6 +223,7 @@ export function createInputMethods({
     };
 
     // A chord is exactly two events, with no modifier press around them: the six-event frame leaked its character into a canvas under rapid fire.
+
     if (mask !== 0) {
       await cdp.send('Input.dispatchKeyEvent', {
         type: 'rawKeyDown',
@@ -285,10 +286,12 @@ export function createInputMethods({
     let chars = 0;
     let settled = false;
     let run = [];
+
     // WHY A CHORD-ONLY STREAM DOES NOT POLL FOR TEXT.
     // A menu or style chord moves no text signature, so the twelve-poll edit wait could only ever report moved:false — after 1.8 s of waiting for a mirror that was never coming.
     // Text still gets the slow-mirror budget, because that lag is real; a chord gets one settle and one honest signature instead.
     // A text stream with nothing focused gets neither: text sent to a button cannot land, so one focus read is cheaper than a poll budget that can only report moved:false.
+
     const reportMoved = async () => {
       if (chars === 0) {
         await primitives.settle();

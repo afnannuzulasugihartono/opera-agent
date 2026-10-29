@@ -199,8 +199,10 @@ test('every exported function in local/ is exercised by the suite', () => {
 });
 
 test('the content script entry stays thin, and its modules stay under the worker ceiling', () => {
+
   // WHY A MODULE THAT DOES NOT EXIST YET IS NOT MEASURED.
   // The ceiling is for a module that is there; a name in the load order with no file behind it is a step still to come.
+
   const movedModules = CONTENT_SCRIPT_LOAD_ORDER.filter(
     (name) => name !== 'content.js' && !name.startsWith('lib/') && tracked().includes(`extension/${name}`)
   );

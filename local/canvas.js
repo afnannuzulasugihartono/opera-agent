@@ -84,6 +84,7 @@ export function createCanvasMethods({
   primitives,
   readState
 }) {
+
   // WHY THE COPY READS THE SELECTION AND NOT A SITE'S CLIPBOARD TRICK.
   // The expression this replaces found one site's hidden editable frame by name, asked it to fill itself on a copy event, and stripped the invisible characters that site inserts - which is per-site code, and it is gone.
   // What is left is the technique without the site: borrow the selection, then read it back from whichever frame holds it.
@@ -107,6 +108,7 @@ export function createCanvasMethods({
   // WHY THE REGION TEXT IS RETURNED EVEN WHEN THE TREE IS THIN.
   // The rich bar decides which read leads, not whether a text is worth returning.
   // On a page with no canvas the DOM has already answered nothing, so the tree is the only text there is; on a canvas page a thin region is the chrome around the picture, and returning it would name the menu as the document.
+
   const readAxText = (
     ax,
     surface
@@ -132,6 +134,7 @@ export function createCanvasMethods({
   };
 
   // The caret fields a read that never borrowed carries, and the ones a read that did carries, kept in one place so no answer can claim more than it measured.
+
   const untouched = {
     caretMoved: false,
     caretRestored: true,
@@ -204,7 +207,9 @@ export function createCanvasMethods({
       if (step.strategy === STRATEGY_AX) {
         const text = readAxText(await axOf(), surface);
         if (text) {
+
           // The title and url are one cheap call the caller expects on every read; whether the text has stopped moving is not something one sample of the tree can answer.
+
           const state = await readState();
           return {
             title: state.title,
@@ -263,7 +268,9 @@ export function createCanvasMethods({
       }
 
       if (step.strategy === STRATEGY_VISION) {
+
         // The driver does not read pixels, and does not pretend to: it names the one tool that returns a picture, so the caller decides rather than receiving an empty string that looks like an empty page.
+
         return {
           title: '',
           url: '',
@@ -297,6 +304,7 @@ export function createCanvasMethods({
   // This read used to ask the url whether the page was a document editor and then chose the clipboard for it, which is the site recognition this change removes.
   // The selection is the cheaper answer and works wherever the page holds its text; the selection copy is the fallback for a surface whose mirror only holds what a selection put there, and which one is needed is a question the page answers.
   // The verdict rides along, so a caret this read could not put back is reported rather than assumed.
+
   async function caretLine() {
     const mark = await guard.remember();
     await primitives.key('Home');

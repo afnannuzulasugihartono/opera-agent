@@ -299,6 +299,7 @@ export function createBridgeServer({
     }
 
     // The lease door answers one ask per call: a claim, which the table grants or refuses, or a release, which only the owner that holds the tab may make.
+
     if (req.method === 'POST' && req.url === '/lease') {
       void (async () => {
         const body = await readJson(req);

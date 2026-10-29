@@ -145,7 +145,9 @@ test('a caret that moved to another node of the same length is reported as moved
 });
 
 test('the guard remembers a position and reports it back', async () => {
+
   // The fake evaluate walks the frames the expression names, so the expression itself is what is under test rather than a stubbed answer.
+
   const evaluate = async () => ({
     frame: 0,
     hostPath: '0/3/2:1',

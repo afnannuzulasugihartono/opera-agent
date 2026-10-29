@@ -66,9 +66,11 @@ export function createPrimitives(
     ) {
       return cdp.send(method, params);
     },
+
     // WHY A PAGE EXCEPTION IS AN ERROR AND NOT A MISSING VALUE.
     // Measured on a real Google Doc: the first probe referenced a constant the page had never heard of, the page threw, and the answer came back undefined - which reads exactly like a page with no canvas, no text and no editor.
     // A thrown page expression is a fact about the page, so it is raised here rather than flattened into a value the caller cannot tell from a measurement.
+
     async evaluate(expression) {
       const reply = await cdp.send('Runtime.evaluate', {
         expression,
@@ -83,9 +85,11 @@ export function createPrimitives(
       }
       return reply?.result?.value;
     },
+
     // WHY THE PROFILE IS A PRIMITIVE OF ITS OWN.
     // An agent meeting a site for the first time has to know what the surface is before it can know what a read will cost, and paying a full read to find out is the wrong order.
     // This asks nothing of the page and moves no caret, so it is the one call that is always safe on a surface nobody has seen.
+
     async surfaceProfile() {
       const probe = await probeSurface({ evaluate: primitives.evaluate });
       const ax = await measureAx({ ask: primitives.ask });
@@ -100,9 +104,11 @@ export function createPrimitives(
         description: describeProfile(surface)
       };
     },
+
     // WHY THE PAGE IS ASKED BEFORE THE MACHINE, AND WHY IT IS ENOUGH.
     // Measured live on this machine, twice, with the drive typing into a Google Docs document: a browser behind another application still reported focus here and took the text, and a minimized browser reported no focus and dropped it.
     // So this one evaluation answers the only case that costs anything to be wrong about, and the machine is asked only when it says the page is deaf.
+
     async hasFocus() {
       const { result } = await cdp.send('Runtime.evaluate', {
         expression: 'document.hasFocus()',
@@ -110,9 +116,11 @@ export function createPrimitives(
       });
       return result?.value === true;
     },
+
     // WHY THE WINDOW IS ASKED THROUGH THE BROWSER FIRST.
     // Measured on this machine: the OS read is a PowerShell enumeration and costs p50 1.14s, while Browser.getWindowForTarget on the same session costs p50 0.35ms and already answers the only question the focus guard has - is the window minimized.
     // The OS read stays as the fallback for a browser or bridge that refuses the Browser domain, because a wrong "background" answer is how text goes nowhere.
+
     async windowState() {
       try {
         const { bounds } = await cdp.send('Browser.getWindowForTarget', {});

@@ -132,8 +132,10 @@ test('a port with nothing on it answers no, and one with the bridge answers yes'
 test('discovery walks past a dead configured port to one that answers', async () => {
   const dead = 19999;
   const live = PORT;
+
   // The live port is put first in the walk, because the claim is about the order and not about which port the machine happens to be serving.
   // A walk that finds some other live port first has still stepped over the dead one, but it has not proved the dead one is the reason it kept going.
+
   const order = [
     dead,
     live
