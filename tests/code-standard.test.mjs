@@ -37,12 +37,42 @@ const lines = (file) => read(file).split(/\r?\n/);
 
 const FILE_LINE_CAP = 1200;
 
-// WHY ONE FILE IS NAMED INSTEAD OF FIXED HERE.
-// Chrome loads a content script as one unit, so splitting extension/content.js means separate manifest entries and separate isolated worlds, which is a project of its own and not a line count.
-// The exception is named, counted and visible, and the rest of the tree has no exceptions.
+// WHY NO FILE IS NAMED ANY MORE.
+// content.js was excepted here with the claim that Chrome loads a content script as one unit, so splitting it would need separate manifest entries and separate isolated worlds.
+// The claim was false, and the tree proved it: manifest.content_scripts[0].js has always loaded six files through one entry, in one isolated world, in order.
+// What actually kept the file large was that sentence, not the platform — so the exception is gone and the ceiling in the content-script gate below is what holds the line now.
+// The empty map stays because the size test below iterates it; deleting the name would break the gate that reads it.
 
-const FILE_LINE_EXCEPTIONS = new Map([
-  ['extension/content.js', 'Chrome loads a content script as one unit; splitting it means separate manifest entries.']
+const FILE_LINE_EXCEPTIONS = new Map();
+
+// WHY A FILE WITH ITS OWN CEILING IS NOT MEASURED TWICE.
+// content.js is the dispatcher, and the content-script gate below holds it under 300 lines - a stricter number than this cap.
+// The general cap is for files with no ceiling of their own; measuring one file in two places reports one fact twice and lets the weaker number look like the rule that applies.
+
+const DEDICATED_CEILING_FILES = new Set(['extension/content.js']);
+
+// WHY THE CONTENT SCRIPT ENTRY HAS A CEILING OF ITS OWN.
+// The file was 1,945 lines and held every page primitive in one IIFE: refs, geometry, the semantic layer, the write path, scroll, wait, media and watch.
+// The manifest loads content scripts as a list, so one entry was never a platform requirement — it was a habit, and the cap below is what ends it.
+
+const CONTENT_ENTRY_CEILING = 300;
+
+// WHY THE LOAD ORDER IS PINNED AS A WHOLE LIST.
+// A module read before it loads answers undefined, and the failure is silent: the helper is simply missing and the page keeps working with half its features.
+// Pinning the whole list means a new file added in the wrong place fails here instead of in a user's browser.
+
+const CONTENT_SCRIPT_LOAD_ORDER = [
+  'lib/agent-log.js', 'semantic-identity.js', 'semantic-views.js', 'role-reconcile.js', 'hover-settle.js',
+  'page-kit.js', 'action-refs.js', 'element-facts.js', 'page-wait.js', 'semantic-page.js',
+  'page-actions.js', 'page-scroll.js', 'page-media.js', 'content.js'
+];
+
+// WHY THE FIVE FILES THAT SHIPPED BEFORE THE SPLIT ARE LEFT OUT OF THE STATE COMPARISON.
+// They carry their own private copies on purpose: content.js has its own stableHash and semantic-identity.js has one too, each inside its own IIFE.
+// Comparing the entry against them would report a duplication that predates this split and is not what the gate is for.
+
+const CONTENT_SCRIPT_LEAF_FILES = new Set([
+  'lib/agent-log.js', 'semantic-identity.js', 'semantic-views.js', 'role-reconcile.js', 'hover-settle.js'
 ]);
 
 test('no source file grows past the cap without a named reason', () => {
@@ -53,6 +83,7 @@ test('no source file grows past the cap without a named reason', () => {
     const count = lines(file).length;
     if (count <= FILE_LINE_CAP) continue;
     if (FILE_LINE_EXCEPTIONS.has(file)) continue;
+    if (DEDICATED_CEILING_FILES.has(file)) continue;
     offenders.push(`${file} is ${count} lines`);
   }
   assert.deepEqual(offenders, [],
@@ -119,4 +150,66 @@ test('every exported function in local/ is exercised by the suite', () => {
   }
   assert.deepEqual(untested, [],
     `an exported function nobody calls is a function nobody knows works:\n${untested.join('\n')}`);
+});
+
+test('the content script entry stays thin, and its modules stay under the worker ceiling', () => {
+  // WHY A MODULE THAT DOES NOT EXIST YET IS NOT MEASURED.
+  // The ceiling is for a module that is there; a name in the load order with no file behind it is a step still to come.
+  const movedModules = CONTENT_SCRIPT_LOAD_ORDER.filter(
+    (name) => name !== 'content.js' && !name.startsWith('lib/') && tracked().includes(`extension/${name}`)
+  );
+  const entry = lines('extension/content.js').length;
+  assert.ok(entry < CONTENT_ENTRY_CEILING,
+    `content.js is the dispatcher, not the product: ${entry} lines`);
+  for (const name of movedModules) {
+    assert.ok(lines(`extension/${name}`).length < 550,
+      `extension/${name} is ${lines(`extension/${name}`).length} lines`);
+  }
+});
+
+test('the manifest loads the content scripts in dependency order', () => {
+  const manifest = JSON.parse(read('extension/manifest.json'));
+  assert.deepEqual(manifest.content_scripts[0].js, CONTENT_SCRIPT_LOAD_ORDER,
+    `the load order is the topological order; a file added out of place loads before its namespace exists:\n  got ${JSON.stringify(manifest.content_scripts[0].js)}`);
+});
+
+test('every content script module publishes the namespace the entry reads', () => {
+  const manifest = JSON.parse(read('extension/manifest.json'));
+  const entry = read('extension/content.js');
+  const offenders = [];
+  for (const rel of manifest.content_scripts[0].js) {
+    if (rel === 'content.js' || rel === 'lib/agent-log.js') continue;
+    const stem = rel.split('/').pop().replace(/\.js$/, '');
+    const namespace = `OperaAgent${stem.split('-')
+      .map((part) => part[0].toUpperCase() + part.slice(1)).join('')}`;
+    const text = read(`extension/${rel}`);
+    if (!text.includes(`globalThis.${namespace} =`)) {
+      offenders.push(`${rel} does not publish globalThis.${namespace}`);
+      continue;
+    }
+    if (!entry.includes(`globalThis.${namespace}`)) {
+      offenders.push(`content.js never reads globalThis.${namespace}, so the module publishes into the void`);
+    }
+  }
+  assert.deepEqual(offenders, [],
+    `a namespace nobody reads is a feature that is missing without an error:\n${offenders.join('\n')}`);
+});
+
+test('the entry declares no state a content script module also declares', () => {
+  const manifest = JSON.parse(read('extension/manifest.json'));
+  const declaredIn = (text) => [
+    ...[...text.matchAll(/^ {2}(?:const|let|var)\s+([A-Za-z_$][\w$]*)/gm)].map((m) => m[1]),
+    ...[...text.matchAll(/^ {2}(?:async\s+)?function\s+([A-Za-z_$][\w$]*)/gm)].map((m) => m[1]),
+  ];
+  const modules = new Map();
+  for (const rel of manifest.content_scripts[0].js) {
+    if (rel === 'content.js' || CONTENT_SCRIPT_LEAF_FILES.has(rel)) continue;
+    for (const name of declaredIn(read(`extension/${rel}`))) {
+      modules.set(name, [...(modules.get(name) || []), rel]);
+    }
+  }
+  const duplicated = declaredIn(read('extension/content.js')).filter((name) => modules.has(name));
+  assert.deepEqual(duplicated, [],
+    `a name declared in the entry and in a module is two copies of one piece of state, and only one of them is live:\n${
+      duplicated.map((name) => `  ${name}: entry + ${modules.get(name).join(', ')}`).join('\n')}`);
 });

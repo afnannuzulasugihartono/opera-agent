@@ -9,6 +9,7 @@ import test from 'node:test';
 
 import { sha256ContractSource } from './helpers/canonical-source-hash.mjs';
 import { mcpSurfaceSourceSync } from './helpers/mcp-surface-source.mjs';
+import { contentSource } from './helpers/content-source.mjs';
 
 await import('../extension/semantic-identity.js');
 await import('../extension/semantic-views.js');
@@ -438,8 +439,7 @@ test('a one-item delta is materially smaller than a 100-item snapshot', () => {
   assert.ok(ratio <= 0.5, ratio);
 });
 
-const read = (relative) => fs.readFileSync(new URL(relative, import.meta.url), 'utf8');
-const content = read('../extension/content.js');
+const content = contentSource();
 
 const staleItem = (key, overrides = {}) => {
   return {

@@ -3,15 +3,14 @@
 // @state: the node shape, the limits, and the rule that a screenshot never becomes a claim.
 // @dependencies: node:fs, node:test, strict, ax-summary, extension-source.
 
-import fs from 'node:fs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { buildAxSummary, AX_SUMMARY_LIMITS } from '../extension/lib/ax-summary.js';
 import { extensionSource } from './helpers/extension-source.mjs';
+import { contentSource } from './helpers/content-source.mjs';
 import { mcpSurfaceSourceSync } from './helpers/mcp-surface-source.mjs';
 
-const read = (relative) => fs.readFileSync(new URL(relative, import.meta.url), 'utf8');
-const content = read('../extension/content.js');
+const content = contentSource();
 const background = await extensionSource();
 const mcp = mcpSurfaceSourceSync();
 

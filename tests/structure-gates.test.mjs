@@ -81,6 +81,25 @@ test('a worker module with no chrome.* belongs in lib/, with one written excepti
     'lib/ is the chrome-free home; a worker module that never touches chrome.* has no reason to live here');
 });
 
+// WHY THE CONTENT SCRIPTS ARE CHECKED TOO.
+// The page half of a primitive touches the DOM, never the extension API, so a chrome.* inside one is a sign the code belongs in a worker.
+// One file is excepted and named: page-media speaks to the service worker for the listen chunks and the watch facts, which is the one job a content script legitimately does through chrome.*.
+
+test('the content script modules reach for no chrome.* as code, with one named exception', async () => {
+  const manifest = JSON.parse(await readFile(new URL('extension/manifest.json', root), 'utf8'));
+  const CONTENT_CHROME_EXCEPTIONS = new Set(['page-media.js']);
+  const offenders = [];
+  for (const rel of manifest.content_scripts[0].js) {
+    const name = rel.split('/').pop();
+    if (name === 'content.js' || name === 'agent-log.js') continue;
+    if (CONTENT_CHROME_EXCEPTIONS.has(name)) continue;
+    const hits = chromeCodeLines(await readFile(new URL(`extension/${rel}`, root), 'utf8'));
+    if (hits.length) offenders.push(`${rel}: ${hits.join(', ')}`);
+  }
+  assert.deepEqual(offenders, [],
+    `the page half of a primitive touches the DOM, not chrome.*:\n${offenders.join('\n')}`);
+});
+
 test('worker modules stay under their ceiling, and background.js does not grow', async () => {
 
   const bg = await readFile(new URL('extension/background.js', root), 'utf8');

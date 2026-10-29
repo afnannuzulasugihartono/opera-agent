@@ -9,6 +9,7 @@ import assert from 'node:assert/strict';
 
 import { BURST_STEP_KEYS, validateBurst, expandGridSteps } from '../extension/lib/protocol.js';
 import { extensionSource } from './helpers/extension-source.mjs';
+import { contentSource } from './helpers/content-source.mjs';
 import { mcpSurfaceSourceSync } from './helpers/mcp-surface-source.mjs';
 
 test('burst click/fill steps accept refFromStep passthrough keys', () => {
@@ -113,7 +114,7 @@ test('expandGridSteps unrolls a grid into arrow keys plus Enter', () => {
 
 test('burst file steps reach the content file setter', () => {
   const burst = fs.readFileSync(new URL('../extension/worker/burst.js', import.meta.url), 'utf8');
-  const content = fs.readFileSync(new URL('../extension/content.js', import.meta.url), 'utf8');
+  const content = contentSource();
   assert.match(burst, /page\.set_files/);
   assert.match(burst, /expandGridSteps\(params\.steps\)/);
   assert.match(content, /case 'page\.set_files'/);

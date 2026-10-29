@@ -8,6 +8,7 @@ import assert from 'node:assert/strict';
 import { recordPopup, popupsSince, resolvePopupOpener } from '../extension/lib/popup-events.js';
 import { PRODUCT_VERSION } from '../extension/lib/protocol.js';
 import { extensionSource } from './helpers/extension-source.mjs';
+import { contentSource } from './helpers/content-source.mjs';
 
 test('popup event log records opener-tab creations', () => {
   const log = new Map();
@@ -40,9 +41,7 @@ test('popup attribution claims background-tab popups for the acted-on tab', () =
   assert.equal(resolvePopupOpener(null, { openerTabId: undefined }), null, 'unrelated tabs are not recorded');
 });
 
-import fs from 'node:fs';
 import { mcpSurfaceSourceSync } from './helpers/mcp-surface-source.mjs';
-const read = (p) => fs.readFileSync(new URL(`../${p}`, import.meta.url), 'utf8');
 
 test('command timeout carries outcome:"unknown" instead of a plain failure', async () => {
   const src = await extensionSource();
@@ -52,14 +51,14 @@ test('command timeout carries outcome:"unknown" instead of a plain failure', asy
 });
 
 test('expect verification polls until verified inside a bounded window', () => {
-  const src = read('extension/content.js');
+  const src = contentSource();
   assert.match(src, /waitForExpectVerification/, 'expect polling loop must exist');
   assert.match(src, /EXPECT_VERIFY_WINDOW_MS/, 'window must be a named bounded constant');
   assert.match(src, /!\s*verification\.verified &&/, 'loop must exit early on verified');
 });
 
 test('page.fill gains retry/expect parity with page.click', async () => {
-  const src = read('extension/content.js');
+  const src = contentSource();
   const fillStart = src.indexOf('async function fill(');
   assert.ok(fillStart >= 0, 'synthetic fill must exist');
   const fillBlock = src.slice(fillStart, src.indexOf('\n  function fillInfo'));

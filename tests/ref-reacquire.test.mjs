@@ -13,10 +13,10 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
 import { mcpSurfaceSource } from './helpers/mcp-surface-source.mjs';
+import { contentSource } from './helpers/content-source.mjs';
 
-const source = await readFile(new URL('../extension/content.js', import.meta.url), 'utf8');
+const source = contentSource();
 
 function resolveBlock() {
   const start = source.indexOf('function resolveActionRef(ref) {');

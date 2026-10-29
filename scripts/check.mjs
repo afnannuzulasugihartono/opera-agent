@@ -11,6 +11,7 @@ import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { ALLOWED_METHODS, PRODUCT_VERSION } from '../extension/lib/protocol.js';
 import { extensionSource } from '../tests/helpers/extension-source.mjs';
+import { contentSource } from '../tests/helpers/content-source.mjs';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 
@@ -79,7 +80,12 @@ for (const marker of ['pendingCompletion', 'flushPendingCompletion', 'createSock
 }
 assert.doesNotMatch(background, /action: 'complete'/, 'the device must not report over HTTP again');
 assert.doesNotMatch(background, /action: 'pull'/, 'the device must not ask for work over HTTP');
-const content = fs.readFileSync(path.join(root, 'extension/content.js'), 'utf8');
+
+// WHY THE BUNDLE AND NOT content.js.
+// The page half of every primitive lives in the content scripts the manifest loads, and six of the seven markers below moved out of content.js when it was split into modules.
+// Reading one file would report a missing marker for a feature that is present, so the check reads what the product actually loads.
+
+const content = contentSource();
 for (const marker of ['password','one-time-code','cvv','cvc','type === \'file\'']) assert.ok(content.toLowerCase().includes(marker.toLowerCase()), marker);
 const ensureContent = background.slice(background.indexOf('async function ensureContent'), background.indexOf('async function contentCall'));
 assert.match(ensureContent, /method: 'content\.ping'/);

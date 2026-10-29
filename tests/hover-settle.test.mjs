@@ -13,6 +13,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { BURST_ACTION_METHODS, BURST_STEP_KEYS, validateBurst } from '../extension/lib/protocol.js';
 import { extensionSource } from './helpers/extension-source.mjs';
+import { contentSource } from './helpers/content-source.mjs';
 import { mcpSurfaceSource } from './helpers/mcp-surface-source.mjs';
 
 await import('../extension/hover-settle.js');
@@ -121,7 +122,7 @@ test('a hover never clicks, and it goes through the shared focus gate', async ()
 });
 
 test('the in-page settle only observes and never carries document text out', async () => {
-  const source = await readFile(new URL('../extension/content.js', import.meta.url), 'utf8');
+  const source = contentSource();
   const start = source.indexOf('async function hoverSettleState');
   assert.ok(start > 0, 'hoverSettleState must exist');
   const block = source.slice(start, source.indexOf('function containsVisibleText', start));

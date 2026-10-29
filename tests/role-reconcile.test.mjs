@@ -12,6 +12,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { extensionSource } from './helpers/extension-source.mjs';
+import { contentSource } from './helpers/content-source.mjs';
 
 await import('../extension/role-reconcile.js');
 const {
@@ -189,7 +190,7 @@ test('R9: an oversized read degrades instead of failing the whole call', async (
 });
 
 test('serialize derives roles from markup instead of only the role attribute', async () => {
-  const source = await readFile(new URL('../extension/content.js', import.meta.url), 'utf8');
+  const source = contentSource();
 
   assert.match(source, /const roleRuntime = globalThis\.OperaAgentRoleReconcile \|\| \{\}/,
     'the runtime is no longer read straight into a bare binding');
@@ -206,7 +207,7 @@ test('serialize derives roles from markup instead of only the role attribute', a
 });
 
 test('the role attribute stays authoritative where it defines identity, not action', async () => {
-  const source = await readFile(new URL('../extension/content.js', import.meta.url), 'utf8');
+  const source = contentSource();
 
   const identityStart = source.indexOf('function stableElementIdentity(el) {');
   assert.ok(identityStart > 0, 'stableElementIdentity must be locatable');

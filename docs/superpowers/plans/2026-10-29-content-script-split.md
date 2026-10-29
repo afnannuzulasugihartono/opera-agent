@@ -137,8 +137,8 @@ Lima masukan yang paling mungkin menggigit orang yang memakai perangkat lunak in
 
 **Interfaces:**
 - Consumes: `extension/manifest.json` (satu-satunya sumber kebenaran urutan muat).
-- Produces: `contentSource()`, `contentSourceSync()`, `contentScriptFiles()` dan `contentScriptFilesSync()` dari `tests/helpers/content-source.mjs` — dipakai empat belas berkas tes di task ini dan seluruh task berikutnya.
-- Bentuknya **sync** untuk sebagian besar call site: sebelas titik baca berada di dua bentuk — sebagian di scope modul, sebagian di dalam `test` async. Pembacaan sync membuat semuanya tukar-satu-baris, apa pun scope-nya; helper async akan memaksa `before()` ke berkas yang mendeklarasikan di atas, dan itu perubahan struktur yang tidak dibutuhkan pemindahan ini.
+- Produces: satu export saja, `contentSource()`, dari `tests/helpers/content-source.mjs` — dipakai empat belas berkas tes di task ini dan seluruh task berikutnya.
+- Bentuknya **sync** meski namanya tidak mengatakannya: tujuh belas titik baca berada di dua bentuk — sebagian di scope modul, sebagian di dalam `test` async. Pembacaan sync membuat semuanya tukar-satu-baris, apa pun scope-nya; helper async akan memaksa `before()` ke berkas yang mendeklarasikan di atas, dan itu perubahan struktur yang tidak dibutuhkan pemindahan ini. Karena hanya satu bentuk yang ada, tidak ada akhiran `Sync` yang perlu dibedakan.
 
 - [ ] **Step 1: Tulis helper bundel**
 
@@ -147,65 +147,53 @@ Create `tests/helpers/content-source.mjs`:
 ```js
 // @last-edited: 2026-10-29 UTC+7.
 // @title: content-source — every content script the manifest loads, in load order, in one string.
-// @state: the manifest is the source of truth, so this helper reads it instead of repeating it; sync and async variants over the same list.
-// @dependencies: node:fs/promises, node:fs.
+// @state: the manifest is the source of truth, so this helper reads it instead of repeating it.
+// @dependencies: node:fs.
 
-import { readFile } from 'node:fs/promises';
 import { readFileSync } from 'node:fs';
 
 // WHY THE MANIFEST AND NOT A LIST HERE.
 // A second list is a list that drifts: the injection order is already written twice in the tree (manifest and worker/tab-content.js), and a third copy in the tests would be a third thing to keep true.
 // Reading the manifest makes the helper follow whatever the product actually loads.
 
-// WHY A SYNC VARIANT AND NOT ONLY THE ASYNC ONE.
-// The seventeen call sites that used to read content.js sit in two shapes: some are at module scope, some inside an async test.
-// A sync read makes every one of them a single-line swap, whatever scope it sits in — an async helper would force a before() hook into the files that declare at the top, and that is a structural change the move does not need.
+// WHY IT IS READ SYNCHRONOUSLY.
+// The seventeen call sites that used to read content.js sit in two shapes: some at module scope, some inside an async test.
+// A sync read makes every one of them a single-line swap, whatever scope it sits in; an async helper would force a before() hook into the files that declare at the top, and that is a structural change the move does not need.
 
-function filesSync() {
+export function contentSource() {
   const manifest = JSON.parse(
     readFileSync(new URL('../../extension/manifest.json', import.meta.url), 'utf8')
   );
-  return manifest.content_scripts.flatMap((entry) => entry.js ?? []);
-}
-
-export function contentScriptFilesSync() {
-  return filesSync();
-}
-
-export function contentSourceSync() {
-  return filesSync()
+  return manifest.content_scripts
+    .flatMap((entry) => entry.js ?? [])
     .map((rel) => readFileSync(new URL(`../../extension/${rel}`, import.meta.url), 'utf8'))
     .join('\n');
 }
-
-export async function contentScriptFiles() {
-  const manifest = JSON.parse(
-    await readFile(new URL('../../extension/manifest.json', import.meta.url), 'utf8')
-  );
-  return manifest.content_scripts.flatMap((entry) => entry.js ?? []);
-}
-
-export async function contentSource() {
-  const files = await contentScriptFiles();
-  const parts = await Promise.all(files.map(
-    (rel) => readFile(new URL(`../../extension/${rel}`, import.meta.url), 'utf8')
-  ));
-  return parts.join('\n');
-}
 ```
+
+Hanya **satu** export, dan itu yang dipakai: `contentSource()`. Helper repo lain
+(`mcp-surface-source.mjs`) punya dua varian karena dua-duanya ada yang memakainya;
+di sini hanya sync yang dibutuhkan, jadi varian async dan daftar file yang diekspor
+adalah permukaan mati.
 
 - [ ] **Step 2: Jalankan helper terhadap pohon hari ini — baseline, bukan asumsi**
 
-Run: `node --input-type=module -e "import { contentSourceSync, contentScriptFilesSync } from './tests/helpers/content-source.mjs'; const s = contentSourceSync(); console.log('files:', contentScriptFilesSync().length, '| chars:', s.length); console.log('collectInteractiveNodes:', /function collectInteractiveNodes\(/.test(s)); console.log('resolveActionRef:', /function resolveActionRef\(ref\) \{/.test(s)); console.log('onMessage:', /chrome\.runtime\.onMessage\.addListener/.test(s));"`
-Expected: `files: 6`, `chars:` sekitar 117000, dan ketiga penanda `true`.
+Run: `node --input-type=module -e "import { contentSource } from './tests/helpers/content-source.mjs'; const s = contentSource(); console.log('chars:', s.length); console.log('collectInteractiveNodes:', /function collectInteractiveNodes\(/.test(s)); console.log('resolveActionRef:', /function resolveActionRef\(ref\) \{/.test(s)); console.log('onMessage:', /chrome\.runtime\.onMessage\.addListener/.test(s));"`
+Expected: `chars:` sekitar 117000, dan ketiga penanda `true`.
 
 Kalau salah satu `false`, berhenti — helper salah baca, jangan lanjut.
 
 - [ ] **Step 3: Tambahkan lima gate ke `tests/code-standard.test.mjs`**
 
-Sisipkan setelah `const FILE_LINE_EXCEPTIONS = new Map([...]);` (baris 44-46):
+Sisipkan setelah `const FILE_LINE_EXCEPTIONS = new Map([...]);` (baris 44-46). Kecualikan itu kini kosong, jadi `content.js` butuh plafon sendiri — dan satu baris `continue` di gate ukuran supaya ia tidak diukur dua kali oleh angka yang lebih longgar:
 
 ```js
+// WHY A FILE WITH ITS OWN CEILING IS NOT MEASURED TWICE.
+// content.js is the dispatcher, and the content-script gate below holds it under 300 lines - a stricter number than this cap.
+// The general cap is for files with no ceiling of their own; measuring one file in two places reports one fact twice and lets the weaker number look like the rule that applies.
+
+const DEDICATED_CEILING_FILES = new Set(['extension/content.js']);
+
 // WHY THE CONTENT SCRIPT ENTRY HAS A CEILING OF ITS OWN.
 // The file was 1,945 lines and held every page primitive in one IIFE: refs, geometry, the semantic layer, the write path, scroll, wait, media and watch.
 // The manifest loads content scripts as a list, so one entry was never a platform requirement — it was a habit, and the cap below is what ends it.
@@ -231,16 +219,25 @@ const CONTENT_SCRIPT_LEAF_FILES = new Set([
 ]);
 ```
 
+Lalu satu baris di gate ukuran, tepat setelah `if (FILE_LINE_EXCEPTIONS.has(file)) continue;`:
+
+```js
+    if (DEDICATED_CEILING_FILES.has(file)) continue;
+```
+
 Tambahkan di akhir berkas:
 
 ```js
 test('the content script entry stays thin, and its modules stay under the worker ceiling', () => {
+  // WHY A MODULE THAT DOES NOT EXIST YET IS NOT MEASURED.
+  // The ceiling is for a module that is there; a name in the load order with no file behind it is a step still to come.
+  const movedModules = CONTENT_SCRIPT_LOAD_ORDER.filter(
+    (name) => name !== 'content.js' && !name.startsWith('lib/') && tracked().includes(`extension/${name}`)
+  );
   const entry = lines('extension/content.js').length;
   assert.ok(entry < CONTENT_ENTRY_CEILING,
     `content.js is the dispatcher, not the product: ${entry} lines`);
-  for (const name of CONTENT_SCRIPT_LOAD_ORDER) {
-    if (name === 'content.js' || name.startsWith('lib/')) continue;
-    if (!tracked().includes(`extension/${name}`)) continue; // not moved yet
+  for (const name of movedModules) {
     assert.ok(lines(`extension/${name}`).length < 550,
       `extension/${name} is ${lines(`extension/${name}`).length} lines`);
   }
@@ -367,13 +364,13 @@ const content = fs.readFileSync(path.join(root, 'extension/content.js'), 'utf8')
 menjadi:
 
 ```js
-const content = contentSourceSync();
+const content = contentSource();
 ```
 
 dan tambahkan import di atas, dekat `extensionSource`:
 
 ```js
-import { contentSourceSync } from '../tests/helpers/content-source.mjs';
+import { contentSource } from '../tests/helpers/content-source.mjs';
 ```
 
 `scripts/check.mjs` **dipin** `gates.lock`, jadi langkah ini butuh `npm run gates:refresh`
@@ -381,25 +378,25 @@ di Step 8 — dengan alasan yang ditulis di commit.
 
 - [ ] **Step 7: Re-point empat belas berkas tes — satu baris per titik baca**
 
-Setiap berkas: tambahkan `import { contentSourceSync } from './helpers/content-source.mjs';`
-bila belum ada, lalu ganti pembacaan `content.js` dengan `contentSourceSync()`.
+Setiap berkas: tambahkan `import { contentSource } from './helpers/content-source.mjs';`
+bila belum ada, lalu ganti pembacaan `content.js` dengan `contentSource()`.
 
 | berkas | baris | sebelum | sesudah |
 |---|---|---|---|
-| `tests/action-pipeline.test.mjs` | 64 | `const src = read('extension/content.js');` | `const src = contentSourceSync();` |
-| `tests/ax-observation.test.mjs` | 14 | `const content = read('../extension/content.js');` | `const content = contentSourceSync();` |
-| `tests/burst-atomic-actions.test.mjs` | 116 | `const content = fs.readFileSync(new URL('../extension/content.js', import.meta.url), 'utf8');` | `const content = contentSourceSync();` |
-| `tests/efficiency.test.mjs` | 14, 25 | dua `fs.readFileSync(...content.js...)` | `const content = contentSourceSync();` di 14, dan `content` yang sama dipakai di 25 |
-| `tests/focus-and-keyboard.test.mjs` | 248 | `const source = await readFile(new URL('../extension/content.js', import.meta.url), 'utf8');` | `const source = contentSourceSync();` |
-| `tests/hover-settle.test.mjs` | 124 | `const source = await readFile(new URL('../extension/content.js', import.meta.url), 'utf8');` | `const source = contentSourceSync();` — baris 141 **tidak disentuh** (ia sudah membaca manifest) |
-| `tests/landing-claims.test.mjs` | 23 | `const content = read('extension/content.js');` | `const content = contentSourceSync();` |
-| `tests/landing-dashboard.test.mjs` | 114 | `const content = fs.readFileSync(new URL('extension/content.js', root), 'utf8');` | `const content = contentSourceSync();` |
-| `tests/ref-reacquire.test.mjs` | 19 | `const source = await readFile(new URL('../extension/content.js', import.meta.url), 'utf8');` | `const source = contentSourceSync();` |
-| `tests/role-reconcile.test.mjs` | 192, 209 | dua `await readFile(...content.js...)` | `const source = contentSourceSync();` di kedua tempat |
-| `tests/semantic-engine.test.mjs` | 442 | `const content = read('../extension/content.js');` | `const content = contentSourceSync();` |
-| `tests/timeout-retry-popup-parity.test.mjs` | 55, 62 | dua `read('extension/content.js')` | `const src = contentSourceSync();` di kedua tempat |
-| `tests/ui-surface.test.mjs` | 252 | `const content = read('../extension/content.js');` | `const content = contentSourceSync();` |
-| `tests/workflow-dsl.test.mjs` | 64 | `const content = fs.readFileSync(new URL('../extension/content.js', import.meta.url), 'utf8');` | `const content = contentSourceSync();` |
+| `tests/action-pipeline.test.mjs` | 64 | `const src = read('extension/content.js');` | `const src = contentSource();` |
+| `tests/ax-observation.test.mjs` | 14 | `const content = read('../extension/content.js');` | `const content = contentSource();` |
+| `tests/burst-atomic-actions.test.mjs` | 116 | `const content = fs.readFileSync(new URL('../extension/content.js', import.meta.url), 'utf8');` | `const content = contentSource();` |
+| `tests/efficiency.test.mjs` | 14, 25 | dua `fs.readFileSync(...content.js...)` | `const content = contentSource();` di 14, dan `content` yang sama dipakai di 25 |
+| `tests/focus-and-keyboard.test.mjs` | 248 | `const source = await readFile(new URL('../extension/content.js', import.meta.url), 'utf8');` | `const source = contentSource();` |
+| `tests/hover-settle.test.mjs` | 124 | `const source = await readFile(new URL('../extension/content.js', import.meta.url), 'utf8');` | `const source = contentSource();` — baris 141 **tidak disentuh** (ia sudah membaca manifest) |
+| `tests/landing-claims.test.mjs` | 23 | `const content = read('extension/content.js');` | `const content = contentSource();` |
+| `tests/landing-dashboard.test.mjs` | 114 | `const content = fs.readFileSync(new URL('extension/content.js', root), 'utf8');` | `const content = contentSource();` |
+| `tests/ref-reacquire.test.mjs` | 19 | `const source = await readFile(new URL('../extension/content.js', import.meta.url), 'utf8');` | `const source = contentSource();` |
+| `tests/role-reconcile.test.mjs` | 192, 209 | dua `await readFile(...content.js...)` | `const source = contentSource();` di kedua tempat |
+| `tests/semantic-engine.test.mjs` | 442 | `const content = read('../extension/content.js');` | `const content = contentSource();` |
+| `tests/timeout-retry-popup-parity.test.mjs` | 55, 62 | dua `read('extension/content.js')` | `const src = contentSource();` di kedua tempat |
+| `tests/ui-surface.test.mjs` | 252 | `const content = read('../extension/content.js');` | `const content = contentSource();` |
+| `tests/workflow-dsl.test.mjs` | 64 | `const content = fs.readFileSync(new URL('../extension/content.js', import.meta.url), 'utf8');` | `const content = contentSource();` |
 
 Aturan yang mengikat: **nol asersi dihapus**. Kalau sebuah asersi ternyata membaca
 berkas lain (`hover-settle.test.mjs:141` dan `role-reconcile.test.mjs:222` membaca

@@ -13,6 +13,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import { contentSource } from './helpers/content-source.mjs';
 
 const root = new URL('..', import.meta.url);
 const read = (name) => fs.readFileSync(new URL(`landing/${name}`, root), 'utf8');
@@ -111,7 +112,7 @@ test('the dashboard says whether the extension is installed in this browser', ()
 });
 
 test('the content script leaves the marker the dashboard reads', () => {
-  const content = fs.readFileSync(new URL('extension/content.js', root), 'utf8');
+  const content = contentSource();
 
   assert.match(content, /documentElement\.dataset\.operaAgent\s*=/, 'the marker is written on documentElement');
 

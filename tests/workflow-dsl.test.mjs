@@ -10,6 +10,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { extensionSource } from './helpers/extension-source.mjs';
+import { contentSource } from './helpers/content-source.mjs';
 
 const core = fs.readFileSync(new URL('../supabase/migrations/20260907204146_opera_agent_1_0_0_core.sql', import.meta.url), 'utf8');
 const workflow = fs.readFileSync(new URL('../supabase/migrations/20260907204221_opera_agent_1_0_0_workflows.sql', import.meta.url), 'utf8');
@@ -61,6 +62,6 @@ test('site-specific logic remains outside the extension', async () => {
   assert.match(sql, /youtube\.get_transcript/);
   assert.match(sql, /research\.crawl_urls/);
   const background = await extensionSource();
-  const content = fs.readFileSync(new URL('../extension/content.js', import.meta.url), 'utf8');
+  const content = contentSource();
   assert.doesNotMatch(background + content, /youtube\.com|ytp-|youtube\./i);
 });

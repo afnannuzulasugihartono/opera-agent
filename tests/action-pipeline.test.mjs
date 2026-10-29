@@ -9,6 +9,7 @@ import {
   ACTION_RAMP_MS, pollDelays, classifyResolve, makeNotReady, attachResolution
 } from '../extension/lib/action-pipeline.js';
 import { extensionSource } from './helpers/extension-source.mjs';
+import { contentSource } from './helpers/content-source.mjs';
 
 test('ACTION_RAMP_MS is the frozen 25..400 ramp', () => {
   assert.deepEqual(ACTION_RAMP_MS, [25, 50, 100, 200, 400]);
@@ -57,11 +58,8 @@ test('attachResolution adds resolved and omits absent verified', () => {
   assert.equal(env2.resolved.verified, true);
 });
 
-import fs from 'node:fs';
-const read = (p) => fs.readFileSync(new URL(`../${p}`, import.meta.url), 'utf8');
-
 test('content exposes page.action_state for the U-V pipeline', () => {
-  const src = read('extension/content.js');
+  const src = contentSource();
   assert.match(src, /page\.action_state/, 'handler must exist');
   assert.match(src, /resolveActionRef\(.*ref/, 'must resolve through the U-I rebind machinery');
   assert.match(src, /refusing automatic rebind/, 'ambiguity surfaced via the U-I refusal path');

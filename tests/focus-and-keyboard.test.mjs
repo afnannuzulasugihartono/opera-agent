@@ -10,8 +10,8 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
 import { extensionSource } from './helpers/extension-source.mjs';
+import { contentSource } from './helpers/content-source.mjs';
 import {
   FOCUS_GATE_ATTEMPTS,
   decideFocusGate,
@@ -245,7 +245,7 @@ test('R9: the shared key allowlist is the single source of truth for bursts and 
 
 test('the synthetic path explains its narrower surface instead of a bare rejection', async () => {
 
-  const source = await readFile(new URL('../extension/content.js', import.meta.url), 'utf8');
+  const source = contentSource();
   assert.doesNotMatch(source, /throw new Error\('Key is not allowlisted\.'\)/);
   assert.match(source, /Key is not allowlisted for the synthetic path/);
   assert.match(source, /require the trusted path/);

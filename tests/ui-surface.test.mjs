@@ -7,6 +7,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { readFile } from 'node:fs/promises';
+import { contentSource } from './helpers/content-source.mjs';
 
 const surfaces = [
   { name: 'popup.html', url: new URL('../extension/popup.html', import.meta.url) },
@@ -248,8 +249,7 @@ test('popup keeps its controls accessible and responsive in narrow Opera panels'
   assert.match(script, /currentTabPrivate \? 'blocked' : 'allowed'/);
 });
 
-const read = (relative) => fs.readFileSync(new URL(relative, import.meta.url), 'utf8');
-const content = read('../extension/content.js');
+const content = contentSource();
 
 test('I1: action-ref descriptors carry mint-time geometry and mutation version', () => {
   assert.match(content, /function actionRefDescriptor\(el, options = \{\}\)/);

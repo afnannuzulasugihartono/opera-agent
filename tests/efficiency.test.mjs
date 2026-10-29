@@ -7,11 +7,12 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { extensionSource } from './helpers/extension-source.mjs';
+import { contentSource } from './helpers/content-source.mjs';
 
 const bridge = fs.readFileSync(new URL('../supabase/functions/opera-agent-bridge/index.ts', import.meta.url), 'utf8');
 const runner = fs.readFileSync(new URL('../supabase/functions/opera-agent-runner/index.ts', import.meta.url), 'utf8');
 const background = await extensionSource();
-const content = fs.readFileSync(new URL('../extension/content.js', import.meta.url), 'utf8');
+const content = contentSource();
 const migration = fs.readFileSync(new URL('../supabase/migrations/20260908233759_opera_agent_efficiency_workflows.sql', import.meta.url), 'utf8');
 const parallelMigration = fs.readFileSync(new URL('../supabase/migrations/20260908233810_opera_agent_parallel_crawl_workflow.sql', import.meta.url), 'utf8');
 const transcriptMigration = fs.readFileSync(new URL('../supabase/migrations/20260909000412_opera_agent_youtube_transcript_fast_path.sql', import.meta.url), 'utf8');
@@ -22,8 +23,6 @@ const textOnlyMigration = fs.readFileSync(new URL('../supabase/migrations/202609
 // What must not come back is the device asking for work, which was two round trips per action.
 
 test('a missing page helper costs one feature, never the whole content script', () => {
-  const content = fs.readFileSync(new URL('../extension/content.js', import.meta.url), 'utf8');
-
   assert.doesNotMatch(content, /throw new Error\('Role reconcile runtime/,
     'a missing helper still takes down every capability on the page');
   assert.doesNotMatch(content, /throw new Error\('Hover settle runtime/,

@@ -10,6 +10,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { extensionSource } from './helpers/extension-source.mjs';
+import { contentSource } from './helpers/content-source.mjs';
 import { mcpSurfaceSourceSync } from './helpers/mcp-surface-source.mjs';
 
 const root = new URL('..', import.meta.url);
@@ -20,7 +21,7 @@ const site = ['landing/beranda.html', 'landing/index.html', 'landing/akun.html',
 
 const manifest = JSON.parse(read('extension/manifest.json'));
 const mcp = mcpSurfaceSourceSync();
-const content = read('extension/content.js');
+const content = contentSource();
 const background = await extensionSource();
 
 test('no page states a version, because a stated version is a promise nothing keeps', () => {
