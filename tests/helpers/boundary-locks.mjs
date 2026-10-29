@@ -21,11 +21,11 @@
 // Otherwise every developer on Windows would see all nine pins fail for a reason that is not a contract change.
 
 export const PUBLIC_SURFACE_LOCKS = Object.freeze([
-  ['../extension/content.js', 'dfba81adb9994856ffa073171f3961a24db5c15e'],
+  ['../extension/content.js', 'c8444adde9ccfbf525ba4592151fc367e694da7f'],
   ['../extension/page-kit.js', 'afa5bc3f7916ba1b9f49a39fa1cc78d16015813d'],
   ['../extension/background.js', 'da44f1ed773c985cb6ad74c62d5e732d2fe2afee'],
   ['../extension/manifest.json', '39d65cb3c5b1c2262b58dc5d8bab57c673f15650'],
-  ['../supabase/functions/opera-agent-mcp/index.ts', '69b1b38e7679a5ded86e3cdcfff0df0d4428f340'],
+  ['../supabase/functions/opera-agent-mcp/index.ts', '91e991ff29d58b02930284846c1118c9b73f6d40'],
   ['../supabase/functions/opera-agent-mcp/tools.ts', '3e6c05dc9a610752b481951303f998e045c55baf'],
 ]);
 

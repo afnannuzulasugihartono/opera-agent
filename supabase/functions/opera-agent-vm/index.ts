@@ -44,8 +44,14 @@ const DOCUMENT_SCOPED = new Set([
 ]);
 
 const headers = {
-  "Access-Control-Allow-Headers": "authorization, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Headers": [
+    "authorization",
+    "content-type"
+  ].join(", "),
+  "Access-Control-Allow-Methods": [
+    "POST",
+    "OPTIONS"
+  ].join(", "),
   "Cache-Control": "no-store",
   "Content-Type": "application/json; charset=utf-8",
 };

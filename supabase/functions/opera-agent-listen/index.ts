@@ -87,7 +87,6 @@ async function transcribeWindow(windowChunks: Array<{ audio_base64: string; mime
   const body = await response.json();
   const segments = Array.isArray(body?.segments) ? body.segments : [];
   return segments
-
     .filter((s: { text?: unknown; no_speech_prob?: unknown }) =>
       typeof s.text === "string" && s.text.trim() &&
       (typeof s.no_speech_prob !== "number" || s.no_speech_prob <= 0.6))

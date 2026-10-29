@@ -41,17 +41,15 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
 const STATIC_TOKEN = Deno.env.get("OPERA_AGENT_MCP_TOKEN") || "";
 const DEVICE_NAME = Deno.env.get("OPERA_AGENT_MCP_DEVICE_NAME") || "opera";
-const ALLOWED_USER_IDS = new Set(
-  (Deno.env.get("OPERA_AGENT_MCP_USER_IDS") || "")
-    .split(",")
-    .map((value) => value.trim())
-    .filter(Boolean)
+const ALLOWED_USER_IDS = new Set((Deno.env.get("OPERA_AGENT_MCP_USER_IDS") || "")
+  .split(",")
+  .map((value) => value.trim())
+  .filter(Boolean)
 );
-const ALLOWED_USER_EMAILS = new Set(
-  (Deno.env.get("OPERA_AGENT_MCP_USER_EMAILS") || "")
-    .split(",")
-    .map((value) => value.trim().toLowerCase())
-    .filter(Boolean)
+const ALLOWED_USER_EMAILS = new Set((Deno.env.get("OPERA_AGENT_MCP_USER_EMAILS") || "")
+  .split(",")
+  .map((value) => value.trim().toLowerCase())
+  .filter(Boolean)
 );
 
 // WHY THE CLIENT IS LOADED LAZILY.
@@ -71,9 +69,25 @@ async function db() {
 }
 
 const CORS_BASE_HEADERS = {
-  "Access-Control-Allow-Headers": "authorization, content-type, last-event-id, mcp-protocol-version, mcp-session-id, x-opera-device, x-opera-provider",
-  "Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS",
-  "Access-Control-Expose-Headers": "mcp-protocol-version, mcp-session-id",
+  "Access-Control-Allow-Headers": [
+    "authorization",
+    "content-type",
+    "last-event-id",
+    "mcp-protocol-version",
+    "mcp-session-id",
+    "x-opera-device",
+    "x-opera-provider"
+  ].join(", "),
+  "Access-Control-Allow-Methods": [
+    "GET",
+    "POST",
+    "DELETE",
+    "OPTIONS"
+  ].join(", "),
+  "Access-Control-Expose-Headers": [
+    "mcp-protocol-version",
+    "mcp-session-id"
+  ].join(", "),
   "Cache-Control": "no-store"
 };
 

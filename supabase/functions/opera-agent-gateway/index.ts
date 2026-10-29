@@ -14,8 +14,16 @@ const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
 });
 
 const CORS_BASE_HEADERS = {
-  "Access-Control-Allow-Headers": "content-type, x-opera-agent-token, authorization",
-  "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
+  "Access-Control-Allow-Headers": [
+    "content-type",
+    "x-opera-agent-token",
+    "authorization"
+  ].join(", "),
+  "Access-Control-Allow-Methods": [
+    "POST",
+    "GET",
+    "OPTIONS"
+  ].join(", "),
   "Cache-Control": "no-store"
 };
 

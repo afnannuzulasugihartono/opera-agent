@@ -749,10 +749,9 @@
   }
 
   function compactObservationElements(items, delta, limit = 16) {
-    const changed = new Set(
-      (Array.isArray(delta?.changes) ? delta.changes : [])
-        .map((change) => String(change?.logicalId || ''))
-        .filter(Boolean)
+    const changed = new Set((Array.isArray(delta?.changes) ? delta.changes : [])
+      .map((change) => String(change?.logicalId || ''))
+      .filter(Boolean)
     );
     const selected = [];
     const selectedIds = new Set();
