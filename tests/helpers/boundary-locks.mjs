@@ -1,6 +1,6 @@
-// @last-edited: 2026-10-13 UTC+7.
+// @last-edited: 2026-10-29 UTC+7.
 // @title: boundary-locks — the frozen locks on the public boundary, shared by the checkpoint tests.
-// @state: nine pins over four stacks; each line says why the current pin exists, and nothing else.
+// @state: one pin per frozen runtime file across three lock arrays; each line says why the current pin exists, and nothing else.
 // @dependencies: none.
 
 // Each entry is the git-blob SHA1 (LF-normalized) of a runtime source whose public contract is frozen.
@@ -21,9 +21,10 @@
 // Otherwise every developer on Windows would see all nine pins fail for a reason that is not a contract change.
 
 export const PUBLIC_SURFACE_LOCKS = Object.freeze([
-  ['../extension/content.js', '4ce134a49026c74b559cee36afd7d15c6f68fce8'],
+  ['../extension/content.js', 'dfba81adb9994856ffa073171f3961a24db5c15e'],
+  ['../extension/page-kit.js', '0fe5db89332069ee6f115a6306a94213d4791267'],
   ['../extension/background.js', 'da44f1ed773c985cb6ad74c62d5e732d2fe2afee'],
-  ['../extension/manifest.json', 'edc35efcd7e1476ad5f4f8898988e48bce6cce8f'],
+  ['../extension/manifest.json', '39d65cb3c5b1c2262b58dc5d8bab57c673f15650'],
   ['../supabase/functions/opera-agent-mcp/index.ts', 'b66ebb0f6c5f3f692fa6b6e5adad01a7f0e2c6bf'],
   ['../supabase/functions/opera-agent-mcp/tools.ts', '3e6c05dc9a610752b481951303f998e045c55baf'],
 ]);

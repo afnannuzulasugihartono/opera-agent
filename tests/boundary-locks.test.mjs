@@ -20,7 +20,7 @@ function sha1Blob(bytes) {
 }
 
 for (const [label, locks, expectedSize] of [
-  ['public surface', PUBLIC_SURFACE_LOCKS, 5],
+  ['public surface', PUBLIC_SURFACE_LOCKS, 6],
   ['observation stack', OBSERVATION_STACK_LOCKS, 3],
   ['relevance stack', RELEVANCE_STACK_LOCKS, 2],
 ]) {

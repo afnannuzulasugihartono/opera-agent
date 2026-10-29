@@ -89,7 +89,7 @@ async function ensureContent(tabId) {
   } catch (error) {
     log.debug('CONTENT_PING_FAILED', error?.message || String(error));
   }
-  await chrome.scripting.executeScript({ target: { tabId }, files: ['lib/agent-log.js', 'semantic-identity.js', 'semantic-views.js', 'role-reconcile.js', 'hover-settle.js', 'content.js'] });
+  await chrome.scripting.executeScript({ target: { tabId }, files: ['lib/agent-log.js', 'semantic-identity.js', 'semantic-views.js', 'role-reconcile.js', 'hover-settle.js', 'page-kit.js', 'content.js'] });
 }
 
 export async function contentCall(tabId, method, params = {}) {

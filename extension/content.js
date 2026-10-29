@@ -46,10 +46,7 @@
         plan: () => ({ done: false, reason: 'hover-settle-unavailable' })
       };
 
-  const MAX_TEXT_CHUNK = 12000;
-  const MAX_ELEMENTS = 200;
-  const MAX_QUERY = 100;
-  const MAX_LINKS = 500;
+  const { clamp, clean, normalizeObservableText, normalizeText, currentRouteKey, MAX_TEXT_CHUNK, MAX_ELEMENTS, MAX_QUERY, MAX_LINKS } = globalThis.OperaAgentPageKit;
   const documentId = crypto.randomUUID();
   const semanticIdentity = globalThis.OperaAgentSemanticIdentity?.createIdentityEngine({ documentId });
   if (!semanticIdentity) throw new Error('Semantic identity runtime is unavailable.');
@@ -76,39 +73,6 @@
   ]);
 
   const SENSITIVE_RE = /(?:password|passwd|passcode|pin\b|one[-_ ]?time|otp\b|2fa|two[-_ ]?factor|verification\s*code|security\s*code|cvv|cvc|card\s*(?:code|number)|credit\s*card|expiry|expiration|payment)/i;
-
-  function clamp(value, min, max, fallback = min) {
-    const n = Number(value);
-    if (!Number.isFinite(n)) return fallback;
-    return Math.min(max, Math.max(min, n));
-  }
-
-  function clean(value, max = 500) {
-    return String(value ?? '').replace(/\s+/g, ' ').trim().slice(0, max);
-  }
-
-  const PUA_GLYPH_RE = /[\uE000-\uF8FF\u200B\u200C\uFEFF]|\u200D/g;
-  const VISITED_SUFFIX_RE = /\s*visited link\s*$/i;
-  function normalizeObservableText(value, max = 500) {
-    const text = clean(value, max + 40).replace(PUA_GLYPH_RE, ' ').replace(/\s+/g, ' ').trim();
-    const untagged = VISITED_SUFFIX_RE.test(text) ? text.replace(VISITED_SUFFIX_RE, '').trim() : text;
-    return untagged.slice(0, max);
-  }
-
-  function normalizeText(value) {
-    return String(value ?? '')
-      .replace(/\r\n?/g, '\n')
-      .replace(/[\t\f\v ]+/g, ' ')
-      .replace(/ *\n */g, '\n')
-      .replace(/\n{3,}/g, '\n\n')
-      .trim();
-  }
-
-  function currentRouteKey() {
-    return globalThis.OperaAgentSemanticIdentity.stableHash(
-      `${location.origin}${location.pathname}${location.search}`
-    );
-  }
 
   function actionRefDescriptor(el, options = {}) {
     const identity = stableElementIdentity(el);
