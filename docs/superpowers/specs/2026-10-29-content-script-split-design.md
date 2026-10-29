@@ -123,14 +123,25 @@ dipakai tanpa dideklarasikan/diimpor/diekspor di berkas itu. Nama global telanja
 gagal di sana; akses properti (`globalThis.OperaAgentX.y`) lolos, dan itu memang cara
 kerja content script.
 
-### Sebelas berkas tes membaca `content.js` sebagai teks
+### Empat belas berkas tes membaca `content.js` sebagai teks
 
 `tests/action-pipeline.test.mjs`, `ax-observation`, `burst-atomic-actions`, `efficiency`
-(dua tempat), `focus-and-keyboard`, `hover-settle` (dua tempat), `ref-reacquire`,
-`role-reconcile`, `landing-claims`, `landing-dashboard`. Semua `readFile` — pola
-asernya dua macam: `/function collectInteractiveNodes\(/` (fungsi ada di berkas ini) dan
+(dua tempat), `focus-and-keyboard`, `hover-settle`, `landing-claims`, `landing-dashboard`,
+`ref-reacquire`, `role-reconcile` (dua tempat), `semantic-engine`,
+`timeout-retry-popup-parity` (dua tempat), `ui-surface`, `workflow-dsl`. Semua `readFile`
+— pola asersi dua macam: `/function collectInteractiveNodes\(/` (fungsi ada di berkas ini) dan
 `source.indexOf('function resolveActionRef(ref) {')` lalu `slice` sampai kurung tutup
 (blok fungsi). Keduanya pindah bersama fungsinya.
+
+Jumlah ini **14 berkas dan 17 titik baca**, bukan sebelas seperti yang tertulis
+di versi pertama spec ini. Angka itu dihitung dari `content.js` saja; pembacaan
+di luar `tests/` baru ketahuan ketika pohon diaudit seluruhnya:
+
+| pembaca | apa yang berubah |
+|---|---|
+| `scripts/check.mjs:82` | memeriksa **tujuh** marker (`password`, `one-time-code`, `cvv`, `cvc`, `type === 'file'`, `args.includeElements !== false`, `case 'content.ping'`) di dalam `content.js`; enam di antaranya pindah ke modul, jadi ia harus membaca bundel |
+| `store/store-manifest.json` | cermin `manifest.content_scripts`, dibandingkan `deepEqual` oleh `check.mjs`; harus ikut di setiap task yang mengubah manifest |
+| `tests/helpers/boundary-locks.mjs` | meng-pin SHA-1 `extension/content.js` **dan** `extension/manifest.json`; keduanya berubah di setiap task |
 
 Preseden yang sudah terbukti ada di spec 2026-10-09: 17 berkas yang membaca
 `background.js` sebagai teks diperbaiki dengan **satu baris per berkas** — mengganti
@@ -250,9 +261,10 @@ memverifikasi semua langkah berikutnya.
    Sumber kebenarannya manifest, bukan daftar hard-code, supaya tidak ada daftar kedua
    yang bisa menyimpang. Baseline dulu: dengan berkas hari ini (enam file), asersi
    yang pindah ke helper harus lulus **sebelum** satu baris pun dipindah.
-3. **Sebelas berkas tes, satu baris per berkas** — `readFile(content.js)` →
-   `contentSource()`. Nol asersi dihapus. `doesNotMatch` yang ada tetap diperiksa:
+3. **Empat belas berkas tes, satu baris per titik baca** — `readFile(content.js)` →
+   `contentSourceSync()`. Nol asersi dihapus. `doesNotMatch` yang ada tetap diperiksa:
    sekarang membaca lebih banyak berkas, jadi lebih ketat, bukan lebih longgar.
+   `scripts/check.mjs` yang memeriksa tujuh marker di `content.js` ikut membaca bundel.
 4. **Ulangi seluruh tabel angka** di *Fakta terverifikasi*.
 
 ### Delapan pemindahan, tiap akhir diakhiri `npm test` + `npm run check`
@@ -311,12 +323,20 @@ fase, bukan cuma di akhir.
 
 ### Yang ditambahkan
 
-- Helper `tests/helpers/content-source.mjs` + kesebelas berkas tes yang memakainya.
+- Helper `tests/helpers/content-source.mjs` + empat belas berkas tes yang memakainya,
+  plus `scripts/check.mjs`.
 - Gerbang ukuran: `extension/content.js` di bawah 300 baris, dan delapan modul baru
   masing-masing di bawah 550 — plafon yang repo sudah tetapkan untuk worker, dipakai
   juga di sini.
+- Gerbang urutan muat, gerbang namespace-terbit, dan gerbang state-tak-terduplikasi.
+  Yang terakhir **menggantikan** bukti yang tadinya dikira sudah ada: gate
+  *no state is declared twice* di `tests/extension-source.test.mjs` berjalan di bundel
+  **worker**, yang tidak memuat satu pun content script, jadi ia tidak pernah mengukur
+  risiko yang paling besar di pemindahan ini.
 - Bukti bebas `chrome.*` untuk tujuh modul baru, dengan satu kecualian tertulis untuk
   `page-media.js` — dihitung, bukan dijanjikan.
+- Pin SHA-1 di `tests/helpers/boundary-locks.mjs` pindah ke delapan modul baru, supaya
+  kunci permukaan publik tidak ikut melemah ketika `content.js` menyusut.
 
 ### Yang tidak berubah
 
@@ -337,15 +357,16 @@ karena hijau di Node.
 degrasi adalah properti yang dikunci, kegagalannya **sunyi**, bukan lempar. Penjaga:
 tes byte-identity + tes browser setelah langkah 4 dan 8, bukan pembacaan kode.
 
-**`doesNotMatch` menjadi lebih ketat.** Sebelas berkas kini membaca 14 berkas, bukan
-satu. Pola yang dulu tidak ada di `content.js` sekarang diperiksa terhadap modul baru.
-Kalau ada yang gagal, keputusannya adalah memperbaiki kodenya — bukan mengembalikan
+**`doesNotMatch` menjadi lebih ketat.** Empat belas berkas kini membaca 14 berkas,
+bukan satu. Pola yang dulu tidak ada di `content.js` sekarang diperiksa terhadap modul
+baru. Kalau ada yang gagal, keputusannya adalah memperbaiki kodenya — bukan mengembalikan
 helper ke satu berkas.
 
 **State terduplikasi.** 49 deklarasi. Kalau sebuah state ternyata dipakai dua region dan
 dipindah ke satu modul, salinan kedua menyimpang tanpa suara. Tabel di atas sudah
 dihitung per baris; yang tidak ada di tabel dan tidak ikut regionnya tetap di
-`content.js` dan dikirim lewat argumen — diperiksa tiap langkah.
+`content.js` dan dikirim lewat argumen — diperiksa tiap langkah, dan sekarang juga
+diperiksa gerbang yang membandingkan deklarasi entry dengan deklarasi modul.
 
 **Degrasi yang hilang.** `tests/efficiency.test.mjs` mengunci bahwa helper yang tidak
 ada tidak menjatuhkan seluruh content script. Delapan modul baru berarti delapan

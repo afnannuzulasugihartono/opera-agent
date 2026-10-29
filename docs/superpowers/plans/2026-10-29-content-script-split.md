@@ -21,6 +21,65 @@
 - Setiap berkas baru memakai header empat field: `@last-edited`, `@title`, `@state`, `@dependencies`.
 - 59 berkas milik sesi lain (`extension/lib/`, `extension/worker/`, `local/`, `docs/` selain spec ini, `supabase/functions/_shared/billing.js`) tidak disentuh.
 
+## Koreksi setelah audit pohon
+
+Rencana ini disusun dari spec, dan spec disusun dari pembacaan `content.js`. Audit
+seluruh pohon — bukan hanya `tests/` — menemukan enam hal yang salah di rencana.
+Semuanya diperbaiki di sini, dan angka-angka di bawah menggantikan angka yang
+tertulis di task-task berikutnya.
+
+| # | Yang tertulis | Yang sebenarnya | Tindakan |
+|---|---|---|---|
+| C1 | 11 berkas tes membaca `content.js` | **14 berkas, 17 titik baca**. Yang tidak tercatat: `semantic-engine`, `timeout-retry-popup-parity`, `ui-surface`, `workflow-dsl` | Task 1 Step 6 memuat keempatnya |
+| C2 | — | `scripts/check.mjs:82` membaca `extension/content.js` langsung lalu **(7)** marker diperiksa di situ; enam di antaranya pindah ke modul | `check.mjs` membaca bundel; pinned di `gates.lock` → `gates:refresh` |
+| C3 | — | `store/store-manifest.json` adalah cermin `manifest.content_scripts`, dan `check.mjs` membandingkan keduanya dengan `deepEqual` | setiap task yang mengubah manifest menjalankan `py scripts/build-store-package.py` |
+| C4 | — | `tests/helpers/boundary-locks.mjs` meng-pin SHA-1 `extension/content.js` **dan** `extension/manifest.json`; keduanya berubah di setiap task | re-pin di setiap task, plus satu pin per modul baru; `tests/boundary-locks.test.mjs` menghitung pin |
+| C5 | gate *no state is declared twice across the bundle* sudah ada dan menutup risiko state | **Salah.** Gate itu berjalan di `extensionSourceFiles()` — bundel **worker** — yang tidak memuat satu pun content script | Task 1 menambah gate baru yang benar |
+| C6 | — | Tiap content script adalah IIFE sendiri, jadi nama yang sama di dua modul **tidak** bentrok; yang berbahaya adalah nama yang sama di `content.js` **dan** modul | gate baru membandingkan entry dengan modul, bukan modul dengan modul |
+
+### Prosedur re-pin per task (Task 2 sampai Task 9)
+
+Lima berkas di luar daftar modul ikut berubah di setiap task, karena lima
+gerbang nyata menuntutnya. Ini bukan reshuffle, dan bukan kebocoran scope:
+
+1. **`extension/manifest.json`** - satu path baru. Dipin di `gates.lock`
+   **dan** di `tests/helpers/boundary-locks.mjs`.
+2. **`store/store-manifest.json`** - cermin `manifest.content_scripts`, dan
+   `scripts/check.mjs` membandingkannya dengan `deepEqual`. Jalankan
+   `py scripts/build-store-package.py`; zip-nya di-ignore git, jadi yang
+   berubah hanya manifest yang dilacak.
+3. **`tests/helpers/boundary-locks.mjs`** - pin SHA-1 `extension/content.js`
+   dan `extension/manifest.json` di-re-pin, karena byte-nya memang berubah,
+   dan modul baru diberi pin sendiri: primitives yang dulu dikunci di
+   `content.js` sekarang hidup di sana, dan tanpa pin baru kunci itu menutup
+   lebih sedikit, bukan lebih banyak.
+4. **`tests/boundary-locks.test.mjs`** - jumlah pin dihitung di sini, jadi
+   ikut bertambah satu per modul.
+5. **`gates.lock`** - `npm run gates:refresh` setelah 1, 3, dan 4.
+
+Repo's own words on this: "background.js changes more often than anything else
+here: the worker split moved dispatch out of it while keeping the bytes, so its
+extraction tasks re-pin it in the same commit. That is expected, not a smell."
+Re-pin `content.js` di delapan task ini persis protocol yang sama.
+
+**Setiap baris `git add` di Task 2 sampai Task 9 harus ditambah** dengan:
+`store/store-manifest.json tests/helpers/boundary-locks.mjs tests/boundary-locks.test.mjs gates.lock`
+
+C5 adalah yang paling berbahaya: rencana ini menunjuk satu bukti untuk risiko
+terbesar, dan buktinya tidak ada. Gerbang yang sudah ada mengukur bundel
+worker (`extension/background.js` dan sebelas berkas `extension/worker/`), bukan
+content script — `tests/helpers/extension-source.mjs` tidak memuat satu pun
+dari enam content script yang ada.
+
+Karena itu Task 1 menambah **dua** gerbang, bukan satu:
+
+- `every content script module publishes the namespace the entry reads` —
+ /module yang namespace-nya tidak dibaca entry adalah feature yang mati sunyi.
+- `the entry declares no state a content script module also declares` —
+  `refs` yang ada di modul **dan** di `content.js` adalah dua tabel yang
+  menyimpang tanpa suara. Deklarasi dari `const { a, b } = globalThis.X` dihitung
+  berbeda, karena itu bentuk **pembacaan**, bukan deklarasi state.
+
 ## Review Focus
 
 Lima masukan yang paling mungkin menggigit orang yang memakai perangkat lunak ini, dan tes yang menguncinya:
@@ -28,7 +87,7 @@ Lima masukan yang paling mungkin menggigit orang yang memakai perangkat lunak in
 1. **Namespace dipanggil sebelum modulnya dimuat** (urutan muat salah) — kegagalan **sunyi**: `globalThis.OperaAgentPageKit` `undefined`, helper hilang, halaman setengah mati tanpa lempar. Tes: Task 1 gate *manifest loads the modules in dependency order* (deep-equal terhadap daftar persis), dan Task 1 gate chrome-free yang ikut gagal kalau path-nya tidak ada.
 2. **Daftar injeksi runtime dan manifest menyimpang** — `ensureContent` tidak menemukan file, konten pingsan diam-diam. Tes: `tests/extension-source.test.mjs` *the ensureContent script list still matches the manifest* (byte-identity), yang sudah ada dan harus hijau di setiap task.
 3. **Degradasi hilang** — helper yang tidak ada kini melempar dan menjatuhkan seluruh content script, bukan satu fitur. Tes: `tests/efficiency.test.mjs` asersi `doesNotMatch` "Role reconcile runtime"; wajib hijau setiap task.
-4. **State terduplikasi dua salinan yang menyimpang** — `refs`/`refCounter`/`watchState` dipindah ke modul sementara `content.js` masih memakai salinan lama. Tes: Task 1 gate *no state is declared twice across the bundle* (sudah ada di `extension-source.test.mjs`), plus Task 10 verifikasi manual: `grep -c` setiap nama state di `content.js` harus 0 setelah modulnya pindah.
+4. **State terduplikasi dua salinan yang menyimpang** — `refs`/`refCounter`/`watchState` dipindah ke modul sementara `content.js` masih memakai salinan lama. Tes: Task 1 gate baru *the entry declares no state a content script module also declares*. Gate yang sudah ada (`extension-source.test.mjs`) **tidak** menutup risiko ini — ia hanya berjalan di bundel worker, bukan di content script; lihat Koreksi C5.
 5. **`doesNotMatch` jadi lebih longgar karena bundel** — sebelas berkas kini membaca 14 berkas; pola yang dulu "tidak ada" kini diperiksa terhadap kode baru. Tes: Task 1 langkah 6 mencatat keluaran `npm test` sebelum dan sesudah re-point; yang boleh berubah hanya tiga gate baru.
 
 ---
@@ -49,9 +108,13 @@ Lima masukan yang paling mungkin menggigit orang yang memakai perangkat lunak in
 | `extension/manifest.json` | `content_scripts[0].js` bertambah 8 path |
 | `extension/worker/tab-content.js:92` | daftar injeksi runtime, identik byte-per-byte dengan manifest |
 | `tests/helpers/content-source.mjs` | **baru** — bundel semua content script, sumber kebenarannya manifest |
-| `tests/code-standard.test.mjs` | gate baru: plafon entry, plafon modul, urutan muat |
+| `tests/code-standard.test.mjs` | gate baru: plafon entry, plafon modul, urutan muat, namespace terpasang, state tak terduplikasi |
 | `tests/structure-gates.test.mjs` | gate baru: content script module bebas `chrome.*` (satu kecualian tertulis) |
-| 11 berkas tes | satu baris per berkas: `readFile(content.js)` → `contentSource()` |
+| `scripts/check.mjs` | membaca bundel, bukan `content.js` tunggal — pinned di `gates.lock` |
+| `store/store-manifest.json` | cermin `manifest.content_scripts` — harus ikut di setiap task yang mengubah manifest |
+| `tests/helpers/boundary-locks.mjs` | pin SHA-1: `content.js` + `manifest.json` di-re-pin, tiap modul baru diberi pin sendiri |
+| `tests/boundary-locks.test.mjs` | jumlah pin dihitung, jadi ikut bertambah satu per modul |
+| 14 berkas tes | satu baris per berkas: `readFile(content.js)` → `contentSource()` |
 
 ---
 
@@ -59,13 +122,23 @@ Lima masukan yang paling mungkin menggigit orang yang memakai perangkat lunak in
 
 **Files:**
 - Create: `tests/helpers/content-source.mjs`
-- Modify: `tests/code-standard.test.mjs` (tambah 3 gate, hapus 1 kecualikan)
+- Modify: `tests/code-standard.test.mjs` (tambah 5 gate, hapus 1 kecualikan)
 - Modify: `tests/structure-gates.test.mjs` (tambah 1 gate)
-- Modify: `tests/action-pipeline.test.mjs:64`, `tests/ax-observation.test.mjs:14`, `tests/burst-atomic-actions.test.mjs:116`, `tests/efficiency.test.mjs:14`, `tests/efficiency.test.mjs:25`, `tests/focus-and-keyboard.test.mjs:248`, `tests/hover-settle.test.mjs:124`, `tests/role-reconcile.test.mjs:192`, `tests/landing-claims.test.mjs:23`, `tests/landing-dashboard.test.mjs:114`, `tests/ref-reacquire.test.mjs:19`
+- Modify: `scripts/check.mjs:82` (baca bundel, bukan `content.js`)
+- Modify: 14 berkas tes, satu baris per titik baca:
+  `tests/action-pipeline.test.mjs:64`, `tests/ax-observation.test.mjs:14`,
+  `tests/burst-atomic-actions.test.mjs:116`, `tests/efficiency.test.mjs:14` dan `:25`,
+  `tests/focus-and-keyboard.test.mjs:248`, `tests/hover-settle.test.mjs:124`,
+  `tests/landing-claims.test.mjs:23`, `tests/landing-dashboard.test.mjs:114`,
+  `tests/ref-reacquire.test.mjs:19`, `tests/role-reconcile.test.mjs:192` dan `:209`,
+  `tests/semantic-engine.test.mjs:442`, `tests/timeout-retry-popup-parity.test.mjs:55` dan `:62`,
+  `tests/ui-surface.test.mjs:252`, `tests/workflow-dsl.test.mjs:64`
+- Modify: `gates.lock` (`scripts/check.mjs` dan `tests/structure-gates.test.mjs` di-pin)
 
 **Interfaces:**
 - Consumes: `extension/manifest.json` (satu-satunya sumber kebenaran urutan muat).
-- Produces: `contentSource()` dan `contentScriptFiles()` dari `tests/helpers/content-source.mjs` — dipakai sebelas berkas tes di task ini dan seluruh task berikutnya.
+- Produces: `contentSource()`, `contentSourceSync()`, `contentScriptFiles()` dan `contentScriptFilesSync()` dari `tests/helpers/content-source.mjs` — dipakai empat belas berkas tes di task ini dan seluruh task berikutnya.
+- Bentuknya **sync** untuk sebagian besar call site: sebelas titik baca berada di dua bentuk — sebagian di scope modul, sebagian di dalam `test` async. Pembacaan sync membuat semuanya tukar-satu-baris, apa pun scope-nya; helper async akan memaksa `before()` ke berkas yang mendeklarasikan di atas, dan itu perubahan struktur yang tidak dibutuhkan pemindahan ini.
 
 - [ ] **Step 1: Tulis helper bundel**
 
@@ -74,14 +147,36 @@ Create `tests/helpers/content-source.mjs`:
 ```js
 // @last-edited: 2026-10-29 UTC+7.
 // @title: content-source — every content script the manifest loads, in load order, in one string.
-// @state: the manifest is the source of truth, so this helper reads it instead of repeating it.
-// @dependencies: node:fs/promises.
+// @state: the manifest is the source of truth, so this helper reads it instead of repeating it; sync and async variants over the same list.
+// @dependencies: node:fs/promises, node:fs.
 
 import { readFile } from 'node:fs/promises';
+import { readFileSync } from 'node:fs';
 
 // WHY THE MANIFEST AND NOT A LIST HERE.
 // A second list is a list that drifts: the injection order is already written twice in the tree (manifest and worker/tab-content.js), and a third copy in the tests would be a third thing to keep true.
 // Reading the manifest makes the helper follow whatever the product actually loads.
+
+// WHY A SYNC VARIANT AND NOT ONLY THE ASYNC ONE.
+// The seventeen call sites that used to read content.js sit in two shapes: some are at module scope, some inside an async test.
+// A sync read makes every one of them a single-line swap, whatever scope it sits in — an async helper would force a before() hook into the files that declare at the top, and that is a structural change the move does not need.
+
+function filesSync() {
+  const manifest = JSON.parse(
+    readFileSync(new URL('../../extension/manifest.json', import.meta.url), 'utf8')
+  );
+  return manifest.content_scripts.flatMap((entry) => entry.js ?? []);
+}
+
+export function contentScriptFilesSync() {
+  return filesSync();
+}
+
+export function contentSourceSync() {
+  return filesSync()
+    .map((rel) => readFileSync(new URL(`../../extension/${rel}`, import.meta.url), 'utf8'))
+    .join('\n');
+}
 
 export async function contentScriptFiles() {
   const manifest = JSON.parse(
@@ -101,12 +196,12 @@ export async function contentSource() {
 
 - [ ] **Step 2: Jalankan helper terhadap pohon hari ini — baseline, bukan asumsi**
 
-Run: `node --input-type=module -e "import { contentSource } from './tests/helpers/content-source.mjs'; const s = await contentSource(); console.log('files:', (await import('./tests/helpers/content-source.mjs')).contentScriptFiles ? '' : ''); console.log('chars:', s.length); console.log('has collectInteractiveNodes:', /function collectInteractiveNodes\(/.test(s));"`
-Expected: `chars:` sekitar 20000, dan `has collectInteractiveNodes: true`.
+Run: `node --input-type=module -e "import { contentSourceSync, contentScriptFilesSync } from './tests/helpers/content-source.mjs'; const s = contentSourceSync(); console.log('files:', contentScriptFilesSync().length, '| chars:', s.length); console.log('collectInteractiveNodes:', /function collectInteractiveNodes\(/.test(s)); console.log('resolveActionRef:', /function resolveActionRef\(ref\) \{/.test(s)); console.log('onMessage:', /chrome\.runtime\.onMessage\.addListener/.test(s));"`
+Expected: `files: 6`, `chars:` sekitar 117000, dan ketiga penanda `true`.
 
-Kalau `false`, berhenti — helper salah baca, jangan lanjut.
+Kalau salah satu `false`, berhenti — helper salah baca, jangan lanjut.
 
-- [ ] **Step 3: Tambahkan tiga gate ke `tests/code-standard.test.mjs`**
+- [ ] **Step 3: Tambahkan lima gate ke `tests/code-standard.test.mjs`**
 
 Sisipkan setelah `const FILE_LINE_EXCEPTIONS = new Map([...]);` (baris 44-46):
 
@@ -126,6 +221,14 @@ const CONTENT_SCRIPT_LOAD_ORDER = [
   'page-kit.js', 'action-refs.js', 'element-facts.js', 'page-wait.js', 'semantic-page.js',
   'page-actions.js', 'page-scroll.js', 'page-media.js', 'content.js'
 ];
+
+// WHY THE FIVE FILES THAT SHIPPED BEFORE THE SPLIT ARE LEFT OUT OF THE STATE COMPARISON.
+// They carry their own private copies on purpose: content.js has its own stableHash and semantic-identity.js has one too, each inside its own IIFE.
+// Comparing the entry against them would report a duplication that predates this split and is not what the gate is for.
+
+const CONTENT_SCRIPT_LEAF_FILES = new Set([
+  'lib/agent-log.js', 'semantic-identity.js', 'semantic-views.js', 'role-reconcile.js', 'hover-settle.js'
+]);
 ```
 
 Tambahkan di akhir berkas:
@@ -148,11 +251,56 @@ test('the manifest loads the content scripts in dependency order', () => {
   assert.deepEqual(manifest.content_scripts[0].js, CONTENT_SCRIPT_LOAD_ORDER,
     `the load order is the topological order; a file added out of place loads before its namespace exists:\n  got ${JSON.stringify(manifest.content_scripts[0].js)}`);
 });
+
+test('every content script module publishes the namespace the entry reads', () => {
+  const manifest = JSON.parse(read('extension/manifest.json'));
+  const entry = read('extension/content.js');
+  const offenders = [];
+  for (const rel of manifest.content_scripts[0].js) {
+    if (rel === 'content.js' || rel === 'lib/agent-log.js') continue;
+    const stem = rel.split('/').pop().replace(/\.js$/, '');
+    const namespace = `OperaAgent${stem.split('-')
+      .map((part) => part[0].toUpperCase() + part.slice(1)).join('')}`;
+    const text = read(`extension/${rel}`);
+    if (!text.includes(`globalThis.${namespace} =`)) {
+      offenders.push(`${rel} does not publish globalThis.${namespace}`);
+      continue;
+    }
+    if (!entry.includes(`globalThis.${namespace}`)) {
+      offenders.push(`content.js never reads globalThis.${namespace}, so the module publishes into the void`);
+    }
+  }
+  assert.deepEqual(offenders, [],
+    `a namespace nobody reads is a feature that is missing without an error:\n${offenders.join('\n')}`);
+});
+
+test('the entry declares no state a content script module also declares', () => {
+  const manifest = JSON.parse(read('extension/manifest.json'));
+  const declaredIn = (text) => [
+    ...[...text.matchAll(/^ {2}(?:const|let|var)\s+([A-Za-z_$][\w$]*)/gm)].map((m) => m[1]),
+    ...[...text.matchAll(/^ {2}(?:async\s+)?function\s+([A-Za-z_$][\w$]*)/gm)].map((m) => m[1]),
+  ];
+  const modules = new Map();
+  for (const rel of manifest.content_scripts[0].js) {
+    if (rel === 'content.js' || CONTENT_SCRIPT_LEAF_FILES.has(rel)) continue;
+    for (const name of declaredIn(read(`extension/${rel}`))) {
+      modules.set(name, [...(modules.get(name) || []), rel]);
+    }
+  }
+  const duplicated = declaredIn(read('extension/content.js')).filter((name) => modules.has(name));
+  assert.deepEqual(duplicated, [],
+    `a name declared in the entry and in a module is two copies of one piece of state, and only one of them is live:\n${
+      duplicated.map((name) => `  ${name}: entry + ${modules.get(name).join(', ')}`).join('\n')}`);
+});
 ```
+
+Catatan bentuk: `const { a, b } = globalThis.X` **tidak** dihitung sebagai deklarasi,
+karena bentuk itu adalah pembacaan, bukan deklarasi state. Gate ini dengan begitu
+tidak salah positives pada baris destructuring yang jadi bridge antar modul.
 
 - [ ] **Step 4: Tambahkan gate `chrome.*` ke `tests/structure-gates.test.mjs`**
 
-`tests/structure-gates.test.mjs` **dipin** `gates.lock`, jadi langkah ini butuh `npm run gates:refresh` di Step 7 — dengan alasan yang ditulis di commit.
+`tests/structure-gates.test.mjs` **dipin** `gates.lock`, jadi langkah ini butuh `npm run gates:refresh` di Step 8 - dengan alasan yang ditulis di commit.
 
 Tambahkan setelah tes `extension/lib is free of chrome.*` (sekitar baris 56):
 
@@ -198,47 +346,87 @@ menjadi:
 // content.js was excepted here with the claim that Chrome loads a content script as one unit, so splitting it would need separate manifest entries and separate isolated worlds.
 // The claim was false, and the tree proved it: manifest.content_scripts[0].js has always loaded six files through one entry, in one isolated world, in order.
 // What actually kept the file large was that sentence, not the platform — so the exception is gone and the ceiling in the content-script gate below is what holds the line now.
+// The empty map stays because the size test below iterates it; deleting the name would break the gate that reads it.
+
+const FILE_LINE_EXCEPTIONS = new Map();
 ```
 
-- [ ] **Step 6: Re-point sebelas berkas tes — satu baris per berkas**
+- [ ] **Step 6: `scripts/check.mjs` membaca bundel, bukan `content.js`**
 
-Setiap berkas: tambahkan `import { contentSource } from './helpers/content-source.mjs';` bila belum ada, lalu ganti pembacaan `content.js` dengan `await contentSource()`.
+Tujuh marker diperiksa `check.mjs` terhadap isi `content.js`: `password`,
+`one-time-code`, `cvv`, `cvc`, `type === 'file'`, `args.includeElements !== false`,
+dan `case 'content.ping'`. Enam di antaranya pindah ke modul; hanya
+`case 'content.ping'` yang tetap di dispatcher.
+
+Ganti baris 82:
+
+```js
+const content = fs.readFileSync(path.join(root, 'extension/content.js'), 'utf8');
+```
+
+menjadi:
+
+```js
+const content = contentSourceSync();
+```
+
+dan tambahkan import di atas, dekat `extensionSource`:
+
+```js
+import { contentSourceSync } from '../tests/helpers/content-source.mjs';
+```
+
+`scripts/check.mjs` **dipin** `gates.lock`, jadi langkah ini butuh `npm run gates:refresh`
+di Step 8 — dengan alasan yang ditulis di commit.
+
+- [ ] **Step 7: Re-point empat belas berkas tes — satu baris per titik baca**
+
+Setiap berkas: tambahkan `import { contentSourceSync } from './helpers/content-source.mjs';`
+bila belum ada, lalu ganti pembacaan `content.js` dengan `contentSourceSync()`.
 
 | berkas | baris | sebelum | sesudah |
 |---|---|---|---|
-| `tests/action-pipeline.test.mjs` | 64 | `const src = read('extension/content.js');` | `const src = await contentSource();` (di dalam `test` async; kalau di top-level, `let src;` + `before`) |
-| `tests/ax-observation.test.mjs` | 14 | `const content = read('../extension/content.js');` | `let content;` + di `before()`: `content = await contentSource();` |
-| `tests/burst-atomic-actions.test.mjs` | 116 | `const content = fs.readFileSync(new URL('../extension/content.js', import.meta.url), 'utf8');` | `const content = await contentSource();` |
-| `tests/efficiency.test.mjs` | 14, 25 | dua `fs.readFileSync(...content.js...)` | `const content = await contentSource();` sekali, dipakai dua asersi |
-| `tests/focus-and-keyboard.test.mjs` | 248 | `const source = await readFile(new URL('../extension/content.js', import.meta.url), 'utf8');` | `const source = await contentSource();` |
-| `tests/hover-settle.test.mjs` | 124, 141 | `readFile(...content.js...)` dan pembacaan `manifest.content_scripts[0].js` | yang 124 → `await contentSource()`; yang 141 **tidak disentuh** (ia sudah membaca manifest) |
-| `tests/ref-reacquire.test.mjs` | 19 | `const source = await readFile(new URL('../extension/content.js', import.meta.url), 'utf8');` | `const source = await contentSource();` |
-| `tests/role-reconcile.test.mjs` | 192 | `const source = await readFile(...)` | `const source = await contentSource();` |
-| `tests/landing-claims.test.mjs` | 23 | `const content = read('extension/content.js');` | `const content = await contentSource();` |
-| `tests/landing-dashboard.test.mjs` | 114 | `const content = fs.readFileSync(new URL('extension/content.js', root), 'utf8');` | `const content = await contentSource();` |
+| `tests/action-pipeline.test.mjs` | 64 | `const src = read('extension/content.js');` | `const src = contentSourceSync();` |
+| `tests/ax-observation.test.mjs` | 14 | `const content = read('../extension/content.js');` | `const content = contentSourceSync();` |
+| `tests/burst-atomic-actions.test.mjs` | 116 | `const content = fs.readFileSync(new URL('../extension/content.js', import.meta.url), 'utf8');` | `const content = contentSourceSync();` |
+| `tests/efficiency.test.mjs` | 14, 25 | dua `fs.readFileSync(...content.js...)` | `const content = contentSourceSync();` di 14, dan `content` yang sama dipakai di 25 |
+| `tests/focus-and-keyboard.test.mjs` | 248 | `const source = await readFile(new URL('../extension/content.js', import.meta.url), 'utf8');` | `const source = contentSourceSync();` |
+| `tests/hover-settle.test.mjs` | 124 | `const source = await readFile(new URL('../extension/content.js', import.meta.url), 'utf8');` | `const source = contentSourceSync();` — baris 141 **tidak disentuh** (ia sudah membaca manifest) |
+| `tests/landing-claims.test.mjs` | 23 | `const content = read('extension/content.js');` | `const content = contentSourceSync();` |
+| `tests/landing-dashboard.test.mjs` | 114 | `const content = fs.readFileSync(new URL('extension/content.js', root), 'utf8');` | `const content = contentSourceSync();` |
+| `tests/ref-reacquire.test.mjs` | 19 | `const source = await readFile(new URL('../extension/content.js', import.meta.url), 'utf8');` | `const source = contentSourceSync();` |
+| `tests/role-reconcile.test.mjs` | 192, 209 | dua `await readFile(...content.js...)` | `const source = contentSourceSync();` di kedua tempat |
+| `tests/semantic-engine.test.mjs` | 442 | `const content = read('../extension/content.js');` | `const content = contentSourceSync();` |
+| `tests/timeout-retry-popup-parity.test.mjs` | 55, 62 | dua `read('extension/content.js')` | `const src = contentSourceSync();` di kedua tempat |
+| `tests/ui-surface.test.mjs` | 252 | `const content = read('../extension/content.js');` | `const content = contentSourceSync();` |
+| `tests/workflow-dsl.test.mjs` | 64 | `const content = fs.readFileSync(new URL('../extension/content.js', import.meta.url), 'utf8');` | `const content = contentSourceSync();` |
 
-Aturan yang mengikat: **nol asersi dihapus**. Kalau sebuah asersi ternyata membaca berkas lain (`hover-settle.test.mjs:141` membaca manifest), ia tidak disentuh.
+Aturan yang mengikat: **nol asersi dihapus**. Kalau sebuah asersi ternyata membaca
+berkas lain (`hover-settle.test.mjs:141` dan `role-reconcile.test.mjs:222` membaca
+manifest), ia tidak disentuh.
 
-- [ ] **Step 7: Refresh pin, lalu jalankan suite**
+- [ ] **Step 8: Refresh pin, lalu jalankan suite**
 
 Run: `npm run gates:refresh`
-Expected: `gates.lock` bertambah hash baru untuk `tests/structure-gates.test.mjs`.
+Expected: `gates.lock` berubah untuk `scripts/check.mjs` dan `tests/structure-gates.test.mjs`.
 
 Run: `npm test 2>&1 | Select-String -Pattern "^# (tests|pass|fail)|^not ok"`
-Expected: **tiga** gate baru gagal, sisanya hijau:
-- `the content script entry stays thin...` → `content.js is the dispatcher, not the product: 1945 lines`
+Expected: **dua** gate baru gagal, sisanya hijau:
+- `the content script entry stays thin...` → `content.js is the dispatcher, not the product: 1946 lines`
 - `the manifest loads the content scripts in dependency order` → daftar manifesto masih 6 berkas
 - `the content script modules reach for no chrome.*...` → lolos (keenam berkas yang ada bersih)
+- `every content script module publishes the namespace the entry reads` → lolos (empat namespace yang sudah ada dibaca entry)
+- `the entry declares no state a content script module also declares` → lolos (belum ada modul baru)
 
 Kalau yang gagal lebih dari dua gate baru, atau ada gate lama yang gagal: **berhenti dan perbaiki**, jangan lanjut.
 
 Run: `npm run check`
 Expected: `check ok`.
 
-- [ ] **Step 8: Commit**
+- [ ] **Step 9: Commit**
 
 ```bash
-git add tests/helpers/content-source.mjs tests/code-standard.test.mjs tests/structure-gates.test.mjs gates.lock tests/action-pipeline.test.mjs tests/ax-observation.test.mjs tests/burst-atomic-actions.test.mjs tests/efficiency.test.mjs tests/focus-and-keyboard.test.mjs tests/hover-settle.test.mjs tests/ref-reacquire.test.mjs tests/role-reconcile.test.mjs tests/landing-claims.test.mjs tests/landing-dashboard.test.mjs
+git add tests/helpers/content-source.mjs tests/code-standard.test.mjs tests/structure-gates.test.mjs scripts/check.mjs gates.lock tests/action-pipeline.test.mjs tests/ax-observation.test.mjs tests/burst-atomic-actions.test.mjs tests/efficiency.test.mjs tests/focus-and-keyboard.test.mjs tests/hover-settle.test.mjs tests/ref-reacquire.test.mjs tests/role-reconcile.test.mjs tests/semantic-engine.test.mjs tests/timeout-retry-popup-parity.test.mjs tests/ui-surface.test.mjs tests/workflow-dsl.test.mjs tests/landing-claims.test.mjs tests/landing-dashboard.test.mjs
 git commit -m "Cabut kecualikan content.js yang beralasan salah, dan bangun alat yang membuktikan pemindahannya
 
 code-standard.test.mjs membebaskan content.js dari plafon 1200 baris dengan
@@ -249,19 +437,27 @@ Klaim itu salah dan repo ini sendiri sudah membuktikannya:
 content_scripts[0].js selalu memuat ENAM file lewat SATU entri, SATU isolated
 world, berurutan. Yang menahan ukuran file itu kalimat tersebut, bukan platform.
 
-Jadi kecualikan dicabut, dan tiga gate baru yang mengunci hasil akhirnya:
-content.js di bawah 300 baris, modul-modulnya di bawah 550, dan urutan muat
+Jadi kecualikan dicabut, dan lima gate baru yang mengunci hasil akhirnya:
+content.js di bawah 300 baris, modul-modulnya di bawah 550, urutan muat
 dipin sebagai satu daftar - karena namespace yang dipanggil sebelum modulnya
-dimuat gagal SUNYI, bukan lempar.
+dimuat gagal SUNYI, bukan lempar - setiap modul menerbitkan namespace yang
+dibaca entry, dan entry tidak mendeklarasikan state yang juga dideklarasikan
+modul - dua salinan satu state adalah dua salinan yang menyimpang tanpa suara.
 
-Sebelas berkas yang membaca content.js sebagai teks kini membaca bundel
-manifest lewat tests/helpers/content-source.mjs. Sumber kebenarannya manifest,
-bukan daftar ketiga yang bisa menyimpang. Nol asersi dihapus.
+Dua gerbang terakhir ini menggantikan bukti yang tadinya dikira sudah ada.
+Gate 'no state is declared twice' yang sudah ada berjalan di bundel WORKER,
+yang tidak memuat satu pun content script, jadi ia tidak pernah mengukur
+risiko yang paling besar di pemindahan ini.
+
+Empat belas berkas yang membaca content.js sebagai teks, dan scripts/check.mjs
+yang memeriksa tujuh marker di dalamnya, kini membaca bundel manifest lewat
+tests/helpers/content-source.mjs. Sumber kebenarannya manifest, bukan daftar
+ketiga yang bisa menyimpang. Nol asersi dihapus.
 
 Suite sengaja merah di dua gate baru setelah commit ini: itu bukti langkah
 berikutnya wajib, bukan kerusakan.
 
-gates.lock di-refresh untuk tests/structure-gates.test.mjs, yang menambah gate
+gates.lock di-refresh untuk scripts/check.mjs, yang kini membaca bundel, dan tests/structure-gates.test.mjs, yang menambah gate
 chrome-free untuk content script dengan satu kecualikan tertulis (page-media,
 satu-satunya yang berbicara ke service worker)."
 ```
@@ -388,12 +584,12 @@ Run: `npm test 2>&1 | Select-String -Pattern "^# (tests|pass|fail)|^not ok"`
 Expected: yang gagal tinggal **satu** gate baru (`content.js is the dispatcher, not the product:` dengan angka yang sudah turun) dan gate urutan muat. Gate chrome-free tetap lolos. Tidak ada gate lama yang gagal.
 
 Run: `npm run check`
-Expected: `check ok`.
+Expected: `check ok`. (Re-pin dulu, lihat **Prosedur re-pin per task**.)
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add extension/page-kit.js extension/content.js extension/manifest.json extension/worker/tab-content.js
+git add extension/page-kit.js extension/content.js extension/manifest.json extension/worker/tab-content.js store/store-manifest.json tests/helpers/boundary-locks.mjs tests/boundary-locks.test.mjs gates.lock
 git commit -m "Pindahkan helper murni content script ke extension/page-kit.js
 
 Enam fungsi dan enam konstanta yang dipakai hampir semua region pindah verbatim
@@ -507,12 +703,12 @@ Expected: `module 11 | content 79`. Angka yang beda berarti sebuah fungsi tertin
 Run: `npm test 2>&1 | Select-String -Pattern "^# (tests|pass|fail)|^not ok"`
 Expected: tidak ada gate baru gagal kecuali gate ukuran `content.js` (angkanya turun lagi) dan gate urutan muat. **Khusus perhatikan** `tests/ref-reacquire.test.mjs` — ia mencari blok `function resolveActionRef(ref) {` dan mengukur panjangnya; kalau gagal, batas bloknya pindah, dan itu yang harus diperiksa, bukan dihapus.
 
-Run: `npm run check` → `check ok`.
+Run: `npm run check` → `check ok`. (Re-pin dulu, lihat **Prosedur re-pin per task**.)
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add extension/action-refs.js extension/content.js extension/manifest.json extension/worker/tab-content.js
+git add extension/action-refs.js extension/content.js extension/manifest.json extension/worker/tab-content.js store/store-manifest.json tests/helpers/boundary-locks.mjs tests/boundary-locks.test.mjs gates.lock
 git commit -m "Pindahkan region ref dan revalidasi ke extension/action-refs.js
 
 Sebelas fungsi dan empat state pindah verbatim. State ikut karena seluruh
@@ -575,7 +771,7 @@ Expected: `module 17 | content 57`.
 Run: `npm test 2>&1 | Select-String -Pattern "^# (tests|pass|fail)|^not ok"`
 Expected: hanya gate ukuran `content.js` dan gate urutan muat yang gagal.
 
-Run: `npm run check` → `check ok`.
+Run: `npm run check` → `check ok`. (Re-pin dulu, lihat **Prosedur re-pin per task**.)
 
 Run: `py tests/browser_extension_test.py`
 Expected: hijau. **Ini titik pertama bukti perilaku**: seluruh lapisan fakta elemen sudah pindah, dan halaman sungguhan harus tetap bisa baca, temukan, dan klik. Kalau merah, berhenti — jangan lanjut ke Task 5.
@@ -583,7 +779,7 @@ Expected: hijau. **Ini titik pertama bukti perilaku**: seluruh lapisan fakta ele
 - [ ] **Step 5: Commit**
 
 ```bash
-git add extension/element-facts.js extension/content.js extension/manifest.json extension/worker/tab-content.js
+git add extension/element-facts.js extension/content.js extension/manifest.json extension/worker/tab-content.js store/store-manifest.json tests/helpers/boundary-locks.mjs tests/boundary-locks.test.mjs gates.lock
 git commit -m "Pindahkan region fakta elemen ke extension/element-facts.js
 
 Tujuh belas fungsi dan tiga state pindah verbatim. Ini region terbesar kedua,
@@ -631,12 +827,12 @@ Run: `node --input-type=module -e "import {readFileSync} from 'node:fs'; const n
 Expected: `module 3 | content 54`.
 
 Run: `npm test` → hanya gate ukuran dan urutan muat yang gagal.
-Run: `npm run check` → `check ok`.
+Run: `npm run check` → `check ok`. (Re-pin dulu, lihat **Prosedur re-pin per task**.)
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add extension/page-wait.js extension/content.js extension/manifest.json extension/worker/tab-content.js
+git add extension/page-wait.js extension/content.js extension/manifest.json extension/worker/tab-content.js store/store-manifest.json tests/helpers/boundary-locks.mjs tests/boundary-locks.test.mjs gates.lock
 git commit -m "Pindahkan tunggu dan tombol ke extension/page-wait.js
 
 Tiga fungsi dan NAV_KEYS pindah verbatim. Modul ini sengaja mendahului
@@ -699,12 +895,12 @@ Expected: `module 16 | content 38`.
 Run: `npm test 2>&1 | Select-String -Pattern "^# (tests|pass|fail)|^not ok"`
 Expected: hanya gate ukuran dan urutan muat yang gagal. **Khusus perhatikan** `tests/ax-observation.test.mjs` — asersinya mencakup `shadowRoot` dan `MAX_SHADOW_ROOTS`; keduanya ikut pindah, dan bundel membuatnya tetap ketemu.
 
-Run: `npm run check` → `check ok`.
+Run: `npm run check` → `check ok`. (Re-pin dulu, lihat **Prosedur re-pin per task**.)
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add extension/semantic-page.js extension/content.js extension/manifest.json extension/worker/tab-content.js
+git add extension/semantic-page.js extension/content.js extension/manifest.json extension/worker/tab-content.js store/store-manifest.json tests/helpers/boundary-locks.mjs tests/boundary-locks.test.mjs gates.lock
 git commit -m "Pindahkan lapisan semantik halaman ke extension/semantic-page.js
 
 Enam belas fungsi dan lima state pindah verbatim. Region ini yang membaca
@@ -764,12 +960,12 @@ Run: `node --input-type=module -e "import {readFileSync} from 'node:fs'; const n
 Expected: `module 15 | content 23`.
 
 Run: `npm test` → hanya gate ukuran dan urutan muat yang gagal.
-Run: `npm run check` → `check ok`.
+Run: `npm run check` → `check ok`. (Re-pin dulu, lihat **Prosedur re-pin per task**.)
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add extension/page-actions.js extension/content.js extension/manifest.json extension/worker/tab-content.js
+git add extension/page-actions.js extension/content.js extension/manifest.json extension/worker/tab-content.js store/store-manifest.json tests/helpers/boundary-locks.mjs tests/boundary-locks.test.mjs gates.lock
 git commit -m "Pindahkan jalur tulis dan bukti pasca-aksi ke extension/page-actions.js
 
 Lima belas fungsi dan EXPECT_VERIFY_WINDOW_MS pindah verbatim. Bukti pasca-aksi
@@ -822,12 +1018,12 @@ Run: `node --input-type=module -e "import {readFileSync} from 'node:fs'; const n
 Expected: `module 9 | content 14`.
 
 Run: `npm test` → hanya gate ukuran dan urutan muat yang gagal.
-Run: `npm run check` → `check ok`.
+Run: `npm run check` → `check ok`. (Re-pin dulu, lihat **Prosedur re-pin per task**.)
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add extension/page-scroll.js extension/content.js extension/manifest.json extension/worker/tab-content.js
+git add extension/page-scroll.js extension/content.js extension/manifest.json extension/worker/tab-content.js store/store-manifest.json tests/helpers/boundary-locks.mjs tests/boundary-locks.test.mjs gates.lock
 git commit -m "Pindahkan pointer, kebijakan capture, dan scroll ke extension/page-scroll.js
 
 Sembilan fungsi pindah verbatim, tanpa state: seluruh state-nya sudah berada di
@@ -893,7 +1089,7 @@ Expected: `module 11 | content 3` — tiga itu `markInstalled`, `handle`, `onMes
 Run: `npm test 2>&1 | Select-String -Pattern "^# (tests|pass|fail)|^not ok"`
 Expected: **hijau penuh.** Gate ukuran lolos karena `content.js` kini di bawah 300 baris; gate urutan muat lolos karena keempatabelas path sudah pada tempatnya.
 
-Run: `npm run check` → `check ok`.
+Run: `npm run check` → `check ok`. (Re-pin dulu, lihat **Prosedur re-pin per task**.)
 
 Run: `py tests/browser_extension_test.py`
 Expected: hijau. Ini bukti kedua dan terakhir: media, listen, dan watch bekerja di halaman sungguhan setelah modul terakhir pindah.
@@ -901,7 +1097,7 @@ Expected: hijau. Ini bukti kedua dan terakhir: media, listen, dan watch bekerja 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add extension/page-media.js extension/content.js extension/manifest.json extension/worker/tab-content.js
+git add extension/page-media.js extension/content.js extension/manifest.json extension/worker/tab-content.js store/store-manifest.json tests/helpers/boundary-locks.mjs tests/boundary-locks.test.mjs gates.lock
 git commit -m "Pindahkan listen, media, dan watch ke extension/page-media.js
 
 Sebelas fungsi dan enam state pindah verbatim. Modul ini satu-satunya yang
