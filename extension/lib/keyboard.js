@@ -155,6 +155,11 @@ function namedKeySpec(name) {
   return null;
 }
 
+/**
+ * Every key name the resolver accepts.
+ * @returns {string[]} Named keys first, then a-z, A-Z, 0-9.
+ */
+
 export function keyNames() {
   return [
     ...Object.keys(NAMED_KEYS),
@@ -165,6 +170,12 @@ export function keyNames() {
 }
 
 export const KEY_ALLOWLIST = Object.freeze(keyNames());
+
+/**
+ * Canonicalize a modifier list into a CDP bitmask.
+ * @param {string|string[]|null} [modifiers] Aliases like `ctrl`, `cmd`, `option` are accepted.
+ * @returns {{ mask: number, names: string[] }} The OR-ed bitmask and the canonical names, in order.
+ */
 
 export function resolveModifiers(modifiers) {
   if (modifiers == null) return {
@@ -212,6 +223,13 @@ function withImplicitShift(
   };
 }
 
+/**
+ * Resolve one key chord into the exact CDP key event fields.
+ * @param {string} key A named key, a letter, or a digit.
+ * @param {string|string[]|null} [modifiers] Modifier aliases; OR-ed into the mask.
+ * @returns {{ kind: 'chord', name: string, key: string, code: string, modifiers: number, modifierNames: string[], windowsVirtualKeyCode: number, nativeVirtualKeyCode: number }} The event payload.
+ */
+
 export function resolveChord(
   key,
   modifiers
@@ -239,6 +257,13 @@ export function resolveChord(
   };
 }
 
+/**
+ * Split text into fixed-width chunks so one insert stays within CDP's per-call budget.
+ * @param {string} text The text to chunk.
+ * @param {number} [size=TEXT_CHUNK_CHARS] Chunk width, at least 1.
+ * @returns {string[]} The chunks, in order.
+ */
+
 export function chunkText(
   text,
   size = TEXT_CHUNK_CHARS
@@ -249,6 +274,13 @@ export function chunkText(
   for (let index = 0; index < value.length; index += width) chunks.push(value.slice(index, index + width));
   return chunks;
 }
+
+/**
+ * Resolve a declarative `{ key, modifiers }` or `{ text }` request into one typed input.
+ * Exactly one of key or text must be present; text rejects modifiers and the length cap.
+ * @param {{ key?: string, modifiers?: string|string[], text?: string }} [request] The request.
+ * @returns {{ kind: 'chord'|'text', text?: string, chunks?: string[], chars?: number } & object} A chord event or a text entry.
+ */
 
 export function resolveKeyInput({
   key,
@@ -281,6 +313,12 @@ export function resolveKeyInput({
 
 const MAX_STREAM_EVENTS = 100;
 const MAX_STREAM_GAP_MS = 2000;
+
+/**
+ * Resolve a whole key walk as one stream so it costs one round trip instead of one per key.
+ * @param {Array<{ key?: string, modifiers?: string|string[], text?: string, gapMs?: number }>} events The events, in order.
+ * @returns {Array<object>} Each event resolved by resolveKeyInput, with its gapMs attached.
+ */
 
 export function resolveKeyStream(events) {
   if (!Array.isArray(events) || events.length === 0) {
@@ -564,6 +602,12 @@ function charKeySpec(char) {
   const point = char.codePointAt(0).toString(16).toUpperCase().padStart(4, '0');
   throw new Error(`Text key event not allowlisted: U+${point}.`);
 }
+
+/**
+ * Turn text into one key event per character, for editors that commit only off key-event sequences.
+ * @param {string} text The text; newlines are normalized first and the length cap applies.
+ * @returns {Array<object>} One spec per character, each carrying its `text`.
+ */
 
 export function resolveTextKeys(text) {
   const value = String(text ?? '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
