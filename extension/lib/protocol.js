@@ -158,6 +158,15 @@ export const METHOD_SPECS = Object.freeze({
 
 export const ALLOWED_METHODS = Object.freeze(Object.keys(METHOD_SPECS));
 
+/**
+ * Clamp a value into [min, max], falling back when it is not a finite number.
+ * @param {*} value The value to clamp.
+ * @param {number} min Lower bound.
+ * @param {number} max Upper bound.
+ * @param {number} [fallback=min] Returned when value is not finite.
+ * @returns {number} The clamped value.
+ */
+
 export function clamp(
   value,
   min,
@@ -268,6 +277,12 @@ function validateFileStep(step) {
   return null;
 }
 
+/**
+ * Expand a burst's `grid` steps into the arrow-key walk plus Enter, and rebase every `refFromStep` onto the expanded list so a ref minted mid-grid still resolves.
+ * @param {Array<object>} steps The burst steps, grid steps included.
+ * @returns {Array<object>} The steps with grids expanded and refFromStep rebased.
+ */
+
 export function expandGridSteps(steps) {
   const out = [];
   const startOf = [];
@@ -304,6 +319,12 @@ export function expandGridSteps(steps) {
     };
   });
 }
+
+/**
+ * Validate whole burst params: shape, step count, executionMode, and each step.
+ * @param {*} params The `browser.burst` params.
+ * @returns {{ ok: true } | { ok: false, error: string }} The verdict.
+ */
 
 export function validateBurst(params) {
   if (!isPlainObject(params)) return {
@@ -364,6 +385,14 @@ export function validateBurst(params) {
   return { ok: true };
 }
 
+/**
+ * Whether a navigate step at or after `from` moved the tab the later step targets, which is what makes a ref minted before the navigation stale.
+ * @param {Array<object>} results The burst results so far.
+ * @param {number} from Step index to start scanning from.
+ * @param {number} stepTabId The tab the later step wants to act on.
+ * @returns {boolean} True when a navigate to that tab happened in between.
+ */
+
 export function burstStaleRef(
   results,
   from,
@@ -377,6 +406,14 @@ export function burstStaleRef(
   return false;
 }
 
+/**
+ * Whether the step at `from` ran on a different tab than the current step, which is what makes a ref minted there unusable across tabs.
+ * @param {Array<object>} results The burst results so far.
+ * @param {number} from Step index whose tabId is the ref's origin.
+ * @param {number} stepTabId The tab the current step targets.
+ * @returns {boolean} True when the two tabs differ.
+ */
+
 export function burstCrossTabRef(
   results,
   from,
@@ -387,6 +424,12 @@ export function burstCrossTabRef(
   if (sourceTab === undefined || sourceTab === null) return false;
   return sourceTab !== stepTabId;
 }
+
+/**
+ * Validate one command against the allowlist and its per-method parameter rules, and stamp it with the default timeout for its method.
+ * @param {*} command The `{ id, method, params, timeoutMs }` command.
+ * @returns {{ ok: true, command: object } | { ok: false, error: string }} The verdict, with the normalized command when ok.
+ */
 
 export function validateCommand(command) {
   if (!isPlainObject(command)) return {
@@ -557,6 +600,13 @@ export function validateCommand(command) {
   };
 }
 
+/**
+ * Normalize any thrown value into the `{ code, message, details? }` error shape the wire carries.
+ * @param {*} error The thrown value.
+ * @param {string} [code='EXECUTION_ERROR'] Code used when the value carries none.
+ * @returns {{ code: string, message: string, details?: object }} The normalized error.
+ */
+
 export function normalizeError(
   error,
   code = 'EXECUTION_ERROR'
@@ -570,6 +620,12 @@ export function normalizeError(
   if (isPlainObject(error?.details)) normalized.details = error.details;
   return normalized;
 }
+
+/**
+ * Parse a URL and accept only http/https, so a javascript: or file: target never crosses the wire.
+ * @param {*} value The candidate URL.
+ * @returns {string|null} The normalized URL string, or null when it is invalid or not http(s).
+ */
 
 export function safeUrl(value) {
   try {

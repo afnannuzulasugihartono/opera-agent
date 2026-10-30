@@ -21,6 +21,12 @@ export const CONSENT_CONFIG_URL = `${SUPABASE_URL}/functions/v1/opera-agent-auth
 
 const EDGE_REGION = 'ap-southeast-1';
 
+/**
+ * Convert a bridge HTTP(S) URL into the WebSocket URL that carries the same region pin.
+ * @param {string} bridgeUrl The bridge URL, http(s) or ws(s), possibly empty.
+ * @returns {string} The ws(s) URL with forceFunctionRegion appended, or '' when empty.
+ */
+
 export function socketUrl(bridgeUrl) {
   const raw = String(bridgeUrl || '').trim();
   if (!raw) return '';

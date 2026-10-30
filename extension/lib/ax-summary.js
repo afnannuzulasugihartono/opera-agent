@@ -44,6 +44,14 @@ function hasValue(node) {
   return value !== undefined && value !== null && String(value).length > 0;
 }
 
+/**
+ * Filter a raw CDP accessibility tree into the bounded, value-free summary attached to page.read.
+ * Drops value fields and whole editable subtrees (closing over the parentId chain), dedupes and caps.
+ * @param {Array<object>} nodes The CDP AX nodes.
+ * @param {{ maxEntries?: number }} [options] Override the entry cap.
+ * @returns {{ source: string, note: string, items: Array<{ role: string, name: string }> }} The summary; entries are not refs.
+ */
+
 export function buildAxSummary(
   nodes,
   options = {}

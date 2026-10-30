@@ -109,6 +109,13 @@ function isLoopbackHttp(value) {
   }
 }
 
+/**
+ * Read the stored options, filling every missing key with its default.
+ * The model key is reported only as `modelKeySet`, never read back out.
+ * @param {{ get: (keys: string[]) => Promise<Record<string, unknown>> }} storage chrome.storage.local-like.
+ * @returns {Promise<{ bridgeUrl: string, logLevel: string, modelEndpoint: string, modelName: string, modelKeySet: boolean }>} The resolved options.
+ */
+
 export async function loadOptions(storage) {
   const cfg = await storage.get([
     'bridgeUrl',
@@ -130,6 +137,14 @@ export async function loadOptions(storage) {
   };
 }
 
+/**
+ * Persist the bridge URL override; empty resets to the default bridge.
+ * https only, because the device token is posted there.
+ * @param {{ set: (value: object) => Promise<void> }} storage chrome.storage.local-like.
+ * @param {*} value The URL to save, or empty to reset.
+ * @returns {Promise<string>} The stored URL.
+ */
+
 export async function saveBridgeUrl(
   storage,
   value
@@ -144,6 +159,13 @@ export async function saveBridgeUrl(
   return trimmed;
 }
 
+/**
+ * Persist the log level; only debug, warn and error are accepted.
+ * @param {{ set: (value: object) => Promise<void> }} storage chrome.storage.local-like.
+ * @param {string} value The level to save.
+ * @returns {Promise<string>} The stored level.
+ */
+
 export async function saveLogLevel(
   storage,
   value
@@ -152,6 +174,13 @@ export async function saveLogLevel(
   await storage.set({ logLevel: value });
   return value;
 }
+
+/**
+ * Persist the model endpoint: https anywhere, or http loopback for a local model, because it receives page content.
+ * @param {{ set: (value: object) => Promise<void> }} storage chrome.storage.local-like.
+ * @param {*} value The endpoint URL.
+ * @returns {Promise<string>} The stored endpoint.
+ */
 
 export async function saveModelEndpoint(
   storage,
@@ -165,6 +194,13 @@ export async function saveModelEndpoint(
   return trimmed;
 }
 
+/**
+ * Persist the model name, 1 to 120 characters.
+ * @param {{ set: (value: object) => Promise<void> }} storage chrome.storage.local-like.
+ * @param {*} value The model name.
+ * @returns {Promise<string>} The stored name.
+ */
+
 export async function saveModelName(
   storage,
   value
@@ -177,6 +213,13 @@ export async function saveModelName(
   return trimmed;
 }
 
+/**
+ * Persist the model key locally; it never leaves this device and is never handed back to the page.
+ * @param {{ set: (value: object) => Promise<void> }} storage chrome.storage.local-like.
+ * @param {*} value The key.
+ * @returns {Promise<string>} The stored key.
+ */
+
 export async function saveModelKey(
   storage,
   value
@@ -185,6 +228,12 @@ export async function saveModelKey(
   await storage.set({ modelKey: trimmed });
   return trimmed;
 }
+
+/**
+ * Read the model configuration for a call, returning which pieces are missing instead of a partial config.
+ * @param {{ get: (keys: string[]) => Promise<Record<string, unknown>> }} storage chrome.storage.local-like.
+ * @returns {Promise<{ configured: true, endpoint: string, model: string, key: string } | { configured: false, code: 'MODEL_NOT_CONFIGURED', missing: string[] }>} The config or the missing fields.
+ */
 
 export async function readModelConfig(storage) {
   const cfg = await storage.get([

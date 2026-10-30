@@ -18,14 +18,32 @@
 
 const sessions = new Map();
 
+/**
+ * The live session registry, keyed by tabId.
+ * @returns {Map<number, { tabId: number, attached: boolean, lastUsedAt?: number }>} The sessions.
+ */
+
 export function getDebuggerSessions() {
   return sessions;
 }
+
+/**
+ * Register a shared session so several CDP operations in one logical operation reuse one attach.
+ * @param {{ tabId: number, attached: boolean }} session The session to register.
+ * @returns {void}
+ */
 
 export function registerDebuggerSession(session) {
   if (!session || typeof session.tabId !== 'number') return;
   sessions.set(session.tabId, session);
 }
+
+/**
+ * Detach and forget one session; a failed detach is logged, never thrown, so a dead tab cannot break the caller.
+ * @param {{ tabId: number, attached: boolean }} session The session to release.
+ * @param {{ debug?: (...args: unknown[]) => void }} [log] Optional logger.
+ * @returns {Promise<void>}
+ */
 
 export async function releaseDebuggerSession(
   session,
@@ -42,6 +60,12 @@ export async function releaseDebuggerSession(
   }
 }
 
+/**
+ * Invalidate the cached session for a tab the debugger detached from (DevTools opened, tab closed), so later CDP calls do not run against a dead debugger.
+ * @param {{ tabId?: number }} source The onDetach source.
+ * @returns {void}
+ */
+
 export function handleDebuggerDetach(source) {
   const tabId = source?.tabId;
   if (typeof tabId !== 'number') return;
@@ -50,6 +74,13 @@ export function handleDebuggerDetach(source) {
   sessions.delete(tabId);
 }
 
+/**
+ * Stamp a session as used now, which is what keeps an active tab out of the idle sweep.
+ * @param {{ tabId: number }} session The session to touch.
+ * @param {number} [now=Date.now()] The timestamp.
+ * @returns {void}
+ */
+
 export function touchDebuggerSession(
   session,
   now = Date.now()
@@ -57,6 +88,12 @@ export function touchDebuggerSession(
   if (!session || typeof session.tabId !== 'number') return;
   session.lastUsedAt = now;
 }
+
+/**
+ * Detach every session quiet longer than maxIdleMs, so the "debugging this browser" bar shows while the agent works and leaves when it stops.
+ * @param {{ maxIdleMs?: number, now?: number, log?: object }} [options] The sweep bound and clock.
+ * @returns {Promise<number>} How many sessions were released.
+ */
 
 export async function releaseIdleDebuggerSessions({
   maxIdleMs = 60000,

@@ -25,6 +25,13 @@ export const FRAME_MAX_BYTES = 1024 * 1024;
 
 export const DEVICE_PROTOCOL_VERSION = 2;
 
+/**
+ * Build the `hello` frame a device sends first, carrying its token and the protocol version.
+ * @param {string} token The device token.
+ * @param {string} deviceName The human-readable device name.
+ * @returns {string} The JSON frame.
+ */
+
 export function handshakeFrame(
   token,
   deviceName
@@ -36,6 +43,15 @@ export function handshakeFrame(
     protocolVersion: DEVICE_PROTOCOL_VERSION
   });
 }
+
+/**
+ * Build the `complete` frame reporting a command's outcome, with a default error when none is given.
+ * @param {string} commandId The command this completes.
+ * @param {boolean} ok Whether it succeeded.
+ * @param {*} [result] The result, sent only when ok.
+ * @param {*} [error] The error, sent only when not ok.
+ * @returns {string} The JSON frame.
+ */
 
 export function completionFrame(
   commandId,
@@ -95,6 +111,16 @@ async function gzipBytes(text) {
   return out;
 }
 
+/**
+ * Encode a completion frame, gzipping it above the threshold into a version-tagged binary frame.
+ * Falls back to plain text when CompressionStream is unavailable or gzip fails.
+ * @param {string} commandId The command this completes.
+ * @param {boolean} ok Whether it succeeded.
+ * @param {*} [result] The result.
+ * @param {*} [error] The error.
+ * @returns {Promise<string|Uint8Array>} The frame, text or gzipped binary.
+ */
+
 export async function encodeCompletionFrame(
   commandId,
   ok,
@@ -114,6 +140,13 @@ export async function encodeCompletionFrame(
     return text;
   }
 }
+
+/**
+ * Parse and size-check one inbound frame; anything malformed is refused, never trusted.
+ * @param {string} raw The raw frame text.
+ * @param {number} [maxBytes=FRAME_MAX_BYTES] The transport cap.
+ * @returns {{ ok: true, message: object } | { ok: false, error: string }} The verdict.
+ */
 
 export function parseFrame(
   raw,
@@ -148,9 +181,20 @@ export function parseFrame(
   };
 }
 
+/**
+ * Build the `pong` frame answering a ping.
+ * @returns {string} The JSON frame.
+ */
+
 export function pongFrame() {
   return JSON.stringify({ type: 'pong' });
 }
+
+/**
+ * Whether a parsed frame is a command the device may run: type 'command' with a non-empty id and method.
+ * @param {*} message The parsed frame.
+ * @returns {boolean} True when the command is runnable.
+ */
 
 export function isRunnableCommand(message) {
   if (!message || message.type !== 'command') return false;
@@ -160,6 +204,12 @@ export function isRunnableCommand(message) {
   if (typeof command.method !== 'string' || command.method.length === 0) return false;
   return true;
 }
+
+/**
+ * Normalize a runnable command frame into the `{ id, method, params, timeoutMs }` shape, defaulting the timeout.
+ * @param {{ command: { id: string, method: string, params?: object, timeoutMs?: number } }} message The command frame.
+ * @returns {{ id: string, method: string, params: object, timeoutMs: number }} The normalized command.
+ */
 
 export function normalizeCommand(message) {
   return {
@@ -174,6 +224,12 @@ export function normalizeCommand(message) {
 // An open socket says the TCP connection is up; it says nothing about whether the bridge accepted this device.
 // Work arriving before the handshake is answered would run against an unproven identity, so the flag is the only thing that unlocks it.
 
+/**
+ * Whether the bridge has answered the handshake; only a `ready` frame unlocks work, because an open socket says nothing about the device being accepted.
+ * @param {*} message The parsed frame.
+ * @returns {boolean} True when the device is ready.
+ */
+
 export function isReady(message) {
   return Boolean(message && message.type === 'ready');
 }
@@ -182,6 +238,12 @@ export function isReady(message) {
 // A 4001 means the credentials are wrong, so retrying is hammering with no future.
 // A 4002 means the handshake was slow — a cold isolate, a delayed hello — which a retry answers in half a second.
 // Treating it as fatal wedged a live device for hours on one slow handshake while its heartbeat stayed green, so every command queued and none ran.
+
+/**
+ * Whether a close code is fatal: 4001 means wrong credentials and retrying is hammering; anything else (notably a slow 4002 handshake) is worth one retry.
+ * @param {number} code The close code.
+ * @returns {boolean} True when the device should stop.
+ */
 
 export function isFatalClose(code) {
   return code === 4001;

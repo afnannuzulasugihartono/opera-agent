@@ -82,6 +82,13 @@ const MAX_RETRY_MS = 30000;
 // A fresh attempt does not erase the reason the previous one ended, and merging a null over it did exactly that: observed live, a device cycling ready to connecting every minute with no error anywhere, which made the cycle itself undiagnosable.
 // Only a connection clears the slate.
 
+/**
+ * Map one socket event to the connection-state patch it produces; only a connection clears lastError, so a cycling device keeps the reason the previous attempt ended.
+ * @param {{ status: string, message?: string, code?: number, reason?: string }} event The socket event.
+ * @param {number} stamp Timestamp for the connection.
+ * @returns {object} The partial state to merge.
+ */
+
 export function connectionPatch(
   event,
   stamp
@@ -170,9 +177,21 @@ const RECYCLE_AGE_MS = 120000;
 
 const DEFAULT_EXECUTE_TIMEOUT_MS = 45000;
 
+/**
+ * The per-command execution bound, overridable for tests; past any honest browser call and short of the command TTL the server applies.
+ * @returns {number} The bound in milliseconds.
+ */
+
 export function executeBoundMs() {
   return Number(globalThis.OPERA_SOCKET_EXECUTE_TIMEOUT_MS ?? DEFAULT_EXECUTE_TIMEOUT_MS);
 }
+
+/**
+ * Race a command's execution against the bound, clearing the timer when the work settles so a CDP call that never answers cannot hold the queue for good.
+ * @param {(command: object) => Promise<*>} run Executes the command.
+ * @param {object} command The command to run.
+ * @returns {Promise<*>} The command's result, or a rejection when the bound wins.
+ */
 
 export async function withExecuteTimeout(
   run,
@@ -191,6 +210,12 @@ export async function withExecuteTimeout(
     bound
   ]);
 }
+
+/**
+ * Create the persistent bridge connection: handshake-gated send, one command at a time, capped backoff on reconnect, fatal-close detection, and stored-completion resend.
+ * @param {{ url: string, token: string, deviceName: string, execute: Function, onState?: Function, WebSocketImpl?: typeof WebSocket, now?: () => number, setTimer?: Function, setWatchTimer?: Function }} [deps] The socket dependencies, all injectable for tests.
+ * @returns {object} The client with start/stop/send/onMessage handlers.
+ */
 
 export function createSocketClient({
   url,

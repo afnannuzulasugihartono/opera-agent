@@ -13,6 +13,14 @@
 export const FOCUS_GATE_ATTEMPTS = 3;
 export const FOCUS_GATE_SETTLE_MS = 100;
 
+/**
+ * Whether a focus sample is good enough to dispatch in the given mode.
+ * Background always dispatches; foreground needs both tabActive and windowFocused.
+ * @param {string} mode 'background' or 'foreground'.
+ * @param {{ tabActive?: boolean, windowFocused?: boolean }} [sample] The sampled state.
+ * @returns {boolean} True when dispatch may proceed.
+ */
+
 export function focusSampleSatisfied(
   mode,
   sample
@@ -20,6 +28,13 @@ export function focusSampleSatisfied(
   if (mode !== 'foreground') return true;
   return sample?.tabActive === true && sample?.windowFocused === true;
 }
+
+/**
+ * Decide dispatch / retry / refuse for one focus-gate attempt.
+ * The gate never activates a tab itself; that authority stays with tabs.activate.
+ * @param {{ mode?: string, sample?: object, attempt?: number, maxAttempts?: number }} [options] The attempt context.
+ * @returns {{ outcome: 'dispatch'|'retry'|'refuse', attempt: number, recovered?: boolean, sample?: object }} The decision.
+ */
 
 export function decideFocusGate({
   mode,

@@ -52,6 +52,13 @@ const KNOWN = new Map([
 
 const GENERIC = 'Terjadi kesalahan. Jalankan uji mandiri, lalu periksa koneksi.';
 
+/**
+ * Map a background error string to the Indonesian label the popup shows.
+ * Only exact known strings are mapped; anything dynamic or unknown falls back to GENERIC so raw internals never reach the reader.
+ * @param {*} value The thrown message.
+ * @returns {string} The Indonesian label.
+ */
+
 export function userErrorMessage(value) {
   const text = typeof value === 'string' ? value : String(value ?? '');
   if (KNOWN.has(text)) return KNOWN.get(text);

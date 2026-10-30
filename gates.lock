@@ -173,7 +173,7 @@ tests/structure-gates.test.mjs d49e88e6e78ec9fdf4d1b82bd81a9e9392b0ca9c
 tests/boundary-locks.test.mjs d55d1494099db430b78f320d3b9e572a84b4af39
 
 # --- controls that decide what the product accepts at runtime ---
-extension/lib/protocol.js 0048f1d6b0e9e04b8af0319b6d2ccdd38651f3f8
+extension/lib/protocol.js 6258058cdf1bd53c1c2958e4cf6c917c224d6d84
 lib/secret-pattern.js 06386015c5756f83c08ee06cc571b9ae897d850a
 supabase/functions/_shared/cors.js 8777f38c4fc811797fca8da4866f8317b99b5d90
 

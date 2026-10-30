@@ -44,6 +44,14 @@ function summarizePage(page) {
   };
 }
 
+/**
+ * Build the system and user prompts for a planning call from a goal and an observed page.
+ * The prompt names the same primitive allowlist the device enforces, and refuses anything outside it.
+ * @param {string} goal The goal text.
+ * @param {{ page?: object, methods?: string[], maxCommands?: number }} [options] The observed page, allowlist override and command cap.
+ * @returns {{ ok: true, system: string, user: string } | { ok: false, code: string, message: string }} The prompts, or the refusal.
+ */
+
 export function buildPlanRequest(
   goal,
   {
@@ -127,6 +135,14 @@ function measure(
   }
   return counter;
 }
+
+/**
+ * Compile raw model text into a sealed program the device may run, refusing anything that sets a caller-owned field, nests too deep, exceeds the command budget, or names a non-allowlisted primitive.
+ * A refusal is never repaired, because a repaired refusal teaches the caller that model output is trusted.
+ * @param {string} rawText The model's reply text.
+ * @param {{ target?: object, budgets?: object, programId?: string, goalRevision?: number }} [options] The caller-owned target and budgets.
+ * @returns {object} The sealed program, or `{ ok: false, code, message }`.
+ */
 
 export function compileGoalPlan(
   rawText,

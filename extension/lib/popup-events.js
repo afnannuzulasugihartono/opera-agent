@@ -12,6 +12,15 @@
 
 export const POPUP_LOG_LIMIT = 8;
 
+/**
+ * Record one popup under its openerTabId, keeping at most `limit` events per opener.
+ * @param {Map<number, Array<{ tabId: number, url: string, at: number }>>} log The popup log.
+ * @param {{ id: number, openerTabId?: number, pendingUrl?: string, url?: string }} tab The created tab.
+ * @param {number} atMs When it was created.
+ * @param {number} [limit=POPUP_LOG_LIMIT] Per-opener bound.
+ * @returns {void}
+ */
+
 export function recordPopup(
   log,
   tab,
@@ -30,6 +39,14 @@ export function recordPopup(
   log.set(opener, list);
 }
 
+/**
+ * The popups opened by a tab at or after a timestamp.
+ * @param {Map<number, Array<{ at: number }>>} log The popup log.
+ * @param {number} tabId The opener tab.
+ * @param {number} sinceMs The earliest timestamp to include.
+ * @returns {Array<{ tabId: number, url: string, at: number }>} The matching events.
+ */
+
 export function popupsSince(
   log,
   tabId,
@@ -39,6 +56,13 @@ export function popupsSince(
   const list = log.get(Number(tabId)) || [];
   return list.filter((e) => Number.isFinite(Number(e.at)) && Number(e.at) >= Number(sinceMs));
 }
+
+/**
+ * Attribute a new tab to the in-flight action's tab when there is one, else to its openerTabId, so a popup is not misattributed while an action is running.
+ * @param {number|null} inFlightTabId The tab the current action targets.
+ * @param {{ openerTabId?: number }|null} tab The created tab.
+ * @returns {number|null} The opener tab id.
+ */
 
 export function resolvePopupOpener(
   inFlightTabId,

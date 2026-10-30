@@ -13,6 +13,12 @@ import {
 export const MODEL_TIMEOUT_MS = 30000;
 export const MODEL_MAX_TOKENS = 2000;
 
+/**
+ * Whether a model endpoint URL is acceptable: https anywhere, or http loopback only.
+ * @param {*} value The endpoint URL.
+ * @returns {boolean} True when acceptable.
+ */
+
 export function endpointOk(value) {
   try {
     const url = new URL(String(value));
@@ -28,6 +34,12 @@ export function endpointOk(value) {
     return false;
   }
 }
+
+/**
+ * Build the tiny probe request used to check the configured endpoint answers at all.
+ * @param {{ model: string }} options The model name.
+ * @returns {{ model: string, messages: object[], temperature: number, max_tokens: number }} The request body.
+ */
 
 export function buildProbeRequest({ model }) {
   return {
@@ -46,6 +58,14 @@ export function buildProbeRequest({ model }) {
     max_tokens: 16
   };
 }
+
+/**
+ * Call the owner's model endpoint to compile a goal into a plan, streaming the SSE deltas (a plain JSON answer is accepted too).
+ * The key travels only in the Authorization header.
+ * @param {{ storage: object, fetchImpl: typeof fetch }} deps Storage for the model config, and the fetch to use.
+ * @param {{ goal: string, page?: object, target?: object, budgets?: object }} input The goal and observed page.
+ * @returns {Promise<object>} The compiled plan, or `{ ok: false, code, message }` with a code that names the failure, never the credentials.
+ */
 
 export async function composeModelPlan({
   storage,

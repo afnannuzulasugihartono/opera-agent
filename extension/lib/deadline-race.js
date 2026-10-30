@@ -11,6 +11,14 @@
 
 const DEFAULT_ERROR_MESSAGE = 'Deadline exceeded.';
 
+/**
+ * Race work against a deadline, clearing the timer in both directions so a settled promise is never rejected later by a leaked timeout (which also kept the MV3 worker alive).
+ * @param {() => Promise<*>} work The work to race.
+ * @param {number} timeoutMs The deadline in milliseconds.
+ * @param {() => Error} [makeError] Builds the rejection error; defaults to a plain Error.
+ * @returns {Promise<*>} Whatever work resolves with, or rejects with when the deadline wins.
+ */
+
 export async function raceWithTimeout(
   work,
   timeoutMs,

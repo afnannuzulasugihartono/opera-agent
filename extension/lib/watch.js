@@ -47,6 +47,12 @@ function fail(reason) {
   };
 }
 
+/**
+ * Validate a watch rule's shape and limits before it is armed.
+ * @param {*} rule The rule object.
+ * @returns {{ ok: true } | { ok: false, reason: string }} The verdict.
+ */
+
 export function validateRule(rule) {
   if (!rule || typeof rule !== 'object') return fail('Rule must be an object.');
   if (typeof rule.ruleId !== 'string' || !RULE_ID_RE.test(rule.ruleId)) {
@@ -174,6 +180,16 @@ function matchesTrigger(
       return false;
   }
 }
+
+/**
+ * Evaluate armed rules against one page-fact snapshot and return what fired plus the next state.
+ * Rules retire past their deadline or maxEvents; once-mode rules retire after their first fire.
+ * @param {Array<object>} rules The armed rules.
+ * @param {object} snapshot The page facts: url, text, adState, mediaTime, per-rule presence.
+ * @param {object} [state] The carried per-rule state from the previous evaluation.
+ * @param {number} now Current time in milliseconds.
+ * @returns {{ fired: Array<{ ruleId: string, action: object, atMs: number, fireCount: number }>, state: object }} What fired and the state to carry forward.
+ */
 
 export function evaluateRules(
   rules,
