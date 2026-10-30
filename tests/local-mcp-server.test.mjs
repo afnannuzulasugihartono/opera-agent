@@ -161,6 +161,37 @@ function fakeDriver() {
       x: 204,
       y: 46
     }],
+    menuTree: async () => [
+      {
+        role: 'menuitem',
+        name: 'File',
+        depth: 0
+      },
+      {
+        role: 'menuitem',
+        name: 'Insert',
+        depth: 0
+      }
+    ],
+    openMenu: async (opts) => {
+      calls.push([
+        'openMenu',
+        opts
+      ]);
+      return {
+        action: {
+          opened: true,
+          at: opts.path,
+          tree: [
+            {
+              role: 'menuitem',
+              name: 'Insert',
+              depth: 0
+            }
+          ]
+        }
+      };
+    },
     pageState: async () => ({
       url: 'https://docs.google.com/document/d/1',
       title: 'Paper',
@@ -1216,6 +1247,111 @@ test('closing a tab drives the browser and drops the cached session', async () =
     'close',
     't9'
   ]);
+});
+
+// WHY THE MENU GATE IS TESTED HERE AND NOT IN THE PRIMITIVE.
+// The primitive walks a path it is given, which is correct: the policy that a path must come from a map belongs to the surface the agent talks to.
+
+const callMenu = (
+  server,
+  name,
+  args
+) => server.handle({
+  jsonrpc: '2.0',
+  id: 90,
+  method: 'tools/call',
+  params: {
+    name,
+    arguments: args
+  }
+});
+
+const menuCtx = () => {
+  const driver = fakeDriver();
+  driver.tabs = async () => [
+    {
+      id: 't1',
+      url: 'https://docs.google.com/',
+      title: 'Docs'
+    },
+    {
+      id: 't2',
+      url: 'https://example.com/',
+      title: 'Other'
+    }
+  ];
+  return {
+    driver,
+    browsers: [{
+      id: 'chrome'
+    }],
+    port: 9450,
+    resolveTab: async () => [
+      't1',
+      't2'
+    ],
+    open: async () => driver,
+    lease: openLease()
+  };
+};
+
+test('open_menu refuses a path when no map was read on the tab, and names the road', async () => {
+  const c = menuCtx();
+  const server = createMcpServer(c);
+  const res = await callMenu(server, 'open_menu', {
+    tabId: 't1',
+    path: ['Insert']
+  });
+
+  assert.ok(res.error, 'a guessed walk is refused');
+  assert.match(res.error.message, /list_menus\(\)/);
+  assert.ok(!c.driver.calls.some(([name]) => name === 'openMenu'), 'nothing was hovered or clicked');
+});
+
+test('open_menu refuses a first step the map does not carry', async () => {
+  const c = menuCtx();
+  const server = createMcpServer(c);
+  await callMenu(server, 'list_menus', { tabId: 't1' });
+  const res = await callMenu(server, 'open_menu', {
+    tabId: 't1',
+    path: ['Sisipkan']
+  });
+
+  assert.ok(res.error);
+  assert.match(res.error.message, /file \| insert/, 'the refusal lists the names the map does carry');
+  assert.ok(!c.driver.calls.some(([name]) => name === 'openMenu'), 'the guessed path was never walked');
+});
+
+test('open_menu walks a path that starts with a mapped name', async () => {
+  const c = menuCtx();
+  const server = createMcpServer(c);
+  await callMenu(server, 'list_menus', { tabId: 't1' });
+  const res = await callMenu(server, 'open_menu', {
+    tabId: 't1',
+    path: [
+      'Insert',
+      'Image'
+    ]
+  });
+
+  assert.ok(res.result, `the mapped walk is allowed: ${res.error?.message ?? ''}`);
+  assert.ok(c.driver.calls.some(([
+    name,
+    opts
+  ]) => name === 'openMenu' && opts.path[0] === 'Insert'));
+});
+
+test('a map read on another tab does not open this one', async () => {
+  const c = menuCtx();
+  const server = createMcpServer(c);
+  await callMenu(server, 'list_menus', { tabId: 't2' });
+  const res = await callMenu(server, 'open_menu', {
+    tabId: 't1',
+    path: ['Insert']
+  });
+
+  assert.ok(res.error);
+  assert.match(res.error.message, /no menu map/);
 });
 
 test('an unknown tool is an error, not a crash, because a model will ask for one', async () => {

@@ -368,6 +368,46 @@ export function createMcpServer(context) {
   const fallback = context.driver ?? null;
   const lease = context.lease ?? bridgeLease;
 
+  // WHY open_menu IS GATED ON A MAP READ ON THIS TAB.
+  // Measured live: a guessed menu path costs hovers and clicks that dismiss whatever was open, and a click on a row that turns out to be a branch runs the wrong command.
+  // So the walk is allowed only from a name the agent read in a map on this tab a moment ago, never from a name it invented.
+  // A snapshot counts as a map too, because it reads the same rows; the map expires, because a page that changed since the read is a page the map no longer describes.
+
+  const MENU_ROLES = new Set([
+    'menu',
+    'menuitem',
+    'menuitemcheckbox',
+    'menuitemradio'
+  ]);
+  const menuMapTtlMs = () => {
+    const ttl = Number(process.env.OPERA_MENU_MAP_TTL_MS);
+    return Number.isFinite(ttl) && ttl > 0 ? ttl : 120000;
+  };
+  const menuMaps = new Map();
+  const mapKeyOf = (
+    tab,
+    tabId
+  ) => String(tab?.id ?? tabId ?? '');
+  const rememberMenuMap = (
+    key,
+    rows
+  ) => {
+    const names = new Set((Array.isArray(rows) ? rows : [])
+      .filter((row) => Number(row?.depth ?? 0) === 0 || MENU_ROLES.has(String(row?.role ?? '')))
+      .map((row) => String(row?.name ?? '').trim().toLowerCase())
+      .filter((name) => name !== ''));
+    if (names.size > 0) menuMaps.set(key, {
+      at: Date.now(),
+      names
+    });
+  };
+  const mappedMenuNames = (key) => {
+    const seen = menuMaps.get(key);
+    if (!seen) return null;
+    if (Date.now() - seen.at > menuMapTtlMs()) return null;
+    return seen.names;
+  };
+
   const driverFor = async (tabId) => {
     if (!tabId) return fallback;
 
@@ -637,19 +677,36 @@ const windowMatch = async (
         }));
       case 'guide':
         return asText(await driver.guide(args.topic));
-      case 'list_menus':
-        return asText(await driver.menuTree({ limit: args.limit }));
+      case 'list_menus': {
+        const rows = await driver.menuTree({ limit: args.limit });
+        rememberMenuMap(mapKeyOf(tab, args?.tabId), rows);
+        return asText(rows);
+      }
       case 'open_menu': {
         const path = Array.isArray(args.path) ? args.path : [];
         if (path.length === 0) throw new Error('open_menu needs a path of menu names, e.g. ["Insert","Image"]');
-        return afterAction(driver, await driver.openMenu({
+        const key = mapKeyOf(tab, args?.tabId);
+        const names = mappedMenuNames(key);
+        const first = String(path[0] ?? '').trim().toLowerCase();
+        if (!names) {
+          throw new Error('open_menu refuses to walk a guessed path: no menu map has been read on this tab yet. list_menus() first, then start the path with a name it returned.');
+        }
+        if (!names.has(first)) {
+          throw new Error(`open_menu refuses "${path[0]}": the map read on this tab names ${[...names].slice(0, 12).join(' | ') || '(nothing)'}. list_menus() again if the page changed, then start the path with one of those names.`);
+        }
+        const out = await driver.openMenu({
           path,
           clickLeaf: args.clickLeaf === true,
           limit: args.limit
-        }));
+        });
+        rememberMenuMap(key, out?.action?.tree ?? out?.tree ?? []);
+        return afterAction(driver, out);
       }
-      case 'ax_snapshot':
-        return asText(await driver.snapshot(args.limit));
+      case 'ax_snapshot': {
+        const rows = await driver.snapshot(args.limit);
+        rememberMenuMap(mapKeyOf(tab, args?.tabId), rows);
+        return asText(rows);
+      }
       case 'caret_line':
         return asText(await driver.caretLine());
       case 'upload': {

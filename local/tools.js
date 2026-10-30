@@ -670,7 +670,7 @@ export const TOOLS = Object.freeze([
   },
   {
     name: 'open_menu',
-    description: 'Walk a menu path and stop there, opening each level on the way: path ["Insert","Image"] brings the Image submenu open and leaves the choice to you. Set clickLeaf to also activate the last item. Branches are hovered, never clicked into blindly, because clicking a row that turns out to be a branch runs whatever it was. A path that breaks returns the level it broke on, what that level actually contained, and the nearest names to what you asked for - a map, not a dead end.',
+    description: 'Walk a menu path and stop there, opening each level on the way: path ["Insert","Image"] brings the Image submenu open and leaves the choice to you. Set clickLeaf to also activate the last item. Branches are hovered, never clicked into blindly, because clicking a row that turns out to be a branch runs whatever it was. The walk is gated on a map: list_menus (or ax_snapshot) must have been read on this tab within the last two minutes, and the path must start with a name that map returned - a guessed path is refused with the names the map does carry, because a guessed menu costs hovers and clicks that dismiss whatever was open. A path that breaks returns the level it broke on, what that level actually contained, and the nearest names to what you asked for - a map, not a dead end.',
     inputSchema: {
       type: 'object',
       properties: {

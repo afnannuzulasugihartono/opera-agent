@@ -137,7 +137,7 @@ export const DOCSTRING_PENDING = new Set([
   'local/input.js: export function createInputMethods (line 53)',
   'local/leases.js: export function createLeaseTable (line 20)',
   'local/mcp-server.js: export function createMcpServer (line 366)',
-  'local/mcp-server.js: export function startStdio (line 790)',
+  'local/mcp-server.js: export function startStdio (line 847)',
   'local/menu-tree.js: export function distanceBetween (line 255)',
   'local/menu-tree.js: export function exactMatch (line 308)',
   'local/menu-tree.js: export function findNode (line 324)',
