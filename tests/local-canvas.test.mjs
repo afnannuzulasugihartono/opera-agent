@@ -49,6 +49,22 @@ const RICH_AX = [
 
 const POOR_AX = ['Share'];
 
+// Ten toolbar labels: rich enough to clear the text-box bar, and none of them the document.
+// This is what a canvas document answers before it has built its accessibility tree.
+
+const CHROME_AX = [
+  '100%',
+  '100%',
+  'Heading 1',
+  'Heading 1',
+  'Arial',
+  'Arial',
+  '11',
+  '11',
+  'Bold',
+  'Italic'
+];
+
 const axTree = (texts) => {
   const nodes = [
     {
@@ -114,6 +130,9 @@ const canvasCdp = ({
   const calls = [];
   return {
     calls,
+    setAx(next) {
+      ax = next;
+    },
     send: async (
       method,
       params = {}
@@ -159,6 +178,26 @@ test('a canvas surface is read through the accessibility tree and the caret is n
   assert.ok(!out.text.includes('Share'), 'chrome text stays in its own frame');
   assert.equal(cdp.calls.some((c) => c.method === 'Input.dispatchKeyEvent'), false,
     'no key is pressed on a surface that answered without one');
+});
+
+test('a cold sample cannot answer for the session: every read measures the tree again', async () => {
+  const cdp = canvasCdp({ ax: CHROME_AX });
+  const primitives = createPrimitives(cdp, { sleep: async () => {} });
+
+  const cold = await primitives.read();
+  assert.equal(cold.strategy, 'ax');
+  assert.ok(cold.text.includes('Heading 1'), 'a cold tree answers with the toolbar');
+
+  cdp.setAx(RICH_AX);
+  const warm = await primitives.read();
+  assert.equal(warm.strategy, 'ax');
+  assert.ok(warm.text.includes('PROPOSAL PENAWARAN'), 'the second read sees the document the tree grew');
+  assert.ok(!warm.text.includes('Heading 1'), 'the toolbar text does not survive into the second read');
+  assert.equal(
+    cdp.calls.filter((call) => call.method === 'Accessibility.getFullAXTree').length,
+    2,
+    'one tree measurement per read, and never one for the session'
+  );
 });
 
 test('a caret-moving read is refused without consent and the refusal is named', async () => {

@@ -99,6 +99,10 @@ export function createCanvasMethods({
 
   const guard = createCaretGuard({ evaluate: primitives.evaluate });
 
+  // WHY THE TREE IS MEASURED ONCE PER READ AND NOT ONCE PER SESSION.
+  // A canvas document builds its accessibility tree lazily, so a read taken while it is still cold answers with the toolbar around the picture.
+  // Cached across reads, that first cold sample answered as the document for the rest of the session: measured on a real Google Doc, every later read returned 52 characters of toolbar text while a new session saw all 3,184.
+
   let measured = null;
   const axOf = async () => {
     if (!measured) measured = await measureAx({ ask: primitives.ask });
@@ -154,6 +158,7 @@ export function createCanvasMethods({
 
   async function read(options = {}) {
     const allowCaretMove = options.allowCaretMove === true;
+    measured = null;
     const probe = await probeSurface({ evaluate: primitives.evaluate });
     const ax = probe.canvas?.value === true ? await axOf() : {};
     const surface = buildProfile({
