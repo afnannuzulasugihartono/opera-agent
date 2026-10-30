@@ -34,6 +34,7 @@ test('run_task review fixes: replay short-circuits, ok gates on status, unknown 
   assert.match(mcpSource, /ok: status === "completed" && verify\.ok/, 'ok requires a completed run AND a passed verify');
   assert.match(mcpSource, /if \(runId && status === "running"\) status = "timeout"/, 'a poll that expires reports timeout, not completed');
   assert.match(mcpSource, /unknown verify kind/, 'an unmappable verify clause fails closed');
+  assert.match(mcpSource, /Number\(result\?\.count\) > 0/, 'a text or selector verify reads the count the device actually returns');
   assert.match(mcpSource, /if \(status === "completed" && verify\.ok\) \{[\s\S]*?opera_skill_save/, 'the lesson is saved only on a successful verified run');
 });
 

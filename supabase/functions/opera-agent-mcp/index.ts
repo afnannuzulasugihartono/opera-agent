@@ -898,12 +898,15 @@ async function runTask(
       evidence: `unknown verify kind: ${String(artifact.verify?.kind ?? '')}`
     };
   } else if (verifyCommand) {
+
+    // WHY verify READS count: page.find and page.query answer { count, item, items }, so a match is a positive count; an `elements` array never exists, and reading it made every verify fail.
+
     try {
       const read = await runCommand(verifyCommand.method, verifyCommand.params, 8000, deviceName, provider);
       const result = read?.result ?? {};
       const found = artifact.verify?.kind === "ref"
         ? (Array.isArray(result?.page?.elements) ? result.page.elements : []).some((element: unknown) => element?.ref === artifact.verify.value)
-        : Boolean(result?.matches?.length || result?.elements?.length);
+        : Number(result?.count) > 0;
       verify = {
         ok: found,
         evidence: result

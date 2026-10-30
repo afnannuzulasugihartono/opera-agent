@@ -76,6 +76,8 @@ class BridgeState:
         self.pongs_received = 0
         self.listen = []
         self.device_token = None
+        self.model_calls = 0
+        self.model_auth = ''
         self.sockets = []
         self.sockets_lock = threading.Lock()
 
@@ -168,6 +170,12 @@ class BridgeState:
             return self.completed[cid]
 
 STATE = BridgeState()
+
+# WHY THE MODEL IS A LOCAL STAND-IN.
+# run_task makes exactly one device-local model call, so pointing the extension at this harness's loopback endpoint proves the compile path in a real Chromium, with no key and no outside network.
+# The drill swaps the reply between pushes, so one endpoint can answer both a read task and a write one.
+
+MODEL_REPLY = '{}'
 
 LONG_TEXT = 'BEGIN ' + ('civil-engineering-semantic-reader ' * 695) + ' END'
 EXTRA_CONTROLS = ''.join(f'<button aria-label="Synthetic action {index}"></button>' for index in range(100))
@@ -645,6 +653,12 @@ class Handler(BaseHTTPRequestHandler):
             self.send_response(404); self.end_headers()
 
     def do_POST(self):
+        if self.path == '/v1/chat/completions':
+            length = int(self.headers.get('content-length', '0'))
+            self.rfile.read(length)
+            STATE.model_calls += 1
+            STATE.model_auth = self.headers.get('authorization', '')
+            return self._send_json({'choices': [{'message': {'content': MODEL_REPLY}}]})
         if self.path == '/opera-agent-listen':
             length = int(self.headers.get('content-length', '0'))
             body = json.loads(self.rfile.read(length) or b'{}')
@@ -935,6 +949,76 @@ async def run_statement_drill(port, download_dir):
         'bytes': row['bytes'],
         'latencyMs': latency_ms,
         'manifestRows': manifest['delivered']
+    }
+
+# WHY run_task IS DRIVEN HERE AND NOT ONLY FROM NODE.
+# The Node tests inject the model and the executor, so they can all pass while the wire path refuses the command; here the real service worker pulls task.run, reads a real page, and calls the model.
+
+async def run_task_drill(port, worker):
+    global MODEL_REPLY
+    await worker.evaluate(
+        "async (cfg) => chrome.storage.local.set(cfg)",
+        {
+            'modelEndpoint': f'http://{HOST}:{port}/v1/chat/completions',
+            'modelName': 'harness-model',
+            'modelKey': 'harness-key'
+        })
+    cid = STATE.push('tabs.open', {'url': f'http://{HOST}:{port}/page', 'active': True, 'wait': True})
+    tab_id = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['tab']['id']
+
+    MODEL_REPLY = json.dumps({
+        'mode': 'read',
+        'program': {
+            'root': {
+                'type': 'SEQUENCE',
+                'children': [{
+                    'type': 'COMMAND',
+                    'method': 'page.read',
+                    'arguments': {},
+                    'resultBinding': 'page'
+                }]
+            }
+        },
+        'verify': {'kind': 'text', 'value': 'Opera Agent Test Page'}
+    })
+    cid = STATE.push('task.run', {
+        'task': 'read the page and tell me what it says',
+        'tabId': tab_id,
+        'confirm': False,
+        'requestId': f'task-read-{uuid.uuid4().hex[:8]}'
+    }, timeout=35000)
+    read_run = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid, 40))
+    assert read_run['mode'] == 'read', read_run
+    assert read_run['program']['schemaVersion'] == 'OA_REACTIVE_VM_V1', read_run['program']
+    methods = [node['method'] for node in read_run['program']['root']['children']]
+    assert methods == ['page.read'], methods
+    assert read_run['verify'] == {'kind': 'text', 'value': 'Opera Agent Test Page'}, read_run['verify']
+    assert 'page' not in read_run, 'the raw page observation must never travel back with the artifact'
+    assert STATE.model_calls == 1, STATE.model_calls
+    assert STATE.model_auth == 'Bearer harness-key', STATE.model_auth
+
+    MODEL_REPLY = json.dumps({
+        'mode': 'write',
+        'graph': {'nodes': [{'type': 'command', 'method': 'page.read'}]},
+        'verify': None
+    })
+    cid = STATE.push('task.run', {
+        'task': 'click the first button on the page',
+        'tabId': tab_id,
+        'confirm': False,
+        'requestId': f'task-write-{uuid.uuid4().hex[:8]}'
+    }, timeout=35000)
+    refused = await asyncio.to_thread(STATE.wait, cid, 40)
+    assert refused.get('ok') is not True, refused
+    assert refused['error']['code'] == 'TASK_NOT_CONFIRMED', refused
+    assert STATE.model_calls == 2, 'the write plan is gated after one model call, never before'
+
+    await worker.evaluate(
+        "async () => chrome.storage.local.remove(['modelEndpoint', 'modelName', 'modelKey'])")
+    return {
+        'readCompiled': True,
+        'writeRefused': True,
+        'modelCalls': STATE.model_calls
     }
 
 # WHY THE DOWNLOAD BEHAVIOUR IS SET OVER CDP.
@@ -3178,6 +3262,7 @@ async def run(port, profile):
         assert all(item['focusPreserved'] for item in focus_audit), focus_audit
 
         statement = await run_statement_drill(port, download_dir)
+        task_run = await run_task_drill(port, worker)
 
         dropped = STATE.drop_sockets()
         assert dropped >= 1, 'no live device socket to drop; the transport proved nothing'
@@ -3320,6 +3405,9 @@ async def run(port, profile):
             'statementDevicePages': statement['pages'],
             'statementDeviceBytes': statement['bytes'],
             'statementDeviceLatencyMs': statement['latencyMs'],
+            'runTaskReadCompiled': task_run['readCompiled'],
+            'runTaskWriteRefused': task_run['writeRefused'],
+            'runTaskModelCalls': task_run['modelCalls'],
             'sensitiveFillBlocked': True,
             'fileUploadBlocked': True,
             'networkReconnect': True,

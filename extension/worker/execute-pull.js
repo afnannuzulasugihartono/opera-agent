@@ -126,6 +126,23 @@ function emitCommandEvent(
   emitChain = emitChain.then(() => fetchJson(cfg.bridgeUrl, body, 5000)).catch(() => {});
 }
 
+// WHY THE CONTROL BUDGETS DIFFER.
+// watch.* and loop.* only schedule registry work and answer at once, so ten seconds is generous.
+// task.run waits on the one device-local model call, whose own ceiling is MODEL_TIMEOUT_MS, so it gets that budget minus a second and still answers before the caller's await gives up.
+
+/**
+ * The dispatch budget a control method gets, in milliseconds.
+ * @param {{ method?: unknown }} raw The pulled command.
+ * @returns {number} The budget, or 0 when the method is an allowlisted primitive that takes the normal path.
+ */
+
+function controlMethodBudget(raw) {
+  if (!raw || typeof raw.method !== 'string') return 0;
+  if (raw.method === 'task.run') return MODEL_TIMEOUT_MS - 1000;
+  if (raw.method.startsWith('watch.') || raw.method.startsWith('loop.')) return 10000;
+  return 0;
+}
+
 async function executeCommand(
   raw,
   cfg
@@ -139,12 +156,18 @@ async function executeCommand(
     })
     : null;
 
-  if (raw && typeof raw.method === 'string' && (raw.method.startsWith('watch.') || raw.method.startsWith('loop.'))) {
-    const deadlineW = Date.now() + 10000;
+  // WHY task.run AND watch./loop.
+  // SKIP THE PRIMITIVE ALLOWLIST.
+  // They are control methods, not browser primitives: each one compiles or schedules work that is itself gated before it touches a page, so the 31-method allowlist would only refuse the door.
+  // task.run gets the model budget, because its one device-local model call is what it waits on.
+
+  const controlBudget = controlMethodBudget(raw);
+  if (controlBudget) {
+    const deadlineC = Date.now() + controlBudget;
     return runDispatch(() => dispatch(raw.method, raw.params || {}, {
-      deadline: deadlineW,
+      deadline: deadlineC,
       onStep
-    }), 10000);
+    }), controlBudget);
   }
   const validated = validateCommand(raw);
   if (!validated.ok) return {

@@ -16,6 +16,7 @@ directory is not listed here, it is generated state, user data, or an archive.
 | Area | Entry | Responsibility | Tests |
 |---|---|---|---|
 | Extension runtime | `extension/background.js`, `extension/content.js` | MV3 worker, content injection, generic primitives | `tests/browser_extension_test.py`, `tests/*extension*.test.mjs` |
+| Natural-language tasks | `extension/lib/task-compile.js`, `extension/lib/task-runner.js`, `supabase/functions/_shared/task-validate.js`, `supabase/functions/_shared/task-run.js` | One task door: the device compiles a task into a gated program or graph, the server executes it and verifies | `tests/task-*.test.mjs`, `tests/run-task*.test.mjs`, `tests/browser_extension_test.py` |
 | Shared pure modules | `lib/*.js` | Expressions, focus, protocol, working state | `tests/*semantic*.test.mjs`, `tests/*working-state*.test.mjs` |
 | Cloud backend | `supabase/functions/*/index.ts`, `_shared/*.js` | Auth, billing, bridge, gateway, MCP, runner, update, VM | `tests/mcp-surface.test.mjs`, live Supabase tests |
 | Local MCP | `local/bin/opera-local.js`, `local/mcp-server.js` | CDP driver behind an MCP stdio server | `tests/local-*-*.test.mjs` |
