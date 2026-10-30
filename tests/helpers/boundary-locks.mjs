@@ -36,7 +36,7 @@ export const PUBLIC_SURFACE_LOCKS = Object.freeze([
   ],
   [
     '../extension/background.js',
-    '654c163e3ecdaf40d2ab08b62b28bc838469b26e'
+    '828df80fe83428fa85547258dc6eb37efc63d984'
   ],
   [
     '../extension/manifest.json',

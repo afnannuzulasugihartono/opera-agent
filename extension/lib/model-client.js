@@ -60,22 +60,20 @@ export function buildProbeRequest({ model }) {
 }
 
 /**
- * Call the owner's model endpoint to compile a goal into a plan, streaming the SSE deltas (a plain JSON answer is accepted too).
- * The key travels only in the Authorization header.
+ * Make the one device-local model call for a task and return the raw reply text.
+ * The key travels only in the Authorization header to the owner's endpoint and never to our server, queue, database, or logs; an unconfigured device refuses with MODEL_NOT_CONFIGURED before any network call.
  * @param {{ storage: object, fetchImpl: typeof fetch }} deps Storage for the model config, and the fetch to use.
- * @param {{ goal: string, page?: object, target?: object, budgets?: object }} input The goal and observed page.
- * @returns {Promise<object>} The compiled plan, or `{ ok: false, code, message }` with a code that names the failure, never the credentials.
+ * @param {{ system: string, user: string }} prompt The prompts to send.
+ * @returns {Promise<{ ok: true, text: string } | { ok: false, code: string, message: string, missing?: string[] }>} The raw reply text, or the coded refusal.
  */
 
-export async function composeModelPlan({
+export async function callModelText({
   storage,
   fetchImpl
 },
   {
-    goal,
-    page,
-    target,
-    budgets
+    system,
+    user
   }
 ) {
   const cfg = await readModelConfig(storage);
@@ -90,18 +88,16 @@ export async function composeModelPlan({
     code: 'MODEL_BAD_ENDPOINT',
     message: 'The model endpoint must be https or loopback http.'
   };
-  const req = buildPlanRequest(goal, { page });
-  if (!req.ok) return req;
   const body = {
     model: cfg.model,
     messages: [
       {
         role: 'system',
-        content: req.system
+        content: system
       },
       {
         role: 'user',
-        content: req.user
+        content: user
       }
     ],
     temperature: 0,
@@ -153,7 +149,42 @@ export async function composeModelPlan({
     code: 'MODEL_BAD_RESPONSE',
     message: 'The model endpoint answered without text.'
   };
-  return compileGoalPlan(content, {
+  return {
+    ok: true,
+    text: content
+  };
+}
+
+/**
+ * Call the owner's model endpoint to compile a goal into a plan, streaming the SSE deltas (a plain JSON answer is accepted too).
+ * The key travels only in the Authorization header.
+ * @param {{ storage: object, fetchImpl: typeof fetch }} deps Storage for the model config, and the fetch to use.
+ * @param {{ goal: string, page?: object, target?: object, budgets?: object }} input The goal and observed page.
+ * @returns {Promise<object>} The compiled plan, or `{ ok: false, code, message }` with a code that names the failure, never the credentials.
+ */
+
+export async function composeModelPlan({
+  storage,
+  fetchImpl
+},
+  {
+    goal,
+    page,
+    target,
+    budgets
+  }
+) {
+  const req = buildPlanRequest(goal, { page });
+  if (!req.ok) return req;
+  const answer = await callModelText({
+    storage,
+    fetchImpl
+  }, {
+    system: req.system,
+    user: req.user
+  });
+  if (!answer.ok) return answer;
+  return compileGoalPlan(answer.text, {
     target,
     budgets
   });

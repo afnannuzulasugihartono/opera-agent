@@ -8,7 +8,7 @@
 // The list is the debt, written down once and paid down file by file, instead of a rule that waits for a big-bang rewrite of 310 docstrings.
 
 export const DOCSTRING_PENDING = new Set([
-  'extension/background.js: export function dispatch (line 90)',
+  'extension/background.js: export function dispatch (line 91)',
   'extension/worker/action-focus.js: export function burstStepParams (line 720)',
   'extension/worker/action-focus.js: export function executionMode (line 37)',
   'extension/worker/action-focus.js: export function notReadyError (line 210)',

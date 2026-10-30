@@ -61,6 +61,7 @@ import {
   popupLog,
 } from './worker/action-focus.js';
 import { runBurst } from './worker/burst.js';
+import { runTaskCommand } from './lib/task-runner.js';
 import {
   watchRuleId,
   saveWatchers,
@@ -479,6 +480,8 @@ export async function dispatch(
     }
     case 'statement.manifest':
       return statementManifest();
+    case 'task.run':
+      return runTaskCommand(params, context);
     default:
       throw new Error('Method is not implemented by this extension build.');
   }
