@@ -71,7 +71,8 @@ const FROZEN_MCP_TOOLS = [
   'skill_save',
   'media_stream_start',
   'media_stream_stop',
-  'media_listen_read'
+  'media_listen_read',
+  'run_task'
 ];
 
 const FROZEN_METHODS = [
@@ -156,6 +157,7 @@ const FROZEN_TOOL_SCHEMAS = Object.freeze({
   statement_manifest: '7f2ed6ebc3c8d007',
   statement_deliver: '9d430e6ed2f9bc8e',
   invoice_create: '32805bba02ebc291',
+  run_task: '1cd5932813f10332',
 });
 
 const PLAN_DOOR_CHANGED_TOOL = 'invoice_create';
@@ -284,6 +286,7 @@ test('MCP exposes focused browser tools and no generic command escape hatch', ()
     'run_workflow',
     'run_program',
     'run_adhoc',
+    'run_task',
     'skill_save',
     'skill_recall',
     'start_watch',
@@ -324,9 +327,9 @@ test('R4 keeps the protocol inventory frozen at 31 allowlisted primitives for re
   assert.deepEqual([...ALLOWED_METHODS].sort(), FROZEN_METHODS);
 });
 
-test('R11 removes the sense-act loop tools, so the public MCP tool inventory is 34 tools', async () => {
+test('the public MCP tool inventory is 35 tools after run_task (spec 2026-10-30-run-task-design.md)', async () => {
   const registered = [...source.matchAll(/server\.registerTool\("([a-z_]+)"/g)].map((match) => match[1]);
-  assert.equal(registered.length, 34);
+  assert.equal(registered.length, 35);
   assert.deepEqual([...registered].sort(), [
     ...FROZEN_MCP_TOOLS,
     'start_watch',
@@ -354,9 +357,9 @@ test('R4 keeps the read_page input schema frozen with no view parameter', async 
 
 test('the tool count and names match the contract', () => {
   const registered = [...source.matchAll(/server\.registerTool\("([a-z_]+)"/g)].map((m) => m[1]);
-  assert.equal(registered.length, 34);
+  assert.equal(registered.length, 35);
   assert.deepEqual(registered, contract.tools);
-  assert.equal(contract.toolCount, 34);
+  assert.equal(contract.toolCount, 35);
 });
 
 test('no generic escape hatch was introduced', () => {
@@ -440,9 +443,20 @@ test('the OAuth client name resolves the provider when headers cannot', () => {
 
 // The one authorized change since the map was frozen is the plan door on invoice_create: the frozen map records the change and the digest it moved from, so a reader can tell a reviewed change from a drift.
 
+test('run_task is registered with the natural-language task schema', () => {
+  const block = toolBlock('run_task');
+  assert.ok(block, 'run_task must be registered');
+  assert.match(block, /task: z\.string\(\)\.min\(1\)\.max\(1200\)/, 'task is a string of 1..1200 characters');
+  assert.match(block, /requestId: z\.string\(\)\.min\(1\)\.max\(100\)\.regex\(\/\^\[A-Za-z0-9_-\]\{1,100\}\$\/\)/, 'requestId is the idempotency key');
+  assert.match(block, /confirm: z\.boolean\(\)\.optional\(\)/, 'confirm gates write tasks');
+  assert.match(block, /tabId: tabIdSchema\.optional\(\)/, 'tabId defaults to the driven tab');
+  assert.match(block, /timeoutMs: z\.number\(\)\.int\(\)\.min\(1000\)\.max\(120000\)\.optional\(\)/, 'timeout is clamped to 1000..120000');
+  assert.match(block, /runTask\(/, 'the handler delegates to runTask');
+});
+
 test('the frozen schema map matches the live file, and records the one authorized change', () => {
   const blocks = toolBlocks();
-  assert.equal(blocks.length, 34, 'the public tool count changes only by reviewed decision (loop tools removed)');
+  assert.equal(blocks.length, 35, 'the public tool count changes only by reviewed decision (run_task added by spec 2026-10-30-run-task-design.md)');
   const actual = {};
   for (const block of blocks) actual[block.name] = schemaDigest(block.schema);
 

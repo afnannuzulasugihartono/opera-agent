@@ -74,7 +74,7 @@ What is true now, and what to do next. Cap 150 lines. Spent detail: git history.
   device runs it locally; [`goal-plan.js`](../extension/lib/goal-plan.js) shares the allowlist.
 - **Cloudflare Pages at `opera-agent.pages.dev` serves the site; Vercel is the backup**, and
   `vercel.app` stays in CORS. Every `style-src` allows `'self'`, and the features page counts
-  34 tools, 31 primitives and six permissions, against the code.
+  35 tools, 31 primitives and six permissions, against the code.
 - **A deploy is a dispatch, not a push.** [`deploy-site.yml`](../.github/workflows/deploy-site.yml)
   publishes `landing/` with `wrangler pages deploy` after the unit and syntax gates; a push
   that does not deploy leaves CI green and the old build live. The Vercel CLI cannot deploy.

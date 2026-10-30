@@ -1,5 +1,5 @@
 // @last-edited: 2026-10-21 UTC+7.
-// @title: tools — the 34 tools this MCP server offers, and the schemas they take.
+// @title: tools — the 35 tools this MCP server offers, and the schemas they take.
 // @state: every tool the surface advertises, with the input shape each one answers.
 // @dependencies: @modelcontextprotocol/sdk, zod/v4, ../_shared/seal-vm-program.js.
 
@@ -196,6 +196,7 @@ export function registerTools(
     executeScreenshot,
     runWorkflow,
     runAdhoc,
+    runTask,
     rpc,
     textResult,
     toolError,
@@ -330,6 +331,38 @@ export function registerTools(
     graph: Record<string, unknown>; requestId: string; input?: Record<string, unknown>; timeoutMs?: number
   }) =>
     runAdhoc(graph, requestId, input, timeoutMs, deviceName, provider).then(textResult).catch(toolError));
+
+  server.registerTool("run_task", {
+    title: "Run an Opera Agent task from natural language",
+    description: "State one task in natural language and let the paired Opera device plan and run it end to end: the device makes one model call to the owner's configured endpoint (the key never leaves the device), compiles the reply into a read-only program or a confirmed write graph over the allowlisted primitives, executes it, verifies the result, and returns a per-node trace. Write tasks need confirm:true. Spec: docs/superpowers/specs/2026-10-30-run-task-design.md.",
+    inputSchema: {
+      task: z.string().min(1).max(1200)
+        .describe("The task in natural language, at most 1200 characters."),
+      tabId: tabIdSchema.optional()
+        .describe("Explicit Opera automation target tab ID returned by open_url or list_tabs; defaults to the driven tab."),
+      confirm: z.boolean().optional()
+        .describe("Required true when the task writes (click, fill, key, focus). Read-only tasks ignore it."),
+      requestId: z.string().min(1).max(100).regex(/^[A-Za-z0-9_-]{1,100}$/)
+        .describe("Idempotency key; a malformed key is rejected so replay protection is never silent."),
+      timeoutMs: z.number().int().min(1000).max(120000).optional()
+        .describe("Task timeout in milliseconds; defaults to 60000.")
+    },
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: true
+    }
+  }, ({
+    task,
+    tabId,
+    confirm,
+    requestId,
+    timeoutMs
+  }: {
+    task: string; tabId?: number; confirm?: boolean; requestId: string; timeoutMs?: number
+  }) =>
+    runTask(task, tabId, confirm, requestId, timeoutMs, deviceName, provider).then(textResult).catch(toolError));
 
   server.registerTool("skill_save", {
     title: "Save skill lesson",

@@ -30,6 +30,7 @@ export type ToolDeps = {
   executeScreenshot: typeof executeScreenshot;
   runWorkflow: typeof runWorkflow;
   runAdhoc: typeof runAdhoc;
+  runTask: typeof runTask;
   rpc: typeof rpc;
   textResult: typeof textResult;
   toolError: typeof toolError;
@@ -752,6 +753,18 @@ function rpcErrorParts(
   };
 }
 
+async function runTask(
+  task: unknown,
+  tabId: unknown,
+  confirm: unknown,
+  requestId: unknown,
+  timeoutMs: unknown,
+  deviceName: string = DEVICE_NAME,
+  provider = ""
+) {
+  throw new CommandFailure("NOT_IMPLEMENTED", "run_task lands in the next task of docs/superpowers/plans/2026-10-30-run-task.md.");
+}
+
 async function runAdhoc(
   graph: unknown,
   requestId: unknown,
@@ -1219,6 +1232,7 @@ function createServer(
     executeScreenshot,
     runWorkflow,
     runAdhoc,
+    runTask,
     rpc,
     textResult,
     toolError,
