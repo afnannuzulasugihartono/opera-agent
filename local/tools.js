@@ -783,6 +783,29 @@ export const TOOLS = Object.freeze([
     }
   },
   {
+    name: 'document_write',
+    description: 'Carry a paper described as JSON into a live page: check the plan against its own tables, draw every graph as a picture, put the styled paper on the clipboard, paste it into the tab, and read the page back. The result is a document with real headings, tables, images and charts rather than a plan on disk. Refuses a paper whose graph disagrees with its table, an image with no source to place, and a chart the page could not draw, so nothing half-formed reaches the page. The paste lands where the caret is, so name the point with at when the page is not empty.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        source: stringArg('the JSON file describing the paper'),
+        tabId: stringArg('the tab to paste the paper into'),
+        at: {
+          type: 'object',
+          description: 'where to put the caret before the paste, in CSS pixels',
+          properties: {
+            x: numberArg('x inside the viewport'),
+            y: numberArg('y inside the viewport')
+          }
+        }
+      },
+      required: [
+        'source',
+        'tabId'
+      ]
+    }
+  },
+  {
     name: 'report_build',
     description: 'Turn a sheet exported to CSV into a report plan whose every figure names the column and the exact rows it came from, recheck the plan against those rows, and write it beside the source. Refuses a row outside the requested period, a value that is not money, a missing column, and a figure that disagrees with its source - so a wrong number stops the report instead of reaching a client. No browser is touched: month-end reports must not depend on a tab being open.',
     inputSchema: {

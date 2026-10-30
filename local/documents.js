@@ -329,9 +329,15 @@ export function buildDocument({ doc } = {}) {
           rows: normalized.source.rows
         }
       });
+
+      // WHY THE CHART KIND IS KEPT BESIDE THE BLOCK KIND.
+      // The block says what the block is, and the chart says what shape it is.
+      // A page that draws the chart needs the second one, and a plan that dropped it could only be drawn as a guess.
+
       blocks.push({
         ...normalized,
         kind: 'graph',
+        chartKind: normalized.kind,
         section: sectionIndex
       });
     });

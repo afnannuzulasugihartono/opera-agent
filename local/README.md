@@ -100,7 +100,7 @@ Point a client at it:
 
 ## Tools
 
-The server advertises 39 tools; `guide()` returns them as tasks rather than a list.
+The server advertises 40 tools; `guide()` returns them as tasks rather than a list.
 
 `browser_status`, `focus_window`, `dialog_state`, `dialog_type`, `dialog_press`,
 `list_tabs`, `open_url`, `close_tab`, `read_page`, `find_elements`, `click`,
@@ -108,7 +108,7 @@ The server advertises 39 tools; `guide()` returns them as tasks rather than a li
 `append`, `stream_keys`, `browser_burst`, `wait_for`, `ask_page`, `wait_for_row`,
 `wait_still`, `caret_line`, `upload`, `drop_file`, `intercept_file_chooser`, `download`,
 `list_menus`, `open_menu`, `guide`, `capture_page`, `ax_snapshot`, `statement_card`,
-`statement_delivered`, `report_build`, `document_build`.
+`statement_delivered`, `report_build`, `document_build`, `document_write`.
 
 `browser_burst` runs 1-8 dependent steps on one tab in a single call and reads the page
 once at the end; the first failure stops the burst and keeps the steps that finished.
@@ -122,6 +122,12 @@ is the deliberate look at every row.
 disk — a `.crdownload` is not a result. The last two tools are the statement job: a
 card that names the file before the drive, and a delivery that verifies it and adds the
 client-month to a manifest. See [`docs/jobs/statements.md`](../docs/jobs/statements.md).
+
+`document_build` plans a paper on disk and rechecks every figure against its table;
+`document_write` carries that paper into a live tab — it draws each graph as a picture,
+puts the styled paper on the machine clipboard, pastes it at the caret, and asks the
+page which headings it now holds, so a paste that did not land is reported rather than
+assumed.
 
 ## Recipes, measured
 

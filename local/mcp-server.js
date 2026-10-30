@@ -34,6 +34,7 @@ import {
 } from './statements.js';
 import { reportFromFile } from './reports.js';
 import { documentFromFile } from './documents.js';
+import { writeDocumentToPage } from './doc-write.js';
 import {
   BURST_INPUT_ACTIONS,
   normalizeBurst,
@@ -615,6 +616,12 @@ const windowMatch = async (
           result: await driver.ask(method, askParams(args))
         });
       }
+      case 'document_write':
+        return asText(await writeDocumentToPage({
+          source: args.source,
+          session: driver,
+          at: args.at ?? null
+        }));
       case 'wait_for_row':
         return afterAction(driver, await driver.waitForRow({
           role: args.role,
