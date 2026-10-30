@@ -44,7 +44,7 @@ export const PUBLIC_SURFACE_LOCKS = Object.freeze([
   ],
   [
     '../supabase/functions/opera-agent-mcp/index.ts',
-    '6d838f75b925934b3c7c9e36456ee3d33fc58a37'
+    '9a53a99306b95462118f4fa1acb1b4d41038c061'
   ],
   [
     '../supabase/functions/opera-agent-mcp/tools.ts',

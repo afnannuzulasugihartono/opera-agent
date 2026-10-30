@@ -19,6 +19,7 @@ import {
   sealVmProgram
 } from "../_shared/seal-vm-program.js";
 import { compileAdhocGraph } from "../_shared/adhoc-compile.js";
+import { validateTaskInput } from "../_shared/task-validate.js";
 import { registerTools } from "./tools.ts";
 
 // WHY THE DEPS ARE TYPED FROM THE FUNCTIONS THEMSELVES.
@@ -515,6 +516,7 @@ async function runCommand(
   timeoutMs = 12000,
   deviceName: string = DEVICE_NAME,
   provider = "",
+  requestId: string | null = null,
   progress: (() => ProgressEmitter | null) | null = () => progressScope.getStore() ?? null
 ) {
   const boundedTimeout = Math.max(500, Math.min(30000, timeoutMs));
@@ -524,7 +526,7 @@ async function runCommand(
     p_params: params,
     p_timeout_ms: boundedTimeout,
     p_device_name: deviceName,
-    p_request_id: null,
+    p_request_id: requestId,
     p_provider: provider || null
   });
   const enqueuedAt = edgeClock();
@@ -762,7 +764,35 @@ async function runTask(
   deviceName: string = DEVICE_NAME,
   provider = ""
 ) {
-  throw new CommandFailure("NOT_IMPLEMENTED", "run_task lands in the next task of docs/superpowers/plans/2026-10-30-run-task.md.");
+  const checked = validateTaskInput({
+    task,
+    tabId,
+    confirm,
+    requestId,
+    timeoutMs
+  });
+  if (!checked.ok) throw new CommandFailure(checked.code, checked.message);
+  const value = checked.value;
+
+  let lessons: unknown[] = [];
+  try {
+    const recalled = await rpc("opera_skill_recall", {
+      p_query: value.task.slice(0, 500),
+      p_site: "",
+      p_limit: 5
+    });
+    if (recalled?.ok && Array.isArray(recalled.skills)) lessons = recalled.skills;
+  } catch {}
+
+  const waitMs = Math.max(1000, Math.min(120000, value.timeoutMs));
+  const answer = await runCommand("task.run", {
+    task: value.task,
+    tabId: value.tabId,
+    confirm: value.confirm,
+    requestId: value.requestId,
+    lessons
+  }, waitMs, deviceName, provider, value.requestId);
+  return answer;
 }
 
 async function runAdhoc(
