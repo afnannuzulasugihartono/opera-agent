@@ -89,6 +89,7 @@ Local green is not acceptance. The acceptance rule is in [`AGENTS.md`](AGENTS.md
 | What is a delivery worth, and what may an agent hand to its own user? | [`docs/product/monetization.md`](docs/product/monetization.md) |
 | What did a release contain, and why? | [`CHANGELOG.md`](CHANGELOG.md) and [`docs/releases/`](docs/releases/) |
 | What design references informed this? | [`docs/design-references.md`](docs/design-references.md) |
+| What did reverse engineering Playwright and Browser Use teach us? | [`docs/reverse-engineering-browser-agents.md`](docs/reverse-engineering-browser-agents.md) |
 | What is the product aiming at? | [`docs/uec-north-star.md`](docs/uec-north-star.md) |
 
 A design spec under [`docs/superpowers/specs/`](docs/superpowers/specs/) records why a
