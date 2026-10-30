@@ -70,10 +70,9 @@ What is true now, and what to do next. Cap 150 lines. Spent detail: git history.
   characters with no caret touched, against the bridge's 1.875 ms. A canvas caret is not in
   the DOM, so `caretRestored` is never claimed; `tests/no-site-code.test.mjs` fails the
   build if a site name or a `.kix-` selector returns.
-- **The plan path exists; the model call does not.** The model composes a plan once and the
-  device runs it locally; [`goal-plan.js`](../extension/lib/goal-plan.js) shares the allowlist.
+- **`run_task` ships the natural-language task door** (spec + plan under `superpowers/`): one MCP tool takes a task, the device compiles it with one device-local model call, the server executes the sealed artifact via the existing VM/adhoc lanes, verifies, saves a capped lesson. 35 cloud tools now.
 - **Cloudflare Pages at `opera-agent.pages.dev` serves the site; Vercel is the backup**, and
-  `vercel.app` stays in CORS. Every `style-src` allows `'self'`, and the features page counts
+  `vercel.app` stays in CORS; every `style-src` allows `'self'` and the features page counts
   35 tools, 31 primitives and six permissions, against the code.
 - **A deploy is a dispatch, not a push.** [`deploy-site.yml`](../.github/workflows/deploy-site.yml)
   publishes `landing/` with `wrangler pages deploy` after the unit and syntax gates; a push
