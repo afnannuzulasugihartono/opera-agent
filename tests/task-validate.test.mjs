@@ -1,6 +1,6 @@
 // @last-edited: 2026-10-30 UTC+7.
 // @title: task-validate — pure input validation for the run_task tool, shared by the edge function and tests.
-// @state: one validator: task string 1..1200, requestId idempotency pattern, timeout clamp 1000..120000, confirm boolean.
+// @state: one validator: task string 1..1200, requestId idempotency pattern, timeout clamp 1000..30000, confirm boolean.
 // @dependencies: none.
 
 import test from 'node:test';
@@ -26,6 +26,15 @@ test('run_task server execution: the compiled artifact is executed through the e
   assert.match(mcpSource, /verifyCommandFor\(artifact\.verify/, 'the verify clause becomes one allowlisted read command');
   assert.match(mcpSource, /lessonFromRun\(\{[\s\S]*?opera_skill_save/, 'a finished run saves one capped lesson');
   assert.match(mcpSource, /TASK_NOT_CONFIRMED/, 'a write artifact without confirm is refused server-side too');
+});
+
+test('run_task review fixes: replay short-circuits, ok gates on status, unknown verify fails closed, lesson only on success', () => {
+  assert.match(mcpSource, /reused: Boolean\(queued\.reused\)/, 'runCommand surfaces the enqueue replay marker');
+  assert.match(mcpSource, /if \(compiled\?\.reused\)/, 'a replayed requestId never re-executes the artifact');
+  assert.match(mcpSource, /ok: status === "completed" && verify\.ok/, 'ok requires a completed run AND a passed verify');
+  assert.match(mcpSource, /if \(runId && status === "running"\) status = "timeout"/, 'a poll that expires reports timeout, not completed');
+  assert.match(mcpSource, /unknown verify kind/, 'an unmappable verify clause fails closed');
+  assert.match(mcpSource, /if \(status === "completed" && verify\.ok\) \{[\s\S]*?opera_skill_save/, 'the lesson is saved only on a successful verified run');
 });
 
 test('run_task input: a well-formed task is accepted with defaults applied', () => {
@@ -70,7 +79,7 @@ test('run_task input: a malformed requestId is refused, never silently ignored',
   assert.equal(validateTaskInput({ task: 't' }).code, 'INVALID_REQUEST');
 });
 
-test('run_task input: timeout is clamped to 1000..120000 and defaults to 60000', () => {
+test('run_task input: timeout is clamped to 1000..30000 (the command await bound) and defaults to 60000', () => {
   assert.equal(validateTaskInput({
     task: 't',
     requestId: 'r',
@@ -80,7 +89,7 @@ test('run_task input: timeout is clamped to 1000..120000 and defaults to 60000',
     task: 't',
     requestId: 'r',
     timeoutMs: 999999
-  }).value.timeoutMs, 120000);
+  }).value.timeoutMs, 30000);
   assert.equal(validateTaskInput({
     task: 't',
     requestId: 'r',

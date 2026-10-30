@@ -8,7 +8,11 @@
 
 export const TASK_MAX_CHARS = 1200;
 export const TASK_TIMEOUT_MIN_MS = 1000;
-export const TASK_TIMEOUT_MAX_MS = 120000;
+
+// WHY 30000 AND NOT 120000.
+// The task.run compile hop is awaited through runCommand, which clamps every command to 30 s, so advertising 120 s promised a timeout the transport never delivers; the execution lanes (VM host, adhoc runner) carry their own budgets after the compile hop returns.
+
+export const TASK_TIMEOUT_MAX_MS = 30000;
 export const TASK_TIMEOUT_DEFAULT_MS = 60000;
 
 const REQUEST_ID_RE = /^[A-Za-z0-9_-]{1,100}$/;

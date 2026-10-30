@@ -75,16 +75,15 @@ export async function runTaskCommand(
   });
   if (!gated.ok) throw failure(gated.code, gated.message);
 
-  log.debug('TASK_COMPILED', {
-    mode: gated.mode,
-    verify: gated.verify ?? null
-  });
+  log.debug('TASK_COMPILED', `mode=${gated.mode} verify=${JSON.stringify(gated.verify ?? null)}`);
+
+  // WHY THE PAGE OBSERVATION DOES NOT TRAVEL BACK.
+  // The prompt is capped at 1200 chars of page text plus 40 elements before it reaches the model, but the command result is persisted server-side, so the raw observation must not ride back with the artifact; the server only needs the compiled artifact and the verify clause.
 
   return {
     ok: true,
     mode: gated.mode,
     ...(gated.mode === 'read' ? { program: gated.program } : { graph: gated.graph }),
-    verify: gated.verify ?? null,
-    page
+    verify: gated.verify ?? null
   };
 }

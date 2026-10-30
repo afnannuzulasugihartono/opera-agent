@@ -22,6 +22,11 @@ const VERIFY_KINDS = new Set([
   'ref'
 ]);
 
+// WHY THE LESSONS BLOCK IS CAPPED.
+// Skill memory is shared across accounts, so recalled lesson text is third-party prompt surface; a cap keeps five lessons from pushing the prompt far past the goal's own cap.
+
+const LESSONS_BLOCK_MAX_CHARS = 2000;
+
 /**
  * Parse the model's run_task reply text into a validated reply object.
  * @param {string} text The raw model reply.
@@ -109,8 +114,11 @@ export function buildTaskPrompt({
     .map((lesson) => `- task: ${String(lesson.task ?? '')}\n  lesson: ${String(lesson.lesson ?? '')}${lesson.pitfalls ? `\n  pitfalls: ${
       String(lesson.pitfalls)
     }` : ''}`);
-  const user = lessonLines.length
-    ? `${request.user}\n\n<lessons>\n${lessonLines.join('\n')}\n</lessons>`
+  const lessonsBlock = lessonLines.length
+    ? `<lessons>\n${lessonLines.join('\n')}\n</lessons>`.slice(0, LESSONS_BLOCK_MAX_CHARS)
+    : '';
+  const user = lessonsBlock
+    ? `${request.user}\n\n${lessonsBlock}`
     : request.user;
   return {
     ok: true,

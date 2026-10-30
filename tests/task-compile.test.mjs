@@ -89,6 +89,34 @@ test('buildTaskPrompt: lessons are appended to the user message and the goal sta
   assert.match(prompt.user, /click the menu first/);
 });
 
+test('buildTaskPrompt: the lessons block is capped even when recalled lessons are long', () => {
+  const longLesson = 'x'.repeat(5000);
+  const prompt = buildTaskPrompt({
+    task: 't',
+    lessons: [
+      {
+        task: 'a',
+        lesson: longLesson
+      },
+      {
+        task: 'b',
+        lesson: longLesson
+      },
+      {
+        task: 'c',
+        lesson: longLesson
+      }
+    ],
+    page: {
+      url: 'https://x',
+      text: '',
+      elements: []
+    }
+  });
+  const block = /<lessons>\n([\s\S]*?)<\/lessons>/.exec(prompt.user)?.[1] ?? '';
+  assert.ok(block.length <= 2000, `lessons block is ${block.length} chars, cap is 2000`);
+});
+
 test('gateTaskReply: a read program is gated through compileGoalPlan and passes with a target', () => {
   const parsed = parseTaskReply(JSON.stringify({
     mode: 'read',
@@ -129,6 +157,44 @@ test('gateTaskReply: a read program that sets an owned field is refused', () => 
   });
   assert.equal(gated.ok, false);
   assert.match(gated.code, /PLAN_/);
+});
+
+test('gateTaskReply: a mixed program whose FIRST command is allowed but a later one is not is refused', () => {
+  const mixed = {
+    root: {
+      type: 'SEQUENCE',
+      children: [
+        {
+          type: 'COMMAND',
+          method: 'page.read',
+          arguments: {},
+          resultBinding: 'page'
+        },
+        {
+          type: 'COMMAND',
+          method: 'page.eval',
+          arguments: { code: '1+1' },
+          resultBinding: 'x'
+        }
+      ]
+    }
+  };
+  const parsed = parseTaskReply(JSON.stringify({
+    mode: 'read',
+    program: mixed,
+    verify: null
+  }));
+  const gated = gateTaskReply(parsed, {
+    confirm: false,
+    target: {
+      device: 'opera',
+      tabId: 1
+    },
+    budgets: { browserCommandLeavesPerRun: 12 }
+  });
+  assert.equal(gated.ok, false);
+  assert.equal(gated.code, 'PLAN_METHOD_NOT_ALLOWED');
+  assert.match(gated.message, /page\.eval/);
 });
 
 test('gateTaskReply: a write reply without confirm is refused and nothing is returned for registration', () => {

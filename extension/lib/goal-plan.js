@@ -193,9 +193,10 @@ export function compileGoalPlan(
     return refuse('PLAN_TOO_MANY_COMMANDS', `The plan runs ${counted.commands} browser commands; the budget is ${maxCommands}.`);
   }
 
-  const method = findCommandMethod(parsed.root);
-  if (method && !ALLOWED_METHODS.includes(method)) {
-    return refuse('PLAN_METHOD_NOT_ALLOWED', `${method} is not one of the ${ALLOWED_METHODS.length} allowlisted primitives.`);
+  const methods = findCommandMethods(parsed.root);
+  const disallowed = methods.find((method) => !ALLOWED_METHODS.includes(method));
+  if (disallowed) {
+    return refuse('PLAN_METHOD_NOT_ALLOWED', `${disallowed} is not one of the ${ALLOWED_METHODS.length} allowlisted primitives.`);
   }
 
   return {
@@ -236,17 +237,17 @@ function findOwnedField(
   return null;
 }
 
-function findCommandMethod(root) {
-  let found = null;
+// WHY EVERY COMMAND NODE IS CHECKED, NOT THE FIRST.
+// A program whose first command is a read and whose second is a write passed the old single-method check, so the gate would wave through a mixed program on the strength of its first node; collecting all methods costs nothing and refuses the whole program.
+
+function findCommandMethods(root) {
+  const found = [];
   const visit = (
     node,
     depth = 1
   ) => {
-    if (found || node === null || typeof node !== 'object' || depth > 64) return;
-    if (node.type === 'COMMAND' && typeof node.method === 'string') {
-      found = node.method;
-      return;
-    }
+    if (node === null || typeof node !== 'object' || depth > 64) return;
+    if (node.type === 'COMMAND' && typeof node.method === 'string') found.push(node.method);
     for (const [key, value] of Object.entries(node)) {
       if (key === 'arguments' || key === 'valueSpec' || key === 'value') continue;
       if (Array.isArray(value)) value.forEach((item) => visit(item, depth + 1));

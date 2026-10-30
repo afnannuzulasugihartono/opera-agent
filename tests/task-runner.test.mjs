@@ -86,7 +86,7 @@ test('run_task read lane: exactly one model call and the sealed program comes ba
     kind: 'text',
     value: 'Done'
   });
-  assert.ok(result.page, 'the capped observation travels with the artifact');
+  assert.equal(result.page, undefined, 'the raw page observation never travels back to the server with the artifact');
 });
 
 test('run_task refuses before any network call when the model is not configured', async () => {

@@ -596,6 +596,7 @@ async function runCommand(
     ok: true,
     commandId: completed.commandId,
     status: completed.status,
+    reused: Boolean(queued.reused),
     result: completed.result,
     timing: {
       ...completed.timing,
@@ -800,6 +801,26 @@ async function runTask(
     requestId: value.requestId,
     lessons
   }, waitMs, deviceName, provider, value.requestId);
+  if (compiled?.reused) {
+
+    // WHY A REPLAYED KEY SHORT-CIRCUITS.
+    // opera_enqueue returns reused:true for a request_id it has already queued, and the first call executed the task; re-running the artifact here would execute a write graph twice, which is exactly what the idempotency key exists to prevent.
+
+    return {
+      ok: true,
+      replayed: true,
+      mode: (compiled.result as {
+        mode?: string
+      })?.mode ?? "read",
+      runId: null,
+      trace: [],
+      verify: {
+        ok: true,
+        evidence: 'replayed requestId: the first call executed this task'
+      },
+      lessonSaved: false
+    };
+  }
   const artifact = compiled?.result;
   if (!artifact || typeof artifact !== "object" || artifact.ok !== true || !artifact.mode) {
     throw new CommandFailure("TASK_COMPILE_FAILED", "The device did not return a compiled task.");
@@ -810,7 +831,7 @@ async function runTask(
 
   let runId: string | null = null;
   let trace: unknown[] = [];
-  let status = "completed";
+  let status = "running";
   if (artifact.mode === "read") {
     const sealed = await sealVmProgram(artifact.program, caller);
     const enqueued = await callVmHost("enqueue", {
@@ -828,7 +849,7 @@ async function runTask(
       }, deviceName, provider, caller);
       const currentStatus = String((current as {
         status?: unknown
-      })?.status ?? "");
+      })?.status ?? "").toLowerCase();
       if (currentStatus && ![
         "queued",
         "running"
@@ -837,7 +858,8 @@ async function runTask(
         break;
       }
     }
-    if (runId) {
+    if (runId && status === "running") status = "timeout";
+    if (runId && status === "completed") {
       const final = await callVmHost("result", {
         runId
       }, deviceName, provider, caller);
@@ -855,18 +877,27 @@ async function runTask(
       tabId: value.tabId
     }, waitMs, deviceName, provider);
     runId = run.runId ?? null;
-    status = run.status;
+    status = String(run.status ?? "").toLowerCase();
     trace = Array.isArray(run.result?.trace) ? run.result.trace : [];
   }
 
-  const verifyCommand = verifyCommandFor(artifact.verify ?? null, value.tabId);
+  const verifyCommand = artifact.verify ? verifyCommandFor(artifact.verify, value.tabId) : null;
   let verify: {
     ok: boolean; evidence: unknown
   } = {
     ok: true,
     evidence: null
   };
-  if (verifyCommand) {
+  if (artifact.verify && !verifyCommand) {
+
+    // WHY AN UNKNOWN VERIFY KIND FAILS CLOSED.
+    // The device parser refuses unknown kinds, so this is a backstop: a clause the server cannot map to an allowlisted read command must never count as "verified".
+
+    verify = {
+      ok: false,
+      evidence: `unknown verify kind: ${String(artifact.verify?.kind ?? '')}`
+    };
+  } else if (verifyCommand) {
     try {
       const read = await runCommand(verifyCommand.method, verifyCommand.params, 8000, deviceName, provider);
       const result = read?.result ?? {};
@@ -885,24 +916,29 @@ async function runTask(
     }
   }
 
+  // WHY THE LESSON IS SAVED ONLY ON A SUCCESSFUL RUN.
+  // A failed run's pitfall text embeds node `why` strings that can be page-derived, and the plan's contract is that a failed run does not save; success lessons carry what worked.
+
   let lessonSaved = false;
-  try {
-    const lesson = lessonFromRun({
-      task: value.task,
-      trace,
-      verify
-    });
-    const saved = await rpc("opera_skill_save", {
-      p_task: lesson.task,
-      p_site: "",
-      p_lesson: lesson.lesson,
-      p_pitfalls: lesson.pitfalls
-    });
-    lessonSaved = Boolean(saved?.ok);
-  } catch {}
+  if (status === "completed" && verify.ok) {
+    try {
+      const lesson = lessonFromRun({
+        task: value.task,
+        trace,
+        verify
+      });
+      const saved = await rpc("opera_skill_save", {
+        p_task: lesson.task,
+        p_site: "",
+        p_lesson: lesson.lesson,
+        p_pitfalls: lesson.pitfalls
+      });
+      lessonSaved = Boolean(saved?.ok);
+    } catch {}
+  }
 
   return {
-    ok: verify.ok,
+    ok: status === "completed" && verify.ok,
     status,
     mode: artifact.mode,
     runId,

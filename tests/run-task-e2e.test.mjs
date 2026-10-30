@@ -5,12 +5,15 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 import { validateTaskInput } from '../supabase/functions/_shared/task-validate.js';
 import {
   verifyCommandFor,
   lessonFromRun
 } from '../supabase/functions/_shared/task-run.js';
 import { runTaskCommand } from '../extension/lib/task-runner.js';
+
+const mcpSource = fs.readFileSync(new URL('../supabase/functions/opera-agent-mcp/index.ts', import.meta.url), 'utf8');
 
 const READ_PROGRAM = {
   root: {
@@ -97,16 +100,9 @@ test('e2e: tool input validates, the device compiles once, verify maps to a read
   assert.ok(lesson.lesson.length <= 4000);
 });
 
-test('e2e: the same requestId twice produces the same key, so the enqueue can dedupe', () => {
-  const first = validateTaskInput({
-    task: 't',
-    requestId: 'dup-1'
-  });
-  const second = validateTaskInput({
-    task: 't',
-    requestId: 'dup-1'
-  });
-  assert.equal(first.value.requestId, second.value.requestId);
+test('e2e: a replayed requestId short-circuits execution (opera_enqueue returns reused:true)', () => {
+  assert.match(mcpSource, /reused: Boolean\(queued\.reused\)/, 'runCommand surfaces the enqueue replay marker');
+  assert.match(mcpSource, /if \(compiled\?\.reused\)[\s\S]*?replayed: true/, 'runTask returns replayed:true and never re-executes the artifact');
 });
 
 test('e2e: a write artifact without confirm is refused before any execution helper runs', async () => {

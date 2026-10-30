@@ -157,7 +157,7 @@ const FROZEN_TOOL_SCHEMAS = Object.freeze({
   statement_manifest: '7f2ed6ebc3c8d007',
   statement_deliver: '9d430e6ed2f9bc8e',
   invoice_create: '32805bba02ebc291',
-  run_task: '1487fc10c40aba19',
+  run_task: 'be0adbd86239dba4',
 });
 
 const PLAN_DOOR_CHANGED_TOOL = 'invoice_create';
@@ -450,7 +450,7 @@ test('run_task is registered with the natural-language task schema', () => {
   assert.match(block, /requestId: z\.string\(\)\.min\(1\)\.max\(100\)\.regex\(\/\^\[A-Za-z0-9_-\]\{1,100\}\$\/\)/, 'requestId is the idempotency key');
   assert.match(block, /confirm: z\.boolean\(\)\.optional\(\)/, 'confirm gates write tasks');
   assert.match(block, /tabId: tabIdSchema\.optional\(\)/, 'tabId defaults to the driven tab');
-  assert.match(block, /timeoutMs: z\.number\(\)\.int\(\)\.min\(1000\)\.max\(120000\)\.optional\(\)/, 'timeout is clamped to 1000..120000');
+  assert.match(block, /timeoutMs: z\.number\(\)\.int\(\)\.min\(1000\)\.max\(30000\)\.optional\(\)/, 'timeout is clamped to 1000..30000 (the command await bound)');
   assert.match(block, /runTask\(/, 'the handler delegates to runTask');
 });
 

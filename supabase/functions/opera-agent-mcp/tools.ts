@@ -344,8 +344,8 @@ export function registerTools(
         .describe("Required true when the task writes (click, fill, key, focus). Read-only tasks ignore it."),
       requestId: z.string().min(1).max(100).regex(/^[A-Za-z0-9_-]{1,100}$/)
         .describe("Idempotency key; a malformed key is rejected so replay protection is never silent."),
-      timeoutMs: z.number().int().min(1000).max(120000).optional()
-        .describe("Task timeout in milliseconds; defaults to 60000.")
+      timeoutMs: z.number().int().min(1000).max(30000).optional()
+        .describe("Task timeout in milliseconds for the compile hop; defaults to 60000, capped at 30000 because that is the command await bound.")
     },
     annotations: {
       readOnlyHint: false,
