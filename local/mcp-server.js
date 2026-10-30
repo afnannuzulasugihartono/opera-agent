@@ -408,6 +408,27 @@ export function createMcpServer(context) {
     return seen.names;
   };
 
+  // WHY THE DIALOG ROADS ARE GATED ON A FRESH STATE READ.
+  // A dialog belongs to no tab and no page can see it: the only thing that says what its buttons are is dialog_state, and pressing a button nobody read is how a "Delete" gets clicked by a guess.
+  // So a press or a type is allowed only from a state read a moment ago, and a press only on a button name that state carried.
+
+  const dialogReadTtlMs = () => {
+    const ttl = Number(process.env.OPERA_DIALOG_STATE_TTL_MS);
+    return Number.isFinite(ttl) && ttl > 0 ? ttl : 60000;
+  };
+  let dialogRead = null;
+  const rememberDialogRead = (state) => {
+    if (state && state.open === true) {
+      dialogRead = {
+        at: Date.now(),
+        buttons: new Set((Array.isArray(state.buttons) ? state.buttons : [])
+          .map((button) => String(button ?? '').trim().toLowerCase())
+          .filter((button) => button !== ''))
+      };
+    }
+  };
+  const freshDialogRead = () => (dialogRead && Date.now() - dialogRead.at <= dialogReadTtlMs() ? dialogRead : null);
+
   const driverFor = async (tabId) => {
     if (!tabId) return fallback;
 
@@ -566,12 +587,28 @@ const windowMatch = async (
       }
       case 'focus_window':
         return asText(await driver.focusWindow(args.match ?? ''));
-      case 'dialog_state':
-        return asText(await driver.dialogState());
-      case 'dialog_type':
+      case 'dialog_state': {
+        const state = await driver.dialogState();
+        rememberDialogRead(state);
+        return asText(state);
+      }
+      case 'dialog_type': {
+        if (!freshDialogRead()) {
+          throw new Error('dialog_type refuses to type into a dialog nobody read: dialog_state() first, within the last minute.');
+        }
         return asText(await driver.dialogType(args.text ?? ''));
-      case 'dialog_press':
+      }
+      case 'dialog_press': {
+        const read = freshDialogRead();
+        const name = String(args.name ?? '').trim().toLowerCase();
+        if (!read) {
+          throw new Error('dialog_press refuses to press a button nobody read: dialog_state() first, within the last minute.');
+        }
+        if (!read.buttons.has(name)) {
+          throw new Error(`dialog_press refuses "${args.name}": the dialog read a moment ago has ${[...read.buttons].slice(0, 12).join(' | ') || '(no buttons)'}. dialog_state() again if it changed, then press one of those.`);
+        }
         return asText(await driver.dialogPress(args.name ?? ''));
+      }
       case 'list_tabs':
         return asText(await driver.tabs());
       case 'open_url':

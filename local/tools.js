@@ -103,7 +103,7 @@ export const TOOLS = Object.freeze([
   },
   {
     name: 'dialog_type',
-    description: 'Type text into the open operating system dialog\'s field - a full path into a file picker is the one that matters. This is outside the browser: the text goes to the dialog itself, not to a page.',
+    description: 'Type text into the open operating system dialog\'s field - a full path into a file picker is the one that matters. This is outside the browser: the text goes to the dialog itself, not to a page. Gated on a fresh read: dialog_state() must have answered open within the last minute, because typing into a dialog nobody read is how a path lands in the wrong field.',
     inputSchema: {
       type: 'object',
       properties: { text: stringArg('text to put in the dialog field, usually a full path') },
@@ -112,7 +112,7 @@ export const TOOLS = Object.freeze([
   },
   {
     name: 'dialog_press',
-    description: "Press a button on the open operating system dialog by name - \"Open\", \"Save\", \"Cancel\". A page that opened a file picker cannot be answered from the browser; this answers it from the machine. Answer with the button it found, so a call that pressed the wrong thing says so.",
+    description: 'Press a button on the open operating system dialog by name - "Open", "Save", "Cancel". A page that opened a file picker cannot be answered from the browser; this answers it from the machine. Gated on a fresh read: dialog_state() must have answered open within the last minute, and the button must be one that state named - a guessed button is refused with the buttons the dialog does carry, because a wrong press on a Delete or Discard dialog cannot be undone. Answer with the button it found, so a call that pressed the wrong thing says so.',
     inputSchema: {
       type: 'object',
       properties: { name: stringArg('button on the dialog, e.g. Open or Cancel') },

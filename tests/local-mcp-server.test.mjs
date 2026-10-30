@@ -173,6 +173,38 @@ function fakeDriver() {
         depth: 0
       }
     ],
+    dialogState: async () => {
+      calls.push(['dialogState']);
+      return {
+        open: true,
+        platform: 'win32',
+        title: 'Open file',
+        buttons: [
+          'Open',
+          'Cancel'
+        ]
+      };
+    },
+    dialogType: async (text) => {
+      calls.push([
+        'dialogType',
+        text
+      ]);
+      return {
+        open: true,
+        typed: text
+      };
+    },
+    dialogPress: async (name) => {
+      calls.push([
+        'dialogPress',
+        name
+      ]);
+      return {
+        open: false,
+        pressed: name
+      };
+    },
     openMenu: async (opts) => {
       calls.push([
         'openMenu',
@@ -1352,6 +1384,43 @@ test('a map read on another tab does not open this one', async () => {
 
   assert.ok(res.error);
   assert.match(res.error.message, /no menu map/);
+});
+
+// WHY THE DIALOG ROADS ARE GATED THE SAME WAY.
+// A dialog belongs to no tab, no page can see it, and the only read that names its buttons is dialog_state - so a press nobody read is a guess, and a guessed Delete cannot be undone.
+
+test('dialog_press refuses a button when no dialog was read, and names the road', async () => {
+  const c = ctx();
+  const server = createMcpServer(c);
+  const res = await callMenu(server, 'dialog_press', { name: 'Open' });
+
+  assert.ok(res.error);
+  assert.match(res.error.message, /dialog_state\(\)/);
+  assert.ok(!c.driver.calls.some(([name]) => name === 'dialogPress'), 'nothing was pressed');
+});
+
+test('dialog_press refuses a button the fresh state does not carry', async () => {
+  const c = ctx();
+  const server = createMcpServer(c);
+  await callMenu(server, 'dialog_state', {});
+  const res = await callMenu(server, 'dialog_press', { name: 'Delete' });
+
+  assert.ok(res.error);
+  assert.match(res.error.message, /open \| cancel/, 'the refusal lists the buttons the dialog has');
+  assert.ok(!c.driver.calls.some(([name]) => name === 'dialogPress'), 'the guessed button was never pressed');
+});
+
+test('dialog_press and dialog_type work from a fresh state that names the button', async () => {
+  const c = ctx();
+  const server = createMcpServer(c);
+  await callMenu(server, 'dialog_state', {});
+  const press = await callMenu(server, 'dialog_press', { name: 'Open' });
+  const typed = await callMenu(server, 'dialog_type', { text: 'C:\\paper.json' });
+
+  assert.ok(press.result, `a mapped button is pressed: ${press.error?.message ?? ''}`);
+  assert.ok(typed.result, `typing is allowed from a fresh state: ${typed.error?.message ?? ''}`);
+  assert.ok(c.driver.calls.some(([name]) => name === 'dialogPress'));
+  assert.ok(c.driver.calls.some(([name]) => name === 'dialogType'));
 });
 
 test('an unknown tool is an error, not a crash, because a model will ask for one', async () => {
