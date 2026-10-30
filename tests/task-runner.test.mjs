@@ -1,5 +1,5 @@
 // @last-edited: 2026-10-30 UTC+7.
-// @title: task-runner — the device-side run_task command: validate, one model call, gate, execute, verify.
+// @title: task-runner — the device-side run_task command: validate, one model call, gate, return the compiled artifact.
 // @state: 6 locks; codes are stable so the tool can switch on them.
 // @dependencies: node:test, strict, task-runner.
 
@@ -35,25 +35,10 @@ const reply = (body) => async () => ({
   json: async () => ({ choices: [{ message: { content: JSON.stringify(body) } }] })
 });
 
-const taskDeps = (overrides = {}) => ({
-  observePage: async () => ({
-    url: 'https://x',
-    text: 'hi',
-    elements: []
-  }),
-  executeProgram: async () => ({ trace: [{
-    node: 0,
-    ok: true
-  }] }),
-  verifyTask: async () => ({
-    ok: true,
-    evidence: 'found'
-  }),
-  runAdhoc: async () => ({ trace: [{
-    node: 0,
-    ok: true
-  }] }),
-  ...overrides
+const observePage = async () => ({
+  url: 'https://x',
+  text: 'hi',
+  elements: []
 });
 
 test('run_task rejects a non-string task before any model call', async () => {
@@ -70,7 +55,7 @@ test('run_task rejects a non-string task before any model call', async () => {
   assert.equal(called, 0);
 });
 
-test('run_task read lane: one model call, gate, execute, verify, and a per-node trace comes back', async () => {
+test('run_task read lane: exactly one model call and the sealed program comes back for the server to execute', async () => {
   let calls = 0;
   const fetchImpl = async () => {
     calls += 1;
@@ -91,19 +76,17 @@ test('run_task read lane: one model call, gate, execute, verify, and a per-node 
   }, {
     storage: configuredStorage,
     fetchImpl,
-    taskDeps: taskDeps()
+    observePage
   });
   assert.equal(calls, 1, 'exactly one model call per task');
   assert.equal(result.ok, true);
   assert.equal(result.mode, 'read');
-  assert.deepEqual(result.trace, [{
-    node: 0,
-    ok: true
-  }]);
+  assert.ok(result.program, 'the sealed program is returned');
   assert.deepEqual(result.verify, {
-    ok: true,
-    evidence: 'found'
+    kind: 'text',
+    value: 'Done'
   });
+  assert.ok(result.page, 'the capped observation travels with the artifact');
 });
 
 test('run_task refuses before any network call when the model is not configured', async () => {
@@ -117,15 +100,14 @@ test('run_task refuses before any network call when the model is not configured'
       fetchImpl: async () => {
         called += 1;
       },
-      taskDeps: taskDeps()
+      observePage
     }),
     (error) => error.code === 'MODEL_NOT_CONFIGURED'
   );
   assert.equal(called, 0);
 });
 
-test('run_task refuses a write reply without confirm and never registers anything', async () => {
-  let adhoc = 0;
+test('run_task refuses a write reply without confirm and returns no graph', async () => {
   const fetchImpl = reply({
     mode: 'write',
     graph: { nodes: [] },
@@ -139,23 +121,20 @@ test('run_task refuses a write reply without confirm and never registers anythin
     }, {
       storage: configuredStorage,
       fetchImpl,
-      taskDeps: taskDeps({ runAdhoc: async () => {
-        adhoc += 1; return {};
-      } })
+      observePage
     }),
     (error) => error.code === 'TASK_NOT_CONFIRMED'
   );
-  assert.equal(adhoc, 0);
 });
 
-test('run_task passes a confirmed write reply to the adhoc lane', async () => {
-  let adhoc = 0;
+test('run_task passes a confirmed write reply through as a graph for the server-side adhoc compiler', async () => {
+  const graph = { nodes: [{
+    type: 'command',
+    method: 'page.read'
+  }] };
   const fetchImpl = reply({
     mode: 'write',
-    graph: { nodes: [{
-      type: 'command',
-      method: 'page.read'
-    }] },
+    graph,
     verify: null
   });
   const result = await runTaskCommand({
@@ -165,21 +144,15 @@ test('run_task passes a confirmed write reply to the adhoc lane', async () => {
   }, {
     storage: configuredStorage,
     fetchImpl,
-    taskDeps: taskDeps({ runAdhoc: async () => {
-      adhoc += 1; return { trace: [{
-        node: 0,
-        ok: true
-      }] };
-    } })
+    observePage
   });
-  assert.equal(adhoc, 1);
   assert.equal(result.mode, 'write');
+  assert.deepEqual(result.graph, graph);
 });
 
-test('run_task returns the compile refusal code and executes nothing when the gate refuses', async () => {
+test('run_task returns the compile refusal code when the gate refuses', async () => {
   const owned = JSON.parse(JSON.stringify(READ_PROGRAM));
   owned.tenantId = 'x';
-  let executed = 0;
   const fetchImpl = reply({
     mode: 'read',
     program: owned,
@@ -192,11 +165,8 @@ test('run_task returns the compile refusal code and executes nothing when the ga
     }, {
       storage: configuredStorage,
       fetchImpl,
-      taskDeps: taskDeps({ executeProgram: async () => {
-        executed += 1; return {};
-      } })
+      observePage
     }),
     (error) => error.code === 'PLAN_SETS_OWNED_FIELD'
   );
-  assert.equal(executed, 0);
 });

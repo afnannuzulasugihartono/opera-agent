@@ -362,7 +362,7 @@ export function registerTools(
   }: {
     task: string; tabId?: number; confirm?: boolean; requestId: string; timeoutMs?: number
   }) =>
-    runTask(task, tabId, confirm, requestId, timeoutMs, deviceName, provider).then(textResult).catch(toolError));
+    runTask(task, tabId, confirm, requestId, timeoutMs, deviceName, provider, caller).then(textResult).catch(toolError));
 
   server.registerTool("skill_save", {
     title: "Save skill lesson",

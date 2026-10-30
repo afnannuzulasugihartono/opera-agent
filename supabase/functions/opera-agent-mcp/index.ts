@@ -20,6 +20,10 @@ import {
 } from "../_shared/seal-vm-program.js";
 import { compileAdhocGraph } from "../_shared/adhoc-compile.js";
 import { validateTaskInput } from "../_shared/task-validate.js";
+import {
+  lessonFromRun,
+  verifyCommandFor
+} from "../_shared/task-run.js";
 import { registerTools } from "./tools.ts";
 
 // WHY THE DEPS ARE TYPED FROM THE FUNCTIONS THEMSELVES.
@@ -762,7 +766,8 @@ async function runTask(
   requestId: unknown,
   timeoutMs: unknown,
   deviceName: string = DEVICE_NAME,
-  provider = ""
+  provider = "",
+  caller: VmCaller | null = null
 ) {
   const checked = validateTaskInput({
     task,
@@ -773,6 +778,9 @@ async function runTask(
   });
   if (!checked.ok) throw new CommandFailure(checked.code, checked.message);
   const value = checked.value;
+  if (!caller) {
+    throw new CommandFailure("UNAUTHORIZED", "run_task needs a user access token, like run_program: the static token names no tenant, so a task run could not be scoped.");
+  }
 
   let lessons: unknown[] = [];
   try {
@@ -785,14 +793,123 @@ async function runTask(
   } catch {}
 
   const waitMs = Math.max(1000, Math.min(120000, value.timeoutMs));
-  const answer = await runCommand("task.run", {
+  const compiled = await runCommand("task.run", {
     task: value.task,
     tabId: value.tabId,
     confirm: value.confirm,
     requestId: value.requestId,
     lessons
   }, waitMs, deviceName, provider, value.requestId);
-  return answer;
+  const artifact = compiled?.result;
+  if (!artifact || typeof artifact !== "object" || artifact.ok !== true || !artifact.mode) {
+    throw new CommandFailure("TASK_COMPILE_FAILED", "The device did not return a compiled task.");
+  }
+  if (artifact.mode === "write" && value.confirm !== true) {
+    throw new CommandFailure("TASK_NOT_CONFIRMED", "A write task needs confirm: true at the tool; nothing was registered.");
+  }
+
+  let runId: string | null = null;
+  let trace: unknown[] = [];
+  let status = "completed";
+  if (artifact.mode === "read") {
+    const sealed = await sealVmProgram(artifact.program, caller);
+    const enqueued = await callVmHost("enqueue", {
+      program: sealed,
+      requestId: value.requestId
+    }, deviceName, provider, caller);
+    runId = enqueued && typeof enqueued === "object" && "runId" in enqueued ? String((enqueued as {
+      runId?: unknown
+    }).runId) : null;
+    const startedAt = Date.now();
+    while (runId && Date.now() - startedAt < waitMs + 10000) {
+      await sleepMs(400);
+      const current = await callVmHost("status", {
+        runId
+      }, deviceName, provider, caller);
+      const currentStatus = String((current as {
+        status?: unknown
+      })?.status ?? "");
+      if (currentStatus && ![
+        "queued",
+        "running"
+      ].includes(currentStatus)) {
+        status = currentStatus;
+        break;
+      }
+    }
+    if (runId) {
+      const final = await callVmHost("result", {
+        runId
+      }, deviceName, provider, caller);
+      const result = (final as {
+        result?: unknown
+      })?.result;
+      if (result && typeof result === "object" && Array.isArray((result as {
+        trace?: unknown
+      }).trace)) trace = (result as {
+        trace: unknown[]
+      }).trace;
+    }
+  } else {
+    const run = await runAdhoc(artifact.graph, value.requestId, {
+      tabId: value.tabId
+    }, waitMs, deviceName, provider);
+    runId = run.runId ?? null;
+    status = run.status;
+    trace = Array.isArray(run.result?.trace) ? run.result.trace : [];
+  }
+
+  const verifyCommand = verifyCommandFor(artifact.verify ?? null, value.tabId);
+  let verify: {
+    ok: boolean; evidence: unknown
+  } = {
+    ok: true,
+    evidence: null
+  };
+  if (verifyCommand) {
+    try {
+      const read = await runCommand(verifyCommand.method, verifyCommand.params, 8000, deviceName, provider);
+      const result = read?.result ?? {};
+      const found = artifact.verify?.kind === "ref"
+        ? (Array.isArray(result?.page?.elements) ? result.page.elements : []).some((element: unknown) => element?.ref === artifact.verify.value)
+        : Boolean(result?.matches?.length || result?.elements?.length);
+      verify = {
+        ok: found,
+        evidence: result
+      };
+    } catch (error) {
+      verify = {
+        ok: false,
+        evidence: String(error?.message || error)
+      };
+    }
+  }
+
+  let lessonSaved = false;
+  try {
+    const lesson = lessonFromRun({
+      task: value.task,
+      trace,
+      verify
+    });
+    const saved = await rpc("opera_skill_save", {
+      p_task: lesson.task,
+      p_site: "",
+      p_lesson: lesson.lesson,
+      p_pitfalls: lesson.pitfalls
+    });
+    lessonSaved = Boolean(saved?.ok);
+  } catch {}
+
+  return {
+    ok: verify.ok,
+    status,
+    mode: artifact.mode,
+    runId,
+    trace,
+    verify,
+    lessonSaved
+  };
 }
 
 async function runAdhoc(

@@ -480,8 +480,22 @@ export async function dispatch(
     }
     case 'statement.manifest':
       return statementManifest();
-    case 'task.run':
-      return runTaskCommand(params, context);
+    case 'task.run': {
+      const tabId = await resolveTabId(params);
+      return runTaskCommand(params, {
+        ...context,
+        storage: chrome.storage.local,
+        observePage: async (input) => {
+          const target = input?.tabId ?? tabId;
+          const result = await contentCall(target, 'page.read', {
+            includeElements: true,
+            maxElements: 40,
+            view: 'compact'
+          });
+          return result?.page ?? {};
+        }
+      });
+    }
     default:
       throw new Error('Method is not implemented by this extension build.');
   }

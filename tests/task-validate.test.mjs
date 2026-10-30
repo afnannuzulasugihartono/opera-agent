@@ -18,6 +18,16 @@ test('run_task server wiring: validates, recalls lessons, enqueues task.run with
   assert.match(mcpSource, /lessons/, 'recalled lessons travel inside the task.run params');
 });
 
+test('run_task server execution: the compiled artifact is executed through the existing lanes, verified, and lessoned', () => {
+  assert.match(mcpSource, /if \(!caller\)[\s\S]*?run_task needs a user access token/, 'run_task is scoped to a user token like run_program');
+  assert.match(mcpSource, /sealVmProgram\(artifact\.program, caller\)/, 'the read lane seals the program before enqueue');
+  assert.match(mcpSource, /callVmHost\("enqueue"/, 'the read lane runs through the VM host');
+  assert.match(mcpSource, /runAdhoc\(artifact\.graph/, 'the write lane runs through the existing adhoc flow');
+  assert.match(mcpSource, /verifyCommandFor\(artifact\.verify/, 'the verify clause becomes one allowlisted read command');
+  assert.match(mcpSource, /lessonFromRun\(\{[\s\S]*?opera_skill_save/, 'a finished run saves one capped lesson');
+  assert.match(mcpSource, /TASK_NOT_CONFIRMED/, 'a write artifact without confirm is refused server-side too');
+});
+
 test('run_task input: a well-formed task is accepted with defaults applied', () => {
   const result = validateTaskInput({
     task: 'download the statement',

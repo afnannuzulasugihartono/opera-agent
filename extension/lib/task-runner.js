@@ -1,10 +1,11 @@
 // @last-edited: 2026-10-30 UTC+7.
-// @title: task-runner — the device-side run_task command: validate, one model call, gate, execute, verify.
-// @state: owns the task.run command on the device; every failure carries a stable code the tool can switch on.
+// @title: task-runner — the device-side run_task command: validate, one model call, parse, gate, and return the compiled artifact.
+// @state: owns the task.run command on the device; the server executes the returned artifact through the existing VM/adhoc lanes, so the browser work still runs on this device via enqueued commands.
 // @dependencies: task-compile, model-client, log.
 
-// WHY THE ORCHESTRATION LIVES ON THE DEVICE.
-// The model key never leaves the device (docs/security.md), so the one model call per task happens here, not on the server; the server only relays the task text and the answer.
+// WHY THE DEVICE ONLY COMPILES AND THE SERVER EXECUTES.
+// The model key never leaves the device (docs/security.md), so the one model call per task happens here.
+// Execution is orchestrated by the existing run_program / run_adhoc lanes, which enqueue browser commands back to this device — so splitting compile (device) from execute (server) invents no new channel and reuses the sealed-program and adhoc gates that are already tested.
 
 import { log } from './log.js';
 import { callModelText } from './model-client.js';
@@ -27,10 +28,10 @@ function failure(
 }
 
 /**
- * Run one task.run command on the device.
+ * Run one task.run command on the device: validate, observe the page, make the single device-local model call, parse and gate the reply, and return the compiled artifact.
  * @param {{ task?: unknown, tabId?: unknown, confirm?: unknown, requestId?: unknown, lessons?: unknown }} params The command params from the server.
- * @param {{ storage?: object, fetchImpl?: typeof fetch, taskDeps?: { observePage?: Function, executeProgram?: Function, verifyTask?: Function, runAdhoc?: Function } }} context The dispatch context; taskDeps carries the production seams (page observation, program executor, verifier, adhoc lane) and is injectable for tests.
- * @returns {Promise<{ ok: true, mode: 'read'|'write', trace: Array<object>, verify: { ok: boolean, evidence: unknown }, lesson?: string }>} The task envelope.
+ * @param {{ storage?: object, fetchImpl?: typeof fetch, observePage?: (input: { tabId: number|null }) => Promise<object> }} context The dispatch context; observePage is the production page reader and injectable for tests.
+ * @returns {Promise<{ ok: true, mode: 'read'|'write', program?: object, graph?: object, verify: { kind: string, value: string }|null, page?: object }>} The compiled artifact for the server to execute.
  */
 
 export async function runTaskCommand(
@@ -41,9 +42,10 @@ export async function runTaskCommand(
   if (!task || task.length > 1200) throw failure('INVALID_TASK', 'task must be a string of 1..1200 characters.');
   const confirm = params?.confirm === true;
   const lessons = Array.isArray(params?.lessons) ? params.lessons : [];
-  const deps = context.taskDeps ?? {};
 
-  const page = deps.observePage ? await deps.observePage({ tabId: params?.tabId ?? null }) : {};
+  const page = context.observePage
+    ? await context.observePage({ tabId: params?.tabId ?? null })
+    : {};
   const prompt = buildTaskPrompt({
     task,
     lessons,
@@ -73,37 +75,16 @@ export async function runTaskCommand(
   });
   if (!gated.ok) throw failure(gated.code, gated.message);
 
-  let trace;
-  if (gated.mode === 'read') {
-    if (!deps.executeProgram) throw failure('TASK_NO_EXECUTOR', 'No program executor is wired on this device.');
-    const run = await deps.executeProgram(gated.program, { tabId: params?.tabId ?? null });
-    trace = run?.trace ?? [];
-  } else {
-    if (!deps.runAdhoc) throw failure('TASK_NO_ADHOC', 'No adhoc lane is wired on this device.');
-    const run = await deps.runAdhoc(gated.graph, {
-      tabId: params?.tabId ?? null,
-      requestId: params?.requestId ?? null
-    });
-    trace = run?.trace ?? [];
-  }
-
-  const verify = deps.verifyTask
-    ? await deps.verifyTask(gated.verify, { tabId: params?.tabId ?? null })
-    : {
-      ok: true,
-      evidence: null
-    };
-
-  log.debug('TASK_RUN', {
+  log.debug('TASK_COMPILED', {
     mode: gated.mode,
-    nodes: trace.length,
-    verifyOk: verify?.ok === true
+    verify: gated.verify ?? null
   });
 
   return {
     ok: true,
     mode: gated.mode,
-    trace,
-    verify
+    ...(gated.mode === 'read' ? { program: gated.program } : { graph: gated.graph }),
+    verify: gated.verify ?? null,
+    page
   };
 }

@@ -157,7 +157,7 @@ const FROZEN_TOOL_SCHEMAS = Object.freeze({
   statement_manifest: '7f2ed6ebc3c8d007',
   statement_deliver: '9d430e6ed2f9bc8e',
   invoice_create: '32805bba02ebc291',
-  run_task: '1cd5932813f10332',
+  run_task: '1487fc10c40aba19',
 });
 
 const PLAN_DOOR_CHANGED_TOOL = 'invoice_create';
