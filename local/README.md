@@ -171,8 +171,14 @@ for its first 200ms, and `wait_still` answered "settled" after 155ms, because tw
 empty reads are identical. Stillness is not readiness, so the fetch reads until the
 page says something.
 
-OpenCode loads a plugin once per process: a change to the plugin's code is live after
-a restart, not after a save.
+`opera_capture_page` answers with the picture as a file part. OpenCode's native tool
+content carries text and files, and an image block has no place there, so the picture
+would be dropped on the way to the model.
+
+OpenCode loads a plugin once per process, and the process that owns the plugins is
+the service, not the desktop app. A change to the plugin's code is live after the
+`opencode-cli.exe serve --service` process is restarted: restarting the app alone
+leaves the old plugin loaded, and so does a save.
 
 A permission rule is what turns a click into a question:
 

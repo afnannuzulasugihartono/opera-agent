@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-13 UTC+7.
+// @last-edited: 2026-10-31 UTC+7.
 // @title: local-sessions — one cached driver per tab, fronted on switch, tested without a browser.
 // @state: 9 locks; adapter shape, cache keys, front-once, close-drop.
 // @dependencies: node:test, strict, ../local/sessions.js.
@@ -140,6 +140,16 @@ function fakeSession() {
     },
     capture: async () => {
       calls.push(['capture']); return 'JPG';
+    },
+    viewport: async () => {
+      calls.push(['viewport']); return {
+        width: 100,
+        height: 200,
+        dpr: 1
+      };
+    },
+    cdp: {
+      send: async () => ({})
     },
     front: async () => {
       calls.push(['front']); return true;
@@ -347,6 +357,34 @@ test('find searches the page the session is attached to', async () => {
 
   const [, expression] = session.calls.find((c) => c[0] === 'evaluate');
   assert.match(expression, /total/);
+});
+
+// WHY THE ADAPTER CARRIES THE THREE VERBS A DOCUMENT WRITE NEEDS.
+// A document write pastes a paper into a live page: it reads the viewport to place the caret, clicks a point, and hands the page connection to the clipboard.
+// Measured live: the write stopped on "session.viewport is not a function" because the adapter spoke only the verbs the other tools used.
+
+test('the adapter carries the verbs a document write needs', async () => {
+  const session = fakeSession();
+  const driver = asDriver(session);
+
+  assert.deepEqual(await driver.viewport(), {
+    width: 100,
+    height: 200,
+    dpr: 1
+  });
+  await driver.clickAt(4, 5);
+
+  assert.equal(driver.cdp, session.cdp, 'the page connection is the session own');
+  assert.deepEqual(session.calls.slice(-2), [
+    [
+      'viewport'
+    ],
+    [
+      'clickAt',
+      4,
+      5
+    ]
+  ]);
 });
 
 test('findOn is the shared search the entry point reuses', async () => {

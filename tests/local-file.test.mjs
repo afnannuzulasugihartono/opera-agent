@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-23 UTC+7.
+// @last-edited: 2026-10-31 UTC+7.
 // @title: local-file — upload, drop and download are proven by the bytes on disk, not by an ok.
 // @state: the file verbs, and the staging, chooser interception and delivery checks behind them.
 // @dependencies: node:test, strict, ../local/primitives.js.
@@ -736,6 +736,44 @@ test('download refuses to guess what to click', async () => {
     x: 1,
     y: 2
   }), /exactly one of/);
+});
+
+// WHY THE FOLDER IS ARMED BEFORE THE CLICK AND NOT AFTER.
+// A click that starts a download has already chosen where the file goes, so a transport that cannot arm the folder has to say so instead of downloading a file somewhere the caller never named.
+// Measured live over the extension bridge: Chrome's debugger cannot reach the browser domain, so both ways of naming the folder refused.
+
+test('a transport that cannot arm the folder says so, and clicks nothing', async () => {
+  const calls = [];
+  const cdp = {
+    calls,
+    send: async (
+      method,
+      params = {}
+    ) => {
+      calls.push({
+        method,
+        params
+      });
+      if (method === 'Browser.setDownloadBehavior' || method === 'Page.setDownloadBehavior') {
+        throw new Error(`'${method}' wasn't found`);
+      }
+      return { result: {} };
+    }
+  };
+  const p = createPrimitives(cdp, {
+    fs: fakeDisk(),
+    sleep: async () => {}
+  });
+
+  await assert.rejects(
+    () => p.download({
+      x: 10,
+      y: 10,
+      dir: path.resolve('opera-download-test-unarmed')
+    }),
+    /Nothing was clicked/
+  );
+  assert.ok(!calls.some((c) => c.method === 'Input.dispatchMouseEvent'), 'no download was started');
 });
 
 // WHY THE NAME IS GIVEN AFTER THE FILE LANDS.

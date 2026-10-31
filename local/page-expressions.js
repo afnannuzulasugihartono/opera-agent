@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-21 UTC+7.
+// @last-edited: 2026-10-31 UTC+7.
 // @title: page-expressions — the JavaScript the page runs, and the helpers that build it.
 // @state: the snapshot, focus, caret, scroll, upload and edit expressions, and the pure helpers around them.
 // @dependencies: node:buffer.
@@ -385,6 +385,10 @@ const SNAPSHOT_ROLES = new Set([
 // Dropping the accessibility tree is only safe because the role is recoverable: an explicit role attribute is what Google Docs itself puts on its menus, and the tag table below covers the plain-HTML remainder.
 // A widget whose role only an assistive technology would compute would be missing, which is why the attribute is read first and the tag table is deliberately short.
 
+// WHY THE LABELS ARE READ IN THE PAGE.
+// A plain form field takes its name from the label that belongs to it, and that is the name the accessibility tree this expression replaced would have given it.
+// Measured live: a text field under the label "Your name" answered that no textbox matched that name, so the tool that tells the agent to click_row the field could not name the field it pointed at.
+
 // WHY SECRET VALUES NEVER LEAVE THE PAGE.
 // The snapshot carries a field's current value so the agent can see what is already typed — a formula bar, a name box.
 // A password field would ride along the same way, straight into model context, which is exfiltration wearing a snapshot's clothes.
@@ -442,6 +446,12 @@ const SNAPSHOT_EXPRESSION = `(() => {
     return TAG_ROLE[tag] || null;
   };
 
+  const LABELS = new Map();
+  for (const label of document.querySelectorAll('label[for]')) {
+    const id = label.getAttribute('for');
+    if (id) LABELS.set(id, (label.textContent || '').trim());
+  }
+
   const nameOf = (el) => {
     const label = el.getAttribute('aria-label');
     if (label) return label;
@@ -450,6 +460,13 @@ const SNAPSHOT_EXPRESSION = `(() => {
       const text = labelledBy.split(' ')
         .map((id) => { const n = document.getElementById(id); return n ? (n.textContent || '') : ''; })
         .join(' ').trim();
+      if (text) return text;
+    }
+    const bound = LABELS.get(el.getAttribute('id') || '');
+    if (bound) return bound;
+    const wrapping = el.closest('label');
+    if (wrapping) {
+      const text = (wrapping.textContent || '').trim();
       if (text) return text;
     }
     const alt = el.getAttribute('alt');

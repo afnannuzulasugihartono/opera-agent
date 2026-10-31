@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-23 UTC+7.
+// @last-edited: 2026-10-31 UTC+7.
 // @title: local-observe — what the page says about itself, read in as few round trips as it can be read in.
 // @state: snapshot, scroll, computed, capture and viewport, and the page expressions that answer them.
 // @dependencies: node:test, strict, ../local/primitives.js.
@@ -617,6 +617,17 @@ test('secret field values never leave the page', () => {
   assert.ok(expression.includes("kind === 'password'"), 'password values stay in the page');
   assert.ok(expression.includes('one-time-code'), 'one-time codes stay in the page');
   assert.ok(expression.includes('el.value'), 'ordinary values still ride along');
+});
+
+// WHY A FIELD IS NAMED BY ITS LABEL.
+// The snapshot answers what the accessibility tree would answer, and a plain form field takes its name from the label that belongs to it.
+// Measured live: a page whose text field sat under the label "Your name" answered that no textbox matched that name, so the tool that advises "click_row the field" could not name the field it pointed at.
+
+test('a field carries the name its label gives it', () => {
+  const expression = snapshotExpression(120);
+
+  assert.match(expression, /label\[for\]/, 'the page reads the labels that name the fields');
+  assert.match(expression, /closest\('label'\)/, 'a field inside a label is named by that label too');
 });
 
 

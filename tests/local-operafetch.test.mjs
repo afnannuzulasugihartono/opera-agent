@@ -326,3 +326,41 @@ test('the local context carries the driver the tools drive the browser with', ()
   assert.equal(typeof context.open, 'function');
   assert.equal(typeof context.resolveTab, 'function');
 });
+
+// WHY THE PICTURE IS HANDED OVER AS A FILE.
+// OpenCode's native tool answer carries text and files, and the image block the capture tool sends has no place there, so the model was told the viewport and never saw the page.
+// OpenCode's own MCP reader turns such a block into a data url file, so the plugin does the same and the picture arrives.
+
+test('a captured picture reaches the model as a file part, not as a dropped block', async () => {
+  const registry = fakeRegistry();
+  await createOperaPlugin({
+    call: async () => ({
+      content: [
+        {
+          type: 'image',
+          data: 'Zm9v',
+          mimeType: 'image/jpeg'
+        },
+        {
+          type: 'text',
+          text: '{"viewport":{"width":100}}'
+        }
+      ]
+    })
+  }).setup(registry.ctx);
+  const capture = registry.added.find((tool) => tool.name === 'capture_page');
+
+  const out = await capture.execute({}, {
+    sessionID: 'proof',
+    agent: 'proof',
+    messageID: 'proof',
+    id: 'proof'
+  });
+
+  assert.deepEqual(out.content[0], {
+    type: 'file',
+    uri: 'data:image/jpeg;base64,Zm9v',
+    mime: 'image/jpeg'
+  });
+  assert.equal(out.content[1].text, '{"viewport":{"width":100}}');
+});

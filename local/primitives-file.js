@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-21 UTC+7.
+// @last-edited: 2026-10-31 UTC+7.
 // @title: primitives-file — the verbs that move a file: upload, drop, and download.
 // @state: the file chooser, the dropped file, and the download that proves itself on disk.
 // @dependencies: node:buffer, ./page-expressions.js.
@@ -326,7 +326,7 @@ export function filePrimitives(
           });
           armedVia = 'page';
         } catch (pageError) {
-          throw new Error(`download could not arm a folder: Browser said "${browserError?.message}", Page said "${pageError?.message}"`);
+          throw new Error(`download could not arm a folder: Browser said "${browserError?.message}", Page said "${pageError?.message}". Nothing was clicked, because a file that lands somewhere else is not the file that was asked for.`);
         }
       }
 

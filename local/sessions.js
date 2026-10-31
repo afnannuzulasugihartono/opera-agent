@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-13 UTC+7.
+// @last-edited: 2026-10-31 UTC+7.
 // @title: sessions — one cached driver per tab, and the tab the agent touches comes forward.
 // @state: keyed cache, adapter shape, front-on-switch.
 // @dependencies: none.
@@ -88,6 +88,12 @@ export function asDriver(session) {
       hasFocus: () => session.hasFocus()
     }),
     captureSized: (options) => session.captureSized(options ?? {}),
+    viewport: () => session.viewport(),
+    clickAt: (
+      x,
+      y
+    ) => session.clickAt(x, y),
+    cdp: session.cdp,
     navigate: (url) => session.navigate(url),
     guide: async (topic) => guide(topic),
     menuTree: (options) => session.menuTree(options ?? {}),

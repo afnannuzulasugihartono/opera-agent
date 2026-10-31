@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-30 UTC+7.
+// @last-edited: 2026-10-31 UTC+7.
 // @title: docstring-baseline — the exported declarations that still carry no JSDoc block, counted and shrinking.
 // @state: a declaration leaves this set only after a `/** ... */` block with `@param`/`@returns` sits above it; the count may fall, never rise.
 // @dependencies: tests/helpers/docstrings.mjs.
@@ -141,17 +141,17 @@ export const DOCSTRING_PENDING = new Set([
   'local/menu-tree.js: export function revealOf (line 245)',
   'local/menu-tree.js: export function stateOf (line 234)',
   'local/observe.js: export function createObserveMethods (line 106)',
-  'local/page-expressions.js: export arrow centreOf (line 578)',
-  'local/page-expressions.js: export arrow computedExpression (line 1085)',
-  'local/page-expressions.js: export arrow hitExpression (line 956)',
-  'local/page-expressions.js: export arrow imageSize (line 883)',
-  'local/page-expressions.js: export arrow locateExpression (line 936)',
-  'local/page-expressions.js: export arrow scrollExpression (line 979)',
+  'local/page-expressions.js: export arrow centreOf (line 595)',
+  'local/page-expressions.js: export arrow computedExpression (line 1102)',
+  'local/page-expressions.js: export arrow hitExpression (line 973)',
+  'local/page-expressions.js: export arrow imageSize (line 900)',
+  'local/page-expressions.js: export arrow locateExpression (line 953)',
+  'local/page-expressions.js: export arrow scrollExpression (line 996)',
   'local/page-expressions.js: export function describeKey (line 96)',
-  'local/page-expressions.js: export function dragMimeType (line 695)',
-  'local/page-expressions.js: export function modifierMask (line 805)',
-  'local/page-expressions.js: export function snapshotExpression (line 597)',
-  'local/page-expressions.js: export function splitText (line 816)',
+  'local/page-expressions.js: export function dragMimeType (line 712)',
+  'local/page-expressions.js: export function modifierMask (line 822)',
+  'local/page-expressions.js: export function snapshotExpression (line 614)',
+  'local/page-expressions.js: export function splitText (line 833)',
   'local/pointer.js: export function createPointerMethods (line 39)',
   'local/primitives-file.js: export function filePrimitives (line 33)',
   'local/primitives.js: export function createPrimitives (line 40)',
@@ -162,7 +162,7 @@ export const DOCSTRING_PENDING = new Set([
   'local/reports.js: export function reportFromFile (line 366)',
   'local/reports.js: export function verifyReport (line 302)',
   'local/sessions.js: export function asDriver (line 51)',
-  'local/sessions.js: export function createSessionStore (line 157)',
+  'local/sessions.js: export function createSessionStore (line 163)',
   'local/sessions.js: export function findOn (line 19)',
   'local/statements.js: export function balanceDigits (line 147)',
   'local/statements.js: export function slug (line 35)',

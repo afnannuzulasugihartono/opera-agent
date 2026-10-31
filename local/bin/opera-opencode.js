@@ -123,6 +123,27 @@ export async function operaFetch({
   }
 }
 
+// WHY THE PICTURE IS HANDED OVER AS A FILE.
+// OpenCode's native tool answer carries text and files, and the image block the capture tool sends has no place there, so the model was told the viewport and never saw the page.
+// OpenCode's own MCP reader turns such a block into a data url file, so the plugin does the same and the picture arrives.
+
+const asNative = (result) => {
+  const content = result?.content;
+  if (!Array.isArray(content)) return result;
+  return {
+    ...result,
+    content: content.map((part) => {
+      if (part?.type !== 'image' || !part.data) return part;
+      const mime = String(part.mimeType ?? 'image/jpeg');
+      return {
+        type: 'file',
+        uri: `data:${mime};base64,${part.data}`,
+        mime
+      };
+    })
+  };
+};
+
 // WHY THE PERMISSION IS ASKED AND NOT FORCED.
 // A rule that says ask is the person's decision, and a rule that says nothing lets the call through.
 // So every tool asks the same question, and the rules decide what the answer is.
@@ -205,7 +226,7 @@ export function createOperaPlugin({
               context
             ) => {
               await allowed(ctx, tool.name, input, context);
-              return callFor(tool.name, input);
+              return asNative(await callFor(tool.name, input));
             }
           });
         }
