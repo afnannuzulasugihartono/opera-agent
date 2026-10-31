@@ -135,6 +135,15 @@ takes them as charts that carry their data and can be edited — and a graph tha
 made that way falls back to the picture, so the answer says which graph is a chart and
 which is a picture.
 
+A paper names its look with `"template"`. `"journal"` is Overleaf's Basic Academic
+Journal Article Template, and the rules are that class's own: a 20pt bold sans title on
+the left, a Helvetica bold 12pt author, an abstract in a box filled RGB(182,193,251), a
+Times 10pt body, numbered headings in capitals, a table captioned above it as
+`Table 1.`, a figure captioned below it as `Figure 1.`, and references numbered as a
+bold superscript. A paper with no template keeps the plain look. The margins and the
+page-number footer of the class are the page's own settings, not the paper's, so they
+are left as the document has them.
+
 ## Recipes, measured
 
 These are the rules that the three Google editors actually honour. Each one returns
@@ -158,6 +167,11 @@ bullets. Clear, toggle once, then write.
 
 **A submenu opens on hover.** Move the pointer and settle there; a press closes the
 menu instead.
+
+**A character the code page cannot hold travels as a numbered entity.** The rich
+HTML goes through PowerShell, which writes CF_HTML in the console's code page, while
+the page reads CF_HTML as UTF-8 — so an em dash arrived as `�`. A numbered entity
+is ASCII, survives every code page, and the page decodes it back.
 
 ## Licence
 

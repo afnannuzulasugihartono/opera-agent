@@ -1,10 +1,12 @@
-// @last-edited: 2026-10-25 UTC+7.
+// @last-edited: 2026-10-31 UTC+7.
 // @title: documents — a paper is planned on disk with tables, images and graphs, and a plan that cannot be checked is refused.
 // @state: JSON in, a docplan with blocks and a figure ledger out, plus the recheck that catches an edited number.
-// @dependencies: node:fs, node:path.
+// @dependencies: node:fs, node:path, ./doc-template.js.
 
 import fs from 'node:fs';
 import path from 'node:path';
+
+import { PAPER_TEMPLATES } from './doc-template.js';
 
 function nonEmptyString(value) {
   return typeof value === 'string' && value.trim() !== '';
@@ -17,6 +19,12 @@ function parseNumber(value) {
   const parsed = Number(text);
   return Number.isFinite(parsed) ? parsed : null;
 }
+
+/**
+ * Parses the JSON a paper is described in.
+ * @param {string} text - the JSON source of the paper.
+ * @returns {object} the paper as an object.
+ */
 
 export function parseDocument(text) {
   let doc;
@@ -101,6 +109,7 @@ function validateTable(
     return cells;
   });
   return {
+    title: nonEmptyString(table.title) ? table.title.trim() : '',
     headers,
     rows: normalized
   };
@@ -236,6 +245,20 @@ function validateGraph(
   };
 }
 
+function validateTemplate(
+  template
+) {
+  if (template === undefined || template === null) return null;
+  if (typeof template !== 'string' || template.trim() === '') {
+    throw new Error(`the template is not a name; a paper asks for a look by name: ${PAPER_TEMPLATES.join(', ')}.`);
+  }
+  const name = template.trim();
+  if (!PAPER_TEMPLATES.includes(name)) {
+    throw new Error(`the template "${name}" is not one this renderer knows: ${PAPER_TEMPLATES.join(', ')}.`);
+  }
+  return name;
+}
+
 function validateCover(
   cover
 ) {
@@ -291,6 +314,13 @@ function validateReferences(
   });
 }
 
+/**
+ * Plans a paper: every block in the order it is read, and every figure naming the table and the rows it came from.
+ * @param {object} args - the plan inputs.
+ * @param {object} args.doc - the paper as an object.
+ * @returns {{title: string, docplan: object, figures: object[]}} the plan and the ledger of its figures.
+ */
+
 export function buildDocument({ doc } = {}) {
   if (!doc || typeof doc !== 'object' || Array.isArray(doc)) {
     throw new Error('document_build needs a document object.');
@@ -307,6 +337,7 @@ export function buildDocument({ doc } = {}) {
   const cover = validateCover(doc.cover);
   const toc = validateToc(doc.toc);
   const references = validateReferences(doc.references);
+  const template = validateTemplate(doc.template);
 
   const figures = [];
   const blocks = [];
@@ -348,6 +379,7 @@ export function buildDocument({ doc } = {}) {
     ) => {
       blocks.push({
         kind: 'table',
+        title: normalized.title,
         headers: normalized.headers,
         rows: normalized.rows,
         section: sectionIndex,
@@ -406,6 +438,7 @@ export function buildDocument({ doc } = {}) {
   const docplan = {
     title: doc.title.trim(),
     author: nonEmptyString(doc.author) ? doc.author.trim() : null,
+    template,
     cover,
     toc,
     references,
@@ -434,6 +467,15 @@ export function buildDocument({ doc } = {}) {
     figures
   };
 }
+
+/**
+ * Rechecks a built paper against the source it was built from.
+ * @param {object} args - the recheck inputs.
+ * @param {object} args.document - the built paper.
+ * @param {object} args.doc - the source paper.
+ * @returns {{ok: boolean, checked: number, mismatches: object[]}} what was checked and what disagreed.
+ */
+
 export function verifyDocument({
   document,
   doc
@@ -528,6 +570,14 @@ export function verifyDocument({
     mismatches
   };
 }
+
+/**
+ * Reads a paper from a file, plans it, rechecks it and writes the plan beside the source.
+ * @param {object} args - the job inputs.
+ * @param {string} args.source - the path of the JSON file describing the paper.
+ * @param {string} [args.out] - where to write the plan; it defaults beside the source.
+ * @returns {object} the source, the plan on disk and the recheck.
+ */
 
 export function documentFromFile({
   source,

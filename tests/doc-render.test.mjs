@@ -13,6 +13,7 @@ import {
   chartMarker,
   chartSpec,
   graphFigureHtml,
+  paperHeadings,
   paperMarkers,
   renderPaperHtml,
   tocListHtml,
@@ -350,4 +351,140 @@ test('the list that stands in for a contents the page will not make names every 
   });
   assert.match(html, /Pengantar/);
   assert.match(html, /Referensi/);
+});
+
+const JOURNAL = {
+  title: 'Paper Jurnal',
+  docplan: {
+    title: 'Paper Jurnal',
+    author: 'Opera Agent',
+    template: 'journal',
+    cover: {
+      subtitle: 'Membaca kanvas',
+      affiliation: 'Laboratorium Opera',
+      date: '31 Oktober 2026',
+      abstract: 'Ringkasan satu paragraf.',
+      keywords: [
+        'accessibility tree',
+        'google docs'
+      ]
+    },
+    toc: {
+      title: 'Daftar Isi'
+    },
+    references: [
+      'Opera Agent. 2026. Paper lengkap.'
+    ],
+    sections: [],
+    blocks: [
+      {
+        kind: 'heading',
+        level: 1,
+        text: 'Pengantar',
+        section: 0
+      },
+      {
+        kind: 'paragraph',
+        text: 'Semua angka diambil pada tab yang sama.',
+        section: 0
+      },
+      {
+        kind: 'table',
+        title: 'Waktu panggil',
+        headers: [
+          'Panggilan',
+          'Latensi ms'
+        ],
+        rows: [
+          [
+            'list_tabs',
+            '2'
+          ]
+        ],
+        section: 0,
+        table: 0
+      },
+      {
+        kind: 'image',
+        alt: 'Tangkapan layar',
+        caption: 'Tab yang dipakai.',
+        src: 'shot.png',
+        section: 0
+      },
+      {
+        kind: 'graph',
+        chartKind: 'bar',
+        title: 'Latensi',
+        caption: 'Dari tabel.',
+        data: GRAPH.data,
+        source: {
+          section: 0,
+          table: 0,
+          rows: [
+            0
+          ]
+        },
+        section: 0
+      }
+    ],
+    totals: {
+      sections: 1,
+      items: 1,
+      images: 1,
+      graphs: 1
+    }
+  },
+  figures: []
+};
+
+const JOURNAL_ASSETS = {
+  images: {
+    [assetKey('image', 0, 0)]: 'data:image/png;base64,AAA'
+  },
+  charts: {
+    [assetKey('graph', 0, 0)]: 'data:image/png;base64,BBB'
+  }
+};
+
+test('the journal template gives the paper the look of the class', () => {
+  const html = renderPaperHtml({
+    document: JOURNAL,
+    assets: JOURNAL_ASSETS
+  });
+  assert.match(html, /<p style="[^"]*font-size:26\.67px[^"]*">Paper Jurnal<\/p>/, 'the title is 20pt bold sans');
+  assert.match(html, /<h2 style="[^"]*">1 PENGANTAR<\/h2>/, 'the heading is numbered and in capitals');
+  assert.match(html, /font-family:Times New Roman[^"]*">Semua angka diambil pada tab yang sama\./, 'the body is Times');
+  assert.match(html, /ABSTRACT/, 'the abstract is labelled the way the class labels it');
+  assert.match(html, /background-color:#b6c1fb/, 'the abstract stands in the box the class gives it');
+  assert.match(html, /Keywords:/, 'the keywords carry the label of the class');
+  assert.match(html, /<sup[^>]*>\[1\]<\/sup>/, 'the reference number is the bold superscript of the class');
+  assert.match(html, /Table 1\./, 'the table is captioned above it');
+  assert.match(html, /Figure 1\./, 'the figure is captioned below it');
+});
+
+test('a paper with no template keeps the plain look it had', () => {
+  const html = renderPaperHtml({
+    document: COMPLETE
+  });
+  assert.match(html, /text-align:center/, 'the title stays in the middle');
+  assert.match(html, /<h2[^>]*>Pengantar<\/h2>/, 'the heading is not numbered and not in capitals');
+  assert.match(html, /\[1\] Opera Agent\. 2026\. Paper lengkap\./, 'the reference number is not a superscript');
+  assert.ok(!html.includes('Table 1.'), 'the plain paper has no table labels');
+});
+
+test('the contents list names the headings the way the paper shows them', () => {
+  const html = tocListHtml({
+    document: JOURNAL
+  });
+  assert.match(html, /1 PENGANTAR/);
+  assert.match(html, /REFERENSI/);
+});
+
+test('the headings the writer looks for are the headings the paper shows', () => {
+  assert.deepEqual(paperHeadings({
+    document: JOURNAL
+  }), ['1 PENGANTAR']);
+  assert.deepEqual(paperHeadings({
+    document: COMPLETE
+  }), ['Pengantar']);
 });

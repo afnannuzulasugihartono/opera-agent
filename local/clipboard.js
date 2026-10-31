@@ -19,6 +19,21 @@ import { execFileSync } from 'node:child_process';
 
 const CONTROL = 2;
 
+// WHY A CHARACTER ABOVE THE CODE PAGE TRAVELS AS A NUMBERED ENTITY.
+// Measured on a real Google Doc: a caption with an em dash arrived as a replacement character, and the raw bytes on the clipboard held 97 where the em dash should be.
+// The writer hands the HTML to PowerShell, which writes CF_HTML in the console's code page, while the page reads CF_HTML as UTF-8, so every byte above 0x7F was lost.
+// A numbered entity is ASCII, so it survives every code page, and the page decodes it back into the character it stands for.
+
+/**
+ * Rewrites the characters a code page cannot hold as numbered entities, so the HTML survives the trip to the clipboard.
+ * @param {string} html - the HTML to prepare for the clipboard.
+ * @returns {string} the same HTML with every character above 0x7F written as a numbered entity.
+ */
+
+export function clipboardHtml(html) {
+  return String(html ?? '').replace(/[^\x00-\x7F]/gu, (character) => `&#${character.codePointAt(0)};`);
+}
+
 /**
  * Puts HTML on the system clipboard as rich text, so a paste into a page carries formatting, tables and pictures.
  * @param {string} html - the HTML to place on the clipboard.
@@ -26,7 +41,7 @@ const CONTROL = 2;
  */
 
 export function writeHtml(html) {
-  const text = String(html ?? '');
+  const text = clipboardHtml(html);
   if (text.trim() === '') {
     throw new Error('there is no HTML to put on the clipboard.');
   }

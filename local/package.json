@@ -25,6 +25,7 @@
     "doc-native-page.js",
     "doc-native-structure.js",
     "doc-render.js",
+    "doc-template.js",
     "doc-write.js",
     "documents.js",
     "driver.js",

@@ -7,6 +7,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
+  clipboardHtml,
   ensureHtml,
   pasteHtml,
   readHtml,
@@ -72,4 +73,20 @@ test('a paste is the paste command on the Ctrl+V key, sent down and up', async (
 
 test('a paste needs the page connection', async () => {
   await assert.rejects(() => pasteHtml(null), /page connection/);
+});
+
+test('a character the code page cannot hold travels as a numbered entity', () => {
+  const html = clipboardHtml('<p>a — b · c “d”</p>');
+  assert.ok(!/[^\x00-\x7F]/.test(html), 'the clipboard text is pure ASCII');
+  assert.match(html, /&#8212;/, 'the em dash is a numbered entity');
+  assert.match(html, /&#183;/, 'the middle dot is a numbered entity');
+  assert.match(html, /&#8220;/, 'the left quote is a numbered entity');
+});
+
+test('a character that is already an entity is not encoded twice', () => {
+  assert.equal(clipboardHtml('<p>&#8212; & <</p>'), '<p>&#8212; & <</p>');
+});
+
+test('ASCII text is left exactly as it was', () => {
+  assert.equal(clipboardHtml('<p>plain text</p>'), '<p>plain text</p>');
 });

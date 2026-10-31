@@ -23,6 +23,7 @@ import {
   chartMarker,
   chartSpec,
   graphFigureHtml,
+  paperHeadings,
   paperMarkers,
   renderPaperHtml,
   tocListHtml
@@ -366,10 +367,9 @@ export async function writeDocumentToPage({
       y: Math.round(height * DEFAULT_CARET.y)
     };
 
-  const wanted = blocks
-    .filter((block) => block.kind === 'heading')
-    .map((block) => String(block.text ?? '').trim())
-    .filter((text) => text !== '');
+  const wanted = paperHeadings({
+    document: built.document
+  });
   const title = String(built.document?.docplan?.title ?? '');
   const editor = await waitForEditor(session);
 
@@ -428,7 +428,8 @@ export async function writeDocumentToPage({
       graphs,
       builder: native,
       clipboard,
-      openSheet
+      openSheet,
+      templateName: built.document?.docplan?.template ?? null
     });
   }
 
@@ -493,16 +494,24 @@ async function pictureOverMarker({
   block,
   marker,
   builder,
-  clipboard
+  clipboard,
+  templateName
 }) {
   try {
     const src = await chartPicture(session, {
       ...block,
       kind: block.chartKind ?? block.kind
     });
+
+    // WHY THE PICTURE STANDS WITHOUT A CAPTION.
+    // The paper already carries the caption under the marker, and a caption twice is a caption a reader has to guess about.
+    // So the picture takes the marker's place and the paper's own caption stays under it.
+
     const html = `<!-- ${marker} -->${graphFigureHtml({
       block,
-      src
+      src,
+      templateName,
+      withCaption: false
     })}`;
     const out = await builder.pasteOver({
       doc: session,
@@ -527,7 +536,8 @@ async function writeNativeCharts({
   graphs,
   builder,
   clipboard,
-  openSheet
+  openSheet,
+  templateName
 }) {
   const sheet = await openSheet();
   const charts = [];
@@ -575,7 +585,8 @@ async function writeNativeCharts({
         block,
         marker,
         builder,
-        clipboard
+        clipboard,
+        templateName
       });
       charts.push({
         index: index + 1,

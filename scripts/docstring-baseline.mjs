@@ -127,10 +127,6 @@ export const DOCSTRING_PENDING = new Set([
   'local/caret-guard.js: export function restoreVerdict (line 70)',
   'local/cdp.js: export function createCdpClient (line 18)',
   'local/dev-shim.js: export function createSupervisor (line 41)',
-  'local/documents.js: export function buildDocument (line 294)',
-  'local/documents.js: export function documentFromFile (line 532)',
-  'local/documents.js: export function parseDocument (line 21)',
-  'local/documents.js: export function verifyDocument (line 437)',
   'local/driver.js: export function installedBrowsers (line 47)',
   'local/driver.js: export function openSession (line 135)',
   'local/focus-guard.js: export function createFocusGuard (line 34)',
@@ -256,4 +252,4 @@ export const DOCSTRING_PENDING = new Set([
   'supabase/functions/opera-agent-mcp/tools.ts: export function registerTools (line 190)',
 ]);
 
-export const DOCSTRING_BASELINE = 246;
+export const DOCSTRING_BASELINE = 242;

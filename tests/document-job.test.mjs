@@ -150,6 +150,29 @@ test('a paper with no cover and no contents carries neither', () => {
   assert.deepEqual(built.docplan.references, []);
 });
 
+test('a template is carried into the plan, and one nobody knows is refused', () => {
+  const built = buildDocument({
+    doc: {
+      ...DOC,
+      template: 'journal'
+    }
+  });
+  assert.equal(built.docplan.template, 'journal');
+  const bad = structuredClone(DOC);
+  bad.template = 'thesis';
+  assert.throws(() => buildDocument({ doc: bad }), /template/);
+});
+
+test('a table title is carried into the plan, and a table without one is not refused', () => {
+  const doc = structuredClone(DOC);
+  doc.sections[0].tables[0].title = 'Waktu panggil';
+  const built = buildDocument({ doc });
+  const table = built.docplan.blocks.find((block) => block.kind === 'table');
+  assert.equal(table.title, 'Waktu panggil');
+  const plain = buildDocument({ doc: DOC });
+  assert.equal(plain.docplan.blocks.find((block) => block.kind === 'table').title, '');
+});
+
 test('a cover that is not an object and a reference with no text are refused', () => {
   assert.throws(() => buildDocument({
     doc: {

@@ -1,7 +1,7 @@
-// @last-edited: 2026-10-30 UTC+7.
+// @last-edited: 2026-10-31 UTC+7.
 // @title: doc-render — a document plan turned into the HTML a page can show, with every chart drawn as a picture.
 // @state: the chart spec, the canvas expression that draws a chart, and the HTML renderer for a plan's blocks.
-// @dependencies: none.
+// @dependencies: ./doc-template.js.
 
 // WHY THE STYLE SITS ON THE ELEMENT.
 // Measured on a real Google Doc: a pasted <style> block left the text as it was, while the same rule written inline on the element landed as a heading, a bold run and a bordered table.
@@ -11,12 +11,8 @@
 // Measured on the same Doc: an inline <svg> pasted as the three text labels inside it, and an <img> holding an SVG data URI pasted as a broken image with a toast saying the image could not be retrieved.
 // A PNG pasted as an image arrived whole, so a chart is drawn on a canvas and handed over as a PNG.
 
-const PAPER_FONT = 'Arial, sans-serif';
-const TEXT_COLOR = '#202124';
-const MUTED_COLOR = '#5f6368';
-const RULE_COLOR = '#dadce0';
-const HEADING_COLOR = '#0b57d0';
-const HEADER_FILL = '#e8f0fe';
+import { paperTemplate } from './doc-template.js';
+
 const CHART_WIDTH = 720;
 const CHART_HEIGHT = 360;
 const PALETTE = [
@@ -177,66 +173,138 @@ export function chartExpression(spec) {
 })()`;
 }
 
-function headingHtml(text) {
-  return `<h2 style="font-family:${PAPER_FONT};font-size:18px;font-weight:bold;color:${TEXT_COLOR};border-bottom:1px solid ${RULE_COLOR};padding-bottom:4px;margin:22px 0 10px 0">${escapeHtml(text)}</h2>`;
+function headingHtml(
+  text,
+  template
+) {
+  return `<h2 style="${template.styles.heading}">${escapeHtml(text)}</h2>`;
 }
 
 // WHY THE TITLE IS A PARAGRAPH AND NOT A HEADING.
 // Measured on a real Doc: the table of contents the page makes lists every heading, and a paper whose own title is a heading is listed in its own contents.
 // So the title stands on the cover as a title, and only the sections are headings.
 
-function titleHtml(text) {
-  return `<p style="font-family:${PAPER_FONT};font-size:26px;font-weight:bold;color:${HEADING_COLOR};text-align:center;margin:48px 0 6px 0">${escapeHtml(text)}</p>`;
+function titleHtml(
+  text,
+  template
+) {
+  return `<p style="${template.styles.title}">${escapeHtml(text)}</p>`;
 }
 
-function coverLineHtml(text) {
-  return `<p style="font-family:${PAPER_FONT};font-size:12px;color:${TEXT_COLOR};text-align:center;margin:0 0 4px 0">${escapeHtml(text)}</p>`;
+function lineHtml(
+  text,
+  template,
+  role
+) {
+  return `<p style="${template.styles[role]}">${escapeHtml(text)}</p>`;
 }
 
-function coverLabelHtml(text) {
-  return `<p style="font-family:${PAPER_FONT};font-size:12px;font-weight:bold;color:${TEXT_COLOR};text-align:left;margin:18px 0 4px 0">${escapeHtml(text)}</p>`;
+function labelHtml(
+  text,
+  template
+) {
+  return `<p style="${template.styles.label}">${escapeHtml(text)}</p>`;
+}
+
+function keywordsHtml(
+  keywords,
+  template
+) {
+  const words = keywords.join(', ');
+  return `<p style="${template.styles.keywords}">${escapeHtml(`${template.labels.keywords} ${words}`)}</p>`;
 }
 
 function referenceHtml(
   number,
-  text
+  text,
+  template
 ) {
-  return `<p style="font-family:${PAPER_FONT};font-size:11px;line-height:1.5;color:${TEXT_COLOR};margin:0 0 6px 0">[${number}] ${escapeHtml(text)}</p>`;
+  const label = template.superscriptReferences
+    ? `<sup style="${template.styles.referenceLabel}">[${number}]</sup>`
+    : `[${number}]`;
+  return `<p style="${template.styles.reference}">${label} ${escapeHtml(text)}</p>`;
 }
 
-function paragraphHtml(text) {
-  return `<p style="font-family:${PAPER_FONT};font-size:12px;line-height:1.55;color:${TEXT_COLOR};margin:0 0 10px 0">${escapeHtml(text)}</p>`;
+function paragraphHtml(
+  text,
+  template
+) {
+  return `<p style="${template.styles.body}">${escapeHtml(text)}</p>`;
 }
 
-function tableHtml(block) {
-  const cellStyle = `border:1px solid ${RULE_COLOR};padding:6px 8px;font-family:${PAPER_FONT};font-size:12px;color:${TEXT_COLOR}`;
-  const headStyle = `${cellStyle};background-color:${HEADER_FILL};font-weight:bold`;
+// WHY THE ABSTRACT STANDS IN A BOX WHEN THE TEMPLATE SAYS SO.
+// The class of the journal template draws its abstract in a box filled with its own colour, and a box a Doc keeps is a one-cell table with that fill.
+
+function abstractHtml(
+  text,
+  template
+) {
+  if (!template.boxedAbstract) return paragraphHtml(text, template);
+  return `<table style="${template.styles.abstractBox}"><tbody><tr><td style="${template.styles.abstractCell}"><p style="${template.styles.abstractText}">${escapeHtml(text)}</p></td></tr></tbody></table>`;
+}
+
+function captionLabelHtml(
+  label,
+  number,
+  template
+) {
+  if (!label) return '';
+  return `<span style="${template.styles.captionLabel}">${escapeHtml(`${label} ${number}.`)}</span> `;
+}
+
+function captionHtml(
+  text,
+  template,
+  label = '',
+  number = 0
+) {
+  return `<p style="${template.styles.caption}">${captionLabelHtml(label, number, template)}${escapeHtml(text)}</p>`;
+}
+
+function tableHtml(
+  block,
+  template,
+  number
+) {
+  const styles = template.styles;
+  const headStyle = `${styles.head}${styles.ruleTop}${styles.ruleMiddle}`;
   const heads = block.headers.map((header) => `<th style="${headStyle}">${escapeHtml(header)}</th>`).join('');
-  const rows = block.rows.map((row) => {
+  const last = block.rows.length - 1;
+  const rows = block.rows.map(((
+    row,
+    rowIndex
+  ) => {
+    const cellStyle = `${styles.cell}${rowIndex === last ? styles.ruleBottom : ''}`;
     const cells = row.map((cell) => `<td style="${cellStyle}">${escapeHtml(cell)}</td>`).join('');
     return `<tr>${cells}</tr>`;
-  }).join('');
-  return `<table style="border-collapse:collapse;width:100%;margin:0 0 14px 0"><thead><tr>${heads}</tr></thead><tbody>${rows}</tbody></table>`;
+  })).join('');
+  const title = String(block.title ?? '').trim();
+  const caption = title
+    ? captionHtml(title, template, template.labels.table, number)
+    : '';
+  return `${caption}<table style="${styles.table}"><thead><tr>${heads}</tr></thead><tbody>${rows}</tbody></table>`;
 }
 
 function figureHtml({
   src,
   alt,
-  caption
+  caption,
+  template,
+  label = '',
+  number = 0
 }) {
   const image = `<img src="${escapeHtml(src)}" alt="${escapeHtml(alt)}" style="max-width:560px;height:auto">`;
-  const label = caption
-    ? `<figcaption style="font-family:${PAPER_FONT};font-size:11px;color:${MUTED_COLOR};margin-top:6px">${escapeHtml(caption)}</figcaption>`
+  const text = caption
+    ? `<figcaption style="${template.styles.figureCaption}">${captionLabelHtml(label, number, template)}${escapeHtml(caption)}</figcaption>`
     : '';
-  return `<figure style="margin:12px 0 16px 0">${image}${label}</figure>`;
+  return `<figure style="margin:12px 0 16px 0">${image}${text}</figure>`;
 }
 
-function captionHtml(text) {
-  return `<p style="font-family:${PAPER_FONT};font-size:11px;color:${MUTED_COLOR};margin:0 0 10px 0">${escapeHtml(text)}</p>`;
-}
-
-function markerHtml(marker) {
-  return `<p style="font-family:${PAPER_FONT};font-size:12px;line-height:1.55;color:${TEXT_COLOR};margin:0 0 10px 0">${escapeHtml(marker)}</p>`;
+function markerHtml(
+  marker,
+  template
+) {
+  return `<p style="${template.styles.body}">${escapeHtml(marker)}</p>`;
 }
 
 /**
@@ -298,6 +366,26 @@ export function paperMarkers({ document } = {}) {
 }
 
 /**
+ * The headings of a paper as the paper shows them, so the writer looks for the text that will really be there.
+ * @param {object} args - the read inputs.
+ * @param {object} args.document - a document from buildDocument, carrying the docplan.
+ * @returns {string[]} the heading texts, numbered and worded the way the template words them.
+ */
+
+export function paperHeadings({ document } = {}) {
+  const docplan = document?.docplan ?? {};
+  const template = paperTemplate(docplan.template);
+  let number = 0;
+  const headings = [];
+  for (const block of asArray(docplan.blocks)) {
+    if (block?.kind !== 'heading') continue;
+    number += 1;
+    headings.push(template.headingText(String(block.text ?? '').trim(), number));
+  }
+  return headings;
+}
+
+/**
  * The list of headings that stands in for a table of contents the page refused to make.
  * @param {object} args - the read inputs.
  * @param {object} args.document - a document from buildDocument, carrying the docplan.
@@ -306,15 +394,18 @@ export function paperMarkers({ document } = {}) {
 
 export function tocListHtml({ document } = {}) {
   const docplan = document?.docplan ?? {};
-  const headings = asArray(docplan.blocks)
-    .filter((block) => block?.kind === 'heading')
-    .map((block) => String(block.text ?? '').trim())
-    .filter((text) => text !== '');
-  if (asArray(docplan.references).length) headings.push(REFERENCES_HEADING);
+  const template = paperTemplate(docplan.template);
+  const headings = paperHeadings({
+    document
+  });
+  if (asArray(docplan.references).length) headings.push(template.headingText(REFERENCES_HEADING, null));
   return headings.map((
     text,
     index
-  ) => `<p style="font-family:${PAPER_FONT};font-size:12px;line-height:1.55;color:${TEXT_COLOR};margin:0 0 6px 0">${index + 1}. ${escapeHtml(text)}</p>`).join('');
+  ) => {
+    const number = template.contentsNumbers ? `${index + 1}. ` : '';
+    return `<p style="${template.styles.tocEntry}">${number}${escapeHtml(text)}</p>`;
+  }).join('');
 }
 
 /**
@@ -322,13 +413,20 @@ export function tocListHtml({ document } = {}) {
  * @param {object} args - the figure inputs.
  * @param {object} args.block - the graph block of a built document.
  * @param {string} args.src - the source of the picture.
+ * @param {string} [args.templateName] - the template the paper asks for.
+ * @param {number} [args.number] - the number the figure carries in the paper.
+ * @param {boolean} [args.withCaption] - when false, the picture stands alone because the paper already carries the caption.
  * @returns {string} the HTML of the figure.
  */
 
 export function graphFigureHtml({
   block,
-  src
+  src,
+  templateName = null,
+  number = 1,
+  withCaption = true
 }) {
+  const template = paperTemplate(templateName);
   const caption = [
     block?.title,
     block?.caption
@@ -336,7 +434,10 @@ export function graphFigureHtml({
   return figureHtml({
     src,
     alt: block?.title || 'grafik',
-    caption
+    caption: withCaption ? caption : '',
+    template,
+    label: template.labels.figure,
+    number
   });
 }
 
@@ -360,40 +461,47 @@ export function renderPaperHtml({
   if (!docplan || !Array.isArray(docplan.blocks)) {
     throw new Error('renderPaperHtml needs a built document that carries a docplan.');
   }
+  const template = paperTemplate(docplan.template);
   const images = assets.images ?? {};
   const charts = assets.charts ?? {};
   const markers = paperMarkers({
     document
   });
+  const headings = paperHeadings({
+    document
+  });
   const parts = [];
 
-  parts.push(titleHtml(docplan.title));
-  if (docplan.cover?.subtitle) parts.push(coverLineHtml(docplan.cover.subtitle));
-  if (docplan.author) parts.push(coverLineHtml(docplan.author));
-  if (docplan.cover?.affiliation) parts.push(coverLineHtml(docplan.cover.affiliation));
-  if (docplan.cover?.date) parts.push(coverLineHtml(docplan.cover.date));
+  parts.push(titleHtml(docplan.title, template));
+  if (docplan.cover?.subtitle) parts.push(lineHtml(docplan.cover.subtitle, template, 'subtitle'));
+  if (docplan.author) parts.push(lineHtml(docplan.author, template, 'author'));
+  if (docplan.cover?.affiliation) parts.push(lineHtml(docplan.cover.affiliation, template, 'affiliation'));
+  if (docplan.cover?.date) parts.push(lineHtml(docplan.cover.date, template, 'date'));
   if (docplan.cover?.abstract) {
-    parts.push(coverLabelHtml('Abstrak'));
-    parts.push(paragraphHtml(docplan.cover.abstract));
+    parts.push(labelHtml(template.labels.abstract, template));
+    parts.push(abstractHtml(docplan.cover.abstract, template));
   }
   if (docplan.cover?.keywords?.length) {
-    parts.push(coverLabelHtml(`Kata kunci: ${docplan.cover.keywords.join(', ')}`));
+    parts.push(keywordsHtml(docplan.cover.keywords, template));
   }
-  if (docplan.cover) parts.push(markerHtml(markers.breaks[0]));
+  if (docplan.cover) parts.push(markerHtml(markers.breaks[0], template));
 
   // WHY THE CONTENTS STAND BETWEEN TWO PAGE BREAKS.
   // Measured on a real Doc: a page break is a command the page runs where the text stands, so the break is a marker and the page breaks it itself.
   // The cover ends with one, and the contents end with another, so the paper opens with a cover, lists itself, and starts its body on a fresh page.
 
   if (docplan.toc) {
-    parts.push(coverLabelHtml(docplan.toc.title));
-    parts.push(markerHtml(markers.toc));
-    parts.push(markerHtml(markers.breaks[markers.breaks.length - 1]));
+    parts.push(labelHtml(template.headingText(docplan.toc.title, null), template));
+    parts.push(markerHtml(markers.toc, template));
+    parts.push(markerHtml(markers.breaks[markers.breaks.length - 1], template));
   }
 
   const imageCounts = new Map();
   const graphCounts = new Map();
   let graphTotal = 0;
+  let headingIndex = 0;
+  let tableNumber = 0;
+  let figureNumber = 0;
   const nextIndex = (
     counts,
     section
@@ -405,18 +513,21 @@ export function renderPaperHtml({
 
   for (const block of docplan.blocks) {
     if (block.kind === 'heading') {
-      parts.push(headingHtml(block.text));
+      parts.push(headingHtml(headings[headingIndex], template));
+      headingIndex += 1;
       continue;
     }
     if (block.kind === 'paragraph') {
-      parts.push(paragraphHtml(block.text));
+      parts.push(paragraphHtml(block.text, template));
       continue;
     }
     if (block.kind === 'table') {
-      parts.push(tableHtml(block));
+      tableNumber += 1;
+      parts.push(tableHtml(block, template, tableNumber));
       continue;
     }
     if (block.kind === 'image') {
+      figureNumber += 1;
       const index = nextIndex(imageCounts, block.section);
       const key = assetKey('image', block.section, index);
       const src = images[key];
@@ -426,24 +537,28 @@ export function renderPaperHtml({
       parts.push(figureHtml({
         src,
         alt: block.alt,
-        caption: block.caption
+        caption: block.caption,
+        template,
+        label: template.labels.figure,
+        number: figureNumber
       }));
       continue;
     }
     if (block.kind === 'graph') {
       graphTotal += 1;
+      figureNumber += 1;
 
       // WHY A NATIVE CHART IS RENDERED AS A MARKER.
       // Measured on a real Doc: a chart pasted from a sheet arrives as a chart only when the page answers the paste dialog, and the chart must stand where it belongs.
       // So the paper carries a marker there, the marker is found in the document, and the chart is pasted over it.
 
       if (nativeCharts === true) {
-        parts.push(markerHtml(chartMarker(graphTotal)));
+        parts.push(markerHtml(chartMarker(graphTotal), template));
         const caption = [
           block.title,
           block.caption
         ].filter((part) => part && String(part).trim() !== '').join(' — ');
-        if (caption) parts.push(captionHtml(caption));
+        if (caption) parts.push(captionHtml(caption, template, template.labels.figure, figureNumber));
         continue;
       }
       const key = assetKey('graph', block.section, nextIndex(graphCounts, block.section));
@@ -453,7 +568,9 @@ export function renderPaperHtml({
       }
       parts.push(graphFigureHtml({
         block,
-        src
+        src,
+        templateName: docplan.template,
+        number: figureNumber
       }));
     }
   }
@@ -463,12 +580,12 @@ export function renderPaperHtml({
 
   const references = asArray(docplan.references);
   if (references.length) {
-    parts.push(headingHtml(REFERENCES_HEADING));
+    parts.push(headingHtml(template.headingText(REFERENCES_HEADING, null), template));
     references.forEach((
       text,
       index
     ) => {
-      parts.push(referenceHtml(index + 1, text));
+      parts.push(referenceHtml(index + 1, text, template));
     });
   }
   return parts.join('');
