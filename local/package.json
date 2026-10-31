@@ -22,6 +22,8 @@
     "dev-shim.js",
     "dialog.js",
     "doc-native-chart.js",
+    "doc-native-page.js",
+    "doc-native-structure.js",
     "doc-render.js",
     "doc-write.js",
     "documents.js",

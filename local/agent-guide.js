@@ -198,7 +198,9 @@ export const SIDE_EFFECTS = Object.freeze({
   document_build: ['writes a checked document file beside the source; no page is touched'],
   document_write: [
     'pastes the paper into the named tab, so the page gains the whole document at the caret',
-    'puts the paper on the machine clipboard for the paste, so whatever was copied there is replaced'
+    'puts the paper on the machine clipboard for the paste, so whatever was copied there is replaced',
+    'breaks the pages and makes the table of contents in the page itself, and a contents the page refuses falls back to a pasted list of the headings',
+    'with nativeCharts the graph travels through the machine clipboard too, as a chart copied out of a scratch sheet'
   ],
   capture_page: [],
   ax_snapshot: []

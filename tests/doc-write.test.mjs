@@ -219,7 +219,7 @@ test('the paper is checked, drawn, put on the clipboard and pasted into the page
   const written = clipboard.calls.find((call) => call.what === 'ensureHtml');
   assert.ok(written, 'the paper went to the clipboard just before the paste');
   assert.match(written.html, /^<!-- opera-agent-document:/, 'the paper carries a marker the clipboard can be checked against');
-  assert.match(written.html, /<h1/);
+  assert.match(written.html, /<h2/, 'the sections of the paper are headings');
   assert.match(written.html, /<table/);
   assert.match(written.html, /data:image\/png;base64,CHART/);
   assert.ok(clipboard.calls.some((call) => call.what === 'pasteHtml'), 'the page was asked to paste');
@@ -484,4 +484,214 @@ test('the caret point the caller names is the point that is clicked', async () =
     x: 120,
     y: 240
   });
+});
+
+const COMPLETE_PAPER = {
+  title: 'Paper Lengkap',
+  author: 'Opera Agent',
+  cover: {
+    subtitle: 'Membaca kanvas',
+    affiliation: 'Laboratorium Opera',
+    date: '31 Oktober 2026',
+    abstract: 'Ringkasan satu paragraf.',
+    keywords: [
+      'accessibility tree'
+    ]
+  },
+  toc: true,
+  sections: [
+    {
+      heading: 'Pengantar',
+      body: 'Isi pengantar.',
+      tables: [
+        {
+          headers: [
+            'Panggilan',
+            'Latensi ms'
+          ],
+          rows: [
+            [
+              'list_tabs',
+              '2'
+            ]
+          ]
+        }
+      ],
+      graphs: [
+        {
+          kind: 'bar',
+          title: 'Latensi',
+          caption: 'Dari tabel.',
+          source: {
+            table: 0,
+            labelColumn: 'Panggilan',
+            aggregate: 'sum',
+            valueColumn: 'Latensi ms'
+          },
+          data: [
+            {
+              label: 'list_tabs',
+              value: 2
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  references: [
+    'Opera Agent. 2026. Paper lengkap.'
+  ]
+};
+
+function fakeStructure({
+  order = [],
+  contents = {
+    ok: true,
+    why: 'the page made it'
+  }
+} = {}) {
+  const breaks = [];
+  const made = [];
+  const pasted = [];
+  return {
+    breaks,
+    made,
+    pasted,
+    calls: {
+      pageBreak: async ({
+        marker
+      }) => {
+        order.push(`break:${marker}`);
+        breaks.push(marker);
+        return {
+          ok: true,
+          why: 'the page broke the page'
+        };
+      },
+      tableOfContents: async ({
+        marker
+      }) => {
+        order.push(`contents:${marker}`);
+        made.push(marker);
+        return contents;
+      },
+      pasteOver: async ({
+        html
+      }) => {
+        order.push('contents:list');
+        pasted.push(html);
+        return {
+          pasted: true
+        };
+      }
+    }
+  };
+}
+
+test('a complete paper breaks its pages, charts its graphs, and ends with a table of contents the page made', async () => {
+  const { source } = paperFile({
+    paper: COMPLETE_PAPER,
+    name: 'paper-complete.json'
+  });
+  const session = fakeSession();
+  const clipboard = fakeClipboard(session.cdp);
+  const order = [];
+  const structure = fakeStructure({
+    order
+  });
+  const result = await writeDocumentToPage({
+    source,
+    session,
+    clipboard,
+    nativeCharts: true,
+    openSheet: async () => ({}),
+    native: {
+      build: async () => ({
+        copied: true
+      }),
+      place: async () => {
+        order.push('chart');
+        return {
+          ok: true,
+          charts: 1,
+          why: 'the page names it'
+        };
+      },
+      pasteOver: async () => ({
+        pasted: true
+      }),
+      trash: async () => ({
+        trashed: true,
+        why: 'the page says so'
+      })
+    },
+    structure: structure.calls,
+    settleMs: 60,
+    pollMs: 10
+  });
+
+  assert.deepEqual(structure.breaks, [
+    '[[opera-break-1]]',
+    '[[opera-break-2]]'
+  ]);
+  assert.deepEqual(structure.made, [
+    '[[opera-toc]]'
+  ]);
+  assert.deepEqual(order, [
+    'break:[[opera-break-1]]',
+    'break:[[opera-break-2]]',
+    'chart',
+    'contents:[[opera-toc]]'
+  ], 'the breaks come first, the charts before the contents, so the numbers in the contents are the numbers of the finished paper');
+  assert.equal(result.structure.toc.kind, 'native');
+  assert.equal(result.structure.toc.ok, true);
+});
+
+test('a table of contents the page will not make falls back to the list of headings', async () => {
+  const { source } = paperFile({
+    paper: COMPLETE_PAPER,
+    name: 'paper-complete-fallback.json'
+  });
+  const session = fakeSession();
+  const clipboard = fakeClipboard(session.cdp);
+  const structure = fakeStructure({
+    contents: {
+      ok: false,
+      why: 'the page does not offer it'
+    }
+  });
+  const result = await writeDocumentToPage({
+    source,
+    session,
+    clipboard,
+    structure: structure.calls,
+    settleMs: 60,
+    pollMs: 10
+  });
+
+  assert.equal(result.structure.toc.kind, 'list');
+  assert.equal(result.structure.toc.ok, true);
+  assert.match(structure.pasted[0], /Pengantar/);
+  assert.match(structure.pasted[0], /Referensi/);
+});
+
+test('a paper with no cover and no contents asks the page for nothing', async () => {
+  const { source } = paperFile({
+    name: 'paper-plain.json'
+  });
+  const session = fakeSession();
+  const clipboard = fakeClipboard(session.cdp);
+  const structure = fakeStructure();
+  const result = await writeDocumentToPage({
+    source,
+    session,
+    clipboard,
+    structure: structure.calls,
+    settleMs: 60,
+    pollMs: 10
+  });
+
+  assert.deepEqual(structure.breaks, []);
+  assert.deepEqual(structure.made, []);
+  assert.equal(result.structure.toc, null);
 });

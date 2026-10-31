@@ -8,11 +8,15 @@ import assert from 'node:assert/strict';
 
 import {
   assetKey,
+  breakMarker,
   chartExpression,
   chartMarker,
   chartSpec,
   graphFigureHtml,
-  renderPaperHtml
+  paperMarkers,
+  renderPaperHtml,
+  tocListHtml,
+  tocMarker
 } from '../local/doc-render.js';
 
 const GRAPH = {
@@ -97,6 +101,46 @@ const DOCUMENT = {
   figures: []
 };
 
+const COMPLETE = {
+  title: 'Paper Lengkap',
+  docplan: {
+    title: 'Paper Lengkap',
+    author: 'Opera Agent',
+    cover: {
+      subtitle: 'Membaca kanvas',
+      affiliation: 'Laboratorium Opera',
+      date: '31 Oktober 2026',
+      abstract: 'Ringkasan satu paragraf.',
+      keywords: [
+        'accessibility tree',
+        'google docs'
+      ]
+    },
+    toc: {
+      title: 'Daftar Isi'
+    },
+    references: [
+      'Opera Agent. 2026. Paper lengkap.'
+    ],
+    sections: [],
+    blocks: [
+      {
+        kind: 'heading',
+        level: 1,
+        text: 'Pengantar',
+        section: 0
+      }
+    ],
+    totals: {
+      sections: 1,
+      items: 0,
+      images: 0,
+      graphs: 0
+    }
+  },
+  figures: []
+};
+
 test('a chart of an unknown kind is refused instead of drawn as something else', () => {
   assert.throws(() => chartSpec({
     kind: 'pie',
@@ -139,7 +183,7 @@ test('the paper becomes a heading, a paragraph, a table, an image and a chart', 
       }
     }
   });
-  assert.match(html, /<h1[^>]*>Satu Sampel Dingin<\/h1>/);
+  assert.match(html, /<p[^>]*>Satu Sampel Dingin<\/p>/, 'the title stands on its own, so a table of contents does not list the title of the paper');
   assert.match(html, /<h2[^>]*>Pengukuran<\/h2>/);
   assert.match(html, /<p[^>]*>Semua angka diambil pada tab yang sama\.<\/p>/);
   assert.match(html, /<th[^>]*>Panggilan<\/th>/);
@@ -222,4 +266,88 @@ test('a title with markup in it is escaped before it reaches the page', () => {
   });
   assert.ok(!html.includes('<script>'), 'no markup from the title reaches the page');
   assert.match(html, /\u0026lt;script\u0026gt;/);
+});
+
+test('the cover carries the subtitle, the affiliation, the date, the abstract and the keywords', () => {
+  const html = renderPaperHtml({
+    document: COMPLETE
+  });
+  assert.match(html, /Membaca kanvas/);
+  assert.match(html, /Laboratorium Opera/);
+  assert.match(html, /31 Oktober 2026/);
+  assert.match(html, /Abstrak/);
+  assert.match(html, /Ringkasan satu paragraf\./);
+  assert.match(html, /Kata kunci/);
+  assert.match(html, /accessibility tree/);
+});
+
+test('the cover ends with a page break, and the contents stand between two of them', () => {
+  const html = renderPaperHtml({
+    document: COMPLETE
+  });
+  assert.ok(html.includes('[[opera-break-1]]'), 'the cover ends with a page break');
+  assert.ok(html.includes('[[opera-toc]]'), 'the table of contents stands as a marker the page can replace');
+  assert.ok(html.includes('[[opera-break-2]]'), 'the contents end with a page break');
+  assert.match(html, /Daftar Isi/);
+});
+
+test('a paper with no cover and no contents carries no markers at all', () => {
+  const html = renderPaperHtml({
+    document: DOCUMENT,
+    assets: {
+      images: {
+        [assetKey('image', 0, 0)]: 'data:image/png;base64,AAA'
+      },
+      charts: {
+        [assetKey('graph', 0, 0)]: 'data:image/png;base64,BBB'
+      }
+    }
+  });
+  assert.ok(!html.includes('[[opera-break-1]]'));
+  assert.ok(!html.includes('[[opera-toc]]'));
+});
+
+test('the references are a numbered list under their heading', () => {
+  const html = renderPaperHtml({
+    document: COMPLETE
+  });
+  assert.match(html, /<h2[^>]*>Referensi<\/h2>/);
+  assert.match(html, /\[1\] Opera Agent\. 2026\. Paper lengkap\./);
+});
+
+test('the markers the writer looks for are the markers the paper carries', () => {
+  assert.equal(breakMarker(1), '[[opera-break-1]]');
+  assert.equal(tocMarker(), '[[opera-toc]]');
+  const html = renderPaperHtml({
+    document: COMPLETE
+  });
+  assert.ok(html.includes(breakMarker(1)));
+  assert.ok(html.includes(tocMarker()));
+});
+
+test('the markers the paper asks for are the ones the writer looks for', () => {
+  const markers = paperMarkers({
+    document: COMPLETE
+  });
+  assert.deepEqual(markers.breaks, [
+    '[[opera-break-1]]',
+    '[[opera-break-2]]'
+  ]);
+  assert.equal(markers.toc, '[[opera-toc]]');
+});
+
+test('a paper with no contents asks for no table of contents', () => {
+  const markers = paperMarkers({
+    document: DOCUMENT
+  });
+  assert.deepEqual(markers.breaks, []);
+  assert.equal(markers.toc, null);
+});
+
+test('the list that stands in for a contents the page will not make names every heading', () => {
+  const html = tocListHtml({
+    document: COMPLETE
+  });
+  assert.match(html, /Pengantar/);
+  assert.match(html, /Referensi/);
 });

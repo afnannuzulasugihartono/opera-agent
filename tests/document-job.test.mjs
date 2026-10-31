@@ -102,6 +102,81 @@ test('a table with the wrong number of cells is refused', () => {
   assert.throws(() => buildDocument({ doc: bad }), /cells/);
 });
 
+test('a cover, a table of contents and references are carried into the plan', () => {
+  const built = buildDocument({
+    doc: {
+      title: 'Paper lengkap',
+      author: 'Opera Agent',
+      cover: {
+        subtitle: 'Membaca kanvas',
+        affiliation: 'Laboratorium Opera',
+        date: '31 Oktober 2026',
+        abstract: 'Ringkasan satu paragraf.',
+        keywords: [
+          'accessibility tree',
+          'google docs'
+        ]
+      },
+      toc: true,
+      sections: [
+        {
+          heading: 'Pengantar',
+          body: 'Isi pengantar.'
+        }
+      ],
+      references: [
+        'Opera Agent. 2026. Paper lengkap.'
+      ]
+    }
+  });
+  assert.equal(built.docplan.cover.subtitle, 'Membaca kanvas');
+  assert.equal(built.docplan.cover.affiliation, 'Laboratorium Opera');
+  assert.equal(built.docplan.cover.date, '31 Oktober 2026');
+  assert.equal(built.docplan.cover.abstract, 'Ringkasan satu paragraf.');
+  assert.deepEqual(built.docplan.cover.keywords, [
+    'accessibility tree',
+    'google docs'
+  ]);
+  assert.equal(built.docplan.toc.title, 'Daftar Isi');
+  assert.deepEqual(built.docplan.references, [
+    'Opera Agent. 2026. Paper lengkap.'
+  ]);
+});
+
+test('a paper with no cover and no contents carries neither', () => {
+  const built = buildDocument({ doc: DOC });
+  assert.equal(built.docplan.cover, null);
+  assert.equal(built.docplan.toc, null);
+  assert.deepEqual(built.docplan.references, []);
+});
+
+test('a cover that is not an object and a reference with no text are refused', () => {
+  assert.throws(() => buildDocument({
+    doc: {
+      title: 'Paper',
+      cover: 'bukan objek',
+      sections: [
+        {
+          heading: 'Pengantar'
+        }
+      ]
+    }
+  }), /cover/);
+  assert.throws(() => buildDocument({
+    doc: {
+      title: 'Paper',
+      sections: [
+        {
+          heading: 'Pengantar'
+        }
+      ],
+      references: [
+        '   '
+      ]
+    }
+  }), /reference 1/);
+});
+
 // WHY THE GRAPH DATA HERE IS OUT OF TABLE ORDER.
 // The artifact must carry the rows it recomputed, not the caller's array; keeping the fixture reversed makes the difference visible to the test below.
 

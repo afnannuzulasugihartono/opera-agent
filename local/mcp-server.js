@@ -42,6 +42,10 @@ import {
   trashSheet
 } from './doc-native-chart.js';
 import {
+  insertPageBreak,
+  insertTableOfContents
+} from './doc-native-structure.js';
+import {
   ensureHtml,
   pasteHtml,
   readChartClip,
@@ -76,6 +80,16 @@ const NATIVE_CALLS = Object.freeze({
   place: placeNativeChart,
   pasteOver: pasteOverMarker,
   trash: trashSheet
+});
+
+// WHY THE STRUCTURE CALLS ARE NAMED HERE.
+// The paper write takes the page breaks and the table of contents as seams too, so a test can answer them without a browser.
+// These are the real ones: a document that breaks its own pages, a document that makes its own table of contents, and the clipboard that carries the list that stands in for one.
+
+const STRUCTURE_CALLS = Object.freeze({
+  pageBreak: insertPageBreak,
+  tableOfContents: insertTableOfContents,
+  pasteOver: pasteOverMarker
 });
 
 const CLIPBOARD_CALLS = Object.freeze({
@@ -733,6 +747,7 @@ const windowMatch = async (
             at: args.at ?? null,
             nativeCharts,
             native: context.native ?? NATIVE_CALLS,
+            structure: context.structure ?? STRUCTURE_CALLS,
             clipboard: context.clipboard ?? CLIPBOARD_CALLS,
             openSheet: nativeCharts
               ? async () => {

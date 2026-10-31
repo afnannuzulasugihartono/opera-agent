@@ -1,7 +1,7 @@
 // @last-edited: 2026-10-31 UTC+7.
 // @title: doc-native-chart — a chart the page itself draws: built in a scratch sheet, released by a dialog, carried into a document as a chart.
 // @state: the sheet that builds it, the dialog that releases it, and the page that says it landed.
-// @dependencies: ./clipboard.js.
+// @dependencies: ./clipboard.js, ./doc-native-page.js.
 
 // WHY THE CHART IS BUILT IN A SHEET AND NOT DRAWN ON THE PAGE.
 // Measured live on a real Google Doc: a pasted <svg> arrives as the three text labels inside it, and an <img> holding an SVG data URI arrives as a broken image.
@@ -21,53 +21,10 @@ import {
   readChartClip,
   writeText
 } from './clipboard.js';
-import { focusWindow } from './window-focus.js';
-
-// WHY THE PAGE HAS TO BE IN SIGHT BEFORE IT GETS THE CLIPBOARD.
-// Measured live on this machine: a page whose window sits behind another one reports itself hidden, and a paste into it arrives with nothing on it — the sheet showed its paste bubble and stayed empty.
-// The same paste into the same page landed as soon as its window was brought forward, so the page is asked whether it is visible and its window is brought forward when it is not.
-
-const VISIBILITY_PROBE = `(() => ({
-  visibility: String(document.visibilityState || ''),
-  title: String(document.title || '')
-}))()`;
-
-/**
- * Asks the page whether it is in sight, and brings its window forward when it is not.
- * @param {object} page - the page session to ask and to bring forward.
- * @param {Function} [sleep] - the wait between bringing the window forward and asking again, replaced in tests.
- * @returns {Promise<{visible: boolean, focused: boolean, why: string}>} whether the page is visible, and why it is not when it is not.
- */
-
-export async function ensureVisible(
-  page,
-  sleep = sleepDefault
-) {
-  const state = await page.evaluate(VISIBILITY_PROBE).catch(() => null);
-  if (state?.visibility === 'visible') {
-    return {
-      visible: true,
-      focused: false,
-      why: ''
-    };
-  }
-  const title = String(state?.title ?? '').trim();
-  if (title === '') {
-    return {
-      visible: false,
-      focused: false,
-      why: 'the page has no title to bring its window forward with'
-    };
-  }
-  const focus = await focusWindow(title);
-  await sleep(700);
-  const after = await page.evaluate(VISIBILITY_PROBE).catch(() => null);
-  return {
-    visible: after?.visibility === 'visible',
-    focused: focus?.focused === true,
-    why: focus?.why ?? ''
-  };
-}
+import {
+  ensureVisible,
+  selectMarker
+} from './doc-native-page.js';
 
 // WHY THE DIALOG IS READ BY WHAT IT SAYS.
 // Measured live on a real Doc: the paste dialog puts its two answers in radio buttons, and each radio sits in a row whose text names the answer.
@@ -121,22 +78,6 @@ const DIALOG_PROBE = `(() => {
     paste: point(button ? button.getBoundingClientRect() : null),
     cancel: point(cancel ? cancel.getBoundingClientRect() : null),
     isChartDialog: /^Paste chart$/i.test(title) && Boolean(unlinked && linked)
-  };
-})()`;
-
-// WHY THE FIND BAR IS READ BY ITS COUNTER.
-// Measured live on a real Doc: the find bar counts its matches in one place, and it reads "1 of 1" when the marker is there and "0 of 0" when it is not.
-// So the marker is known to be missing by the counter, and a chart is never pasted into a document that does not hold its place.
-
-const FIND_PROBE = `(() => {
-  const counter = document.querySelector('.appsDocsUiWizFindbarFindInputCounter');
-  const text = String(counter?.textContent || '').trim();
-  const counts = /(\\d+)\\s*of\\s*(\\d+)/i.exec(text);
-  return {
-    counter: text,
-    count: counts ? Number(counts[1]) : null,
-    missing: counts ? Number(counts[1]) === 0 : false,
-    noBar: !counter
   };
 })()`;
 
@@ -288,40 +229,6 @@ async function pasteChartData({
     landed: false,
     range,
     attempts
-  };
-}
-
-async function selectMarker({
-  doc,
-  marker,
-  sleep
-}) {
-  await doc.front();
-  const shown = await ensureVisible(
-    doc,
-    sleep
-  );
-  await doc.key('f', [
-    'Control'
-  ]);
-  await sleep(500);
-  await doc.cdp.send('Input.insertText', {
-    text: marker
-  });
-  await sleep(800);
-  await doc.key('Enter');
-  await sleep(900);
-  const found = await doc.evaluate(FIND_PROBE).catch(() => ({
-    missing: false,
-    noBar: true,
-    counter: ''
-  }));
-  await doc.key('Escape');
-  await sleep(400);
-  return {
-    ...found,
-    visible: shown.visible,
-    focusWhy: shown.why
   };
 }
 

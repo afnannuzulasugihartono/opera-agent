@@ -235,6 +235,62 @@ function validateGraph(
     data: computed.data
   };
 }
+
+function validateCover(
+  cover
+) {
+  if (cover === undefined || cover === null) return null;
+  if (!cover || typeof cover !== 'object' || Array.isArray(cover)) {
+    throw new Error('the cover is not an object.');
+  }
+  const keywords = asArray(cover.keywords)
+    .map((word) => String(word ?? '').trim())
+    .filter((word) => word !== '');
+  return {
+    subtitle: nonEmptyString(cover.subtitle) ? cover.subtitle.trim() : '',
+    affiliation: nonEmptyString(cover.affiliation) ? cover.affiliation.trim() : '',
+    date: nonEmptyString(cover.date) ? cover.date.trim() : '',
+    abstract: nonEmptyString(cover.abstract) ? cover.abstract.trim() : '',
+    keywords
+  };
+}
+
+function validateToc(
+  toc
+) {
+  if (toc === undefined || toc === null || toc === false) return null;
+  if (toc === true) {
+    return {
+      title: 'Daftar Isi'
+    };
+  }
+  if (!toc || typeof toc !== 'object' || Array.isArray(toc)) {
+    throw new Error('the table of contents is neither true nor an object with a title.');
+  }
+  return {
+    title: nonEmptyString(toc.title) ? toc.title.trim() : 'Daftar Isi'
+  };
+}
+
+function validateReferences(
+  references
+) {
+  if (references === undefined || references === null) return [];
+  if (!Array.isArray(references)) {
+    throw new Error('the references are not a list.');
+  }
+  return references.map((
+    entry,
+    index
+  ) => {
+    const text = nonEmptyString(entry) ? entry.trim() : '';
+    if (text === '') {
+      throw new Error(`reference ${index + 1} has no text.`);
+    }
+    return text;
+  });
+}
+
 export function buildDocument({ doc } = {}) {
   if (!doc || typeof doc !== 'object' || Array.isArray(doc)) {
     throw new Error('document_build needs a document object.');
@@ -247,6 +303,10 @@ export function buildDocument({ doc } = {}) {
   if (sections.length === 0) {
     throw new Error('document_build needs at least one section.');
   }
+
+  const cover = validateCover(doc.cover);
+  const toc = validateToc(doc.toc);
+  const references = validateReferences(doc.references);
 
   const figures = [];
   const blocks = [];
@@ -346,6 +406,9 @@ export function buildDocument({ doc } = {}) {
   const docplan = {
     title: doc.title.trim(),
     author: nonEmptyString(doc.author) ? doc.author.trim() : null,
+    cover,
+    toc,
+    references,
     sections: sections.map((section) => ({
       heading: section.heading.trim(),
       items: asArray(section.tables).reduce((
@@ -360,7 +423,8 @@ export function buildDocument({ doc } = {}) {
       sections: sections.length,
       items: totalItems,
       images: blocks.filter((block) => block.kind === 'image').length,
-      graphs: figures.length
+      graphs: figures.length,
+      references: references.length
     }
   };
 

@@ -23,15 +23,21 @@ import {
   chartMarker,
   chartSpec,
   graphFigureHtml,
-  renderPaperHtml
+  paperMarkers,
+  renderPaperHtml,
+  tocListHtml
 } from './doc-render.js';
 import {
   buildNativeChart,
-  ensureVisible,
   pasteOverMarker,
   placeNativeChart,
   trashSheet
 } from './doc-native-chart.js';
+import {
+  insertPageBreak,
+  insertTableOfContents
+} from './doc-native-structure.js';
+import { ensureVisible } from './doc-native-page.js';
 import {
   ensureHtml,
   pasteHtml,
@@ -166,6 +172,92 @@ async function waitForEditor(
   }
 }
 
+// WHY THE PAGE BREAKS ARE MADE BEFORE THE CHARTS AND THE CONTENTS AFTER THEM.
+// Measured live on a real Doc: a table of contents holds the page numbers of the paper as it stands when it is made, and a chart is taller than the line it replaces.
+// So the pages are broken first, the charts are put in, and the contents are made last, so the numbers in the contents are the numbers of the finished paper.
+
+async function writeBreaks({
+  session,
+  markers,
+  builder
+}) {
+  const breaks = [];
+  for (const marker of markers.breaks) {
+    let made = {
+      ok: false,
+      why: 'the page was never asked'
+    };
+    try {
+      made = await builder.pageBreak({
+        doc: session,
+        marker
+      });
+    } catch (error) {
+      made = {
+        ok: false,
+        why: String(error?.message ?? error).split('\n')[0]
+      };
+    }
+    breaks.push({
+      marker,
+      ok: made?.ok === true,
+      why: made?.why ?? ''
+    });
+  }
+  return breaks;
+}
+
+// WHY A CONTENTS THE PAGE WILL NOT MAKE FALLS BACK TO THE LIST OF HEADINGS.
+// A paper without a table of contents is a paper without a way to find its parts, and the headings are already in the document.
+// So the list is pasted over the marker the same way a picture stands in for a chart that could not be made.
+
+async function writeContents({
+  session,
+  document,
+  markers,
+  builder,
+  clipboard
+}) {
+  if (!markers.toc) return null;
+  let made = {
+    ok: false,
+    why: 'the page was never asked'
+  };
+  try {
+    made = await builder.tableOfContents({
+      doc: session,
+      marker: markers.toc
+    });
+  } catch (error) {
+    made = {
+      ok: false,
+      why: String(error?.message ?? error).split('\n')[0]
+    };
+  }
+  if (made?.ok === true) {
+    return {
+      ok: true,
+      kind: 'native',
+      why: made.why ?? ''
+    };
+  }
+  const pasted = await builder.pasteOver({
+    doc: session,
+    marker: markers.toc,
+    html: tocListHtml({
+      document
+    }),
+    clipboard
+  });
+  return {
+    ok: pasted?.pasted === true,
+    kind: 'list',
+    why: pasted?.pasted === true
+      ? `the page would not make the table of contents (${made?.why || 'the page said no'}), so the headings are listed instead`
+      : `the page would not make the table of contents (${made?.why || 'the page said no'}) and the list could not be pasted either`
+  };
+}
+
 /**
  * Carries a paper from a JSON file into a live page: checks the plan against its own tables, draws every graph as a picture, fills the clipboard, pastes into the tab, and asks the page which headings it now holds.
  * @param {object} args - the write inputs.
@@ -177,6 +269,7 @@ async function waitForEditor(
  * @param {boolean} [args.nativeCharts] - when true, every graph is made by the page itself as a chart and pasted in as a chart, with a picture as the fallback.
  * @param {Function} [args.openSheet] - opens the sheet the charts are built in, replaced in tests.
  * @param {object} [args.native] - the chart making and placing calls, replaced in tests.
+ * @param {object} [args.structure] - the page break and table of contents calls, replaced in tests.
  * @param {object} [args.clipboard] - the clipboard writer to use, replaced in tests.
  * @returns {Promise<object>} what was pasted, what the page says it holds, and the read back afterwards.
  */
@@ -194,6 +287,11 @@ export async function writeDocumentToPage({
     place: placeNativeChart,
     pasteOver: pasteOverMarker,
     trash: trashSheet
+  },
+  structure = {
+    pageBreak: insertPageBreak,
+    tableOfContents: insertTableOfContents,
+    pasteOver: pasteOverMarker
   },
   clipboard = {
     ensureHtml,
@@ -314,6 +412,15 @@ export async function writeDocumentToPage({
   // The charts are not held back by the heading check, because a document draws its accessibility tree lazily and a cold tree names no heading while the paper is plainly there.
   // Each chart asks the document for its own marker, so a marker that is missing is caught where it is missing.
 
+  const markers = paperMarkers({
+    document: built.document
+  });
+  const breaks = await writeBreaks({
+    session,
+    markers,
+    builder: structure
+  });
+
   let nativeReport = null;
   if (nativeCharts === true) {
     nativeReport = await writeNativeCharts({
@@ -324,6 +431,14 @@ export async function writeDocumentToPage({
       openSheet
     });
   }
+
+  const toc = await writeContents({
+    session,
+    document: built.document,
+    markers,
+    builder: structure,
+    clipboard
+  });
 
   const read = await session.read({ allowCaretMove: false });
   const text = String(read.text ?? '');
@@ -354,6 +469,10 @@ export async function writeDocumentToPage({
           : 'the page named none of these headings, so the paper was not found in it'
     },
     native: nativeReport,
+    structure: {
+      breaks,
+      toc
+    },
     readBack: {
       chars: text.length,
       titleFound: title !== '' && text.includes(title),

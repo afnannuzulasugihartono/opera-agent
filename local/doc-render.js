@@ -181,6 +181,29 @@ function headingHtml(text) {
   return `<h2 style="font-family:${PAPER_FONT};font-size:18px;font-weight:bold;color:${TEXT_COLOR};border-bottom:1px solid ${RULE_COLOR};padding-bottom:4px;margin:22px 0 10px 0">${escapeHtml(text)}</h2>`;
 }
 
+// WHY THE TITLE IS A PARAGRAPH AND NOT A HEADING.
+// Measured on a real Doc: the table of contents the page makes lists every heading, and a paper whose own title is a heading is listed in its own contents.
+// So the title stands on the cover as a title, and only the sections are headings.
+
+function titleHtml(text) {
+  return `<p style="font-family:${PAPER_FONT};font-size:26px;font-weight:bold;color:${HEADING_COLOR};text-align:center;margin:48px 0 6px 0">${escapeHtml(text)}</p>`;
+}
+
+function coverLineHtml(text) {
+  return `<p style="font-family:${PAPER_FONT};font-size:12px;color:${TEXT_COLOR};text-align:center;margin:0 0 4px 0">${escapeHtml(text)}</p>`;
+}
+
+function coverLabelHtml(text) {
+  return `<p style="font-family:${PAPER_FONT};font-size:12px;font-weight:bold;color:${TEXT_COLOR};text-align:left;margin:18px 0 4px 0">${escapeHtml(text)}</p>`;
+}
+
+function referenceHtml(
+  number,
+  text
+) {
+  return `<p style="font-family:${PAPER_FONT};font-size:11px;line-height:1.5;color:${TEXT_COLOR};margin:0 0 6px 0">[${number}] ${escapeHtml(text)}</p>`;
+}
+
 function paragraphHtml(text) {
   return `<p style="font-family:${PAPER_FONT};font-size:12px;line-height:1.55;color:${TEXT_COLOR};margin:0 0 10px 0">${escapeHtml(text)}</p>`;
 }
@@ -224,6 +247,74 @@ function markerHtml(marker) {
 
 export function chartMarker(index) {
   return `[[opera-chart-${Number(index)}]]`;
+}
+
+/**
+ * The text that stands where a page break belongs, so the page can break the page itself.
+ * @param {number} index - the break's position in the paper, counted from one.
+ * @returns {string} the marker the document can find, as `[[opera-break-N]]`.
+ */
+
+export function breakMarker(index) {
+  return `[[opera-break-${Number(index)}]]`;
+}
+
+/**
+ * The text that stands where the table of contents belongs, so the page can make it itself.
+ * @returns {string} the marker the document can find, as `[[opera-toc]]`.
+ */
+
+export function tocMarker() {
+  return '[[opera-toc]]';
+}
+
+const REFERENCES_HEADING = 'Referensi';
+
+const asArray = (value) => Array.isArray(value) ? value : [];
+
+/**
+ * The markers the paper asks the page to make, so the writer and the renderer agree on where each one stands.
+ * @param {object} args - the read inputs.
+ * @param {object} args.document - a document from buildDocument, carrying the docplan.
+ * @returns {{breaks: string[], toc: string|null}} the page break markers and the table of contents marker.
+ */
+
+export function paperMarkers({ document } = {}) {
+  const docplan = document?.docplan ?? {};
+  const breaks = [];
+  let index = 0;
+  if (docplan.cover) {
+    index += 1;
+    breaks.push(breakMarker(index));
+  }
+  if (docplan.toc) {
+    index += 1;
+    breaks.push(breakMarker(index));
+  }
+  return {
+    breaks,
+    toc: docplan.toc ? tocMarker() : null
+  };
+}
+
+/**
+ * The list of headings that stands in for a table of contents the page refused to make.
+ * @param {object} args - the read inputs.
+ * @param {object} args.document - a document from buildDocument, carrying the docplan.
+ * @returns {string} the HTML of the list.
+ */
+
+export function tocListHtml({ document } = {}) {
+  const docplan = document?.docplan ?? {};
+  const headings = asArray(docplan.blocks)
+    .filter((block) => block?.kind === 'heading')
+    .map((block) => String(block.text ?? '').trim())
+    .filter((text) => text !== '');
+  if (asArray(docplan.references).length) headings.push(REFERENCES_HEADING);
+  return headings.map((
+    text,
+    index
+  ) => `<p style="font-family:${PAPER_FONT};font-size:12px;line-height:1.55;color:${TEXT_COLOR};margin:0 0 6px 0">${index + 1}. ${escapeHtml(text)}</p>`).join('');
 }
 
 /**
@@ -271,11 +362,33 @@ export function renderPaperHtml({
   }
   const images = assets.images ?? {};
   const charts = assets.charts ?? {};
-  const parts = [
-    `<h1 style="font-family:${PAPER_FONT};font-size:26px;font-weight:bold;color:${HEADING_COLOR};margin:0 0 4px 0">${escapeHtml(docplan.title)}</h1>`
-  ];
-  if (docplan.author) {
-    parts.push(`<p style="font-family:${PAPER_FONT};font-size:12px;color:${MUTED_COLOR};margin:0 0 18px 0">${escapeHtml(docplan.author)}</p>`);
+  const markers = paperMarkers({
+    document
+  });
+  const parts = [];
+
+  parts.push(titleHtml(docplan.title));
+  if (docplan.cover?.subtitle) parts.push(coverLineHtml(docplan.cover.subtitle));
+  if (docplan.author) parts.push(coverLineHtml(docplan.author));
+  if (docplan.cover?.affiliation) parts.push(coverLineHtml(docplan.cover.affiliation));
+  if (docplan.cover?.date) parts.push(coverLineHtml(docplan.cover.date));
+  if (docplan.cover?.abstract) {
+    parts.push(coverLabelHtml('Abstrak'));
+    parts.push(paragraphHtml(docplan.cover.abstract));
+  }
+  if (docplan.cover?.keywords?.length) {
+    parts.push(coverLabelHtml(`Kata kunci: ${docplan.cover.keywords.join(', ')}`));
+  }
+  if (docplan.cover) parts.push(markerHtml(markers.breaks[0]));
+
+  // WHY THE CONTENTS STAND BETWEEN TWO PAGE BREAKS.
+  // Measured on a real Doc: a page break is a command the page runs where the text stands, so the break is a marker and the page breaks it itself.
+  // The cover ends with one, and the contents end with another, so the paper opens with a cover, lists itself, and starts its body on a fresh page.
+
+  if (docplan.toc) {
+    parts.push(coverLabelHtml(docplan.toc.title));
+    parts.push(markerHtml(markers.toc));
+    parts.push(markerHtml(markers.breaks[markers.breaks.length - 1]));
   }
 
   const imageCounts = new Map();
@@ -343,6 +456,20 @@ export function renderPaperHtml({
         src
       }));
     }
+  }
+
+  // WHY THE REFERENCES ARE A HEADING AND A NUMBERED LIST.
+  // A reference list is part of the paper, so it is a heading the table of contents lists, and every entry carries the number a reader cites it by.
+
+  const references = asArray(docplan.references);
+  if (references.length) {
+    parts.push(headingHtml(REFERENCES_HEADING));
+    references.forEach((
+      text,
+      index
+    ) => {
+      parts.push(referenceHtml(index + 1, text));
+    });
   }
   return parts.join('');
 }

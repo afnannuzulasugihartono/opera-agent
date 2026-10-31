@@ -9,7 +9,6 @@ import assert from 'node:assert/strict';
 import {
   buildNativeChart,
   chartTsv,
-  ensureVisible,
   pasteOverMarker,
   placeNativeChart,
   trashSheet
@@ -56,26 +55,6 @@ const CHART = {
 };
 
 const noSleep = async () => {};
-
-test('a page in sight is left alone, and a page out of sight without a title says so', async () => {
-  const seen = await ensureVisible({
-    evaluate: async () => ({
-      visibility: 'visible',
-      title: 'Doc - Google Docs'
-    })
-  });
-  assert.equal(seen.visible, true);
-  assert.equal(seen.why, '');
-
-  const blind = await ensureVisible({
-    evaluate: async () => ({
-      visibility: 'hidden',
-      title: ''
-    })
-  });
-  assert.equal(blind.visible, false);
-  assert.match(blind.why, /no title/);
-});
 
 function fakeSheet() {
   const calls = [];
@@ -530,6 +509,9 @@ test('a document that never asks how to paste the chart says so instead of claim
   const out = await placeNativeChart({
     doc,
     marker: '[[opera-chart-1]]',
+    clipboard: {
+      readChartClip: () => 'chart'
+    },
     sleep: noSleep,
     timeoutMs: 30,
     intervalMs: 10
