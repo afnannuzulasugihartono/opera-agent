@@ -127,7 +127,10 @@ client-month to a manifest. See [`docs/jobs/statements.md`](../docs/jobs/stateme
 `document_write` carries that paper into a live tab — it draws each graph as a picture,
 puts the styled paper on the machine clipboard, pastes it at the caret, and asks the
 page which headings it now holds, so a paste that did not land is reported rather than
-assumed.
+assumed. With `nativeCharts` the graphs are made by the page itself — a scratch
+spreadsheet draws them and the document takes them as charts that carry their data and
+can be edited — and a graph that cannot be made that way falls back to the picture, so
+the answer says which graph is a chart and which is a picture.
 
 ## Recipes, measured
 

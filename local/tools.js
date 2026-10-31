@@ -26,6 +26,10 @@ const numberArg = (name) => ({
   type: 'number',
   description: name
 });
+const boolArg = (name) => ({
+  type: 'boolean',
+  description: name
+});
 
 // The surface is only what the driver does well.
 // It has a local burst for dependent moves on one tab, but no reusable element refs beyond a handle that a resolve step hands to a later step, and no cross-tab steps: those are the cloud server's affordances, and pretending a local stdio process has them would advertise something it cannot honour.
@@ -784,7 +788,7 @@ export const TOOLS = Object.freeze([
   },
   {
     name: 'document_write',
-    description: 'Carry a paper described as JSON into a live page: check the plan against its own tables, draw every graph as a picture, put the styled paper on the clipboard, paste it into the tab, and read the page back. The result is a document with real headings, tables, images and charts rather than a plan on disk. Refuses a paper whose graph disagrees with its table, an image with no source to place, and a chart the page could not draw, so nothing half-formed reaches the page. The paste lands where the caret is, so name the point with at when the page is not empty.',
+    description: 'Carry a paper described as JSON into a live page: check the plan against its own tables, draw every graph as a picture, put the styled paper on the clipboard, paste it into the tab, and read the page back. The result is a document with real headings, tables, images and charts rather than a plan on disk. Refuses a paper whose graph disagrees with its table, an image with no source to place, and a chart the page could not draw, so nothing half-formed reaches the page. The paste lands where the caret is, so name the point with at when the page is not empty. With nativeCharts the graphs are made by the page itself in a scratch spreadsheet and pasted in as charts that carry their data and can be edited; a graph that cannot be made that way falls back to the picture, and the result says which is which.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -797,7 +801,8 @@ export const TOOLS = Object.freeze([
             x: numberArg('x inside the viewport'),
             y: numberArg('y inside the viewport')
           }
-        }
+        },
+        nativeCharts: boolArg('when true, every graph is made by the page as a chart that carries its data and can be edited, with the picture as the fallback')
       },
       required: [
         'source',

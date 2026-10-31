@@ -20,12 +20,23 @@ import { documentFromFile } from './documents.js';
 import {
   assetKey,
   chartExpression,
+  chartMarker,
   chartSpec,
+  graphFigureHtml,
   renderPaperHtml
 } from './doc-render.js';
 import {
+  buildNativeChart,
+  ensureVisible,
+  pasteOverMarker,
+  placeNativeChart,
+  trashSheet
+} from './doc-native-chart.js';
+import {
   ensureHtml,
-  pasteHtml
+  pasteHtml,
+  readChartClip,
+  writeText
 } from './clipboard.js';
 
 const MIME_BY_EXTENSION = {
@@ -39,6 +50,8 @@ const DEFAULT_CARET = {
   x: 0.5,
   y: 0.5
 };
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 function imageSource(
   block,
@@ -161,6 +174,9 @@ async function waitForEditor(
  * @param {{x: number, y: number}} [args.at] - where to put the caret before the paste, in CSS pixels.
  * @param {number} [args.settleMs] - how long to keep asking the page after a paste before trying again.
  * @param {number} [args.pollMs] - the gap between two asks of the page.
+ * @param {boolean} [args.nativeCharts] - when true, every graph is made by the page itself as a chart and pasted in as a chart, with a picture as the fallback.
+ * @param {Function} [args.openSheet] - opens the sheet the charts are built in, replaced in tests.
+ * @param {object} [args.native] - the chart making and placing calls, replaced in tests.
  * @param {object} [args.clipboard] - the clipboard writer to use, replaced in tests.
  * @returns {Promise<object>} what was pasted, what the page says it holds, and the read back afterwards.
  */
@@ -171,9 +187,19 @@ export async function writeDocumentToPage({
   at = null,
   settleMs = 20000,
   pollMs = 1000,
+  nativeCharts = false,
+  openSheet = null,
+  native = {
+    build: buildNativeChart,
+    place: placeNativeChart,
+    pasteOver: pasteOverMarker,
+    trash: trashSheet
+  },
   clipboard = {
     ensureHtml,
-    pasteHtml
+    pasteHtml,
+    readChartClip,
+    writeText
   }
 } = {}) {
   if (!session) {
@@ -182,7 +208,16 @@ export async function writeDocumentToPage({
   const marker = `opera-agent-document:${randomUUID()}`;
   const built = documentFromFile({ source });
   const blocks = built.document?.docplan?.blocks ?? [];
+  const graphs = blocks.filter((block) => block.kind === 'graph');
   const base = path.dirname(path.resolve(String(source)));
+
+  // WHY THE REFUSAL COMES BEFORE THE PASTE.
+  // A native chart needs a sheet to be built in, and a paper pasted with markers and no chart to put in them is a paper with holes in it.
+  // So the write stops while the page still holds nothing of ours.
+
+  if (nativeCharts === true && typeof openSheet !== 'function') {
+    throw new Error('document_write cannot make native charts without a sheet to build them in.');
+  }
 
   const images = {};
   const charts = {};
@@ -202,7 +237,7 @@ export async function writeDocumentToPage({
       images[assetKey('image', block.section, nextIndex(imageCounts, block.section))] = imageSource(block, base);
       continue;
     }
-    if (block.kind === 'graph') {
+    if (block.kind === 'graph' && nativeCharts !== true) {
       charts[assetKey('graph', block.section, nextIndex(graphCounts, block.section))] = await chartPicture(session, {
         ...block,
         kind: block.chartKind ?? block.kind
@@ -215,7 +250,8 @@ export async function writeDocumentToPage({
     assets: {
       images,
       charts
-    }
+    },
+    nativeCharts: nativeCharts === true
   })}`;
 
   await session.front();
@@ -247,6 +283,12 @@ export async function writeDocumentToPage({
   // The clipboard belongs to the whole machine: measured on this one, a buffer this flow had filled held another agent's picture a minute later.
   // Writing it right before the paste keeps that window to the paste itself, and the marker says whether our paper was still the one on the buffer.
 
+  // WHY THE PAGE IS BROUGHT FORWARD BEFORE THE PAPER IS PASTED.
+  // Measured live on this machine: a paste into a page whose window sits behind another one lands nothing at all, and the very same paste lands the whole paper as soon as that window is in front.
+  // So the page is asked whether it is visible, its window is brought forward when it is not, and the answer travels with the report so a write that left nothing says why.
+
+  const shown = await ensureVisible(session);
+
   let landed = {
     found: [],
     waitedMs: 0
@@ -256,7 +298,7 @@ export async function writeDocumentToPage({
   while (attempts < 2 && landed.found.length < wanted.length) {
     attempts += 1;
     await session.clickAt(point.x, point.y);
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    await sleep(500);
     const placed = clipboard.ensureHtml(html, marker);
     held.push(placed);
     await clipboard.pasteHtml(session.cdp);
@@ -266,6 +308,22 @@ export async function writeDocumentToPage({
     });
   }
   const found = landed.found;
+
+  // WHY THE CHARTS ARE PLACED AFTER THE PAPER IS IN.
+  // A chart is pasted over a marker, so the marker has to be in the document first, and the paste is what puts it there.
+  // The charts are not held back by the heading check, because a document draws its accessibility tree lazily and a cold tree names no heading while the paper is plainly there.
+  // Each chart asks the document for its own marker, so a marker that is missing is caught where it is missing.
+
+  let nativeReport = null;
+  if (nativeCharts === true) {
+    nativeReport = await writeNativeCharts({
+      session,
+      graphs,
+      builder: native,
+      clipboard,
+      openSheet
+    });
+  }
 
   const read = await session.read({ allowCaretMove: false });
   const text = String(read.text ?? '');
@@ -277,7 +335,7 @@ export async function writeDocumentToPage({
       bytes: Buffer.byteLength(html, 'utf8'),
       at: point,
       images: Object.keys(images).length,
-      charts: Object.keys(charts).length,
+      charts: graphs.length,
       attempts,
       editor,
       clipboard: held
@@ -287,9 +345,15 @@ export async function writeDocumentToPage({
       headings: wanted,
       found,
       waitedMs: landed.waitedMs,
+      visible: shown.visible,
       ok: wanted.length === 0 ? false : found.length === wanted.length,
-      why: 'the page names these headings in its own accessibility tree, which is where a document editor keeps its table of contents'
+      why: found.length === wanted.length
+        ? 'the page names these headings in its own accessibility tree, which is where a document editor keeps its table of contents'
+        : shown.visible === false
+          ? `the page was out of sight (${shown.why || 'its window would not come forward'}), so the paste had nowhere to land`
+          : 'the page named none of these headings, so the paper was not found in it'
     },
+    native: nativeReport,
     readBack: {
       chars: text.length,
       titleFound: title !== '' && text.includes(title),
@@ -298,5 +362,123 @@ export async function writeDocumentToPage({
         ? 'the page answered with other text, so the paper was not found in it'
         : 'the page was read after the paste'
     }
+  };
+}
+
+// WHY A CHART THAT CANNOT BE MADE FALLS BACK TO A PICTURE.
+// The paper promised a graph in that spot, and a paper with a hole where a graph should be is not the paper that was asked for.
+// So the picture is pasted over the same marker, and the report says which graph is a chart and which is a picture.
+
+async function pictureOverMarker({
+  session,
+  block,
+  marker,
+  builder,
+  clipboard
+}) {
+  try {
+    const src = await chartPicture(session, {
+      ...block,
+      kind: block.chartKind ?? block.kind
+    });
+    const html = `<!-- ${marker} -->${graphFigureHtml({
+      block,
+      src
+    })}`;
+    const out = await builder.pasteOver({
+      doc: session,
+      marker,
+      html,
+      clipboard
+    });
+    return {
+      pasted: out?.pasted === true,
+      why: out?.why ?? ''
+    };
+  } catch (error) {
+    return {
+      pasted: false,
+      why: String(error?.message ?? error).split('\n')[0]
+    };
+  }
+}
+
+async function writeNativeCharts({
+  session,
+  graphs,
+  builder,
+  clipboard,
+  openSheet
+}) {
+  const sheet = await openSheet();
+  const charts = [];
+  let sheetReport = {
+    trashed: false,
+    why: 'the sheet was not thrown away'
+  };
+  try {
+    for (let index = 0; index < graphs.length; index += 1) {
+      const block = graphs[index];
+      const marker = chartMarker(index + 1);
+      let placed = {
+        ok: false,
+        why: 'the chart was never built'
+      };
+      try {
+        await builder.build({
+          sheet,
+          block,
+          clipboard
+        });
+        placed = await builder.place({
+          doc: session,
+          marker,
+          clipboard
+        });
+      } catch (error) {
+        placed = {
+          ok: false,
+          why: String(error?.message ?? error).split('\n')[0]
+        };
+      }
+      if (placed.ok === true) {
+        charts.push({
+          index: index + 1,
+          title: block.title ?? '',
+          kind: 'native',
+          ok: true,
+          why: placed.why ?? ''
+        });
+        continue;
+      }
+      const picture = await pictureOverMarker({
+        session,
+        block,
+        marker,
+        builder,
+        clipboard
+      });
+      charts.push({
+        index: index + 1,
+        title: block.title ?? '',
+        kind: picture.pasted ? 'picture' : 'missing',
+        ok: picture.pasted,
+        why: picture.pasted
+          ? placed.why
+          : `${placed.why}; the picture that stood in for it did not land either: ${picture.why}`
+      });
+    }
+    sheetReport = await builder.trash({
+      sheet
+    }).catch((error) => ({
+      trashed: false,
+      why: String(error?.message ?? error).split('\n')[0]
+    }));
+  } finally {
+    sheet.close?.();
+  }
+  return {
+    charts,
+    sheet: sheetReport
   };
 }

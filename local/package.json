@@ -21,6 +21,7 @@
     "clipboard.js",
     "dev-shim.js",
     "dialog.js",
+    "doc-native-chart.js",
     "doc-render.js",
     "doc-write.js",
     "documents.js",

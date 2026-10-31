@@ -208,6 +208,47 @@ function figureHtml({
   return `<figure style="margin:12px 0 16px 0">${image}${label}</figure>`;
 }
 
+function captionHtml(text) {
+  return `<p style="font-family:${PAPER_FONT};font-size:11px;color:${MUTED_COLOR};margin:0 0 10px 0">${escapeHtml(text)}</p>`;
+}
+
+function markerHtml(marker) {
+  return `<p style="font-family:${PAPER_FONT};font-size:12px;line-height:1.55;color:${TEXT_COLOR};margin:0 0 10px 0">${escapeHtml(marker)}</p>`;
+}
+
+/**
+ * The text that stands where a chart belongs when the chart is made by the page itself and pasted in afterwards.
+ * @param {number} index - the chart's position in the paper, counted from one.
+ * @returns {string} the marker the document can find, as `[[opera-chart-N]]`.
+ */
+
+export function chartMarker(index) {
+  return `[[opera-chart-${Number(index)}]]`;
+}
+
+/**
+ * Renders one graph block as the picture a page can carry, with the caption the plan gave it.
+ * @param {object} args - the figure inputs.
+ * @param {object} args.block - the graph block of a built document.
+ * @param {string} args.src - the source of the picture.
+ * @returns {string} the HTML of the figure.
+ */
+
+export function graphFigureHtml({
+  block,
+  src
+}) {
+  const caption = [
+    block?.title,
+    block?.caption
+  ].filter((part) => part && String(part).trim() !== '').join(' — ');
+  return figureHtml({
+    src,
+    alt: block?.title || 'grafik',
+    caption
+  });
+}
+
 /**
  * Renders a built document into the HTML a page pastes as a styled document: headings, paragraphs, tables, figures and charts.
  * @param {object} args - the render inputs.
@@ -215,12 +256,14 @@ function figureHtml({
  * @param {object} [args.assets] - the pictures to place.
  * @param {Record<string, string>} [args.assets.images] - image block keys to source urls or data URIs.
  * @param {Record<string, string>} [args.assets.charts] - graph block keys to PNG data URIs.
+ * @param {boolean} [args.nativeCharts] - when true, a graph is rendered as a marker the page can find and a chart can be pasted over.
  * @returns {string} the HTML of the whole paper.
  */
 
 export function renderPaperHtml({
   document,
-  assets = {}
+  assets = {},
+  nativeCharts = false
 } = {}) {
   const docplan = document?.docplan;
   if (!docplan || !Array.isArray(docplan.blocks)) {
@@ -237,6 +280,7 @@ export function renderPaperHtml({
 
   const imageCounts = new Map();
   const graphCounts = new Map();
+  let graphTotal = 0;
   const nextIndex = (
     counts,
     section
@@ -274,19 +318,29 @@ export function renderPaperHtml({
       continue;
     }
     if (block.kind === 'graph') {
+      graphTotal += 1;
+
+      // WHY A NATIVE CHART IS RENDERED AS A MARKER.
+      // Measured on a real Doc: a chart pasted from a sheet arrives as a chart only when the page answers the paste dialog, and the chart must stand where it belongs.
+      // So the paper carries a marker there, the marker is found in the document, and the chart is pasted over it.
+
+      if (nativeCharts === true) {
+        parts.push(markerHtml(chartMarker(graphTotal)));
+        const caption = [
+          block.title,
+          block.caption
+        ].filter((part) => part && String(part).trim() !== '').join(' — ');
+        if (caption) parts.push(captionHtml(caption));
+        continue;
+      }
       const key = assetKey('graph', block.section, nextIndex(graphCounts, block.section));
       const src = charts[key];
       if (!src) {
         throw new Error(`section ${block.section + 1} graph "${block.title || '(untitled)'}" has no picture; a chart that was not drawn cannot be pasted.`);
       }
-      const caption = [
-        block.title,
-        block.caption
-      ].filter((part) => part && String(part).trim() !== '').join(' — ');
-      parts.push(figureHtml({
-        src,
-        alt: block.title || 'grafik',
-        caption
+      parts.push(graphFigureHtml({
+        block,
+        src
       }));
     }
   }

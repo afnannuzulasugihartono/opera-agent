@@ -7,6 +7,10 @@
 // Measured on a real Google Doc: an editor drawn on a canvas takes rich text from the paste buffer, and the buffer is the one place a browser keeps formatting that no key event carries.
 // The text itself travels as base64, because a PowerShell pipe reads its input in the console's code page and an accented word would arrive mangled.
 
+// WHY PLAIN TEXT GETS ITS OWN WRITER.
+// Measured on a real spreadsheet: a paste of tab separated text lands as rows and columns, while a paste of rich HTML arrives as one mangled cell.
+// So the sheet is fed plain text, and the buffer is written the same way the rich text is, only without the html format.
+
 // WHY THE PASTE CARRIES THE PASTE COMMAND.
 // The key event alone moved the caret and pasted nothing, because a synthetic key is not the browser's own paste command.
 // The command is what the browser runs on Ctrl+V, and it reads the buffer this module filled.
@@ -49,9 +53,82 @@ export function writeHtml(html) {
   };
 }
 
+/**
+ * Puts plain text on the system clipboard, so a paste into a spreadsheet lands as rows and columns.
+ * @param {string} text - the text to place on the clipboard.
+ * @returns {{bytes: number}} how many bytes were written.
+ */
+
+export function writeText(text) {
+  const value = String(text ?? '');
+  if (value.trim() === '') {
+    throw new Error('there is no text to put on the clipboard.');
+  }
+  if (process.platform !== 'win32') {
+    throw new Error('plain text reaches the clipboard through PowerShell on Windows only; add a native clipboard writer before this runs on another system.');
+  }
+  const encoded = Buffer.from(value, 'utf8').toString('base64');
+  execFileSync(
+    'powershell.exe',
+    [
+      '-NoProfile',
+      '-NonInteractive',
+      '-Command',
+      '$bytes = [Console]::In.ReadToEnd(); $text = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($bytes)); Set-Clipboard -Value $text'
+    ],
+    {
+      input: encoded,
+      encoding: 'utf8',
+      windowsHide: true
+    }
+  );
+  return {
+    bytes: Buffer.byteLength(value, 'utf8')
+  };
+}
+
 // WHY THE CLIPBOARD IS READ BACK.
 // The clipboard belongs to the whole machine, and on a machine where several agents drive one browser another agent's copy can land between a write and a paste.
 // So the HTML is written, read back, and written again when the buffer holds something else, and the caller is told which of the two happened.
+
+// WHY THE BUFFER IS ASKED WHAT IT HOLDS.
+// Measured live on a real sheet: copying the chart and copying the cells behind it put the same format names on the buffer, and only the custom format says which one it is - "embedded-chart-clip" for the chart, "grid_range_clip" for the cells.
+// So the custom format is read and the name inside it is the answer, because the format names alone cannot tell the two apart.
+
+const CLIP_NAMES = 'Add-Type -AssemblyName System.Windows.Forms; $d = [System.Windows.Forms.Clipboard]::GetDataObject(); $m = $d.GetData("Chromium Web Custom MIME Data Format"); if ($null -eq $m) { "none" } else { $b = $m.ToArray(); $u = [System.Text.Encoding]::Unicode.GetString($b); $a = [System.Text.Encoding]::ASCII.GetString($b); if ($u -match "embedded-chart-clip" -or $a -match "embedded-chart-clip") { "chart" } elseif ($u -match "grid_range_clip" -or $a -match "grid_range_clip") { "range" } else { "other" } }';
+
+/**
+ * Says what the buffer carries: the chart, the cells behind it, or something else.
+ * @returns {string} "chart", "range", "other", "none", or "unknown" when the buffer cannot be read.
+ */
+
+export function readChartClip() {
+  if (process.platform !== 'win32') return 'unknown';
+  try {
+    const out = execFileSync(
+      'powershell.exe',
+      [
+        '-NoProfile',
+        '-NonInteractive',
+        '-Command',
+        CLIP_NAMES
+      ],
+      {
+        encoding: 'utf8',
+        windowsHide: true
+      }
+    );
+    const said = String(out ?? '').trim();
+    return [
+      'chart',
+      'range',
+      'other',
+      'none'
+    ].includes(said) ? said : 'unknown';
+  } catch {
+    return 'unknown';
+  }
+}
 
 /**
  * Reads the rich text back from the system clipboard.

@@ -2608,3 +2608,197 @@ test('ask_page refuses anything that could act, and says what it may ask', async
   assert.ok(!c.driver.calls.some((call) => call[0] === 'ask'), 'nothing reached the browser');
 });
 
+
+// WHY THE NATIVE CHART PATH IS TESTED AT THE TOOL LAYER.
+// A native chart needs a sheet of its own, and the sheet is opened and closed by the tool, not by the paper write.
+// So the test watches the tool: it opens the scratch sheet, puts a chart where the marker stood, and closes the sheet again.
+
+const NATIVE_PAPER = {
+  title: 'Satu Sampel Dingin',
+  author: 'Opera Agent',
+  sections: [
+    {
+      heading: 'Pengukuran',
+      body: 'Semua angka diambil pada tab yang sama.',
+      tables: [
+        {
+          headers: [
+            'Panggilan',
+            'Latensi ms'
+          ],
+          rows: [
+            [
+              'list_tabs',
+              '2'
+            ],
+            [
+              'read_page',
+              '54'
+            ]
+          ]
+        }
+      ],
+      graphs: [
+        {
+          kind: 'bar',
+          title: 'Latensi',
+          caption: 'Dari tabel.',
+          source: {
+            table: 0,
+            labelColumn: 'Panggilan',
+            aggregate: 'sum',
+            valueColumn: 'Latensi ms'
+          },
+          data: [
+            {
+              label: 'list_tabs',
+              value: 2
+            },
+            {
+              label: 'read_page',
+              value: 54
+            }
+          ]
+        }
+      ]
+    }
+  ]
+};
+
+const nativePage = () => ({
+  front: async () => {},
+  evaluate: async () => ({
+    visibility: 'visible',
+    title: 'Doc - Google Docs'
+  }),
+  viewport: async () => ({
+    width: 1536,
+    height: 720,
+    dpr: 1
+  }),
+  clickAt: async () => {},
+  ask: async () => ({
+    nodes: [
+      {
+        role: {
+          value: 'Iframe'
+        },
+        name: {
+          value: ''
+        }
+      },
+      {
+        role: {
+          value: 'generic'
+        },
+        name: {
+          value: 'Pengukuran'
+        }
+      }
+    ]
+  }),
+  read: async () => ({
+    text: 'Satu Sampel Dingin Pengukuran',
+    strategy: 'ax'
+  }),
+  cdp: {
+    send: async () => null
+  }
+});
+
+test('document_write with nativeCharts opens a scratch sheet, puts a chart where the marker stood, and closes the sheet', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'opera-native-tool-'));
+  const source = path.join(dir, 'paper.json');
+  fs.writeFileSync(source, JSON.stringify(NATIVE_PAPER, null, 2));
+  const driver = fakeDriver();
+  const page = nativePage();
+  const placed = [];
+  const context = {
+    driver,
+    browsers: [{
+      id: 'chrome'
+    }],
+    port: 9450,
+    resolveTab: async () => [
+      't1'
+    ],
+    open: async (options) => (options?.targetId === 'sheet-1' ? {
+      close: async () => {},
+      evaluate: async () => ({
+        ready: true
+      })
+    } : page),
+    lease: openLease(),
+    clipboard: {
+      ensureHtml: () => ({
+        held: true,
+        rewrote: false
+      }),
+      pasteHtml: async () => {},
+      writeText: () => ({
+        bytes: 0
+      })
+    },
+    native: {
+      build: async () => ({
+        copied: true
+      }),
+      place: async ({
+        marker
+      }) => {
+        placed.push(marker);
+        return {
+          ok: true,
+          charts: 1,
+          why: 'the page names the inserted chart'
+        };
+      },
+      pasteOver: async () => ({
+        pasted: true
+      }),
+      trash: async () => ({
+        trashed: true,
+        why: 'the page says so'
+      })
+    }
+  };
+  driver.open = async (url) => {
+    driver.calls.push([
+      'open',
+      url
+    ]);
+    return {
+      id: 'sheet-1',
+      url
+    };
+  };
+  const server = createMcpServer(context);
+  const res = await server.handle({
+    jsonrpc: '2.0',
+    id: 77,
+    method: 'tools/call',
+    params: {
+      name: 'document_write',
+      arguments: {
+        tabId: 't1',
+        source,
+        nativeCharts: true
+      }
+    }
+  });
+
+  assert.equal(res.error, undefined, res.error?.message ?? '');
+  const payload = JSON.parse(res.result.content[0].text);
+  assert.deepEqual(placed, [
+    '[[opera-chart-1]]'
+  ]);
+  assert.equal(payload.native.charts[0].kind, 'native');
+  assert.ok(driver.calls.some(([
+    name,
+    url
+  ]) => name === 'open' && url === 'https://sheets.new'), 'the scratch sheet was opened');
+  assert.ok(driver.calls.some(([
+    name,
+    id
+  ]) => name === 'close' && id === 'sheet-1'), 'the scratch sheet was closed again');
+});

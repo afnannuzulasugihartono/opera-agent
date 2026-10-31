@@ -82,6 +82,12 @@ function fakeSession({
       calls.push({
         what: 'evaluate'
       });
+      if (expression.includes('visibilityState')) {
+        return {
+          visibility: 'visible',
+          title: 'Doc - Google Docs'
+        };
+      }
       assert.match(expression, /toDataURL/);
       return 'data:image/png;base64,CHART';
     },
@@ -252,6 +258,172 @@ test('a paste that lands nothing is tried again, and the headings the page names
     2,
     'the clipboard is filled just before each paste, because the buffer belongs to the whole machine'
   );
+});
+
+test('a paper asked for native charts pastes markers and puts a real chart where each marker stood', async () => {
+  const { source } = paperFile({
+    name: 'paper-native.json'
+  });
+  const session = fakeSession();
+  const clipboard = fakeClipboard(session.cdp);
+  const built = [];
+  const placed = [];
+  const result = await writeDocumentToPage({
+    source,
+    session,
+    clipboard,
+    nativeCharts: true,
+    openSheet: async () => ({}),
+    native: {
+      build: async ({
+        block
+      }) => {
+        built.push(block.title);
+        return {
+          copied: true
+        };
+      },
+      place: async ({
+        marker
+      }) => {
+        placed.push(marker);
+        return {
+          ok: true,
+          charts: 1,
+          why: 'the page names it'
+        };
+      },
+      pasteOver: async () => ({
+        pasted: true
+      }),
+      trash: async () => ({
+        trashed: true,
+        why: 'the page says so'
+      })
+    },
+    settleMs: 60,
+    pollMs: 10
+  });
+
+  assert.deepEqual(built, [
+    'Latensi'
+  ]);
+  assert.deepEqual(placed, [
+    '[[opera-chart-1]]'
+  ]);
+  const written = clipboard.calls.find((call) => call.what === 'ensureHtml');
+  assert.match(written.html, /\[\[opera-chart-1\]\]/, 'the paper carries the marker where the chart belongs');
+  assert.ok(!written.html.includes('data:image/png;base64,CHART'), 'the chart is not pasted as a picture');
+  assert.equal(result.native.charts[0].kind, 'native');
+  assert.equal(result.native.charts[0].ok, true);
+  assert.equal(result.native.sheet.trashed, true);
+});
+
+test('a document whose accessibility tree is cold still gets its charts, because the page finds its own marker', async () => {
+  const { source } = paperFile({
+    name: 'paper-native-cold.json'
+  });
+  const session = fakeSession({
+    headingsAfter: 99
+  });
+  const clipboard = fakeClipboard(session.cdp);
+  const placed = [];
+  const result = await writeDocumentToPage({
+    source,
+    session,
+    clipboard,
+    nativeCharts: true,
+    openSheet: async () => ({}),
+    native: {
+      build: async () => ({
+        copied: true
+      }),
+      place: async ({
+        marker
+      }) => {
+        placed.push(marker);
+        return {
+          ok: true,
+          charts: 1,
+          why: 'the page names it'
+        };
+      },
+      pasteOver: async () => ({
+        pasted: true
+      }),
+      trash: async () => ({
+        trashed: true,
+        why: 'the page says so'
+      })
+    },
+    settleMs: 60,
+    pollMs: 10
+  });
+
+  assert.equal(result.landed.ok, false, 'the page names no heading, and the report says so');
+  assert.deepEqual(placed, [
+    '[[opera-chart-1]]'
+  ], 'the chart was placed anyway, because the marker is found in the page itself');
+  assert.equal(result.native.charts[0].kind, 'native');
+});
+
+test('a graph that cannot be made native falls back to the picture, and the result says so', async () => {
+  const { source } = paperFile({
+    name: 'paper-native-fallback.json'
+  });
+  const session = fakeSession();
+  const clipboard = fakeClipboard(session.cdp);
+  const pasted = [];
+  const result = await writeDocumentToPage({
+    source,
+    session,
+    clipboard,
+    nativeCharts: true,
+    openSheet: async () => ({}),
+    native: {
+      build: async () => {
+        throw new Error('the sheet did not answer');
+      },
+      place: async () => ({
+        ok: false,
+        why: 'never reached'
+      }),
+      pasteOver: async ({
+        html
+      }) => {
+        pasted.push(html);
+        return {
+          pasted: true
+        };
+      },
+      trash: async () => ({
+        trashed: true,
+        why: 'the page says so'
+      })
+    },
+    settleMs: 60,
+    pollMs: 10
+  });
+
+  assert.equal(result.native.charts[0].kind, 'picture');
+  assert.equal(result.native.charts[0].ok, true);
+  assert.match(result.native.charts[0].why, /sheet did not answer/);
+  assert.match(pasted[0], /data:image\/png;base64,CHART/, 'the picture stands in for the chart that could not be made');
+});
+
+test('native charts without a sheet to build them in are refused before anything is pasted', async () => {
+  const { source } = paperFile({
+    name: 'paper-native-nosheet.json'
+  });
+  const session = fakeSession();
+  const clipboard = fakeClipboard(session.cdp);
+  await assert.rejects(() => writeDocumentToPage({
+    source,
+    session,
+    clipboard,
+    nativeCharts: true
+  }), /sheet/);
+  assert.equal(clipboard.calls.length, 0, 'nothing was put on the clipboard');
 });
 
 test('a graph that disagrees with its table stops the write before anything is pasted', async () => {

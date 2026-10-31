@@ -9,7 +9,9 @@ import assert from 'node:assert/strict';
 import {
   assetKey,
   chartExpression,
+  chartMarker,
   chartSpec,
+  graphFigureHtml,
   renderPaperHtml
 } from '../local/doc-render.js';
 
@@ -145,6 +147,33 @@ test('the paper becomes a heading, a paragraph, a table, an image and a chart', 
   assert.match(html, /<img src="data:image\/png;base64,AAA" alt="Tangkapan layar"/);
   assert.match(html, /<img src="data:image\/png;base64,BBB" alt="Latensi"/);
   assert.match(html, /<figcaption[^>]*>Tab yang dipakai\.<\/figcaption>/);
+});
+
+test('a native chart is a marker the page can find, and no picture', () => {
+  const html = renderPaperHtml({
+    document: DOCUMENT,
+    assets: {
+      images: {
+        [assetKey('image', 0, 0)]: 'data:image/png;base64,AAA'
+      },
+      charts: {}
+    },
+    nativeCharts: true
+  });
+  assert.match(html, /\[\[opera-chart-1\]\]/, 'the graph stands as a marker the document can find');
+  assert.ok(html.includes(chartMarker(1)), 'the marker is the one the chart placer looks for');
+  assert.ok(!html.includes('base64,BBB'), 'no chart picture is pasted');
+  assert.match(html, /Latensi — Dari tabel\./, 'the caption stays under the chart');
+});
+
+test('a graph picture carries its title and caption under it', () => {
+  const html = graphFigureHtml({
+    block: GRAPH,
+    src: 'data:image/png;base64,BBB'
+  });
+  assert.match(html, /<figure/, 'the picture stands on its own');
+  assert.match(html, /Latensi per panggilan — Angka dari tabel\./, 'the caption names the graph');
+  assert.match(html, /data:image\/png;base64,BBB/);
 });
 
 test('the style travels on the element, because a pasted stylesheet is not read', () => {

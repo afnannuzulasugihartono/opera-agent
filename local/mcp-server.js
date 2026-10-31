@@ -36,6 +36,18 @@ import { reportFromFile } from './reports.js';
 import { documentFromFile } from './documents.js';
 import { writeDocumentToPage } from './doc-write.js';
 import {
+  buildNativeChart,
+  pasteOverMarker,
+  placeNativeChart,
+  trashSheet
+} from './doc-native-chart.js';
+import {
+  ensureHtml,
+  pasteHtml,
+  readChartClip,
+  writeText
+} from './clipboard.js';
+import {
   BURST_INPUT_ACTIONS,
   normalizeBurst,
   runLocalBurst
@@ -54,6 +66,24 @@ import {
 // The tool table lives in tools.js: the surface is data, and this file is the protocol that answers it.
 
 export { TOOLS };
+
+// WHY THE REAL CHART CALLS ARE NAMED HERE.
+// The paper write takes the chart making and placing as seams, so a test can answer them without a browser and without touching the machine's clipboard.
+// These are the real ones: a sheet that builds a chart, a document that takes it, and the clipboard that carries both the paper and the chart data.
+
+const NATIVE_CALLS = Object.freeze({
+  build: buildNativeChart,
+  place: placeNativeChart,
+  pasteOver: pasteOverMarker,
+  trash: trashSheet
+});
+
+const CLIPBOARD_CALLS = Object.freeze({
+  ensureHtml,
+  pasteHtml,
+  readChartClip,
+  writeText
+});
 
 function requireArguments(
   args,
@@ -693,12 +723,33 @@ const windowMatch = async (
           result: await driver.ask(method, askParams(args))
         });
       }
-      case 'document_write':
-        return asText(await writeDocumentToPage({
-          source: args.source,
-          session: driver,
-          at: args.at ?? null
-        }));
+      case 'document_write': {
+        const nativeCharts = args.nativeCharts === true;
+        let sheetTab = null;
+        try {
+          return asText(await writeDocumentToPage({
+            source: args.source,
+            session: driver,
+            at: args.at ?? null,
+            nativeCharts,
+            native: context.native ?? NATIVE_CALLS,
+            clipboard: context.clipboard ?? CLIPBOARD_CALLS,
+            openSheet: nativeCharts
+              ? async () => {
+                sheetTab = await fallback.open('https://sheets.new');
+                return await context.open({
+                  ...(context.sessionOptions ?? {}),
+                  targetId: sheetTab.id
+                });
+              }
+              : null
+          }));
+        } finally {
+          if (sheetTab) {
+            await fallback.close(sheetTab.id).catch(() => null);
+          }
+        }
+      }
       case 'wait_for_row':
         return afterAction(driver, await driver.waitForRow({
           role: args.role,
