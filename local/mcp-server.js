@@ -407,6 +407,12 @@ const bridgeLease = {
   release: releaseTab
 };
 
+/**
+ * Build the MCP server that answers the tool calls of a local driver.
+ * @param {object} context - the driver, the session opener, the tab resolver, and what the server reports about itself.
+ * @returns {object} the server: a close, a call seam, and a JSON-RPC handler.
+ */
+
 export function createMcpServer(context) {
   const sessions = new Map();
   const fallback = context.driver ?? null;
@@ -883,11 +889,20 @@ const windowMatch = async (
     }
   };
 
+  // WHY THE SERVER ANSWERS A TOOL CALL DIRECTLY AND NOT ONLY OVER THE WIRE.
+  // The OpenCode plugin lives in the server process and drives the same tools, so the call seam cannot be the JSON-RPC line alone.
+
+  const call = async (
+    name,
+    args = {}
+  ) => await run(name, args);
+
   return {
     async close() {
       for (const session of sessions.values()) session.close?.();
       sessions.clear();
     },
+    call,
     async handle(request) {
       const {
         id,
@@ -922,7 +937,7 @@ const windowMatch = async (
         if (method === 'tools/list') return reply({ tools: TOOLS });
         if (method === 'tools/call') {
           const started = Date.now();
-          const out = await run(params?.name, params?.arguments ?? {});
+          const out = await call(params?.name, params?.arguments ?? {});
           out.content.push({
             type: 'text',
             text: `${Date.now() - started} ms`
@@ -946,6 +961,15 @@ const windowMatch = async (
 // Without the handler a single rejected handle ends the process on an unhandled rejection, taking down a whole session over one bad call.
 // SonarCloud caught that on this file and it was right: the handler is not decoration.
 // The void then says the reply is deliberately not awaited, because an event loop has nothing else to wait for.
+
+/**
+ * Serve the MCP stdio protocol: newline-delimited JSON frames in, one answer out.
+ * @param {object} options - the streams to read and write, and the context the tools are driven with.
+ * @param {object} options.input - the stream the frames arrive on.
+ * @param {object} options.output - the stream the answers are written to.
+ * @param {object} options.context - the driver and the session the tools are driven with.
+ * @returns {object} the server, so a caller can close it.
+ */
 
 export function startStdio({
   input = process.stdin,

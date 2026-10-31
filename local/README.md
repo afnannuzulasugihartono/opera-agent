@@ -100,10 +100,10 @@ Point a client at it:
 
 ## Tools
 
-The server advertises 40 tools; `guide()` returns them as tasks rather than a list.
+The server advertises 41 tools; `guide()` returns them as tasks rather than a list.
 
 `browser_status`, `focus_window`, `dialog_state`, `dialog_type`, `dialog_press`,
-`list_tabs`, `open_url`, `close_tab`, `read_page`, `find_elements`, `click`,
+`list_tabs`, `open_url`, `close_tab`, `surface_profile`, `read_page`, `find_elements`, `click`,
 `resolve_row`, `click_row`, `hover`, `press_key`, `type`, `get_computed`, `scroll`,
 `append`, `stream_keys`, `browser_burst`, `wait_for`, `ask_page`, `wait_for_row`,
 `wait_still`, `caret_line`, `upload`, `drop_file`, `intercept_file_chooser`, `download`,
@@ -143,6 +143,34 @@ Times 10pt body, numbered headings in capitals, a table captioned above it as
 bold superscript. A paper with no template keeps the plain look. The margins and the
 page-number footer of the class are the page's own settings, not the paper's, so they
 are left as the document has them.
+
+## Native OpenCode tools
+
+`local/bin/opera-opencode.js` is an OpenCode plugin. It registers the whole table as
+native tools under the `opera` namespace, so the model calls `opera_read_page` and
+`opera_click` directly instead of reaching them through an MCP server, and it asks
+OpenCode's permission rules before every call.
+
+Load it by putting one line in `~/.config/opencode/plugins/opera-agent.js`:
+
+```js
+export { default } from 'file:///D:/GitHub/opera-agent/local/bin/opera-opencode.js';
+```
+
+It registers 42 tools: the 41 above, and `opera_fetch`.
+
+`opera_fetch` is the one call that walks the whole road. It opens its own tab, waits
+for the page to settle, reads it, and closes the tab again, and it answers with the
+url it ended on, the title, and the page text. Give it `waitFor` when the content
+arrives late. Use it when the page needs JavaScript or a signed-in session, where an
+HTTP fetch gets nothing back; for a page you have to click through, `opera_open_url`
+and `opera_browser_burst` are the road.
+
+A permission rule is what turns a click into a question:
+
+```json
+{ "action": "click", "resource": "*", "effect": "ask" }
+```
 
 ## Recipes, measured
 

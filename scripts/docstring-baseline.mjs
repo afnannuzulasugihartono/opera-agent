@@ -132,8 +132,6 @@ export const DOCSTRING_PENDING = new Set([
   'local/focus-guard.js: export function createFocusGuard (line 34)',
   'local/input.js: export function createInputMethods (line 53)',
   'local/leases.js: export function createLeaseTable (line 20)',
-  'local/mcp-server.js: export function createMcpServer (line 410)',
-  'local/mcp-server.js: export function startStdio (line 950)',
   'local/menu-tree.js: export function distanceBetween (line 255)',
   'local/menu-tree.js: export function exactMatch (line 308)',
   'local/menu-tree.js: export function findNode (line 324)',
@@ -252,4 +250,4 @@ export const DOCSTRING_PENDING = new Set([
   'supabase/functions/opera-agent-mcp/tools.ts: export function registerTools (line 190)',
 ]);
 
-export const DOCSTRING_BASELINE = 242;
+export const DOCSTRING_BASELINE = 240;

@@ -19,6 +19,7 @@
     "caret-guard.js",
     "cdp.js",
     "clipboard.js",
+    "context.js",
     "dev-shim.js",
     "dialog.js",
     "doc-native-chart.js",

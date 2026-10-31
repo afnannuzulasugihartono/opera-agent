@@ -3,15 +3,16 @@
 
 # Naming
 
-Three name spaces meet in this product, and each one is read by a different machine. The separator a name uses says which space it belongs to, so a name that arrives in a log, a stack trace or a model's tool list can be placed without being told.
+Four name spaces meet in this product, and each one is read by a different machine. The separator a name uses says which space it belongs to, so a name that arrives in a log, a stack trace or a model's tool list can be placed without being told.
 
 The rule in one line: **a dot separates namespaces, an underscore separates words, and a hyphen is not used as a separator anywhere.**
 
-## The three spaces
+## The four spaces
 
 | Space | Shape | Example | Read by |
 |---|---|---|---|
 | MCP tool name | `snake_case` | `browser_status`, `click_row`, `wait_for`, `ax_snapshot` | the model, and the person reading a tool list |
+| OpenCode native tool name | `namespace_snake_case` | `opera_read_page`, `opera_fetch` | the model, in OpenCode's own tool list |
 | Wire method name | `namespace.action` | `tabs.list`, `page.click`, `browser.burst`, `page.wait_for` | the service worker, the bridge and the gateway |
 | Postgres function and argument name | `snake_case` | `opera_claim_next_wait`, `p_device_name` | Postgres, and the edge functions that call it |
 
@@ -25,6 +26,14 @@ The tool name is the product's surface: it is the word a model types and the lin
 
 The same reasoning holds one layer down, which is why the wire protocol uses an underscore *inside* a name as well: `page.wait_for`, not `page.waitfor` and not `page.wait-for`.
 
+## Why the OpenCode native tool names carry a namespace
+
+OpenCode joins a namespace and a tool name with an underscore, so `opera` plus `read_page` is the native `opera_read_page`.
+
+The prefix keeps Opera's tools apart from the built-ins the model already knows — `read`, `write`, `webfetch` — and it tells the model which surface it is standing on, the same way `tabs.list` says the wire is talking.
+
+The name behind the prefix is the same snake_case the MCP surface uses, because it is the same tool: `local/tools.js` is one table, and `local/bin/opera-opencode.js` registers it as native tools without copying a single name.
+
 ## Where each shape lives
 
 The wire contract is one file, `extension/lib/protocol.js`, and it is the source both the service worker and the Node tests read:
@@ -34,7 +43,7 @@ The wire contract is one file, `extension/lib/protocol.js`, and it is the source
 
 The tool surface is data, in two places for two surfaces:
 
-- `local/tools.js` — the local stdio server's tools.
+- `local/tools.js` — the local stdio server's tools, and the table the OpenCode plugin registers as native tools.
 - `supabase/functions/opera-agent-mcp/tools.ts` — the cloud server's tools, registered one `registerTool` call each.
 
 The Postgres names are in the migrations, and the edge functions refuse anything that is not a bare identifier before it reaches the database: `supabase/functions/opera-agent-mcp/index.ts` and `supabase/functions/opera-agent-bridge/index.ts` both reject a function or argument name that fails `^[a-z_][a-z0-9_]*$`.

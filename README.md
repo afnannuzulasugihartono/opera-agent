@@ -38,6 +38,7 @@ A private, local-browser control bridge.
 | Browser primitives | **31** allowlisted generic methods ([`extension/lib/protocol.js`](extension/lib/protocol.js)) plus device-local `watch.*`/`loop.*` async methods |
 | Cloud MCP surface | **35** tools ([`supabase/functions/opera-agent-mcp/index.ts`](supabase/functions/opera-agent-mcp/index.ts)) |
 | Local MCP surface | **41** tools ([`local/mcp-server.js`](local/mcp-server.js)) - the operator's own signed-in Chrome, no cloud hop |
+| OpenCode native surface | **42** tools ([`local/bin/opera-opencode.js`](local/bin/opera-opencode.js)) - the same table, called directly by the model |
 | Distribution | Signed CRX3 self-updates from the update service |
 
 Every number in that table is measured, not typed: `tests/readme.test.mjs` reads the
