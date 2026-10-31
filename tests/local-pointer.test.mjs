@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-23 UTC+7.
+// @last-edited: 2026-11-01 UTC+7.
 // @title: local-pointer — a click is a coordinate sent into a page that may have moved, and the answer says what was under it.
 // @state: clicks, hovers, the mark a person watching can see, and the handles measured at the moment of the press.
 // @dependencies: node:test, strict, ../local/primitives.js.
@@ -188,6 +188,129 @@ test('a click fires move, press and release together', async () => {
   await createPrimitives(cdp).clickAt(10, 20);
 
   assert.equal(cdp.stats().max, 4, 'spotlight and three mouse events overlap');
+});
+
+// WHY THE MOUSE GOES OUT WITH THE PAGE TOLD TO TAKE THE FOCUS.
+// Measured live on this machine: with the browser window behind another application, a click cost 5031 ms and the page never saw it - no mousedown, no mouseup, no click, and the field took no focus - while the answer still named the element under the point.
+// Chrome drops the press and the release for a window that is not in front, and it holds the move on a compositor that is not running.
+// Focus emulation makes the renderer take the mouse: the same click cost 25 ms, the page saw it, and the field took the focus.
+// The focus is given back right after, because the focus guard reads the truth about the window, and a page that believes it is focused forever would never hear that its window is on the taskbar.
+
+// WHY THIS FAKE IS ITS OWN.
+// It is the only fake that answers a question the others cannot: what the page sees when the browser window is not in front.
+
+const focusGatedCdp = () => {
+  const calls = [];
+  const page = {
+    focused: false,
+    seen: {
+      mouseMoved: 0,
+      mousePressed: 0,
+      mouseReleased: 0
+    }
+  };
+  return {
+    calls,
+    page,
+    send: async (
+      method,
+      params = {}
+    ) => {
+      calls.push({
+        method,
+        params
+      });
+      if (method === 'Emulation.setFocusEmulationEnabled') {
+        page.focused = params.enabled === true;
+        return { result: {} };
+      }
+      if (method === 'Input.dispatchMouseEvent') {
+        if (page.focused && params.type in page.seen) page.seen[params.type] += 1;
+        return { result: {} };
+      }
+      return { result: {} };
+    }
+  };
+};
+
+
+test('a click lands even when the browser window is behind, because the page is told to take the focus', async () => {
+  const cdp = focusGatedCdp();
+
+  await createPrimitives(cdp).clickAt(163, 91);
+
+  assert.equal(cdp.page.seen.mousePressed, 1, 'the page saw the press');
+  assert.equal(cdp.page.seen.mouseReleased, 1, 'and the release');
+  assert.equal(cdp.page.focused, false, 'and the focus is given back, so the focus guard still reads the truth about the window');
+});
+
+
+test('a hover lands even when the browser window is behind', async () => {
+  const cdp = focusGatedCdp();
+
+  await createPrimitives(cdp).hover(193, 113);
+
+  assert.equal(cdp.page.seen.mouseMoved, 1, 'the page saw the move');
+});
+
+
+test('a click is never lost to a focus command the browser does not know', async () => {
+  const cdp = recordingCdp();
+  cdp.send = async (
+    method,
+    params = {}
+  ) => {
+    cdp.calls.push({
+      method,
+      params
+    });
+    if (method === 'Emulation.setFocusEmulationEnabled') throw new Error('unknown command');
+    return { result: {} };
+  };
+
+  await createPrimitives(cdp).clickAt(10, 20);
+
+  assert.equal(cdp.calls.filter((c) => c.method === 'Input.dispatchMouseEvent').length, 3, 'the click still goes out');
+});
+
+
+// WHY TWO CLICKS ARE PINNED ON THE ORDER THEY FINISH IN.
+// The MCP server answers requests as they arrive, so two clicks on one tab can be on their way at the same time.
+// The first one to finish used to take the focus away from the second one, which is how a click ends up never reaching the page.
+
+test('two clicks on one tab at once keep the focus until the last one is done', async () => {
+  const cdp = focusGatedCdp();
+  let presses = 0;
+  let openTheGate;
+  const gate = new Promise((resolve) => {
+    openTheGate = resolve;
+  });
+  const send = cdp.send;
+  cdp.send = async (
+    method,
+    params = {}
+  ) => {
+    if (method === 'Input.dispatchMouseEvent' && params.type === 'mousePressed') {
+      presses += 1;
+      if (presses === 2) openTheGate();
+      else await gate;
+    }
+    return send(method, params);
+  };
+  const p = createPrimitives(cdp);
+
+  await Promise.all([
+    p.clickAt(10, 20),
+    p.clickAt(30, 40)
+  ]);
+
+  const names = cdp.calls.map((c) => c.method);
+  const givenBack = cdp.calls.filter((c) => c.method === 'Emulation.setFocusEmulationEnabled' && c.params.enabled === false);
+  assert.equal(givenBack.length, 1, 'the focus is given back once');
+  assert.ok(
+    names.lastIndexOf('Emulation.setFocusEmulationEnabled') > names.lastIndexOf('Input.dispatchMouseEvent'),
+    'and not while a click is still on its way to the page'
+  );
 });
 
 // WHY A SNAPSHOT MUST NOT SEND A STALE SHAPE BACK.

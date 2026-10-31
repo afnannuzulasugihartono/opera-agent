@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-23 UTC+7.
+// @last-edited: 2026-11-01 UTC+7.
 // @title: pointer — the clicks and hovers, and the handles that say what they hit.
 // @state: clickAt, clickFraction, hover, hoverRow, clickHandle, handleBox and resolveHandle, with the mark a person watching can see.
 // @dependencies: ./page-expressions.js.
@@ -138,6 +138,36 @@ export function createPointerMethods({
     }
   };
 
+  // WHY THE MOUSE GOES OUT WITH THE PAGE TOLD TO TAKE THE FOCUS.
+  // Measured live on this machine: with the browser window behind another application, a click cost 5031 ms and the page never saw it - no mousedown, no mouseup, no click, and the field took no focus - while the answer still named the element under the point.
+  // Chrome drops the press and the release for a window that is not in front, and it holds the move on a compositor that is not running.
+  // Focus emulation makes the renderer take the mouse: the same click cost 25 ms, the page saw it, and the field took the focus.
+  // The focus is given back right after, because the focus guard reads the truth about the window, and a page that believes it is focused forever would never hear that its window is on the taskbar.
+  // A browser that does not know the command still gets the click, because a lost click is worse than a slow one.
+
+  // WHY THE COUNT IS HERE.
+  // The MCP server answers requests as they arrive, so two clicks on one tab can be on their way at the same time.
+  // The first one to finish must not take the focus away from the second one, or that click never reaches the page.
+
+  let mouseFocus = 0;
+
+  const withMouseFocus = async (work) => {
+    mouseFocus += 1;
+    await cdp.send('Emulation.setFocusEmulationEnabled', {
+      enabled: true
+    }).catch(() => null);
+    try {
+      return await work();
+    } finally {
+      mouseFocus -= 1;
+      if (mouseFocus === 0) {
+        await cdp.send('Emulation.setFocusEmulationEnabled', {
+          enabled: false
+        }).catch(() => null);
+      }
+    }
+  };
+
   async function clickAt(
     x,
     y
@@ -158,23 +188,25 @@ export function createPointerMethods({
       clickCount: 1,
       buttons: 1
     };
-    await Promise.all([
-      spot(x, y, 'rgb(255,60,60)'),
-      cdp.send('Input.dispatchMouseEvent', {
-        type: 'mouseMoved',
-        x,
-        y,
-        buttons: 0
-      }),
-      cdp.send('Input.dispatchMouseEvent', {
-        type: 'mousePressed',
-        ...common
-      }),
-      cdp.send('Input.dispatchMouseEvent', {
-        type: 'mouseReleased',
-        ...common
-      })
-    ]);
+    await withMouseFocus(async () => {
+      await Promise.all([
+        spot(x, y, 'rgb(255,60,60)'),
+        cdp.send('Input.dispatchMouseEvent', {
+          type: 'mouseMoved',
+          x,
+          y,
+          buttons: 0
+        }),
+        cdp.send('Input.dispatchMouseEvent', {
+          type: 'mousePressed',
+          ...common
+        }),
+        cdp.send('Input.dispatchMouseEvent', {
+          type: 'mouseReleased',
+          ...common
+        })
+      ]);
+    });
     return {
       x,
       y,
@@ -211,17 +243,17 @@ export function createPointerMethods({
     x,
     y
   ) {
-    const mark = spot(x, y, 'rgb(66,133,244)');
-    const moved = cdp.send('Input.dispatchMouseEvent', {
-      type: 'mouseMoved',
-      x,
-      y,
-      buttons: 0
+    await withMouseFocus(async () => {
+      await Promise.all([
+        spot(x, y, 'rgb(66,133,244)'),
+        cdp.send('Input.dispatchMouseEvent', {
+          type: 'mouseMoved',
+          x,
+          y,
+          buttons: 0
+        })
+      ]);
     });
-    await Promise.all([
-      mark,
-      moved
-    ]);
     return {
       x,
       y
