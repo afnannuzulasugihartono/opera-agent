@@ -10,7 +10,7 @@ import { bridgeReachable } from '../bridge.js';
 
 const NAMESPACE = 'opera';
 
-const FETCH_DESCRIPTION = 'Fetch one url with the real browser and answer with the page text. Use it when the page needs JavaScript or a signed-in session, where an HTTP fetch gets nothing back. It opens its own tab, waits for the page to settle, reads it, and closes the tab again, so one call walks the whole road. Give waitFor when the content arrives late, and the fetch waits for that text before it reads. For a page you have to click through, use open_url and browser_burst instead.';
+const FETCH_DESCRIPTION = 'Fetch one url with the real browser and answer with the page text. Use it when the page needs JavaScript or a signed-in session, where an HTTP fetch gets nothing back. It opens its own tab, waits for the page to settle, reads it again until the page holds text, and closes the tab again, so one call walks the whole road. Give waitFor when the content arrives late, and the fetch waits for that text before it reads. For a page you have to click through, use open_url and browser_burst instead.';
 
 const FETCH_INPUT = {
   type: 'object',
@@ -42,19 +42,34 @@ const asJson = (result) => {
   }
 };
 
+// WHY THE FETCH READS THE PAGE AGAIN.
+// Measured live on Hacker News: a fresh tab held no text and no accessibility rows for its first 200ms, and wait_still answered "settled" after 155ms because two empty reads are identical.
+// The wait measures stillness and not readiness, so the fetch reads until the page holds text and its document has finished loading.
+
+const hasText = (page) => (page.text ?? '').trim().length > 0;
+const isLoading = (page) => page.ready === 'loading';
+
 /**
  * Fetch one url through the browser and answer with the page text.
- * @param {object} options - the call seam, the url, and the text to wait for.
+ * @param {object} options - the call seam, the url, the text to wait for, and the clock the fetch reads on.
  * @param {Function} options.call - runs one opera-local tool by name and answers with its result.
  * @param {string} options.url - the absolute url to open.
  * @param {string} [options.waitFor] - text that must appear before the page is read.
+ * @param {number} [options.timeoutMs] - how long the fetch waits for the page to hold text, default 8000.
+ * @param {number} [options.retryMs] - the pause between reads, default 300.
+ * @param {Function} [options.sleep] - waits between reads.
+ * @param {Function} [options.now] - reads the clock the budget is measured on.
  * @returns {Promise<object>} the url it ended on, its title, and the page text.
  */
 
 export async function operaFetch({
   call,
   url,
-  waitFor
+  waitFor,
+  timeoutMs = 8000,
+  retryMs = 300,
+  sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+  now = Date.now
 }) {
   const opened = asJson(await call('open_url', {
     url
@@ -75,14 +90,25 @@ export async function operaFetch({
     await call('wait_still', {
       tabId
     });
-    const page = asJson(await call('read_page', {
+    const deadline = now() + timeoutMs;
+    let page = asJson(await call('read_page', {
       tabId
     }));
+    while ((!hasText(page) || isLoading(page)) && now() < deadline) {
+      await sleep(retryMs);
+      page = asJson(await call('read_page', {
+        tabId
+      }));
+    }
+    if (!hasText(page)) {
+      throw new Error(`the page at ${url} answered with no text after ${timeoutMs}ms; give waitFor the text to wait for, or drive it with opera_open_url and opera_browser_burst.`);
+    }
+    const note = isLoading(page) ? '\nnote: the page was still loading when the fetch ended' : '';
     return {
       content: [
         {
           type: 'text',
-          text: `url: ${page.url ?? url}\ntitle: ${page.title ?? ''}`
+          text: `url: ${page.url ?? url}\ntitle: ${page.title ?? ''}${note}`
         },
         {
           type: 'text',

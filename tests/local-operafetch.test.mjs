@@ -148,6 +148,123 @@ test('the fetch opens a tab, settles the page, reads it, and closes the tab', as
   assert.match(out.content[0].text, /https:\/\/example\.com\//);
 });
 
+// WHY THE PAGE IS READ AGAIN.
+// Measured live on Hacker News: a fresh tab held no text and no accessibility rows for its first 200ms, and wait_still answered "settled" after 155ms because two empty reads are identical.
+// The wait measures stillness, not readiness, so the fetch reads until the page has something to say.
+
+test('the fetch reads again while the page has nothing to say, and answers with what the page held', async () => {
+  const calls = [];
+  const call = async (
+    name,
+    args
+  ) => {
+    calls.push([
+      name,
+      args
+    ]);
+    if (name === 'open_url') return asJson({
+      action: {
+        id: '7'
+      }
+    });
+    if (name === 'read_page') {
+      const reads = calls.filter((entry) => entry[0] === 'read_page').length;
+      if (reads === 1) return asJson({
+        title: '',
+        url: '',
+        text: '',
+        strategy: 'vision'
+      });
+      return asJson({
+        title: 'Hacker News',
+        url: 'https://news.ycombinator.com/',
+        text: 'Hacker News'
+      });
+    }
+    return asJson({});
+  };
+
+  const out = await operaFetch({
+    call,
+    url: 'https://news.ycombinator.com/',
+    sleep: async () => {}
+  });
+
+  assert.equal(calls.filter((entry) => entry[0] === 'read_page').length, 2, 'the empty read was not the answer');
+  assert.equal(out.content[1].text, 'Hacker News');
+});
+
+test('a page that never gives up its text says so, and leaves no tab behind', async () => {
+  const calls = [];
+  let at = 0;
+  const call = async (
+    name,
+    args
+  ) => {
+    calls.push([
+      name,
+      args
+    ]);
+    if (name === 'open_url') return asJson({
+      action: {
+        id: '7'
+      }
+    });
+    if (name === 'read_page') return asJson({
+      title: '',
+      url: '',
+      text: '',
+      strategy: 'vision'
+    });
+    return asJson({});
+  };
+
+  await assert.rejects(
+    () => operaFetch({
+      call,
+      url: 'https://example.com/',
+      timeoutMs: 600,
+      sleep: async (ms) => {
+        at += ms;
+      },
+      now: () => at
+    }),
+    /no text/
+  );
+  assert.equal(calls.at(-1)[0], 'close_tab', 'the tab was closed on the way out');
+});
+
+test('a page that was still loading when the fetch ended says so', async () => {
+  const call = async (name) => {
+    if (name === 'open_url') return asJson({
+      action: {
+        id: '7'
+      }
+    });
+    if (name === 'read_page') return asJson({
+      title: 'Hacker News',
+      url: 'https://news.ycombinator.com/',
+      text: 'Hacker News',
+      ready: 'loading'
+    });
+    return asJson({});
+  };
+  let at = 0;
+
+  const out = await operaFetch({
+    call,
+    url: 'https://news.ycombinator.com/',
+    timeoutMs: 600,
+    sleep: async (ms) => {
+      at += ms;
+    },
+    now: () => at
+  });
+
+  assert.equal(out.content[1].text, 'Hacker News');
+  assert.match(out.content[0].text, /still loading/);
+});
+
 test('a text that was waited for and never came is named, and the tab is still closed', async () => {
   const calls = [];
   const call = async (

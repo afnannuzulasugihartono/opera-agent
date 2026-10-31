@@ -160,11 +160,19 @@ export { default } from 'file:///D:/GitHub/opera-agent/local/bin/opera-opencode.
 It registers 42 tools: the 41 above, and `opera_fetch`.
 
 `opera_fetch` is the one call that walks the whole road. It opens its own tab, waits
-for the page to settle, reads it, and closes the tab again, and it answers with the
-url it ended on, the title, and the page text. Give it `waitFor` when the content
-arrives late. Use it when the page needs JavaScript or a signed-in session, where an
-HTTP fetch gets nothing back; for a page you have to click through, `opera_open_url`
-and `opera_browser_burst` are the road.
+for the page to settle, reads it again until the page holds text, and closes the tab
+again, and it answers with the url it ended on, the title, and the page text. Give it
+`waitFor` when the content arrives late. Use it when the page needs JavaScript or a
+signed-in session, where an HTTP fetch gets nothing back; for a page you have to click
+through, `opera_open_url` and `opera_browser_burst` are the road.
+
+The read is repeated on purpose. A fresh tab held no text and no accessibility rows
+for its first 200ms, and `wait_still` answered "settled" after 155ms, because two
+empty reads are identical. Stillness is not readiness, so the fetch reads until the
+page says something.
+
+OpenCode loads a plugin once per process: a change to the plugin's code is live after
+a restart, not after a save.
 
 A permission rule is what turns a click into a question:
 
