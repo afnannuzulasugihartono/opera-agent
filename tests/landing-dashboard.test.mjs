@@ -843,3 +843,9 @@ test('the app bar carries one action, and the status line names a state', () => 
   assert.doesNotMatch(html, /device ter-pairing, \$\{online\} daring/, 'the status line does not repeat the figures the metric strip already carries');
   assert.match(html, /'Semua device daring\.'/, 'it names the state instead');
 });
+
+test('the app shell carries its own doors, and the site keeps its map', () => {
+  const html = read('dashboard.html');
+  assert.match(app, /body\.app-dark header nav a\.nav-sec \{[^}]*display: none/, 'a work surface does not carry Fitur, Privasi, Dukungan and Model Anda in its own bar');
+  assert.match(html, /<span class="doors">[\s\S]{0,400}?fitur\.html[\s\S]{0,200}?dukungan\.html/, 'and every door stays in the footer');
+});

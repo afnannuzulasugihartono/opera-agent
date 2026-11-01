@@ -64,6 +64,13 @@ body.app-dark header nav a:not(.brand):not(.navCta):hover { color: var(--ink); }
 
 body.app-dark header nav a[aria-current="page"]:not(.brand):not(.navCta) { color: var(--ink); box-shadow: inset 0 -1px 0 var(--ink); }
 
+/*
+ * WHY the app shell drops the marketing doors: the console and the account page are a place to work, and a work surface that carries "Fitur", "Privasi", "Dukungan" and "Model Anda" in its own bar is carrying the brochure.
+ * Measured on Cline's console and OpenCode's, the app bar holds the app's own destinations only, and every door stays in the footer.
+ */
+
+body.app-dark header nav a.nav-sec { display: none; }
+
 body.app-dark .brandMark rect { fill: var(--ink); }
 
 body.app-dark .brandMark path { fill: #06120d; }

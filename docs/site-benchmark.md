@@ -67,6 +67,7 @@ soft purple fill rather than a block.
 | header content | a centred 1200px box at x=111, over a 1422px console | the window's edges, 24px gutters | one measure on one screen |
 | footer content | a third centred box | the same gutters | |
 | active rail item | a solid accent block, the loudest thing on the page | `--accent-soft` fill, `--accent-strong` text, 9.27:1 measured | Cline uses a soft tint |
+| header doors | 9, the marketing map and the app's own | 5: Unduh, Dashboard, Akun, the language | Cline's and OpenCode's app bars carry the app's destinations only |
 | account line | "Device milik {email}." | "Akun {email}." | the page names the account |
 | app bar actions | two, the second one already in the nav, the rail and the account view | one | |
 | status line | "2 device ter-pairing, 1 daring." — two of the three figures again | "Semua device daring." / "Sebagian device offline." / "Tidak ada device daring." | the state, not the counts |
@@ -116,6 +117,11 @@ measurements. The rest of this table is what the redesign changed.
 10. **The browser tab follows the app convention.** "Tabel — Opera Agent"
     became "Tabel | Dashboard Opera Agent", after measuring Cline's "Home |
     Cline Dashboard" and OpenCode's "Activity | OpenCode Console".
+11. **The app bar carries the app's own doors.** The signed-in bar carried
+    nine items — the marketing map and the app's destinations — where
+    Cline's and OpenCode's app bars carry the app's destinations only. The
+    console and the account page now show Unduh, Dashboard, Akun and the
+    language; every door stays in the footer.
 
 ## Next round, ranked
 
