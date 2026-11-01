@@ -16,6 +16,8 @@
  *
  * WHY the radius is re-pointed here too: measured live, a Cline button is 6px and a Cline card 10px, and a Cohere control is 0-2px.
  * The site's own 22px card and 980px pill are the brochure shape, and in a control panel they made every control read as a sticker instead of a control.
+ *
+ * WHY the focus ring is re-pointed here too: site.css paints it #0b6b52, which measures 2.99:1 on the dark canvas and 2.82:1 on a card, under the 3:1 a focus indicator has to clear, so a keyboard reader could not see where they were.
  */
 
 body.app-dark {
@@ -39,7 +41,12 @@ body.app-dark {
   --on-fill: #06120d;
   --radius: 10px;
   --radius-sm: 6px;
+  --focus: var(--accent-strong);
 }
+
+/* WHY the selection is re-inked: site.css paints white ink on the brand green, which is 1.76:1, so a selected line in the console was unreadable. */
+
+body.app-dark ::selection { background: var(--accent); color: var(--on-fill); }
 
 /* WHY the chrome answers in the canvas: a light header above a dark console reads as a different product, which is the one thing a benchmarked redesign cannot afford. */
 

@@ -122,6 +122,12 @@ measurements. The rest of this table is what the redesign changed.
     Cline's and OpenCode's app bars carry the app's destinations only. The
     console and the account page now show Unduh, Dashboard, Akun and the
     language; every door stays in the footer.
+12. **The dark canvas answers the keyboard.** `site.css`'s focus ring is
+    `#0b6b52`, which measures 2.99:1 on the console's canvas and 2.82:1 on a
+    card — under the 3:1 a focus indicator has to clear — and its selection
+    painted white ink on the brand green, 1.76:1. The app shell now re-points
+    the ring to the accent (11.72:1) and inks the selection dark on the
+    accent.
 
 ## Next round, ranked
 

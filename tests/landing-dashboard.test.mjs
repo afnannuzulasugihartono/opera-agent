@@ -849,3 +849,8 @@ test('the app shell carries its own doors, and the site keeps its map', () => {
   assert.match(app, /body\.app-dark header nav a\.nav-sec \{[^}]*display: none/, 'a work surface does not carry Fitur, Privasi, Dukungan and Model Anda in its own bar');
   assert.match(html, /<span class="doors">[\s\S]{0,400}?fitur\.html[\s\S]{0,200}?dukungan\.html/, 'and every door stays in the footer');
 });
+
+test('the focus ring and the selected text are readable on the dark canvas', () => {
+  assert.match(app, /--focus: var\(--accent-strong\)/, 'the paper canvas focus ring measures 2.99:1 on the dark one, under the 3:1 a focus indicator has to clear');
+  assert.match(app, /body\.app-dark ::selection \{[^}]*background: var\(--accent\);[^}]*color: var\(--on-fill\)/, 'and white ink on the brand green is 1.76:1, so a selected line was unreadable');
+});
