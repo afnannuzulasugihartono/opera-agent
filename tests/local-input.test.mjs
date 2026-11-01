@@ -223,7 +223,10 @@ test('append waits for the page to be quiet, not for a fixed beat', async () => 
     slept.push(ms);
   } }).append('tail text');
 
-  assert.ok(slept.includes(SETTLE_POLL_MS), 'the end key is followed by a settle');
+  assert.ok(
+    cdp.calls.some((c) => String(c.params?.expression ?? '').includes('opera-settle-probe')),
+    'the end key is followed by a settle'
+  );
   assert.ok(!slept.includes(120), 'and not by the old fixed 120 ms beat');
 });
 
@@ -772,9 +775,12 @@ test('a chord-only stream settles once instead of polling for an edit that never
   assert.equal(out.settled, true, 'and it says it already settled, so the page look does not pay twice');
   assert.deepEqual(slept, [
     KEY_BEAT_MS,
-    KEY_BEAT_MS,
-    SETTLE_POLL_MS
+    KEY_BEAT_MS
   ], 'two key beats, then one settle — not twelve 150 ms polls');
+  assert.ok(
+    cdp.calls.some((c) => String(c.params?.expression ?? '').includes('opera-settle-probe')),
+    'and that settle is one question to the watcher, with no beat of waiting on a quiet page'
+  );
 });
 
 test('a text stream with nothing focused fails fast instead of polling for text that cannot land', async () => {

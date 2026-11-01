@@ -206,7 +206,10 @@ test('a menu walk settles between pointer moves instead of sleeping fixed gaps',
     timeoutMs: 1000
   });
 
-  assert.ok(slept.includes(SETTLE_POLL_MS), 'the walk waits on the page settle');
+  assert.ok(
+    cdp.calls.some((c) => String(c.params?.expression ?? '').includes('opera-settle-probe')),
+    'the walk waits on the page settle'
+  );
   assert.ok(!slept.some((ms) => ms === 120 || ms === 260 || ms === 90), 'and not on the old fixed hover/open/poll gaps');
 });
 

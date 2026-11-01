@@ -151,6 +151,14 @@ const canvasCdp = ({
 
       // A page that can name the line the caret is on answers the caret read in one go, and only a page that cannot falls through to the selection.
 
+      if (method === 'Runtime.evaluate' && expression.includes('opera-settle-probe')) {
+        return { result: { value: {
+          changes: 0,
+          quietMs: 40,
+          elapsedMs: 40,
+          visibility: 'visible'
+        } } };
+      }
       if (method === 'Runtime.evaluate' && expression.includes('opera-caret-line')) {
         if (noCaret) {
           return { result: { value: {
@@ -575,8 +583,11 @@ test('a caret line reads the selection, collapses, and reports its verdict', asy
       ]
     ],
     'home, shift-end, then the collapse, each on both edges');
-  assert.ok(slept.filter((ms) => ms === SETTLE_POLL_MS).length >= 2,
-    'a settle after each selection move, not a fixed beat');
+  assert.equal(
+    cdp.calls.filter((c) => String(c.params?.expression ?? '').includes('opera-settle-probe')).length,
+    2,
+    'a settle after each selection move, and each is one question to the watcher the page keeps'
+  );
 });
 
 test('an unreadable line is empty, and the caret still collapses', async () => {

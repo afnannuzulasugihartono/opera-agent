@@ -8,10 +8,9 @@
 // The settle is that question asked once, so the waits and the thing they wait on are answered by one module.
 
 import {
-  SETTLE_ARM_EXPRESSION,
-  SETTLE_DISARM_EXPRESSION,
   SETTLE_MAX_MS,
   SETTLE_POLL_MS,
+  SETTLE_PROBE_EXPRESSION,
   SETTLE_QUIET_MS,
   SETTLE_READ_EXPRESSION
 } from './page-expressions.js';
@@ -50,22 +49,30 @@ export function createWaits({
       ...(detail ? { detail } : {})
     });
 
-    let armed = false;
+    // WHY ONE PROBE COMES BEFORE ANY POLLING.
+    // The watcher from the last settle is still armed and still knows the page's last change, so the common case - a page that has not moved - answers in the probe itself.
+    // A page that did just move polls until it is quiet, which is the same loop as before, only entered when there is something to wait for.
+
     let last = null;
     try {
-      await cdp.send('Runtime.evaluate', {
-        expression: SETTLE_ARM_EXPRESSION,
+      const { result } = await cdp.send('Runtime.evaluate', {
+        expression: SETTLE_PROBE_EXPRESSION,
         returnByValue: true
       });
-      armed = true;
+      last = result?.value;
+      if (!last || last.missing) {
+        return answer('failed', null, 'the page lost the settle watcher');
+      }
+      if (Number(last.quietMs) >= SETTLE_QUIET_MS) return answer('quiet', last);
+
       const polls = Math.ceil(SETTLE_MAX_MS / SETTLE_POLL_MS);
       for (let poll = 0; poll < polls; poll += 1) {
         await sleep(SETTLE_POLL_MS);
-        const { result } = await cdp.send('Runtime.evaluate', {
+        const { result: read } = await cdp.send('Runtime.evaluate', {
           expression: SETTLE_READ_EXPRESSION,
           returnByValue: true
         });
-        const state = result?.value;
+        const state = read?.value;
         if (!state || state.missing) {
           return answer('failed', null, 'the page lost the settle watcher');
         }
@@ -75,13 +82,6 @@ export function createWaits({
       return answer('deadline', last);
     } catch (error) {
       return answer('failed', null, error?.message || String(error));
-    } finally {
-      if (armed) {
-        await cdp.send('Runtime.evaluate', {
-          expression: SETTLE_DISARM_EXPRESSION,
-          returnByValue: true
-        }).catch(() => null);
-      }
     }
   }
 

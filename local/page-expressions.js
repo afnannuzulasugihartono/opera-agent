@@ -1212,20 +1212,35 @@ export const EDIT_POLLS = 12;
 // The first shape installed a MutationObserver and resolved from a page-side setTimeout(120).
 // Measured live on a hidden Google Docs tab, that timer was clamped by background-tab throttling: the call took 304ms, and repeated runs reached 1,009ms, while a snapshot of the same page took 4ms.
 // The observer still belongs to the page, but the clock that decides "quiet" now belongs to Node, whose timers are not throttled.
-// The page installs only the watcher; Node waits one poll, asks the watcher how long the page has been still, and stops after 8ms of quiet or 120ms total.
-// Measured live over the extension bridge: the 32ms window this replaces cost 46ms per action, and an 8ms window on a 4ms poll settles a still page in 16-20ms.
+// The page installs only the watcher; Node asks the watcher how long the page has been still, and stops after 8ms of quiet or 120ms total.
+// Measured live over the extension bridge: the 32ms window this replaces cost 46ms per action, and an 8ms window that reuses the watcher settles a still page in one round trip instead of four.
 // A page that keeps moving still pays the 120ms cap, so the short window costs a slow page nothing it did not already spend.
 
 export const SETTLE_QUIET_MS = 8;
 export const SETTLE_MAX_MS = 120;
 export const SETTLE_POLL_MS = 4;
 
-export const SETTLE_ARM_EXPRESSION = `(() => {
+// WHY THE OBSERVER IS REUSED ACROSS SETTLES INSTEAD OF REBUILT AND ARMED.
+// The watcher that was armed one action ago is still watching, and it knows when the page last changed - that knowledge is the whole answer a settle needs.
+// Re-arming threw it away and set the clock to now, so every settle had to wait the full quiet window even on a page that had not moved for minutes.
+// One call now carries the watcher forward and answers how long the page has been quiet, and a page that is already quiet settles in one round trip instead of four.
+
+/**
+ * Carry the settle watcher forward and answer how quiet the page is.
+ * @returns {string} the expression that arms the watcher and answers with its state.
+ */
+
+export const SETTLE_PROBE_EXPRESSION = `(() => {
   const key = '__operaSettle';
   const old = window[key];
+  const now = performance.now();
+  const state = {
+    started: Number(old?.started) || now,
+    lastChange: Number(old?.lastChange) || now,
+    changes: Number(old?.changes) || 0,
+    observer: null
+  };
   if (old?.observer) { try { old.observer.disconnect(); } catch { /* a page already gone has nothing to disconnect */ } }
-  const started = performance.now();
-  const state = { started, lastChange: started, changes: 0, observer: null };
   state.observer = new MutationObserver(() => {
     state.changes += 1;
     state.lastChange = performance.now();
@@ -1234,8 +1249,13 @@ export const SETTLE_ARM_EXPRESSION = `(() => {
     state.observer.observe(document.documentElement || document, { subtree: true, childList: true, attributes: true, characterData: true });
   } catch { /* settling a page that refuses observation is still cheaper than not looking */ }
   window[key] = state;
-  return true;
-})() /*opera-settle-arm*/`;
+  return {
+    changes: state.changes,
+    quietMs: Math.max(0, Math.round(now - state.lastChange)),
+    elapsedMs: Math.max(0, Math.round(now - state.started)),
+    visibility: document.visibilityState
+  };
+})() /*opera-settle-probe*/`;
 
 export const SETTLE_READ_EXPRESSION = `(() => {
   const state = window.__operaSettle;
@@ -1248,13 +1268,6 @@ export const SETTLE_READ_EXPRESSION = `(() => {
     visibility: document.visibilityState
   };
 })() /*opera-settle-read*/`;
-
-export const SETTLE_DISARM_EXPRESSION = `(() => {
-  const state = window.__operaSettle;
-  if (state?.observer) { try { state.observer.disconnect(); } catch { /* a page already gone has nothing to disconnect */ } }
-  try { delete window.__operaSettle; } catch { /* a page that froze its globals still loses the observer */ }
-  return true;
-})() /*opera-settle-disarm*/`;
 
 // WHY THE APPEND WAITS AFTER THE END KEY.
 // The end key asks the editor to move its caret and scroll to it; a document that scrolls answers the next insert before the view has caught up, and text lands where the caret used to be.

@@ -182,7 +182,7 @@ export const DOCSTRING_PENDING = new Set([
   'local/transport.js: export function pageWebSocketById (line 65)',
   'local/transport.js: export function waitForBrowser (line 92)',
   'local/transport.js: export function waitForPage (line 239)',
-  'local/waits.js: export function createWaits (line 23)',
+  'local/waits.js: export function createWaits (line 22)',
   'local/ws-server.js: class BridgeSocket (line 211)',
   'local/ws-server.js: export function acceptKey (line 32)',
   'local/ws-server.js: export function createFrameReader (line 86)',

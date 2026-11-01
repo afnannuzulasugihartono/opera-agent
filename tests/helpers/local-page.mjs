@@ -63,6 +63,14 @@ export function recordingCdp() {
           } } };
         }
         if (params.expression.includes('isContentEditable')) return { result: { value: { ...page } } };
+        if (params.expression.includes('opera-settle-probe')) {
+          return { result: { value: {
+            changes: 1,
+            quietMs: 40,
+            elapsedMs: 40,
+            visibility: 'hidden'
+          } } };
+        }
         if (params.expression.includes('opera-settle-arm')) return { result: { value: { ok: true } } };
         if (params.expression.includes('opera-settle-read')) {
           return { result: { value: {

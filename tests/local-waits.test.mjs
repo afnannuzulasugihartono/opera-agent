@@ -16,7 +16,7 @@ import {
   DOC_URL
 } from './helpers/local-page.mjs';
 
-test('settle watches the page from Node, so a hidden tab cannot clamp its timer', async () => {
+test('settle asks the watcher it already has instead of arming a new one', async () => {
   const cdp = recordingCdp();
   const slept = [];
   const out = await createPrimitives(cdp, { sleep: async (ms) => {
@@ -24,20 +24,58 @@ test('settle watches the page from Node, so a hidden tab cannot clamp its timer'
   } }).settle();
 
   const calls = cdp.calls.filter((call) => call.method === 'Runtime.evaluate');
-  const arm = calls.find((call) => call.params.expression.includes('opera-settle-arm'));
-  const read = calls.find((call) => call.params.expression.includes('opera-settle-read'));
-  const disarm = calls.find((call) => call.params.expression.includes('opera-settle-disarm'));
+  const probe = calls.find((call) => call.params.expression.includes('opera-settle-probe'));
 
-  assert.ok(arm, 'settle installs a mutation watcher');
-  assert.match(arm.params.expression, /MutationObserver/);
-  assert.equal(arm.params.awaitPromise, undefined, 'no page-side promise waits on a throttled timer');
-  assert.ok(read, 'settle asks the watcher how quiet the page is');
-  assert.match(read.params.expression, /__operaSettle/);
-  assert.ok(disarm, 'settle removes its watcher');
+  assert.ok(probe, 'settle asks the watcher it already keeps');
+  assert.match(probe.params.expression, /MutationObserver/);
+  assert.equal(probe.params.awaitPromise, undefined, 'no page-side promise waits on a throttled timer');
+  assert.equal(calls.length, 1, 'a quiet page answers in one round trip, with no poll and no arm');
+  assert.deepEqual(slept, [], 'and nothing is slept');
   assert.equal(out.why, 'quiet');
   assert.equal(out.changes, 1);
   assert.equal(out.maxMs, SETTLE_MAX_MS);
-  assert.deepEqual(slept, [SETTLE_POLL_MS]);
+});
+
+
+test('settle polls when the page did just move', async () => {
+  let reads = 0;
+  const cdp = recordingCdp();
+  const slept = [];
+  cdp.send = async (
+    method,
+    params = {}
+  ) => {
+    cdp.calls.push({
+      method,
+      params
+    });
+    if (params.expression.includes('opera-settle-probe')) {
+      return { result: { value: {
+        changes: 1,
+        quietMs: 0,
+        elapsedMs: 0,
+        visibility: 'visible'
+      } } };
+    }
+    if (params.expression.includes('opera-settle-read')) {
+      reads += 1;
+      return { result: { value: {
+        changes: 1,
+        quietMs: reads >= 2 ? 9 : 4,
+        elapsedMs: 4 * reads,
+        visibility: 'visible'
+      } } };
+    }
+    return { result: { value: null } };
+  };
+
+  const out = await createPrimitives(cdp, { sleep: async (ms) => {
+    slept.push(ms);
+  } }).settle();
+
+  assert.equal(out.why, 'quiet');
+  assert.equal(reads, 2, 'it asks again until the page is quiet');
+  assert.ok(slept.length >= 1, 'and waits between the asks');
 });
 
 
@@ -97,7 +135,7 @@ test('a text wait settles the page between checks instead of sleeping a fixed ga
           ready: 'complete'
         } } };
       }
-      if (method === 'Runtime.evaluate' && String(params.expression).includes('opera-settle-arm')) {
+      if (method === 'Runtime.evaluate' && String(params.expression).includes('opera-settle-probe')) {
         return { result: { value: true } };
       }
       if (method === 'Runtime.evaluate' && String(params.expression).includes('opera-settle-read')) {
@@ -107,9 +145,6 @@ test('a text wait settles the page between checks instead of sleeping a fixed ga
           elapsedMs: 40,
           visibility: 'visible'
         } } };
-      }
-      if (method === 'Runtime.evaluate' && String(params.expression).includes('opera-settle-disarm')) {
-        return { result: { value: true } };
       }
       return { result: {} };
     }
@@ -124,7 +159,7 @@ test('a text wait settles the page between checks instead of sleeping a fixed ga
   });
 
   assert.equal(out.text, 'Heading is here');
-  assert.ok(cdp.calls.some((call) => call.params?.expression?.includes('opera-settle-arm')), 'the wait waits on a mutation settle');
+  assert.ok(cdp.calls.some((call) => call.params?.expression?.includes('opera-settle-probe')), 'the wait waits on a mutation settle');
   assert.ok(slept.includes(SETTLE_POLL_MS), 'and sleeps the settle beat, not the fixed 100 ms gap');
   assert.ok(!slept.includes(100), 'the fixed interval is not the method anymore');
 });
@@ -154,7 +189,7 @@ test('a row wait settles the page between checks instead of sleeping a fixed gap
   });
 
   assert.equal(out.found, true);
-  assert.ok(cdp.calls.some((call) => call.params?.expression?.includes('opera-settle-arm')), 'the wait waits on a mutation settle');
+  assert.ok(cdp.calls.some((call) => call.params?.expression?.includes('opera-settle-probe')), 'the wait waits on a mutation settle');
   assert.ok(slept.includes(SETTLE_POLL_MS), 'and sleeps the settle beat, not the fixed 100 ms gap');
   assert.ok(!slept.includes(100), 'the fixed interval is not the method anymore');
 });
@@ -180,9 +215,9 @@ test('a read on a settled page takes two samples and says the text stood still',
   assert.equal(out.caretRestored, true);
   assert.equal(out.caretWhy, '');
   const asks = cdp.calls.filter((c) => c.method === 'Runtime.evaluate').map((c) => c.params.expression);
-  assert.ok(asks.some((expression) => expression.includes('opera-settle-arm')), 'the read settles before its second sample');
-  assert.ok(asks.some((expression) => expression.includes('opera-settle-read')), 'and asks the page how quiet it is');
-  assert.deepEqual(slept, [SETTLE_POLL_MS], 'the settle is a beat, not a hundred milliseconds');
+  assert.ok(asks.some((expression) => expression.includes('opera-settle-probe')), 'the read settles before its second sample');
+  assert.equal(asks.some((expression) => expression.includes('opera-settle-read')), false, 'and a quiet page answers the probe itself, so no poll is needed');
+  assert.deepEqual(slept, [], 'the settle is one round trip, not a beat of waiting');
 });
 
 // WHY A READ THAT RETURNS A TENTH OF THE PAGE IS THE BUG THIS PINS.
@@ -220,7 +255,7 @@ test('a read on a page still filling in says so, and answers with the later samp
       if (method === 'Runtime.evaluate' && String(params.expression).includes('document.title')) {
         return { result: { value: samples[Math.min(ask++, samples.length - 1)] } };
       }
-      if (method === 'Runtime.evaluate' && String(params.expression).includes('opera-settle-arm')) {
+      if (method === 'Runtime.evaluate' && String(params.expression).includes('opera-settle-probe')) {
         return { result: { value: true } };
       }
       if (method === 'Runtime.evaluate' && String(params.expression).includes('opera-settle-read')) {
@@ -230,9 +265,6 @@ test('a read on a page still filling in says so, and answers with the later samp
           elapsedMs: 8,
           visibility: 'visible'
         } } };
-      }
-      if (method === 'Runtime.evaluate' && String(params.expression).includes('opera-settle-disarm')) {
-        return { result: { value: true } };
       }
       return { result: {} };
     }
@@ -401,7 +433,7 @@ test('waitForMutation uses the page settle between reads instead of a fixed gap'
         method,
         params
       });
-      if (method === 'Runtime.evaluate' && String(params.expression).includes('opera-settle-arm')) return { result: { value: true } };
+      if (method === 'Runtime.evaluate' && String(params.expression).includes('opera-settle-probe')) return { result: { value: true } };
       if (method === 'Runtime.evaluate' && String(params.expression).includes('opera-settle-read')) return { result: { value: {
         changes: 1,
         quietMs: 40,
@@ -475,7 +507,7 @@ function rowsCdp(reads) {
         method,
         params
       });
-      if (method === 'Runtime.evaluate' && String(params.expression).includes('opera-settle-arm')) {
+      if (method === 'Runtime.evaluate' && String(params.expression).includes('opera-settle-probe')) {
         return { result: { value: true } };
       }
       if (method === 'Runtime.evaluate' && String(params.expression).includes('opera-settle-read')) {
@@ -485,9 +517,6 @@ function rowsCdp(reads) {
           elapsedMs: 40,
           visibility: 'visible'
         } } };
-      }
-      if (method === 'Runtime.evaluate' && String(params.expression).includes('opera-settle-disarm')) {
-        return { result: { value: true } };
       }
       const next = queue.length > 1 ? queue.shift() : queue[0];
       return { result: { value: next } };
@@ -671,7 +700,7 @@ test('a page that never settles says so instead of pretending', async () => {
         method,
         params
       });
-      if (method === 'Runtime.evaluate' && String(params.expression).includes('opera-settle-arm')) {
+      if (method === 'Runtime.evaluate' && String(params.expression).includes('opera-settle-probe')) {
         return { result: { value: true } };
       }
       if (method === 'Runtime.evaluate' && String(params.expression).includes('opera-settle-read')) {
@@ -681,9 +710,6 @@ test('a page that never settles says so instead of pretending', async () => {
           elapsedMs: 8,
           visibility: 'visible'
         } } };
-      }
-      if (method === 'Runtime.evaluate' && String(params.expression).includes('opera-settle-disarm')) {
-        return { result: { value: true } };
       }
       tick += 1;
       return { result: { value: [{
