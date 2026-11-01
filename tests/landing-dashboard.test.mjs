@@ -854,3 +854,9 @@ test('the focus ring and the selected text are readable on the dark canvas', () 
   assert.match(app, /--focus: var\(--accent-strong\)/, 'the paper canvas focus ring measures 2.99:1 on the dark one, under the 3:1 a focus indicator has to clear');
   assert.match(app, /body\.app-dark ::selection \{[^}]*background: var\(--accent\);[^}]*color: var\(--on-fill\)/, 'and white ink on the brand green is 1.76:1, so a selected line was unreadable');
 });
+
+test('the summary card states the fact once', () => {
+  const html = read('dashboard.html');
+  assert.doesNotMatch(html, /Kesiapan akun ini/, 'the lead-in listed the three things the card below it shows');
+  assert.doesNotMatch(html, /Pasang dulu di bagian Unduh/, 'the app bar already points at the download page and the card lists the steps');
+});

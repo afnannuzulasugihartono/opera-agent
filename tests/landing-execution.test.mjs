@@ -198,7 +198,7 @@ test('the dashboard names the extension when the browser does not have it', asyn
 
   assert.match(nodes.installState.textContent, /Opera Agent belum terpasang di browser ini/,
     'the missing extension is named, not left for the reader to infer');
-  assert.match(nodes.installState.textContent, /Pasang dulu/, 'and the next step is given');
+  assert.match(nodes.checklist.innerHTML, /Pasang extension di browser ini/, 'and the next step is given by the checklist, once');
 });
 
 test('the dashboard confirms the extension once the content script has marked the page', async () => {

@@ -128,6 +128,12 @@ measurements. The rest of this table is what the redesign changed.
     painted white ink on the brand green, 1.76:1. The app shell now re-points
     the ring to the accent (11.72:1) and inks the selection dark on the
     accent.
+13. **The summary card says one thing once.** The Ringkasan view opened with
+    a lead-in that listed the three things its own card showed, and the card
+    then said "Pasang dulu di bagian Unduh, lalu pair dengan akun ini" on top
+    of the checklist that names those steps and the app bar's action that
+    points at Unduh. The lead-in is gone and the state line states the fact;
+    the steps live in the checklist, once.
 
 ## Next round, ranked
 

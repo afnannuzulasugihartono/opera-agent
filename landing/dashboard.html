@@ -86,7 +86,6 @@
 
         <section id="ringkasan" class="active">
           <h1>Ringkasan</h1>
-          <p class="meta">Kesiapan akun ini: extension di browser, device yang ter-pairing, dan langkah berikutnya.</p>
           <div class="card">
             <p class="tone" id="installState" role="status" aria-live="polite">&nbsp;</p>
             <ol class="checklist" id="checklist"></ol>
@@ -466,11 +465,12 @@
       // WHY this is a function and not a single read: the content script runs at document_idle, so the marker can land after this module has already read the document.
       // Reading once would show "not installed" on a browser that has it, and the reader would go and install a second copy.
       // The attribute change is the one event that means the answer changed.
+      // WHY the line states the fact and stops there: the card below already lists the steps, and the app bar's action already points at the download page, so the second sentence said the same thing twice.
       const reportInstallState = () => {
         const installed = document.documentElement.dataset.operaAgent === 'installed';
         $('installState').textContent = installed
           ? 'Opera Agent terpasang di browser ini.'
-          : 'Opera Agent belum terpasang di browser ini. Pasang dulu di bagian Unduh, lalu pair dengan akun ini.';
+          : 'Opera Agent belum terpasang di browser ini.';
         $('installState').className = installed ? 'tone good' : 'tone warn';
         lastSeen.installed = installed;
         lastSeen.browser = document.documentElement.dataset.operaAgentBrowser || '';
