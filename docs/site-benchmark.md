@@ -9,7 +9,7 @@ measured, and "How to measure it again" repeats the method.
 
 ## The public home, measured
 
-| | Opera Agent (`/beranda`) | Cline (`cline.bot`) | OpenCode (`opencode.ai`) | Cohere (`cohere.com`) |
+| | Opera Agent (`/beranda`, before) | Cline (`cline.bot`) | OpenCode (`opencode.ai`) | Cohere (`cohere.com`) |
 |---|---|---|---|---|
 | headline | 54.7px, weight 600, −2.74px tracking, 2 lines | 47.5px, weight 340, +0.54px, 1 line | 22px, weight 700 (the hero is a terminal) | 60px, weight 400, −1.2px |
 | hero action | 44px tall, pill, 14.5px type | 36px, radius 7px, 14.4px type | a copy-paste command | 52px, pill, 16px type |
@@ -18,6 +18,13 @@ measured, and "How to measure it again" repeats the method.
 | paragraphs | 26, longest 104 characters | 19, longest 138 characters | 6, longest 247 characters | not comparable: the mega menu and the consent dialog live inside the page |
 | real images | 0 (a CSS mock of the console) | 6 | 2 | 88 |
 | page height | 4625px | 6585px | 3649px | 1872px |
+
+**After, live on 2026-11-01** (`https://opera-agent.pages.dev/beranda`, 912px
+inner width): headline 54.72px, weight 500, −1.6416px tracking; 23 paragraphs,
+longest 104 characters; 7 sections; 0 images; page height 4592px; navigation
+overflow 0px. The hero action keeps its 44px. A same-origin A/B at the same
+width measured the copy change on its own: 25 paragraphs and 4638px before,
+23 and 4574px after.
 
 What the numbers say:
 
@@ -44,19 +51,29 @@ What the numbers say:
 The live dashboard sends a stranger to the sign-in page on purpose ("no token,
 no dashboard"), so the console was measured from a local render of
 `landing/dashboard.html` with its two Supabase origins pointed at a local stub
-answering with two devices, one online.
+answering with two devices, one online. The instrument is a route in the stub
+that opens the console in an iframe and writes its geometry into the DOM, so
+headless Chrome can dump the same numbers before and after.
 
-| | Opera Agent console | note |
-|---|---|---|
-| view title | 18px, weight 600, line box 17.8px | the line box was smaller than the glyphs it held |
-| controls | 36px, radius 6px, 13.5px type | 10px cards and 6px controls are the benchmark's own console measurements |
-| rail | 220px wide, 8 doors, 13.5px type | |
-| metric strip | 22px numbers, 11px labels | |
-| surfaces | `#0c0e11` canvas, `#12151a` cards, radius 10px | |
+Cline's console was measured in the same browser: title 24px/600, section
+heading 16px/600, nav link 16px/400 at 239×48, and an active sidebar item in a
+soft purple fill rather than a block.
 
-The console was benchmarked against Cline in an earlier round — the radii, the
-label scale and the title size are Cline's. The one defect left was
-typographic.
+| | before | after | reference |
+|---|---|---|---|
+| view title | 18px/500, line box 22.5px | 24px/600, line box 30px | Cline's title is 24px/600 |
+| metric figures | 22px/600 | 18px/600 | the title now outranks the numbers under it |
+| heading weight | site.css's marketing 500 reached both app surfaces | `body.app-dark` re-pins 600 | the account title was 34px/500 |
+| header content | a centred 1200px box at x=111, over a 1422px console | the window's edges, 24px gutters | one measure on one screen |
+| footer content | a third centred box | the same gutters | |
+| active rail item | a solid accent block, the loudest thing on the page | `--accent-soft` fill, `--accent-strong` text, 9.27:1 measured | Cline uses a soft tint |
+| account line | "Device milik {email}." | "Akun {email}." | the page names the account |
+| app bar actions | two, the second one already in the nav, the rail and the account view | one | |
+| status line | "2 device ter-pairing, 1 daring." — two of the three figures again | "Semua device daring." / "Sebagian device offline." / "Tidak ada device daring." | the state, not the counts |
+| document title | "Tabel — Opera Agent" | "Tabel \| Dashboard Opera Agent" | Cline writes "Home \| Cline Dashboard", OpenCode "Activity \| OpenCode Console" |
+
+The radii, the label scale and the title size are Cline's own console
+measurements. The rest of this table is what the redesign changed.
 
 ## What shipped on 2026-11-01
 
@@ -80,6 +97,25 @@ typographic.
    singkat." about a list of five short answers. The eyebrow now names the
    mechanism (MCP), the privacy section links the policy and nothing else, and
    the FAQ and closing band lost their filler lines.
+6. **The console's headings are the console's own.** site.css gives every
+   `h1`–`h4` the marketing display weight of 500, and it reached both signed-in
+   surfaces: the console's view title measured 18px/500 and the account page's
+   34px/500. `app.css` now re-pins 600 on `body.app-dark`, and the console's
+   title is 24px/600 — the size Cline prints its own in.
+7. **The console carries one measure.** The header's content sat in its own
+   centred 1200px box over a 1422px console and the footer in a third, so one
+   screen held three widths. Both now take the console's own 24px gutters.
+8. **The console says one thing once.** The account line reads "Akun {email}."
+   instead of calling an account a device, the app bar dropped the "Kelola
+   akun" button the nav, the rail and the account view already carry, and the
+   status line names a state ("Sebagian device offline.") instead of repeating
+   two of the three figures above it.
+9. **The active rail item is a tint, not a block.** A solid accent fill was the
+   loudest thing on the dark canvas; it is now `--accent-soft` with
+   `--accent-strong` text, measured at 9.27:1.
+10. **The browser tab follows the app convention.** "Tabel — Opera Agent"
+    became "Tabel | Dashboard Opera Agent", after measuring Cline's "Home |
+    Cline Dashboard" and OpenCode's "Activity | OpenCode Console".
 
 ## Next round, ranked
 
@@ -93,12 +129,19 @@ typographic.
    references give a reader a map of what the product does (43 and 64 links).
    A short "Fitur" group — read the page, click, fill the form — costs one
    list and no mega menu.
-3. **Translation coverage on the remaining pages.** `unduh.html`, `fitur.html`,
-   and `dukungan.html` carry unmarked strings of their own. The mechanism is
-   already there; the marking is not.
+3. **Translation coverage on the remaining pages.** Measured across all twelve
+   landing pages: 198 Indonesian sentences carry a `data-i18n` mark and 84 do
+   not. The gaps are `akun.html` (17), `privasi.html` (16), `dashboard.html`
+   (15), `syarat.html` (14), `oauth/consent.html` (11), `404.html` (5),
+   `unduh-berkas.html` (3), `index.html` (2) and `unduh.html` (1).
+   `beranda.html`, `fitur.html` and `dukungan.html` are clean. The three app
+   surfaces — `akun.html`, `dashboard.html` and `oauth/consent.html` — carry
+   the language toggle and load `i18n.js`, but hold no `#i18n-dict` at all, so
+   their toggle switches nothing.
 4. **The console, measured with a real account.** Every console number above
-   comes from a stubbed session. Re-measure before changing the console, and
-   keep the surface dark: it is the only place on the site that is.
+   comes from a stubbed session; the redesign was measured the same way.
+   Re-measure against a real account before the next round, and keep the
+   surface dark: it is the only place on the site that is.
 5. **Cohere's 52px action.** Only if the spec's 44px is revisited. Cline's
    36px says 44px is a fine middle, and our action already carries the one
    filled action per section.
@@ -114,5 +157,12 @@ typographic.
   the viewport **including** the scrollbar, so a 912px window leaves
   `912 − 15 − 48 = 849px` of shell.
 - For the console, point `AUTH_HOST` and `REST` at a local stub that answers
-  `/auth/v1/user` and `opera_my_devices`, and measure the signed-in shell. The
-  live page will not show it to a stranger, and that is the design.
+  `/auth/v1/user` and `opera_my_devices`, inject the access token, and measure
+  the signed-in shell. The live page will not show it to a stranger, and that
+  is the design. The stub serves one `/measure` route that opens the console
+  in an iframe and writes the geometry — header and footer boxes, the content
+  column, the view title, the metric figures, the active rail item — into the
+  DOM, so `chrome --headless=new --dump-dom` prints the same numbers before
+  and after. The screenshot has to disable transitions: the console's primary
+  action changes class after the session resolves, and headless Chrome
+  captures the frame before the fill has finished.

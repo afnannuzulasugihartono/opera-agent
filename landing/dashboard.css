@@ -32,7 +32,7 @@ body:has(main.console) {
 main.console {
   --app-radius: 10px;
   --app-radius-sm: 6px;
-  --app-title: 18px;
+  --app-title: 24px;
   --app-pad: 20px;
   display: flex;
   flex-direction: column;
@@ -47,6 +47,19 @@ main.console.wide {
   width: 100%;
   max-width: none;
   margin-inline: 0;
+}
+
+/*
+ * WHY the chrome shares the window's edges: measured at a 1422px window, the header's content sat in its own centred 1200px box at x=111 and the footer's in another, while the console's content column ran from 244 to 1398.
+ * Three measures on one screen read as three pages, so the header and the footer take the console's own gutters.
+ */
+
+body:has(main.console) header .wrap,
+body:has(main.console) footer .wrap {
+  width: 100%;
+  max-width: none;
+  margin-inline: 0;
+  padding-inline: 24px;
 }
 
 /*
@@ -72,10 +85,6 @@ main.console .card {
 }
 
 /* ── the app bar, the status line and the metric strip ─────────────────────── */
-
-/* WHY the page may hide the shared nav's pill: site.css keeps its own display rule for .navCta, which the bare [hidden] attribute cannot beat on its own. */
-
-header nav .navCta[hidden] { display: none; }
 
 .appBar {
   display: flex;
@@ -131,12 +140,17 @@ header nav .navCta[hidden] { display: none; }
 
 .metrics dd {
   margin: 4px 0 0;
-  font-size: 22px;
+  font-size: 18px;
   font-weight: 600;
   letter-spacing: -.03em;
   line-height: 1.1;
   font-variant-numeric: tabular-nums;
 }
+
+/*
+ * WHY the numbers sit under the title: measured before the change, the strip's figures were 22px/600 and the view title under them 18px/500, so the biggest text on the console was a number.
+ * Cline's console title is 24px/600, and a title that outranks its own figures is the only order a reader can scan.
+ */
 
 @media (max-width: 520px) {
   .metrics dd { font-size: 18px; }
@@ -255,13 +269,15 @@ header nav .navCta[hidden] { display: none; }
 .rail a:hover { background: var(--surface-soft); color: var(--ink); }
 
 /*
- * WHY the current item is filled: measured on the paper canvas, the old chip sat at 1.1:1 against it — the signal was carried almost entirely by the text colour, which is not something a reader scanning a column catches.
- * The accent fill reads at 4.6:1, the same ink the site already gives its one filled action.
+ * WHY the current item is tinted and not filled: on the paper canvas the old chip sat at 1.1:1 against it, so the signal was carried almost entirely by the text colour, and the accent fill that replaced it reads at 4.6:1.
+ * That fill was measured on paper.
+ * On the dark canvas it was the loudest thing on the screen, and a navigation item that shouts is one the reader reads before the work it points at.
+ * Measured on Cline's console, the active item is a soft tint and not a block, so the fill here is the tint the console already carries in --accent-soft and the text keeps the accent.
  */
 
 .rail a[aria-current="true"] {
-  background: var(--accent);
-  color: var(--on-fill, #fff);
+  background: var(--accent-soft);
+  color: var(--accent-strong);
   font-weight: 600;
 }
 
@@ -380,6 +396,8 @@ section > .meta {
   main.console { padding: 92px 0 40px; }
   .layout { grid-template-columns: 1fr; grid-template-rows: auto auto; gap: 16px; }
   .content { overflow: visible; padding: 0 16px 24px; }
+  body:has(main.console) header .wrap,
+  body:has(main.console) footer .wrap { padding-inline: 16px; }
   .content.tabbed > section.active,
   .content.tabbed > .duo:has(> section.active) { flex: 0 0 auto; overflow: visible; }
   #tabel { flex: 0 0 auto; }
@@ -831,8 +849,8 @@ table.history {
 
 .railList button[aria-current="true"] {
   border-left-color: var(--accent);
-  background: var(--accent);
-  color: var(--on-fill, #fff);
+  background: var(--accent-soft);
+  color: var(--accent-strong);
 }
 
 /* WHY the count takes the row's ink: the muted grey on the brand green is 1.5:1, so the row count of the table the reader is looking at was unreadable. */

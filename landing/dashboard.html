@@ -10,7 +10,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="theme-color" content="#f7f5ef" />
-  <title>Dashboard — Opera Agent</title>
+  <title>Ringkasan | Dashboard Opera Agent</title>
   <meta name="description" content="Dashboard Opera Agent: device yang ter-pairing, perintahnya, akun ini, dan kendali atasnya." />
   <link rel="stylesheet" href="/site.css" />
   <link rel="stylesheet" href="/app.css" />
@@ -72,7 +72,6 @@
             <p class="appWho" id="whoami">Memeriksa sesi…</p>
             <div class="appActions">
               <a class="btn ghost sm" href="./unduh.html" id="primaryCta">Pasang extension</a>
-              <a class="btn ghost sm" href="./akun.html">Kelola akun</a>
             </div>
           </div>
 
@@ -457,7 +456,7 @@
       const { token, user } = session;
       liveToken = token;
       liveUser = user;
-      $('whoami').textContent = `Device milik ${user.email}.`;
+      $('whoami').textContent = `Akun ${user.email}.`;
 
       // WHY the sign-in link leaves a signed-in page: "Masuk" beside a live session is a contradiction the reader has to resolve, and the app bar already offers the account.
       const navCta = document.querySelector('header .navCta');
@@ -658,8 +657,15 @@
         return;
       }
       const online = data.devices.filter((device) => device.status === 'online').length;
-      $('status').textContent = `${data.devices.length} device ter-pairing, ${online} daring.`;
-      $('status').className = online ? 'status ok' : 'status warn';
+      // WHY the line names a state and not a count: the metric strip above already carries the counts, and a line that repeats them says the same thing twice.
+      // WHY the write is guarded: the list is re-read every ten seconds, and an unchanged line rewritten ten times a minute is a live region that talks over itself.
+      const note = online === data.devices.length
+        ? 'Semua device daring.'
+        : (online ? 'Sebagian device offline.' : 'Tidak ada device daring.');
+      if ($('status').textContent !== note) {
+        $('status').textContent = note;
+        $('status').className = online === data.devices.length ? 'status ok' : 'status warn';
+      }
 
       // WHY the state rides the first line: two stacked cards once differed only in a middle row, so the down device hid in plain sight.
       // The build moves up beside the name for the same reason; the facts below keep the rest.
@@ -1100,7 +1106,8 @@
 
       // WHY the document title follows the view: eight views share one URL, so the tab strip is the only place a reader with several tabs open can tell them apart.
       const heading = sections.find((section) => section.id === target)?.querySelector('h1')?.textContent?.trim();
-      if (heading) document.title = `${heading} — Opera Agent`;
+      // WHY the title follows the app convention: measured in the browser, Cline writes "Home | Cline Dashboard" and OpenCode writes "Activity | OpenCode Console", so the view comes first and the pipe names the app.
+      if (heading) document.title = `${heading} | Dashboard Opera Agent`;
       for (const link of document.querySelectorAll('.rail a, .tabs a')) {
         if (link.getAttribute('href') === `#${target}`) link.setAttribute('aria-current', 'true');
         else link.removeAttribute('aria-current');

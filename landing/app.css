@@ -45,6 +45,17 @@ body.app-dark {
 
 body.app-dark { background: var(--paper); color: var(--ink); }
 
+/*
+ * WHY the headings are re-inked here: site.css gives every h1 to h4 the marketing display weight, and a signed-in surface is not a brochure.
+ * Measured before the change: the console's view title was 18px/500 while the figures under it were 22px/600, and the account page's title was 34px/500.
+ * Cline's console headings are 600, and a title has to outrank the numbers under it.
+ */
+
+body.app-dark h1,
+body.app-dark h2,
+body.app-dark h3,
+body.app-dark h4 { font-weight: 600; }
+
 body.app-dark header { background: var(--paper); border-bottom: 1px solid var(--line); }
 
 body.app-dark header nav a:not(.brand):not(.navCta) { color: var(--muted); }
@@ -75,6 +86,10 @@ body.app-dark header nav .navCta:hover {
   border-color: var(--accent-strong);
   background: var(--accent-strong);
 }
+
+/* WHY the sign-in pill can leave: site.css keeps its own display rule for .navCta, which the bare [hidden] attribute cannot beat on its own. */
+
+body.app-dark header nav .navCta[hidden] { display: none; }
 
 /* WHY white ink is re-inked on the filled action: white on the brand green is 1.9:1. */
 

@@ -179,7 +179,7 @@ const SIGNED_IN_PAGES = ['akun.html', 'dashboard.html', 'oauth/consent.html'];
 test('the dashboard renders a device card for a paired device', async () => {
   const { nodes, rejected } = await run('dashboard.html');
   assert.deepEqual(rejected, [], `the module rejected: ${rejected.join('; ')}`);
-  assert.match(nodes.status.textContent, /1 device ter-pairing/, 'the status line counts the device');
+  assert.match(nodes.status.textContent, /Semua device daring\./, 'the status line names the state, and the count stays in the metric strip');
 
   assert.match(nodes.devices.innerHTML, /opera/, 'the device name is rendered');
   assert.match(nodes.devices.innerHTML, new RegExp(DEVICE.id), 'the device id is rendered');

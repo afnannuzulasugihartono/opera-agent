@@ -123,7 +123,7 @@ test('the dashboard is about devices, not a profile page', () => {
 
   assert.doesNotMatch(html, /profileCard|avatar_url/, 'no profile data renders on the device page');
   assert.doesNotMatch(html, /id="avatar"/, 'no avatar initials here either');
-  assert.match(html, /Device milik/, 'the page names whose devices these are, in one line');
+  assert.match(html, /Akun \$\{user\.email\}/, 'the page names whose account these devices belong to, in one line');
   assert.match(html, /aria-current="page"/, 'the nav marks this page as the current one');
 
   assert.match(html, /<h1>Akun ini<\/h1>/, 'the account facts have their own section');
@@ -568,7 +568,7 @@ test('the table list opens under the item that asks for it', () => {
 test('the browser tab names the view being read', () => {
   const html = read('dashboard.html');
 
-  assert.match(html, /document\.title = `\$\{heading\} — Opera Agent`/, 'the title is written by the tab controller, from the view it opened');
+  assert.match(html, /document\.title = `\$\{heading\} \| Dashboard Opera Agent`/, 'the title is written by the tab controller, from the view it opened');
 });
 
 test('the history can be narrowed without reading every command', () => {
@@ -658,12 +658,13 @@ test('the rail scrolls itself, because a list of tables is longer than a window'
   assert.match(css, /\.layout \{[^}]*grid-template-rows: minmax\(0, 1fr\)/, 'bounded by the shell, not by its longest list');
 });
 
-test('the active rail item is filled, not a shade of paper', () => {
-  assert.match(css, /\.rail a\[aria-current="true"\] \{[^}]*background: var\(--accent\)/, 'the current item carries the accent');
-  assert.match(css, /\.rail a\[aria-current="true"\] \{[^}]*color: var\(--on-fill, #fff\)/, 'and reads in an ink that answers the fill — white on paper, dark on the brand green');
+test('the active rail item is tinted, not a block of accent', () => {
+  assert.match(css, /\.rail a\[aria-current="true"\] \{[^}]*background: var\(--accent-soft\)/, 'the current item carries a tint, the way Cline marks the one it is on');
+  assert.match(css, /\.rail a\[aria-current="true"\] \{[^}]*color: var\(--accent-strong\)/, 'and reads in the accent, measured at 9.3:1 on that tint');
+  assert.doesNotMatch(css, /\.rail a\[aria-current="true"\] \{[^}]*background: var\(--accent\)/, 'a solid accent block was the loudest thing on the dark canvas');
 });
 
-test('the row count on a filled rail row is readable', () => {
+test('the row count on the active rail row is readable', () => {
   assert.match(css, /\.railList button\[aria-current="true"\] \.meta \{[^}]*color: inherit/, 'the count takes the row\'s own ink, because the muted grey on the brand green is 1.5:1');
 });
 
@@ -815,11 +816,30 @@ test('the pager ends on the rail\'s line', () => {
 });
 
 test('the console\'s spacing sits on one scale', () => {
-  assert.match(css, /main\.console \{[^}]*--app-title: 18px/, 'a view title is 18px, the size Cline prints a panel title in');
+  assert.match(css, /main\.console \{[^}]*--app-title: 24px/, 'a view title is 24px, the size Cline prints its title in');
   assert.match(css, /section h1 \{[^}]*line-height: 1\.25/, 'and it breathes on 1.25, so the line box is taller than the glyphs it holds');
   assert.match(css, /\.contentHead \{[^}]*padding-top: 16px/, 'the head starts on 16');
   assert.match(css, /\.metrics > div \{[^}]*padding: 12px 16px/, 'a card breathes on 12 and 16');
   assert.match(css, /section > \.meta \{[^}]*margin: 0 0 16px/, 'a note is followed by 16');
   assert.match(css, /\.konsolBar \{[^}]*margin: 0 0 8px/, 'a bar is followed by 8');
   assert.match(css, /\.railHead \{[^}]*min-height: 36px/, 'and the rail head is as tall as the row it shares a line with');
+});
+
+test('the signed-in surfaces keep their own heading weight', () => {
+  assert.match(app, /body\.app-dark h1,\s*body\.app-dark h2,\s*body\.app-dark h3,\s*body\.app-dark h4 \{[^}]*font-weight: 600/, 'the marketing display weight does not reach the console or the account page');
+  assert.match(css, /\.metrics dd \{[^}]*font-size: 18px/, 'and the figures under the title are smaller than the title itself');
+});
+
+test('the console\'s chrome shares the window\'s edges', () => {
+  assert.match(css, /body:has\(main\.console\) header \.wrap,\s*body:has\(main\.console\) footer \.wrap \{[^}]*width: 100%/, 'the header and the footer take the whole window, not a centred 1200px box');
+  assert.match(css, /body:has\(main\.console\) header \.wrap,\s*body:has\(main\.console\) footer \.wrap \{[^}]*padding-inline: 24px/, 'and they take the console\'s own gutters, so the page carries one measure');
+});
+
+test('the app bar carries one action, and the status line names a state', () => {
+  const html = read('dashboard.html');
+  const bar = html.slice(html.indexOf('<div class="appActions">'), html.indexOf('</div>', html.indexOf('<div class="appActions">')));
+  assert.doesNotMatch(bar, /Kelola akun/, 'the account is already one click away in the nav, in the rail and in the account view');
+  assert.match(html, /`Akun \$\{user\.email\}\.`/, 'the account line names the account, and not a device that does not exist');
+  assert.doesNotMatch(html, /device ter-pairing, \$\{online\} daring/, 'the status line does not repeat the figures the metric strip already carries');
+  assert.match(html, /'Semua device daring\.'/, 'it names the state instead');
 });
