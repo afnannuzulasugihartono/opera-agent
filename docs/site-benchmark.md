@@ -3,11 +3,9 @@
 
 # Benchmark situs — Cline, OpenCode, Cohere
 
-Measured on 2026-11-01 in Chromium, in the reader's browser, with one script
-applied to every page. The public home was measured at an inner width of 912px
-(the width of the reader's window); Cohere was measured at 1000px. Every number
-below is a measured value, not an impression, and the method is repeated under
-"How to measure it again".
+Measured 2026-11-01 in Chromium, one script on every page. Our home at an inner
+width of 912px (the reader's window); Cohere at 1000px. Every number below is
+measured, and "How to measure it again" repeats the method.
 
 ## The public home, measured
 
@@ -24,26 +22,22 @@ below is a measured value, not an impression, and the method is repeated under
 What the numbers say:
 
 1. **Our prose is the shortest of the four.** The longest paragraph on the home
-   page is 104 characters against Cline's 138 and OpenCode's 247. The rule from
-   the Cohere-grade spec — one idea, one action, one object per section — is
-   holding. Do not add paragraphs; the references are not a reason to write
-   more.
+   page is 104 characters against Cline's 138 and OpenCode's 247. One idea, one
+   action, one object per section — the rule from the Cohere-grade spec holds.
 2. **Our headline was the heaviest and the tightest of the four.** It printed
    600 weight with −2.74px of tracking where Cohere prints 400/−1.2px and Cline
-   prints 340/+0.54px. The repo's own spec sets display type at 500, tracking
+   prints 340/+0.54px. The repo's spec sets display type at 500, tracking
    −0.03em, line height 1.02; the live site had drifted to 600/−0.05em/0.97.
-   The type is back on the spec, which also puts it inside the band the
-   references occupy.
-3. **Our action is the one size that is ours to keep.** 44px sits between
-   Cohere's 52px and Cline's 36px, and the spec fixes it at 44px. Nothing here
-   argues for changing it.
-4. **Our navigation gave away four doors for nothing.** At a 912px window the
+   The type is back on the spec, inside the band the references occupy.
+3. **The hero action keeps its 44px.** It sits between Cohere's 52px and
+   Cline's 36px, and the spec fixes it at 44px.
+4. **The navigation gave away four doors for nothing.** At a 912px window the
    whole row (Unduh, Model Anda, Dashboard, Akun, Fitur, Privasi, Dukungan,
-   language, Masuk) needs 777px of the 849px the shell leaves, and four of them
-   were hidden while 72px sat unused. They now survive down to 861px, where the
-   row stops fitting.
+   language, Masuk) needs 777px of the 849px the shell leaves, and four were
+   hidden while 72px sat unused. They now survive down to 861px, where the row
+   stops fitting.
 5. **We ship no photographs.** Cline shows six, Cohere eighty-eight; our proof
-   is a CSS mock of the console. Honest, but a reader cannot see the product.
+   is a CSS mock of the console. A reader cannot see the product.
 
 ## The signed-in console, measured
 
@@ -60,9 +54,9 @@ answering with two devices, one online.
 | metric strip | 22px numbers, 11px labels | |
 | surfaces | `#0c0e11` canvas, `#12151a` cards, radius 10px | |
 
-The console was already benchmarked against Cline in an earlier round (the
-radii, the label scale and the title size are Cline's). The one defect left in
-it was typographic, and the fix is below.
+The console was benchmarked against Cline in an earlier round — the radii, the
+label scale and the title size are Cline's. The one defect left was
+typographic.
 
 ## What shipped on 2026-11-01
 
@@ -80,6 +74,12 @@ it was typographic, and the fix is below.
    page, the tile said "Devices", the member action said "Pair device", and the
    three install steps stayed Indonesian under the EN toggle. All four are
    Indonesian now, and the three steps are translated.
+5. **The home copy stopped repeating itself.** The eyebrow promised control
+   ("under your control"), the privacy section promised it again, and the
+   closing band promised it a third time. The FAQ sub-line said "Jawaban
+   singkat." about a list of five short answers. The eyebrow now names the
+   mechanism (MCP), the privacy section links the policy and nothing else, and
+   the FAQ and closing band lost their filler lines.
 
 ## Next round, ranked
 
@@ -87,20 +87,18 @@ it was typographic, and the fix is below.
    Cohere eighty-eight; we show a CSS mock. One PNG of the extension popup
    answers "what does this look like" better than any copy. It also needs
    `img-src 'self'` in `landing/_headers` and `landing/vercel.json`, which
-   today allow `data:` only, and the hosting gate that keeps those two files
+   today allow `data:` only, plus the hosting gate that keeps those two files
    in step. The best trust-per-hour item left.
-2. **One product map in the navigation.** Nine flat doors work at a 1440px
-   window; the references give a reader a map of what the product does (43 and
-   64 links). A short "Fitur" group — read the page, click, fill the form —
-   costs one list and no mega menu.
-3. **Translation coverage on the remaining pages.** The home page had three
-   sentences that stayed Indonesian under EN; `unduh.html`, `fitur.html`, and
-   `dukungan.html` carry unmarked strings of their own. The mechanism is
+2. **One product map in the navigation.** Nine flat doors work at 1440px; the
+   references give a reader a map of what the product does (43 and 64 links).
+   A short "Fitur" group — read the page, click, fill the form — costs one
+   list and no mega menu.
+3. **Translation coverage on the remaining pages.** `unduh.html`, `fitur.html`,
+   and `dukungan.html` carry unmarked strings of their own. The mechanism is
    already there; the marking is not.
 4. **The console, measured with a real account.** Every console number above
-   comes from a stubbed session. Re-measure against a live account before
-   changing the console, and keep the surface dark: it is the only place on
-   the site that is.
+   comes from a stubbed session. Re-measure before changing the console, and
+   keep the surface dark: it is the only place on the site that is.
 5. **Cohere's 52px action.** Only if the spec's 44px is revisited. Cline's
    36px says 44px is a fine middle, and our action already carries the one
    filled action per section.
@@ -110,12 +108,11 @@ it was typographic, and the fix is below.
 - Open the four pages in the same Chromium and read the computed style of the
   first `h1`, the first filled action in the hero, the first `section`, and the
   navigation's children. Count the sections, the paragraphs and the images.
-  The numbers above came from exactly that.
 - For the navigation, set the header's wrap width to a chosen viewport width
   and read `nav.scrollWidth` against `nav.clientWidth`: the row fits when the
-  first is not larger than the second. Remember that a media query in this
-  browser measures the viewport **including** the scrollbar, so a 912px window
-  leaves `912 − 15 − 48 = 849px` of shell.
+  first is not larger than the second. A media query in this browser measures
+  the viewport **including** the scrollbar, so a 912px window leaves
+  `912 − 15 − 48 = 849px` of shell.
 - For the console, point `AUTH_HOST` and `REST` at a local stub that answers
-  `/auth/v1/user` and `opera_my_devices`, and measure the signed-in shell.
-  The live page will not show it to a stranger, and that is the design.
+  `/auth/v1/user` and `opera_my_devices`, and measure the signed-in shell. The
+  live page will not show it to a stranger, and that is the design.

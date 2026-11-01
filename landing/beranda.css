@@ -467,14 +467,8 @@
 
 .finalBand h2 {
   max-width: 12ch;
-  margin: 0 0 12px;
-  color: #fff;
-}
-
-.finalBand p {
-  max-width: 48ch;
   margin: 0 0 24px;
-  color: rgba(239, 242, 236, .62);
+  color: #fff;
 }
 
 @media (max-width: 640px) {
