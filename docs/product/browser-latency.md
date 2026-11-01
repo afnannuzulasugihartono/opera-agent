@@ -287,6 +287,12 @@ is a product promise, not a latency bug, and it is now the whole of the wait.
 The panel that asks it still starts a PowerShell of its own, which costs about
 1.6 s before the question is even on screen.
 
+The front-click row is not a like-for-like pair: the 59 ms was measured through
+the tool surface the plugin already had, the 108 ms through a fresh server
+against the live extension and the real page, and the two differ in the page
+look the action ends with. What the change removed is the read inside the
+click, and that read now costs 1-3 ms instead of 1.1 s.
+
 ### Bridge
 
 The live extension was not connected during this run (`bridgeReachable()` was
