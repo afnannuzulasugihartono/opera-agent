@@ -55,6 +55,11 @@ them:
   `Browser.getWindowForTarget` on the real Chrome measured **p50 0.35 ms / p95
   3.19 ms**. The PowerShell enumeration stays only as a fallback for a browser
   or bridge that refuses the Browser domain.
+- That fallback is now a long-lived shell: one PowerShell stays up, compiles the
+  window class once, and answers over a loopback listener. The machine read went
+  from **1,071-1,130 ms** per read to **1-3 ms**, and the dialog read from
+  **1,190-1,231 ms** to **5-6 ms**. `browser_status` over the live extension
+  bridge measured **1,569 ms** before and **14 ms** after.
 - The local path is much cheaper than the cloud path, but a tool call is not
   "under 1 ms": the README's `<1 ms` is per CDP primitive, not per MCP call.
 
@@ -237,6 +242,50 @@ the window is minimized, and the bounds answer it. If the window is minimized,
 `Browser.setWindowBounds` restores it. The PowerShell enumeration remains as the
 fallback for a browser or bridge that refuses the Browser domain, because a
 wrong "background" answer is how text goes nowhere.
+
+### The OS fallback got its own long-lived shell
+
+The fallback above was still a 1.1 s tax on every machine read: one
+`powershell.exe` start (about 0.8 s) plus the `Add-Type` compile of the window
+class (about 0.3 s), paid again for every read. The bridge path and the focus
+guard both pay that read, so a click whose window sat behind another
+application measured 3.6 s.
+
+`local/os-worker.js` keeps one PowerShell process alive for the life of the
+agent. The shell compiles the window class once and answers over a loopback
+`HttpListener`; the agent sends a request carrying a per-process token and gets
+that request's answer back. A stdin loop was measured first and rejected: a
+PowerShell loop that reads commands from stdin answers a ping in 1.1 s, because
+the console host flushes its pipeline on the way out, while the same loop behind
+a listener answers in 1 ms.
+
+The dialog road runs its own script through the same shell, so a dialog read
+does not start a shell either. The script's class is compiled once per machine
+rather than once per call, and the script no longer ends the process when it is
+done, because the process it ends is now the one that answers the next question.
+
+Measured live on this machine, one run, same process, old path first and new
+path second:
+
+| Operation | One shell per read | The shell that stays up |
+|---|---:|---:|
+| window read, first call | 1,130 ms | 1,273 ms (the shell starts) |
+| window read, next calls | 1,071 / 1,085 ms | 3 / 1 ms |
+| dialog read | 1,231 / 1,190 / 1,193 ms | 300 / 6 / 5 ms |
+
+Over the live extension bridge, with the real extension and the real Chrome:
+
+| Tool call | Before | After |
+|---|---:|---:|
+| `browser_status` | 1,569 ms | 14 ms warm, 20 ms cold |
+| `click_row` with the drive's window in front | 59 ms | 108 ms |
+| `click_row` with the drive's window behind another app | 3,635 ms | 3,535 ms |
+
+The last row is the honest one: the machine read is gone from it, and what is
+left is the person being asked whether the drive may take the screen. That ask
+is a product promise, not a latency bug, and it is now the whole of the wait.
+The panel that asks it still starts a PowerShell of its own, which costs about
+1.6 s before the question is even on screen.
 
 ### Bridge
 

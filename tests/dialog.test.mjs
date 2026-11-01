@@ -19,6 +19,58 @@ import {
 import { TOOLS } from '../local/mcp-server.js';
 import { guide } from '../local/agent-guide.js';
 
+// WHY THE DIALOG ROAD IS ANSWERED BY THE SHELL THAT IS ALREADY UP.
+// Measured live on this machine: a dialog read cost 1.67 s, because every call started its own PowerShell and compiled the window class again.
+// The worker that already answers the window questions can run the same script, so a dialog read is a round trip over the loopback instead of a new machine.
+
+test('a dialog call goes to the persistent worker first', async () => {
+  const asked = [];
+  const answer = JSON.stringify({
+    open: true,
+    platform: 'win32',
+    title: 'Open',
+    class: '#32770',
+    field: 'C:\\tmp',
+    buttons: [
+      'Open',
+      'Cancel'
+    ],
+    controls: [],
+    why: ''
+  });
+  const state = await dialogState({
+    worker: {
+      ask: async (mode, args) => {
+        asked.push({
+          mode,
+          args
+        });
+        return answer;
+      }
+    }
+  });
+
+  assert.equal(asked.length, 1, 'the worker was asked once');
+  assert.equal(asked[0].mode, 'script', 'the worker runs the script it is given');
+  assert.equal(asked[0].args[1], 'state', 'and the mode travels with it');
+  assert.equal(state.open, true);
+  assert.deepEqual(state.buttons, [
+    'Open',
+    'Cancel'
+  ]);
+});
+
+test('a worker that cannot answer falls back to the one-shot shell', async () => {
+  const state = await dialogState({
+    worker: {
+      ask: async () => null
+    }
+  });
+
+  assert.equal(state.platform, process.platform);
+  assert.equal(typeof state.open, 'boolean');
+});
+
 // WHY EVERY CALL ANSWERS EVEN WHEN THERE IS NOTHING TO ANSWER ABOUT.
 // A caller that asked the machine a question gets words back when the machine has none to give, because a bare false reads the same as a dialog that refused to answer.
 

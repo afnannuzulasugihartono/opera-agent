@@ -20,8 +20,15 @@ import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 
 import { NOTICE } from './focus-confirm.js';
+import {
+  WINDOW_CLASS,
+  sharedOsWorker
+} from './os-worker.js';
 
 const run = promisify(execFile);
+
+// WHY THE WORKER IS THE SHARED ONE.
+// The window reads and the dialog reads ask the same machine the same way, so they share one shell: the first caller pays the slow start and every later one answers in milliseconds.
 
 // WHY THE TITLES COME BACK AS LINES.
 // Every one of these three tools answers with plain text on stdout, and a window title is one line; a title with a newline in it is not a thing a window manager shows.
@@ -78,60 +85,7 @@ const WINDOWS_SCRIPT = (
 ) => `
 $ErrorActionPreference = 'Stop'
 Add-Type @"
-using System;
-using System.Text;
-using System.Runtime.InteropServices;
-public class OperaWindow {
-  public delegate bool EnumProc(IntPtr h, IntPtr l);
-  [DllImport("user32.dll")] public static extern bool EnumWindows(EnumProc cb, IntPtr l);
-  [DllImport("user32.dll")] public static extern bool IsWindowVisible(IntPtr h);
-  [DllImport("user32.dll")] public static extern bool IsIconic(IntPtr h);
-  [DllImport("user32.dll", CharSet=CharSet.Unicode)] public static extern int GetWindowTextW(IntPtr h, StringBuilder s, int n);
-  [DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow();
-  [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr h);
-  [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr h, int n);
-  [DllImport("user32.dll")] public static extern void keybd_event(byte vk, byte scan, uint flags, UIntPtr extra);
-  public static string Read() {
-    var sb = new StringBuilder();
-    sb.AppendLine("FOREGROUND " + TitleOf(GetForegroundWindow()));
-    EnumWindows((h, l) => {
-      if (!IsWindowVisible(h)) return true;
-      var t = TitleOf(h);
-      if (t.Length > 0) sb.AppendLine((IsIconic(h) ? "MINIMIZED " : "") + t);
-      return true;
-    }, IntPtr.Zero);
-    return sb.ToString();
-  }
-  public static IntPtr Find(string match, string browser) {
-    IntPtr any = IntPtr.Zero;
-    IntPtr ours = IntPtr.Zero;
-    EnumWindows((h, l) => {
-      if (!IsWindowVisible(h)) return true;
-      var t = TitleOf(h);
-      if (t.Length == 0) return true;
-      if (match.Length > 0 && t.IndexOf(match, StringComparison.OrdinalIgnoreCase) < 0) return true;
-      if (any == IntPtr.Zero) any = h;
-      if (browser.Length > 0 && t.IndexOf(browser, StringComparison.OrdinalIgnoreCase) >= 0) {
-        ours = h;
-        return false;
-      }
-      return true;
-    }, IntPtr.Zero);
-    return ours != IntPtr.Zero ? ours : any;
-  }
-  public static string TitleOf(IntPtr h) {
-    var s = new StringBuilder(512);
-    GetWindowTextW(h, s, 512);
-    return s.ToString();
-  }
-  public static IntPtr Foreground() { return GetForegroundWindow(); }
-  public static void Bring(IntPtr h) {
-    if (IsIconic(h)) ShowWindow(h, 9);
-    keybd_event(0x12, 0, 0, UIntPtr.Zero);
-    keybd_event(0x12, 0, 2, UIntPtr.Zero);
-    SetForegroundWindow(h);
-  }
-}
+${WINDOW_CLASS}
 "@
 ${match === null ? '[OperaWindow]::Read()' : focusBody(match, browser, ask)}`;
 
@@ -177,7 +131,19 @@ const readWindows = (all) => {
   };
 };
 
-async function windows(run_) {
+// WHY THE WORKER GOES FIRST AND THE ONE-SHOT SHELL STAYS.
+// The persistent process answers in milliseconds after one slow start; if it dies, the one-shot script still answers, so a dead worker never costs a read.
+
+// WHY THE WORKER ONLY RUNS FOR THE DEFAULT RUNNER.
+// A caller that hands in its own runner wants that runner used, so an injected runner means the one-shot path alone; the check is on the option rather than on the runner's identity, because Node hands out the same promisified execFile to everyone who asks for it.
+
+async function windows(
+  run_,
+  platform = 'win32',
+  injected = true
+) {
+  const fast = injected ? null : await sharedOsWorker(platform)?.ask('read').catch(() => null);
+  if (typeof fast === 'string') return readWindows(lines(fast));
   const read = await run_('powershell', [
     '-NoProfile',
     '-NonInteractive',
@@ -185,6 +151,29 @@ async function windows(run_) {
     WINDOWS_SCRIPT(null, '')
   ]);
   return readWindows(lines(read.stdout));
+}
+
+async function win32Focus(
+  wanted,
+  ours,
+  ask,
+  run_,
+  injected = true
+) {
+  const fast = injected
+    ? null
+    : await sharedOsWorker('win32')?.ask('focus', [
+      wanted,
+      ours,
+      ask ? '1' : '0'
+    ]).catch(() => null);
+  if (typeof fast === 'string') return { stdout: fast };
+  return run_('powershell', [
+    '-NoProfile',
+    '-NonInteractive',
+    '-Command',
+    WINDOWS_SCRIPT(wanted, ours, ask)
+  ]);
 }
 
 async function apple(
@@ -250,17 +239,20 @@ async function x11(
 /**
  * Read what the operating system says about the windows on this machine.
  * @param {object} [options] - the platform to read, and the command runner to read it with.
+ * @param {string} [options.platform] - the platform whose windows are read.
+ * @param {Function} [options.exec] - the runner to use; a runner of your own means the one-shot path, never the shell that stays up.
  * @returns {Promise<object>} the foreground window, the windows behind it, and the minimized ones.
  */
 
 export async function windowState({
   platform = process.platform,
-  exec = run
+  exec = null
 } = {}) {
+  const runner = exec ?? run;
   try {
-    if (platform === 'win32') return await windows(exec);
-    if (platform === 'darwin') return await apple(null, exec);
-    if (platform === 'linux') return await x11(null, exec);
+    if (platform === 'win32') return await windows(runner, platform, exec !== null);
+    if (platform === 'darwin') return await apple(null, runner);
+    if (platform === 'linux') return await x11(null, runner);
     return unsupported(platform, `window focus is not implemented on ${platform}`);
   } catch (error) {
     return unsupported(platform, String(error?.message ?? error).split('\n')[0]);
@@ -274,6 +266,10 @@ export async function windowState({
  * Bring one browser window to the front of the machine.
  * @param {string} [match] - the piece of the window title to bring forward.
  * @param {object} [options] - the platform, the command runner, the browser whose window wins when two hold the same title, and whether the person is asked first.
+ * @param {string} [options.platform] - the platform whose windows are moved.
+ * @param {Function} [options.exec] - the runner to use; a runner of your own means the one-shot path, never the shell that stays up.
+ * @param {string} [options.browser] - the browser whose window wins when two hold the same title.
+ * @param {boolean} [options.ask] - whether the person is asked before the screen is taken.
  * @returns {Promise<object>} the title it brought, whether the operating system let it, and the browser it belongs to.
  */
 
@@ -281,11 +277,12 @@ export async function focusWindow(
   match = '',
   {
     platform = process.platform,
-    exec = run,
+    exec = null,
     browser = '',
     ask = true
   } = {}
 ) {
+  const runner = exec ?? run;
   const wanted = String(match ?? '').trim();
   const ours = String(browser ?? '').trim();
   if (wanted === '') {
@@ -307,19 +304,14 @@ export async function focusWindow(
   }
   try {
     const out = platform === 'win32'
-      ? await exec('powershell', [
-        '-NoProfile',
-        '-NonInteractive',
-        '-Command',
-        WINDOWS_SCRIPT(wanted, ours, ask)
-      ])
+      ? await win32Focus(wanted, ours, ask, runner, exec !== null)
       : platform === 'darwin'
-        ? await exec('osascript', [
+        ? await runner('osascript', [
           '-e',
           APPLE_FOCUS(wanted)
         ])
         : platform === 'linux'
-          ? await exec('xdotool', [
+          ? await runner('xdotool', [
             'search',
             '--name',
             wanted,

@@ -21,6 +21,8 @@
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 
+import { sharedOsWorker } from './os-worker.js';
+
 const run = promisify(execFile);
 
 // WHY ONE SCRIPT WITH A MODE.
@@ -33,6 +35,9 @@ const run = promisify(execFile);
 
 const SCRIPT = `
 $ErrorActionPreference = 'Stop'
+# WHY THE CLASS IS COMPILED ONCE PER MACHINE AND NOT ONCE PER CALL.
+# The same shell answers every dialog question, and a type that is already loaded cannot be loaded again, so the walk asks for the class only when it is missing.
+if (-not ('OperaDialog' -as [type])) {
 Add-Type @"
 using System;
 using System.Text;
@@ -77,6 +82,7 @@ public class OperaDialog {
   }
 }
 "@
+}
 
 function Get-OperaDialog {
   $front = [OperaDialog]::GetForegroundWindow()
@@ -108,71 +114,65 @@ $text = if ($args.Length -gt 1) { $args[1] } else { '' }
 $name = if ($args.Length -gt 2) { $args[2] } else { '' }
 
 $dlg = Get-OperaDialog
+# WHY THE MODES ARE ONE BRANCH AND NOT A SCRIPT THAT EXITS.
+# The same shell answers every dialog question, and a script that ends the process would end that shell with it; so one branch runs, prints one answer, and the shell lives on.
 if ($dlg -eq [IntPtr]::Zero) {
   ConvertTo-Json @{ open = $false; platform = 'win32'; why = 'no dialog is open on this machine' } -Compress
-  exit 0
-}
-
-$children = Get-OperaChildren $dlg
-$controls = @()
-foreach ($child in $children) {
-  $cls = [OperaDialog]::ClassOf($child)
-  if (-not [OperaDialog]::Visible($child)) { continue }
-  $controls += @{ cls = $cls; name = [OperaDialog]::TitleOf($child); text = [OperaDialog]::Read($child) }
-}
-
-if ($mode -eq 'state') {
-  $fields = @($controls | Where-Object { $_.cls -eq 'Edit' })
-  $field = if ($fields.Count -gt 0) { $fields[0] } else { $null }
-  ConvertTo-Json @{
-    open = $true
-    platform = 'win32'
-    title = [OperaDialog]::TitleOf($dlg)
-    class = [OperaDialog]::ClassOf($dlg)
-    field = if ($field) { $field.text } else { '' }
-    buttons = @($controls | Where-Object { $_.cls -eq 'Button' } | ForEach-Object { $_.name })
-    controls = $controls
-    why = ''
-  } -Compress -Depth 5
-  exit 0
-}
-
-if ($mode -eq 'type') {
-  $target = [IntPtr]::Zero
+} else {
+  $children = Get-OperaChildren $dlg
+  $controls = @()
   foreach ($child in $children) {
-    if ([OperaDialog]::ClassOf($child) -ne 'Edit') { continue }
-    if ([OperaDialog]::Visible($child)) { $target = $child; break }
+    $cls = [OperaDialog]::ClassOf($child)
+    if (-not [OperaDialog]::Visible($child)) { continue }
+    $controls += @{ cls = $cls; name = [OperaDialog]::TitleOf($child); text = [OperaDialog]::Read($child) }
   }
-  if ($target -eq [IntPtr]::Zero) {
-    ConvertTo-Json @{ open = $true; platform = 'win32'; typed = $false; why = 'the dialog has no text field to type into' } -Compress
-    exit 0
-  }
-  $ok = [OperaDialog]::Write($target, $text)
-  ConvertTo-Json @{ open = $true; platform = 'win32'; typed = $ok; field = [OperaDialog]::Read($target); why = $(if ($ok) { '' } else { 'the field would not take the text' }) } -Compress
-  exit 0
-}
 
-if ($mode -eq 'press') {
-  $target = [IntPtr]::Zero
-  $matched = ''
-  # WHY AN EMPTY NAME IS REFUSED: '***' matches the first button, so a blank name would press whichever button came first instead of answering that none was named.
-  $named = -not [string]::IsNullOrWhiteSpace($name)
-  foreach ($child in $children) {
-    if (-not $named) { break }
-    if ([OperaDialog]::ClassOf($child) -ne 'Button') { continue }
-    $caption = [OperaDialog]::TitleOf($child)
-    if ($caption -like "*$name*") { $target = $child; $matched = $caption; break }
+  if ($mode -eq 'state') {
+    $fields = @($controls | Where-Object { $_.cls -eq 'Edit' })
+    $field = if ($fields.Count -gt 0) { $fields[0] } else { $null }
+    ConvertTo-Json @{
+      open = $true
+      platform = 'win32'
+      title = [OperaDialog]::TitleOf($dlg)
+      class = [OperaDialog]::ClassOf($dlg)
+      field = if ($field) { $field.text } else { '' }
+      buttons = @($controls | Where-Object { $_.cls -eq 'Button' } | ForEach-Object { $_.name })
+      controls = $controls
+      why = ''
+    } -Compress -Depth 5
+  } elseif ($mode -eq 'type') {
+    $target = [IntPtr]::Zero
+    foreach ($child in $children) {
+      if ([OperaDialog]::ClassOf($child) -ne 'Edit') { continue }
+      if ([OperaDialog]::Visible($child)) { $target = $child; break }
+    }
+    if ($target -eq [IntPtr]::Zero) {
+      ConvertTo-Json @{ open = $true; platform = 'win32'; typed = $false; why = 'the dialog has no text field to type into' } -Compress
+    } else {
+      $ok = [OperaDialog]::Write($target, $text)
+      ConvertTo-Json @{ open = $true; platform = 'win32'; typed = $ok; field = [OperaDialog]::Read($target); why = $(if ($ok) { '' } else { 'the field would not take the text' }) } -Compress
+    }
+  } elseif ($mode -eq 'press') {
+    $target = [IntPtr]::Zero
+    $matched = ''
+    # WHY AN EMPTY NAME IS REFUSED: '***' matches the first button, so a blank name would press whichever button came first instead of answering that none was named.
+    $named = -not [string]::IsNullOrWhiteSpace($name)
+    foreach ($child in $children) {
+      if (-not $named) { break }
+      if ([OperaDialog]::ClassOf($child) -ne 'Button') { continue }
+      $caption = [OperaDialog]::TitleOf($child)
+      if ($caption -like "*$name*") { $target = $child; $matched = $caption; break }
+    }
+    if ($target -eq [IntPtr]::Zero) {
+      ConvertTo-Json @{ open = $true; platform = 'win32'; pressed = $false; buttons = @($controls | Where-Object { $_.cls -eq 'Button' } | ForEach-Object { $_.name }); why = $(if ($named) { 'no button on this dialog is called ' + $name } else { 'no button name was given' }) } -Compress -Depth 5
+    } else {
+      [void][OperaDialog]::Post($target, 0x00F5, [IntPtr]::Zero, [IntPtr]::Zero)
+      ConvertTo-Json @{ open = $true; platform = 'win32'; pressed = $true; button = $matched; why = '' } -Compress
+    }
+  } else {
+    ConvertTo-Json @{ open = $true; platform = 'win32'; why = ('unknown mode ' + $mode) } -Compress
   }
-  if ($target -eq [IntPtr]::Zero) {
-    ConvertTo-Json @{ open = $true; platform = 'win32'; pressed = $false; buttons = @($controls | Where-Object { $_.cls -eq 'Button' } | ForEach-Object { $_.name }); why = $(if ($named) { 'no button on this dialog is called ' + $name } else { 'no button name was given' }) } -Compress -Depth 5
-    exit 0
-  }
-  [void][OperaDialog]::Post($target, 0x00F5, [IntPtr]::Zero, [IntPtr]::Zero)
-  ConvertTo-Json @{ open = $true; platform = 'win32'; pressed = $true; button = $matched; why = '' } -Compress
-  exit 0
 }
-
-ConvertTo-Json @{ open = $true; platform = 'win32'; why = ('unknown mode ' + $mode) } -Compress
 `;
 
 const powershell = (
@@ -187,11 +187,40 @@ const powershell = (
 )}'`).join(' ')}`
 ]);
 
+const readAnswer = (text) => {
+  if (typeof text !== 'string') return null;
+  const last = text.trim().split('\n').pop()?.trim() ?? '';
+  if (!last.startsWith('{')) return null;
+  try {
+    return JSON.parse(last);
+  } catch {
+    return null;
+  }
+};
+
+// WHY THE SHELL THAT IS ALREADY UP IS ASKED FIRST.
+// Measured live on this machine: a dialog read cost 1.67 s because every call started its own PowerShell and compiled the window class again.
+// The worker that already answers the window questions runs this same script, so a dialog read is a round trip over the loopback; the one-shot shell stays as the fallback for a machine where the worker cannot answer.
+
 const parse = async (
   mode,
-  ...rest
+  rest,
+  options = {}
 ) => {
   const platform = process.platform;
+  const ask = options.worker ?? sharedOsWorker(platform);
+  if (ask) {
+    const body = await ask.ask('script', [
+      SCRIPT,
+      mode,
+      ...rest
+    ]).catch(() => null);
+    const parsed = readAnswer(body);
+    if (parsed) return {
+      ...parsed,
+      mode
+    };
+  }
   if (platform !== 'win32') {
     return {
       open: false,
@@ -201,7 +230,8 @@ const parse = async (
   }
   try {
     const { stdout } = await powershell(mode, ...rest);
-    const parsed = JSON.parse(String(stdout).trim().split('\n').pop());
+    const parsed = readAnswer(stdout);
+    if (!parsed) throw new Error('the shell answered with something that is not a dialog');
     return {
       ...parsed,
       mode
@@ -216,14 +246,45 @@ const parse = async (
   }
 };
 
-export function dialogState() {
-  return parse('state');
+/**
+ * Read the operating system's own dialog, if one is open.
+ * @param {object} [options] - the worker to ask, injected for tests.
+ * @returns {Promise<object>} what the dialog holds, or why there is none.
+ */
+
+export function dialogState(options = {}) {
+  return parse('state', [], options);
 }
 
-export function dialogType(text) {
-  return parse('type', String(text ?? ''));
+/**
+ * Type into the text field of the operating system's own dialog.
+ * @param {string} text - the text to type.
+ * @param {object} [options] - the worker to ask, injected for tests.
+ * @returns {Promise<object>} what the field reads back, or why it did not take it.
+ */
+
+export function dialogType(
+  text,
+  options = {}
+) {
+  return parse('type', [
+    String(text ?? '')
+  ], options);
 }
 
-export function dialogPress(name) {
-  return parse('press', '', String(name ?? ''));
+/**
+ * Press a named button on the operating system's own dialog.
+ * @param {string} name - the button to press; a blank name is refused.
+ * @param {object} [options] - the worker to ask, injected for tests.
+ * @returns {Promise<object>} the button that answered, or why none did.
+ */
+
+export function dialogPress(
+  name,
+  options = {}
+) {
+  return parse('press', [
+    '',
+    String(name ?? '')
+  ], options);
 }

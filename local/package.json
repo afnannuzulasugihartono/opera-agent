@@ -39,6 +39,7 @@
     "mcp-server.js",
     "menu-tree.js",
     "observe.js",
+    "os-worker.js",
     "page-expressions.js",
     "pointer.js",
     "primitives-file.js",
