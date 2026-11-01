@@ -1,5 +1,5 @@
-﻿// @last-edited: 2026-10-31 UTC+7.
-// @title: docstring-baseline â€” the exported declarations that still carry no JSDoc block, counted and shrinking.
+// @last-edited: 2026-10-31 UTC+7.
+// @title: docstring-baseline — the exported declarations that still carry no JSDoc block, counted and shrinking.
 // @state: a declaration leaves this set only after a `/** ... */` block with `@param`/`@returns` sits above it; the count may fall, never rise.
 // @dependencies: tests/helpers/docstrings.mjs.
 
@@ -120,7 +120,7 @@ export const DOCSTRING_PENDING = new Set([
   'local/browsers.js: export function protocolsFor (line 120)',
   'local/burst.js: export function normalizeBurst (line 318)',
   'local/burst.js: export function runLocalBurst (line 416)',
-  'local/canvas.js: export function createCanvasMethods (line 82)',
+  'local/canvas.js: export function createCanvasMethods (line 85)',
   'local/caret-guard.js: export function createCaretGuard (line 98)',
   'local/caret-guard.js: export function gateRead (line 45)',
   'local/caret-guard.js: export function rememberedState (line 28)',
@@ -142,15 +142,15 @@ export const DOCSTRING_PENDING = new Set([
   'local/menu-tree.js: export function stateOf (line 234)',
   'local/observe.js: export function createObserveMethods (line 106)',
   'local/page-expressions.js: export arrow centreOf (line 595)',
-  'local/page-expressions.js: export arrow computedExpression (line 1114)',
-  'local/page-expressions.js: export arrow imageSize (line 900)',
-  'local/page-expressions.js: export arrow locateExpression (line 953)',
-  'local/page-expressions.js: export arrow scrollExpression (line 1008)',
+  'local/page-expressions.js: export arrow computedExpression (line 1148)',
+  'local/page-expressions.js: export arrow imageSize (line 934)',
+  'local/page-expressions.js: export arrow locateExpression (line 987)',
+  'local/page-expressions.js: export arrow scrollExpression (line 1042)',
   'local/page-expressions.js: export function describeKey (line 96)',
   'local/page-expressions.js: export function dragMimeType (line 712)',
-  'local/page-expressions.js: export function modifierMask (line 822)',
+  'local/page-expressions.js: export function modifierMask (line 856)',
   'local/page-expressions.js: export function snapshotExpression (line 614)',
-  'local/page-expressions.js: export function splitText (line 833)',
+  'local/page-expressions.js: export function splitText (line 867)',
   'local/pointer.js: export function createPointerMethods (line 39)',
   'local/primitives-file.js: export function filePrimitives (line 33)',
   'local/primitives.js: export function createPrimitives (line 44)',

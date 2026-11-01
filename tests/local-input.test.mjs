@@ -208,6 +208,7 @@ test('append puts the text at the end and proves nothing follows it', async () =
 
   assert.equal(out.landed, true);
   assert.equal(out.atEnd, true);
+  assert.equal(out.settled, true, 'the append already settled, so the page look does not pay a second time');
   assert.match(out.atEndWhy, /nothing follows/);
   const endKey = cdp.calls.filter((c) => c.method === 'Input.dispatchKeyEvent');
   assert.ok(endKey.length >= 2, 'the caret is asked for the end before anything is typed');

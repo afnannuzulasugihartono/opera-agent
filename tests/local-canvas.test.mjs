@@ -125,7 +125,9 @@ const canvasCdp = ({
   ax = RICH_AX,
   copy = null,
   caret = CANVAS_CARET,
-  domText = ''
+  domText = '',
+  line = null,
+  noCaret = false
 } = {}) => {
   const calls = [];
   return {
@@ -146,6 +148,29 @@ const canvasCdp = ({
         return { result: { value: probe } };
       }
       if (method === 'Accessibility.getFullAXTree') return axTree(ax);
+
+      // A page that can name the line the caret is on answers the caret read in one go, and only a page that cannot falls through to the selection.
+
+      if (method === 'Runtime.evaluate' && expression.includes('opera-caret-line')) {
+        if (noCaret) {
+          return { result: { value: {
+            found: false,
+            noCaret: true,
+            why: 'the page holds no caret to read a line from'
+          } } };
+        }
+        if (line === null) {
+          return { result: { value: {
+            found: false,
+            why: 'the block around the caret holds more than one line'
+          } } };
+        }
+        return { result: { value: {
+          found: true,
+          line,
+          why: 'the line came from the page, so the caret did not move'
+        } } };
+      }
 
       // The one selection state: the text the copy reads and the caret position the guard measures, from the same frame.
 
@@ -466,6 +491,47 @@ test('createCanvasMethods exposes read and caretLine', () => {
     'read'
   ]);
 });
+
+// WHY THE CHEAP ROAD IS THE ONE THAT SHIPS.
+// Measured live over the extension bridge: the key road cost 187 ms and moved the caret the caller was reading from, while a page that can name its line costs one read and moves nothing.
+// The key road stays for the surface that keeps its text as pixels, so this test holds the cheap road to its two promises: the line, and no key at all.
+
+test('a caret line the page can name costs one read and moves nothing', async () => {
+  const cdp = canvasCdp({
+    line: 'Kajian pustaka mencakup'
+  });
+  const p = createPrimitives(cdp, { sleep: async () => {} });
+
+  const out = await p.caretLine();
+
+  assert.equal(out.line, 'Kajian pustaka mencakup');
+  assert.equal(out.caretMoved, false);
+  assert.equal(out.caretRestored, true);
+  assert.equal(out.viewRestored, true);
+  assert.equal(cdp.calls.filter((c) => c.method === 'Input.dispatchKeyEvent').length, 0,
+    'no key was pressed to read a line the page already knew');
+  assert.equal(cdp.calls.filter((c) => String(c.params?.expression ?? '').includes('opera-caret-line')).length, 1,
+    'one read answers it');
+});
+
+
+// WHY A PAGE WITH NO CARET GETS AN EMPTY ANSWER AND NO KEYS.
+// The key road creates a selection to read, so on a page with no caret it would move one that was never there and answer with whatever the first key touched.
+// Measured live over the extension bridge: that road cost 138 ms and scrolled the page to its end on the way.
+
+test('a page with no caret has no line, and no key is pressed to invent one', async () => {
+  const cdp = canvasCdp({
+    noCaret: true
+  });
+  const out = await createPrimitives(cdp, { sleep: async () => {} }).caretLine();
+
+  assert.equal(out.line, '');
+  assert.equal(out.caretMoved, false);
+  assert.match(out.caretWhy, /no caret/);
+  assert.equal(cdp.calls.filter((c) => c.method === 'Input.dispatchKeyEvent').length, 0,
+    'nothing was pressed on a page with no caret');
+});
+
 
 test('a caret line reads the selection, collapses, and reports its verdict', async () => {
   const cdp = canvasCdp({ copy: 'Kajian pustaka mencakup' });

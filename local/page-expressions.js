@@ -808,6 +808,40 @@ export const SELECTION_STATE_EXPRESSION = `(() => {
   return richest || caret || nothing;
 })()`;
 
+// WHY THE LINE THE CARET IS ON CAN COME FROM THE PAGE ITSELF.
+// The key road reads that line by selecting it, which moves the caret the caller was reading from and costs a key beat, two settles and a copy.
+// An input knows the line it holds at the caret, and a block element is the line, so the same answer is one read away and nothing moves.
+// A surface that keeps its text as pixels answers neither, and the answer says so instead of guessing: a block longer than a line is refused, because the editor root is not the line the caret is on.
+
+/**
+ * Read the line the caret is on from the page, without moving the caret.
+ * @returns {string} the expression that answers with the line, or with why the page cannot name it.
+ */
+
+export const CARET_LINE_EXPRESSION = `(() => {
+  const active = document.activeElement;
+  const tag = String(active?.tagName || '').toLowerCase();
+  if (tag === 'input' || tag === 'textarea') {
+    const value = String(active.value ?? '');
+    const at = Math.max(0, Math.min(value.length, Number(active.selectionStart) || 0));
+    const start = value.lastIndexOf('\\n', Math.max(0, at - 1)) + 1;
+    const next = value.indexOf('\\n', at);
+    const end = next < 0 ? value.length : next;
+    return { found: true, line: value.slice(start, end), why: 'the line came from the ' + tag + ' the caret is in, so the caret did not move' };
+  }
+  const sel = window.getSelection ? window.getSelection() : null;
+  if (!sel || sel.rangeCount === 0) return { found: false, noCaret: true, why: 'the page holds no caret to read a line from' };
+  let node = null;
+  try { node = sel.getRangeAt(0).startContainer; } catch { node = null; }
+  const host = node ? (node.nodeType === 3 ? node.parentElement : node) : null;
+  const block = host?.closest ? host.closest('p, li, td, th, h1, h2, h3, h4, h5, h6, pre, blockquote, [contenteditable=""], [contenteditable="true"]') : null;
+  if (!block) return { found: false, noCaret: true, why: 'the caret is not in a block of text a line could be read from' };
+  const line = String(block.innerText ?? block.textContent ?? '').trim();
+  if (line.length === 0) return { found: false, why: 'the block around the caret holds no text' };
+  if (line.length > 400 || line.indexOf('\\n') >= 0) return { found: false, why: 'the block around the caret holds more than one line' };
+  return { found: true, line: line, why: 'the line came from the block the caret is in, so the caret did not move' };
+})() /*opera-caret-line*/`;
+
 // WHY THE PAGE'S OWN WORDS ARE READ AS ONE OBJECT.
 // Every read of a page answers with the same four things - what it calls itself, where it is, what it says, and whether it has finished saying it.
 // Written out here, the read is one expression a person can paste into a console and see for themselves, which is the property every expression in this file has.
@@ -1172,18 +1206,19 @@ export const EDIT_POLLS = 12;
 // WHY A READ TAKES TWO SAMPLES, BUT NOT A FIXED BEAT APART.
 // Measured live on YouTube: readyState said "complete" at 1.9s with 871 characters of text, and the text reached 8,478 by 2.4s.
 // readyState is about the network, not about a page that renders itself afterwards, so an agent that read once had a tenth of the page and no way to know it.
-// The second sample is what turns that into a fact, but the gap between the samples is now the settle below: 32ms of quiet on a settled page, 120ms when the page keeps moving, and no hidden-tab timer to clamp.
+// The second sample is what turns that into a fact, but the gap between the samples is now the settle below: 8ms of quiet on a settled page, 120ms when the page keeps moving, and no hidden-tab timer to clamp.
 
 // WHY THE SETTLE IS POLLED FROM NODE INSTEAD OF WAITING IN THE PAGE.
 // The first shape installed a MutationObserver and resolved from a page-side setTimeout(120).
 // Measured live on a hidden Google Docs tab, that timer was clamped by background-tab throttling: the call took 304ms, and repeated runs reached 1,009ms, while a snapshot of the same page took 4ms.
 // The observer still belongs to the page, but the clock that decides "quiet" now belongs to Node, whose timers are not throttled.
-// The page installs only the watcher; Node waits 8ms, asks the watcher how long the page has been still, and stops after 32ms of quiet or 120ms total.
-// Fifteen asks is the worst case, and four is the common one; no page-side timer is left for a hidden tab to clamp.
+// The page installs only the watcher; Node waits one poll, asks the watcher how long the page has been still, and stops after 8ms of quiet or 120ms total.
+// Measured live over the extension bridge: the 32ms window this replaces cost 46ms per action, and an 8ms window on a 4ms poll settles a still page in 16-20ms.
+// A page that keeps moving still pays the 120ms cap, so the short window costs a slow page nothing it did not already spend.
 
-export const SETTLE_QUIET_MS = 32;
+export const SETTLE_QUIET_MS = 8;
 export const SETTLE_MAX_MS = 120;
-export const SETTLE_POLL_MS = 8;
+export const SETTLE_POLL_MS = 4;
 
 export const SETTLE_ARM_EXPRESSION = `(() => {
   const key = '__operaSettle';

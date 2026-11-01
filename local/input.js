@@ -199,8 +199,14 @@ export function createInputMethods({
     await primitives.settle();
     const typed = await type(text);
     const atEnd = typed.placed.found && String(typed.placed.after ?? '').trim() === '';
+
+    // WHY THE ANSWER SAYS IT ALREADY SETTLED.
+    // The settle after the end key proved the editor caught up, and the type that followed read the page twice: once for the signature before the text and once for where it landed.
+    // A third look from the page look would measure the same quiet a moment later, and it cost 33 ms on the bridge for no new fact.
+
     return {
       ...typed,
+      settled: true,
       chars,
       atEnd,
       atEndWhy: typed.placed.found

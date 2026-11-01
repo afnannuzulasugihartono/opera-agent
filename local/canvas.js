@@ -38,7 +38,10 @@
 // WHY A SURFACE NOTHING CAN ANSWER NAMES THE PICTURE.
 // The driver does not read pixels and does not pretend to: naming the one tool that returns a picture lets the caller decide, rather than handing back an empty string that looks like an empty page.
 
-import { SELECTION_STATE_EXPRESSION } from './page-expressions.js';
+import {
+  CARET_LINE_EXPRESSION,
+  SELECTION_STATE_EXPRESSION
+} from './page-expressions.js';
 import {
   probeSurface,
   measureAx,
@@ -310,7 +313,35 @@ export function createCanvasMethods({
   // The selection is the cheaper answer and works wherever the page holds its text; the selection copy is the fallback for a surface whose mirror only holds what a selection put there, and which one is needed is a question the page answers.
   // The verdict rides along, so a caret this read could not put back is reported rather than assumed.
 
+  // WHY THE LINE IS READ FROM THE PAGE FIRST AND BORROWED ONLY WHEN IT CANNOT ANSWER.
+  // Measured live over the extension bridge: the key road - Home, a settle, Shift+End, a settle, the copy, End - cost 187 ms, and every one of those steps moved the caret the caller was reading from.
+  // The page can answer the same question in one read wherever its text is in the DOM: an input holds the whole line, and the block the caret sits in is the line.
+  // A surface that keeps its text as pixels answers neither, so the key road stays for exactly that page, and the answer says which road was taken.
+  // A page with no caret at all has no line to read, and pressing keys to invent one moves a caret that was not there; that answer is empty and names why.
+
   async function caretLine() {
+    const quick = await primitives.evaluate(CARET_LINE_EXPRESSION).catch(() => null);
+    if (quick?.found === true) {
+      return {
+        line: String(quick.line ?? ''),
+        caretMoved: false,
+        caretRestored: true,
+        viewRestored: true,
+        caretWhy: String(quick.why ?? ''),
+        viewWhy: ''
+      };
+    }
+    if (quick?.noCaret === true) {
+      return {
+        line: '',
+        caretMoved: false,
+        caretRestored: true,
+        viewRestored: true,
+        caretWhy: String(quick.why ?? ''),
+        viewWhy: ''
+      };
+    }
+
     const mark = await guard.remember();
     await primitives.key('Home');
     await primitives.settle();

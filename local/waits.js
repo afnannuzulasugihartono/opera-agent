@@ -187,10 +187,15 @@ export function createWaits({
     };
   }
 
+  // WHY THE QUIET WINDOW IS THE SETTLE'S OWN EIGHT MILLISECONDS AND NOT A HUNDRED AND TWENTY.
+  // The window is the whole cost of this wait: a settled page paid it in full and every caller paid it again after.
+  // Measured live over the extension bridge: 120ms of quiet plus a 60ms poll answered in 154ms, while one settle and a second read answer in about 20ms and ask the same question - did the rows move.
+  // The window is the settle's, so this wait asks nothing of the page that the settle before every action does not already ask, and a page that keeps moving still waits.
+
   async function waitForStill({
     timeoutMs = 8000,
-    quietMs = 120,
-    intervalMs = 60,
+    quietMs = 8,
+    intervalMs = 8,
     limit = 120,
     now: clock = now
   } = {}) {

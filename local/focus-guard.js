@@ -83,6 +83,24 @@ export function createFocusGuard({
     return named && sameBrowser;
   };
 
+  // WHY THE GUARD ASKS THE PAGE UNTIL IT HEARS INSTEAD OF SLEEPING A FIXED TIME.
+  // Measured on the fixture: every input call whose screen the drive had to take paid two fixed 120 ms sleeps, while the page answered hasFocus in under a millisecond the whole time.
+  // The wait is for a fact, so the fact is asked for until it arrives or the budget runs out; a press that a window still swallows is retried by the click itself, so a short wait costs no correctness.
+  // The attempts are capped as well as the clock, because a test hands in a clock that does not move.
+
+  const heardWithin = async (
+    ask,
+    budgetMs
+  ) => {
+    const deadline = clock() + budgetMs;
+    for (let attempt = 0; attempt < 8; attempt += 1) {
+      if (await ask().catch(() => false) === true) return true;
+      if (clock() >= deadline) return false;
+      await sleep(Math.min(16, Math.max(1, budgetMs))).catch(() => null);
+    }
+    return false;
+  };
+
   return async function ensureFront({
     hasFocus,
     match = ''
@@ -145,8 +163,7 @@ export function createFocusGuard({
         };
       }
 
-      await sleep(settleMs).catch(() => null);
-      const heard = await hasFocus().catch(() => false);
+      const heard = await heardWithin(hasFocus, settleMs);
       return {
         window: heard
           ? `brought ${out.title} back from the taskbar`
@@ -199,7 +216,7 @@ export function createFocusGuard({
 
     const moved = await Promise.resolve().then(() => front()).catch(() => null);
     if (moved !== null && moved !== false) {
-      await sleep(settleMs).catch(() => null);
+      await heardWithin(hasFocus, settleMs);
     }
 
     // WHY THE WINDOW IS BROUGHT FORWARD WITHOUT ASKING AGAIN.
@@ -210,8 +227,7 @@ export function createFocusGuard({
       os: true,
       browser: driving?.name ?? ''
     })).catch(() => null);
-    await sleep(settleMs).catch(() => null);
-    const heard = await hasFocus().catch(() => false);
+    const heard = await heardWithin(hasFocus, settleMs);
     return {
       window: out?.focused
         ? heard

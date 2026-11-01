@@ -242,10 +242,11 @@ const gapOf = (
 
 const quietOf = (
   value,
-  fallback
+  fallback,
+  min = 50
 ) => {
   const asked = Number(value ?? fallback);
-  return Number.isFinite(asked) ? Math.min(5000, Math.max(50, asked)) : fallback;
+  return Number.isFinite(asked) ? Math.min(5000, Math.max(min, asked)) : fallback;
 };
 
 
@@ -799,7 +800,7 @@ const windowMatch = async (
       case 'wait_still':
         return afterAction(driver, await driver.waitForStill({
           timeoutMs: budgetOf(args.timeoutMs, 8000),
-          quietMs: quietOf(args.quietMs, 120)
+          quietMs: quietOf(args.quietMs, 8, 8)
         }));
       case 'guide':
         return asText(await driver.guide(args.topic));

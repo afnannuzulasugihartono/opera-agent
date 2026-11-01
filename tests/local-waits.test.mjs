@@ -574,6 +574,50 @@ test('a row wait that runs out says so and hands back the page', async () => {
 });
 
 
+// WHY THE DEFAULT QUIET WINDOW IS MEASURED AND NOT TRUSTED.
+// The window is the whole cost of the wait, so a default that is too long is paid by every caller who did not ask for one.
+// The fake clock moves one settle beat per check, which is what a real still page does on this bridge.
+
+test('stillness ends on the short window it ships with', async () => {
+  const still = [{
+    role: 'menuitem',
+    name: 'Image',
+    x: 3,
+    y: 4,
+    node: 0
+  }];
+  let clock = 0;
+  const cdp = rowsCdp([
+    still,
+    still,
+    still,
+    still,
+    still,
+    still,
+    still,
+    still,
+    still,
+    still,
+    still,
+    still
+  ]);
+  const p = createPrimitives(cdp, {
+    sleep: async (ms) => {
+      clock += ms;
+    },
+    now: () => clock
+  });
+
+  const out = await p.waitForStill({
+    timeoutMs: 5000
+  });
+
+  assert.equal(out.still, true);
+  assert.equal(out.settled, true);
+  assert.ok(out.checks <= 8, `stillness took ${out.checks} checks, which is the short window and not a hundred and twenty milliseconds`);
+});
+
+
 test('stillness ends on two identical reads and names how long it took', async () => {
   const still = [{
     role: 'menuitem',

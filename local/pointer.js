@@ -104,6 +104,8 @@ export function createPointerMethods({
     }
   };
 
+  let domEnabled = false;
+
   const ownershipAt = async (
     handle,
     point
@@ -113,11 +115,15 @@ export function createPointerMethods({
     const backendNodeId = Number(raw.slice(HANDLE_PREFIX.length));
     if (!Number.isFinite(backendNodeId)) return {};
 
-    // WHY THE DOM AGENT IS SWITCHED ON FIRST.
+    // WHY THE DOM AGENT IS SWITCHED ON FIRST, AND ONLY ONCE.
     // Measured live: without it resolveNode answers an error, the catch below swallowed it, and the click reported no fact at all - a silent fallback that looks the same as a page that cannot answer.
+    // The switch stays on for the life of the session, so asking again on every click is a round trip that buys nothing.
 
     try {
-      await cdp.send('DOM.enable').catch(() => null);
+      if (!domEnabled) {
+        await cdp.send('DOM.enable').catch(() => null);
+        domEnabled = true;
+      }
       const resolved = await cdp.send('DOM.resolveNode', { backendNodeId });
       const objectId = resolved?.object?.objectId;
       if (!objectId) return {};
