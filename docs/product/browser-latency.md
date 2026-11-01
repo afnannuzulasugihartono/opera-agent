@@ -394,40 +394,56 @@ scrolling the page to its end on the way.
 look. The second settle measured the same quiet a moment later, so the append
 now says it already settled, the way a chord-only `stream_keys` does.
 
+The settle itself had one more cost to give up: it armed a fresh watcher on
+every call, which reset the clock to now, so a page that had not moved for
+minutes still paid the full quiet window. The watcher from the last settle is
+still watching and still knows when the page last changed, so one call now
+carries it forward and answers with its state. A page that is already quiet
+answers in that one round trip; a page that did just move polls, which is the
+same loop as before, entered only when there is something to wait for. Measured
+on the same page: one settle fell from 15 ms to 2 ms.
+
 Measured after the change, same machine, same page, five runs each:
 
 | Tool | p50 | p95 |
 |---|---:|---:|
-| `browser_status` | 7 ms | 11 ms |
-| `dialog_state` | 4 ms | 6 ms (284 ms on the first call, which starts the OS shell) |
-| `list_tabs` | 2 ms | 4 ms |
 | `guide` | 0 ms | 1 ms |
-| `caret_line` | 6 ms | 7 ms |
-| `get_computed` | 7 ms | 8 ms |
-| `list_menus` | 7 ms | 9 ms |
-| `ask_page` | 8 ms | 9 ms |
-| `find_elements` | 8 ms | 8 ms |
-| `ax_snapshot` | 9 ms | 11 ms |
-| `resolve_row` | 12 ms | 13 ms |
-| `surface_profile` | 12 ms | 17 ms |
-| `scroll` | 32 ms | 33 ms |
-| `read_page` | 31 ms | 32 ms |
-| `wait_for` | 31 ms | 37 ms |
-| `wait_for_row` | 31 ms | 33 ms |
-| `wait_still` | 32 ms | 33 ms |
-| `type` | 32 ms | 44 ms |
+| `browser_status` | 6 ms | 10 ms |
+| `caret_line` | 6 ms | 8 ms |
+| `get_computed` | 6 ms | 8 ms |
+| `ask_page` | 6 ms | 10 ms |
+| `list_tabs` | 3 ms | 3 ms |
+| `list_menus` | 7 ms | 8 ms |
+| `find_elements` | 7 ms | 8 ms |
+| `ax_snapshot` | 8 ms | 9 ms |
+| `resolve_row` | 11 ms | 12 ms |
+| `scroll` | 12 ms | 14 ms |
+| `read_page` | 13 ms | 15 ms |
+| `surface_profile` | 13 ms | 17 ms |
+| `wait_for` | 14 ms | 16 ms |
+| `wait_for_row` | 14 ms | 15 ms |
+| `wait_still` | 20 ms | 21 ms |
+| `hover` | 22 ms | 22 ms |
+| `browser_burst` (2 steps) | 23 ms | 34 ms |
+| `click on the field` | 25 ms | 41 ms |
 | `click` | 31 ms | 32 ms |
-| `hover` | 31 ms | 48 ms |
-| `browser_burst` (2 steps) | 34 ms | 39 ms |
-| `capture_page` | 45 ms | 57 ms |
-| `click_row` | 48 ms | 63 ms |
-| `press_key` | 59 ms | 62 ms |
-| `append` | 61 ms | 64 ms |
+| `press_key` | 31 ms | 41 ms |
+| `type` | 32 ms | 33 ms |
+| `capture_page` | 42 ms | 44 ms |
+| `append` | 47 ms | 52 ms |
+| `click_row` | 48 ms | 50 ms |
+| `dialog_state` | 5 ms | 224 ms on the first call, which starts the OS shell |
 
-The cheapest tool is now 0 ms and the dearest is 61 ms. Every answer still
-carries what it carried before: `click_row` reports `pressed: true`, `append`
-reports where the text landed, and `caret_line` reports which road read the
-line.
+The dearest tool is `click_row` at 48 ms and the cheapest is `guide` at 0 ms.
+Every answer still carries what it carried before: `click_row` reports
+`pressed: true`, `append` reports where the text landed, and `caret_line`
+reports which road read the line.
+
+The remaining 31 ms in `click`, `press_key` and `type` is the key beat: a
+keyDown and a keyUp have to land in different ticks or Docs drops the edge.
+Windows fires a timer on a 15.6 ms tick, so the 16 ms beat lands on two ticks,
+31 ms, and no scheduling trick measured here beats that floor - `Atomics.wait`
+sleeps on the same tick.
 
 The one cost this does not touch is the question the person answers: when the
 screen is not the drive's, the first input call still waits for that answer -
@@ -445,25 +461,26 @@ fixture, and it agrees with the live surface:
 
 | Tool (harness) | Before | After |
 |---|---:|---:|
-| `click` | 298 ms | 30 ms |
-| `click_row` | 298 ms | 31 ms |
-| `press_key` | 329 ms | 47 ms |
-| `stream_keys` text | 329 ms | 47 ms |
-| `stream_keys` chords | 359 ms | 78 ms |
-| `read_page` | 47 ms | 16 ms |
-| `wait_for` (found) | 47 ms | 16 ms |
-| `wait_still` | 140 ms | 16 ms |
+| `click` | 298 ms | 8 ms |
+| `click_row` | 298 ms | 10 ms |
+| `press_key` | 329 ms | 31 ms |
+| `stream_keys` text | 329 ms | 31 ms |
+| `stream_keys` chords | 359 ms | 63 ms |
+| `read_page` | 47 ms | 2 ms |
+| `wait_for` (found) | 47 ms | 3 ms |
+| `wait_still` | 140 ms | 12 ms |
 | `caret_line` | 187 ms | 1 ms |
-| `append` | 125 ms | 47 ms |
-| `browser_burst` (3 steps) | 47 ms | 31 ms |
+| `append` | 125 ms | 31 ms |
+| `browser_burst` (3 steps) | 47 ms | 7 ms |
 | `ax_snapshot` | 2 ms | 2 ms |
 
-One row stays above 64 ms: a two-chord `stream_keys` costs 78 ms, and the beat
-inside a chord is the reason. Windows fires a timer on a 15.6 ms tick, so the
+Two rows sit closest to the line, and both are the key beat rather than a wait:
+`press_key` and `stream_keys` text cost 31 ms for one keyDown and one keyUp, and
+a two-chord stream costs 63 ms. Windows fires a timer on a 15.6 ms tick, so the
 16 ms beat that separates a key's down edge from its up edge lands on two ticks,
-31 ms, and a stream of two chords pays it twice. The beat is what stops Docs
-from dropping an edge that arrives in the same tick, so it is not a number to
-lower without a browser to prove it against.
+31 ms. The beat is what stops Docs from dropping an edge that arrives in the same
+tick, so it is not a number to lower without a browser to prove it against -
+`Atomics.wait` sleeps on the same tick, measured.
 
 ### Bridge
 
