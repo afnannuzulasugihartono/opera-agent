@@ -82,6 +82,114 @@ test('a click on the edge of the viewport is still allowed', async () => {
   assert.equal(cdp.calls.filter((c) => c.method === 'Input.dispatchMouseEvent').length, 3);
 });
 
+// WHY A PRESS THE PAGE DID NOT TAKE IS SENT AGAIN.
+// Measured live on this machine: the first click of a drive, right after the browser window came forward for the person, never reached the page - Chrome swallowed the press when the window was activated, the page saw the move and nothing else, and the second press landed.
+// So the page counts the presses it receives, and a press the page did not take is sent again.
+
+
+function pressCdp({
+  swallow = 0,
+  tag = 'BUTTON'
+} = {}) {
+  const calls = [];
+  const page = {
+    presses: 0,
+    sent: 0
+  };
+  return {
+    calls,
+    page,
+    send: async (
+      method,
+      params = {}
+    ) => {
+      calls.push({
+        method,
+        params
+      });
+      if (method === 'Runtime.evaluate' && params.expression.includes('opera-hit')) {
+        return { result: { value: {
+          tag,
+          role: tag === 'BUTTON' ? 'button' : '',
+          name: 'Bold',
+          presses: page.presses
+        } } };
+      }
+      if (method === 'Runtime.evaluate' && params.expression.includes('__operaPressCount')) {
+        return { result: { value: page.presses } };
+      }
+      if (method === 'Input.dispatchMouseEvent' && params.type === 'mousePressed') {
+        page.sent += 1;
+        if (page.sent > swallow) page.presses += 1;
+      }
+      return { result: {} };
+    }
+  };
+}
+
+
+test('a press the page did not take is sent again', async () => {
+  const cdp = pressCdp({
+    swallow: 1
+  });
+
+  const out = await createPrimitives(cdp).clickAt(384, 46);
+
+  assert.equal(
+    cdp.calls.filter((c) => c.method === 'Input.dispatchMouseEvent' && c.params.type === 'mousePressed').length,
+    2,
+    'the swallowed press went out again'
+  );
+  assert.equal(out.pressed, true);
+  assert.equal(out.hit.name, 'Bold');
+});
+
+
+test('a press the page took is not sent again', async () => {
+  const cdp = pressCdp();
+
+  const out = await createPrimitives(cdp).clickAt(384, 46);
+
+  assert.equal(
+    cdp.calls.filter((c) => c.method === 'Input.dispatchMouseEvent' && c.params.type === 'mousePressed').length,
+    1,
+    'and the page answered once'
+  );
+  assert.equal(out.pressed, true);
+});
+
+
+test('a page that never takes the press says so', async () => {
+  const cdp = pressCdp({
+    swallow: 99
+  });
+
+  const out = await createPrimitives(cdp).clickAt(384, 46);
+
+  assert.equal(out.pressed, false, 'the answer does not claim a click the page never took');
+});
+
+
+// WHY A FRAME IS NEVER PRESSED TWICE.
+// The press lands in the frame's own document, so the count in this document never moves.
+// A second press would be a second click inside the frame, and the answer would say nothing about it.
+
+test('a press into a frame is not sent again', async () => {
+  const cdp = pressCdp({
+    swallow: 99,
+    tag: 'IFRAME'
+  });
+
+  const out = await createPrimitives(cdp).clickAt(384, 46);
+
+  assert.equal(
+    cdp.calls.filter((c) => c.method === 'Input.dispatchMouseEvent' && c.params.type === 'mousePressed').length,
+    1,
+    'and the frame was clicked once'
+  );
+  assert.equal(out.pressed, null, 'the answer does not claim what happened inside the frame');
+});
+
 
 test('a click_row says when something else owns the point it clicked', async () => {
   const cdp = {
@@ -398,7 +506,8 @@ test('a refused spotlight never breaks the click it decorates', async () => {
   assert.deepEqual(out, {
     x: 10,
     y: 20,
-    hit: null
+    hit: null,
+    pressed: null
   });
   assert.equal(cdp.calls.filter((c) => c.method === 'Input.dispatchMouseEvent').length, 3);
 });
@@ -599,7 +708,8 @@ test('a handle is measured from the node at the moment of the click', async () =
   assert.deepEqual(at, {
     x: 200,
     y: 230,
-    handle: 'opera-4321'
+    handle: 'opera-4321',
+    pressed: null
   });
   const measured = cdp.calls.find((c) => c.method === 'DOM.getBoxModel');
   assert.deepEqual(measured.params, { backendNodeId: 4321 });

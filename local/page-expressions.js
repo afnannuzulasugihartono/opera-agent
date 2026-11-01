@@ -970,15 +970,27 @@ export const locateExpression = (probe) => `(() => {
   };
 })() /*opera-locate*/`;
 
+// WHY THE HIT CARRIES THE PRESS COUNT.
+// Measured live on this machine: the first click of a drive, right after the browser window came forward for the person, never reached the page - Chrome swallowed the press when the window was activated, and the page saw the move and nothing else.
+// So the page counts the presses it receives, and the count travels with the answer that says what was under the point.
+
+/**
+ * Say what is under a point and how many presses the page has taken.
+ * @param {number} x - the point's x in CSS pixels.
+ * @param {number} y - the point's y in CSS pixels.
+ * @returns {string} the expression that answers with the element and the press count.
+ */
+
 export const hitExpression = (
   x,
   y
 ) => `(() => {
   const el = document.elementFromPoint(${Math.round(Number(x) || 0)}, ${Math.round(Number(y) || 0)});
-  if (!el) return null;
+  const presses = typeof window.__operaPressCount === 'number' ? window.__operaPressCount : null;
+  if (!el) return { presses };
   const get = (name) => (el.getAttribute ? el.getAttribute(name) : null);
   const name = get('aria-label') || (typeof el.value === 'string' ? el.value : '') || el.innerText || el.textContent || '';
-  return { tag: el.tagName || '', role: get('role') || '', name: String(name).trim().slice(0, 60) };
+  return { tag: el.tagName || '', role: get('role') || '', name: String(name).trim().slice(0, 60), presses };
 })() /*opera-hit*/`;
 
 // WHY THE SCROLLER IS FOUND BY ITS SCROLL HEIGHT.

@@ -142,11 +142,10 @@ export const DOCSTRING_PENDING = new Set([
   'local/menu-tree.js: export function stateOf (line 234)',
   'local/observe.js: export function createObserveMethods (line 106)',
   'local/page-expressions.js: export arrow centreOf (line 595)',
-  'local/page-expressions.js: export arrow computedExpression (line 1102)',
-  'local/page-expressions.js: export arrow hitExpression (line 973)',
+  'local/page-expressions.js: export arrow computedExpression (line 1114)',
   'local/page-expressions.js: export arrow imageSize (line 900)',
   'local/page-expressions.js: export arrow locateExpression (line 953)',
-  'local/page-expressions.js: export arrow scrollExpression (line 996)',
+  'local/page-expressions.js: export arrow scrollExpression (line 1008)',
   'local/page-expressions.js: export function describeKey (line 96)',
   'local/page-expressions.js: export function dragMimeType (line 712)',
   'local/page-expressions.js: export function modifierMask (line 822)',
@@ -162,7 +161,7 @@ export const DOCSTRING_PENDING = new Set([
   'local/reports.js: export function reportFromFile (line 366)',
   'local/reports.js: export function verifyReport (line 302)',
   'local/sessions.js: export function asDriver (line 51)',
-  'local/sessions.js: export function createSessionStore (line 186)',
+  'local/sessions.js: export function createSessionStore (line 187)',
   'local/sessions.js: export function findOn (line 19)',
   'local/statements.js: export function balanceDigits (line 147)',
   'local/statements.js: export function slug (line 35)',
@@ -250,4 +249,4 @@ export const DOCSTRING_PENDING = new Set([
   'supabase/functions/opera-agent-mcp/tools.ts: export function registerTools (line 190)',
 ]);
 
-export const DOCSTRING_BASELINE = 240;
+export const DOCSTRING_BASELINE = 239;

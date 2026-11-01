@@ -328,7 +328,8 @@ test('a row with no element behind it is clicked at the point it reported', asyn
     name: 'text caret',
     x: 4,
     y: 5,
-    hit: undefined
+    hit: undefined,
+    pressed: undefined
   });
   assert.deepEqual(session.calls.at(-1), [
     'clickAt',

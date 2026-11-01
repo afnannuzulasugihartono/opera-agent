@@ -130,7 +130,8 @@ export function asDriver(
           name: row.name,
           x: row.x,
           y: row.y,
-          hit: at.hit
+          hit: at.hit,
+          pressed: at.pressed
         };
       }
       const at = await session.clickHandle(row.handle);

@@ -82,16 +82,25 @@ export function createPointerMethods({
         returnByValue: true
       });
       const el = result?.value;
-      if (!el) return null;
+      if (!el) return {
+        hit: null,
+        presses: null
+      };
       const tag = String(el.tag ?? '');
       return {
-        tag,
-        role: String(el.role ?? ''),
-        name: String(el.name ?? ''),
-        canvas: tag === 'CANVAS'
+        hit: {
+          tag,
+          role: String(el.role ?? ''),
+          name: String(el.name ?? ''),
+          canvas: tag === 'CANVAS'
+        },
+        presses: typeof el.presses === 'number' ? el.presses : null
       };
     } catch {
-      return null;
+      return {
+        hit: null,
+        presses: null
+      };
     }
   };
 
@@ -136,6 +145,29 @@ export function createPointerMethods({
     } catch {
       return {};
     }
+  };
+
+  // WHY THE PAGE COUNTS THE PRESSES IT TAKES.
+  // Measured live on this machine: the first click of a drive, right after the browser window came forward for the person, never reached the page - Chrome swallowed the press when the window was activated, the page saw the move and nothing else, and the second press landed.
+  // So the page is asked to count the presses it receives, and a press the page did not take is sent again.
+  // A press the page did take is never sent twice, so a page that answered once is not made to answer twice.
+
+  let presses = null;
+
+  const countPresses = async () => {
+    const { result } = await cdp.send('Runtime.evaluate', {
+      expression: `(() => {
+        if (!window.__operaPressListening) {
+          window.__operaPressListening = true;
+          window.__operaPressCount = 0;
+          document.addEventListener('mousedown', () => { window.__operaPressCount += 1; }, true);
+        }
+        return window.__operaPressCount;
+      })()`,
+      returnByValue: true
+    });
+    const count = Number(result?.value);
+    return Number.isFinite(count) ? count : null;
   };
 
   // WHY THE MOUSE GOES OUT WITH THE PAGE TOLD TO TAKE THE FOCUS.
@@ -188,29 +220,48 @@ export function createPointerMethods({
       clickCount: 1,
       buttons: 1
     };
-    await withMouseFocus(async () => {
-      await Promise.all([
-        spot(x, y, 'rgb(255,60,60)'),
-        cdp.send('Input.dispatchMouseEvent', {
-          type: 'mouseMoved',
-          x,
-          y,
-          buttons: 0
-        }),
-        cdp.send('Input.dispatchMouseEvent', {
-          type: 'mousePressed',
-          ...common
-        }),
-        cdp.send('Input.dispatchMouseEvent', {
-          type: 'mouseReleased',
-          ...common
-        })
-      ]);
-    });
+    const press = async () => {
+      await withMouseFocus(async () => {
+        await Promise.all([
+          spot(x, y, 'rgb(255,60,60)'),
+          cdp.send('Input.dispatchMouseEvent', {
+            type: 'mouseMoved',
+            x,
+            y,
+            buttons: 0
+          }),
+          cdp.send('Input.dispatchMouseEvent', {
+            type: 'mousePressed',
+            ...common
+          }),
+          cdp.send('Input.dispatchMouseEvent', {
+            type: 'mouseReleased',
+            ...common
+          })
+        ]);
+      });
+    };
+    if (presses === null) presses = await countPresses().catch(() => null);
+    const baseline = presses;
+    await press();
+    let seen = await hitAt(x, y);
+
+    // WHY A PRESS THE PAGE DID NOT TAKE IS SENT AGAIN.
+    // Chrome swallows the first press after the browser window comes forward, and the answer that says which element was under the point would still name it.
+    // The count says what the page received, so the press goes again - and a page that took the press is left alone.
+    // A frame is left alone too: the press lands in the frame's own document, the count here never moves, and a second press would be a second click inside it.
+
+    const framed = seen.hit?.tag === 'IFRAME';
+    if (!framed && seen.presses !== null && seen.presses === baseline) {
+      await press();
+      seen = await hitAt(x, y);
+    }
+    presses = seen.presses;
     return {
       x,
       y,
-      hit: await hitAt(x, y)
+      hit: seen.hit,
+      pressed: seen.presses === null || framed ? null : seen.presses > baseline
     };
   }
 
@@ -226,11 +277,12 @@ export function createPointerMethods({
     };
     const x = Math.round(Math.min(1, Math.max(0, asked.x)) * view.width);
     const y = Math.round(Math.min(1, Math.max(0, asked.y)) * view.height);
-    await clickAt(x, y);
+    const click = await clickAt(x, y);
     return {
       x,
       y,
       of: asked,
+      pressed: click.pressed,
       viewport: {
         width: view.width,
         height: view.height
@@ -313,10 +365,11 @@ export function createPointerMethods({
   async function clickHandle(handle) {
     const at = await handleBox(handle);
     const owner = await ownershipAt(handle, at);
-    await clickAt(at.x, at.y);
+    const click = await clickAt(at.x, at.y);
     return {
       ...at,
       handle: String(handle),
+      pressed: click.pressed,
       ...owner
     };
   }
