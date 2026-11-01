@@ -357,6 +357,114 @@ clicks, none lost, including the two rounds in the activation case that used to
 lose the press. At the tool surface, four background `click_row` calls landed in
 372-417 ms each, and every one reported `pressed: true`.
 
+### The whole live surface came under 64 ms
+
+The live surface was measured again over the extension bridge, on the real
+Chrome, against the bench page, five runs each. Six tools were above 64 ms, and
+the cause was the same in all of them: a fixed cost that every call paid.
+
+| Tool | Before | After | What changed |
+|---|---:|---:|---|
+| `click_row` | 77 ms | 48 ms | the settle is shorter, and `DOM.enable` is sent once |
+| `press_key` | 78 ms | 59 ms | the settle is shorter |
+| `browser_burst` (2 steps) | 76 ms | 34 ms | the settle is shorter |
+| `wait_still` | 154 ms | 32 ms | the quiet window is the settle's own 8 ms, not 120 |
+| `caret_line` | 188 ms | 6 ms | the page names the line, so no key is pressed |
+| `append` | 125 ms | 61 ms | one settler instead of two |
+
+The settle was the fixed cost under every action. It waits for 8 ms of quiet on
+a 4 ms poll now, where it waited 32 ms on an 8 ms poll: measured on the same
+page, one settle fell from 46 ms to 15 ms, and every action that settles paid it.
+
+`wait_still` had its own quiet window of 120 ms on top of that, so a page that
+was already still paid 154 ms to say so. The window is now the settle's own 8 ms,
+and the wait compares the rows across one settle - the same proof the settle
+before every action already asks for.
+
+`caret_line` read the caret's line by pressing Home, Shift+End and End, settling
+after each move and copying the selection: 187 ms, and it moved the caret the
+caller was reading from. A page whose text is in the DOM can name the line
+without any of that - an input knows the line at the caret, and the block the
+caret sits in is the line - so that read comes first and the keys are kept for
+the surface that keeps its text in pixels. A page with no caret now answers
+empty instead of pressing keys to invent one, which also stopped the read from
+scrolling the page to its end on the way.
+
+`append` settled after the end key, typed, and then settled again in the page
+look. The second settle measured the same quiet a moment later, so the append
+now says it already settled, the way a chord-only `stream_keys` does.
+
+Measured after the change, same machine, same page, five runs each:
+
+| Tool | p50 | p95 |
+|---|---:|---:|
+| `browser_status` | 7 ms | 11 ms |
+| `dialog_state` | 4 ms | 6 ms (284 ms on the first call, which starts the OS shell) |
+| `list_tabs` | 2 ms | 4 ms |
+| `guide` | 0 ms | 1 ms |
+| `caret_line` | 6 ms | 7 ms |
+| `get_computed` | 7 ms | 8 ms |
+| `list_menus` | 7 ms | 9 ms |
+| `ask_page` | 8 ms | 9 ms |
+| `find_elements` | 8 ms | 8 ms |
+| `ax_snapshot` | 9 ms | 11 ms |
+| `resolve_row` | 12 ms | 13 ms |
+| `surface_profile` | 12 ms | 17 ms |
+| `scroll` | 32 ms | 33 ms |
+| `read_page` | 31 ms | 32 ms |
+| `wait_for` | 31 ms | 37 ms |
+| `wait_for_row` | 31 ms | 33 ms |
+| `wait_still` | 32 ms | 33 ms |
+| `type` | 32 ms | 44 ms |
+| `click` | 31 ms | 32 ms |
+| `hover` | 31 ms | 48 ms |
+| `browser_burst` (2 steps) | 34 ms | 39 ms |
+| `capture_page` | 45 ms | 57 ms |
+| `click_row` | 48 ms | 63 ms |
+| `press_key` | 59 ms | 62 ms |
+| `append` | 61 ms | 64 ms |
+
+The cheapest tool is now 0 ms and the dearest is 61 ms. Every answer still
+carries what it carried before: `click_row` reports `pressed: true`, `append`
+reports where the text landed, and `caret_line` reports which road read the
+line.
+
+The one cost this does not touch is the question the person answers: when the
+screen is not the drive's, the first input call still waits for that answer -
+372-417 ms measured above - and every later call in that run pays nothing.
+
+The guard's own waits were fixed sleeps until now: two 120 ms beats after it
+moved the window, so an input call whose screen the drive took paid 240 ms
+whether the window was ready or not. It asks the page whether it hears input
+now, until the page says yes or the budget runs out; a press a window still
+swallows is retried by the click itself, so the short wait costs no
+correctness.
+
+The committed harness was re-run after the change, thirty runs each on the same
+fixture, and it agrees with the live surface:
+
+| Tool (harness) | Before | After |
+|---|---:|---:|
+| `click` | 298 ms | 30 ms |
+| `click_row` | 298 ms | 31 ms |
+| `press_key` | 329 ms | 47 ms |
+| `stream_keys` text | 329 ms | 47 ms |
+| `stream_keys` chords | 359 ms | 78 ms |
+| `read_page` | 47 ms | 16 ms |
+| `wait_for` (found) | 47 ms | 16 ms |
+| `wait_still` | 140 ms | 16 ms |
+| `caret_line` | 187 ms | 1 ms |
+| `append` | 125 ms | 47 ms |
+| `browser_burst` (3 steps) | 47 ms | 31 ms |
+| `ax_snapshot` | 2 ms | 2 ms |
+
+One row stays above 64 ms: a two-chord `stream_keys` costs 78 ms, and the beat
+inside a chord is the reason. Windows fires a timer on a 15.6 ms tick, so the
+16 ms beat that separates a key's down edge from its up edge lands on two ticks,
+31 ms, and a stream of two chords pays it twice. The beat is what stops Docs
+from dropping an edge that arrives in the same tick, so it is not a number to
+lower without a browser to prove it against.
+
 ### Bridge
 
 The live extension was not connected during this run (`bridgeReachable()` was
