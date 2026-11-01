@@ -354,6 +354,7 @@ section {
 section h1 {
   margin: 0 0 4px;
   font-size: var(--app-title);
+  line-height: 1.25;
   letter-spacing: -.025em;
 }
 

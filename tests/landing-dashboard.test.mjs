@@ -816,6 +816,7 @@ test('the pager ends on the rail\'s line', () => {
 
 test('the console\'s spacing sits on one scale', () => {
   assert.match(css, /main\.console \{[^}]*--app-title: 18px/, 'a view title is 18px, the size Cline prints a panel title in');
+  assert.match(css, /section h1 \{[^}]*line-height: 1\.25/, 'and it breathes on 1.25, so the line box is taller than the glyphs it holds');
   assert.match(css, /\.contentHead \{[^}]*padding-top: 16px/, 'the head starts on 16');
   assert.match(css, /\.metrics > div \{[^}]*padding: 12px 16px/, 'a card breathes on 12 and 16');
   assert.match(css, /section > \.meta \{[^}]*margin: 0 0 16px/, 'a note is followed by 16');

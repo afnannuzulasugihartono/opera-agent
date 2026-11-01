@@ -74,13 +74,15 @@ test('the header is never squeezed by a page that keeps a narrow column', () => 
   // Measured live on 2026-10-26: index.html sets .wrap to 560px, and the header shares that wrap, so at a 912px window the last nav item ended at 936px and the document scrolled sideways by 24px.
   // The nav row measures 747px, and the wrap spends 40px of padding inside the viewport margin, so the row needs 835px; the old 800px rule counted only the margin and left 801-835 overflowing.
   // The header therefore keeps the widest content measure on the site, and the nav scrolls itself whenever even that is too tight.
+  // Measured again on 2026-11-01: with all nine doors in the row and the 18px gap it carries below 980px, the row needs 777px of the 849px the shell leaves at a 912px window.
+  // The four secondary doors were hidden while 72px sat unused, so the row now sheds them only where it stops fitting.
 
   const index = cssOf('index.html');
   assert.match(index, /--wrap:\s*1200px/, 'the shell names a measure wide enough for the chrome and the page below it');
   assert.match(index, /header \.wrap\s*\{[^}]*max-width:\s*var\(--wrap\)/, 'the chrome keeps that measure, whatever the column below does');
   assert.match(index, /header nav\s*\{[^}]*overflow-x:\s*auto/, 'the row scrolls itself when the wrap is still too tight');
-  assert.match(index, /@media \(max-width: 980px\)[\s\S]*?header nav a\.nav-sec \{ display: none; \}/,
-    'and it sheds the secondary items before a laptop runs out of room');
+  assert.match(index, /@media \(max-width: 860px\)[\s\S]*?header nav a\.nav-sec \{ display: none; \}/,
+    'and it sheds the secondary items only where the row stops fitting');
   for (const page of pages) {
     assert.match(cssOf(page), /header \.wrap\s*\{[^}]*max-width:\s*var\(--wrap\)/, `${page} gives the shared header the same rule`);
   }
@@ -181,6 +183,18 @@ test('display type sets the page apart from its own dashboard', () => {
   assert.match(css, /clamp\(44px, 6vw, 82px\)/, 'the headline spans display sizes');
   assert.match(css, /h2 \{[^}]*font-size: clamp\(28px, 3\.2vw, 44px\)/, 'sections step down to a clear second rank');
   assert.match(css, /\.section \{[^}]*padding: 104px 0/, 'and breathe around each idea');
+});
+
+test('the display type carries the weight the spec set, not the one it drifted to', () => {
+
+  // WHY THE WEIGHT IS A LOCK AND NOT A TASTE: the spec sets display at 500, and the live site drifted to 600.
+  // Measured against the references on 2026-11-01, Cohere prints its headline at 400 and Cline at 340, so 600 sat outside both.
+  // The lock keeps the marketing headline inside the range the references occupy.
+
+  const css = cssOf('beranda.html');
+  assert.match(css, /h1,\s*h2,\s*h3,\s*h4 \{[^}]*font-weight: 500/, 'the headline family carries weight 500');
+  assert.match(css, /\.heroCopy h1 \{[^}]*line-height: 1\.02/, 'the hero headline breathes on 1.02, the line height the spec set');
+  assert.match(css, /\.heroCopy h1 \{[^}]*letter-spacing: -\.03em/, 'and tracks -.03em, the value the spec set');
 });
 
 test('buttons are pills on the marketing surfaces, and square on the signed-in shell', () => {

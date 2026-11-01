@@ -45,8 +45,8 @@
   max-width: 12ch;
   margin: 0 0 22px;
   font-size: clamp(44px, 6vw, 82px);
-  line-height: .97;
-  letter-spacing: -.05em;
+  line-height: 1.02;
+  letter-spacing: -.03em;
 }
 
 .heroCopy .accent { color: var(--accent); }
