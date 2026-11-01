@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-25 UTC+7.
+// @last-edited: 2026-11-01 UTC+7.
 // @title: local-mcp-server — the stdio MCP surface, driven against a fake browser rather than a process.
 // @state: 8 locks; the protocol handshake, the advertised tools, and the ways a call can fail.
 // @dependencies: node:test, strict, ../local/mcp-server.js.
@@ -977,6 +977,34 @@ test('an application that is not a browser says what is in front instead of gues
   assert.equal(window.focused, false);
   assert.equal(window.browser, '', 'there is no browser to name');
   assert.match(window.why, /another window is in front/);
+});
+
+// WHY THE BROWSER DRIVING THE TAB IS NAMED SEPARATELY.
+// The window in front and the browser the drive is on are two different facts: a Brave window can be in front while the drive sits on a Chrome tab.
+// The extension may be connected to several browsers at once, so the answer says which one this tab belongs to.
+
+test('the answer names the browser driving the tab, not only the one in front', async () => {
+  const context = statusCtx('syarat franchise gacoan - Brave', ['Untitled document - Google Docs']);
+  context.driver.browser = async () => ({
+    name: 'Google Chrome',
+    version: '131.0.0.0'
+  });
+  const server = createMcpServer(context);
+
+  const res = await server.handle({
+    jsonrpc: '2.0',
+    id: 91,
+    method: 'tools/call',
+    params: {
+      name: 'browser_status',
+      arguments: {}
+    }
+  });
+
+  const out = JSON.parse(res.result.content[0].text);
+  assert.equal(out.browser.name, 'Google Chrome', 'the browser this tab belongs to is named');
+  assert.equal(out.browser.version, '131.0.0.0');
+  assert.equal(out.window.browser, 'Brave', 'and the browser in front is still its own fact');
 });
 
 // WHY THESE CLAIMS EXIST.

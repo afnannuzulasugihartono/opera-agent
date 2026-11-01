@@ -1,7 +1,7 @@
-// @last-edited: 2026-10-23 UTC+7.
+// @last-edited: 2026-11-01 UTC+7.
 // @title: primitives — the local driver assembled from the modules that each answer one question.
 // @state: navigation, focus and the raw protocol escape hatch, with the typing, pointer, reads, waits, canvas and file verbs assigned from their own modules.
-// @dependencies: ./input.js, ./pointer.js, ./observe.js, ./waits.js, ./canvas.js, ./primitives-file.js, ./window-focus.js.
+// @dependencies: ./input.js, ./pointer.js, ./observe.js, ./waits.js, ./canvas.js, ./primitives-file.js, ./window-focus.js, ./browser-id.js.
 
 // WHY THIS FILE EXISTS
 
@@ -36,6 +36,10 @@ import {
   windowState as osWindowState,
   focusWindow as osFocusWindow
 } from './window-focus.js';
+import {
+  BROWSER_EXPRESSION,
+  browserId
+} from './browser-id.js';
 
 export function createPrimitives(
   cdp,
@@ -49,6 +53,7 @@ export function createPrimitives(
   } = {}
 ) {
   const capped = (limit) => Math.min(Math.max(1, Number(limit) || 120), 500);
+  let browser = null;
 
   const primitives = {
     async navigate(url) {
@@ -117,6 +122,19 @@ export function createPrimitives(
       return result?.value === true;
     },
 
+    // WHY THE BROWSER IS ASKED ONCE AND KEPT.
+    // A tab cannot change the browser it runs in, and the page is the only thing that knows for sure, so one evaluation is enough for the life of the session.
+
+    async browser() {
+      if (browser) return browser;
+      const { result } = await cdp.send('Runtime.evaluate', {
+        expression: BROWSER_EXPRESSION,
+        returnByValue: true
+      });
+      browser = browserId(result?.value);
+      return browser;
+    },
+
     // WHY THE WINDOW IS ASKED THROUGH THE BROWSER FIRST.
     // Measured on this machine: the OS read is a PowerShell enumeration and costs p50 1.14s, while Browser.getWindowForTarget on the same session costs p50 0.35ms and already answers the only question the focus guard has - is the window minimized.
     // The OS read stays as the fallback for a browser or bridge that refuses the Browser domain, because a wrong "background" answer is how text goes nowhere.
@@ -135,18 +153,46 @@ export function createPrimitives(
         return osWindowState();
       }
     },
-    async focusWindow(match = '') {
-      try {
-        const { windowId } = await cdp.send('Browser.getWindowForTarget', {});
-        await cdp.send('Browser.setWindowBounds', {
-          windowId,
-          bounds: { windowState: 'normal' }
+    async focusWindow(
+      match = '',
+      {
+        ask = true,
+        os = false
+      } = {}
+    ) {
+
+      // WHY THE MACHINE CAN BE ASKED DIRECTLY.
+      // Browser.getWindowForTarget can tell whether this session's window is minimized, but it cannot lift a window that is behind another application, and it answered focused:true for a window the person had covered.
+      // So a caller that needs the screen back asks the operating system, and CDP stays the path that restores a minimized window without a name.
+
+      if (os) {
+        return osFocusWindow(match, {
+          browser: (await primitives.browser().catch(() => null))?.name ?? '',
+          ask
         });
-        const { bounds } = await cdp.send('Browser.getWindowBounds', { windowId });
-        const focused = bounds?.windowState !== 'minimized';
+      }
+      try {
+        const {
+          windowId,
+          bounds
+        } = await cdp.send('Browser.getWindowForTarget', {});
+
+        // WHY ONLY A MINIMIZED WINDOW IS TOLD TO BE NORMAL.
+        // Measured live on this machine: telling a maximized browser window to be normal restored it to its smaller plain size, and the page the person was reading shrank under them without being asked.
+        // A window that is not minimized already has a size the person chose, so its size is left alone and only the window that cannot take a click at all is restored.
+
+        if (bounds?.windowState === 'minimized') {
+          await cdp.send('Browser.setWindowBounds', {
+            windowId,
+            bounds: { windowState: 'normal' }
+          });
+        }
+        const { bounds: now } = await cdp.send('Browser.getWindowBounds', { windowId });
+        const focused = now?.windowState !== 'minimized';
         return {
           platform: process.platform,
           match: String(match ?? ''),
+          browser: (await primitives.browser().catch(() => null))?.name ?? '',
           focused,
           title: focused ? 'the browser window' : '',
           foreground: '',
@@ -155,7 +201,10 @@ export function createPrimitives(
           why: focused ? '' : 'the browser would not leave the taskbar'
         };
       } catch {
-        return osFocusWindow(match);
+        return osFocusWindow(match, {
+          browser: (await primitives.browser().catch(() => null))?.name ?? '',
+          ask
+        });
       }
     }
   };

@@ -323,6 +323,8 @@ test('the local context carries the driver the tools drive the browser with', ()
 
   assert.equal(typeof context.driver.tabs, 'function');
   assert.equal(typeof context.driver.read, 'function');
+  assert.equal(typeof context.driver.browser, 'function', 'the driver says which browser the tab belongs to');
+  assert.equal(typeof context.driver.focusWindow, 'function');
   assert.equal(typeof context.open, 'function');
   assert.equal(typeof context.resolveTab, 'function');
 });

@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-25 UTC+7.
+// @last-edited: 2026-11-01 UTC+7.
 // @title: mcp-server — the stdio MCP surface over the local driver.
 // @state: 8 locks; the handshake, the advertised tools, and every way a call can fail without killing the server.
 // @dependencies: ./statements.js, ./reports.js, ./documents.js, ./burst.js, ./tools.js, ./advice.js.
@@ -629,7 +629,9 @@ const windowMatch = async (
       case 'browser_status': {
         const window = await driver.windowState();
         const pages = await fallback.tabs().catch(() => []);
+        const driving = typeof driver.browser === 'function' ? await driver.browser().catch(() => null) : null;
         return asText({
+          browser: driving,
           browsers: context.browsers,
           port: livePort(context),
           window: windowTruth(window, context.browsers, pages)

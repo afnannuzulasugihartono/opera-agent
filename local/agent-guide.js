@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-25 UTC+7.
+// @last-edited: 2026-11-01 UTC+7.
 // @title: agent-guide — what an agent can do here, written as tasks instead of a tool list.
 // @state: recipes, side effects, honesty locks between them and the tools.
 // @dependencies: none.
@@ -143,7 +143,7 @@ export const RECIPES = Object.freeze([
       'browser_status',
       'focus_window'
     ],
-    note: 'browser_status names the browser in front and whether it is ours; focus_window takes a piece of the window title. With no match, focus_window answers the state without moving anything — pass a piece of the title to bring one forward. Never an empty match: that used to bring an arbitrary window forward.'
+    note: 'browser_status names the browser in front, whether it is ours, and which browser the tab being driven belongs to; focus_window takes a piece of the window title and prefers the window of that browser when two of them hold the same title. With no match, focus_window answers the state without moving anything — pass a piece of the title to bring one forward. Never an empty match: that used to bring an arbitrary window forward. The window keeps its size, and if the person is working somewhere else they are asked first, in a panel over the window they are in — the focus moves when they say yes or when thirty seconds pass with nobody there to answer.'
   }
 ]);
 

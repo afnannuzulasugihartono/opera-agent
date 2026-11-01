@@ -204,40 +204,49 @@ test('the adapter speaks driver verbs over primitive nouns', async () => {
 // The row is what was asked for; what the click hit belongs to the click.
 // Measured live: a click_row answered with its row and its point while a dialog owned the point and took the click, and the adapter's rebuilt answer had thrown that fact away before anyone could read it.
 
-test('a deaf page asks the session window, not the operating system shell', async () => {
+// WHY THE GUARD ASKS THE MACHINE AND NOT THE SESSION.
+// The page of a browser that is behind another program still says it has the focus, so the session cannot say whether the screen is the drive's - only the machine can.
+// The machine read is injected, so one read is shared by the tab switch, the guard and the window answer.
+
+test('the guard asks the machine what is in front, and takes the screen back through the session', async () => {
   const session = fakeSession();
-  session.hasFocus = async () => false;
-  session.windowState = async () => {
-    session.calls.push(['windowState']); return {
-      foreground: '',
-      windows: [],
-      minimized: []
-    };
-  };
-  session.focusWindow = async () => {
-    session.calls.push(['focusWindow']); return {
+  let heard = false;
+  session.hasFocus = async () => heard;
+  session.focusWindow = async (match) => {
+    session.calls.push([
+      'focusWindow',
+      match
+    ]); heard = true; return {
       focused: true,
-      title: 'x'
+      title: 'Paper - Google Chrome'
     };
   };
+  let reads = 0;
 
-  const out = await asDriver(session).ensureFront({ match: 'Paper' });
+  const out = await asDriver(session, {
+    ask: async () => ({
+      allowed: true,
+      answer: 'allow'
+    }),
+    read: async () => {
+      reads += 1;
+      return {
+        foreground: 'Typecelerate - Brave',
+        windows: [],
+        minimized: []
+      };
+    }
+  }).ensureFront({ match: 'Paper' });
 
-  assert.ok(session.calls.some((c) => c[0] === 'windowState'), 'the session was asked about the window');
-  assert.ok(!session.calls.some((c) => c[0] === 'focusWindow'), 'a background window is left where the human put it');
-  assert.match(out.window, /background and hears input anyway/);
+  assert.equal(reads, 1, 'the machine was asked once');
+  assert.ok(session.calls.some((c) => c[0] === 'front'), 'the drive took its tab back to the front');
+  assert.ok(session.calls.some((c) => c[0] === 'focusWindow'), 'and its window with it');
+  assert.match(out.window, /took the screen back/);
 });
 
 test('a minimized session window is brought back through the session, not a shell', async () => {
   const session = fakeSession();
   session.hasFocus = async () => false;
-  session.windowState = async () => {
-    session.calls.push(['windowState']); return {
-      foreground: '',
-      windows: [],
-      minimized: ['Paper - Google Chrome']
-    };
-  };
   session.focusWindow = async (match) => {
     session.calls.push([
       'focusWindow',
@@ -248,7 +257,13 @@ test('a minimized session window is brought back through the session, not a shel
     };
   };
 
-  const out = await asDriver(session).ensureFront({ match: 'Paper' });
+  const out = await asDriver(session, {
+    read: async () => ({
+      foreground: '',
+      windows: [],
+      minimized: ['Paper - Google Chrome']
+    })
+  }).ensureFront({ match: 'Paper' });
 
   assert.deepEqual(session.calls.filter((c) => c[0] === 'focusWindow'), [[
     'focusWindow',
@@ -447,6 +462,51 @@ test('a tab that refuses to front still gets driven', async () => {
   const driver = await store.open({ targetId: 'AAA' });
 
   assert.equal(typeof driver.read, 'function');
+});
+
+// WHY AN UNNAMED ATTACH NEVER TAKES THE SCREEN.
+// The unnamed session is whatever page the browser lists first, and reading the browser or the page must not move the person off what they are doing.
+// The named path keeps the sign that the agent is here; the unnamed path is the one nobody named, so it stays out of the way and the input guard is what takes the screen when input is about to be sent.
+
+test('an unnamed attach never takes the screen from the person', async () => {
+  const fronts = [];
+  let asked = 0;
+  const store = createSessionStore({
+    openSession: async () => {
+      const session = fakeSession();
+      session.front = async () => {
+        fronts.push(1);
+        return true;
+      };
+      return session;
+    },
+    port: 1,
+    mayFront: async () => {
+      asked += 1;
+    }
+  });
+
+  await store.attach();
+
+  assert.equal(fronts.length, 0, 'the screen stays where the person put it');
+  assert.equal(asked, 0, 'and nobody is asked about a focus that was never taken');
+});
+
+test('a named tab is asked about before it comes forward, with the driver in hand', async () => {
+  const asked = [];
+  const store = createSessionStore({
+    openSession: async () => fakeSession(),
+    port: 1,
+    mayFront: async (options) => {
+      asked.push(options);
+    }
+  });
+
+  await store.open({ targetId: 'AAA' });
+
+  assert.equal(asked.length, 1, 'the person is asked once, about the tab the drive wants');
+  assert.equal(asked[0].key, 'AAA');
+  assert.equal(typeof asked[0].driver.browser, 'function', 'and the question can name the browser the tab belongs to');
 });
 
 test('closing drops the cache and the browser tab together', async () => {

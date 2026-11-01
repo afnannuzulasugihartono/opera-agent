@@ -1,27 +1,26 @@
-// @last-edited: 2026-10-25 UTC+7.
-// @title: focus-guard — whether anything is going to hear this click, and the one case worth fixing.
-// @state: the page asked every time, the machine asked once in a while and only when the page is deaf.
-// @dependencies: ./window-focus.js.
+// @last-edited: 2026-11-01 UTC+7.
+// @title: focus-guard — whether the screen is the drive's, and the one question worth asking.
+// @state: the machine is asked what is in front, the person is asked once, and the answer is held for the rest of the run.
+// @dependencies: ./window-focus.js, ./focus-confirm.js.
 
-// WHY AN INPUT ACTION CHECKS THE WINDOW ITSELF.
+// WHY AN INPUT ACTION CHECKS THE SCREEN ITSELF.
 // Asking the human to press a key in the middle of a drive is the one thing this product promised not to need, so the check happens where the action happens, and every answer says what it found.
 
-// WHY THE PAGE IS ASKED FIRST, EVERY TIME.
+// WHY THE MACHINE IS ASKED AND NOT THE PAGE.
 // Measured live on this machine, with the drive typing into a Google Docs document:
 
 // - browser behind another application: the page reported focus, and the typed text landed.
-//   A window that is behind is not the problem.
+//   The page cannot tell that the screen is somebody else's.
 // - browser minimized, caret in place: the page reported no focus, and four typed characters went nowhere.
 //   A window that is on the taskbar is the problem.
 
-// The page answers the first case for one evaluation, so nothing is spent when there is nothing to fix, and the machine is asked only when the page says it is deaf.
+// So the page is not the one that answers whether the screen is the drive's - the machine is, and it answers in one read.
+// The page is still asked after the screen is taken, because a window in front and a page that hears input are two different facts.
 
-// WHY THE MACHINE IS ASKED AT ALL, GIVEN THE PAGE SAYS THE SAME THING FOR A BACKGROUND TAB.
-// Because that is the whole difficulty: a background tab and a minimized window both report no focus and not visible, so the page cannot tell them apart, and they need opposite answers - one goes ahead, the other has to have its window brought back.
-// Only the machine can tell, so it is asked, and the answer is held for a beat because a shell launch is the most expensive thing in this file.
-
-// WHY THE PAGE IS NOT HELD FOR A BEAT.
-// It costs one evaluation, and it is the answer that changes fastest: a human who brings the window back should not have to wait a second for the drive to notice.
+// WHY THE PERSON IS ASKED ONCE AND THE ANSWER IS HELD.
+// The person asked for a window lock: while the drive works, the screen cannot wander off to another tab, another browser or another program.
+// So the first time the machine says the screen is somebody else's, the person is asked in the window they are in, and the answer is held for the rest of the run.
+// An answer of no is held too: the screen stays where the person put it, and the drive goes on in the background.
 
 // WHY IT IS BUILT RATHER THAN WRITTEN.
 // The rules are one closure over the two things a test can hold still - the machine and the clock - so the claims below are checked without launching a shell and without waiting a second.
@@ -30,10 +29,16 @@ import {
   focusWindow,
   windowState
 } from './window-focus.js';
+import {
+  askFocus
+} from './focus-confirm.js';
 
 export function createFocusGuard({
   focus = focusWindow,
   read = windowState,
+  front = async () => null,
+  browser = async () => null,
+  ask = askFocus,
   machineTtlMs = 1500,
   settleMs = 120,
   sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
@@ -43,6 +48,8 @@ export function createFocusGuard({
     at: 0,
     state: null
   };
+  let personAnswered = false;
+  let mayHold = false;
 
   const machine = async () => {
     if (clock() - seen.at < machineTtlMs && seen.state) return {
@@ -60,6 +67,22 @@ export function createFocusGuard({
     };
   };
 
+  // WHY THE SCREEN IS MATCHED WITH THE WINDOW AND NOT WITH THE TAB ALONE.
+  // Two windows can carry the same page title - one in Chrome and one in Brave - and the title of the window in front would then say the drive is already there while the screen is about to move to another browser.
+  // So the browser travels with the title, the same way it travels when a window is brought forward.
+
+  const screenIsOurs = (
+    state,
+    wanted,
+    ours
+  ) => {
+    const front_ = String(state?.foreground ?? '').toLowerCase();
+    if (front_ === '') return false;
+    const named = wanted === '' ? ours !== '' : front_.includes(wanted);
+    const sameBrowser = ours === '' || ours === 'unknown' || front_.includes(ours);
+    return named && sameBrowser;
+  };
+
   return async function ensureFront({
     hasFocus,
     match = ''
@@ -70,18 +93,23 @@ export function createFocusGuard({
         checked: 'nothing'
       };
     }
-    if (await hasFocus().catch(() => false)) {
+
+    const wanted = String(match ?? '').trim().toLowerCase();
+    const {
+      state
+    } = await machine();
+    const driving = await Promise.resolve().then(() => browser()).catch(() => null);
+    const ours = String(driving?.name ?? '').toLowerCase();
+    const foreground = state?.foreground ?? '';
+
+    if (screenIsOurs(state, wanted, ours)) {
       return {
-        window: 'the page hears input',
-        checked: 'page'
+        window: 'the drive holds the screen',
+        checked: 'machine',
+        foreground,
+        focused: true
       };
     }
-
-    const {
-      state,
-      asked
-    } = await machine();
-    const wanted = String(match ?? '').trim().toLowerCase();
 
     // WHY NO BLIND FALLBACK TO THE FIRST MINIMIZED WINDOW.
     // Measured live on this machine: a read-only burst on a page that was merely behind another application brought a minimized Settings window to the front, because nothing named the browser and the guard took whatever was on the taskbar.
@@ -111,7 +139,7 @@ export function createFocusGuard({
         return {
           window: `the window is on the taskbar and the machine would not bring ${minimized} back: ${out?.why ?? 'it said nothing'}`,
           checked: 'machine',
-          foreground: out?.foreground ?? state?.foreground ?? '',
+          foreground: out?.foreground ?? foreground,
           focused: false,
           blocked: true
         };
@@ -124,19 +152,75 @@ export function createFocusGuard({
           ? `brought ${out.title} back from the taskbar`
           : `brought ${out.title} back from the taskbar, but the page still cannot hear input`,
         checked: 'machine',
-        foreground: out?.foreground ?? state?.foreground ?? '',
+        foreground: out?.foreground ?? foreground,
         focused: heard,
         ...(heard ? {} : { blocked: true })
       };
     }
+
+    // WHY A DRIVE WITHOUT A NAME STOPS HERE.
+    // The window is found by a piece of its title, and a drive that named nothing has nothing to look for - so there is nothing to ask about and nothing to take.
+
+    if (!match && !driving?.name) {
+      return {
+        window: `the screen is the person's: ${foreground || 'another window'} is in front`,
+        checked: 'person',
+        foreground,
+        focused: false
+      };
+    }
+
+    // WHY THE PERSON IS ASKED BEFORE THE DRIVE TAKES THE SCREEN BACK.
+    // The person may have moved on to another tab, another browser or another program while the drive was working, and taking the screen back under their hands takes that away without asking.
+    // So the question is asked in the window they are in, and it is asked once: an answer of yes is held for the rest of the run.
+
+    if (!personAnswered) {
+      personAnswered = true;
+      const answer = await Promise.resolve().then(() => ask({
+        what: `the "${match || 'browser'}" window`
+      })).catch(() => ({
+        allowed: false,
+        answer: 'error'
+      }));
+      mayHold = Boolean(answer?.allowed);
+    }
+
+    if (!mayHold) {
+      return {
+        window: `the screen is the person's: ${foreground || 'another window'} is in front, and the drive will not take it`,
+        checked: 'person',
+        foreground,
+        focused: false
+      };
+    }
+
+    // WHY THE TAB COMES FORWARD FIRST.
+    // A screen that is not the drive's is usually a tab that is not the one the person is looking at, and bringing the tab forward is what makes the window carry the title the machine looks for.
+
+    const moved = await Promise.resolve().then(() => front()).catch(() => null);
+    if (moved !== null && moved !== false) {
+      await sleep(settleMs).catch(() => null);
+    }
+
+    // WHY THE WINDOW IS BROUGHT FORWARD WITHOUT ASKING AGAIN.
+    // The person already said yes, so the window of the browser being driven is brought forward as well, and the browser travels with the title so the right window is the one that comes forward.
+
+    const out = await Promise.resolve().then(() => focus(match || driving?.name || '', {
+      ask: false,
+      os: true,
+      browser: driving?.name ?? ''
+    })).catch(() => null);
+    await sleep(settleMs).catch(() => null);
+    const heard = await hasFocus().catch(() => false);
     return {
-      window: `the page is in the background and hears input anyway; ${state?.foreground || 'another window'} is in front`,
-      checked: asked ? 'machine' : 'memory',
-      foreground: state?.foreground ?? ''
+      window: out?.focused
+        ? heard
+          ? `took the screen back: ${out.title || match || driving?.name}`
+          : `the window came forward, but the page still cannot hear input`
+        : `the screen is the person's: ${out?.foreground || foreground || 'another window'} is in front`,
+      checked: 'lock',
+      foreground: out?.foreground ?? foreground,
+      focused: Boolean(out?.focused) && heard
     };
   };
 }
-
-// WHY ONE GUARD PER SESSION.
-// Two guards would answer differently about the same machine at the same moment - one would have asked the page, the other would still be holding an old shell - and two answers about one window is the kind of thing this product exists to stop.
-// The session builds its own, and the page it asks about is the session's, so the guard and the thing it guards are created together in sessions.js.

@@ -1,5 +1,5 @@
-// @last-edited: 2026-10-31 UTC+7.
-// @title: docstring-baseline — the exported declarations that still carry no JSDoc block, counted and shrinking.
+﻿// @last-edited: 2026-10-31 UTC+7.
+// @title: docstring-baseline â€” the exported declarations that still carry no JSDoc block, counted and shrinking.
 // @state: a declaration leaves this set only after a `/** ... */` block with `@param`/`@returns` sits above it; the count may fall, never rise.
 // @dependencies: tests/helpers/docstrings.mjs.
 
@@ -129,7 +129,7 @@ export const DOCSTRING_PENDING = new Set([
   'local/dev-shim.js: export function createSupervisor (line 41)',
   'local/driver.js: export function installedBrowsers (line 47)',
   'local/driver.js: export function openSession (line 135)',
-  'local/focus-guard.js: export function createFocusGuard (line 34)',
+  'local/focus-guard.js: export function createFocusGuard (line 36)',
   'local/input.js: export function createInputMethods (line 53)',
   'local/leases.js: export function createLeaseTable (line 20)',
   'local/menu-tree.js: export function distanceBetween (line 255)',
@@ -154,7 +154,7 @@ export const DOCSTRING_PENDING = new Set([
   'local/page-expressions.js: export function splitText (line 833)',
   'local/pointer.js: export function createPointerMethods (line 39)',
   'local/primitives-file.js: export function filePrimitives (line 33)',
-  'local/primitives.js: export function createPrimitives (line 40)',
+  'local/primitives.js: export function createPrimitives (line 44)',
   'local/read-strategy.js: export function readLadder (line 55)',
   'local/reports.js: export function buildReport (line 149)',
   'local/reports.js: export function parseDelimited (line 82)',
@@ -162,7 +162,7 @@ export const DOCSTRING_PENDING = new Set([
   'local/reports.js: export function reportFromFile (line 366)',
   'local/reports.js: export function verifyReport (line 302)',
   'local/sessions.js: export function asDriver (line 51)',
-  'local/sessions.js: export function createSessionStore (line 163)',
+  'local/sessions.js: export function createSessionStore (line 186)',
   'local/sessions.js: export function findOn (line 19)',
   'local/statements.js: export function balanceDigits (line 147)',
   'local/statements.js: export function slug (line 35)',

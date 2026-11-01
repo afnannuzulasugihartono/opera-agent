@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-25 UTC+7.
+﻿// @last-edited: 2026-11-01 UTC+7.
 // @title: window-focus \u2014 a drive can tell that the window it is typing into is behind something.
 // @state: the three platforms, the refusals, the tool that answers it.
 // @dependencies: node:test, assert, ../local/window-focus.js, ../local/mcp-server.js.
@@ -68,6 +68,101 @@ test('focus_window with no match reads the machine and moves nothing', async () 
   assert.match(out.why, /no match given/);
 });
 
+// WHY THE BROWSER GOES WITH THE TITLE.
+// The extension may be talking to any browser on any machine, and two of them can hold the same page title.
+// The window of the browser being driven is the one that should come forward, so the browser travels with the title into the machine.
+
+test('the window brought forward is the one of the browser being driven', async () => {
+  const calls = [];
+  const exec = async (
+    command,
+    args
+  ) => {
+    calls.push([
+      command,
+      args[args.length - 1]
+    ]);
+    return { stdout: 'BROUGHT Paper - Google Chrome\nFOREGROUND Paper - Google Chrome\n' };
+  };
+
+  const out = await focusWindow('Paper', {
+    platform: 'win32',
+    exec,
+    browser: 'Chrome'
+  });
+
+  assert.match(calls[0][1], /Find\('Paper', 'Chrome'\)/, 'the browser goes with the title');
+  assert.equal(out.browser, 'Chrome', 'and the answer names it');
+  assert.equal(out.title, 'Paper - Google Chrome', 'so the caller knows which window it got');
+});
+
+// WHY THE PERSON IS ASKED BEFORE THE SCREEN IS TAKEN FROM THEM.
+// The person may have moved on to another tab, another browser or another program while the drive was working, and bringing a window forward under their hands takes that away without asking.
+// So the question is asked in the window they are in, and only an answer of yes lets the focus move.
+
+test('the person is asked in the window in front before the focus moves', async () => {
+  const calls = [];
+  const exec = async (
+    command,
+    args
+  ) => {
+    calls.push([
+      command,
+      args[args.length - 1]
+    ]);
+    return { stdout: 'BROUGHT Paper - Google Chrome\nFOREGROUND Paper - Google Chrome\n' };
+  };
+
+  await focusWindow('Paper', {
+    platform: 'win32',
+    exec
+  });
+
+  assert.match(calls[0][1], /focus-notice\.ps1/, 'the question is asked by the notice in this tree');
+  assert.match(calls[0][1], /Foreground\(\) -ne \$h/, 'and only when the window in front is another one');
+});
+
+test('a person who says no leaves the screen where it was', async () => {
+  const exec = async () => ({
+    stdout: 'REFUSED Paper - Google Chrome\nFOREGROUND Typecelerate - Brave\nPaper - Google Chrome\n'
+  });
+
+  const out = await focusWindow('Paper', {
+    platform: 'win32',
+    exec
+  });
+
+  assert.equal(out.focused, false, 'the window did not come forward');
+  assert.match(out.why, /did not allow/, 'and the answer says who said no');
+  assert.match(out.why, /Typecelerate - Brave/, 'and what stayed on the screen');
+});
+
+// WHY A WINDOW THAT IS NOT MINIMIZED KEEPS ITS SIZE.
+// Measured live on this machine: focusing a maximized browser window restored it to its smaller plain size, and the page the person was reading shrank under them without being asked.
+// So the size is only touched for a window that is minimized, which cannot take a click at all.
+
+test('a window that is not minimized is not resized on the way forward', async () => {
+  const calls = [];
+  const exec = async (
+    command,
+    args
+  ) => {
+    calls.push([
+      command,
+      args[args.length - 1]
+    ]);
+    return { stdout: 'BROUGHT Paper - Google Chrome\nFOREGROUND Paper - Google Chrome\n' };
+  };
+
+  await focusWindow('Paper', {
+    platform: 'win32',
+    exec,
+    browser: 'Google Chrome'
+  });
+
+  assert.match(calls[0][1], /if \(IsIconic\(h\)\) ShowWindow\(h, 9\);/, 'only a minimized window is restored');
+});
+
 test('a platform with no implementation refuses in words rather than answering false', async () => {
   const state = await windowState({ platform: 'sunos' });
 
@@ -95,64 +190,225 @@ test('a refusal carries every key a real answer carries', async () => {
   assert.ok(Array.isArray(real.windows), 'the real answer still answers');
 });
 
-// WHY THE READ AND THE WRITE ARE BOTH OFFERED.
-// An agent that cannot type needs to know whether the window is behind something before it starts clicking, and an agent that has just been told needs one call that fixes it \u2014 not a paragraph about window managers.
-
 // WHY THE GUARD IS MEASURED HERE, NOT ASSUMED.
-// The two live measurements came out opposite ways, and a guard built on either one alone would have been wrong: a browser behind another application still hears input, and a minimized browser does not.
-// So the guard asks the page, which answers for free and gets both cases right, and pays for the machine only when the page says it is deaf.
+// The live measurements came out opposite ways, and a guard built on either one alone would have been wrong: a browser behind another application still hears input, and a minimized browser does not.
+// The second measurement was worse than the first: the page of a browser that is behind another program still says it has the focus, so the page cannot say whether the screen is the drive's.
+// So the machine is asked what is in front - one read, shared - and the person is asked once when the screen is somebody else's.
 
-test('a page that hears input costs one evaluation and never asks the machine', async () => {
+test('the screen on the drive\'s own window is left alone', async () => {
   let asks = 0;
-  let reads = 0;
-  const ensure = createFocusGuard({
-    clock: () => 0,
-    read: async () => {
-      reads += 1; return {
-        foreground: '',
-        minimized: []
-      };
-    },
-    focus: async () => ({
-      focused: true,
-      title: 'x'
-    })
-  });
-
-  const out = await ensure({ hasFocus: async () => {
-    asks += 1; return true;
-  } });
-
-  assert.equal(asks, 1, 'the page was asked');
-  assert.equal(reads, 0, 'and the machine was left alone');
-  assert.equal(out.window, 'the page hears input');
-  assert.equal(out.checked, 'page', 'the answer says which of the two ran');
-});
-
-// WHY THESE THREE CLAIMS ARE ONE CLAIM.
-// Measured live: a background tab and a minimized window report exactly the same thing to the page - no focus, not visible
-// - and need opposite answers, because text lands in the first and goes nowhere in the second.
-//   Only the machine can tell them apart, so it is asked once, and only when the page is deaf.
-
-test('a page that cannot hear asks the machine once and says what it found', async () => {
-  let reads = 0;
   let focuses = 0;
+  let reads = 0;
   const ensure = createFocusGuard({
     clock: () => 0,
+    sleep: async () => {},
     read: async () => {
       reads += 1; return {
-        foreground: 'Typecelerate',
+        foreground: 'Paper - Google Chrome',
         windows: [
-          'Typecelerate',
           'Paper - Google Chrome'
         ],
         minimized: []
       };
     },
+    browser: async () => ({
+      name: 'Google Chrome'
+    }),
+    ask: async () => {
+      asks += 1;
+      return {
+        allowed: true,
+        answer: 'allow'
+      };
+    },
     focus: async () => {
-      focuses += 1; return {
+      focuses += 1;
+      return {
         focused: true,
-        title: 'x'
+        title: 'Paper - Google Chrome'
+      };
+    }
+  });
+
+  const out = await ensure({
+    hasFocus: async () => true,
+    match: 'Paper'
+  });
+
+  assert.equal(reads, 1, 'the machine was asked once');
+  assert.equal(asks, 0, 'and the person was not asked about a screen that is already the drive\'s');
+  assert.equal(focuses, 0, 'and nothing was moved');
+  assert.equal(out.window, 'the drive holds the screen');
+  assert.equal(out.focused, true);
+});
+
+// WHY THE BROWSER TRAVELS WITH THE TITLE.
+// Two windows can carry the same page title - one in Chrome and one in Brave - and a title alone would say the drive already holds the screen while the screen is about to move to another browser.
+
+test('the same page in another browser is not the drive\'s screen', async () => {
+  let asks = 0;
+  const ensure = createFocusGuard({
+    clock: () => 0,
+    sleep: async () => {},
+    read: async () => ({
+      foreground: 'Paper - Brave',
+      windows: [],
+      minimized: []
+    }),
+    browser: async () => ({
+      name: 'Google Chrome'
+    }),
+    ask: async () => {
+      asks += 1;
+      return {
+        allowed: false,
+        answer: 'dismiss'
+      };
+    },
+    focus: async () => ({
+      focused: true,
+      title: 'Paper - Google Chrome'
+    })
+  });
+
+  const out = await ensure({
+    hasFocus: async () => true,
+    match: 'Paper'
+  });
+
+  assert.equal(asks, 1, 'the person is asked, because the screen is another browser\'s');
+  assert.match(out.window, /the screen is the person's/);
+});
+
+// WHY THE DRIVE HOLDS THE SCREEN WHILE IT WORKS.
+// The person asked for a window lock: while the drive works, the focus cannot wander off to another tab, another browser or another program.
+// So the first time the machine says the screen is somebody else's, the person is asked in the window they are in, and once the person says yes the drive takes the screen back on its own for the rest of the run - the question is asked once, not once per keystroke.
+
+test('a screen that is somebody else\'s asks the person once and is taken back', async () => {
+  let asks = 0;
+  let fronts = 0;
+  let focuses = 0;
+  let focusOptions = null;
+  let heard = false;
+  const ensure = createFocusGuard({
+    clock: () => 0,
+    sleep: async () => {},
+    read: async () => ({
+      foreground: 'Typecelerate - Brave',
+      windows: [
+        'Paper - Google Chrome'
+      ],
+      minimized: []
+    }),
+    browser: async () => ({
+      name: 'Google Chrome'
+    }),
+    front: async () => {
+      fronts += 1;
+    },
+    ask: async () => {
+      asks += 1;
+      return {
+        allowed: true,
+        answer: 'allow'
+      };
+    },
+    focus: async (match, options) => {
+      focuses += 1;
+      focusOptions = options;
+      heard = true;
+      return {
+        focused: true,
+        title: 'Paper - Google Chrome',
+        foreground: 'Paper - Google Chrome',
+        match,
+        options
+      };
+    }
+  });
+
+  const out = await ensure({
+    hasFocus: async () => heard,
+    match: 'Paper'
+  });
+
+  assert.equal(asks, 1, 'the person was asked');
+  assert.equal(fronts, 1, 'and the drive took its tab back to the front');
+  assert.equal(focuses, 1, 'and its window with it');
+  assert.equal(focusOptions.os, true, 'through the operating system, because CDP cannot lift a covered window');
+  assert.equal(out.focused, true);
+  assert.equal(out.checked, 'lock');
+});
+
+test('the screen is taken back without asking again once the person said yes', async () => {
+  let asks = 0;
+  let focuses = 0;
+  const ensure = createFocusGuard({
+    clock: () => 0,
+    sleep: async () => {},
+    read: async () => ({
+      foreground: 'Typecelerate - Brave',
+      windows: [],
+      minimized: []
+    }),
+    browser: async () => ({
+      name: 'Google Chrome'
+    }),
+    ask: async () => {
+      asks += 1;
+      return {
+        allowed: true,
+        answer: 'allow'
+      };
+    },
+    focus: async () => {
+      focuses += 1;
+      return {
+        focused: true,
+        title: 'Paper - Google Chrome'
+      };
+    }
+  });
+
+  await ensure({
+    hasFocus: async () => true,
+    match: 'Paper'
+  });
+  await ensure({
+    hasFocus: async () => true,
+    match: 'Paper'
+  });
+
+  assert.equal(asks, 1, 'the question is asked once for the whole run');
+  assert.equal(focuses, 2, 'and the drive holds the screen every time it loses it');
+});
+
+test('a person who keeps the screen lets the drive work in the background', async () => {
+  let asks = 0;
+  let focuses = 0;
+  const ensure = createFocusGuard({
+    clock: () => 0,
+    sleep: async () => {},
+    read: async () => ({
+      foreground: 'Typecelerate - Brave',
+      windows: [],
+      minimized: []
+    }),
+    browser: async () => ({
+      name: 'Google Chrome'
+    }),
+    ask: async () => {
+      asks += 1;
+      return {
+        allowed: false,
+        answer: 'dismiss'
+      };
+    },
+    focus: async () => {
+      focuses += 1;
+      return {
+        focused: true,
+        title: 'Paper - Google Chrome'
       };
     }
   });
@@ -162,11 +418,10 @@ test('a page that cannot hear asks the machine once and says what it found', asy
     match: 'Paper'
   });
 
-  assert.equal(reads, 1, 'the shell was spent once');
-  assert.equal(focuses, 0, 'and a window that is merely behind is left where the human put it');
-  assert.match(out.window, /in the background and hears input anyway/);
-  assert.match(out.window, /Typecelerate is in front/, 'and the answer names what is in front');
-  assert.equal(out.checked, 'machine');
+  assert.equal(asks, 1, 'the person was asked once');
+  assert.equal(focuses, 0, 'and the screen stayed where they put it');
+  assert.match(out.window, /the screen is the person's/);
+  assert.equal(out.blocked, undefined, 'the work goes on in the background, because the page still hears the input');
 });
 
 // WHY AN OWNED WINDOW NEEDS NO NAME.
@@ -281,6 +536,10 @@ test('a minimized window the caller did not name stays on the taskbar', async ()
         'Paper - Google Chrome'
       ]
     }),
+    ask: async () => ({
+      allowed: true,
+      answer: 'allow'
+    }),
     focus: async (match) => {
       wanted.push(match); return {
         focused: true,
@@ -292,7 +551,7 @@ test('a minimized window the caller did not name stays on the taskbar', async ()
   const out = await ensure({ hasFocus: async () => false });
 
   assert.deepEqual(wanted, [], 'no window is touched without a name');
-  assert.match(out.window, /in the background and hears input anyway/);
+  assert.match(out.window, /the screen is the person's/);
   assert.match(out.window, /OpenCode is in front/);
 });
 
@@ -300,15 +559,23 @@ test('a minimized window that does not fit the name stays on the taskbar', async
   const wanted = [];
   const ensure = createFocusGuard({
     clock: () => 0,
+    sleep: async () => {},
     read: async () => ({
       foreground: 'Settings',
       windows: [],
       minimized: ['Settings']
     }),
+    browser: async () => ({
+      name: 'Google Chrome'
+    }),
+    ask: async () => ({
+      allowed: true,
+      answer: 'allow'
+    }),
     focus: async (match) => {
       wanted.push(match); return {
         focused: true,
-        title: 'Settings'
+        title: 'Paper - Google Chrome'
       };
     }
   });
@@ -318,8 +585,9 @@ test('a minimized window that does not fit the name stays on the taskbar', async
     match: 'Paper'
   });
 
-  assert.deepEqual(wanted, [], 'a different window is never brought forward');
-  assert.match(out.window, /Settings is in front/);
+  assert.deepEqual(wanted, ['Paper'], 'the window that is named is the one brought forward, and never the other one');
+  assert.match(out.window, /the page still cannot hear input/);
+  assert.doesNotMatch(out.window, /brought Settings back/, 'and the unnamed one stays on the taskbar');
 });
 
 test('a taskbar window the machine will not bring back says what it said', async () => {
@@ -344,50 +612,46 @@ test('a taskbar window the machine will not bring back says what it said', async
   assert.match(out.window, /on the taskbar and the machine would not bring .* back: something is taking the focus back/);
 });
 
-test('a burst on a page that cannot hear pays for one shell and keeps asking the page', async () => {
+test('a burst pays for one shell and keeps the answer', async () => {
   let at = 0;
-  let asks = 0;
   let reads = 0;
   const ensure = createFocusGuard({
     clock: () => at,
     read: async () => {
       reads += 1; return {
-        foreground: 'OpenCode',
+        foreground: 'Paper - Google Chrome',
         windows: [],
         minimized: []
       };
     },
+    browser: async () => ({
+      name: 'Google Chrome'
+    }),
     focus: async () => ({
       focused: true,
-      title: 'x'
+      title: 'Paper - Google Chrome'
     })
   });
 
-  await ensure({ hasFocus: async () => {
-    asks += 1; return false;
-  } });
+  await ensure({
+    hasFocus: async () => true,
+    match: 'Paper'
+  });
   at = 400;
-  const second = await ensure({ hasFocus: async () => {
-    asks += 1; return false;
-  } });
+  const second = await ensure({
+    hasFocus: async () => true,
+    match: 'Paper'
+  });
 
-  assert.equal(asks, 2, 'the page is asked every time, because it costs one evaluation and it is the answer that changes fastest');
-  assert.equal(reads, 1, 'and the shell is paid once for the burst');
-  assert.equal(second.checked, 'memory', 'the answer says it came from the machine it already asked');
+  assert.equal(reads, 1, 'the shell is paid once for the burst');
+  assert.equal(second.checked, 'machine');
 
   at = 1600;
-  const third = await ensure({ hasFocus: async () => {
-    asks += 1; return false;
-  } });
+  await ensure({
+    hasFocus: async () => true,
+    match: 'Paper'
+  });
   assert.equal(reads, 2, 'a shell older than a beat is asked again, because a human brings windows back');
-
-  at = 1700;
-  const listening = await ensure({ hasFocus: async () => {
-    asks += 1; return true;
-  } });
-  assert.equal(listening.window, 'the page hears input');
-  assert.equal(reads, 2, 'a page that hears costs nothing, whatever the machine was doing a moment ago');
-  assert.equal(asks, 4);
 });
 
 test('a driver that cannot see the page says so rather than pretending the window is fine', async () => {

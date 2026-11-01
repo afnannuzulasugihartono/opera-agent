@@ -1,7 +1,7 @@
-// @last-edited: 2026-10-25 UTC+7.
+// @last-edited: 2026-11-01 UTC+7.
 // @title: window-focus \u2014 whether the browser window is in front, and how to put it there.
 // @state: one read from the operating system, one write, honest answers on every platform.
-// @dependencies: node:child_process, node:util.
+// @dependencies: node:child_process, node:util, ./focus-confirm.js.
 
 // WHY THIS FILE EXISTS
 
@@ -19,6 +19,8 @@
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 
+import { NOTICE } from './focus-confirm.js';
+
 const run = promisify(execFile);
 
 // WHY THE TITLES COME BACK AS LINES.
@@ -34,7 +36,46 @@ const lines = (text) => String(text ?? '')
 // The operating system's own documented way round that is a no-op ALT, which makes the calling process eligible to come forward; it presses nothing and types nothing.
 // With it, focus_window answered focused true while the typing app was still running.
 
-const WINDOWS_SCRIPT = (match) => `
+// WHY THE BROWSER TRAVELS WITH THE TITLE.
+// The extension may be talking to any browser on any machine, and two of them can hold the same page title.
+// The window of the browser being driven is the one that should come forward, so the browser goes into the machine with the title and the window that carries it wins.
+// A window with no browser in its title is still brought forward when no other window carries the browser, because a title that matches is better than no window at all.
+
+// WHY ONLY A MINIMIZED WINDOW IS RESTORED.
+// Measured live on this machine: bringing a maximized browser window forward restored it to its smaller plain size, and the page the person was reading shrank under them without being asked.
+// A window that is not minimized already has a size the person chose, so its size is left alone and only the window that cannot take a click at all is restored.
+
+// WHY THE PERSON IS ASKED BEFORE THE SCREEN IS TAKEN FROM THEM.
+// The person may have moved on to another tab, another browser or another program while the drive was working, and bringing a window forward under their hands takes that away without asking.
+// So the question is asked in the window they are in, and only an answer of yes lets the focus move.
+
+const focusBody = (
+  match,
+  browser,
+  ask
+) => `
+$h = [OperaWindow]::Find('${match.replace(/'/g, "''")}', '${String(browser ?? '').replace(/'/g, "''")}')
+if ($h -ne [IntPtr]::Zero) {
+  $t = [OperaWindow]::TitleOf($h)
+  $ok = $true
+  if ([OperaWindow]::Foreground() -ne $h -and ${ask ? '$true' : '$false'}) {
+    $answer = ('bring "' + $t + '" forward') | & powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File '${NOTICE.replace(/'/g, "''")}' -TimeoutSec 30
+    $ok = ("$answer" -match 'ALLOW')
+  }
+  if ($ok) {
+    [OperaWindow]::Bring($h)
+    Write-Output ('BROUGHT ' + $t)
+  } else {
+    Write-Output ('REFUSED ' + $t)
+  }
+}
+`;
+
+const WINDOWS_SCRIPT = (
+  match,
+  browser,
+  ask = true
+) => `
 $ErrorActionPreference = 'Stop'
 Add-Type @"
 using System;
@@ -52,40 +93,47 @@ public class OperaWindow {
   [DllImport("user32.dll")] public static extern void keybd_event(byte vk, byte scan, uint flags, UIntPtr extra);
   public static string Read() {
     var sb = new StringBuilder();
-    sb.AppendLine("FOREGROUND " + Title(GetForegroundWindow()));
+    sb.AppendLine("FOREGROUND " + TitleOf(GetForegroundWindow()));
     EnumWindows((h, l) => {
       if (!IsWindowVisible(h)) return true;
-      var t = Title(h);
+      var t = TitleOf(h);
       if (t.Length > 0) sb.AppendLine((IsIconic(h) ? "MINIMIZED " : "") + t);
       return true;
     }, IntPtr.Zero);
     return sb.ToString();
   }
-  public static string Focus(string match) {
-    var sb = new StringBuilder();
+  public static IntPtr Find(string match, string browser) {
+    IntPtr any = IntPtr.Zero;
+    IntPtr ours = IntPtr.Zero;
     EnumWindows((h, l) => {
       if (!IsWindowVisible(h)) return true;
-      var t = Title(h);
+      var t = TitleOf(h);
       if (t.Length == 0) return true;
       if (match.Length > 0 && t.IndexOf(match, StringComparison.OrdinalIgnoreCase) < 0) return true;
-      ShowWindow(h, 9);
-      keybd_event(0x12, 0, 0, UIntPtr.Zero);
-      keybd_event(0x12, 0, 2, UIntPtr.Zero);
-      SetForegroundWindow(h);
-      sb.AppendLine("BROUGHT " + t);
-      return false;
+      if (any == IntPtr.Zero) any = h;
+      if (browser.Length > 0 && t.IndexOf(browser, StringComparison.OrdinalIgnoreCase) >= 0) {
+        ours = h;
+        return false;
+      }
+      return true;
     }, IntPtr.Zero);
-    sb.AppendLine(Read());
-    return sb.ToString();
+    return ours != IntPtr.Zero ? ours : any;
   }
-  static string Title(IntPtr h) {
+  public static string TitleOf(IntPtr h) {
     var s = new StringBuilder(512);
     GetWindowTextW(h, s, 512);
     return s.ToString();
   }
+  public static IntPtr Foreground() { return GetForegroundWindow(); }
+  public static void Bring(IntPtr h) {
+    if (IsIconic(h)) ShowWindow(h, 9);
+    keybd_event(0x12, 0, 0, UIntPtr.Zero);
+    keybd_event(0x12, 0, 2, UIntPtr.Zero);
+    SetForegroundWindow(h);
+  }
 }
 "@
-[OperaWindow]::${match === null ? 'Read()' : `Focus('${match.replace(/'/g, "''")}')`}`;
+${match === null ? '[OperaWindow]::Read()' : focusBody(match, browser, ask)}`;
 
 const APPLE_READ = 'tell application "System Events" to get name of every process whose frontmost is true';
 const APPLE_FOCUS = (match) => [
@@ -103,10 +151,12 @@ const APPLE_FOCUS = (match) => [
 
 const unsupported = (
   platform,
-  why
+  why,
+  browser = ''
 ) => ({
   platform,
   match: '',
+  browser,
   foreground: '',
   windows: [],
   minimized: [],
@@ -132,7 +182,7 @@ async function windows(run_) {
     '-NoProfile',
     '-NonInteractive',
     '-Command',
-    WINDOWS_SCRIPT(null)
+    WINDOWS_SCRIPT(null, '')
   ]);
   return readWindows(lines(read.stdout));
 }
@@ -197,6 +247,12 @@ async function x11(
 // WHY THE READ ANSWERS INSTEAD OF GUESSING.
 // windowFocused is the difference between "the page ignored my click" and "the page was never in front"; an agent that is told which one it was can act, and one that is told neither spends the drive re-clicking a page that was never listening.
 
+/**
+ * Read what the operating system says about the windows on this machine.
+ * @param {object} [options] - the platform to read, and the command runner to read it with.
+ * @returns {Promise<object>} the foreground window, the windows behind it, and the minimized ones.
+ */
+
 export async function windowState({
   platform = process.platform,
   exec = run
@@ -214,14 +270,24 @@ export async function windowState({
 // WHY THE FOCUS ANSWER NAMES THE WINDOW IT BROUGHT.
 // Windows can refuse to come forward \u2014 the operating system says no \u2014 and a drive that cannot tell refusal from success will go on driving a page that is still behind a spreadsheet.
 
+/**
+ * Bring one browser window to the front of the machine.
+ * @param {string} [match] - the piece of the window title to bring forward.
+ * @param {object} [options] - the platform, the command runner, the browser whose window wins when two hold the same title, and whether the person is asked first.
+ * @returns {Promise<object>} the title it brought, whether the operating system let it, and the browser it belongs to.
+ */
+
 export async function focusWindow(
   match = '',
   {
     platform = process.platform,
-    exec = run
+    exec = run,
+    browser = '',
+    ask = true
   } = {}
 ) {
   const wanted = String(match ?? '').trim();
+  const ours = String(browser ?? '').trim();
   if (wanted === '') {
     const state = await windowState({
       platform,
@@ -230,6 +296,7 @@ export async function focusWindow(
     return {
       platform: state.platform ?? platform,
       match: '',
+      browser: ours,
       focused: false,
       title: '',
       foreground: state.foreground ?? '',
@@ -244,7 +311,7 @@ export async function focusWindow(
         '-NoProfile',
         '-NonInteractive',
         '-Command',
-        WINDOWS_SCRIPT(wanted)
+        WINDOWS_SCRIPT(wanted, ours, ask)
       ])
       : platform === 'darwin'
         ? await exec('osascript', [
@@ -260,11 +327,17 @@ export async function focusWindow(
             '--sync'
           ])
           : null;
-    if (out === null) return unsupported(platform, `window focus is not implemented on ${platform}`);
+    if (out === null) return unsupported(platform, `window focus is not implemented on ${platform}`, ours);
     const all = lines(out.stdout);
     const brought = all.filter((line) => line.startsWith('BROUGHT ')).map((line) => line.slice('BROUGHT '.length));
+    const refused = all.filter((line) => line.startsWith('REFUSED ')).map((line) => line.slice('REFUSED '.length));
+
+    // WHY THE TWO VERDICT LINES ARE TAKEN OUT BEFORE THE MACHINE IS READ.
+    // The window list is read as lines after the first one, so a verdict left in it would be read as the window in front.
+
+    const state = all.filter((line) => !line.startsWith('BROUGHT ') && !line.startsWith('REFUSED '));
     const title = brought[brought.length - 1] ?? '';
-    const after = all.length ? readWindows(all) : await windowState({
+    const after = state.length ? readWindows(state) : await windowState({
       platform,
       exec
     });
@@ -272,6 +345,7 @@ export async function focusWindow(
     return {
       platform,
       match: wanted,
+      browser: ours,
       focused,
       title,
       foreground: after.foreground,
@@ -279,11 +353,13 @@ export async function focusWindow(
       minimized: after.minimized,
       why: focused
         ? ''
-        : title
-          ? `the machine brought ${JSON.stringify(title)} forward and then left ${JSON.stringify(after.foreground)} in front of it — something is taking the focus back`
-          : `no window on this machine has ${JSON.stringify(wanted)} in its title`
+        : refused.length
+          ? `the person did not allow ${JSON.stringify(refused[refused.length - 1])} to come forward; the screen stayed on ${JSON.stringify(after.foreground)}`
+          : title
+            ? `the machine brought ${JSON.stringify(title)} forward and then left ${JSON.stringify(after.foreground)} in front of it — something is taking the focus back`
+            : `no window on this machine has ${JSON.stringify(wanted)} in its title`
     };
   } catch (error) {
-    return unsupported(platform, String(error?.message ?? error).split('\n')[0]);
+    return unsupported(platform, String(error?.message ?? error).split('\n')[0], ours);
   }
 }

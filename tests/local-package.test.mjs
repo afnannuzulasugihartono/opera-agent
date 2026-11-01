@@ -27,6 +27,12 @@ const shipped = JSON.parse(readFileSync(join(local, 'package.json'), 'utf8')).fi
 
 const IMPORT = /from '\.{1,2}\/([a-z-]+(?:\/[a-z-]+)?)\.js'/g;
 
+// WHY A FILE THE CODE READS AT RUNTIME IS ALSO CHECKED.
+// The import graph only knows about modules, but the package also carries a file that is not imported at all: the notice script the focus question is shown from.
+// A package without it installs cleanly and then never asks the person anything, because the script that asks is simply not there.
+
+const ASSET = /new URL\('\.\/([a-z-]+\.(?:ps1|json|txt))', import\.meta\.url\)/g;
+
 const reachable = (entry) => {
   const seen = new Set();
   const walk = (name) => {
@@ -37,6 +43,16 @@ const reachable = (entry) => {
   };
   walk(entry);
   return seen;
+};
+
+const assets = (entry) => {
+  const found = new Set();
+  const walk = (name) => {
+    const source = readFileSync(join(local, `${name}.js`), 'utf8');
+    for (const [, asset] of source.matchAll(ASSET)) found.add(asset);
+  };
+  for (const name of reachable(entry)) walk(name);
+  return found;
 };
 
 // WHY THE ENTRY POINT IS EXEMPT FROM THE MODULE LIST.
@@ -60,8 +76,20 @@ test('every module the bin can reach is inside the published files', () => {
   assert.deepEqual(missing, [], `npx opera-local would install a package that dies on import: ${missing.join(', ')}`);
 });
 
+test('every file the code reads at runtime is inside the published files', () => {
+  const bins = readdirSync(join(local, 'bin')).filter((name) => name.endsWith('.js'));
+  const entries = bins.map((name) => `bin/${name.replace(/\.js$/, '')}`);
+  const needed = [
+    ...entries.flatMap((entry) => [...assets(entry)]),
+    ...assets('mcp-server')
+  ];
+
+  const missing = needed.filter((name) => !shipped.includes(name));
+  assert.deepEqual(missing, [], `npx opera-local would install a package whose runtime files are not there: ${missing.join(', ')}`);
+});
+
 test('the list names nothing the package does not have', () => {
-  const onDisk = readdirSync(local).filter((name) => name.endsWith('.js'));
+  const onDisk = readdirSync(local).filter((name) => /\.(js|ps1)$/.test(name));
 
   const extra = shipped.filter((name) => name !== 'bin' && !onDisk.includes(name));
   assert.deepEqual(extra, [], `the package lists files it does not have: ${extra.join(', ')}`);

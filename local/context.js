@@ -1,7 +1,7 @@
 // @last-edited: 2026-10-31 UTC+7.
 // @title: context — the driver the local tools drive the browser with, built once and shared by the MCP server and the OpenCode plugin.
 // @state: the pipe chosen per call, the session store behind it, and the driver that answers every primitive.
-// @dependencies: ./driver.js, ./window-focus.js, ./dialog.js, ./sessions.js, ./transport.js, ./bridge.js, ./agent-guide.js.
+// @dependencies: ./driver.js, ./window-focus.js, ./focus-confirm.js, ./dialog.js, ./sessions.js, ./transport.js, ./bridge.js, ./agent-guide.js.
 
 import { createRequire } from 'node:module';
 import {
@@ -18,6 +18,10 @@ import {
   windowState,
   focusWindow
 } from './window-focus.js';
+import {
+  askFocus,
+  focusSteal
+} from './focus-confirm.js';
 import {
   dialogState,
   dialogType,
@@ -58,11 +62,32 @@ async function bridged() {
  */
 
 export function createLocalContext() {
+
+  // WHY THE MACHINE IS READ ONCE FOR EVERYBODY.
+  // The operating system read starts a PowerShell and costs about a second, and the question about the screen is asked by three places: the tab switch, the guard before an input, and the window answer.
+  // So one read is shared and kept for a beat - long enough for one step of a drive, short enough that a person who walks away is noticed.
+
+  let seen = {
+    at: 0,
+    state: null
+  };
+  const readWindow = async () => {
+    if (Date.now() - seen.at < 1500 && seen.state) return seen.state;
+    const state = await windowState().catch(() => null);
+    seen = {
+      at: Date.now(),
+      state
+    };
+    return state;
+  };
+
   const store = createSessionStore({
     openSession,
     port: PORT,
     browserId: BROWSER,
-    viaBridge: null
+    viaBridge: null,
+    mayFront,
+    read: readWindow
   });
   const open = (options) => store.open(options);
   const attach = () => store.attach();
@@ -79,6 +104,74 @@ export function createLocalContext() {
       return response.ok;
     } catch {
       return false;
+    }
+  }
+
+  // WHY THE PERSON IS ASKED BEFORE THE SCREEN MOVES TO ANOTHER TAB.
+  // The person may have moved on to another tab, another browser or another program while the drive was working, and a tab that comes forward under their hands takes that away without asking.
+  // So the question is asked in the window they are in, and only an answer of yes lets the focus move.
+  // Once it does, the tab comes forward and the window of the browser being driven comes with it, because a tab that switches behind another program never reaches the screen.
+
+  async function mayFront({
+    key,
+    driver: session
+  }) {
+
+    // WHY THE QUESTION IS ONLY ASKED ON THE MACHINE THAT CAN SHOW IT.
+    // The panel that asks is a Windows panel, and on a machine without it the question could only be asked in the chat - which is the one place the person is not looking.
+    // So the question is asked only where it can be seen, and the focus moves as it did before on the other machines.
+
+    if (process.platform !== 'win32') {
+      await session?.front?.().catch(() => null);
+      return;
+    }
+    const state = await readWindow();
+    const pages = await driver.tabs().catch(() => []);
+    const target = pages.find((page) => String(page.id) === String(key))
+      ?? pages.find((page) => String(page.url) === String(key));
+    const title = target?.title ?? '';
+
+    // WHY THE BROWSER OF THE TAB IS ASKED FOR.
+    // The same page can be open in two browsers at once, and the window in front would then carry the title of the tab the drive wants - so a title alone would say "the person is already here" while the screen moves to another browser.
+
+    const driving = await Promise.resolve().then(() => session?.browser?.()).catch(() => null);
+    const steal = focusSteal({
+      foreground: state?.foreground ?? '',
+      title,
+      browser: driving?.name ?? ''
+    });
+    if (steal.ask) {
+      const answer = await askFocus({
+        what: `the "${title || key}" tab`
+      });
+      if (!answer.allowed) {
+        throw new Error(`the focus did not move: ${steal.why}, and the answer was ${answer.answer}`);
+      }
+    }
+
+    // WHY THE WINDOW COMES FORWARD WITH THE TAB.
+    // Measured live on this machine: the browser window stayed behind the program the person was using, so the screen never moved even though the tab was the drive's.
+    // So the window of the browser being driven comes forward too when there was a question, with the browser's name so the right window is the one that rises.
+
+    if (steal.ask) {
+      await session?.front?.().catch(() => null);
+      await focusWindow(title || driving?.name || '', {
+        browser: driving?.name ?? ''
+      }).catch(() => null);
+      return;
+    }
+    await session?.front?.().catch(() => null);
+  }
+
+  // WHY THE BROWSER IS ASKED OF THE TAB BEING DRIVEN.
+  // The extension may be connected to several browsers at once, so the browser this tab belongs to is the fact every window answer needs.
+  // A tab that cannot be reached answers unknown rather than nothing, because a wrong browser name is how a drive acts on the wrong window.
+
+  async function drivingBrowser() {
+    try {
+      return await (await attach()).browser();
+    } catch {
+      return null;
     }
   }
 
@@ -187,8 +280,14 @@ export function createLocalContext() {
     async windowState() {
       return windowState();
     },
+    async browser() {
+      return drivingBrowser();
+    },
     async focusWindow(match) {
-      return focusWindow(match);
+      const driving = await drivingBrowser();
+      return focusWindow(match, {
+        browser: driving?.name ?? ''
+      });
     },
     async ensureFront(options) {
       return (await attach()).ensureFront(options);

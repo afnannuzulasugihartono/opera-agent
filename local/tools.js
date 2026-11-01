@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-25 UTC+7.
+// @last-edited: 2026-11-01 UTC+7.
 // @title: tools — the MCP tool surface of the local driver, with the schema each call is answered against.
 // @state: every tool name, its description and its input schema, frozen in one table.
 // @dependencies: ./burst.js.
@@ -81,7 +81,7 @@ export const STRAY_FILE_TAB = 'file://';
 export const TOOLS = Object.freeze([
   {
     name: 'browser_status',
-    description: 'Report which Chromium browsers are installed, which debugging port is live, and whether a browser window is in front on this machine. A page cannot see whether the window in front of it is the one the operating system has in front, so when clicks and keys go nowhere this is the call that says why.',
+    description: 'Report which Chromium browsers are installed, which debugging port is live, which browser the tab being driven belongs to, and whether a browser window is in front on this machine. The browser driving the tab and the browser in front are two different facts: a Brave window can be in front while the drive sits on a Chrome tab. A page cannot see whether the window in front of it is the one the operating system has in front, so when clicks and keys go nowhere this is the call that says why.',
     inputSchema: {
       type: 'object',
       properties: {},
@@ -90,7 +90,7 @@ export const TOOLS = Object.freeze([
   },
   {
     name: 'focus_window',
-    description: 'Bring a browser window to the front of the machine, so the page can take clicks and keys. Give the piece of the window title to bring forward ("Google Docs", "Google Chrome"). With no match, this answers the window state without moving anything — pass a piece of the title to bring one forward. Answers the title it brought, and whether the operating system let it.',
+    description: 'Bring a browser window to the front of the machine, so the page can take clicks and keys. Give the piece of the window title to bring forward ("Google Docs", "Google Chrome"). When two browsers hold the same title, the window of the browser being driven is the one that comes forward. The window keeps the size it has: a maximized window stays maximized. If the person is working in another tab, another browser or another program, they are asked first, in a panel over the window they are in - the focus moves when they say yes, or when thirty seconds pass with nobody there to answer. With no match, this answers the window state without moving anything — pass a piece of the title to bring one forward. Answers the title it brought, and whether the operating system let it.',
     inputSchema: {
       type: 'object',
       properties: { match: stringArg('piece of the window title to bring forward') }
