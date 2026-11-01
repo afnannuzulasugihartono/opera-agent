@@ -25,5 +25,7 @@ await bridgeReachable().catch(() => false);
 // Dying here instead said it by refusing to start at all, which is what happened when the person toggled the server on while a previous instance was still holding the loopback port: the conflict was real and the only visible result was a dead MCP with a stack trace instead of a server that starts and names the conflict on the first tool call.
 
 startStdio({
-  context: createLocalContext()
+  context: createLocalContext({
+    warm: true
+  })
 });

@@ -12,7 +12,9 @@ import {
 import {
   NOTICE,
   askFocus,
-  focusSteal
+  createNoticeHost,
+  focusSteal,
+  warmFocusNotice
 } from '../local/focus-confirm.js';
 
 // WHY THE PERSON IS ASKED IN THE WINDOW THEY ARE IN.
@@ -242,4 +244,214 @@ test('the notice lets the screen go when nobody answers it', () => {
 
   assert.match(script, /\$form\.Answer = 'ALLOW'/, 'the panel answers yes when its deadline passes');
   assert.doesNotMatch(script, /\$form\.Answer = 'TIMEOUT'/, 'and never answers no');
+});
+
+// WHY THE QUESTION GOES TO A PANEL THAT IS ALREADY UP.
+// Measured live on this machine: the question cost 1.6 s before it was even on screen, because every ask started its own PowerShell and compiled the panel class again.
+// So one panel host stays up for the life of the agent, and the question is a line to it.
+
+test('the question goes to the panel host that is already up', async () => {
+  const asked = [];
+  const out = await askFocus({
+    what: 'the "Tool bench" window',
+    host: {
+      ask: async (request) => {
+        asked.push(request);
+        return 'ALLOW';
+      }
+    }
+  });
+
+  assert.equal(asked.length, 1, 'the panel that is already up was asked once');
+  assert.equal(asked[0].what, 'the "Tool bench" window');
+  assert.deepEqual(out, {
+    allowed: true,
+    answer: 'allow'
+  });
+});
+
+test('a person who says no in the panel host stops the focus', async () => {
+  const out = await askFocus({
+    what: 'a window',
+    host: {
+      ask: async () => 'DISMISS'
+    }
+  });
+
+  assert.deepEqual(out, {
+    allowed: false,
+    answer: 'dismiss'
+  });
+});
+
+test('a panel host that cannot answer falls back to the panel that starts on the spot', async () => {
+  const spawns = [];
+  const out = await askFocus({
+    what: 'a window',
+    host: {
+      ask: async () => null
+    },
+    spawn: (
+      command,
+      args,
+      options
+    ) => {
+      spawns.push({
+        command,
+        args,
+        options
+      });
+      return {
+        stdout: {
+          on: (
+            _event,
+            fn
+          ) => {
+            fn('ALLOW\n');
+          }
+        },
+        stderr: {
+          on: () => {}
+        },
+        stdin: {
+          end: () => {}
+        },
+        on: (
+          event,
+          fn
+        ) => {
+          if (event === 'close') fn(0);
+        },
+        kill: () => {}
+      };
+    }
+  });
+
+  assert.equal(spawns.length, 1, 'the panel that starts on the spot was used');
+  assert.ok(spawns[0].args.includes(NOTICE), 'and it is the notice in this tree');
+  assert.deepEqual(out, {
+    allowed: true,
+    answer: 'allow'
+  });
+});
+
+// WHY THE PANEL HOST IS ONE PROCESS AND NOT ONE PER QUESTION.
+// The panel class is compiled when the host starts, and every question after that travels over one pipe.
+
+const fakeHost = () => {
+  const state = {
+    written: [],
+    listeners: [],
+    handlers: {}
+  };
+  const child = {
+    stdout: {
+      on: (
+        _event,
+        fn
+      ) => {
+        state.listeners.push(fn);
+      }
+    },
+    stderr: {
+      on: () => {}
+    },
+    stdin: {
+      write: (text) => {
+        state.written.push(text);
+      }
+    },
+    on: (
+      event,
+      fn
+    ) => {
+      state.handlers[event] = fn;
+    },
+    unref: () => {},
+    kill: () => {}
+  };
+  return {
+    child,
+    state,
+    say: (line) => state.listeners.forEach((fn) => fn(line + '\n')),
+    close: () => state.handlers.close?.(0)
+  };
+};
+
+test('the panel host answers every question over one pipe', async () => {
+  const hosts = [];
+  const host = createNoticeHost({
+    spawn: () => {
+      const fake = fakeHost();
+      hosts.push(fake);
+      setTimeout(() => fake.say('READY'), 0);
+      return fake.child;
+    }
+  });
+
+  const first = host.ask({
+    what: 'one window'
+  });
+  await new Promise((resolve) => setTimeout(resolve, 5));
+  hosts[0].say('ALLOW');
+  assert.equal(await first, 'ALLOW');
+
+  const second = host.ask({
+    what: 'another window'
+  });
+  await new Promise((resolve) => setTimeout(resolve, 5));
+  hosts[0].say('DISMISS');
+  assert.equal(await second, 'DISMISS');
+
+  assert.equal(hosts.length, 1, 'one host answers every question');
+  assert.equal(hosts[0].state.written.length, 2, 'and every question is one line');
+  assert.deepEqual(JSON.parse(hosts[0].state.written[0]), {
+    what: 'one window',
+    seconds: 30
+  });
+});
+
+test('a panel host whose shell dies answers nothing', async () => {
+  const hosts = [];
+  const host = createNoticeHost({
+    spawn: () => {
+      const fake = fakeHost();
+      hosts.push(fake);
+      return fake.child;
+    }
+  });
+
+  const asked = host.ask({
+    what: 'a window'
+  });
+  await new Promise((resolve) => setTimeout(resolve, 5));
+  hosts[0].close();
+
+  assert.equal(await asked, null, 'a dead panel answers nothing');
+});
+
+test('the panel host is started before any question is asked', async () => {
+  const starts = [];
+  const host = warmFocusNotice({
+    spawn: (
+      command,
+      args,
+      options
+    ) => {
+      starts.push({
+        command,
+        args,
+        options
+      });
+      return fakeHost().child;
+    }
+  });
+
+  assert.equal(starts.length, 1, 'the panel host starts on its own');
+  assert.equal(starts[0].command, 'powershell');
+  assert.ok(starts[0].args.includes(NOTICE), 'it runs the notice in this tree');
+  assert.ok(starts[0].args.includes('-Worker'), 'and it waits for questions instead of asking one');
+  assert.equal(starts[0].options.windowsHide, true, 'the console of the panel stays out of the way');
+
+  host.close();
 });

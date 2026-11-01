@@ -20,7 +20,8 @@ import {
 } from './window-focus.js';
 import {
   askFocus,
-  focusSteal
+  focusSteal,
+  warmFocusNotice
 } from './focus-confirm.js';
 import {
   dialogState,
@@ -56,12 +57,21 @@ async function bridged() {
   return process.env.OPERA_LOCAL_TRANSPORT !== 'cdp' && await bridgeReachable();
 }
 
+// WHY THE PANEL THAT ASKS THE PERSON IS STARTED WITH THE AGENT.
+// Measured live on this machine: the question cost 1.6 s before it was on screen, because it started its own PowerShell and compiled the panel class again.
+// A host that is already up answers in the time it takes to draw the panel, so the agent starts it before anyone is asked.
+
 /**
  * Build the context that drives the browser, for the MCP server and for the OpenCode plugin alike.
+ * @param {object} [options] - whether the panel that asks the person is started with the agent.
+ * @param {boolean} [options.warm] - true to keep a panel host up, so the first question does not pay for a boot.
  * @returns {object} the driver, the session opener, the tab resolver, and what the server reports about itself.
  */
 
-export function createLocalContext() {
+export function createLocalContext({
+  warm = false
+} = {}) {
+  if (warm) warmFocusNotice();
 
   // WHY THE MACHINE IS READ ONCE FOR EVERYBODY.
   // The operating system read starts a PowerShell and costs about a second, and the question about the screen is asked by three places: the tab switch, the guard before an input, and the window answer.
@@ -156,8 +166,14 @@ export function createLocalContext() {
 
     if (steal.ask) {
       await session?.front?.().catch(() => null);
+
+      // WHY THE PERSON IS NOT ASKED A SECOND TIME.
+      // The question above was answered a moment ago, and asking the same person the same thing twice is noise they learn to dismiss.
+      // So the window comes forward on the answer that was already given.
+
       await focusWindow(title || driving?.name || '', {
-        browser: driving?.name ?? ''
+        browser: driving?.name ?? '',
+        ask: false
       }).catch(() => null);
       return;
     }

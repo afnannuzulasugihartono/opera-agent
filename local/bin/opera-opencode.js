@@ -193,7 +193,9 @@ export function createOperaPlugin({
   const serverFor = async () => {
     if (server) return server;
     await bridgeReachable().catch(() => false);
-    server = createMcpServer(createLocalContext());
+    server = createMcpServer(createLocalContext({
+      warm: true
+    }));
     return server;
   };
 

@@ -1,9 +1,10 @@
 # @last-edited: 2026-11-01 UTC+7.
 # @title: focus-notice - the question asked in the corner of the window the person is working in.
-# @state: one panel that follows the window in front, stays above it, counts down, and gives the answer on stdout.
+# @state: one panel that follows the window in front, stays above it, counts down, and gives the answer on stdout; a host mode that answers every question from one process.
 
 param(
-  [int]$TimeoutSec = 30
+  [int]$TimeoutSec = 30,
+  [switch]$Worker
 )
 
 # WHY THE QUESTION ARRIVES OVER STDIN AND NOT AS AN ARGUMENT.
@@ -12,7 +13,7 @@ param(
 # When there is no pipe - a person running this by hand - the panel still opens and says nothing more than the default.
 
 $What = ''
-if ([Console]::IsInputRedirected) {
+if ((-not $Worker) -and [Console]::IsInputRedirected) {
   $What = [Console]::In.ReadToEnd().Trim()
 }
 if ($What -eq '') {
@@ -27,6 +28,9 @@ $ErrorActionPreference = 'Stop'
 
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
+
+# WHY THE CLASS IS COMPILED ONCE PER PROCESS AND NOT ONCE PER QUESTION.
+# The panel host answers every question from one process, so the class is compiled when the process starts and the loop below only makes new forms.
 
 Add-Type -TypeDefinition @"
 using System;
@@ -94,85 +98,130 @@ public class NotchWindow : Form {
 }
 "@ -ReferencedAssemblies System.Windows.Forms, System.Drawing
 
-$form = New-Object NotchWindow
-$form.Text = 'Opera Agent focus notice'
+# WHY THE PANEL IS A FUNCTION AND NOT THE SCRIPT BODY.
+# A host that waits for the next question has to come back to its loop, so the panel is a thing that is shown, answered, and handed back.
 
-$title = New-Object System.Windows.Forms.Label
-$title.Text = 'Opera Agent wants to change what is on your screen'
-$title.ForeColor = [System.Drawing.Color]::FromArgb(235, 235, 240)
-$title.Font = New-Object System.Drawing.Font('Segoe UI', 10)
-$title.SetBounds(18, 14, 424, 22)
-$form.Controls.Add($title)
+function Show-OperaNotice {
+  param(
+    [string]$Question,
+    [int]$Seconds
+  )
 
-$what = New-Object System.Windows.Forms.Label
-$what.Text = $What
-$what.ForeColor = [System.Drawing.Color]::FromArgb(170, 170, 180)
-$what.Font = New-Object System.Drawing.Font('Segoe UI', 9)
-$what.SetBounds(18, 40, 424, 34)
-$form.Controls.Add($what)
+  $form = New-Object NotchWindow
+  $form.Text = 'Opera Agent focus notice'
 
-# WHY THE PANEL COUNDS DOWN TO THE MOMENT THE SCREEN GOES.
-# The person is sometimes away from the machine, and a drive that waits on a question nobody is there to answer never finishes.
-# So the panel says when the screen goes, and at that moment it lets the drive on - a person who is there can still say no before then, and then the screen stays theirs.
+  $title = New-Object System.Windows.Forms.Label
+  $title.Text = 'Opera Agent wants to change what is on your screen'
+  $title.ForeColor = [System.Drawing.Color]::FromArgb(235, 235, 240)
+  $title.Font = New-Object System.Drawing.Font('Segoe UI', 10)
+  $title.SetBounds(18, 14, 424, 22)
+  $form.Controls.Add($title)
 
-$deadline = New-Object System.Windows.Forms.Label
-$deadline.Text = 'No answer in ' + $TimeoutSec + ' second(s) and the drive takes the screen.'
-$deadline.ForeColor = [System.Drawing.Color]::FromArgb(120, 120, 130)
-$deadline.Font = New-Object System.Drawing.Font('Segoe UI', 8)
-$deadline.SetBounds(18, 74, 424, 20)
-$form.Controls.Add($deadline)
+  $label = New-Object System.Windows.Forms.Label
+  $label.Text = $Question
+  $label.ForeColor = [System.Drawing.Color]::FromArgb(170, 170, 180)
+  $label.Font = New-Object System.Drawing.Font('Segoe UI', 9)
+  $label.SetBounds(18, 40, 424, 34)
+  $form.Controls.Add($label)
 
-$allow = New-Object System.Windows.Forms.Button
-$allow.Text = 'Allow'
-$allow.FlatStyle = 'Flat'
-$allow.ForeColor = [System.Drawing.Color]::FromArgb(20, 20, 24)
-$allow.BackColor = [System.Drawing.Color]::FromArgb(120, 200, 140)
-$allow.SetBounds(18, 100, 110, 28)
-$allow.Add_Click({
-  $form.Answer = 'ALLOW'
-  $form.Close()
-})
-$form.Controls.Add($allow)
+  # WHY THE PANEL COUNTS DOWN TO THE MOMENT THE SCREEN GOES.
+  # The person is sometimes away from the machine, and a drive that waits on a question nobody is there to answer never finishes.
+  # So the panel says when the screen goes, and at that moment it lets the drive on - a person who is there can still say no before then, and then the screen stays theirs.
 
-$dismiss = New-Object System.Windows.Forms.Button
-$dismiss.Text = 'Dismiss'
-$dismiss.FlatStyle = 'Flat'
-$dismiss.ForeColor = [System.Drawing.Color]::FromArgb(225, 225, 230)
-$dismiss.BackColor = [System.Drawing.Color]::FromArgb(58, 58, 64)
-$dismiss.SetBounds(140, 100, 110, 28)
-$dismiss.Add_Click({
-  $form.Answer = 'DISMISS'
-  $form.Close()
-})
-$form.Controls.Add($dismiss)
+  $deadline = New-Object System.Windows.Forms.Label
+  $deadline.Text = 'No answer in ' + $Seconds + ' second(s) and the drive takes the screen.'
+  $deadline.ForeColor = [System.Drawing.Color]::FromArgb(120, 120, 130)
+  $deadline.Font = New-Object System.Drawing.Font('Segoe UI', 8)
+  $deadline.SetBounds(18, 74, 424, 20)
+  $form.Controls.Add($deadline)
 
-$form.Show()
-$form.Follow()
+  $allow = New-Object System.Windows.Forms.Button
+  $allow.Text = 'Allow'
+  $allow.FlatStyle = 'Flat'
+  $allow.ForeColor = [System.Drawing.Color]::FromArgb(20, 20, 24)
+  $allow.BackColor = [System.Drawing.Color]::FromArgb(120, 200, 140)
+  $allow.SetBounds(18, 100, 110, 28)
+  $allow.Add_Click({
+    $form.Answer = 'ALLOW'
+    $form.Close()
+  })
+  $form.Controls.Add($allow)
 
-$until = [DateTime]::Now.AddSeconds($TimeoutSec)
+  $dismiss = New-Object System.Windows.Forms.Button
+  $dismiss.Text = 'Dismiss'
+  $dismiss.FlatStyle = 'Flat'
+  $dismiss.ForeColor = [System.Drawing.Color]::FromArgb(225, 225, 230)
+  $dismiss.BackColor = [System.Drawing.Color]::FromArgb(58, 58, 64)
+  $dismiss.SetBounds(140, 100, 110, 28)
+  $dismiss.Add_Click({
+    $form.Answer = 'DISMISS'
+    $form.Close()
+  })
+  $form.Controls.Add($dismiss)
 
-$follow = New-Object System.Windows.Forms.Timer
-$follow.Interval = 500
-$follow.Add_Tick({
+  $form.Show()
   $form.Follow()
-  $left = [Math]::Max(0, [Math]::Ceiling(($until - [DateTime]::Now).TotalSeconds))
-  $deadline.Text = 'No answer in ' + $left + ' second(s) and the drive takes the screen.'
-})
-$follow.Start()
 
-# WHY THE DEADLINE ANSWERS YES AND NOT NO.
-# The person who is away is not a person who said no, and a drive that treats silence as a refusal never finishes on a machine nobody is sitting at.
-# The panel says when the screen goes, and at that moment the screen goes.
+  $until = [DateTime]::Now.AddSeconds($Seconds)
 
-$timer = New-Object System.Windows.Forms.Timer
-$timer.Interval = [Math]::Max(1000, $TimeoutSec * 1000)
-$timer.Add_Tick({
-  $timer.Stop()
-  $follow.Stop()
-  $form.Answer = 'ALLOW'
-  $form.Close()
-})
+  $follow = New-Object System.Windows.Forms.Timer
+  $follow.Interval = 500
+  $follow.Add_Tick({
+    $form.Follow()
+    $left = [Math]::Max(0, [Math]::Ceiling(($until - [DateTime]::Now).TotalSeconds))
+    $deadline.Text = 'No answer in ' + $left + ' second(s) and the drive takes the screen.'
+  })
+  $follow.Start()
 
-$timer.Start()
-[System.Windows.Forms.Application]::Run($form)
-Write-Output $form.Answer
+  # WHY THE DEADLINE ANSWERS YES AND NOT NO.
+  # The person who is away is not a person who said no, and a drive that treats silence as a refusal never finishes on a machine nobody is sitting at.
+  # The panel says when the screen goes, and at that moment the screen goes.
+
+  $timer = New-Object System.Windows.Forms.Timer
+  $timer.Interval = [Math]::Max(1000, $Seconds * 1000)
+  $timer.Add_Tick({
+    $timer.Stop()
+    $follow.Stop()
+    $form.Answer = 'ALLOW'
+    $form.Close()
+  })
+
+  $timer.Start()
+  [System.Windows.Forms.Application]::Run($form)
+  return $form.Answer
+}
+
+# WHY THE HOST READS ONE QUESTION AT A TIME.
+# The panel sits in the corner of the window the person is in, and two questions at once would ask for two different things at the same time.
+
+if ($Worker) {
+  # WHY THE HOST SAYS IT IS READY.
+  # The agent waits for that word before it asks anything, so the question never arrives while the panel class is still being compiled and the person never sees a panel that was too late.
+
+  [Console]::Out.WriteLine('READY')
+  [Console]::Out.Flush()
+
+  while ($true) {
+    $line = [Console]::In.ReadLine()
+    if ($null -eq $line) { break }
+    $request = $null
+    try {
+      $request = $line | ConvertFrom-Json
+    } catch {
+      continue
+    }
+    $question = [string]$request.what
+    $seconds = $TimeoutSec
+    if ($request.seconds) { $seconds = [int]$request.seconds }
+    $answer = Show-OperaNotice $question $seconds
+
+    # WHY THE ANSWER GOES OUT THROUGH THE CONSOLE AND NOT THE PIPELINE.
+    # Measured live on this machine: a line written through the PowerShell pipeline came back 1.1 s later, and the same line written to the console and flushed came back in under ten milliseconds.
+
+    [Console]::Out.WriteLine($answer)
+    [Console]::Out.Flush()
+  }
+  exit 0
+}
+
+Write-Output (Show-OperaNotice $What $TimeoutSec)
