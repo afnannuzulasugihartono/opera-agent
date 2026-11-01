@@ -81,14 +81,15 @@ public class OperaDialog {
 function Get-OperaDialog {
   $front = [OperaDialog]::GetForegroundWindow()
   if ([OperaDialog]::Visible($front) -and [OperaDialog]::ClassOf($front) -eq '#32770') { return $front }
-  $found = [IntPtr]::Zero
+  # WHY THE COUNT IS SCRIPT-WIDE: the callback runs in script scope, so a function-local variable it writes is a different one and the search answers none.
+  $script:found = [IntPtr]::Zero
   $cb = [OperaDialog+EnumProc]{
     param($h, $l)
     if ([OperaDialog]::Visible($h) -and [OperaDialog]::ClassOf($h) -eq '#32770') { $script:found = $h; return $false }
     return $true
   }
   [void][OperaDialog]::EnumWindows($cb, [IntPtr]::Zero)
-  return $found
+  return $script:found
 }
 
 function Get-OperaChildren($parent) {
@@ -154,13 +155,16 @@ if ($mode -eq 'type') {
 if ($mode -eq 'press') {
   $target = [IntPtr]::Zero
   $matched = ''
+  # WHY AN EMPTY NAME IS REFUSED: '***' matches the first button, so a blank name would press whichever button came first instead of answering that none was named.
+  $named = -not [string]::IsNullOrWhiteSpace($name)
   foreach ($child in $children) {
+    if (-not $named) { break }
     if ([OperaDialog]::ClassOf($child) -ne 'Button') { continue }
     $caption = [OperaDialog]::TitleOf($child)
     if ($caption -like "*$name*") { $target = $child; $matched = $caption; break }
   }
   if ($target -eq [IntPtr]::Zero) {
-    ConvertTo-Json @{ open = $true; platform = 'win32'; pressed = $false; buttons = @($controls | Where-Object { $_.cls -eq 'Button' } | ForEach-Object { $_.name }); why = ('no button on this dialog is called ' + $name) } -Compress -Depth 5
+    ConvertTo-Json @{ open = $true; platform = 'win32'; pressed = $false; buttons = @($controls | Where-Object { $_.cls -eq 'Button' } | ForEach-Object { $_.name }); why = $(if ($named) { 'no button on this dialog is called ' + $name } else { 'no button name was given' }) } -Compress -Depth 5
     exit 0
   }
   [void][OperaDialog]::Post($target, 0x00F5, [IntPtr]::Zero, [IntPtr]::Zero)
@@ -221,5 +225,5 @@ export function dialogType(text) {
 }
 
 export function dialogPress(name) {
-  return parse('press', String(name ?? ''));
+  return parse('press', '', String(name ?? ''));
 }

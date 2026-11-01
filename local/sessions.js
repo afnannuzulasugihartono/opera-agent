@@ -189,10 +189,12 @@ export function createSessionStore({
   browserId,
   viaBridge = null,
   mayFront = null,
-  read = null
+  read = null,
+  resolveTabs = null
 }) {
   const sessions = new Map();
   let fronted = null;
+  let unnamedTab = null;
 
   async function open(options = {}) {
     const {
@@ -202,6 +204,18 @@ export function createSessionStore({
       ...rest
     } = options;
     const key = targetUrl ?? named ?? '';
+
+    // WHY ONLY THE UNNAMED SESSION IS RE-CHECKED.
+    // A named tab keeps its session even when the list lags, because the drive said which tab it means; the unnamed one is whatever the browser listed first when it was made, so a closed tab leaves it pointing at nothing.
+
+    if (sessions.has(key) && key === '' && resolveTabs && unnamedTab) {
+      const live = await resolveTabs().catch(() => []);
+      if (live.length && !live.some((id) => String(id) === unnamedTab)) {
+        sessions.get(key)?.close?.();
+        sessions.delete(key);
+        unnamedTab = null;
+      }
+    }
     if (!sessions.has(key)) {
       const session = await openSession({
         port,
@@ -212,6 +226,7 @@ export function createSessionStore({
         viaBridge,
         ...rest
       });
+      if (key === '' && session?.targetId != null) unnamedTab = String(session.targetId);
       sessions.set(key, asDriver(session, {
         read
       }));

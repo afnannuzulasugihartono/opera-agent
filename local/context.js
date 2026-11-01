@@ -87,7 +87,8 @@ export function createLocalContext() {
     browserId: BROWSER,
     viaBridge: null,
     mayFront,
-    read: readWindow
+    read: readWindow,
+    resolveTabs: resolveTab
   });
   const open = (options) => store.open(options);
   const attach = () => store.attach();

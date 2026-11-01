@@ -663,13 +663,28 @@ const windowMatch = async (
       }
       case 'list_tabs':
         return asText(await driver.tabs());
-      case 'open_url':
-        return afterAction(driver, tab
-          ? {
+      case 'open_url': {
+        if (tab) {
+          return afterAction(driver, {
             navigated: await driver.navigate(args.url),
             tab: args.tabId
-          }
-          : await driver.open(args.url));
+          });
+        }
+
+        // WHY THE ANSWER IS READ THROUGH THE TAB IT OPENED.
+        // The unnamed driver is whatever page the browser listed first, which is not the tab this call just made, so reading through it would describe a page nobody asked about.
+
+        const opened = await driver.open(args.url);
+        const openedDriver = await driverFor(String(opened.id)).catch(() => driver);
+        if (openedDriver !== driver) {
+          tabSaid.set(openedDriver, {
+            id: String(opened.id),
+            title: String(opened.title ?? ''),
+            named: false
+          });
+        }
+        return afterAction(openedDriver, opened);
+      }
       case 'close_tab': {
         const out = await driver.close(args.tabId);
         sessions.get(args.tabId)?.close?.();

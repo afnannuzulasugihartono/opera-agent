@@ -156,16 +156,21 @@ export async function openSession({
 
   let reused = false;
   let target = null;
+  let boundId = targetId === null || targetId === undefined || targetId === '' ? null : String(targetId);
 
   if (tabUrl) {
-    target = (await openTab(port, tabUrl)).webSocketDebuggerUrl;
+    const page = await openTab(port, tabUrl);
+    target = page.webSocketDebuggerUrl;
+    boundId = String(page.id ?? boundId);
     reused = true;
   } else if (targetId) {
     target = (await pageWebSocketById(port, targetId)).url;
     reused = true;
   } else {
     try {
-      target = await discoverPageWebSocket(port);
+      const page = await discoverPageWebSocket(port);
+      target = page.webSocketDebuggerUrl;
+      boundId = String(page.id ?? boundId);
       reused = true;
     } catch {
       if (!launch) throw new Error(`No browser is listening on port ${port}.`);
@@ -195,6 +200,7 @@ export async function openSession({
   if (!target) {
     const chosen = await pageWebSocketById(port, targetId, { timeoutMs });
     target = chosen.url;
+    if (boundId === null && chosen.id != null) boundId = String(chosen.id);
   }
   const transport = await connect(target, { timeoutMs });
   const cdp = createCdpClient(transport);
@@ -202,6 +208,7 @@ export async function openSession({
   return {
     port,
     reused,
+    targetId: boundId,
     binary: reused ? null : resolveBinary({
       id,
       platform,

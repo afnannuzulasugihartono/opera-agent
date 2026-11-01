@@ -531,3 +531,59 @@ test('closing drops the cache and the browser tab together', async () => {
   assert.deepEqual(closed, ['AAA']);
   assert.equal(opens, 2, 'the dropped tab reconnects fresh');
 });
+
+// WHY THE UNNAMED SESSION IS CHECKED AGAINST THE LIVE TABS.
+// Measured live: the unnamed session is whatever page the browser listed first when it was made, and when the person closes that tab the cache keeps pointing at a target that no longer exists - every tab-less call then answers "No tab with given id" while the browser has thirty live tabs.
+// So the unnamed session is re-taken from the live list when its tab is gone; a named tab keeps its session, because a drive that named a tab means that tab.
+
+test('an unnamed attach follows the browser when its first tab is gone', async () => {
+  let live = [
+    '111'
+  ];
+  let opens = 0;
+  const store = createSessionStore({
+    openSession: async () => {
+      opens += 1;
+      const session = fakeSession();
+      session.targetId = live[0];
+      return session;
+    },
+    resolveTabs: async () => live,
+    port: 1
+  });
+
+  const first = await store.attach();
+  assert.equal(opens, 1);
+  assert.equal(await store.attach(), first, 'a live tab keeps its session');
+  assert.equal(opens, 1, 'no new session while the tab lives');
+
+  live = [
+    '222'
+  ];
+  const third = await store.attach();
+
+  assert.equal(opens, 2, 'the dead tab is dropped and a live one is taken');
+  assert.notEqual(third, first);
+});
+
+test('an unnamed attach keeps its session when the tab list cannot answer', async () => {
+  let opens = 0;
+  const store = createSessionStore({
+    openSession: async () => {
+      opens += 1;
+      const session = fakeSession();
+      session.targetId = '111';
+      return session;
+    },
+    resolveTabs: async () => {
+      throw new Error('bridge down');
+    },
+    port: 1
+  });
+
+  const first = await store.attach();
+  await store.attach();
+
+  assert.equal(opens, 1, 'a failed list does not thrash the session');
+  assert.equal(await store.attach(), first);
+});
