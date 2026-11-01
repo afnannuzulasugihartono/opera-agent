@@ -60,6 +60,12 @@ them:
   from **1,071-1,130 ms** per read to **1-3 ms**, and the dialog read from
   **1,190-1,231 ms** to **5-6 ms**. `browser_status` over the live extension
   bridge measured **1,569 ms** before and **14 ms** after.
+- The panel that asks whether the drive may take the screen has a host that
+  stays up too: the question was on screen **1,340 ms** after the ask through the
+  one-shot panel, and **16-30 ms** after the ask through the warm host.
+- Chrome swallowed the first press after it had taken the focus, so a background
+  click could name the right element and do nothing at all. The page now counts
+  the presses it takes, and a press the page did not take is sent again once.
 - The local path is much cheaper than the cloud path, but a tool call is not
   "under 1 ms": the README's `<1 ms` is per CDP primitive, not per MCP call.
 
@@ -284,14 +290,72 @@ Over the live extension bridge, with the real extension and the real Chrome:
 The last row is the honest one: the machine read is gone from it, and what is
 left is the person being asked whether the drive may take the screen. That ask
 is a product promise, not a latency bug, and it is now the whole of the wait.
-The panel that asks it still starts a PowerShell of its own, which costs about
-1.6 s before the question is even on screen.
+The panel that asks it has a host of its own now, described below.
 
 The front-click row is not a like-for-like pair: the 59 ms was measured through
 the tool surface the plugin already had, the 108 ms through a fresh server
 against the live extension and the real page, and the two differ in the page
 look the action ends with. What the change removed is the read inside the
 click, and that read now costs 1-3 ms instead of 1.1 s.
+
+### The focus notice got its own long-lived host
+
+The panel that asks whether the drive may take the screen was the last 1.6 s of a
+background click: every question started a PowerShell of its own, and the person
+was asked to answer a question that was still starting up.
+
+`local/focus-notice.ps1` runs in two modes. The one-shot mode is the panel the
+person sees, and the script ends when that panel closes. The worker mode keeps
+one PowerShell alive, compiles the panel class once, reads one question per line
+from stdin, writes `READY` when it can answer, and writes `ALLOW` or `DISMISS`
+when the person has answered. `local/focus-confirm.js` starts that host when the
+agent starts and uses it for every question after that. A host that never says
+it is ready falls back to the one-shot panel, because a machine that cannot show
+the question must still ask it.
+
+The transport is the console stream and not the PowerShell pipeline: a line
+written to the console and flushed comes back in under ten milliseconds, while
+the same line through the pipeline took 1.1 s.
+
+Measured live on this machine, the same question asked both ways, with a watcher
+clicking the panel as soon as it appears:
+
+| Question | On screen after the ask | Answered after the ask |
+|---|---:|---:|
+| One-shot panel | 1,340 ms | 1,437 ms |
+| Host that stays up, first question | 1,234 ms | 1,264 ms |
+| Host that stays up, every later question | 16-30 ms | 18-31 ms |
+| Host boot, paid when the agent starts | - | 1,448 ms |
+
+The first question through the host pays the boot because the boot is still
+running. Every question after it costs about 20 ms. The agent warms the host at
+startup, so the question the person sees is the question they answered.
+
+At the tool surface, with the drive's window behind another application, the
+whole `click_row` measured 372-417 ms across four runs, and every click landed.
+
+### Chrome swallowed the first press after the window came forward
+
+The background click was slow because the press never reached the page, not
+because of a read.
+
+Measured live with a page that records every mouse event it receives: in the
+round where the operating system put the focus on Chrome, the page received the
+move and nothing else - no `mousedown`, no `mouseup`, no `click` - and the
+answer still named the element that was under the point. In the rounds where the
+window did not come forward, the press landed. Waiting 500 ms after the
+activation did not help, and the second press always landed.
+
+So the page counts the presses it takes, and the count travels with the answer
+that says what was under the point. A click whose press count did not grow is
+pressed again once; a page that took the press is never pressed twice. The
+answer carries `pressed`, so a caller can tell a click that landed from a click
+that did not.
+
+Measured live after the change: four cold runs of two rounds each, eight
+clicks, none lost, including the two rounds in the activation case that used to
+lose the press. At the tool surface, four background `click_row` calls landed in
+372-417 ms each, and every one reported `pressed: true`.
 
 ### Bridge
 
@@ -451,6 +515,10 @@ audit, not for the hot loop.
   re-run on Docs/Sheets.
 - **Live extension bridge.** The extension bridge was not connected; only the
   synthetic loopback frames were measured.
+- **The extension's own click path.** The extension proves a press when the
+  caller sends an expect spec, and nothing in the local path sends one, so the
+  cloud path can still lose the same swallowed press. That path was not changed
+  and not measured.
 - **Real minimized-window focus.** The CDP window state was measured on a
   maximized real Chrome; restoring an actually minimized window was not driven
   because it changes the user's desktop.
