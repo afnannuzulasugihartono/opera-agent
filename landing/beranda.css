@@ -12,8 +12,12 @@
 
 /* ── hero ───────────────────────────────────────────────────────────────── */
 
+/*
+ * WHY one flat ground and no wash behind the right half: the hero carried a radial glow on one side and a floating window on the other, and a reader calls that lopsided before reading a word.
+ * WHY two equal columns: the words and the product's panel now start on the same line and end on the same line, so the first screen has no heavier side.
+ */
+
 .hero {
-  position: relative;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -21,30 +25,21 @@
   padding: 44px 0 92px;
 }
 
-.hero::before {
-  content: "";
-  position: absolute;
-  z-index: -1;
-  top: -120px;
-  right: 0;
-  width: min(560px, 100%);
-  height: 560px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(62, 207, 142, .14), rgba(247, 245, 239, 0) 68%);
-  pointer-events: none;
-}
-
 .heroGrid {
   display: grid;
-  grid-template-columns: minmax(0, 1.02fr) minmax(0, .98fr);
-  gap: clamp(40px, 6vw, 88px);
-  align-items: center;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: clamp(40px, 5vw, 72px);
 }
 
+/*
+ * WHY the headline takes two lines: at 82px it broke into three, and a three-line sentence reads as a paragraph set too large.
+ * WHY the measure widened with it: the column, not the word count, decides where the line breaks now.
+ */
+
 .heroCopy h1 {
-  max-width: 12ch;
+  max-width: 20ch;
   margin: 0 0 22px;
-  font-size: clamp(44px, 6vw, 82px);
+  font-size: clamp(40px, 4.6vw, 66px);
   line-height: 1.02;
   letter-spacing: -.03em;
 }
@@ -52,22 +47,29 @@
 .heroCopy .accent { color: var(--accent); }
 
 .heroCopy .lede {
-  max-width: 46ch;
+  max-width: 42ch;
   margin: 0 0 28px;
   font-size: clamp(17px, 1.35vw, 19px);
 }
 
 .heroCopy .row { margin: 0 0 10px; }
 
-.heroCopy .footnote { margin: 0 0 30px; }
+/* WHY the note is set at body size: a line under the actions is read, and the taste rules keep read text above 13px. */
+
+.heroCopy .footnote { font-size: 13.5px; }
+
+/*
+ * WHY the figures sit in a band under both columns: they are the proof of the claim above, so they span the page instead of hanging under one column.
+ * WHY no rule above them: a hairline over a row of figures is the divider the taste rules ban, and the space separates them.
+ * WHY the band sits low: the gap keeps the last line of the copy far from the first figure, so a short sentence never reads as a label for it.
+ */
 
 .heroStats {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 16px 42px;
-  margin: 30px 0 0;
-  padding: 26px 0 0;
-  border-top: 1px solid var(--line);
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 32px;
+  margin: 88px 0 0;
+  padding: 0;
 }
 
 .heroStats div { margin: 0; }
@@ -84,27 +86,25 @@
 .heroStats dd {
   margin: 7px 0 0;
   color: var(--muted);
-  font-size: 12.5px;
+  font-size: 13px;
   line-height: 1.35;
 }
 
 /* ── product mock ───────────────────────────────────────────────────────── */
 
+/*
+ * WHY the fragment is marked data-ui: it is a piece of the product, so the panel's own borders, small radii and shadow are the product's rules, and the house rules hold around it.
+ * WHY no browser frame: the taste rules and every reader agree that a product shown inside a drawn browser window is a picture of a product, not the product.
+ */
+
 /* WHY min-width and a zero right inset: measured at 390px, the mock's min-content was 356px inside a 342px column, and the glow's -6% pushed the document 4px past the viewport. */
 
-.heroVisual { position: relative; min-width: 0; }
+.heroVisual { display: flex; min-width: 0; }
 
-.heroVisual::before {
-  content: "";
-  position: absolute;
-  inset: 12% 0 -6% 10%;
-  z-index: -1;
-  border-radius: 40px;
-  background: linear-gradient(135deg, rgba(62, 207, 142, .16), rgba(11, 107, 82, .06));
-  filter: blur(24px);
-}
-
-.demo {
+.demo[data-ui] {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, .08);
   border-radius: 20px;
@@ -114,78 +114,38 @@
   font-family: var(--font);
 }
 
-.demoBar {
+/* WHY the rows spread: the panel is as tall as the column beside it, and a panel with a hole at the bottom reads as a mistake. */
+
+[data-ui] .demoBody {
   display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 15px;
-  border-bottom: 1px solid rgba(255, 255, 255, .08);
-  background: rgba(255, 255, 255, .035);
-}
-
-.dots { display: inline-flex; gap: 5px; flex: 0 0 auto; }
-
-.dots span {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, .2);
-}
-
-.dots span:first-child { background: #ff8a7a; }
-.dots span:nth-child(2) { background: #f6c969; }
-.dots span:nth-child(3) { background: var(--brand); }
-
-.mockAddr {
   flex: 1;
-  min-width: 0;
-  padding: 5px 10px;
-  overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, .08);
-  border-radius: 7px;
-  background: rgba(0, 0, 0, .18);
-  color: rgba(239, 242, 236, .56);
-  font-family: var(--mono);
-  font-size: 10.5px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 20px;
 }
 
-.mockBadge {
-  flex: 0 0 auto;
-  padding: 3px 8px;
-  border: 1px solid rgba(255, 255, 255, .12);
-  border-radius: var(--pill);
-  color: rgba(239, 242, 236, .6);
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: .08em;
-  text-transform: uppercase;
-}
-
-.demoBody { padding: 18px; }
-
-.mockTop {
+[data-ui] .mockTop {
   display: flex;
   align-items: center;
   gap: 9px;
-  margin: 0 0 14px;
+  margin: 0;
   color: rgba(239, 242, 236, .72);
-  font-size: 12px;
+  font-size: 13px;
 }
 
-.mockTop .dot { background: var(--brand); box-shadow: 0 0 0 3px rgba(62, 207, 142, .14); }
+[data-ui] .mockTop .dot { background: var(--brand); box-shadow: 0 0 0 3px rgba(62, 207, 142, .14); }
 
-.mockTop strong { color: #fff; font-weight: 600; }
+[data-ui] .mockTop strong { color: #fff; font-weight: 600; }
 
-.mockTop .chip {
+[data-ui] .mockTop .chip {
   margin-left: auto;
   border-color: rgba(255, 255, 255, .1);
   background: rgba(62, 207, 142, .1);
   color: #a9edd0;
 }
 
-.mockCmd {
+[data-ui] .mockCmd {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 10px;
@@ -193,12 +153,12 @@
   padding: 9px 0;
   border-top: 1px solid rgba(255, 255, 255, .07);
   font-family: var(--mono);
-  font-size: 11.5px;
+  font-size: 13px;
 }
 
-.mockCmd:first-of-type { border-top: 0; }
+[data-ui] .mockCmd:first-of-type { border-top: 0; }
 
-.mockCmd code {
+[data-ui] .mockCmd code {
   justify-self: start;
   max-width: 100%;
   padding: 0;
@@ -206,45 +166,62 @@
   border: 0;
   background: none;
   color: #cfe9dd;
-  font-size: 11.5px;
+  font-size: 13px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.mockCmd span {
+[data-ui] .mockCmd span {
   color: rgba(239, 242, 236, .55);
   font-family: var(--font);
-  font-size: 11.5px;
+  font-size: 13px;
   white-space: nowrap;
 }
 
-.mockCmd span.ok { color: #9fe6c8; }
-.mockCmd span.no { color: #f0b394; }
+[data-ui] .mockCmd span.ok { color: #9fe6c8; }
+[data-ui] .mockCmd span.no { color: #f0b394; }
 
-.mockFoot {
+[data-ui] .mockFoot {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  margin-top: 12px;
+  margin: 0;
   padding-top: 12px;
   border-top: 1px solid rgba(255, 255, 255, .08);
   color: rgba(239, 242, 236, .4);
-  font-size: 10.5px;
+  font-size: 13px;
 }
 
-.mockFoot code { border: 0; background: none; color: rgba(239, 242, 236, .62); }
+[data-ui] .mockFoot code { border: 0; background: none; color: rgba(239, 242, 236, .62); }
+
+/* WHY the badge says its word in plain letters: a tiny tracked uppercase label is the micro-label the taste rules ban. */
+
+.mockBadge {
+  flex: 0 0 auto;
+  padding: 3px 9px;
+  border: 1px solid rgba(255, 255, 255, .12);
+  border-radius: var(--pill);
+  color: rgba(239, 242, 236, .6);
+  font-size: 12.5px;
+  font-weight: 500;
+}
 
 @media (max-width: 940px) {
   .heroGrid { grid-template-columns: 1fr; gap: 44px; }
-  .heroCopy h1 { max-width: 14ch; }
+  .heroCopy h1 { max-width: 24ch; font-size: clamp(40px, 7vw, 66px); }
   .heroVisual { max-width: 620px; }
 }
 
+/* WHY the figures become three rows on a phone: three squeezed cells break every label onto two lines. */
+
 @media (max-width: 560px) {
   .hero { padding: 28px 0 64px; min-height: 0; }
-  .demoBody { padding: 15px; }
-  .heroStats { gap: 14px 26px; }
+  [data-ui] .demoBody { padding: 15px; }
+
+  .heroStats { grid-template-columns: 1fr; gap: 14px; }
+  .heroStats div { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+  .heroStats dd { margin: 0; }
 }
 
 /* ── sections ───────────────────────────────────────────────────────────── */

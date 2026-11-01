@@ -26,9 +26,10 @@ test('the hero sells the product instead of apologizing for it', () => {
   const html = read('beranda.html');
   assert.doesNotMatch(html, /Sembilan dua/, 'the broken sentence is gone');
   assert.match(html, /34 tool/, 'the tool count is stated as a number');
-  assert.match(html, /class="eyebrow"/, 'an eyebrow names the release above the headline');
+  assert.doesNotMatch(html, /id="heroEyebrow"/, 'no eyebrow above the headline: the label was a label, not information');
+  assert.match(html, /class="lede"[^>]*>Daftar terbuka\./, 'the release line folded into the sentence under the headline');
   assert.match(html, /id="demo"/, 'a product visual answers what the words claim');
-  assert.match(html, /id="heroStats"/, 'numbers sit under the call to action, not in prose');
+  assert.match(html, /id="heroStats"/, 'numbers sit in a band under both columns, not in prose');
 });
 
 test('the hero stats equal live source counts, never stale copy', () => {
@@ -166,11 +167,11 @@ test('the legal pages open with a map, not a wall', () => {
 test('home after sign-in is a console door, not the sales pitch again', () => {
 
   const html = read('beranda.html');
-  assert.match(html, /id="heroEyebrow"/, 'the eyebrow is addressable');
+  assert.match(html, /id="heroSession"/, 'the session line is addressable');
   assert.match(html, /id="ctaOut"/, 'the acquisition actions have an element');
   assert.match(html, /id="ctaIn" hidden/, 'the member actions start hidden');
   assert.match(html, /id="quickTiles" hidden/, 'and so do the inward tiles');
-  assert.match(html, /href="\.\/dashboard\.html#device"/, 'a tile reaches devices');
+  assert.match(html, /href="\.\/dashboard\.html#ringkasan"/, 'a tile reaches the devices, which live in the summary');
   assert.match(html, /href="\.\/dashboard\.html#pairing"/, 'a tile reaches pairing');
   assert.match(html, /classList\.add\('signed-in'\)/, 'the swap marks the body');
   assert.match(html, /localStorage\?\.\getItem\('opera-agent-access-token'\)/, 'decided by a stored session, never a request');
@@ -180,7 +181,7 @@ test('home after sign-in is a console door, not the sales pitch again', () => {
 test('display type sets the page apart from its own dashboard', () => {
 
   const css = cssOf('beranda.html');
-  assert.match(css, /clamp\(44px, 6vw, 82px\)/, 'the headline spans display sizes');
+  assert.match(css, /clamp\(40px, 4\.6vw, 66px\)/, 'the headline spans display sizes');
   assert.match(css, /h2 \{[^}]*font-size: clamp\(28px, 3\.2vw, 44px\)/, 'sections step down to a clear second rank');
   assert.match(css, /\.section \{[^}]*padding: 104px 0/, 'and breathe around each idea');
 });

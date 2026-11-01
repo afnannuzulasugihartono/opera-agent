@@ -1,4 +1,4 @@
-@last-edited: 2026-11-01 UTC+7.
+@last-edited: 2026-11-02 UTC+7.
 @related: [`AGENTS.md`](../AGENTS.md) - [`design-references.md`](design-references.md) - [`handoff.md`](handoff.md) - [`superpowers/specs/2026-10-26-cohere-grade-site-design.md`](superpowers/specs/2026-10-26-cohere-grade-site-design.md)
 
 # Benchmark situs — Cline, OpenCode, Cohere
@@ -66,15 +66,43 @@ soft purple fill rather than a block.
 | heading weight | site.css's marketing 500 reached both app surfaces | `body.app-dark` re-pins 600 | the account title was 34px/500 |
 | header content | a centred 1200px box at x=111, over a 1422px console | the window's edges, 24px gutters | one measure on one screen |
 | footer content | a third centred box | the same gutters | |
-| active rail item | a solid accent block, the loudest thing on the page | `--accent-soft` fill, `--accent-strong` text, 9.27:1 measured | Cline uses a soft tint |
+| active rail item | a solid accent block, the loudest thing on the page | a 1px accent line and the ink of the text | Cline tints; the console uses its own 1px line |
 | header doors | 9, the marketing map and the app's own | 5: Unduh, Dashboard, Akun, the language | Cline's and OpenCode's app bars carry the app's destinations only |
 | account line | "Device milik {email}." | "Akun {email}." | the page names the account |
 | app bar actions | two, the second one already in the nav, the rail and the account view | one | |
-| status line | "2 device ter-pairing, 1 daring." — two of the three figures again | "Semua device daring." / "Sebagian device offline." / "Tidak ada device daring." | the state, not the counts |
+| status line | "2 device ter-pairing, 1 daring." — two of the three figures again | gone from the app bar; the device list and its cards say their own state | the state, not the counts |
+| rail marks | seven generic glyphs that described nothing | none: the rail is names in two groups, Pantau and Kelola | a rail of names is what the console's own screens use |
+| metric strip | above every view | inside Ringkasan only | one view answers one question |
+| device card | name, status, five facts, and the last ten commands | name, state word, browser · build, two facts, the id and the actions | the commands live in Riwayat |
+| history method cell | a chip inside a table cell | plain literal text | no box inside a box |
+| table names in the rail | "listen_chunks", "workflow_runs" | "Listen chunks", "Workflow runs", the raw name kept in `title` | a reader who does not know the schema decodes nothing |
 | document title | "Tabel — Opera Agent" | "Tabel \| Dashboard Opera Agent" | Cline writes "Home \| Cline Dashboard", OpenCode "Activity \| OpenCode Console" |
 
 The radii, the label scale and the title size are Cline's own console
 measurements. The rest of this table is what the redesign changed.
+
+## The home hero, measured
+
+Measured 2026-11-02 in Chromium with the taste inspector, at 1440px, 768px and
+390px, against the page before the change.
+
+| | before | after | reference |
+|---|---|---|---|
+| hero headline | 82px (5.7vw), 3 lines | 66px (4.6vw), 2 lines | a title holds to two lines |
+| hero columns | 1.02fr / .98fr, a glow behind the right half | 1fr / 1fr, one flat ground | the two halves carry equal weight |
+| headline measure | `max-width: 12ch` | `max-width: 20ch`, 24ch under 940px | the column, not the word count, decides the break |
+| product picture | a drawn browser window with three dots and an address bar | the panel itself, marked `data-ui` | a product shown inside a drawn window is a picture of a product |
+| eyebrow above the headline | "Daftar terbuka · Otomasi browser lewat MCP" | gone; the line folded into the lede | the inspector counts a label above a heading as an eyebrow |
+| figures | a row under the left column, with a hairline above it | a full-width band under both columns, 88px down | the proof spans the claim |
+| headline leading | 1.02 | 1.02 | the spec's line height |
+| page height | 4.9 screens, 385 words | 4.8 screens, 378 words | |
+
+The taste inspector reports the hero clean: the headline-lines, gradient,
+button-fx, mono, hero-eyebrow and contrast findings of the first pass are gone
+at all three widths. The console reports 0 FAIL and 0 WARN in app mode. The
+page-wide findings of the home page — five section eyebrows, four resting
+shadows, sixteen hairlines, six outlined boxes, 14px body copy, no photographs
+and a still page — are untouched and are listed in the next round below.
 
 ## What shipped on 2026-11-01
 
@@ -135,19 +163,67 @@ measurements. The rest of this table is what the redesign changed.
     points at Unduh. The lead-in is gone and the state line states the fact;
     the steps live in the checklist, once.
 
+## What shipped on 2026-11-02
+
+The reader's own notes drove this round. Every claim below is a measurement or
+a screenshot.
+
+1. **The console says one thing once.** The Ringkasan view carried a "Perintah
+   terakhir" card that the Riwayat view listed again, and the Device view
+   repeated the same rows in every device card. The commands have one view now,
+   the last-command card is gone, and the device card answers three questions:
+   is it reachable, what is it, and how do I act on it.
+2. **The figures live in one view.** The metric strip sat above every view, so
+   a reader in Riwayat saw three numbers about a page that showed none. The
+   strip is inside Ringkasan now, and the app bar carries only the account
+   line.
+3. **The rail says what the console does.** Seven generic glyphs described
+   nothing about Opera Agent, so the rail is names now, in two groups: Pantau
+   (Ringkasan, Riwayat, Dengar) and Kelola (Tabel, Pairing, Aksi, Akun). The
+   active item is a 1px accent line and the ink of the text, because a tinted
+   block was the loudest thing on the dark canvas.
+4. **The table list reads like a list of tables.** "listen_chunks" and
+   "workflow_runs" became "Listen chunks" and "Workflow runs"; the raw name
+   stays in the `title` for a support thread.
+5. **The history method is a method.** The cell wore a chip, a box inside the
+   table's own box. It is plain literal text now.
+6. **The device facts read as two rows.** Five facts in one block left the eye
+   unable to tell which row answered which question; the card now shows the
+   state word beside the name, the browser and the build on one line under it,
+   and two rows under a 1px rule: when it was last seen and how many commands
+   are done.
+7. **The home hero is symmetrical.** One column carried the words, the other a
+   glowing window; the columns are equal now, the ground is flat, the headline
+   is 66px on two lines, and the product panel is the panel — no drawn browser
+   around it.
+8. **The figures under the hero span the claim.** They sat under the left
+   column with a hairline above them; they are a band under both columns now,
+   and three rows on a phone.
+9. **The home page lost its eyebrow.** "Daftar terbuka · Otomasi browser lewat
+   MCP" was a label above a heading, which the inspector counts as an eyebrow.
+   The line folded into the lede under the headline.
+
 ## Next round, ranked
 
-1. **A real picture of the product in the hero.** Cline shows six images,
-   Cohere eighty-eight; we show a CSS mock. One PNG of the extension popup
-   answers "what does this look like" better than any copy. It also needs
+1. **The home page, measured against the house rules.** The taste inspector
+   still reports, at all three widths: five section eyebrows, four resting
+   shadows, sixteen hairlines, six outlined boxes, 14px body copy, no
+   photographs and a still page. The hero is clean; the page below it is not.
+   This is the largest honest gap left.
+2. **The home page's frame.** The inspector measures the margins at 120px left
+   and 141px right at 1440px, and calls the FAQ section lopsided with 840px of
+   empty width beside it. Both are page-wide, not the hero.
+3. **A real picture of the product in the hero.** Cline shows six images,
+   Cohere eighty-eight; we show a panel drawn in CSS. One PNG of the extension
+   popup answers "what does this look like" better than any copy. It also needs
    `img-src 'self'` in `landing/_headers` and `landing/vercel.json`, which
    today allow `data:` only, plus the hosting gate that keeps those two files
    in step. The best trust-per-hour item left.
-2. **One product map in the navigation.** Nine flat doors work at 1440px; the
+4. **One product map in the navigation.** Nine flat doors work at 1440px; the
    references give a reader a map of what the product does (43 and 64 links).
    A short "Fitur" group — read the page, click, fill the form — costs one
    list and no mega menu.
-3. **Translation coverage on the remaining pages.** Measured across all twelve
+5. **Translation coverage on the remaining pages.** Measured across all twelve
    landing pages: 198 Indonesian sentences carry a `data-i18n` mark and 84 do
    not. The gaps are `akun.html` (17), `privasi.html` (16), `dashboard.html`
    (15), `syarat.html` (14), `oauth/consent.html` (11), `404.html` (5),
@@ -156,11 +232,11 @@ measurements. The rest of this table is what the redesign changed.
    surfaces — `akun.html`, `dashboard.html` and `oauth/consent.html` — carry
    the language toggle and load `i18n.js`, but hold no `#i18n-dict` at all, so
    their toggle switches nothing.
-4. **The console, measured with a real account.** Every console number above
+6. **The console, measured with a real account.** Every console number above
    comes from a stubbed session; the redesign was measured the same way.
    Re-measure against a real account before the next round, and keep the
    surface dark: it is the only place on the site that is.
-5. **Cohere's 52px action.** Only if the spec's 44px is revisited. Cline's
+7. **Cohere's 52px action.** Only if the spec's 44px is revisited. Cline's
    36px says 44px is a fine middle, and our action already carries the one
    filled action per section.
 

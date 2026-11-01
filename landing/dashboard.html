@@ -1,6 +1,6 @@
 <!-- @last-edited: 2026-10-28 UTC+7. -->
 <!-- @title: dashboard — the control panel: devices, history, the project's tables, pairing, and one command. -->
-<!-- @state: an app shell, not a brochure: an app bar with the live status line and the next action, a metric strip above the views, one rail with three named groups, and one visible view at a time chosen by the hash. -->
+<!-- @state: an app shell, not a brochure: an app bar with the account line and the next action, a metric strip inside the summary view, one rail of plain names, and one visible view at a time chosen by the hash. -->
 <!-- Reads only through opera_my_devices and the opera_konsol_* reader RPCs — never a raw table path; reads the content script's DOM marker to say whether the extension is installed here. -->
 <!-- @dependencies: site.css, app.css, dashboard.css, i18n.js. -->
 
@@ -38,69 +38,64 @@
   <main class="wrap wide console">
     <div class="layout">
       <nav class="rail" aria-label="Bagian dashboard">
+        <!-- WHY a text rail and no icons: seven generic glyphs said nothing about Opera Agent and made the names harder to read, and a rail of names is what the console's own screens use. -->
         <div class="railHead">
           <p class="railTitle">Konsol</p>
-          <button class="railCollapse" id="railCollapse" type="button" aria-expanded="true" title="Sembunyikan navigasi" aria-label="Sembunyikan navigasi">
-            <svg class="railIcon" viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3 5 8l5 5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" /></svg>
-          </button>
         </div>
         <p class="railGroup">Pantau</p>
-        <a href="#ringkasan" aria-current="true"><svg class="railIcon" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 13a6 6 0 1 1 11 0" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" /><path d="M8 13 11 7" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" /></svg><span>Ringkasan</span></a>
-        <a href="#device"><svg class="railIcon" viewBox="0 0 16 16" aria-hidden="true"><rect x="2" y="3" width="12" height="8.5" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.5" /><path d="M6 14h4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" /></svg><span id="railDeviceLabel">Device</span></a>
-        <a href="#riwayat"><svg class="railIcon" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="5.75" fill="none" stroke="currentColor" stroke-width="1.5" /><path d="M8 4.75V8l2.5 1.75" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" /></svg><span>Riwayat</span></a>
-        <a href="#dengar"><svg class="railIcon" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 8h2M6 4.5v7M9.5 2.5v11M13 6.5v3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" /></svg><span>Dengar</span></a>
+        <a href="#ringkasan" aria-current="true"><span>Ringkasan</span></a>
+        <a href="#riwayat"><span>Riwayat</span></a>
+        <a href="#dengar"><span>Dengar</span></a>
         <p class="railGroup">Kelola</p>
-        <a href="#tabel"><svg class="railIcon" viewBox="0 0 16 16" aria-hidden="true"><rect x="2" y="2.5" width="12" height="11" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.5" /><path d="M2 6.25h12M6.25 6.25V13.5" fill="none" stroke="currentColor" stroke-width="1.5" /></svg><span>Tabel</span></a>
+        <a href="#tabel"><span>Tabel</span></a>
 
         <!-- WHY a contextual part: the object of the Tabel view is a list of tables, and a second sidebar inside the content made the one view with two left columns. -->
         <!-- WHY it opens under Tabel and not at the end of the rail: measured against Cline, the objects of a view open directly under that view's item. -->
         <!-- The reader arrived at Tabel and found its tables below "Akun". -->
         <div class="railContext" id="railTables" hidden>
-          <p class="railGroup">Tabel data</p>
           <div class="railList" id="konsolList" role="group" aria-label="Daftar tabel"></div>
         </div>
-        <a href="#pairing"><svg class="railIcon" viewBox="0 0 16 16" aria-hidden="true"><path d="M6.5 9.5a3 3 0 0 1 0-4.2l1.4-1.4a3 3 0 0 1 4.2 4.2l-.7.7" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" /><path d="M9.5 6.5a3 3 0 0 1 0 4.2L8.1 12.1a3 3 0 0 1-4.2-4.2l.7-.7" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" /></svg><span>Pairing</span></a>
-        <a href="#aksi"><svg class="railIcon" viewBox="0 0 16 16" aria-hidden="true"><path d="M5.5 3.75 12 8l-6.5 4.25z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" /></svg><span>Aksi</span></a>
-        <p class="railGroup">Akun</p>
-        <a href="#akun"><svg class="railIcon" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="5.75" r="2.75" fill="none" stroke="currentColor" stroke-width="1.5" /><path d="M3 13.25a5 5 0 0 1 10 0" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" /></svg><span>Akun</span></a>
+        <a href="#pairing"><span>Pairing</span></a>
+        <a href="#aksi"><span>Aksi</span></a>
+        <a href="#akun"><span>Akun</span></a>
       </nav>
 
       <div class="content tabbed">
-        <!-- WHY a head of its own: the numbers and the status line belong to the console, not to one view, and a view that scrolls must not take them with it. -->
+        <!-- WHY a head of its own: the account line belongs to the console, not to one view, and a view that scrolls must not take it with it. -->
         <div class="contentHead">
           <div class="appBar">
-            <p class="appWho" id="whoami">Memeriksa sesi…</p>
+            <!-- WHY the line carries the session and its failures: a second line above the views repeated the figures below it, and the app bar is the one place every view shows. -->
+            <p class="appWho" id="whoami" role="status">Memeriksa sesi…</p>
             <div class="appActions">
               <a class="btn ghost sm" href="./unduh.html" id="primaryCta">Pasang extension</a>
             </div>
           </div>
+        </div>
 
-          <p class="status appStatus" id="status" role="status" aria-live="polite">&nbsp;</p>
+        <section id="ringkasan" class="active">
+          <h1>Ringkasan</h1>
 
+          <!-- WHY the figures live in the summary and not above the views: they are the account's state, so they answer this view and no other. -->
           <dl class="metrics" id="metrics">
             <div><dt>Device ter-pairing</dt><dd id="statDevices">–</dd></div>
             <div><dt>Daring sekarang</dt><dd id="statOnline">–</dd></div>
             <div><dt>Perintah selesai</dt><dd id="statCommands">–</dd></div>
           </dl>
-        </div>
 
-        <section id="ringkasan" class="active">
-          <h1>Ringkasan</h1>
-          <div class="card">
+          <div class="card setup">
+            <div class="cardHead"><h3>Siap</h3></div>
             <p class="tone" id="installState" role="status" aria-live="polite">&nbsp;</p>
             <ol class="checklist" id="checklist"></ol>
           </div>
-        </section>
 
-        <section id="device">
-          <h1>Device</h1>
-          <p class="meta">Device yang ter-pairing ke akun ini, beserta sepuluh perintah terakhirnya.</p>
+          <!-- WHY the devices sit here and not in a view of their own: the console keeps one thing in one place, and the commands already have their own view. -->
+          <div class="blockHead"><h3>Device</h3></div>
+          <p class="status" id="deviceStatus" role="status" aria-live="polite"></p>
           <div id="devices"></div>
         </section>
 
         <section id="riwayat">
           <h1>Riwayat</h1>
-          <p class="meta">Perintah terbaru di semua device, terbaru dulu. Hanya method dan status — tanpa isi perintah.</p>
           <div class="toolbar">
             <div class="segmented" role="group" aria-label="Saring status">
               <button type="button" data-filter="" aria-pressed="true">Semua</button>
@@ -224,6 +219,15 @@
     const $ = (id) => document.getElementById(id);
     const headersFor = (token) => ({ apikey: PUBLISHABLE_KEY, authorization: `Bearer ${token}`, 'content-type': 'application/json' });
 
+    // WHY one line for the session and its failures: the app bar is the one place every view shows, and a separate status strip repeated the figures the metric strip already carries.
+    // The write is guarded because the device list is re-read every ten seconds, and a live region that repeats itself every ten seconds talks over the reader.
+    const sayWho = (text, warn = false) => {
+      const node = $('whoami');
+      if (node.textContent === text) return;
+      node.textContent = text;
+      node.className = warn ? 'appWho warn' : 'appWho';
+    };
+
     // WHY the session renews itself: a Supabase access token lasts about an hour and this page holds no SDK to renew it, so an expired token read as "signed out" and the stored copy was deleted.
     // Renewing is one POST to the Auth host this page already reaches, so a reader who stays signed in is not asked to sign in again every hour.
     const forgetSession = () => {
@@ -319,8 +323,7 @@
       } catch (error) {
         // WHY the temporary branch comes first: a renewal that could not reach Auth is a network problem, and answering it with a sign-out is what made every reader look like the product had forgotten them.
         if (temporary) {
-          $('status').textContent = 'Tidak bisa menghubungi layanan auth. Sesi Anda tetap aman; coba lagi sebentar.';
-          $('status').className = 'status warn';
+          sayWho('Layanan auth tak terjangkau. Sesi Anda tetap aman.', true);
           return null;
         }
         forgetSession();
@@ -375,12 +378,14 @@
         { done: devices.length > 0, text: 'Pair device' },
         { done: total > 0, text: 'Jalankan perintah pertama' }
       ];
+      // WHY no tick character: a glyph from a font the console does not load reads as an emoji to the inspector, and the browser that lacks it shows a box.
+      // The done state is drawn by the box itself, so the row says the same thing everywhere.
       if (steps.every((step) => step.done)) {
-        $('checklist').innerHTML = '<li class="done"><span class="box">✓</span><span>Semua langkah selesai. Konsol ini memantau device Anda.</span></li>';
+        $('checklist').innerHTML = '<li class="done"><span class="box"></span><span>Semua langkah selesai. Konsol ini memantau device Anda.</span></li>';
         return;
       }
       $('checklist').innerHTML = steps.map((step, index) =>
-        `<li class="${step.done ? 'done' : ''}"><span class="box">${step.done ? '✓' : index + 1}</span><span>${esc(step.text)}</span></li>`
+        `<li class="${step.done ? 'done' : ''}"><span class="box">${step.done ? '' : index + 1}</span><span>${esc(step.text)}</span></li>`
       ).join('');
     }
 
@@ -404,7 +409,7 @@
         return;
       }
       if (!online) {
-        cta.href = '#device';
+        cta.href = '#ringkasan';
         cta.textContent = 'Cek device';
         return;
       }
@@ -455,8 +460,7 @@
       const { token, user } = session;
       liveToken = token;
       liveUser = user;
-      $('whoami').textContent = `Akun ${user.email}.`;
-
+      sayWho(`Akun ${user.email}.`);
       // WHY the sign-in link leaves a signed-in page: "Masuk" beside a live session is a contradiction the reader has to resolve, and the app bar already offers the account.
       const navCta = document.querySelector('header .navCta');
       if (navCta) navCta.hidden = true;
@@ -551,7 +555,6 @@
         return;
       }
       $('historyRows').innerHTML = rows.map((row) => {
-        const dotTone = row.status === 'completed' ? ' online' : row.status === 'failed' ? ' offline' : '';
         const ink = commandInk(row.status);
         const status = ink ? `<span class="${ink}">${esc(row.status)}</span>` : `<span>${esc(row.status)}</span>`;
 
@@ -559,7 +562,7 @@
         return `
         <tr>
           <td title="${esc(absoluteTime(row.createdAt))}">${esc(relativeTime(row.createdAt))}</td>
-          <td><span class="dot${dotTone}" aria-hidden="true"></span>${status}</td>
+          <td>${status}</td>
           <td><code>${esc(row.method)}</code></td>
           <td>${esc(row.device)}</td>
           <td class="num">${esc(formatDuration(row.createdAt, row.completedAt))}</td>
@@ -606,14 +609,16 @@
         data = null;
       }
       if (!data?.ok) {
-        $('status').textContent = 'Belum bisa memuat device. Coba lagi sebentar.';
-        $('status').className = 'status warn';
+        sayWho('Belum bisa memuat device. Coba lagi sebentar.', true);
+        $('statDevices').textContent = '–';
+        $('statOnline').textContent = '–';
+        $('statCommands').textContent = '–';
         return;
       }
+      sayWho(`Akun ${user.email}.`);
       renderAccountFacts(user, data.devices);
 
       // WHY the numbers live here and not in a second fetch: they are sums over the same payload the list renders, so the summary can never disagree with it.
-      // The rail count rides along for the same reason.
       const total = data.devices.length;
       const up = data.devices.filter((device) => device.status === 'online').length;
       const done = data.devices.reduce((n, device) => n + (device.completedCommands ?? 0), 0);
@@ -625,7 +630,6 @@
       lastSeen.total = all;
       renderChecklist();
       paintPrimaryAction();
-      $('railDeviceLabel').textContent = `Device (${total})`;
       renderHistory(data.devices);
 
       // WHY metadata only: a screenshot of this page must not leak speech, so the section names sessions without quoting them.
@@ -637,7 +641,6 @@
         $('listens').innerHTML = sessions.length ? sessions.map((session) => `
           <div class="card">
             <div class="cardHead">
-              <span class="dot ${session.status === 'live' ? 'online' : 'offline'}" aria-hidden="true"></span>
               <h3>${esc(session.deviceName || session.id)}</h3>
               <span class="chip">${esc(session.status)}</span>
             </div>
@@ -651,62 +654,46 @@
         $('listens').innerHTML = '';
       }
       if (!data.devices.length) {
-        $('status').textContent = 'Belum ada device terikat ke akun ini.';
-        $('status').className = 'status warn';
         $('devices').innerHTML = '<div class="empty"><strong>Belum ada device.</strong><p>Pasang Opera Agent di browser ini, lalu buat kode pairing untuk dihubungkannya ke akun ini.</p><a class="btn ghost sm" href="#pairing">Buat kode pairing</a></div>';
         return;
       }
-      const online = data.devices.filter((device) => device.status === 'online').length;
-      // WHY the line names a state and not a count: the metric strip above already carries the counts, and a line that repeats them says the same thing twice.
-      // WHY the write is guarded: the list is re-read every ten seconds, and an unchanged line rewritten ten times a minute is a live region that talks over itself.
-      const note = online === data.devices.length
-        ? 'Semua device daring.'
-        : (online ? 'Sebagian device offline.' : 'Tidak ada device daring.');
-      if ($('status').textContent !== note) {
-        $('status').textContent = note;
-        $('status').className = online === data.devices.length ? 'status ok' : 'status warn';
-      }
 
       // WHY the state rides the first line: two stacked cards once differed only in a middle row, so the down device hid in plain sight.
-      // The build moves up beside the name for the same reason; the facts below keep the rest.
+      // WHY the card carries no commands: the Riwayat view already lists every command, and a second copy of the same rows on the summary page was the reader's work twice.
+      // WHY the facts are their own block: identity, state, counters and the id were one list of five rows, and the eye could not tell which row answered which question.
       $('devices').innerHTML = data.devices.map((device) => `
-        <div class="card">
+        <div class="card deviceCard">
           <div class="cardHead">
-            <span class="dot ${device.status === 'online' ? 'online' : 'offline'}" aria-hidden="true"></span>
             <h3>${esc(device.name)}</h3>
-            <span class="chip">${esc(device.extensionVersion || '-')}</span>
-            ${device.browserName ? `<span class="chip">${esc(device.browserName)}</span>` : ''}
-            ${!device.browserName && lastSeen.browser ? `<span class="chip">${esc(lastSeen.browser)} di browser ini</span>` : ''}
+            <span class="deviceState ${device.status === 'online' ? 'online' : 'offline'}">${esc(device.status)}</span>
           </div>
-          <dl class="facts">
-            <dt>Status</dt><dd><span class="${device.status === 'online' ? 'online' : 'offline'}">${esc(device.status)}</span></dd>
+          <p class="deviceSub">${esc(device.browserName || (lastSeen.browser ? `${lastSeen.browser} di browser ini` : 'Browser tidak dikenal'))} · Extension ${esc(device.extensionVersion || '-')}</p>
+          <dl class="deviceFacts">
             <dt>Terakhir terlihat</dt><dd>${esc(relativeTime(device.lastSeenAt))}</dd>
             <dt>Perintah</dt><dd>${esc(device.completedCommands ?? 0)} dari ${esc(device.totalCommands ?? 0)} selesai</dd>
-            <dt>ID device</dt><dd><code class="deviceId" data-copy="${esc(device.id)}" title="Klik untuk menyalin">${esc(device.id)}</code></dd>
           </dl>
-          <ul class="commands">${device.commands.map((command) => `<li><code>${esc(command.method)}</code>${command.provider ? `<span class="chip">${esc(command.provider)}</span>` : ''}<span class="${commandInk(command.status)}">${esc(command.status)}</span></li>`).join('')}</ul>
-          <div class="row">
-            <button class="btn ghost" type="button" data-copy="${esc(device.id)}">Salin ID</button>
-            <button class="btn danger" type="button" data-revoke="${esc(device.id)}" data-name="${esc(device.name)}">Cabut device ini</button>
+          <div class="deviceIdRow">
+            <code class="deviceId" data-copy="${esc(device.id)}" title="Klik untuk menyalin">${esc(device.id)}</code>
+            <div class="row">
+              <button class="btn ghost" type="button" data-copy="${esc(device.id)}">Salin ID</button>
+              <button class="btn danger" type="button" data-revoke="${esc(device.id)}" data-name="${esc(device.name)}">Cabut device ini</button>
+            </div>
           </div>
         </div>`).join('');
 
-      // WHY one delegated listener: the device list is re-rendered on every load, so
-      // per-button listeners would be re-bound each time and the copy affordance is
-      // the one thing a stranger reaches for before writing a support message.
+      // WHY one delegated listener: the device list is re-rendered on every load, so per-button listeners would be re-bound each time and the copy affordance is the one thing a stranger reaches for before writing a support message.
       $('devices').onclick = async (event) => {
         const target = event.target.closest('[data-copy]');
         if (!target) return;
         const id = target.dataset.copy;
         try {
           await navigator.clipboard.writeText(id);
-          $('status').textContent = `ID device disalin: ${id}`;
-          $('status').className = 'status ok';
+          $('deviceStatus').textContent = `ID device disalin: ${id}`;
+          $('deviceStatus').className = 'status ok';
         } catch (error) {
-          // Clipboard is blocked without a user gesture or a secure context, and the
-          // id is on screen anyway, so saying so beats a silent failure.
-          $('status').textContent = `Salin manual: ${id}`;
-          $('status').className = 'status warn';
+          // Clipboard is blocked without a user gesture or a secure context, and the id is on screen anyway, so saying so beats a silent failure.
+          $('deviceStatus').textContent = `Salin manual: ${id}`;
+          $('deviceStatus').className = 'status warn';
         }
       };
       for (const button of document.querySelectorAll('[data-revoke]')) {
@@ -717,12 +704,12 @@
             const response = await fetch(`${REST}/rpc/opera_revoke_my_device`, { method: 'POST', headers: headersFor(token), body: JSON.stringify({ p_device_id: button.dataset.revoke }) });
             const result = await response.json();
             if (!result?.ok) throw new Error(say(result?.error || response.status));
-            $('status').textContent = `${button.dataset.name} dicabut. Pasang ulang untuk menghidupkannya.`;
-            $('status').className = 'status ok';
+            $('deviceStatus').textContent = `${button.dataset.name} dicabut. Pasang ulang untuk menghidupkannya.`;
+            $('deviceStatus').className = 'status ok';
           } catch (error) {
             button.disabled = false;
-            $('status').textContent = `Gagal mencabut: ${error.message}.`;
-            $('status').className = 'status warn';
+            $('deviceStatus').textContent = `Gagal mencabut: ${error.message}.`;
+            $('deviceStatus').className = 'status warn';
             return;
           }
           refreshDevices();
@@ -741,9 +728,8 @@
         const response = await fetch(`${REST}/rpc/opera_run_on_my_device`, { method: 'POST', headers: headersFor(token), body: JSON.stringify({ p_method: method }) });
         const result = await response.json();
 
-        // WHY the pending branch: the device polls on a ramp, so a command can sit
-        // queued a few seconds past the wait window and still complete. Reporting
-        // that as a failure teaches the reader that the button is broken.
+        // WHY the pending branch: the device polls on a ramp, so a command can sit queued a few seconds past the wait window and still complete.
+        // Reporting that as a failure teaches the reader that the button is broken.
         if (!result?.ok) {
           const code = result?.error?.code || result?.status;
           if (code === 'AWAIT_TIMEOUT' || code === 'queued') {
@@ -757,8 +743,8 @@
           return;
         }
 
-        // WHY the status only: the payload may carry page content, and this page
-        // has no business showing it. The method and outcome are the useful parts.
+        // WHY the status only: the payload may carry page content, and this page has no business showing it.
+        // The method and outcome are the useful parts.
         $('runStatus').textContent = `${method} — ${result.status}.`;
         $('runStatus').className = 'status ok';
         refreshDevices();
@@ -801,10 +787,8 @@
       }
     });
 
-    // WHY the editor reads through opera_konsol_* and never a table path: the ownership
-    // filter, the page caps and the masking belong to the server, so a modified client
-    // can ask for a different page but cannot ask for a column the reader refuses to
-    // send. Everything below is presentation: pick a table, sort it, page it, copy it.
+    // WHY the editor reads through opera_konsol_* and never a table path: the ownership filter, the page caps and the masking belong to the server, so a modified client can ask for a different page but cannot ask for a column the reader refuses to send.
+    // Everything below is presentation: pick a table, sort it, page it, copy it.
     const konsol = { ready: false, seq: 0, table: null, cols: [], rows: [], total: 0, offset: 0, limit: 50, search: '', sort: null, dir: null };
     let konsolToken = null;
 
@@ -814,6 +798,10 @@
     };
 
     const konsolNf = (n) => Number(n).toLocaleString('id-ID');
+
+    // WHY a readable name and not the column name: the sidebar listed "listen_chunks" and "workflow_runs", and a reader who does not know the schema had to decode every row before it meant anything.
+    // The raw name stays in the button's data attribute and in its title, so the machine name is still one hover away.
+    const tableLabel = (name) => String(name).replace(/^opera_/, '').replace(/[_-]+/g, ' ').replace(/^./, (c) => c.toUpperCase());
     const konsolNum = new Set(['smallint', 'integer', 'bigint', 'numeric', 'real', 'double precision', 'money', 'smallserial', 'serial', 'bigserial']);
     const konsolClock = new Set(['timestamp with time zone', 'timestamp without time zone', 'date']);
 
@@ -822,11 +810,8 @@
     const konsolMono = (name) => name === 'id' || name.endsWith('_id');
     const konsolCellClass = (col) => [konsolNum.has(col.type) ? 'num' : '', konsolMono(col.name) ? 'mono' : ''].filter(Boolean).join(' ');
 
-    // WHY the cell shortens here: one cell can hold a workflow definition or a URL,
-    // and a grid that grows to fit its widest cell stops being a grid. The grid shows
-    // what fits — a relative time where a clock column sits, a shortened value
-    // elsewhere — and the title always carries the whole truth, so a support
-    // conversation never asks for a value the screen had but hid.
+    // WHY the cell shortens here: one cell can hold a workflow definition or a URL, and a grid that grows to fit its widest cell stops being a grid.
+    // The grid shows what fits — a relative time where a clock column sits, a shortened value elsewhere — and the title always carries the whole truth, so a support conversation never asks for a value the screen had but hid.
     const konsolRowCell = (record, col) => {
       const raw = record[col.name];
       if (raw === null || raw === undefined) return { text: '–', full: '' };
@@ -841,10 +826,8 @@
     const konsolCsvCell = (value) => {
       const text = value === null || value === undefined ? '' : typeof value === 'object' ? JSON.stringify(value) : String(value);
 
-      // WHY the apostrophe: a device or workflow cell that starts with =, +, - or @
-      // is read as a formula by spreadsheet software even inside quotes, and this
-      // export carries names a stranger may have chosen. One leading apostrophe costs
-      // nothing honest and stops the file from running anything.
+      // WHY the apostrophe: a device or workflow cell that starts with =, +, - or @ is read as a formula by spreadsheet software even inside quotes, and this export carries names a stranger may have chosen.
+      // One leading apostrophe costs nothing honest and stops the file from running anything.
       const guarded = /^[=+\-@]/.test(text) ? `'${text}` : text;
       return `"${guarded.replace(/"/g, '""')}"`;
     };
@@ -958,14 +941,17 @@
 
       // WHY grouped and not one flat wall: sixteen names read as a list of tables only when the two rules behind them are visible — nine belong to this account, seven to the operator.
       // The server sends the scope; the page shows it.
-      const groupOf = { owner: 'Milik akun ini', operator: 'Operator' };
+      const groupOf = { owner: 'Akun ini', operator: 'Operator' };
       let lastScope = null;
       $('konsolList').innerHTML = entries.map((entry) => {
-        const head = entry.scope === lastScope ? '' : `<span class="konsolGroup">${esc(groupOf[entry.scope] || entry.scope)}</span>`;
-        lastScope = entry.scope;
+        const scope = groupOf[entry.scope] || '';
+        const head = scope && scope !== lastScope ? `<span class="konsolGroup">${esc(scope)}</span>` : '';
+        lastScope = scope;
+        const label = tableLabel(entry.name);
+        const title = entry.readable ? `${label} · ${konsolNf(entry.total)} baris` : 'Hanya akun operator yang boleh membaca tabel ini';
         return `${head}
-        <button type="button" data-table="${esc(entry.name)}" ${entry.readable ? '' : 'disabled aria-disabled="true"'} aria-current="${entry.name === konsol.table ? 'true' : 'false'}" title="${entry.readable ? esc(`${konsolNf(entry.total)} baris`) : 'Hanya akun operator yang boleh membaca tabel ini'}">
-          <span>${esc(entry.name.replace(/^opera_/, ''))}</span>
+        <button type="button" data-table="${esc(entry.name)}" ${entry.readable ? '' : 'disabled aria-disabled="true"'} aria-current="${entry.name === konsol.table ? 'true' : 'false'}" title="${esc(title)}">
+          <span>${esc(label)}</span>
           <span class="meta">${entry.readable ? konsolNf(entry.total) : '–'}</span>
         </button>`;
       }).join('');
@@ -1095,7 +1081,7 @@
       }
     });
 
-    // WHY one visible section: eight stacked jobs read as a form nobody finished.
+    // WHY one visible section: seven stacked jobs read as a form nobody finished.
     // Tabs show one at a time, deep-linked by hash so #riwayat is shareable.
     function showSection() {
       const sections = [...document.querySelectorAll('main section[id]')];
@@ -1104,7 +1090,7 @@
       const target = sections.some((section) => section.id === wanted) ? wanted : 'ringkasan';
       for (const section of sections) section.classList.toggle('active', section.id === target);
 
-      // WHY the document title follows the view: eight views share one URL, so the tab strip is the only place a reader with several tabs open can tell them apart.
+      // WHY the document title follows the view: seven views share one URL, so the tab strip is the only place a reader with several tabs open can tell them apart.
       const heading = sections.find((section) => section.id === target)?.querySelector('h1')?.textContent?.trim();
       // WHY the title follows the app convention: measured in the browser, Cline writes "Home | Cline Dashboard" and OpenCode writes "Activity | OpenCode Console", so the view comes first and the pipe names the app.
       if (heading) document.title = `${heading} | Dashboard Opera Agent`;
@@ -1123,17 +1109,6 @@
       if (target === 'tabel') konsolInit();
     }
     if (typeof globalThis.addEventListener === 'function') globalThis.addEventListener('hashchange', showSection);
-
-    // WHY the rail can be put away: the table grid is the widest thing on the console, and a 196px column of navigation is 196px it cannot spend.
-    // The label goes and the mark stays, so a collapsed rail is still navigable — which is also why the count writes the label and never the link.
-    const collapse = $('railCollapse');
-    if (collapse) {
-      collapse.addEventListener('click', () => {
-        const collapsed = document.body.classList.toggle('rail-collapsed');
-        collapse.setAttribute('aria-expanded', String(!collapsed));
-        collapse.title = collapsed ? 'Tampilkan navigasi' : 'Sembunyikan navigasi';
-      });
-    }
 
     showSection();
     load();

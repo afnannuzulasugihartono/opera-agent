@@ -116,7 +116,7 @@ test('the authored Indonesian stands byte-for-byte where the pins read it', () =
 
   const sentinels = [
     ['landing/beranda.html', 'Hak cipta dilindungi'],
-    ['landing/beranda.html', 'Jembatan MCP aman'],
+    ['landing/beranda.html', 'Otomasi browser lewat MCP yang aman'],
     ['landing/beranda.html', 'Bawa model Anda'],
     ['landing/unduh-berkas.html', 'Kalau kebijakan ditolak'],
     ['landing/404.html', 'Lima jalan keluar'],
