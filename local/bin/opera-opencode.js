@@ -1,7 +1,17 @@
-// @last-edited: 2026-10-31 UTC+7.
+// @last-edited: 2026-11-02 UTC+7.
 // @title: opera-opencode — the opera-local surface as native OpenCode tools.
-// @state: the registrations the plugin makes, the fetch it runs, and the browser every tool drives.
-// @dependencies: ../tools.js, ../mcp-server.js, ../context.js, ../bridge.js.
+// @state: the registrations the plugin makes, the fetch it runs, the child server that keeps the code current, and the browser every tool drives.
+// @dependencies: node:child_process, node:fs, node:path, node:url, ../tools.js, ../mcp-server.js, ../context.js, ../bridge.js.
+
+import {
+  spawn
+} from 'node:child_process';
+import {
+  readdirSync,
+  statSync
+} from 'node:fs';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 import { TOOLS } from '../tools.js';
 import { createMcpServer } from '../mcp-server.js';
@@ -9,6 +19,27 @@ import { createLocalContext } from '../context.js';
 import { bridgeReachable } from '../bridge.js';
 
 const NAMESPACE = 'opera';
+
+// WHY THE TOOLS RUN IN A CHILD PROCESS, AND WHY THE TREE IS WATCHED INSTEAD OF THE PLUGIN.
+// Node keeps an imported module for the life of the process, so a plugin loaded at startup keeps the code it was loaded with: measured, after a reload the tools still answered in the old timings, because the import cache handed the old module back.
+// A child process reads the files when it starts, so replacing the child is what makes a code change real - and the check lives here, in code that already runs on every call, rather than in the module that cannot be replaced.
+// The in-process server stays as the fallback for a machine where the child cannot start, because a slower answer beats no answer.
+
+const LOCAL_DIR = fileURLToPath(new URL('..', import.meta.url));
+const BIN = fileURLToPath(new URL('./opera-local.js', import.meta.url));
+const STAMP_EVERY_MS = 1000;
+
+// WHY A COUNTER IS EXPORTED.
+// A test can prove a call answered, but not that a fresh server answered it; the count of children started is the only fact that tells a respawn from a cached answer.
+
+let starts = 0;
+
+/**
+ * Count the tool servers this plugin has started, so a test can tell a respawn from a cached answer.
+ * @returns {number} how many children have been started.
+ */
+
+export const pluginChildStarts = () => starts;
 
 const FETCH_DESCRIPTION = 'Fetch one url with the real browser and answer with the page text. Use it when the page needs JavaScript or a signed-in session, where an HTTP fetch gets nothing back. It opens its own tab, waits for the page to settle, reads it again until the page holds text, and closes the tab again, so one call walks the whole road. Give waitFor when the content arrives late, and the fetch waits for that text before it reads. For a page you have to click through, use open_url and browser_burst instead.';
 
@@ -185,10 +216,154 @@ export function createOperaPlugin({
   call
 } = {}) {
   let server = null;
+  let child = null;
+  let childStamp = -1;
+  let checkedAt = 0;
+  let newestSeen = -1;
 
   // WHY THE BRIDGE IS ASKED FOR HERE AND NOT AT LOAD.
   // A plugin that binds a port when OpenCode starts would take the machine's bridge whether the browser is used or not.
   // The first call asks instead, and pays the link wait only when there is a call to make.
+
+  const treeStamp = () => {
+    try {
+      let newest = 0;
+      for (const entry of readdirSync(LOCAL_DIR, {
+        recursive: true,
+        withFileTypes: true
+      })) {
+        if (!entry.isFile() || !entry.name.endsWith('.js')) continue;
+        const stat = statSync(join(entry.parentPath ?? entry.path, entry.name));
+        if (stat.mtimeMs > newest) newest = stat.mtimeMs;
+      }
+      return newest;
+    } catch {
+      return 0;
+    }
+  };
+
+  const stopChild = () => {
+    if (!child) return;
+    try {
+      child.proc.kill();
+    } catch {}
+    child = null;
+  };
+
+  const startChild = () => new Promise((
+    resolve,
+    reject
+  ) => {
+    starts += 1;
+    const proc = spawn(process.execPath, [BIN], {
+      stdio: [
+        'pipe',
+        'pipe',
+        'pipe'
+      ],
+      windowsHide: true
+    });
+    const pending = new Map();
+    let buffer = '';
+    let error = null;
+    let nextId = 0;
+    const fail = (reason) => {
+      error = reason;
+      for (const waiter of pending.values()) waiter.reject(reason);
+      pending.clear();
+    };
+    proc.on('error', (reason) => {
+      fail(reason);
+      reject(reason);
+    });
+    proc.on('exit', () => fail(new Error('the tool server stopped')));
+    proc.stderr.on('data', () => {});
+    proc.stdout.setEncoding('utf8');
+    proc.stdout.on('data', (chunk) => {
+      buffer += chunk;
+      const lines = buffer.split('\n');
+      buffer = lines.pop() ?? '';
+      for (const line of lines) {
+        const text = line.trim();
+        if (!text) continue;
+        let message;
+        try {
+          message = JSON.parse(text);
+        } catch {
+          continue;
+        }
+        const waiter = pending.get(message.id);
+        if (!waiter) continue;
+        pending.delete(message.id);
+        if (message.error) waiter.reject(new Error(String(message.error.message ?? 'the tool refused')));
+        else waiter.resolve(message.result);
+      }
+    });
+    proc.unref?.();
+    proc.stdin?.unref?.();
+    proc.stdout?.unref?.();
+    proc.stderr?.unref?.();
+    const busy = () => {
+      proc.ref?.();
+      proc.stdin?.ref?.();
+      proc.stdout?.ref?.();
+    };
+    const idle = () => {
+      proc.unref?.();
+      proc.stdin?.unref?.();
+      proc.stdout?.unref?.();
+      proc.stderr?.unref?.();
+    };
+    process.once('exit', () => {
+      try {
+        proc.kill();
+      } catch {}
+    });
+    const api = {
+      proc,
+      pending: () => pending.size,
+      call: (
+        name,
+        args
+      ) => new Promise((
+        resolveCall,
+        rejectCall
+      ) => {
+        if (error) {
+          rejectCall(error);
+          return;
+        }
+        nextId += 1;
+        pending.set(nextId, {
+          resolve: (value) => {
+            resolveCall(value);
+            if (!pending.size) idle();
+          },
+          reject: (reason) => {
+            rejectCall(reason);
+            if (!pending.size) idle();
+          }
+        });
+        busy();
+        try {
+          proc.stdin.write(JSON.stringify({
+            jsonrpc: '2.0',
+            id: nextId,
+            method: 'tools/call',
+            params: {
+              name,
+              arguments: args ?? {}
+            }
+          }) + '\n');
+        } catch (reason) {
+          pending.delete(nextId);
+          idle();
+          rejectCall(reason);
+        }
+      })
+    };
+    resolve(api);
+  });
 
   const serverFor = async () => {
     if (server) return server;
@@ -204,7 +379,26 @@ export function createOperaPlugin({
     args
   ) => {
     if (call) return call(name, args);
-    return (await serverFor()).call(name, args);
+    const now = Date.now();
+    if (now - checkedAt > STAMP_EVERY_MS) {
+      checkedAt = now;
+      newestSeen = treeStamp();
+      if (child && newestSeen !== childStamp && child.pending() === 0) stopChild();
+    }
+    if (!child) {
+      try {
+        child = await startChild();
+        childStamp = newestSeen;
+      } catch {
+        return (await serverFor()).call(name, args);
+      }
+    }
+    try {
+      return await child.call(name, args);
+    } catch {
+      stopChild();
+      return (await serverFor()).call(name, args);
+    }
   };
 
   return {
