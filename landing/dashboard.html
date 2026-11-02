@@ -132,7 +132,7 @@
               <thead id="konsolHead"><tr><th scope="col">Memuat…</th></tr></thead>
               <tbody id="konsolRows"></tbody>
             </table>
-            <div class="empty" id="konsolEmpty" hidden><strong>Tabel ini kosong.</strong> Tidak ada baris yang cocok dengan akun dan filter ini.</div>
+            <div class="empty" id="konsolEmpty" hidden><strong id="konsolEmptyText">Tabel ini kosong.</strong></div>
           </div>
           <div class="konsolDetail" id="konsolDetail" hidden>
             <div class="detailHead">
@@ -962,6 +962,9 @@
       $('konsolPrev').disabled = konsol.offset <= 0;
       $('konsolNext').disabled = to >= konsol.total;
       $('konsolEmpty').hidden = konsol.rows.length !== 0;
+
+      // WHY one sentence and not two: "Tabel ini kosong" and "tidak ada baris yang cocok" said the same thing twice, and a filter needs its own words.
+      $('konsolEmptyText').textContent = konsol.search ? 'Tidak ada baris yang cocok dengan filter ini.' : 'Tabel ini kosong.';
 
       // WHY only the filter speaks here: a search changes what the sidebar counted, and the reader needs the new number once.
       konsolSay(konsol.search ? `${konsolNf(konsol.total)} baris cocok dengan “${konsol.search}”.` : '');
