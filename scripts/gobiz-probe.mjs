@@ -128,9 +128,21 @@ async function waitForOtp(seconds) {
   throw new Error('no OTP file appeared in time');
 }
 
+// WHY THE TOKENS ARE PULLED OUT.
+
+// The token route answers with the tokens at the top level or nested under `data`, so the session file keeps one flat pair of tokens either way.
+
+export function sessionTokens(raw) {
+  const data = raw?.data || {};
+  return {
+    access_token: raw?.access_token || data.access_token || '',
+    refresh_token: raw?.refresh_token || data.refresh_token || ''
+  };
+}
+
 async function saveSession(session) {
   await fs.mkdir(homeDir(), { recursive: true });
-  await fs.writeFile(fileIn('session.json'), JSON.stringify(session, null, 2));
+  await fs.writeFile(fileIn('session.json'), JSON.stringify({ ...session, ...sessionTokens(session) }, null, 2));
 }
 
 async function loadSession() {
@@ -143,7 +155,7 @@ async function refresh(session) {
     auth: true,
     body: { client_id: CLIENT_ID, grant_type: 'refresh_token', data: { refresh_token: session.refresh_token } }
   });
-  return { ...session, ...data };
+  return { ...session, ...data, ...sessionTokens(data) };
 }
 
 async function withSession(run) {
@@ -185,6 +197,23 @@ async function login() {
   console.log('access token length', String(session.access_token || '').length, ', refresh token length', String(session.refresh_token || '').length);
 }
 
+// WHY THE FEED QUERY LOOKS LIKE THIS.
+
+// The analytics feed refuses a window it cannot parse and a page it cannot find, so the query carries an RFC3339 window, an offset, and a size.
+
+export function feedQuery(merchantId, now = Date.now()) {
+  const rfc3339 = (ms) => new Date(ms).toISOString().replace(/\.\d{3}Z$/, 'Z');
+  return new URLSearchParams({
+    merchant_id: merchantId,
+    from: '0',
+    size: '20',
+    start_time: rfc3339(now - 7 * 86400000),
+    end_time: rfc3339(now),
+    statuses: 'SETTLEMENT,CAPTURE,REFUND,PARTIAL_REFUND',
+    payment_types: 'QRIS,GOPAY,OFFLINE_CREDIT_CARD,OFFLINE_DEBIT_CARD,CREDIT_CARD'
+  });
+}
+
 async function feed() {
   const rows = await withSession(async (session) => {
     const me = await call(`${API}/v1/users/me`, { token: session.access_token });
@@ -206,13 +235,7 @@ async function feed() {
     const ids = [...new Set(hits.map((hit) => hit.id).concat(user.merchant_id ? [user.merchant_id] : []))];
     const out = [];
     for (const id of ids) {
-      const query = new URLSearchParams({
-        merchant_id: id,
-        days: '7',
-        size: '20',
-        statuses: 'SETTLEMENT,CAPTURE,REFUND,PARTIAL_REFUND',
-        payment_types: 'QRIS,GOPAY,OFFLINE_CREDIT_CARD,OFFLINE_DEBIT_CARD,CREDIT_CARD'
-      });
+      const query = feedQuery(id);
       const data = await call(`${ANALYTICS}/merchant-analytics/v2/merchants/transactions?${query}`, { token: session.access_token });
       for (const t of data.transactions || []) {
         out.push({

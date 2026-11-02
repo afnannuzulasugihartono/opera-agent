@@ -5,7 +5,7 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { barePhone, deviceHeaders, dataHeaders, safeText } from '../scripts/gobiz-probe.mjs';
+import { barePhone, deviceHeaders, dataHeaders, feedQuery, safeText, sessionTokens } from '../scripts/gobiz-probe.mjs';
 
 test('every phone format reaches the same bare national number', () => {
   assert.equal(barePhone('0812 3456 7890'), '81234567890');
@@ -36,6 +36,21 @@ test('a data call carries no device header', () => {
   assert.equal(headers['X-User-Type'], undefined);
   assert.equal(headers['x-uniqueid'], undefined);
   assert.equal(headers['Authentication-Type'], 'go-id');
+});
+
+test('the feed query carries the window and the offset the server parses', () => {
+  const query = feedQuery('G274351871', Date.parse('2026-11-02T10:00:00Z'));
+  assert.equal(query.get('merchant_id'), 'G274351871');
+  assert.equal(query.get('from'), '0');
+  assert.equal(query.get('size'), '20');
+  assert.equal(query.get('start_time'), '2026-10-26T10:00:00Z');
+  assert.equal(query.get('end_time'), '2026-11-02T10:00:00Z');
+});
+
+test('the session keeps one flat pair of tokens whatever shape the answer has', () => {
+  assert.deepEqual(sessionTokens({ access_token: 'a', refresh_token: 'r' }), { access_token: 'a', refresh_token: 'r' });
+  assert.deepEqual(sessionTokens({ data: { access_token: 'a', refresh_token: 'r' } }), { access_token: 'a', refresh_token: 'r' });
+  assert.deepEqual(sessionTokens({}), { access_token: '', refresh_token: '' });
 });
 
 test('a printed value loses its control characters', () => {
