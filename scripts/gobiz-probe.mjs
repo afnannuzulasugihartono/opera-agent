@@ -163,13 +163,23 @@ async function login() {
   const body = { client_id: CLIENT_ID, phone_number: phone, country_code: '62' };
   const request = await call(`${API}/goid/login/request`, { method: 'POST', auth: true, body });
   console.log('otp requested, expires in', safeText(request.data?.otp_expires_in), 'seconds');
-  console.log('write the code into', fileIn('otp.txt'));
-  const otp = await waitForOtp(600);
-  const session = await call(`${API}/goid/token`, {
-    method: 'POST',
-    auth: true,
-    body: { client_id: CLIENT_ID, grant_type: 'otp', data: { otp, otp_token: request.data.otp_token } }
-  });
+  let session = null;
+  let lastError = null;
+  for (let attempt = 1; attempt <= 3 && !session; attempt += 1) {
+    console.log('attempt', attempt, '- write the code into', fileIn('otp.txt'));
+    try {
+      const otp = await waitForOtp(600);
+      session = await call(`${API}/goid/token`, {
+        method: 'POST',
+        auth: true,
+        body: { client_id: CLIENT_ID, grant_type: 'otp', data: { otp, otp_token: request.data.otp_token } }
+      });
+    } catch (error) {
+      lastError = error;
+      console.log('attempt', attempt, 'failed:', safeText(error.message, 160));
+    }
+  }
+  if (!session) throw lastError;
   await saveSession(session);
   console.log('session saved:', fileIn('session.json'));
   console.log('access token length', String(session.access_token || '').length, ', refresh token length', String(session.refresh_token || '').length);
