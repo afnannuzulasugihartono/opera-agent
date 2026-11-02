@@ -101,6 +101,14 @@ test('the worktree script builds its branch from this contract instead of a stri
   assert.doesNotMatch(body, /topic = wanted/, 'the topic no longer defaults to the worktree name');
 });
 
+test('the archive tags are written before the worktree is taken away', () => {
+  const body = readFileSync(script, 'utf8');
+  const tags = body.indexOf('const archived = branches.map');
+  const drop = body.indexOf("git('worktree', 'remove'");
+  assert.ok(tags > 0, 'the tags are built in one place');
+  assert.ok(drop > tags, 'a refused tag must leave the worktree and the branch untouched');
+});
+
 test('a name that cannot become a branch is refused in one sentence, before git is asked', () => {
   const refused = run('create', '***');
   assert.equal(refused.status, 1);

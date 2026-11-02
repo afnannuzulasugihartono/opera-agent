@@ -31,8 +31,8 @@ What is true now, and what to do next. Cap 150 lines. Spent detail: git history.
   fails a missing standard file, a pull request that skips CI, a CRLF file, or a dead path.
 - **The browser drive depends on nothing but the page it drives.** A ref dies with its
   document, its route or the extension epoch, so the drive re-finds what it clicks.
-- Gates: `npm test`, `npm run check` - 31 primitives, 183 runtime safety files, 1642 unit
-  tests, green.
+- Gates: `npm test`, `npm run check` - 31 primitives, 183 runtime safety files, and the unit
+  count `npm test` prints; green.
 - **A work branch has one shape.** `agent/<workspace>` or `agent/<workspace>/<topic>`, kebab in
   every segment; `npm run branches` names each branch that does not fit, beside its right name.
 - **The local driver is modular, and its tests are too.** `local/primitives.js` assembles the

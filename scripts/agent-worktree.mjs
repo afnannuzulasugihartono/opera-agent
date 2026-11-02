@@ -105,21 +105,34 @@ const commands = {
 
     const merged = git('branch', '--merged', 'main').split('\n').map((line) => line.trim().replace('* ', ''));
 
-    if (hadWorktree) git('worktree', 'remove', path, '--force');
-    for (const line of branches) {
+    // WHY THE TAGS COME BEFORE ANY DELETE.
+    // A tag is the only thing that survives a deleted branch, so it is written while the branch still exists and the worktree still holds it.
+    // If git refuses the tag — no committer identity, a name already taken — the worktree and the branch are both still here, and the next run starts where this one stopped.
+    // The old order removed the worktree first, so a refused tag left a half-done delete behind it.
+
+    const archived = branches.map((line) => {
       const state = merged.includes(line) ? 'merged' : 'unmerged';
       const tag = `archive/${line}-${new Date().toISOString().slice(0, 10)}`;
       git('tag', '-a', tag, '-m', `${line} (${state})`);
+      return { line, state, tag };
+    });
+
+    if (hadWorktree) {
+      git('worktree', 'remove', path, '--force');
+      console.log(`worktree ${path} removed`);
+    } else {
+      console.log(`no worktree at ${path}`);
+    }
+    for (const { line, state, tag } of archived) {
       git('branch', '-D', line);
       console.log(`archived ${line} as ${tag} (${state}), then deleted the branch`);
     }
 
-    console.log(hadWorktree ? `worktree ${path} removed` : `no worktree at ${path}`);
     if (branches.length === 0) {
       console.log(`no branch was left to archive: nothing was there on ${WORK_PREFIX}/${at}`);
       return;
     }
-    console.log(`${branches.length} of its branches live on under archive/`);
+    console.log(branches.length === 1 ? 'its branch lives on under archive/' : `${branches.length} of its branches live on under archive/`);
   }
 };
 
