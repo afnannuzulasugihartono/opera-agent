@@ -1,6 +1,6 @@
-// @last-edited: 2026-10-21 UTC+7.
+// @last-edited: 2026-11-02 UTC+7.
 // @title: format-comments — apply the structural comment rule to the tree, and report the files that are not in it.
-// @state: `--write` rewrites every source file to the canonical form, and `--check` exits non-zero when any file is not canonical.
+// @state: `--write` rewrites every source file to the canonical form, and `--check` exits non-zero when any file is not canonical; the agent-tool directories are not repo code and are not read.
 // @dependencies: node:fs/promises, node:path, node:url, tests/helpers/comment-format.mjs.
 
 // WHY THIS PROGRAM EXISTS.
@@ -26,8 +26,12 @@ const NAMES = new Set([
   '.assetsignore', '.vercelignore', 'CODEOWNERS', 'Dockerfile', 'Makefile',
 ]);
 
+// WHY THE AGENT-TOOL DIRECTORIES ARE SKIPPED.
+// A skill installed into the tree is machine-local tool state and not repository code, and its comments follow the tool's style rather than this repository's.
+// The gate reads the files a person would ship, and a skill that a colleague never installs must not turn the suite red.
+
 const SKIP_DIRS = new Set([
-  '.git', 'node_modules', '.kilo', 'dist', 'build', 'tmp', 'coverage',
+  '.git', 'node_modules', '.kilo', '.agents', '.superpowers', 'dist', 'build', 'tmp', 'coverage',
   '.next', '.vercel', '__pycache__', '.temp',
 ]);
 
