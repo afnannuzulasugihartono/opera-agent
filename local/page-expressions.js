@@ -688,9 +688,10 @@ export const UPLOAD_FIND_GAP_MS = 400;
 // Polling the tree until the children are there costs nothing when they arrive immediately and is the only thing that works when they do not.
 // The gap between those polls is the settle, not a number picked here.
 
-export const DROP_PHASE_GAP_MS = 120;
-export const DROP_FRONT_SETTLE_MS = 700;
-export const DROP_SETTLE_MS = 900;
+// WHY A DRAG WAITS ON THE PAGE AND NOT ON A FIXED BEAT.
+// Measured live on the bench page: the front beat, three phase beats and the 900 ms tail this replaces cost 2.2 s for a drop the page finished in one settle.
+// The drag is three events the page answers in order, so each one is followed by the settle, and the answer still claims only that the drag was dispatched.
+
 const DRAG_MIME_TYPES = {
   '.png': 'image/png',
   '.jpg': 'image/jpeg',

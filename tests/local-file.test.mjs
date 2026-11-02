@@ -467,7 +467,9 @@ test('a drop walks the drag phases in order and releases interception after', as
     mimeType: 'image/png'
   });
   assert.deepEqual(
-    cdp.calls.map((c) => (c.method === 'Input.dispatchDragEvent' ? c.params.type : c.method)),
+    cdp.calls
+      .filter((c) => c.method !== 'Runtime.evaluate')
+      .map((c) => (c.method === 'Input.dispatchDragEvent' ? c.params.type : c.method)),
     [
       'Page.bringToFront',
       'Input.setInterceptDrags',
@@ -475,6 +477,11 @@ test('a drop walks the drag phases in order and releases interception after', as
       'Input.setInterceptDrags'
     ],
     'front tab, interception on, the drag phases, interception off'
+  );
+  assert.equal(
+    cdp.calls.filter((c) => String(c.params?.expression ?? '').includes('opera-settle-probe')).length,
+    DROP_PHASES.length + 1,
+    'every phase is followed by the page settle, not by a fixed beat'
   );
   const last = cdp.calls.at(-1);
   assert.equal(last.params.enabled, false, 'and the tab is handed back its real pointer');
