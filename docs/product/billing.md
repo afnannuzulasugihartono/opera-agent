@@ -1,5 +1,5 @@
-@last-edited: 2026-10-26 UTC+7.
-@related: [monetization](monetization.md) - [statement job](../jobs/statements.md) - [handoff](../handoff.md)
+@last-edited: 2026-11-02 UTC+7.
+@related: [monetization](monetization.md) - [statement job](../jobs/statements.md) - [handoff](../handoff.md) - [qris rail probe](qris-rail-probe.md)
 
 # The money: how somebody pays for this
 
