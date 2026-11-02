@@ -483,8 +483,8 @@ test('a drop walks the drag phases in order and releases interception after', as
     1,
     'one settle after the drag proves the page took the drop'
   );
-  const last = cdp.calls.at(-1);
-  assert.equal(last.params.enabled, false, 'and the tab is handed back its real pointer');
+  const handed = cdp.calls.filter((c) => c.method === 'Input.setInterceptDrags').at(-1);
+  assert.equal(handed.params.enabled, false, 'and the tab is handed back its real pointer');
   const dropped = cdp.calls.find((c) => c.params.type === 'drop');
   assert.deepEqual(dropped.params.data.files, ['/files/pic.png']);
   assert.deepEqual(dropped.params.data.items, [{

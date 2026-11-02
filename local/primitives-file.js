@@ -232,15 +232,18 @@ export function filePrimitives(
       // Measured live on the bench page: the front beat, three phase beats and the 900 ms tail cost 2.2 s for a drop the page finished in one settle.
       // The three drag events are ordered by the browser, so the drop handler sees its dragOver first; one settle after them proves the page took the drop.
       // A tab that is already the one on screen is not brought forward again: measured, Page.bringToFront cost 12 ms even when it had nothing to do.
-      // The phases go out as one batch, because each command would otherwise pay a bridge crossing for a two-millisecond drag.
+      // The front, the interception, the three phases and the release go out as one batch, because each command would otherwise pay a bridge crossing for a two-millisecond drag.
+      // The release is idempotent, so a batch that fails half way still leaves the tab its pointer through the finally below.
       // The answer claims the drag was dispatched, not that an upload finished, so the shorter wait does not overclaim.
 
+      let handedBack = false;
       try {
         const visible = await primitives.evaluate('document.visibilityState').catch(() => null);
-        if (visible !== 'visible') {
-          await cdp.send('Page.bringToFront');
-        }
         await cdp.sendMany([
+          ...(visible === 'visible' ? [] : [{
+            method: 'Page.bringToFront',
+            params: {}
+          }]),
           {
             method: 'Input.setInterceptDrags',
             params: { enabled: true }
@@ -253,8 +256,13 @@ export function filePrimitives(
               y: Number(y),
               data: payload
             }
-          }))
+          })),
+          {
+            method: 'Input.setInterceptDrags',
+            params: { enabled: false }
+          }
         ]);
+        handedBack = true;
         await primitives.settle();
         return {
           dropped: true,
@@ -265,7 +273,7 @@ export function filePrimitives(
           mimeType
         };
       } finally {
-        await cdp.send('Input.setInterceptDrags', { enabled: false }).catch(() => null);
+        if (!handedBack) await cdp.send('Input.setInterceptDrags', { enabled: false }).catch(() => null);
         if (cleanup) cleanup();
       }
     },
