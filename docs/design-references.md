@@ -1,5 +1,5 @@
-@last-edited: 2026-10-09 UTC+7.
-@related: [`AGENTS.md`](../AGENTS.md) - [`handoff.md`](handoff.md)
+@last-edited: 2026-11-01 UTC+7.
+@related: [`AGENTS.md`](../AGENTS.md) - [`handoff.md`](handoff.md) - [`site-benchmark.md`](site-benchmark.md)
 
 # Design references
 
@@ -7,6 +7,9 @@ Measured values taken from public reference pages (fetched 2026-10-09), plus
 what this repo adopted from each and what it deliberately left behind. Numbers
 below are observations, not copied assets: no third-party markup, stylesheet,
 image, or font ships in this tree.
+
+The live benchmark of the whole site against Cline, OpenCode and Cohere lives
+in [`site-benchmark.md`](site-benchmark.md), measured 2026-11-01.
 
 ## Steam store about page
 

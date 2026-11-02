@@ -156,7 +156,7 @@
         },
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'none'; script-src 'self' 'sha256-yiEig5muYPedy1v1wDeYFvPmcnVSYIhIubVuItbhX+Y='; connect-src 'none'; style-src 'self' 'unsafe-inline'; img-src data:; font-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'"
+          "value": "default-src 'none'; script-src 'self' 'sha256-Yl+HJGgLqjZdDYw0DcdRtLSEoIJpXjWdmozs8mihWN4='; connect-src 'none'; style-src 'self' 'unsafe-inline'; img-src data:; font-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'"
         },
         {
           "key": "Referrer-Policy",
@@ -201,7 +201,7 @@
         },
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'none'; script-src 'self' 'sha256-yiEig5muYPedy1v1wDeYFvPmcnVSYIhIubVuItbhX+Y='; connect-src 'none'; style-src 'self' 'unsafe-inline'; img-src data:; font-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'"
+          "value": "default-src 'none'; script-src 'self' 'sha256-Yl+HJGgLqjZdDYw0DcdRtLSEoIJpXjWdmozs8mihWN4='; connect-src 'none'; style-src 'self' 'unsafe-inline'; img-src data:; font-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'"
         },
         {
           "key": "Referrer-Policy",
@@ -246,7 +246,7 @@
         },
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'none'; script-src 'self' 'sha256-/kEE0nbbhSPKezq2FYSoFPrfYc9VQK8+RGZMTU31sFc='; connect-src https://*.supabase.co; style-src 'self' 'unsafe-inline'; img-src data:; font-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'"
+          "value": "default-src 'none'; script-src 'self' 'sha256-hdm9Vwy+xXBO+PYPVokADMbw9nDuBa1gXzPYfbwOkL8='; connect-src https://*.supabase.co; style-src 'self' 'unsafe-inline'; img-src data:; font-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'"
         },
         {
           "key": "Referrer-Policy",
@@ -291,7 +291,7 @@
         },
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'none'; script-src 'self' 'sha256-/kEE0nbbhSPKezq2FYSoFPrfYc9VQK8+RGZMTU31sFc='; connect-src https://*.supabase.co; style-src 'self' 'unsafe-inline'; img-src data:; font-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'"
+          "value": "default-src 'none'; script-src 'self' 'sha256-hdm9Vwy+xXBO+PYPVokADMbw9nDuBa1gXzPYfbwOkL8='; connect-src https://*.supabase.co; style-src 'self' 'unsafe-inline'; img-src data:; font-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'"
         },
         {
           "key": "Referrer-Policy",
@@ -336,7 +336,7 @@
         },
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'none'; script-src 'self' 'sha256-/kEE0nbbhSPKezq2FYSoFPrfYc9VQK8+RGZMTU31sFc='; connect-src https://*.supabase.co; style-src 'self' 'unsafe-inline'; img-src data:; font-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'"
+          "value": "default-src 'none'; script-src 'self' 'sha256-hdm9Vwy+xXBO+PYPVokADMbw9nDuBa1gXzPYfbwOkL8='; connect-src https://*.supabase.co; style-src 'self' 'unsafe-inline'; img-src data:; font-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'"
         },
         {
           "key": "Referrer-Policy",
@@ -381,7 +381,7 @@
         },
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'none'; script-src 'self' 'sha256-5ypm0mbUseLIzP+2wKJ4WqT9WxmRbC8qY9KE5lcL7Dw='; connect-src https://*.supabase.co; style-src 'self' 'unsafe-inline'; img-src data:; font-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'"
+          "value": "default-src 'none'; script-src 'self' 'sha256-7EW2MEgjMNzCT3Zw/AWa30KR6luEbkLhQKQdEzfrxnw='; connect-src https://*.supabase.co; style-src 'self' 'unsafe-inline'; img-src data:; font-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'"
         },
         {
           "key": "Referrer-Policy",
@@ -426,7 +426,7 @@
         },
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'none'; script-src 'self' 'sha256-5ypm0mbUseLIzP+2wKJ4WqT9WxmRbC8qY9KE5lcL7Dw='; connect-src https://*.supabase.co; style-src 'self' 'unsafe-inline'; img-src data:; font-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'"
+          "value": "default-src 'none'; script-src 'self' 'sha256-7EW2MEgjMNzCT3Zw/AWa30KR6luEbkLhQKQdEzfrxnw='; connect-src https://*.supabase.co; style-src 'self' 'unsafe-inline'; img-src data:; font-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'"
         },
         {
           "key": "Referrer-Policy",
@@ -471,7 +471,7 @@
         },
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'none'; script-src 'self' 'sha256-5ypm0mbUseLIzP+2wKJ4WqT9WxmRbC8qY9KE5lcL7Dw='; connect-src https://*.supabase.co; style-src 'self' 'unsafe-inline'; img-src data:; font-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'"
+          "value": "default-src 'none'; script-src 'self' 'sha256-7EW2MEgjMNzCT3Zw/AWa30KR6luEbkLhQKQdEzfrxnw='; connect-src https://*.supabase.co; style-src 'self' 'unsafe-inline'; img-src data:; font-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'"
         },
         {
           "key": "Referrer-Policy",

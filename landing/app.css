@@ -16,6 +16,8 @@
  *
  * WHY the radius is re-pointed here too: measured live, a Cline button is 6px and a Cline card 10px, and a Cohere control is 0-2px.
  * The site's own 22px card and 980px pill are the brochure shape, and in a control panel they made every control read as a sticker instead of a control.
+ *
+ * WHY the focus ring is re-pointed here too: site.css paints it #0b6b52, which measures 2.99:1 on the dark canvas and 2.82:1 on a card, under the 3:1 a focus indicator has to clear, so a keyboard reader could not see where they were.
  */
 
 body.app-dark {
@@ -39,11 +41,27 @@ body.app-dark {
   --on-fill: #06120d;
   --radius: 10px;
   --radius-sm: 6px;
+  --focus: var(--accent-strong);
 }
+
+/* WHY the selection is re-inked: site.css paints white ink on the brand green, which is 1.76:1, so a selected line in the console was unreadable. */
+
+body.app-dark ::selection { background: var(--accent); color: var(--on-fill); }
 
 /* WHY the chrome answers in the canvas: a light header above a dark console reads as a different product, which is the one thing a benchmarked redesign cannot afford. */
 
 body.app-dark { background: var(--paper); color: var(--ink); }
+
+/*
+ * WHY the headings are re-inked here: site.css gives every h1 to h4 the marketing display weight, and a signed-in surface is not a brochure.
+ * Measured before the change: the console's view title was 18px/500 while the figures under it were 22px/600, and the account page's title was 34px/500.
+ * Cline's console headings are 600, and a title has to outrank the numbers under it.
+ */
+
+body.app-dark h1,
+body.app-dark h2,
+body.app-dark h3,
+body.app-dark h4 { font-weight: 600; }
 
 body.app-dark header { background: var(--paper); border-bottom: 1px solid var(--line); }
 
@@ -52,6 +70,13 @@ body.app-dark header nav a:not(.brand):not(.navCta) { color: var(--muted); }
 body.app-dark header nav a:not(.brand):not(.navCta):hover { color: var(--ink); }
 
 body.app-dark header nav a[aria-current="page"]:not(.brand):not(.navCta) { color: var(--ink); box-shadow: inset 0 -1px 0 var(--ink); }
+
+/*
+ * WHY the app shell drops the marketing doors: the console and the account page are a place to work, and a work surface that carries "Fitur", "Privasi", "Dukungan" and "Model Anda" in its own bar is carrying the brochure.
+ * Measured on Cline's console and OpenCode's, the app bar holds the app's own destinations only, and every door stays in the footer.
+ */
+
+body.app-dark header nav a.nav-sec { display: none; }
 
 body.app-dark .brandMark rect { fill: var(--ink); }
 
@@ -75,6 +100,10 @@ body.app-dark header nav .navCta:hover {
   border-color: var(--accent-strong);
   background: var(--accent-strong);
 }
+
+/* WHY the sign-in pill can leave: site.css keeps its own display rule for .navCta, which the bare [hidden] attribute cannot beat on its own. */
+
+body.app-dark header nav .navCta[hidden] { display: none; }
 
 /* WHY white ink is re-inked on the filled action: white on the brand green is 1.9:1. */
 

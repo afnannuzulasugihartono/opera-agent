@@ -9,7 +9,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="theme-color" content="#f7f5ef" />
-  <title>Akun — Opera Agent</title>
+  <title>Akun | Dashboard Opera Agent</title>
   <meta name="description" content="Akun Opera Agent: identitas Anda, penyedia yang tertaut, dan device yang ter-pairing." />
   <link rel="stylesheet" href="/site.css" />
   <link rel="stylesheet" href="/app.css" />
@@ -276,6 +276,10 @@
         return;
       }
       renderIdentity(user);
+
+      // WHY the sign-in link leaves a signed-in page: "Masuk" beside a live session is a contradiction the reader has to resolve, and this page already carries the way out.
+      const navCta = document.querySelector('header .navCta');
+      if (navCta) navCta.hidden = true;
 
       // WHY the count and not the list: the account page answers "who am I", and the device list belongs to the dashboard, which is one click away and already renders each device with its own id and controls.
       try {

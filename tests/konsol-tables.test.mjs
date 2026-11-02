@@ -143,8 +143,7 @@ test('the tautology is gone and workflow runs stay owned', () => {
 });
 
 test('the dashboard section exists, is reachable, and reads through the readers', () => {
-  assert.match(html, /<section id="tabel">/, 'the console has its own section');
-  assert.match(html, /<h1>Tabel<\/h1>/, 'the section names itself');
+  assert.match(html, /<section id="tabel" data-title="Tabel">/, 'the console has its own section, and it names itself');
   assert.equal((html.match(/<a href="#tabel">/g) || []).length, 1, 'the one rail leads to it, instead of a second strip repeating the same names');
   assert.match(html, /if \(target === 'tabel'\) konsolInit\(\);/, 'the console initialises on first visit, not on page load');
   assert.match(html, /konsolRpc\('opera_konsol_tables'/, 'the sidebar lists through the table reader');
@@ -152,8 +151,10 @@ test('the dashboard section exists, is reachable, and reads through the readers'
 });
 
 test('the dashboard grid escapes, caps, and never writes', () => {
-  assert.match(html, /title="\$\{esc\(cell\.full\)\}">\$\{esc\(cell\.text\)\}/, 'every cell escapes the whole value into the title and the shown text into the cell');
-  assert.match(html, /\$\('konsolJson'\)\.textContent = JSON\.stringify\(record, null, 2\)/, 'the JSON pane sets text, never markup');
+  assert.match(html, /title="\$\{esc\(cell\.full\)\}">/, 'every cell escapes the whole value into the title');
+  assert.match(html, /const body = copy \? `<span class="cellText">\$\{esc\(cell\.text\)\}<\/span>\$\{copy\}` : esc\(cell\.text\);/, 'and the shown text is escaped too');
+  assert.match(html, /const konsolPaintDetail = \(record\) =>/, 'the detail well paints the row that was clicked');
+  assert.match(html, /<dd class="\$\{classes\}">\$\{esc\(value\)\}<\/dd>/, 'and escapes every value it writes');
   assert.match(html, /const cap = 5000;/, 'an export stops at five thousand rows');
   assert.match(html, /p_limit: 200/, 'an export page is the reader\'s own maximum');
   assert.match(html, /id="konsolSearch"[^>]*maxlength="64"/, 'the search box mirrors the reader\'s 64-character cut');

@@ -43,7 +43,7 @@ const AUTHORIZATION = {
 const CONSENT_ELEMENTS = ['status', 'factsCard', 'signedOutCard', 'signInButton', 'clientName', 'factClient', 'factRedirect', 'redirectNote', 'scopeList', 'factUser', 'approveButton', 'denyButton', 'consentsCard', 'consentList'];
 
 const HOME_ELEMENTS = {
-  heroEyebrow: { textContent: 'Daftar terbuka \u00b7 Gratis dipakai' },
+  heroSession: { textContent: 'Sesi aktif di browser ini.', hidden: true },
   ctaOut: { hidden: false },
   ctaIn: { hidden: true },
   quickTiles: { hidden: true }
@@ -179,17 +179,17 @@ const SIGNED_IN_PAGES = ['akun.html', 'dashboard.html', 'oauth/consent.html'];
 test('the dashboard renders a device card for a paired device', async () => {
   const { nodes, rejected } = await run('dashboard.html');
   assert.deepEqual(rejected, [], `the module rejected: ${rejected.join('; ')}`);
-  assert.match(nodes.status.textContent, /1 device ter-pairing/, 'the status line counts the device');
+  assert.match(nodes.whoami.textContent, /Akun afnan@example\.com\./, 'the account line names the account, and the counts stay in the metric strip');
 
   assert.match(nodes.devices.innerHTML, /opera/, 'the device name is rendered');
   assert.match(nodes.devices.innerHTML, new RegExp(DEVICE.id), 'the device id is rendered');
-  assert.match(nodes.devices.innerHTML, /tabs\.list/, 'the recent commands are rendered');
+  assert.match(nodes.devices.innerHTML, /Terakhir terlihat/, 'the card says when the device was last seen');
+  assert.doesNotMatch(nodes.devices.innerHTML, /tabs\.list/, 'and holds no copy of the history: the Riwayat view lists it once');
   assert.match(nodes.devices.innerHTML, /Cabut device ini/, 'the revoke control is rendered');
 
   assert.equal(nodes.statDevices.textContent, 1, 'the device count is computed, not written');
   assert.equal(nodes.statOnline.textContent, 1, 'and so is the online count');
   assert.match(nodes.statCommands.textContent, /8970 dari 9000/, 'and the command tally');
-  assert.equal(nodes.railDeviceLabel.textContent, 'Device (1)', 'the rail counts what it links to');
 });
 
 test('the dashboard names the extension when the browser does not have it', async () => {
@@ -198,7 +198,7 @@ test('the dashboard names the extension when the browser does not have it', asyn
 
   assert.match(nodes.installState.textContent, /Opera Agent belum terpasang di browser ini/,
     'the missing extension is named, not left for the reader to infer');
-  assert.match(nodes.installState.textContent, /Pasang dulu/, 'and the next step is given');
+  assert.match(nodes.checklist.innerHTML, /Pasang extension di browser ini/, 'and the next step is given by the checklist, once');
 });
 
 test('the dashboard confirms the extension once the content script has marked the page', async () => {
@@ -239,7 +239,7 @@ test('home swaps to member actions on a stored session, and stays put without on
   assert.equal(signed.nodes.ctaOut.hidden, true, 'acquisition actions hide');
   assert.equal(signed.nodes.ctaIn.hidden, false, 'member actions show');
   assert.equal(signed.nodes.quickTiles.hidden, false, 'and the inward tiles show');
-  assert.equal(signed.nodes.heroEyebrow.textContent, 'Sesi aktif di browser ini', 'the eyebrow says what is true');
+  assert.equal(signed.nodes.heroSession.hidden, false, 'the session line shows what is true');
   const stranger = await run('beranda.html', { stored: {} });
   assert.ok(!stranger.context.document.body.classList.contains('signed-in'), 'no session, no mark');
   assert.equal(stranger.nodes.ctaIn.hidden, true, 'member actions stay hidden');

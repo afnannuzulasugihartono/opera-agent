@@ -38,46 +38,36 @@
     <section class="hero hero--full">
       <div class="heroGrid">
         <div class="heroCopy">
-          <p class="eyebrow" id="heroEyebrow" data-i18n="hero.eyebrow">Daftar terbuka · Browser automation, under your control</p>
           <h1 data-i18n-html="hero.title">Asisten Anda, di <span class="accent">browser Anda.</span></h1>
-          <p class="lede" data-i18n="hero.lede">Jembatan MCP aman ke browser Anda — tanpa eksekusi skrip sembarangan.</p>
+          <p class="lede" data-i18n="hero.lede">Daftar terbuka. Otomasi browser lewat MCP yang aman — tanpa eksekusi skrip sembarangan.</p>
           <div class="row" id="ctaOut">
             <a class="btn primary" href="./unduh.html" data-i18n="cta.download">Mulai sekarang</a>
             <a class="btn" href="#model" data-i18n="cta.model">Bawa model Anda</a>
           </div>
+          <p class="footnote" id="heroSession" data-i18n="hero.session" hidden>Sesi aktif di browser ini.</p>
           <p class="footnote" data-i18n="hero.note">Gratis dipakai. Model ditagih penyedia Anda.</p>
           <div class="row" id="ctaIn" hidden>
             <a class="btn primary" href="./dashboard.html" data-i18n="cta.dashboard">Buka Dashboard</a>
-            <a class="btn" href="./dashboard.html#pairing" data-i18n="cta.pair">Pair device</a>
+            <a class="btn" href="./dashboard.html#pairing" data-i18n="cta.pair">Pasangkan device</a>
           </div>
           <div class="grid" id="quickTiles" hidden>
             <div class="tile">
-              <h3 data-i18n="tiles.devices.title">Devices</h3>
-              <p data-i18n-html="tiles.devices.body">Status dan kendali device. <a href="./dashboard.html#device">Lihat</a>.</p>
+              <h3 data-i18n="tiles.devices.title">Device</h3>
+              <p data-i18n-html="tiles.devices.body">Status dan kendali device. <a href="./dashboard.html#ringkasan">Lihat</a>.</p>
             </div>
             <div class="tile">
               <h3 data-i18n="tiles.pairing.title">Pairing</h3>
               <p data-i18n-html="tiles.pairing.body">Kode sekali pakai untuk device baru. <a href="./dashboard.html#pairing">Buat</a>.</p>
             </div>
             <div class="tile">
-              <h3 data-i18n="tiles.model.title">Your model</h3>
+              <h3 data-i18n="tiles.model.title">Model Anda</h3>
               <p data-i18n-html="tiles.model.body">Endpoint dan kunci tetap di browser. <a href="#model">Atur</a>.</p>
             </div>
           </div>
-          <dl class="heroStats" id="heroStats">
-            <div><dt>34</dt><dd data-i18n="hero.stat.tools">tool MCP</dd></div>
-            <div><dt>31</dt><dd data-i18n="hero.stat.prims">primitive browser</dd></div>
-            <div><dt>6</dt><dd data-i18n="hero.stat.perms">izin, semua dijelaskan</dd></div>
-          </dl>
         </div>
 
         <div class="heroVisual">
-          <div class="demo" id="demo" role="img" aria-label="Contoh panel Opera Agent: tiga tab terbuka, ringkasan halaman, dan penolakan kolom pembayaran">
-            <div class="demoBar">
-              <span class="dots" aria-hidden="true"><span></span><span></span><span></span></span>
-              <span class="mockAddr">opera-agent.pages.dev/dashboard</span>
-              <span class="mockBadge" data-i18n="demo.example">Contoh</span>
-            </div>
+          <div class="demo" id="demo" data-ui role="img" aria-label="Contoh panel Opera Agent: tiga tab terbuka, ringkasan halaman, dan penolakan kolom pembayaran">
             <div class="demoBody">
               <div class="mockTop">
                 <span class="dot" aria-hidden="true"></span>
@@ -106,6 +96,12 @@
           </div>
         </div>
       </div>
+
+      <dl class="heroStats" id="heroStats">
+        <div><dt>34</dt><dd data-i18n="hero.stat.tools">tool MCP</dd></div>
+        <div><dt>31</dt><dd data-i18n="hero.stat.prims">primitive browser</dd></div>
+        <div><dt>6</dt><dd data-i18n="hero.stat.perms">izin, semua dijelaskan</dd></div>
+      </dl>
     </section>
 
     <section id="install" class="section reveal">
@@ -114,14 +110,14 @@
           <p class="eyebrow" data-i18n="install.eyebrow">Instalasi</p>
           <h2 data-i18n="install.title">Dari prompt ke hasil.</h2>
         </div>
-        <p data-i18n-html="install.sub">Unduh. Masuk. Pair. <a href="./unduh.html">Lihat panduan instalasi</a> bila perlu.</p>
+        <p data-i18n-html="install.sub">Unduh. Masuk. Pasangkan. <a href="./unduh.html">Lihat panduan instalasi</a> bila perlu.</p>
       </div>
       <div class="split">
         <div>
           <ol class="steps">
-            <li><strong>Unduh.</strong> Muat arsip di <code>opera://extensions</code> atau browser Chromium Anda.</li>
-            <li><strong>Masuk.</strong> Gunakan magic link atau OAuth.</li>
-            <li><strong>Pair.</strong> Hubungkan device dari <a href="./dashboard.html">Dashboard</a>.</li>
+            <li data-i18n-html="install.step.download"><strong>Unduh.</strong> Muat arsip di <code>opera://extensions</code> atau browser Chromium Anda.</li>
+            <li data-i18n-html="install.step.signin"><strong>Masuk.</strong> Gunakan magic link atau OAuth.</li>
+            <li data-i18n-html="install.step.pair"><strong>Pasangkan.</strong> Hubungkan device dari <a href="./dashboard.html">Dashboard</a>.</li>
           </ol>
           <div class="row" style="margin-top: 28px;">
             <a class="btn primary" href="./unduh.html" data-i18n="install.start">Mulai instalasi</a>
@@ -223,7 +219,7 @@
           <p class="eyebrow" data-i18n="privacy.eyebrow">Privasi</p>
           <h2 data-i18n="privacy.title">Data Anda tetap milik Anda.</h2>
         </div>
-        <p data-i18n-html="privacy.sub">Model, kunci, dan persetujuan tetap berada di bawah kendali Anda. <a href="./privasi.html">Baca kebijakan privasi</a>.</p>
+        <p data-i18n-html="privacy.sub"><a href="./privasi.html">Baca kebijakan privasi</a>.</p>
       </div>
       <div class="factGrid">
         <article>
@@ -251,7 +247,6 @@
           <p class="eyebrow" data-i18n="faq.eyebrow">FAQ</p>
           <h2 data-i18n="faq.title">Yang perlu diketahui.</h2>
         </div>
-        <p data-i18n="faq.sub">Jawaban singkat.</p>
       </div>
       <dl class="facts faq">
         <dt data-i18n="faq.cost.dt">Biaya</dt><dd data-i18n="faq.cost.dd">Opera Agent gratis. Model ditagih penyedianya.</dd>
@@ -264,7 +259,6 @@
 
     <section class="finalBand reveal" aria-labelledby="finalTitle">
       <h2 id="finalTitle" data-i18n="final.title">Pakai gratis. Bawa model sendiri.</h2>
-      <p data-i18n="final.sub">Satu extension, satu akun, dan kendali penuh atas browser Anda.</p>
       <a class="btn primary" href="./unduh.html" data-i18n="cta.download">Mulai sekarang</a>
     </section>
   </main>
@@ -288,11 +282,11 @@
     "nav.privacy": "Privacy",
     "nav.features": "Features",
     "nav.support": "Support",
-    "hero.eyebrow": "Open signup · Browser automation, under your control",
     "hero.title": "Your assistant, in <span class=\"accent\">your browser.</span>",
-    "hero.lede": "A secure MCP bridge to your browser — no reckless script execution.",
+    "hero.lede": "Open signup. Browser automation over MCP that is safe — no reckless script execution.",
     "cta.download": "Get started",
     "cta.model": "Bring your model",
+    "hero.session": "Session active in this browser.",
     "hero.note": "Free to use. Your provider bills the model.",
     "cta.dashboard": "Open the dashboard",
     "cta.pair": "Pair a device",
@@ -305,6 +299,9 @@
     "install.title": "From prompt to outcome.",
     "install.start": "Start installing",
     "install.checklist": "Open the checklist",
+    "install.step.download": "Download. Load the archive in <code>opera://extensions</code> or your Chromium browser.",
+    "install.step.signin": "Sign in. Use a magic link or OAuth.",
+    "install.step.pair": "Pair. Connect a device from the <a href=\"./dashboard.html\">dashboard</a>.",
     "model.title": "Bring your model.",
     "model.sub": "Your endpoint and key stay in your browser, not on our server.",
     "model.provider": "Provider",
@@ -329,7 +326,6 @@
     "privacy.commands.dd": "The relay lets your assistant act on your device.",
     "privacy.shot.dd": "Sensitive and private pages are refused and never shared with third parties.",
     "faq.title": "Good to know.",
-    "faq.sub": "Short answers.",
     "faq.cost.dt": "Cost",
     "faq.cost.dd": "Opera Agent is free. Your provider bills the model.",
     "faq.model.dt": "Model",
@@ -349,7 +345,7 @@
     "install.sub": "Download. Sign in. Pair. <a href=\"./unduh.html\">See the install guide</a> if needed.",
     "model.custom": "Custom…",
     "model.note": "HTTPS and local models on 127.0.0.1 are supported. Use <em>Just copy</em> before installing the extension.",
-    "privacy.sub": "Your model, keys, and approvals stay under your control. <a href=\"./privasi.html\">Read the privacy policy</a>.",
+    "privacy.sub": "<a href=\"./privasi.html\">Read the privacy policy</a>.",
     "footer.rights": "© 2026 Opera Agent. All rights reserved.",
     "footer.home": "Home",
     "footer.privacy": "Privacy",
@@ -374,8 +370,7 @@
     "privacy.eyebrow": "Privacy",
     "privacy.shot.dt": "Screenshot",
     "faq.eyebrow": "FAQ",
-    "final.title": "Free to use. Bring your own model.",
-    "final.sub": "One extension, one account, and full control of your browser."
+    "final.title": "Free to use. Bring your own model."
   }
 }
   </script>
@@ -397,7 +392,7 @@
     try {
       if (globalThis.localStorage?.getItem('opera-agent-access-token')) {
         document.body.classList.add('signed-in');
-        $('heroEyebrow').textContent = 'Sesi aktif di browser ini';
+        $('heroSession').hidden = false;
         $('ctaOut').hidden = true;
         $('ctaIn').hidden = false;
         $('quickTiles').hidden = false;
