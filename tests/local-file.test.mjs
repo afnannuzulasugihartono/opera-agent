@@ -480,8 +480,8 @@ test('a drop walks the drag phases in order and releases interception after', as
   );
   assert.equal(
     cdp.calls.filter((c) => String(c.params?.expression ?? '').includes('opera-settle-probe')).length,
-    DROP_PHASES.length + 1,
-    'every phase is followed by the page settle, not by a fixed beat'
+    1,
+    'one settle after the drag proves the page took the drop'
   );
   const last = cdp.calls.at(-1);
   assert.equal(last.params.enabled, false, 'and the tab is handed back its real pointer');

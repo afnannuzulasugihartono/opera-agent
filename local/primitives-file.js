@@ -228,14 +228,17 @@ export function filePrimitives(
       // Chrome only accepts a dispatched drag while interception is on, and a page left in that state stops believing real ones — the pointer would do nothing on this tab until it was released, which is worse than the problem being solved.
       // So the release is in the finally, where a failure still reaches.
 
-      // WHY EACH DRAG STEP WAITS ON THE PAGE AND NOT ON A FIXED BEAT.
+      // WHY THE DRAG IS DISPATCHED STRAIGHT THROUGH AND THE PAGE IS ASKED ONCE AT THE END.
       // Measured live on the bench page: the front beat, three phase beats and the 900 ms tail cost 2.2 s for a drop the page finished in one settle.
-      // A drag is three events the page answers in order, so the settle proves each one landed and returns as soon as the page is quiet.
+      // The three drag events are ordered by the browser, so the drop handler sees its dragOver first; one settle after them proves the page took the drop.
+      // A tab that is already the one on screen is not brought forward again: measured, Page.bringToFront cost 12 ms even when it had nothing to do.
       // The answer claims the drag was dispatched, not that an upload finished, so the shorter wait does not overclaim.
 
       try {
-        await cdp.send('Page.bringToFront');
-        await primitives.settle();
+        const visible = await primitives.evaluate('document.visibilityState').catch(() => null);
+        if (visible !== 'visible') {
+          await cdp.send('Page.bringToFront');
+        }
         await cdp.send('Input.setInterceptDrags', { enabled: true });
         for (const phase of DROP_PHASES) {
           await cdp.send('Input.dispatchDragEvent', {
@@ -244,8 +247,8 @@ export function filePrimitives(
             y: Number(y),
             data: payload
           });
-          await primitives.settle();
         }
+        await primitives.settle();
         return {
           dropped: true,
           filename,

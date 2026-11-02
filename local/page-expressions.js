@@ -886,10 +886,10 @@ export function splitText(
 // So a run holds what to do and each event only starts when reached; the overlap given up was three milliseconds a key on loopback against twenty seconds each over the relay, which is why it existed at all.
 // Order is only half of it: Docs drops edges that land in the same tick — three Enter presses vanished while typed characters beside them all survived — and the trust window hides this by spacing early calls with proof round trips while trusted ones fire back-to-back.
 // So a key holds its down edge one frame before the up, and a stream does not pay that beat a second time.
-// Sixteen milliseconds is a 60 Hz frame: past Chrome's per-frame coalescing, and a fraction of the old fifty.
-// The reliability tax is real, so it stays; the doubling inside a stream was not.
+// Measured on this machine: Windows fires a timer on a 15.6 ms tick, so a 16 ms beat lands on two ticks, 31 ms, while 8 ms lands on one — which is the frame the beat was always meant to be.
+// A chord still registers across that tick, proved on the bench page by Ctrl+A then typing replacing the whole value instead of appending to it.
 
-export const KEY_BEAT_MS = 16;
+export const KEY_BEAT_MS = 8;
 
 // WHY THE PICKER IS INTERCEPTED, NOT CLICKED THROUGH.
 // The file input only exists once the upload flow starts it — measured live as inputFound:false on a page whose Upload menu item works fine — and starting that flow opens the native picker, which is OS chrome no CDP call can dismiss.
