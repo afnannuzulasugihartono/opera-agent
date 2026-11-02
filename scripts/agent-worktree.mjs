@@ -44,7 +44,7 @@ const commands = {
   create(wanted, base = 'main', topic = '') {
     if (!wanted || wanted.startsWith('-')) throw new Error('usage: agent-worktree.mjs create <name> [base-branch] [topic]');
     const branch = workBranch(wanted, topic);
-    const at = branch.split('/')[1];
+    const at = slugWord(wanted);
     const path = join(repo, '..', `opera-agent-${at}`);
     if (existsSync(path)) throw new Error(`${path} already exists; pick another name, or remove it first`);
     try {
@@ -103,7 +103,7 @@ const commands = {
       throw new Error(`nothing named ${wanted}: no worktree at ${path} and no branch under ${WORK_PREFIX}/${at}`);
     }
 
-    const merged = git('branch', '--merged', 'main').split('\n').map((line) => line.trim().replace('* ', ''));
+    const merged = branchLines(git('branch', '--merged', 'main'));
 
     // WHY THE TAGS COME BEFORE ANY DELETE.
     // A tag is the only thing that survives a deleted branch, so it is written while the branch still exists and the worktree still holds it.
