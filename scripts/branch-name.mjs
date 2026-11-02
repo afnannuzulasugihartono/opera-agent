@@ -64,6 +64,17 @@ export function branchProblem(name) {
   return null;
 }
 
+// WHY THE LIST OUTPUT IS PARSED HERE.
+// `git branch --list` marks the branch this checkout holds with `*` and the one another worktree holds with `+`.
+// Both markers are cursor furniture rather than part of the name, and a marker left in the text once became a tag git refused: `fatal: 'archive/+ agent/x-...' is not a valid tag name`.
+
+export function branchLines(text) {
+  return String(text ?? '')
+    .split('\n')
+    .map((line) => line.trim().replace(/^[*+]\s+/, ''))
+    .filter(Boolean);
+}
+
 // WHY A TIDY FORM IS OFFERED AND NEVER APPLIED.
 // A branch that already exists may be checked out on another machine and named in an open pull request, so renaming it is a decision its owner makes.
 // Printing the name it should have had is the whole intervention: the rename is then one command, and the move is visible in the history.

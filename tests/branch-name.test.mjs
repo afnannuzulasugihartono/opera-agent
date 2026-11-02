@@ -14,7 +14,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
 
-import { branchProblem, normaliseBranch, reviewBranches, slugWord, workBranch, WORK_PREFIX } from '../scripts/branch-name.mjs';
+import { branchLines, branchProblem, normaliseBranch, reviewBranches, slugWord, workBranch, WORK_PREFIX } from '../scripts/branch-name.mjs';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 const script = join(root, 'scripts', 'agent-worktree.mjs');
@@ -86,6 +86,12 @@ test('the report splits the branches, and only the trunk and the shape are calle
     { name: 'cline/6m4r5nzz', suggestion: 'agent/cline/6m4r5nzz' },
     { name: 'agent/sitebench/sitebench', suggestion: 'agent/sitebench' },
   ]);
+});
+
+test('the branch list loses the markers instead of carrying them into a tag', () => {
+  const listed = '* agent/cline/dead-code\n  agent/cline\n+ agent/probe/end-to-end\n\n';
+  assert.deepEqual(branchLines(listed), ['agent/cline/dead-code', 'agent/cline', 'agent/probe/end-to-end']);
+  assert.deepEqual(branchLines(''), []);
 });
 
 test('the worktree script builds its branch from this contract instead of a string of its own', () => {

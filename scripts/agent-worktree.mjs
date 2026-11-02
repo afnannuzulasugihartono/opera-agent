@@ -22,7 +22,7 @@ import { fileURLToPath } from 'node:url';
 
 import { dirname, join, resolve } from 'node:path';
 
-import { branchProblem, slugWord, workBranch, WORK_PREFIX } from './branch-name.mjs';
+import { branchLines, branchProblem, slugWord, workBranch, WORK_PREFIX } from './branch-name.mjs';
 
 const repo = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -97,8 +97,7 @@ const commands = {
     if (!at) throw new Error(`"${wanted}" is not a name: use letters and digits, joined by hyphens`);
     const path = join(repo, '..', `opera-agent-${at}`);
     const hadWorktree = existsSync(path);
-    const branches = git('branch', '--list', `${WORK_PREFIX}/${at}`, `${WORK_PREFIX}/${at}/*`)
-      .split('\n').map((line) => line.trim().replace(/^\*\s+/, '')).filter(Boolean);
+    const branches = branchLines(git('branch', '--list', `${WORK_PREFIX}/${at}`, `${WORK_PREFIX}/${at}/*`));
 
     if (!hadWorktree && branches.length === 0) {
       throw new Error(`nothing named ${wanted}: no worktree at ${path} and no branch under ${WORK_PREFIX}/${at}`);
