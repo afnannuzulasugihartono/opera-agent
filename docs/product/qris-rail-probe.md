@@ -10,7 +10,7 @@ Yang dibuktikan, tiga hal terpisah:
 
 | Level | Yang dibuktikan | Kalau gagal |
 |---|---|---|
-| **L0** | Akun GoPay Merchant bisa dibaca dari server: login portal, daftar merchant, QRIS statis, riwayat transaksi | tidak ada rel server-side; pilihan tinggal agregator pihak ketiga atau HP menyala 24 jam |
+| **L0** | Akun GoPay Merchant bisa dibaca dari server: login API, daftar merchant, QRIS statis, feed transaksi | tidak ada rel server-side; pilihan tinggal agregator pihak ketiga atau HP menyala 24 jam |
 | **L1** | QRIS statis yang diubah jadi dinamis (tag 01 jadi `12`, tag 54 berisi nominal, CRC16 tag 63 dihitung ulang) **diterima acquirer**, dan uang masuk ke saldo GoPay dengan nominal yang terkunci | tidak ada QRIS buatan sendiri; rel resmi (GoBiz Payment API) atau agregator |
 | **L2** | Settlement terlihat di feed transaksi portal, untuk app pembayaran yang benar-benar dipakai pelanggan | deteksi otomatis tidak bisa; kanal lain atau konfirmasi manual |
 
@@ -24,8 +24,8 @@ L0 dan L1 boleh gagal terpisah. Rel yang menang harus lolos ketiganya.
 - Rahasia tidak masuk chat, tidak masuk git. Kredensial hanya di file `.env` lokal dan
   `[UNVERIFIED]` berarti belum diuji, bukan berarti pasti.
 - Akses resmi ke GoBiz hanya lewat jalur aktivasi atau tim MAM (syarat §5 Developer Portal).
-  Semua yang di bawah memakai dashboard merchant, bukan API resmi, jadi **risiko banned ada**.
-  Siklus polling harus pendek dan hanya jalan saat ada invoice terbuka.
+  Semua yang di bawah memakai API merchant yang sama dengan aplikasi HP, bukan API resmi, jadi
+  **risiko banned ada**. Siklus polling harus pendek dan hanya jalan saat ada invoice terbuka.
 -_[UNVERIFIED]_: tidak ada aturan BI yang ditemukan secara eksplisit mengizinkan atau melarang
   pihak ketiga mengubah QRIS statis jadi dinamis. Yang pasti: identitas merchant (NMID, tag 26-51)
   tidak berubah, jadi dana tetap ke merchant yang sama.
@@ -37,7 +37,7 @@ sudah masuk**. Tiga kanal yang tersedia:
 
 | Kanal | Cara tahu pembayaran masuk | HP nyala? | Biaya |
 |---|---|---|---|
-| **Polling portal (server)** | Akun GoBiz/GoPay Merchant dibaca dari server, feed transaksi dicek | tidak | Rp 0 kalau kita bangun sendiri |
+| **Polling API merchant (server)** | Akun GoBiz/GoPay Merchant dibaca dari server, feed transaksi dicek | tidak | Rp 0 kalau kita bangun sendiri |
 | **APK notifikasi (HP)** | Aplikasi di HP membaca notifikasi GoPay Merchant, meneruskannya ke server | **ya** | Rp 0 (APIQris) atau paket |
 | **API resmi** | Provider mengirim webhook | tidak | Tergantung provider |
 
@@ -45,8 +45,8 @@ Jadi "upload foto QRIS lalu pasang aplikasi detektor di HP" itu **satu** pola, c
 bagi pemakai awam, bukan satu-satunya. Yang tidak bisa dihindari: **dana harus sampai ke akun
 merchant**, jadi minimal satu kanal baca mutasi wajib ada.
 
-Polling portal adalah kanal tanpa HP: pola yang sama dipakai WebQRIS (kanal "GoBiz Detector"),
-EQRIS (`/api/gomerch-mutasi`), TemanQRIS (Gateway Otomatis), dan RavaPay. Yang polling portal
+Polling API adalah kanal tanpa HP: pola yang sama dipakai WebQRIS (kanal "GoBiz Detector"),
+EQRIS (`/api/gomerch-mutasi`), TemanQRIS (Gateway Otomatis), dan RavaPay. Yang polling API
 bisa lakukan: baca mutasi, cocokkan nominal, webhook ke server kita.
 
 ## Yang bisa kita bangun sendiri, dan apa yang tidak
@@ -54,7 +54,7 @@ bisa lakukan: baca mutasi, cocokkan nominal, webhook ke server kita.
 | Yang | Bisa? | Kenapa |
 |---|---|---|
 | Mengubah QRIS statis jadi dinamis (nominal terkunci) | **ya** | aritmetika EMVCo saja: tag 01 `11`→`12`, tag 54, CRC16 tag 63. Tidak ada panggilan jaringan, tidak ada API, tidak ada biaya |
-| Membaca mutasi dari portal merchant | **ya**, kalau L0 lolos | endpoint dashboard merchant, bukan API resmi. Risiko ban ada, dan bisa rusak tanpa pemberitahuan |
+| Membaca mutasi dari API merchant | **ya**, kalau L0 lolos | endpoint yang dipakai aplikasi HP dan dashboard GoFood, bukan API resmi. Risiko ban ada, dan bisa rusak tanpa pemberitahuan |
 | Mencocokkan mutasi ke invoice dan mengirim webhook ke sistem kita | **ya** | pekerjaan lokal kita |
 | Meneruskan uang, memegang saldo, menginisiasi pembayaran atas nama orang lain | **tidak** | itu aktivitas PJP dan butuh lisensi BI (UU PJP 1/2023, PBI 23/6/2021 Pasal 11-14, PBI 10/2025, PADG 32/2025) |
 
@@ -80,28 +80,43 @@ dan tiap penerbit punya API sendiri dengan proses review.
 Jadi "tanpa input manual" untuk domestic QRIS dijawab QRIS dinamis, bukan VA. VA tetap berguna
 kalau ada klien yang butuh transfer rekening manual.
 
-## Langkah 0 — portal merchant (L0)
+## Langkah 0 — login merchant dari server (L0)
 
-1. Buka `https://portal.gofoodmerchant.co.id/auth/login`, masuk dengan nomor HP akun GoPay Merchant
-   lalu OTP. Kalau ada email, pakai `https://portal.gofoodmerchant.co.id/auth/login/email`.
-2. Catat: **berhasil atau tidak**. Akun UMI perorangan belum pernah dipastikan bisa masuk ke portal ini.
-   [UNVERIFIED]
-3. Kalau masuk, catat empat hal, jangan screenshot ke chat:
-   - Merchant ID / NMID (format `G...` atau `UMI...`)
-   - QRIS statis: string QR-nya. Halaman QRIS biasanya menyediakan unduh; string-nya juga bisa
-     diambil dari menu QRIS. Kalau tidak ada string di portal, ambil dari aplikasi GoPay Merchant
-     (Bagikan / Salin QR). **NMID saja tidak cukup**: mengubah statis jadi dinamis butuh payload
-     lengkap, karena tag acquirer (26-51), MCC, nama, dan kota ikut menentukan tag 54 dan CRC.
-     Kalau hanya NMID yang didapat, tulis itu di laporan: payload bisa dirakit ulang, tapi
-     strukturnya harus persis sama dengan yang diterbitkan acquirer, dan itu yang harus diuji.
-   - Outlet / cabang yang terdaftar
-   - URL halaman riwayat transaksi (Keuangan → Aktivitas terakhir)
-4. Buka riwayat transaksi dan lihat apakah **transaksi QRIS** terlihat di sana, lengkap dengan
-   nominal dan waktu. Ini yang akan dibaca poller.
-5. Tidak perlu ganti password dulu. Jangan sentuh pengaturan akun apa pun yang tidak diminta.
+Temuan 2026-11-02: akun GoPay Merchant **tidak punya dashboard web sendiri**. Host
+`merchant.gopay.co.id`, `portal.gopay.co.id`, `dashboard.gopay.co.id`, dan `portal.gopaymerchant.co.id`
+semuanya tidak ada; yang ada cuma halaman pemesanan di `gopay.co.id/merchant`. Tapi dashboard
+GoFood (`portal.gofoodmerchant.co.id`) memakai API yang sama dengan aplikasi HP, jadi **browser
+tidak diperlukan**: satu SMS OTP sudah cukup, lalu servernya yang membaca mutasi.
 
-** Laporkan L0:** `login: ya/tidak`, `NMID: <tersimpan di .env, tidak di chat>`, `qr_static: ada/tidak`,
-`riwayat_qris: ya/tidak`, `outlet: <jumlah>`.
+Rute yang sudah dicek langsung ke server pada 2026-11-02 (tanpa kredensial apa pun):
+
+| Panggilan | Jawaban server | Arti |
+|---|---|---|
+| `POST https://api.gobiz.co.id/goid/login/request` | 400 `goid:error:missing_field` | rute ada, minta nomor HP |
+| `POST https://api.gobiz.co.id/goid/token` | 400 `goid:error:missing_field` | rute ada, minta OTP |
+| `GET https://api.gobiz.co.id/v1/users/me` | 401 `missing auth header` | rute ada, butuh token |
+| `POST https://api.gobiz.co.id/v1/merchants/search` | 401 `missing auth header` | rute ada, butuh token |
+| `GET https://api.gojekapi.com/merchant-analytics/v2/merchants/transactions` | 401 `missing auth header` | feed transaksi, butuh token |
+| `POST https://api.gobiz.co.id/journals/search` | 401 `missing auth header` | jurnal detail, butuh token |
+| `GET https://portal.gofoodmerchant.co.id/goid/login/request` | 404 | di host portal tidak ada; pakai `api.gobiz.co.id` |
+
+Langkah:
+
+1. Simpan nomor HP merchant (format apa pun) di `%TEMP%\opera-gobiz\phone.txt`. Jangan tempel ke
+   chat, jangan simpan di repo.
+2. Jalankan `node scripts/gobiz-probe.mjs login`. Program meminta OTP lewat SMS, lalu menunggu
+   file `%TEMP%\opera-gobiz\otp.txt` berisi 4 angka. Tulis 4 angka itu ke file itu; program
+   menghapus file itu sendiri setelah membaca.
+3. Jalankan `node scripts/gobiz-probe.mjs feed`. Program mencetak profil merchant dan transaksi
+   7 hari terakhir: id, waktu, `gross_amount` (minor unit), status, `payment_type`,
+   `channel_type`, `order_id`, dan issuer QRIS.
+4. Yang harus terlihat: `merchant_id`, daftar merchant, dan — kalau ada transaksi — baris dengan
+   `payment_type` QRIS dan `gross_amount` terisi. Kalau `feed` membalas 401, ulangi `login`.
+5. QRIS statis: ambil dari aplikasi GoPay Merchant (menu QRIS → Bagikan/Salin). Payload-nya bukan
+   rahasia publik, tapi tetap jangan masuk repo. Payload itu yang dipakai di L1.
+
+** Laporkan L0:** `login=<ya/tidak>`, `merchant_id=<ada/tidak, nilainya tidak masuk chat>`,
+`outlet=<n>`, `qr_static=<ada/tidak>`, `feed_qris=<ya/tidak>`.
 
 ## Langkah 1 — Rp 1.000 lewat QRIS dinamis buatan sendiri (L1)
 
@@ -128,15 +143,16 @@ rencana QRIS buatan sendiri mati, dan ini diketahui sebelum kode apa pun ditulis
 
 Bayar tiga kali, dari tiga app berbeda, masing-masing Rp 1.001 (nominal berbeda biar jelas):
 
-| App bayar | Nominal | Terlihat di riwayat portal? |
+| App bayar | Nominal | Terlihat di feed server? |
 |---|---|---|
 | GoPay | Rp 1.001 | ya / tidak |
 | Aplikasi bank (BCA / Mandiri / BRI) | Rp 1.002 | ya / tidak |
 | DANA atau OVO | Rp 1.003 | ya / tidak |
 
-Buka riwayat transaksi portal dan cek tiap nominal. Yang dibutuhkan: **nominal dan waktu** per
-transaksi. Kalau transaksi dari app bank tidak muncul, kanal server-side hanya menutup GoPay dan
-itu harus tertulis di keputusan rel, bukan dikarang.
+Jalankan `node scripts/gobiz-probe.mjs feed` setelah tiap pembayaran, lalu cari nominalnya di
+keluaran. Yang dibutuhkan: **nominal dan waktu** per transaksi. Kalau transaksi dari app bank
+tidak muncul, kanal server-side hanya menutup GoPay dan itu harus tertulis di keputusan rel,
+bukan dikarang.
 
 ** Laporkan L2:** satu baris per app: `app, nominal, terlihat: ya/tidak, waktu_tersedia: ya/tidak`.
 
@@ -172,7 +188,7 @@ Langkah yang harus dijalankan, bukan cuma dibaca:
 Tempel hasil di respons, satu blok per level, tanpa nilai rahasia:
 
 ```
-L0: login=<ya/tidak> qr_static=<ada/tidak> riwayat_qris=<ya/tidak> outlet=<n>
+L0: login=<ya/tidak> merchant_id=<ada/tidak> qr_static=<ada/tidak> feed_qris=<ya/tidak> outlet=<n>
 L1: nominal_kunci=<ya/tidak> bayar=<berhasil/gagal> pesan=<teks> saldo_naik=<ya/tidak>
 L2: goPay=<ya/tidak> bank=<ya/tidak> dana=<ya/tidak>
 L3: gobiz_official=<form terkirim> webqris=<terdaftar/terbatas> apqris=<terdaftar> eqris=<terdaftar>
