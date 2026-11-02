@@ -40,6 +40,13 @@ export function barePhone(raw) {
   return digits;
 }
 
+// WHY THE DEVICE ID NEVER CHANGES.
+
+// The portal sends one browser id on every call, and the server binds the OTP to that id.
+// A call that arrives with a new id is refused like a wrong code, so one id is kept for the whole run.
+
+const DEVICE_ID = crypto.randomUUID();
+
 // WHY THE AUTH CALLS CARRY DEVICE HEADERS.
 
 // The portal sends a device header set on the login calls, and the server checks it.
@@ -59,7 +66,7 @@ export function deviceHeaders(token) {
     'X-User-Type': 'merchant',
     'x-DeviceOS': 'Web',
     'x-appId': APP_ID,
-    'x-uniqueid': crypto.randomUUID()
+    'x-uniqueid': DEVICE_ID
   };
 }
 

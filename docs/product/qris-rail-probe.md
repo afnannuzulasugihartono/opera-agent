@@ -123,15 +123,15 @@ Langkah:
 | Yang dicek | Hasil |
 |---|---|
 | Header yang benar-benar dikirim portal | tertangkap dari request asli: `X-AppVersion: platform-v3.129.0-edffae48`, `Authentication-Type: go-id`, `x-appId: go-biz-web-dashboard`, `X-Platform: Web`, `x-DeviceOS: Web`, `X-User-Type: merchant`, `Gojek-Country-Code: ID`, `Gojek-Timezone: Asia/Jakarta`, `x-uniqueid` UUID. Sama dengan yang dikirim `scripts/gobiz-probe.mjs` |
-| `401 "Harap perbarui versi aplikasi"` | **bukan** gate versi. Itu jawaban kalau kode SMS milik request OTP yang lebih lama. Tiap `POST /goid/login/request` baru membatalkan kode yang masih menunggu, jadi probe paralel mematikan kode yang sedang dipakai |
+| `401 "Harap perbarui versi aplikasi"` | **bukan** gate versi. Dua sebab: kode SMS milik request OTP yang lebih lama (tiap `POST /goid/login/request` baru membatalkan kode yang masih menunggu), dan `x-uniqueid` yang berubah antar call. Portal mengirim satu `browser_id` di semua call dan server mengikat OTP ke id itu; call dengan id baru ditolak seperti kode salah |
 | Baca akun dari proses Node biasa | berhasil. `GET /v1/users/me` dan `POST /v1/merchants/search` jalan di luar browser, dengan token dari cookie portal (`access_token`, `refresh_token`) |
+| Login penuh dari Node | berhasil. `login` → SMS OTP → tukar token → session tersimpan; `feed` langsung berjalan. Tidak ada browser, tidak ada HP menyala |
 | Profil merchant | user `roles=verified_admin`, satu merchant terdaftar (id-nya tidak ditulis di file ini) |
 | Bentuk query feed | `merchant_id`, `from` (offset, wajib), `size`, `start_time` + `end_time` format RFC3339 (`2026-11-02T10:00:00Z`). `days` saja → 400 `start_time_required`; epoch → 400 (parser butuh RFC3339); tanpa `from` → 422 `either from or from_id is required` |
 | Isi feed 7 hari | 0 transaksi. Akun ini belum punya lalu lintas QRIS, jadi feed masih harus dibuktikan dengan pembayaran nyata (L2) |
 
-Sisa L0: `login` dari Node murni harus dibuktikan sekali dengan satu SMS bersih (token dari
-cookie portal dipakai supaya jalur baca saja bisa dibuktikan duluan), dan QRIS statis masih
-perlu diambil dari aplikasi GoPay Merchant.
+Sisa L0: QRIS statis masih perlu diambil dari aplikasi GoPay Merchant, dan feed 7 hari masih
+kosong karena akun ini belum pernah menerima pembayaran QRIS.
 
 ## Langkah 1 — Rp 1.000 lewat QRIS dinamis buatan sendiri (L1)
 
