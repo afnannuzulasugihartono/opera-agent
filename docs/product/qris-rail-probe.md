@@ -28,7 +28,10 @@ L0 dan L1 boleh gagal terpisah. Rel yang menang harus lolos ketiganya.
   **risiko banned ada**. Siklus polling harus pendek dan hanya jalan saat ada invoice terbuka.
 -_[UNVERIFIED]_: tidak ada aturan BI yang ditemukan secara eksplisit mengizinkan atau melarang
   pihak ketiga mengubah QRIS statis jadi dinamis. Yang pasti: identitas merchant (NMID, tag 26-51)
-  tidak berubah, jadi dana tetap ke merchant yang sama.
+  tidak berubah, jadi dana tetap ke merchant yang sama. Bukti empiris 2026-11-02: aplikasi
+  pembayaran non-GoPay menerima QR dinamis buatan sendiri dan menampilkan nominal terkunci, jadi
+  sisi payer tidak menolak. Apakah acquirer mengizinkan-practice ini tetap terbuka sampai dana
+  benar-benar masuk ke saldo merchant.
 
 ## Detector ada tiga, dan HP cuma salah satu
 
@@ -142,8 +145,8 @@ rencana QRIS buatan sendiri mati, dan ini diketahui sebelum kode apa pun ditulis
 2. Ubah jadi dinamis dengan tool apa pun yang bisa dijalankan lokal (repo `verssache/qris-dinamis`,
    atau `npm:` paket QRIS statis-ke-dinamis). String QRIS statis bukan rahasia publik, jadi
    konverter daring pun boleh untuk uji ini; jangan pernah masukkan kredensial ke sana.
-   Yang wajib: tag 01 `11` → `12`, tag 54 berisi `1000` (bukan `1000.00`), CRC16-CCITT-FALSE
-   dihitung ulang di tag 63.
+   Yang wajib: tag 01 `11` → `12`, tag 54 berisi `1000` (bukan `1000.00`), **tag 62/07 `A01` → `A02`**,
+   CRC16-CCITT-FALSE dihitung ulang di tag 63.
 3. Render QR-nya, pindai dari **aplikasi pembayaran yang berbeda dari GoPay** (misalnya DANA
    atau aplikasi bank), lalu bayar **tepat Rp 1.000**.
 4. Yang harus terjadi: aplikasi menampilkan nominal terkunci Rp 1.000 (tidak ada kolom nominal
@@ -153,6 +156,19 @@ rencana QRIS buatan sendiri mati, dan ini diketahui sebelum kode apa pun ditulis
 
 ** Laporkan L1:** `render_qr: ya/tidak`, `nominal_kunci: ya/tidak`, `bayar: berhasil/gagal`,
 `pesan_gagal: <persis>`, `saldo_naik: ya/tidak`, `selisih_saldo: <angka>`.
+
+### Hasil 2026-11-02 (L1 sebagian lolos)
+
+| Uji | Hasil |
+|---|---|
+| QR statis asli, dipindai ShopeePay | diterima, nominal bisa diisi (baseline: pasangan ShopeePay–GoPay untuk QR statis merchant ini jalan) |
+| Konversi dengan tag 62/07 masih `A01` | **ditolak**: "QR code tidak sah". Tag 62/07 adalah kategori QRIS: `A01` statis, `A02` dinamis. Mengubah tag 01 saja tidak cukup |
+| Konversi dengan tag 62/07 `A02` | **diterima**. Aplikasi pembayaran menampilkan nominal Rp 1.000 terkunci, tanpa kolom yang bisa diedit |
+| Pembayaran Rp 1.000 | **belum dilakukan** (dana tidak tersedia saat uji). Saldo merchant naik dan settlement masuk feed belum terbukti |
+| CRC16 | algoritma CCITT-FALSE diverifikasi: CRC payload statis yang tertuang dari QR cocok (`F47E`), dan CRC payload dinamis dihitung ulang dengan hasil yang sama |
+
+Sisa L1: satu pembayaran Rp 1.000 sungguhan, untuk membuktikan dua hal sekaligus — acquirer
+menerima nominal yang terkunci dan saldo merchant naik, dan feed server melihat transaksinya (L2).
 
 ## Langkah 2 — settlement terlihat dari feed (L2)
 
