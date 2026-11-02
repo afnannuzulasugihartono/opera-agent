@@ -21,7 +21,8 @@
     "gates:refresh": "node scripts/gates.mjs --refresh",
     "check": "node scripts/check.mjs",
     "scope": "node scripts/scope.mjs",
-    "scope:diff": "node scripts/scope-check.mjs"
+    "scope:diff": "node scripts/scope-check.mjs",
+    "branches": "node scripts/branch-name.mjs"
   },
   "engines": {
     "node": ">=22"

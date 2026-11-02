@@ -15,7 +15,7 @@ node scripts/agent-worktree.mjs create <name> [base-branch] [topic]
 That one command:
 
 - creates a worktree beside the repo, at `../opera-agent-<name>`,
-- puts it on the branch `agent/<name>/<topic>`, cut from the base you named (default `main`),
+- puts it on the branch `agent/<name>`, or `agent/<name>/<topic>` when you pass a topic, cut from the base you named (default `main`),
 - copies every `.env*` file from the main checkout, because a worktree without them cannot run the gates,
 - runs the install, so the worktree is immediately usable.
 
@@ -23,13 +23,23 @@ That one command:
 node scripts/agent-worktree.mjs list
 ```
 
-Shows every worktree and the branch it holds, and marks the main checkout so nothing drives from it by accident.
+Shows every worktree, the branch it holds, and whether that branch fits the shape, and marks the main checkout so nothing drives from it by accident.
 
 ```bash
 node scripts/agent-worktree.mjs remove <name>
 ```
 
-Archives the branch as a tag — `archive/<branch>-<date>`, with the merge state in the tag message — and only then deletes the branch and the worktree. A branch that was never merged is reachable from nothing else, so its tag is the only thing standing between the delete and losing a session's reasoning.
+Archives every branch under `agent/<name>` as a tag — `archive/<branch>-<date>`, with the merge state in the tag message — and only then deletes the branches and the worktree. A branch that was never merged is reachable from nothing else, so its tag is the only thing standing between the delete and losing a session's reasoning. A name that holds nothing is refused, so a sentence about an archive is always about one.
+
+## The branch shape
+
+```bash
+npm run branches
+```
+
+A work branch is `agent/<workspace>`, with an optional `/topic`: the first segment is the worktree — one machine and one checkout — and the second is one line of work inside it. Every segment is lowercase letters, digits and single hyphens, so a name survives git, a pull-request URL and every shell without quoting. The trunk is `main`, and an archived branch is a tag under `archive/`.
+
+`npm run branches` reads every branch on the clone and prints the ones that do not fit beside the name they should have had — for example `agent/operafetch/operafetch -> agent/operafetch`, because a topic that repeats the worktree names one thing twice. Renaming is its owner's call, since the old name may be checked out elsewhere and named in an open pull request; the report is the whole intervention, and [`branch-name.mjs`](../scripts/branch-name.mjs) is the one place the shape is written.
 
 ## What you run inside a worktree
 
@@ -55,7 +65,7 @@ Some things exist once per machine, and a worktree does not copy them. Handle th
 ## Shipping
 
 ```bash
-git push -u origin agent/<name>/<topic>
+git push -u origin agent/<name>        # or agent/<name>/<topic>
 gh pr create --base main
 ```
 
