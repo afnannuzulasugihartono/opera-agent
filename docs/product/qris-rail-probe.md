@@ -40,7 +40,10 @@ L0 dan L1 boleh gagal terpisah. Rel yang menang harus lolos ketiganya.
    - Merchant ID / NMID (format `G...` atau `UMI...`)
    - QRIS statis: string QR-nya. Halaman QRIS biasanya menyediakan unduh; string-nya juga bisa
      diambil dari menu QRIS. Kalau tidak ada string di portal, ambil dari aplikasi GoPay Merchant
-     (Bagikan / Salin QR).
+     (Bagikan / Salin QR). **NMID saja tidak cukup**: mengubah statis jadi dinamis butuh payload
+     lengkap, karena tag acquirer (26-51), MCC, nama, dan kota ikut menentukan tag 54 dan CRC.
+     Kalau hanya NMID yang didapat, tulis itu di laporan: payload bisa dirakit ulang, tapi
+     strukturnya harus persis sama dengan yang diterbitkan acquirer, dan itu yang harus diuji.
    - Outlet / cabang yang terdaftar
    - URL halaman riwayat transaksi (Keuangan → Aktivitas terakhir)
 4. Buka riwayat transaksi dan lihat apakah **transaksi QRIS** terlihat di sana, lengkap dengan
