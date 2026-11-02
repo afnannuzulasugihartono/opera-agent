@@ -29,6 +29,18 @@ const LOCAL_DIR = fileURLToPath(new URL('..', import.meta.url));
 const BIN = fileURLToPath(new URL('./opera-local.js', import.meta.url));
 const STAMP_EVERY_MS = 1000;
 
+// WHY A BROKEN RUNTIME IS NOT RETRIED ON EVERY CALL.
+// A machine where the child cannot start still has the in-process server, and trying again on every call turned one failure into a tax on every tool: measured, about 150 ms each time.
+// So a failure is remembered for a while, and the tools answer from the server that is already here.
+
+const RETRY_AFTER_MS = 60000;
+
+// WHY THE CHILD RUNS ON NODE AND NOT ON WHATEVER RUNS THE PLUGIN.
+// OpenCode is a compiled binary, so process.execPath points at it and not at a runtime that takes a script: measured, every call then paid about 150 ms for a spawn that could not start the server before falling back.
+// Node is what the server is written for and what every machine that runs these tools has, so it is named, and a machine without it simply pays the in-process fallback.
+
+const RUNNER = process.versions.bun ? 'node' : process.execPath;
+
 // WHY A COUNTER IS EXPORTED.
 // A test can prove a call answered, but not that a fresh server answered it; the count of children started is the only fact that tells a respawn from a cached answer.
 
@@ -220,6 +232,7 @@ export function createOperaPlugin({
   let childStamp = -1;
   let checkedAt = 0;
   let newestSeen = -1;
+  let retryAt = 0;
 
   // WHY THE BRIDGE IS ASKED FOR HERE AND NOT AT LOAD.
   // A plugin that binds a port when OpenCode starts would take the machine's bridge whether the browser is used or not.
@@ -255,7 +268,7 @@ export function createOperaPlugin({
     reject
   ) => {
     starts += 1;
-    const proc = spawn(process.execPath, [BIN], {
+    const proc = spawn(RUNNER, [BIN], {
       stdio: [
         'pipe',
         'pipe',
@@ -385,11 +398,13 @@ export function createOperaPlugin({
       newestSeen = treeStamp();
       if (child && newestSeen !== childStamp && child.pending() === 0) stopChild();
     }
+    if (!child && now < retryAt) return (await serverFor()).call(name, args);
     if (!child) {
       try {
         child = await startChild();
         childStamp = newestSeen;
       } catch {
+        retryAt = Date.now() + RETRY_AFTER_MS;
         return (await serverFor()).call(name, args);
       }
     }
@@ -397,6 +412,7 @@ export function createOperaPlugin({
       return await child.call(name, args);
     } catch {
       stopChild();
+      retryAt = Date.now() + RETRY_AFTER_MS;
       return (await serverFor()).call(name, args);
     }
   };
