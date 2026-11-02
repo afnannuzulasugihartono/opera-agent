@@ -30,6 +30,56 @@ L0 dan L1 boleh gagal terpisah. Rel yang menang harus lolos ketiganya.
   pihak ketiga mengubah QRIS statis jadi dinamis. Yang pasti: identitas merchant (NMID, tag 26-51)
   tidak berubah, jadi dana tetap ke merchant yang sama.
 
+## Detector ada tiga, dan HP cuma salah satu
+
+"HP harus nyala 24 jam" bukan syarat teknis. Yang dibutuhkan: **satu sumber yang tahu pembayaran
+sudah masuk**. Tiga kanal yang tersedia:
+
+| Kanal | Cara tahu pembayaran masuk | HP nyala? | Biaya |
+|---|---|---|---|
+| **Polling portal (server)** | Akun GoBiz/GoPay Merchant dibaca dari server, feed transaksi dicek | tidak | Rp 0 kalau kita bangun sendiri |
+| **APK notifikasi (HP)** | Aplikasi di HP membaca notifikasi GoPay Merchant, meneruskannya ke server | **ya** | Rp 0 (APIQris) atau paket |
+| **API resmi** | Provider mengirim webhook | tidak | Tergantung provider |
+
+Jadi "upload foto QRIS lalu pasang aplikasi detektor di HP" itu **satu** pola, cara paling mudah
+bagi pemakai awam, bukan satu-satunya. Yang tidak bisa dihindari: **dana harus sampai ke akun
+merchant**, jadi minimal satu kanal baca mutasi wajib ada.
+
+Polling portal adalah kanal tanpa HP: pola yang sama dipakai WebQRIS (kanal "GoBiz Detector"),
+EQRIS (`/api/gomerch-mutasi`), TemanQRIS (Gateway Otomatis), dan RavaPay. Yang polling portal
+bisa lakukan: baca mutasi, cocokkan nominal, webhook ke server kita.
+
+## Yang bisa kita bangun sendiri, dan apa yang tidak
+
+| Yang | Bisa? | Kenapa |
+|---|---|---|
+| Mengubah QRIS statis jadi dinamis (nominal terkunci) | **ya** | aritmetika EMVCo saja: tag 01 `11`→`12`, tag 54, CRC16 tag 63. Tidak ada panggilan jaringan, tidak ada API, tidak ada biaya |
+| Membaca mutasi dari portal merchant | **ya**, kalau L0 lolos | endpoint dashboard merchant, bukan API resmi. Risiko ban ada, dan bisa rusak tanpa pemberitahuan |
+| Mencocokkan mutasi ke invoice dan mengirim webhook ke sistem kita | **ya** | pekerjaan lokal kita |
+| Meneruskan uang, memegang saldo, menginisiasi pembayaran atas nama orang lain | **tidak** | itu aktivitas PJP dan butuh lisensi BI (UU PJP 1/2023, PBI 23/6/2021 Pasal 11-14, PBI 10/2025, PADG 32/2025) |
+
+Batasnya jelas: **dana tidak pernah menyentuh sistem kita**. Pembayar → QRIS → saldo GoPay
+Merchant → rekening bank. Yang kita bangun adalah lapisan notifikasi dan rekonsiliasi, bukan
+payment gateway. Konsekuensinya, "membangun payment gateway sendiri" dalam arti PJP: tidak
+bisa. "Membangun konektor pembayaran sendiri di atas QRIS milik dagang sendiri": bisa, dan itu
+persis yang kita mau.
+
+## "Rekening" tanpa input manual berarti virtual account
+
+Opsi kedua yang Anda sebut: bayar lewat rekening bank tanpa mengetik nominal. Yang memenuhi itu
+hanya **virtual account (VA) per invoice**: satu nomor rekening khusus per tagihan, jadi nominal
+sudah terkunci di sistem bank. Nomor VA tidak bisa kita buat sendiri — penerbitnya bank atau PJP,
+dan tiap penerbit punya API sendiri dengan proses review.
+
+| Jalur VA | Biaya | Kenapa belum jadi pilihan |
+|---|---|---|
+| Midtrans VA | Rp 4.000 per invoice | sudah terhubung dan otomatis, tapi Rp 4.000 = 4% dari invoice Rp 99.000 |
+| Bank (BNI, Mandiri, BRI) | sesuai tariff bank | API perorangan/UMI butuh review dan berbulan-bulan, tidak cocok untuk pilot |
+| QRIS (yang kita bangun) | Rp 0 | nominal terkunci di QR, payer tidak perlu teller atau input nominal |
+
+Jadi "tanpa input manual" untuk domestic QRIS dijawab QRIS dinamis, bukan VA. VA tetap berguna
+kalau ada klien yang butuh transfer rekening manual.
+
 ## Langkah 0 — portal merchant (L0)
 
 1. Buka `https://portal.gofoodmerchant.co.id/auth/login`, masuk dengan nomor HP akun GoPay Merchant
@@ -69,7 +119,7 @@ rencana QRIS buatan sendiri mati, dan ini diketahui sebelum kode apa pun ditulis
 4. Yang harus terjadi: aplikasi menampilkan nominal terkunci Rp 1.000 (tidak ada kolom nominal
    yang bisa diedit), pembayaran berhasil, saldo GoPay Merchant naik Rp 1.000.
 5. Kalau aplikasi menampilkan "bayar sejumlah", berarti tag 01 belum jadi `12`.
-   Kalau pembayaran ditolak, catat **pesan errornya persis** — itu data acquisitions.
+   Kalau pembayaran ditolak, catat **pesan errornya persis** — itu data akuisisi yang paling berharga.
 
 ** Laporkan L1:** `render_qr: ya/tidak`, `nominal_kunci: ya/tidak`, `bayar: berhasil/gagal`,
 `pesan_gagal: <persis>`, `saldo_naik: ya/tidak`, `selisih_saldo: <angka>`.
@@ -92,7 +142,19 @@ itu harus tertulis di keputusan rel, bukan dikarang.
 
 ## Langkah 3 — jalur lain, paralel (tidak bergantung L0)
 
-Cek tiga hal, supaya tidak hanya satu jalan:
+Cek empat hal, supaya tidak hanya satu jalan. Harga di bawah dari halaman vendor; **[UNVERIFIED]**
+karena belum dibeli dan belum diuji.
+
+| Vendor | Bentuk | Harga | HP? | Catatan |
+|---|---|---|---|---|
+| **GoBiz Payment API resmi** | webhook HMAC, `gross_amount` tepat | gratis | tidak | Akses invite-only, lingkup GoFood. Formulir, bukan jaminan |
+| **WebQRIS** | polling portal (GoBiz Detector), webhook | gratis dengan kuota harian | tidak | Kanal APK-nya butuh HP; kanal GoBiz Detector tidak |
+| **APIQris** | polling via aplikasi pendamping di HP | Rp 0 per transaksi | **ya** | Biaya per transaksi nol, tapi detector-nya ada di HP |
+| **EQRIS** | polling mutasi + QRIS dinamis, token REST | Rp 25.000/30 hari (5 req/mnt) atau Rp 35.000/30 hari tanpa batas | tidak | Butuh login GoPay Merchant (merchantId + nomor HP), jadi cocok kalau L0 lolos |
+| **TemanQRIS** | Gateway Otomatis, polling GoPay, webhook | paket Rp 0 (50 req/hari) atau Rp 9.000/bln; **gateway 0,8%** | tidak | Biaya 0,8% lebih mahal dari Midtrans 0,7%, jadi bukan alasan pindah |
+| **RavaPay** | polling GoPay, webhook, dana langsung ke GoPay Merchant | langganan Rp 1.000/hari atau Rp 30.000/bln | tidak | Tanpa biaya per transaksi; **[UNVERIFIED]** |
+
+Langkah yang harus dijalankan, bukan cuma dibaca:
 
 1. **Rel resmi.** `https://developer.gobiz.com/` → hubungi tim untuk integrasi Payment.
    Akses Developer Portal disebut invite-only dan lingkupnya GoFood, jadi formulir ini hanya
@@ -102,6 +164,8 @@ Cek tiga hal, supaya tidak hanya satu jalan:
    unique code ditambahkan ke nominal.
 3. **APIQris.** Gratis per transaksi, tapi pendeteksinya lewat aplikasi di HP, jadi tetap butuh
    HP menyala. Catat saja sebagai pembanding biaya, bukan pilihan utama.
+4. **EQRIS.** Pakai kalau L0 lolos: daftar token, isi merchantId + nomor HP merchant, login sekali.
+   Catat: apakah mutasi dari app bank dan DANA terlihat, bukan hanya dari GoPay.
 
 ## Bentuk laporan
 
@@ -111,7 +175,7 @@ Tempel hasil di respons, satu blok per level, tanpa nilai rahasia:
 L0: login=<ya/tidak> qr_static=<ada/tidak> riwayat_qris=<ya/tidak> outlet=<n>
 L1: nominal_kunci=<ya/tidak> bayar=<berhasil/gagal> pesan=<teks> saldo_naik=<ya/tidak>
 L2: goPay=<ya/tidak> bank=<ya/tidak> dana=<ya/tidak>
-L3: gobiz_official=<form terkirim> webqris=<terdaftar/terbatas> apqris=<terdaftar>
+L3: gobiz_official=<form terkirim> webqris=<terdaftar/terbatas> apqris=<terdaftar> eqris=<terdaftar>
 ```
 
 ## Keputusan setelah probe
@@ -120,8 +184,8 @@ L3: gobiz_official=<form terkirim> webqris=<terdaftar/terbatas> apqris=<terdafta
 |---|---|
 | L0 ya, L1 ya, L2 ya (semua app) | QRIS sendiri: payload dinamis buatan kita, feed portal dibaca server, tanpa HP |
 | L0 ya, L1 ya, L2 hanya GoPay | QRIS sendiri, dengan catatan cakupan; HMAC dari webhook resmi sebagai jaring pengaman |
-| L0 ya, L1 tidak | WebQRIS GoBiz Detector (polling portal, tanpa HP) |
-| L0 tidak | WebQRIS atau APIQris, dan detector HP disiapkan sebagai cadangan |
+| L0 ya, L1 tidak | WebQRIS GoBiz Detector atau EQRIS (polling portal, tanpa HP) |
+| L0 tidak | EQRIS, WebQRIS, atau APIQris, dan detector HP disiapkan sebagai cadangan |
 | L0 ya, L1 ya, L2 ya, dan Developer Portal memberi akses | GoBiz Payment API resmi: `gross_amount` tepat, tanpa kode unik, webhook HMAC |
 
 ## Konsekuensi yang sudah terlihat sekarang
