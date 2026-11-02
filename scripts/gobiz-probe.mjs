@@ -76,6 +76,15 @@ export function dataHeaders(token) {
   };
 }
 
+// WHY PRINTED VALUES ARE CLEANED.
+
+// Every field printed here came from a remote server, and a terminal that receives control characters can be made to show something the operator never sent.
+// Printed values lose their control characters and are cut to a readable length.
+
+export function safeText(value, length = 120) {
+  return String(value ?? '').replace(/[\u0000-\u001f\u007f]/g, ' ').slice(0, length);
+}
+
 async function call(url, { method = 'GET', body, token, auth = false } = {}) {
   const res = await fetch(url, {
     method,
@@ -86,7 +95,7 @@ async function call(url, { method = 'GET', body, token, auth = false } = {}) {
   let data;
   try { data = JSON.parse(text); } catch { data = { raw: text.slice(0, 300) }; }
   if (!res.ok) {
-    const error = new Error(`${method} ${url} -> ${res.status} ${JSON.stringify(data).slice(0, 200)}`);
+    const error = new Error(`${method} ${url} -> ${res.status} ${safeText(JSON.stringify(data), 200)}`);
     error.status = res.status;
     throw error;
   }
@@ -153,7 +162,7 @@ async function login() {
   const phone = barePhone(await readInput('phone.txt'));
   const body = { client_id: CLIENT_ID, phone_number: phone, country_code: '62' };
   const request = await call(`${API}/goid/login/request`, { method: 'POST', auth: true, body });
-  console.log('otp requested, expires in', request.data?.otp_expires_in, 'seconds');
+  console.log('otp requested, expires in', safeText(request.data?.otp_expires_in), 'seconds');
   console.log('write the code into', fileIn('otp.txt'));
   const otp = await waitForOtp(600);
   const session = await call(`${API}/goid/token`, {
@@ -177,13 +186,13 @@ async function feed() {
     });
     const hits = found.hits || found.data?.hits || [];
     console.log('user:', JSON.stringify({
-      id: user.id,
-      email: user.email,
-      phone: user.phone,
-      merchant_id: user.merchant_id,
-      roles: user.roles
+      id: safeText(user.id),
+      email: safeText(user.email),
+      phone: safeText(user.phone),
+      merchant_id: safeText(user.merchant_id),
+      roles: safeText([].concat(user.roles || []).join(','))
     }));
-    console.log('merchants:', JSON.stringify(hits.map((hit) => ({ id: hit.id, name: hit.merchant_name }))));
+    console.log('merchants:', JSON.stringify(hits.map((hit) => ({ id: safeText(hit.id), name: safeText(hit.merchant_name) }))));
     const ids = [...new Set(hits.map((hit) => hit.id).concat(user.merchant_id ? [user.merchant_id] : []))];
     const out = [];
     for (const id of ids) {
@@ -197,18 +206,18 @@ async function feed() {
       const data = await call(`${ANALYTICS}/merchant-analytics/v2/merchants/transactions?${query}`, { token: session.access_token });
       for (const t of data.transactions || []) {
         out.push({
-          merchant_id: id,
-          id: t.id,
-          order_id: t.order_id,
-          transaction_time: t.transaction_time,
-          settlement_time: t.settlement_time,
-          gross_amount_minor: t.gross_amount,
-          currency: t.currency,
-          status: t.transaction_status,
-          payment_type: t.payment_type,
-          channel_type: t.channel_type,
-          source: t.transaction_source,
-          issuer: t.qris_provider_aspi_issuer
+          merchant_id: safeText(id),
+          id: safeText(t.id),
+          order_id: safeText(t.order_id),
+          transaction_time: safeText(t.transaction_time),
+          settlement_time: safeText(t.settlement_time),
+          gross_amount_minor: Number(t.gross_amount),
+          currency: safeText(t.currency),
+          status: safeText(t.transaction_status),
+          payment_type: safeText(t.payment_type),
+          channel_type: safeText(t.channel_type),
+          source: safeText(t.transaction_source),
+          issuer: safeText(t.qris_provider_aspi_issuer)
         });
       }
     }

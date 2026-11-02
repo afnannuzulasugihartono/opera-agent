@@ -5,7 +5,7 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { barePhone, deviceHeaders, dataHeaders } from '../scripts/gobiz-probe.mjs';
+import { barePhone, deviceHeaders, dataHeaders, safeText } from '../scripts/gobiz-probe.mjs';
 
 test('every phone format reaches the same bare national number', () => {
   assert.equal(barePhone('0812 3456 7890'), '81234567890');
@@ -36,4 +36,11 @@ test('a data call carries no device header', () => {
   assert.equal(headers['X-User-Type'], undefined);
   assert.equal(headers['x-uniqueid'], undefined);
   assert.equal(headers['Authentication-Type'], 'go-id');
+});
+
+test('a printed value loses its control characters', () => {
+  assert.equal(safeText('one\ntwo\rthree'), 'one two three');
+  assert.equal(safeText('plain'), 'plain');
+  assert.equal(safeText('abcdef', 3), 'abc');
+  assert.equal(safeText(undefined), '');
 });
