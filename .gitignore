@@ -6,6 +6,7 @@
 # Dependencies
 
 node_modules/
+package-lock.json
 
 # Build output
 
@@ -83,4 +84,6 @@ __pycache__/
 
 .kilo/
 .superpowers/
+.agents/
+skills-lock.json
 graphify-out/
