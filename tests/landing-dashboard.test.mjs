@@ -80,7 +80,7 @@ test('the device card holds no copy of the history', () => {
 
   assert.doesNotMatch(html, /<ul class="commands">/, 'the card lists no commands of its own');
   assert.doesNotMatch(html, /device\.commands\.map/, 'and the page never paints them a second time');
-  assert.match(html, /<h1>Riwayat<\/h1>/, 'the commands have one view, and it is named');
+  assert.match(html, /<section id="riwayat" data-title="Riwayat">/, 'the commands have one view, and it is named');
 });
 
 test('the hash marks the section being read, and nothing else does', () => {
@@ -138,7 +138,7 @@ test('the dashboard is about devices, not a profile page', () => {
   assert.match(html, /Akun \$\{user\.email\}/, 'the page names whose account these devices belong to, in one line');
   assert.match(html, /aria-current="page"/, 'the nav marks this page as the current one');
 
-  assert.match(html, /<h1>Akun ini<\/h1>/, 'the account facts have their own section');
+  assert.match(html, /<section id="akun" data-title="Akun ini">/, 'the account facts have their own section');
   assert.doesNotMatch(html, /<input[^>]*id="(fullName|accountName|email)"/i, 'and nothing on this page edits the account');
 });
 
@@ -154,8 +154,9 @@ test('the dashboard has a rail, because it has five jobs and no divider', () => 
   assert.match(html, /aria-label="Bagian dashboard"/, 'and it is labelled, so a screen reader announces what it is');
 
   for (const heading of ['Ringkasan', 'Riwayat', 'Sesi dengar', 'Tabel', 'Pairing manual', 'Jalankan aksi', 'Akun ini']) {
-    assert.ok(html.includes(`<h1>${heading}</h1>`), `${heading} has a heading of its own`);
+    assert.ok(html.includes(`data-title="${heading}"`), `${heading} names its own view`);
   }
+  assert.equal((html.match(/<h1/g) || []).length, 1, 'and the console carries one title, in the head above the views');
 
   assert.match(css, /@media \(max-width: 760px\)[\s\S]*?\.rail \{[^}]*flex-wrap: wrap/s, 'the rail has a narrow-screen form, and wraps into rows below 760px');
 });
@@ -488,15 +489,18 @@ test('the account line sits in a head of its own', () => {
 });
 
 // WHY THE GRID WAS REBUILT.
-// Measured live: the table editor was one block of monospace on the canvas, with no head band and no rule about which values are ids.
+// Measured live: the table editor was one block of monospace on the canvas, with no rule about which values are ids.
 // A grid where every character is the same width reads as a terminal dump, not as data, and the reader named it before I did.
+// The app screens in the study print their tables with no fill band and no zebra striping, so the grid wears a 1px rule and nothing else.
 
 test('the grid reads like a table, not a terminal dump', () => {
   const html = read('dashboard.html');
 
   assert.match(css, /\.konsolGrid \{[^}]*font-family: var\(--font\)/, 'the cells wear the interface font');
   assert.doesNotMatch(css, /\.konsolGrid \{[^}]*font: 12\.5px\/1\.55 var\(--mono\)/, 'a whole grid in mono is a dump');
-  assert.match(css, /\.konsolGrid th \{[^}]*background: var\(--surface-soft\)/, 'the header is a band, the way every production table prints it');
+  assert.match(css, /\.konsolGrid th \{[^}]*background: var\(--surface\)/, 'the header carries no fill: none of the headed tables in the study has one');
+  assert.match(css, /\.konsolGrid th \{[^}]*border-bottom: 1px solid var\(--line-strong\)/, 'and the rule under the names is the strongest one on the table');
+  assert.doesNotMatch(css, /\.konsolGrid tbody tr:nth-child\(even\)/, 'the zebra striping is gone: the 1px row rules separate the rows now');
   assert.doesNotMatch(css, /\.konsolGrid th \{[^}]*text-transform: uppercase/, 'and it is not a tracked uppercase band: the inspector calls that a micro-label');
   assert.match(css, /\.konsolGrid th \{[^}]*color: var\(--muted\)/, 'and it steps back so the values lead');
   assert.match(css, /\.konsolGrid td\.mono,/, 'only the id-like columns keep the mono face');
@@ -509,7 +513,7 @@ test('the history section lists every command newest first', () => {
   for (const head of ['Waktu', 'Status', 'Metode', 'Device', 'Durasi']) {
     assert.ok(html.includes(`<th>${head}</th>`), `the history table heads ${head}`);
   }
-  assert.match(html, /<h1>Riwayat<\/h1>/, 'the section names itself');
+  assert.match(html, /<section id="riwayat" data-title="Riwayat">/, 'the section names itself');
   assert.match(html, /href="#riwayat"/, 'and the rail links to it');
   assert.match(html, /id="historyRows"/, 'the rows have a body of their own');
   assert.match(html, /renderHistory\(data\.devices\)/, 'and the refresh feeds it the loaded devices');
@@ -538,11 +542,13 @@ test('the console opens with an app bar, not a marketing hero', () => {
 test('each view is a page of its own, with one visible title', () => {
   const html = read('dashboard.html');
 
+  assert.equal((html.match(/<h1/g) || []).length, 1, 'the console carries one title, in the head above the views');
+  assert.match(html, /<h1 class="viewTitle" id="viewTitle">/, 'and that title is the head title');
   for (const id of ['ringkasan', 'riwayat', 'dengar', 'tabel', 'pairing', 'aksi', 'akun']) {
-    assert.match(html, new RegExp(`<section id="${id}"[^>]*>[\\s\\S]{0,160}?<h1>`), `${id} opens with its own h1`);
+    assert.match(html, new RegExp(`<section id="${id}"[^>]*data-title=`), `${id} names itself, and the head paints the name`);
   }
   assert.equal((html.match(/class="active"/g) || []).length, 1, 'exactly one view is open on load');
-  assert.match(css, /section h1 \{/, 'and that title has a rule of its own');
+  assert.match(css, /\.viewTitle \{/, 'and that title has a rule of its own');
 });
 
 test('the account line never hides, and the figures answer one view only', () => {
@@ -677,6 +683,27 @@ test('the rail scrolls itself, because a list of tables is longer than a window'
   assert.match(css, /\.layout \{[^}]*grid-template-rows: minmax\(0, 1fr\)/, 'bounded by the shell, not by its longest list');
 });
 
+// WHY THE TABLE VIEW WAS REBUILT.
+// Measured live against the account's own sixteen tables: the editor printed machine names, one id per line, and the row count of a table appeared three times on one screen.
+// The view now names every column in words, shortens an id to eight characters with the whole id on the clipboard, and answers a click with a key-value well.
+
+test('the table view answers without repeating itself', () => {
+  const html = read('dashboard.html');
+
+  assert.match(html, /id="konsolTableFilter"/, 'the table list has a filter, so sixteen names are not a wall');
+  assert.match(html, /const konsolColumnLabel = \(name\) =>/, 'every column wears a human name over the machine one');
+  assert.match(html, /const konsolColumnNames = \{/, 'and the names a reader cannot guess live in one map');
+  assert.match(html, /full\.length > 8 \? `\$\{full\.slice\(0, 8\)\}…`/, 'an id stops at eight characters');
+  assert.match(html, /data-copy="\$\{esc\(cell\.full\)\}"/, 'and the whole id reaches the clipboard from the row');
+  assert.match(html, /id="konsolDetailRows"/, 'a click answers in a key-value well');
+  assert.doesNotMatch(html, /id="konsolJson"/, 'and never in a block of raw json');
+  assert.match(html, /id="konsolSize"/, 'the page size is a choice');
+  assert.match(html, /konsol\.limit = Number\(\$\('konsolSize'\)\.value\)/, 'and the reader takes it');
+  assert.match(html, /konsolSay\(konsol\.search \? `\$\{konsolNf\(konsol\.total\)\} baris cocok/, 'the status line speaks only when a filter changed the count');
+  assert.match(html, /`Halaman \$\{pageNo\} dari \$\{pageCount\}`/, 'and the pager speaks only the position, because the sidebar already counts the table');
+  assert.match(css, /\.konsolFoot \{[^}]*justify-content: center/, 'the pager sits in the middle of the view');
+});
+
 test('the active rail item is a line and the ink of the text, not a fill', () => {
   assert.match(css, /\.rail a\[aria-current="true"\] \{[^}]*color: var\(--ink\)/, 'the current item keeps the ink of the text it is');
   assert.match(css, /\.rail a\[aria-current="true"\] \{[^}]*font-weight: 600/, 'and it says so by weight, not by colour');
@@ -685,8 +712,12 @@ test('the active rail item is a line and the ink of the text, not a fill', () =>
   assert.doesNotMatch(css, /\.rail a\[aria-current="true"\] \{[^}]*background:/, 'and no fill: on the dark canvas a tinted block was the loudest thing on the screen');
 });
 
-test('the row count on the active rail row is readable', () => {
-  assert.match(css, /\.railList button\[aria-current="true"\] \.meta \{[^}]*color: inherit/, 'the count takes the row\'s own ink, because the muted grey on the brand green is 1.5:1');
+test('the active table row is a line and the ink of the text, and its count stays readable', () => {
+  assert.match(css, /\.railList button\[aria-current="true"\] \{[^}]*color: var\(--ink\)/, 'the open table keeps the ink of the text it is');
+  assert.match(css, /\.railList button\[aria-current="true"\]::before \{[^}]*width: 1px/, 'and the mark is the 1px accent line the console uses everywhere');
+  assert.doesNotMatch(css, /\.railList button\[aria-current="true"\] \{[^}]*background:/, 'and no fill: the green block was the loudest thing on the screen');
+  assert.match(css, /\.railList \.meta \{[^}]*color: var\(--muted\)/, 'the count stays in the muted grey, which reads on the dark canvas');
+  assert.match(css, /\.railList \.meta \{[^}]*margin: 0/, 'and it carries no margin, or the shared .meta margin lifted it off the middle of the row');
 });
 
 test('the table view is one box bounded by the window', () => {
@@ -697,7 +728,7 @@ test('the table view is one box bounded by the window', () => {
 });
 
 test('a table row in the rail is one row high, not two', () => {
-  assert.match(css, /\.railList button \{[^}]*height: 30px/, 'the row carries its own height, so an inherited line-height cannot double it');
+  assert.match(css, /\.railList button \{[^}]*height: 32px/, 'the row carries its own height, so an inherited line-height cannot double it');
   assert.match(css, /\.railList button \{[^}]*white-space: nowrap/, 'and stays one row high');
 });
 
@@ -827,7 +858,7 @@ test('the pager ends on the rail\'s line', () => {
 
 test('the console\'s spacing sits on one scale', () => {
   assert.match(css, /main\.console \{[^}]*--app-title: 24px/, 'a view title is 24px, the size Cline prints its title in');
-  assert.match(css, /section h1 \{[^}]*line-height: 1\.25/, 'and it breathes on 1.25, so the line box is taller than the glyphs it holds');
+  assert.match(css, /\.viewTitle \{[^}]*line-height: 1\.25/, 'and it breathes on 1.25, so the line box is taller than the glyphs it holds');
   assert.match(css, /\.contentHead \{[^}]*padding-top: 16px/, 'the head starts on 16');
   assert.match(css, /\.metrics > div \{[^}]*padding: 12px 16px/, 'a card breathes on 12 and 16');
   assert.match(css, /section > \.meta \{[^}]*margin: 0 0 16px/, 'a note is followed by 16');

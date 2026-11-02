@@ -115,6 +115,27 @@ main.console .btn { box-shadow: none; }
   border-bottom: 1px solid var(--line);
 }
 
+/*
+ * WHY the title sits in the head: an app screen names itself once, at the top of the canvas, and a title that scrolls away with its own view is a title the reader has to find again.
+ * WHY 24px: the app screens print their title at 18-28px, and the console's own scale already carries one size for it.
+ */
+
+.viewTitle {
+  margin: 0;
+  color: var(--ink);
+  font-size: var(--app-title);
+  font-weight: 600;
+  letter-spacing: -.025em;
+  line-height: 1.25;
+}
+
+.appBarSide {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+}
+
 .appWho {
   margin: 0;
   color: var(--muted);
@@ -367,12 +388,9 @@ section {
   scroll-margin-top: 96px;
 }
 
-section h1 {
-  margin: 0 0 4px;
-  font-size: var(--app-title);
-  line-height: 1.25;
-  letter-spacing: -.025em;
-}
+/*
+ * WHY no heading inside a view: the head above names the view, and a second name a few pixels under it says the same thing twice.
+ */
 
 section > .meta {
   max-width: 68ch;
@@ -402,7 +420,7 @@ section > .meta {
   body:has(main.console) footer .wrap { padding-inline: 16px; }
   .content.tabbed > section.active,
   .content.tabbed > .duo:has(> section.active) { flex: 0 0 auto; overflow: visible; }
-  #tabel { flex: 0 0 auto; }
+  #tabel { flex: 0 0 auto; overflow: visible; }
   .konsolScroll { max-height: 70vh; }
   .rail {
     display: flex;
@@ -417,21 +435,6 @@ section > .meta {
 
   .railHead,
   .railGroup { display: none; }
-
-  /*
-   * WHY the exception: the wrapped row is right for seven view names and wrong for twenty-seven of them, so the rail that carries the table list stays a vertical column the reader scrolls.
-   * WHY a share of the window and not an offset from it: a phone has no window to subtract a header from, and the list still has to end somewhere.
-   */
-
-  .rail:has(> .railContext:not([hidden])) {
-    flex-direction: column;
-    align-items: stretch;
-    max-height: 55vh;
-    overflow-y: auto;
-    padding: 0 16px;
-    scrollbar-width: thin;
-  }
-  .rail:has(> .railContext:not([hidden]))::-webkit-scrollbar { display: block; }
 }
 
 /* ── the readiness checklist ──────────────────────────────────────────────── */
@@ -854,11 +857,17 @@ table.history {
  * The old rule measured the window in pixels — a clamp between 360px and 620px against the window height less 390px — which is a number of pixels pretending to be a layout, and it left the grid 148px tall in a window with room for twice that.
  */
 
+/*
+ * WHY the view does not scroll: the grid inside it scrolls, and two scroll areas over one table meant a scrollbar on the page and another on the grid.
+ * The head stays above and the pager stays below, so one scroll area carries the table.
+ */
+
 #tabel {
   display: flex;
   flex-direction: column;
   flex: 1;
   min-height: 0;
+  overflow: hidden;
 }
 
 /*
@@ -872,25 +881,57 @@ table.history {
 .railContext[hidden] { display: none; }
 
 /*
- * WHY the name ellipsis: a long table name wrapped its row count onto a second line, which doubled every row and made the column look twice as long as it is.
- * WHY the row carries its own height: an inherited line-height measured 47px on a row whose text is 20px, so sixteen tables became a column nobody could scan.
+ * WHY the filter lives in the rail: sixteen names in a 220px column is a wall, and the reader who wants "commands" should not read fifteen rows to find it.
+ * WHY it is one line and 30px: the app screens print their search at 30-36px, and a second field beside the row filter would have been two filters for one question.
  */
 
+.railContext {
+  display: grid;
+  gap: 6px;
+  margin: 6px 0 2px;
+}
+
+.railFilter {
+  width: 100%;
+  height: 30px;
+  margin: 0;
+  padding: 0 9px;
+  border: 1px solid var(--line);
+  border-radius: var(--app-radius-sm);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 12.5px;
+}
+
+.railFilter::placeholder { color: var(--muted); }
+
+/*
+ * WHY the name ellipsis: a long table name wrapped its row count onto a second line, which doubled every row and made the column look twice as long as it is.
+ * WHY the row carries its own height: an inherited line-height measured 47px on a row whose text is 20px, so sixteen tables became a column nobody could scan.
+ * WHY 32px and 13.5px: the app screens print sidebar rows on a 32px hit area at a 34px pitch, and the label wears the same size as the rail items above it.
+ */
+
+.railList {
+  display: grid;
+  gap: 1px;
+}
+
 .railList button {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
   width: 100%;
-  height: 30px;
+  height: 32px;
   padding: 0 9px;
   border: 0;
-  border-left: 2px solid transparent;
   border-radius: var(--app-radius-sm);
   background: none;
   color: var(--muted);
   font: inherit;
-  font-size: 12.5px;
+  font-size: 13.5px;
   text-align: left;
   white-space: nowrap;
   cursor: pointer;
@@ -903,22 +944,40 @@ table.history {
 
 .railList button:hover:not(:disabled) { background: var(--surface-soft); color: var(--ink); }
 
+/*
+ * WHY the open table is a line and the ink of the text: the green block was the loudest thing on the screen, and a list of sixteen names with one shouted row reads as a banner.
+ * The 1px accent line is the mark the console's own navigation uses, so the column speaks one language.
+ */
+
 .railList button[aria-current="true"] {
-  border-left-color: var(--accent);
-  background: var(--accent-soft);
-  color: var(--accent-strong);
+  color: var(--ink);
+  font-weight: 600;
 }
 
-/* WHY the count takes the row's ink: the muted grey on the brand green is 1.5:1, so the row count of the table the reader is looking at was unreadable. */
-
-.railList button[aria-current="true"] .meta { color: inherit; }
+.railList button[aria-current="true"]::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 6px;
+  bottom: 6px;
+  width: 1px;
+  background: var(--accent);
+}
 
 .railList button:disabled { opacity: .55; cursor: not-allowed; }
 
-.railList .meta { flex: 0 0 auto; font-variant-numeric: tabular-nums; }
+/* WHY the count stays grey and keeps no margin: the count is a figure beside the name, and the shared .meta margin pushed it 7px above the middle of the row. */
+
+.railList .meta {
+  flex: 0 0 auto;
+  margin: 0;
+  color: var(--muted);
+  font-size: 12.5px;
+  font-variant-numeric: tabular-nums;
+}
 
 .railList .konsolGroup {
-  padding: 12px 9px 4px;
+  padding: 16px 9px 4px;
   color: var(--muted);
   font-size: 12px;
   font-weight: 500;
@@ -985,10 +1044,15 @@ table.history {
   font-size: 12.5px;
 }
 
+/*
+ * WHY the row is 38px and not 19: the app screens print data rows on a 36-53px pitch, and a row that packs two lines of pixels into 19px reads as a log file, not as data.
+ * WHY the rule is 1px and 3-7% darker: the rule is what separates the rows once the zebra striping is gone.
+ */
+
 .konsolGrid th,
 .konsolGrid td {
   max-width: 320px;
-  padding: 7px 12px;
+  padding: 9px 12px;
   overflow: hidden;
   border-bottom: 1px solid var(--line);
   text-align: left;
@@ -996,7 +1060,10 @@ table.history {
   white-space: nowrap;
 }
 
-/* WHY the header is a band: uppercase, small and muted is how a column name steps back so the values under it lead. */
+/*
+ * WHY no band under the names: eleven of the eleven headed tables in the study carry no fill, and a filled header is the first thing that makes a table look like a template.
+ * WHY the rule under the header is the strongest one: where a table has a rule under its names, that rule is the line the eye reads first.
+ */
 
 .konsolGrid th {
   position: sticky;
@@ -1004,7 +1071,7 @@ table.history {
   z-index: 1;
   padding: 9px 12px;
   border-bottom: 1px solid var(--line-strong);
-  background: var(--surface-soft);
+  background: var(--surface);
   color: var(--muted);
   font-size: 12px;
   font-weight: 500;
@@ -1030,7 +1097,7 @@ table.history {
   box-shadow: 1px 0 0 var(--line);
 }
 
-.konsolGrid thead th:first-child { z-index: 3; background: var(--surface-soft); }
+.konsolGrid thead th:first-child { z-index: 3; }
 
 .konsolGrid th button {
   display: block;
@@ -1046,41 +1113,182 @@ table.history {
 
 .konsolGrid th button:hover { color: var(--accent); }
 
+/*
+ * WHY the identity and the figures wear the ink: in the studied screens only the name and the key number are bright, and the rest of the row steps back a step.
+ * WHY the copy button has no box: a boxed glyph on every row is the icon-chip habit, and the id is the only value in the grid the reader may want to carry away.
+ */
+
+.konsolGrid tbody td { color: var(--muted); }
+.konsolGrid tbody td:first-child { color: var(--ink); font-weight: 500; }
+
 .konsolGrid tbody tr { cursor: pointer; }
-.konsolGrid tbody tr:nth-child(even) { background: var(--zebra, rgba(22, 21, 19, .018)); }
 .konsolGrid tbody tr:hover { background: var(--surface-soft); }
-.konsolGrid tbody tr[aria-selected="true"] { background: var(--accent-soft); }
+.konsolGrid tbody tr[aria-selected="true"] { background: var(--surface-strong); }
 .konsolGrid tbody tr:last-child td { border-bottom: 0; }
 .konsolGrid td.num,
-.konsolGrid th.num { text-align: right; font-variant-numeric: tabular-nums; }
+.konsolGrid th.num { text-align: right; font-variant-numeric: tabular-nums; color: var(--ink); }
 
-.konsolFoot { margin: 12px 0 0; }
-.konsolFoot .meta { font-variant-numeric: tabular-nums; }
+.konsolGrid .cellText {
+  display: inline-block;
+  max-width: 120px;
+  overflow: hidden;
+  vertical-align: middle;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 
-.konsolJson {
-  max-height: 260px;
+.copyBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  margin-left: 6px;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: none;
+  color: var(--muted);
+  vertical-align: middle;
+  cursor: pointer;
+}
+
+.copyBtn:hover { background: var(--surface-soft); color: var(--ink); }
+.copyBtn svg { display: block; }
+
+/*
+ * WHY the footer is centred: a pager that hugs the left edge leaves the eye at the edge of a wide grid, and the page position is the line the reader comes back to.
+ * WHY the size is a dropdown and not three buttons: one control with three choices says the same and takes one tap.
+ */
+
+.konsolFoot {
+  justify-content: center;
   margin: 12px 0 0;
-  padding: 14px;
-  overflow: auto;
+}
+
+.konsolFoot .meta {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+/*
+ * WHY the select wears the console and not the shared form: the shared control paints a dark arrow on a dark canvas, and a page size is a 30px line, not a 46px field.
+ */
+
+.pageSize {
+  appearance: none;
+  width: auto;
+  min-height: 0;
+  height: 30px;
+  margin: 0;
+  padding: 0 26px 0 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--app-radius-sm);
+  background-color: var(--surface);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%2398a1ab' stroke-width='1.4' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-position: calc(100% - 12px) 12px;
+  background-repeat: no-repeat;
+  color: var(--ink);
+  font: inherit;
+  font-size: 12.5px;
+}
+
+.pageSize:hover { border-color: var(--line-strong); }
+
+/*
+ * WHY the detail is a well of key-value rows: the pane answers one question — what this row holds — and a block of raw json answered it as a wall of punctuation.
+ * WHY 32px rows and the label on the left: the app screens print their key-value wells that way, with the figure on one right edge.
+ */
+
+.konsolDetail {
+  margin: 12px 0 0;
   border: 1px solid var(--line);
   border-radius: var(--app-radius);
-  background: var(--surface-soft);
-  font: 12.5px/1.55 var(--mono);
-  white-space: pre-wrap;
+  background: var(--surface);
+}
+
+.konsolDetail[hidden] { display: none; }
+
+.detailHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--line);
+}
+
+.detailTitle {
+  margin: 0;
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.detailRows { margin: 0; }
+
+.detailRows > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 32px;
+  padding: 7px 14px;
+}
+
+.detailRows > div + div { border-top: 1px solid var(--line); }
+.detailRows dt { color: var(--muted); font-size: 12.5px; }
+
+.detailRows dd {
+  margin: 0;
+  color: var(--ink);
+  font-size: 13px;
+  text-align: right;
   word-break: break-word;
 }
 
-.konsolJson[hidden] { display: none; }
+.detailRows dd.mono { font-family: var(--mono); font-size: 12.5px; }
+.detailRows dd.wrap { text-align: left; }
 
-@media (max-width: 900px) {
+/*
+ * WHY the table list folds into a strip on a narrow screen: sixteen names in a column on a phone pushed the grid off the first screen, and a table the reader has to scroll to find is a table nobody opens.
+ * WHY the strip scrolls sideways and never the page: the app screens keep their tabs in their own row.
+ * WHY the list goes last on a phone: the seven view names are one menu, and the table list belongs to the view that is open, not between two menu items.
+ * WHY 44px: a phone is touched, and the app screens ask 44px of touch target.
+ */
+
+@media (max-width: 760px) {
+  .rail:has(> .railContext:not([hidden])) {
+    align-items: center;
+    padding: 0 16px 8px;
+  }
+
+  .railContext {
+    order: 9;
+    width: 100%;
+  }
+
+  .rail a {
+    padding: 12px 10px;
+  }
+
   .railList {
-    grid-auto-flow: column;
-    grid-auto-columns: max-content;
+    display: flex;
     gap: 6px;
     overflow-x: auto;
     padding-bottom: 4px;
   }
-  .railList .konsolGroup { padding: 0 6px; align-self: center; }
-  .railList button { border-left: 0; border-bottom: 2px solid transparent; white-space: nowrap; }
-  .railList button[aria-current="true"] { border-left: 0; border-bottom-color: var(--accent); }
+
+  .railList .konsolGroup { display: none; }
+
+  .railList button {
+    width: auto;
+    flex: 0 0 auto;
+    padding: 0 10px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+  }
+
+  .railList button[aria-current="true"] { border-color: var(--accent); }
+  .railList button[aria-current="true"]::before { display: none; }
 }

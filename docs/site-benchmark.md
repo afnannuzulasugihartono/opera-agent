@@ -81,6 +81,35 @@ soft purple fill rather than a block.
 The radii, the label scale and the title size are Cline's own console
 measurements. The rest of this table is what the redesign changed.
 
+## The Tabel view, measured
+
+Measured 2026-11-02 against the account's own sixteen tables, from
+`20261010090000_opera_agent_konsol_tables.sql`: nine tables owned by the
+account, seven operator-only, `opera_audit` holding 38.486 rows. The console
+was rendered from a local stub answering with that shape, in Chromium at 1440px,
+768px and 390px.
+
+| | before | after | reference |
+|---|---|---|---|
+| view title | an `h1` inside every view, seven of them | one `h1` in the head, 24px/600; each view carries its name in `data-title` | an app screen names itself once, at the top |
+| table list row | 30px, 12.5px, the raw name, a bare number | 32px, 13.5px, "Audit", "38.486 baris" | the app screens print sidebar rows on a 32px hit area |
+| active table | a green fill block with green text | the ink of the text and a 1px accent line | the console's own 1px mark |
+| table list | sixteen names, no way to narrow them | a 30px "Cari tabel…" filter over the same list | |
+| grid head | `--surface-soft` band, uppercase-free but filled | no fill, a 1px `--line-strong` rule, 12px/500 muted | none of the headed tables in the study has a fill band |
+| grid rows | 19px, zebra on every second row | 39px, 1px rules, no zebra | the app screens print data rows on a 36–53px pitch |
+| column names | `event_type`, `device_id` | "Peristiwa", "Device", the raw name in the cell's `title` | a reader who does not know the schema decodes nothing |
+| an id | a full uuid, one line per cell | 8 characters plus a copy button | an id on one line is a ruler |
+| a jsonb cell | the raw object | "method: page.click · selector: #submit-order · +2" | two named pairs say what the row holds |
+| figures | left-aligned | right-aligned, tabular numerals | figures read down their right edge |
+| row detail | a `<pre>` of raw json | a key-value well | one question, one answer |
+| the row count | three times on one screen | once, in the sidebar; the status line speaks only when a filter changed it | the console says one thing once |
+| the pager | "Halaman 1 dari 770 · 1–50 dari 38.486 baris" | "Halaman 1 dari 770", a 1–50 / 1–100 / 1–200 dropdown, centred | |
+| scroll areas | the page and the grid | one: the grid, inside `#tabel { overflow: hidden }` | |
+| phone | the rail was a column of seven names and sixteen tables | the names wrap into two rows of 44px targets, the tables become a chip strip, the grid keeps its own scroll | |
+
+The taste inspector reports 0 FAIL and 0 WARN in app mode at 1440px, 768px and
+390px, on `#tabel` and on `#ringkasan`.
+
 ## The home hero, measured
 
 Measured 2026-11-02 in Chromium with the taste inspector, at 1440px, 768px and
@@ -202,6 +231,24 @@ a screenshot.
 9. **The home page lost its eyebrow.** "Daftar terbuka · Otomasi browser lewat
    MCP" was a label above a heading, which the inspector counts as an eyebrow.
    The line folded into the lede under the headline.
+10. **The console names itself once.** Seven views each carried an `h1`, and
+    the head carried none. There is one `h1` in the head now, 24px/600, and
+    every view carries its name in `data-title`; the head paints the name of
+    the view that is open.
+11. **The table list reads like a list of tables.** The rows are 32px on a
+    13.5px label, the count is always "N baris", the open table is the ink of
+    the text and a 1px accent line instead of a green block, and a "Cari tabel…"
+    field narrows sixteen names.
+12. **The grid reads like data.** The fill band under the column names and the
+    zebra striping are gone, the rows are 39px with a 1px rule, the columns
+    wear human names, an id stops at eight characters with the whole id on the
+    clipboard, a jsonb cell reads as two named pairs, and the figures sit
+    right-aligned on their own edge.
+13. **The table view says one thing once.** The row count appeared above the
+    grid, in the pager and in the sidebar; the sidebar keeps it, the pager keeps
+    the position ("Halaman 1 dari 770") and a dropdown picks the page size.
+    The detail pane answers a click with a key-value well, not a block of raw
+    json.
 
 ## Next round, ranked
 

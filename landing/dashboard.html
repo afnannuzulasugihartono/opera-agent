@@ -53,6 +53,7 @@
         <!-- WHY it opens under Tabel and not at the end of the rail: measured against Cline, the objects of a view open directly under that view's item. -->
         <!-- The reader arrived at Tabel and found its tables below "Akun". -->
         <div class="railContext" id="railTables" hidden>
+          <input class="railFilter" id="konsolTableFilter" type="search" placeholder="Cari tabel…" autocomplete="off" spellcheck="false" maxlength="64" aria-label="Cari tabel" />
           <div class="railList" id="konsolList" role="group" aria-label="Daftar tabel"></div>
         </div>
         <a href="#pairing"><span>Pairing</span></a>
@@ -64,16 +65,19 @@
         <!-- WHY a head of its own: the account line belongs to the console, not to one view, and a view that scrolls must not take it with it. -->
         <div class="contentHead">
           <div class="appBar">
-            <!-- WHY the line carries the session and its failures: a second line above the views repeated the figures below it, and the app bar is the one place every view shows. -->
-            <p class="appWho" id="whoami" role="status">Memeriksa sesi…</p>
-            <div class="appActions">
-              <a class="btn ghost sm" href="./unduh.html" id="primaryCta">Pasang extension</a>
+            <!-- WHY one title for the whole console: the view names itself once, at the top of the canvas, and a title that scrolls away with its own view is a title the reader has to find again. -->
+            <h1 class="viewTitle" id="viewTitle">Ringkasan</h1>
+            <div class="appBarSide">
+              <!-- WHY the line carries the session and its failures: a second line above the views repeated the figures below it, and the app bar is the one place every view shows. -->
+              <p class="appWho" id="whoami" role="status">Memeriksa sesi…</p>
+              <div class="appActions">
+                <a class="btn ghost sm" href="./unduh.html" id="primaryCta">Pasang extension</a>
+              </div>
             </div>
           </div>
         </div>
 
-        <section id="ringkasan" class="active">
-          <h1>Ringkasan</h1>
+        <section id="ringkasan" class="active" data-title="Ringkasan">
 
           <!-- WHY the figures live in the summary and not above the views: they are the account's state, so they answer this view and no other. -->
           <dl class="metrics" id="metrics">
@@ -94,8 +98,7 @@
           <div id="devices"></div>
         </section>
 
-        <section id="riwayat">
-          <h1>Riwayat</h1>
+        <section id="riwayat" data-title="Riwayat">
           <div class="toolbar">
             <div class="segmented" role="group" aria-label="Saring status">
               <button type="button" data-filter="" aria-pressed="true">Semua</button>
@@ -118,14 +121,12 @@
           </div>
         </section>
 
-        <section id="tabel">
-          <h1>Tabel</h1>
-          <p class="meta">Data proyek, hanya-baca: baris disaring server, kolom rahasia disamarkan sebelum keluar.</p>
+        <section id="tabel" data-title="Tabel">
           <div class="konsolBar">
             <input id="konsolSearch" type="search" placeholder="Cari di tabel ini…" autocomplete="off" spellcheck="false" maxlength="64" aria-label="Cari baris di tabel ini" />
             <button class="btn ghost sm" id="konsolCsv" type="button" title="Unduh hingga 5.000 baris sesuai filter saat ini">Ekspor CSV</button>
           </div>
-          <p class="status" id="konsolStatus" role="status" aria-live="polite">&nbsp;</p>
+          <p class="status" id="konsolStatus" role="status" aria-live="polite"></p>
           <div class="konsolScroll">
             <table class="konsolGrid">
               <thead id="konsolHead"><tr><th scope="col">Memuat…</th></tr></thead>
@@ -133,23 +134,33 @@
             </table>
             <div class="empty" id="konsolEmpty" hidden><strong>Tabel ini kosong.</strong> Tidak ada baris yang cocok dengan akun dan filter ini.</div>
           </div>
+          <div class="konsolDetail" id="konsolDetail" hidden>
+            <div class="detailHead">
+              <h2 class="detailTitle">Detail baris</h2>
+              <button class="btn ghost sm" id="konsolDetailClose" type="button">Tutup</button>
+            </div>
+            <dl class="detailRows" id="konsolDetailRows"></dl>
+          </div>
           <div class="konsolBar konsolFoot">
             <button class="btn ghost sm" id="konsolPrev" type="button">‹ Sebelumnya</button>
             <span class="meta" id="konsolPage">–</span>
+            <label class="meta" for="konsolSize">Baris</label>
+            <select class="pageSize" id="konsolSize">
+              <option value="50">1–50</option>
+              <option value="100">1–100</option>
+              <option value="200">1–200</option>
+            </select>
             <button class="btn ghost sm" id="konsolNext" type="button">Berikutnya ›</button>
           </div>
-          <pre class="konsolJson" id="konsolJson" hidden></pre>
         </section>
 
-        <section id="dengar">
-          <h1>Sesi dengar</h1>
+        <section id="dengar" data-title="Sesi dengar">
           <p class="meta">Sesi dengar audio ke akun ini: metadata saja, tanpa isi pembicaraan. Isi transkrip hanya ada di hasil tool model.</p>
           <div id="listens"></div>
         </section>
 
       <div class="duo">
-        <section id="pairing">
-          <h1>Pairing manual</h1>
+        <section id="pairing" data-title="Pairing manual">
           <div class="card">
             <p class="meta">Kode sekali pakai, berlaku 10 menit, terikat ke akun ini. Tempel di popup extension
               pada device yang ingin kamu hubungkan.</p>
@@ -169,8 +180,7 @@
           </div>
         </section>
 
-        <section id="aksi">
-          <h1>Jalankan aksi</h1>
+        <section id="aksi" data-title="Jalankan aksi">
           <div class="card">
             <p class="meta">Perintah dikirim ke device milikmu sendiri. Device menolak halaman yang
               menampilkan password, kode sekali pakai, atau pembayaran.</p>
@@ -184,8 +194,7 @@
         </section>
       </div>
 
-        <section id="akun">
-          <h1>Akun ini</h1>
+        <section id="akun" data-title="Akun ini">
           <div class="card">
             <dl class="facts" id="accountFacts"></dl>
             <div class="row">
@@ -789,7 +798,7 @@
 
     // WHY the editor reads through opera_konsol_* and never a table path: the ownership filter, the page caps and the masking belong to the server, so a modified client can ask for a different page but cannot ask for a column the reader refuses to send.
     // Everything below is presentation: pick a table, sort it, page it, copy it.
-    const konsol = { ready: false, seq: 0, table: null, cols: [], rows: [], total: 0, offset: 0, limit: 50, search: '', sort: null, dir: null };
+    const konsol = { ready: false, seq: 0, table: null, cols: [], rows: [], total: 0, offset: 0, limit: 50, search: '', sort: null, dir: null, entries: [], filter: '' };
     let konsolToken = null;
 
     const konsolSay = (message, tone) => {
@@ -805,6 +814,17 @@
     const konsolNum = new Set(['smallint', 'integer', 'bigint', 'numeric', 'real', 'double precision', 'money', 'smallserial', 'serial', 'bigserial']);
     const konsolClock = new Set(['timestamp with time zone', 'timestamp without time zone', 'date']);
 
+    // WHY a readable column name: the grid printed "event_type" and "device_id", and a reader who does not know the schema had to decode every column before a row meant anything.
+    // WHY the machine name stays: the header keeps the raw name and its type in the title, so the schema is one hover away.
+    const konsolColumnNames = {
+      id: 'Id', event_type: 'Peristiwa', device_id: 'Device', command_id: 'Perintah',
+      workflow_name: 'Alur kerja', details: 'Rincian', created: 'Waktu', created_at: 'Waktu',
+      method: 'Metode', status: 'Status', duration_ms: 'Durasi', browser: 'Browser',
+      last_seen: 'Terakhir terlihat', trigger: 'Pemicu', runs: 'Jumlah jalan', last_run: 'Jalan terakhir',
+      device_name: 'Device', segments: 'Bagian', started_at: 'Mulai'
+    };
+    const konsolColumnLabel = (name) => konsolColumnNames[name] || String(name).replace(/_/g, ' ').replace(/^./, (c) => c.toUpperCase());
+
     // WHY mono only where the value is an id: a grid where every character is the same width reads as a terminal dump, and the ids are the only columns where the shape of the glyph carries meaning.
     // WHY the column name decides it: the choice comes from the shape of the column, never from the shape of one value, so two rows of the same column never disagree.
     const konsolMono = (name) => name === 'id' || name.endsWith('_id');
@@ -812,6 +832,14 @@
 
     // WHY the cell shortens here: one cell can hold a workflow definition or a URL, and a grid that grows to fit its widest cell stops being a grid.
     // The grid shows what fits — a relative time where a clock column sits, a shortened value elsewhere — and the title always carries the whole truth, so a support conversation never asks for a value the screen had but hid.
+    // WHY an id stops at eight characters: a uuid on one line is a ruler, and the shape of a row matters more than the shape of one glyph.
+    // WHY a json cell reads as pairs: the raw object was a terminal dump in the middle of a table, and two named pairs say what the row holds.
+    const konsolShort = (value) => {
+      if (value === null || value === undefined) return '–';
+      if (typeof value === 'object') return '…';
+      const text = String(value);
+      return text.length > 28 ? `${text.slice(0, 27)}…` : text;
+    };
     const konsolRowCell = (record, col) => {
       const raw = record[col.name];
       if (raw === null || raw === undefined) return { text: '–', full: '' };
@@ -819,8 +847,26 @@
         const ms = new Date(raw).getTime();
         if (Number.isFinite(ms)) return { text: relativeTime(raw), full: raw };
       }
-      const full = typeof raw === 'object' ? JSON.stringify(raw) : String(raw);
+      if (typeof raw === 'object') {
+        const pairs = Object.entries(raw).slice(0, 2).map(([key, value]) => `${key}: ${konsolShort(value)}`);
+        const rest = Object.keys(raw).length - pairs.length;
+        if (!pairs.length) return { text: '–', full: JSON.stringify(raw) };
+        return { text: `${pairs.join(' · ')}${rest > 0 ? ` · +${rest}` : ''}`, full: JSON.stringify(raw), json: true };
+      }
+      const full = String(raw);
+      if (konsolMono(col.name)) return { text: full.length > 8 ? `${full.slice(0, 8)}…` : full, full, copy: full.length > 8 };
       return { text: full.length > 96 ? `${full.slice(0, 93)}…` : full, full };
+    };
+
+    // WHY the detail is a well and not a dump: the pane below the grid answers one question — what this row holds — and a key-value list answers it without a scroll of raw json.
+    const konsolPaintDetail = (record) => {
+      $('konsolDetailRows').innerHTML = konsol.cols.map((col) => {
+        const raw = record[col.name];
+        const value = raw === null || raw === undefined ? '–' : typeof raw === 'object' ? JSON.stringify(raw) : String(raw);
+        const classes = [konsolMono(col.name) ? 'mono' : '', value.length > 40 ? 'wrap' : ''].filter(Boolean).join(' ');
+        return `<div><dt>${esc(konsolColumnLabel(col.name))}</dt><dd class="${classes}">${esc(value)}</dd></div>`;
+      }).join('');
+      $('konsolDetail').hidden = false;
     };
 
     const konsolCsvCell = (value) => {
@@ -883,7 +929,7 @@
       konsol.cols = data.columns || [];
       konsol.rows = data.rows || [];
       konsol.total = data.total || 0;
-      $('konsolJson').hidden = true;
+      $('konsolDetail').hidden = true;
       $('konsolHead').innerHTML = `<tr>${konsol.cols.map((col) => {
         const active = konsol.sort === col.name;
         const arrow = active ? (konsol.dir === 'asc' ? ' ▲' : ' ▼') : '';
@@ -892,27 +938,33 @@
         // WHY the num class and not right-aligned text: figures read down their right
         // edge the way every production table prints them, and the choice comes from
         // the catalog type, never from the shape of one value.
-        return `<th scope="col" class="${konsolCellClass(col)}" aria-sort="${sortState}"><button type="button" data-sort="${esc(col.name)}" title="${esc(col.type)}">${esc(col.name)}${arrow}</button></th>`;
+        return `<th scope="col" class="${konsolCellClass(col)}" aria-sort="${sortState}"><button type="button" data-sort="${esc(col.name)}" title="${esc(col.name)} · ${esc(col.type)}">${esc(konsolColumnLabel(col.name))}${arrow}</button></th>`;
       }).join('')}</tr>`;
       $('konsolRows').innerHTML = konsol.rows.map((record, index) =>
         `<tr data-row="${index}">${konsol.cols.map((col) => {
           const cell = konsolRowCell(record, col);
-          return `<td class="${konsolCellClass(col)}" title="${esc(cell.full)}">${esc(cell.text)}</td>`;
+          const classes = [konsolCellClass(col), cell.json ? 'json' : ''].filter(Boolean).join(' ');
+
+          // WHY the copy button sits beside the id: the short form is for the eye, and the whole id has to reach the clipboard without a trip to the detail pane.
+          const copy = cell.copy
+            ? `<button class="copyBtn" type="button" data-copy="${esc(cell.full)}" title="Salin ${esc(col.name)}" aria-label="Salin ${esc(col.name)}"><svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" focusable="false"><rect x="5.5" y="5.5" width="8" height="8" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.3"></rect><path d="M10.5 3.5h-7a1 1 0 0 0-1 1v7" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"></path></svg></button>`
+            : '';
+          const body = copy ? `<span class="cellText">${esc(cell.text)}</span>${copy}` : esc(cell.text);
+          return `<td class="${classes}" title="${esc(cell.full)}">${body}</td>`;
         }).join('')}</tr>`
       ).join('');
-      const from = konsol.total === 0 ? 0 : konsol.offset + 1;
       const to = konsol.offset + konsol.rows.length;
       const pageNo = Math.floor(konsol.offset / konsol.limit) + 1;
       const pageCount = Math.max(1, Math.ceil(konsol.total / konsol.limit));
 
-      // WHY the page position and the row span together: "1–50 dari 28.745" says how much exists and "Halaman 2 dari 575" says where the reader stands — the footer of totals every production table closes with.
-      $('konsolPage').textContent = konsol.total === 0 ? '0 baris' : `Halaman ${pageNo} dari ${pageCount} · ${konsolNf(from)}–${konsolNf(to)} dari ${konsolNf(konsol.total)} baris`;
+      // WHY the position and not the row count: the sidebar already counts every table, and a third copy of "38.486 baris" above the grid said the same thing three times.
+      $('konsolPage').textContent = konsol.total === 0 ? '0 baris' : `Halaman ${pageNo} dari ${pageCount}`;
       $('konsolPrev').disabled = konsol.offset <= 0;
       $('konsolNext').disabled = to >= konsol.total;
       $('konsolEmpty').hidden = konsol.rows.length !== 0;
-      konsolSay(konsol.search
-        ? `${konsolNf(konsol.total)} baris ${konsol.table} cocok dengan “${konsol.search}”.`
-        : `${konsol.table} — ${konsolNf(konsol.total)} baris.`, 'ok');
+
+      // WHY only the filter speaks here: a search changes what the sidebar counted, and the reader needs the new number once.
+      konsolSay(konsol.search ? `${konsolNf(konsol.total)} baris cocok dengan “${konsol.search}”.` : '');
     }
 
     async function konsolOpen(name) {
@@ -922,9 +974,7 @@
       konsol.sort = null;
       konsol.dir = null;
       $('konsolSearch').value = '';
-      for (const button of $('konsolList').querySelectorAll('[data-table]')) {
-        button.setAttribute('aria-current', String(button.dataset.table === name));
-      }
+      konsolPaintList();
       await konsolPage();
     }
 
@@ -937,29 +987,38 @@
         konsolSay('Konsol data belum bisa dimuat. Muat ulang halaman sebentar lagi.', 'warn');
         return;
       }
-      const entries = data.tables || [];
+      konsol.entries = data.tables || [];
+      konsolPaintList();
+      const first = konsol.entries.find((entry) => entry.readable);
+      if (first && !konsol.table) await konsolOpen(first.name);
+      const locked = konsol.entries.filter((entry) => !entry.readable).length;
+      if (locked && !konsol.table) konsolSay(`${locked} tabel di sini hanya untuk akun operator.`, 'warn');
+    }
 
-      // WHY grouped and not one flat wall: sixteen names read as a list of tables only when the two rules behind them are visible — nine belong to this account, seven to the operator.
-      // The server sends the scope; the page shows it.
+    // WHY the list is painted on its own: a filter, a new table and a fresh load all change the same column, and three copies of this markup would drift.
+    // WHY grouped and not one flat wall: sixteen names read as a list of tables only when the two rules behind them are visible — nine belong to this account, seven to the operator.
+    // WHY one count format with a noun: "28.746" alone left the reader asking thousands of what, and "38.486 baris" beside "24" was two formats for one thing.
+    const konsolPaintList = () => {
       const groupOf = { owner: 'Akun ini', operator: 'Operator' };
+      const needle = konsol.filter.trim().toLowerCase();
+      const entries = konsol.entries.filter((entry) => !needle
+        || entry.name.toLowerCase().includes(needle)
+        || tableLabel(entry.name).toLowerCase().includes(needle));
       let lastScope = null;
       $('konsolList').innerHTML = entries.map((entry) => {
         const scope = groupOf[entry.scope] || '';
         const head = scope && scope !== lastScope ? `<span class="konsolGroup">${esc(scope)}</span>` : '';
         lastScope = scope;
         const label = tableLabel(entry.name);
-        const title = entry.readable ? `${label} · ${konsolNf(entry.total)} baris` : 'Hanya akun operator yang boleh membaca tabel ini';
+        const count = entry.readable ? `${konsolNf(entry.total)} baris` : '–';
+        const title = entry.readable ? `${label} · ${count}` : 'Hanya akun operator yang boleh membaca tabel ini';
         return `${head}
         <button type="button" data-table="${esc(entry.name)}" ${entry.readable ? '' : 'disabled aria-disabled="true"'} aria-current="${entry.name === konsol.table ? 'true' : 'false'}" title="${esc(title)}">
           <span>${esc(label)}</span>
-          <span class="meta">${entry.readable ? konsolNf(entry.total) : '–'}</span>
+          <span class="meta">${esc(count)}</span>
         </button>`;
       }).join('');
-      const first = entries.find((entry) => entry.readable);
-      if (first && !konsol.table) await konsolOpen(first.name);
-      const locked = entries.filter((entry) => !entry.readable).length;
-      if (locked && !konsol.table) konsolSay(`${locked} tabel di sini hanya untuk akun operator.`, 'warn');
-    }
+    };
 
     async function konsolInit() {
       if (konsol.ready) return;
@@ -973,6 +1032,12 @@
       await konsolOpen(button.dataset.table);
     });
 
+    // WHY the list filters on its own: sixteen names in a 220px column is a wall, and the reader who wants "commands" should not read fifteen rows to find it.
+    $('konsolTableFilter').addEventListener('input', () => {
+      konsol.filter = $('konsolTableFilter').value.trim().slice(0, 64);
+      konsolPaintList();
+    });
+
     $('konsolHead').addEventListener('click', async (event) => {
       const button = event.target.closest('[data-sort]');
       if (!button) return;
@@ -983,20 +1048,38 @@
       await konsolPage();
     });
 
-    $('konsolRows').addEventListener('click', (event) => {
+    $('konsolRows').addEventListener('click', async (event) => {
+
+      // WHY the copy comes first: the button sits inside the row, and a click on it must copy the id, not open the row behind it.
+      const copy = event.target.closest('[data-copy]');
+      if (copy) {
+        try {
+          await navigator.clipboard.writeText(copy.dataset.copy);
+          copy.title = 'Tersalin';
+          setTimeout(() => { copy.title = 'Salin'; }, 1200);
+        } catch (error) {
+          konsolSay('Salin tidak bisa di browser ini; nilainya ada di detail baris.', 'warn');
+        }
+        return;
+      }
+
       const tr = event.target.closest('tr[data-row]');
       if (!tr) return;
 
       // WHY a toggle and not a one-way open: the pane is the reader's magnifier, and a magnifier you cannot put down becomes the thing in the way.
-      // The tinted row says which row the pane is showing, so closing it never leaves a stale doubt.
+      // The marked row says which row the pane is showing, so closing it never leaves a stale doubt.
       const open = tr.getAttribute('aria-selected') === 'true';
       for (const row of $('konsolRows').querySelectorAll('[aria-selected]')) row.removeAttribute('aria-selected');
-      if (open) { $('konsolJson').hidden = true; return; }
+      if (open) { $('konsolDetail').hidden = true; return; }
       const record = konsol.rows[Number(tr.dataset.row)];
       if (!record) return;
       tr.setAttribute('aria-selected', 'true');
-      $('konsolJson').textContent = JSON.stringify(record, null, 2);
-      $('konsolJson').hidden = false;
+      konsolPaintDetail(record);
+    });
+
+    $('konsolDetailClose').addEventListener('click', () => {
+      $('konsolDetail').hidden = true;
+      for (const row of $('konsolRows').querySelectorAll('[aria-selected]')) row.removeAttribute('aria-selected');
     });
 
     $('konsolPrev').addEventListener('click', async () => {
@@ -1007,6 +1090,13 @@
     $('konsolNext').addEventListener('click', async () => {
       konsol.offset += konsol.limit;
       await konsolPage();
+    });
+
+    // WHY the page size is a choice and not a constant: fifty rows fit a laptop, a hundred fits a monitor, and the server caps one page at two hundred.
+    $('konsolSize').addEventListener('change', () => {
+      konsol.limit = Number($('konsolSize').value) || 50;
+      konsol.offset = 0;
+      konsolPage();
     });
 
     // WHY debounced from the first keystroke: every character is a server round trip over a table that may hold twenty-eight thousand rows, and a search that starts from page four lands on nothing.
@@ -1091,9 +1181,13 @@
       for (const section of sections) section.classList.toggle('active', section.id === target);
 
       // WHY the document title follows the view: seven views share one URL, so the tab strip is the only place a reader with several tabs open can tell them apart.
-      const heading = sections.find((section) => section.id === target)?.querySelector('h1')?.textContent?.trim();
+      // WHY the name lives in a data attribute: the title now sits in the head above the views, so the view carries the word and the head paints it.
+      const heading = sections.find((section) => section.id === target)?.dataset.title?.trim();
       // WHY the title follows the app convention: measured in the browser, Cline writes "Home | Cline Dashboard" and OpenCode writes "Activity | OpenCode Console", so the view comes first and the pipe names the app.
-      if (heading) document.title = `${heading} | Dashboard Opera Agent`;
+      if (heading) {
+        $('viewTitle').textContent = heading;
+        document.title = `${heading} | Dashboard Opera Agent`;
+      }
       for (const link of document.querySelectorAll('.rail a, .tabs a')) {
         if (link.getAttribute('href') === `#${target}`) link.setAttribute('aria-current', 'true');
         else link.removeAttribute('aria-current');
