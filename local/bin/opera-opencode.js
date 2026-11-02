@@ -37,9 +37,9 @@ const RETRY_AFTER_MS = 60000;
 
 // WHY THE CHILD RUNS ON NODE AND NOT ON WHATEVER RUNS THE PLUGIN.
 // OpenCode is a compiled binary, so process.execPath points at it and not at a runtime that takes a script: measured, every call then paid about 150 ms for a spawn that could not start the server before falling back.
-// Node is what the server is written for and what every machine that runs these tools has, so it is named, and a machine without it simply pays the in-process fallback.
+// The test is what the path ends with, not which runtime is asking: a node binary runs the server, and anything else means node from the path, which is what every machine that runs these tools has.
 
-const RUNNER = process.versions.bun ? 'node' : process.execPath;
+const RUNNER = /node(\.exe)?$/i.test(process.execPath) ? process.execPath : 'node';
 
 // WHY A COUNTER IS EXPORTED.
 // A test can prove a call answered, but not that a fresh server answered it; the count of children started is the only fact that tells a respawn from a cached answer.
