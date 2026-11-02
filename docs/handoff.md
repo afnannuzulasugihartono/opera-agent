@@ -31,8 +31,10 @@ What is true now, and what to do next. Cap 150 lines. Spent detail: git history.
   fails a missing standard file, a pull request that skips CI, a CRLF file, or a dead path.
 - **The browser drive depends on nothing but the page it drives.** A ref dies with its
   document, its route or the extension epoch, so the drive re-finds what it clicks.
-- Gates: `npm test`, `npm run check` - 31 primitives, 183 runtime safety files, 1561 unit
+- Gates: `npm test`, `npm run check` - 31 primitives, 183 runtime safety files, 1642 unit
   tests, green.
+- **A work branch has one shape.** `agent/<workspace>` or `agent/<workspace>/<topic>`, kebab in
+  every segment; `npm run branches` names each branch that does not fit, beside its right name.
 - **The local driver is modular, and its tests are too.** `local/primitives.js` assembles the
   modules; `tools.js` holds the MCP surface as data; the tests are one file per module.
 - Production, measured against the live database: 76 `opera_*` functions (65
@@ -102,24 +104,22 @@ What is true now, and what to do next. Cap 150 lines. Spent detail: git history.
    code exchanges for a one-hour token, and a tool call completes. Google sign-in is unverified.
 4. **MCP resolves one device per account and stamps the harness provider.**
    `X-Opera-Device` picks among the caller's devices. A real second account still wants a test.
-5. **Polling is the one latency lever.** 676.6 ms of 1875.3 ms average over 9,079 commands is
-   the device not yet asking (`opera_claim_next_wait`, p95 1914.4 ms).
-6. **One-off writes run as `adhoc.*` ephemeral workflows.** Compile, register, start, poll,
+5. **One-off writes run as `adhoc.*` ephemeral workflows.** Compile, register, start, poll,
    delete; the compiler stays device-local and the key never leaves ([`security.md`](security.md)).
-7. Publishable-key rotation still needs owner action. Edge deploy runs via the logged-in CLI.
-8. **`browse.recon` ships the unknown-site order.** Detect, map, act, verify with
+6. Publishable-key rotation still needs owner action. Edge deploy runs via the logged-in CLI.
+7. **`browse.recon` ships the unknown-site order.** Detect, map, act, verify with
    total-stop CAPTCHA policy ([`unknown-site.md`](unknown-site.md)).
-9. **The console dashboard's table editor is read-only by decision.** It reads sixteen
+8. **The console dashboard's table editor is read-only by decision.** It reads sixteen
     tables through `SECURITY DEFINER` `opera_konsol_*` readers; a write side is next.
-10. **The update endpoint answers in a nested query string.** Ask with
+9. **The update endpoint answers in a nested query string.** Ask with
     `?id=ofgemipoobcnbjkfanmofjbdonjapmgl`.
-11. **The price is decided and applied.** `plan.pilot` Rp 99.000 up to 15 client-months,
+10. **The price is decided and applied.** `plan.pilot` Rp 99.000 up to 15 client-months,
     `plan.firm` Rp 249.000 up to 50, extra Rp 10.000; invoiced after the first accepted batch,
     and none has arrived.
-12. **A bridged window on the taskbar is restored, not refused.** `tabs.activate` reads the
+11. **A bridged window on the taskbar is restored, not refused.** `tabs.activate` reads the
     window first and sends `state: 'normal'` with the focus ask when it is minimized, because
     `focused: true` alone was measured to leave it there; the live suite proves the restore.
-13. **A sandbox payment closes a real invoice on the provider's signature; production has not.**
+12. **A sandbox payment closes a real invoice on the provider's signature; production has not.**
     Driven 2026-10-26: a QRIS payment of Rp 99.000 through the simulator; `Uji Sandbox:2027-08`
     was `paid` at 09:22:30.476 by the signed settlement, every notification written to
     `opera_notification_log`. The first rule used an HMAC with the server key while Midtrans
