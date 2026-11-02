@@ -320,7 +320,48 @@ async function leaseAsk(
 export function connectBridgeTarget(targetId) {
   const tab = Number(targetId);
   let onFrame = null;
+
+  // WHY AN OLDER EXTENSION IS TOLD APART FROM A FAILED BATCH.
+  // The batch door is new, and an extension loaded before it answers "unknown method" — that is a capability gap, not a failed drag, so it is retried one command at a time and remembered.
+  // Any other error is a real failure and is passed on untouched.
+
+  let batchSupported = true;
   return {
+
+    // WHY A BATCH IS ONE BRIDGE COMMAND.
+    // Measured live: eight commands at a round trip each cost more than the drag they carried, and a file drop is eight.
+    // The extension runs the list in order on one debugger session and answers with every result, so the caller pays one crossing instead of eight.
+
+    async batch(frames = []) {
+      if (batchSupported) {
+        try {
+          const answered = await request('cdp.batch', {
+            tabId: tab,
+            commands: frames.map((frame) => ({
+              method: frame.method,
+              params: frame.params ?? {}
+            }))
+          });
+          const results = Array.isArray(answered?.results) ? answered.results : [];
+          return frames.map((
+            frame,
+            at
+          ) => results[at] ?? null);
+        } catch (error) {
+          if (!/unknown method/i.test(String(error?.message ?? ''))) throw error;
+          batchSupported = false;
+        }
+      }
+      const results = [];
+      for (const frame of frames) {
+        results.push(await request('cdp', {
+          tabId: tab,
+          method: frame.method,
+          params: frame.params ?? {}
+        }));
+      }
+      return results;
+    },
     send(raw) {
       let frame;
       try {

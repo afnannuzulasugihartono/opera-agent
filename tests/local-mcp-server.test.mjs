@@ -771,6 +771,36 @@ test('a call runs the tool and returns its result as text content', async () => 
   ]);
 });
 
+
+// WHY AN OPEN ANSWERS WITH THE TAB AND NOT WITH A PAGE LOOK.
+// Measured live: attaching a session and reading the new page cost more than opening it - 92 ms of a 127 ms open - and a page nobody has read yet has no text or rows to report.
+// So the answer names the tab and the url, and the first read or action on that tab pays the attach once, which is also when the person is asked about the screen.
+
+test('open_url answers with the tab it opened and leaves the page for the first read', async () => {
+  const c = ctx();
+  const server = createMcpServer(c);
+
+  const res = await server.handle({
+    jsonrpc: '2.0',
+    id: 41,
+    method: 'tools/call',
+    params: {
+      name: 'open_url',
+      arguments: { url: 'https://sheets.google.com/' }
+    }
+  });
+  const out = JSON.parse(res.result.content[0].text);
+
+  assert.equal(out.tab.url, 'https://sheets.google.com/');
+  assert.ok(out.tab.id, 'the tab id is what the next call needs');
+  assert.equal('page' in out, false, 'no page is read for a tab nobody has driven yet');
+  assert.match(out.note, /first driven or read/);
+  assert.deepEqual(c.driver.calls, [[
+    'open',
+    'https://sheets.google.com/'
+  ]], 'and the driver was asked to open a tab, nothing else');
+});
+
 test('a stream reaches the driver as one call with its events intact', async () => {
   const c = ctx();
   const server = createMcpServer(c);
@@ -1525,10 +1555,6 @@ test('every action hands back the page it acted on, so looking costs no extra ca
     [
       'stream_keys',
       { events: [{ key: 'a' }] }
-    ],
-    [
-      'open_url',
-      { url: 'https://sheets.google.com/' }
     ]
   ]) {
     const res = await server.handle({

@@ -16,7 +16,7 @@ export function recordingCdp() {
     holds: true,
     tail: ''
   };
-  return {
+  const cdp = {
     calls,
     page,
     send: async (
@@ -110,8 +110,16 @@ export function recordingCdp() {
         };
       }
       return { result: {} };
+    },
+    sendMany: async (frames = []) => {
+      const results = [];
+      for (const frame of frames) {
+        results.push(await cdp.send(frame.method, frame.params ?? {}));
+      }
+      return results;
     }
   };
+  return cdp;
 }
 
 

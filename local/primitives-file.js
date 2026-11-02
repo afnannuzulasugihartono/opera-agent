@@ -232,6 +232,7 @@ export function filePrimitives(
       // Measured live on the bench page: the front beat, three phase beats and the 900 ms tail cost 2.2 s for a drop the page finished in one settle.
       // The three drag events are ordered by the browser, so the drop handler sees its dragOver first; one settle after them proves the page took the drop.
       // A tab that is already the one on screen is not brought forward again: measured, Page.bringToFront cost 12 ms even when it had nothing to do.
+      // The phases go out as one batch, because each command would otherwise pay a bridge crossing for a two-millisecond drag.
       // The answer claims the drag was dispatched, not that an upload finished, so the shorter wait does not overclaim.
 
       try {
@@ -239,15 +240,21 @@ export function filePrimitives(
         if (visible !== 'visible') {
           await cdp.send('Page.bringToFront');
         }
-        await cdp.send('Input.setInterceptDrags', { enabled: true });
-        for (const phase of DROP_PHASES) {
-          await cdp.send('Input.dispatchDragEvent', {
-            type: phase,
-            x: Number(x),
-            y: Number(y),
-            data: payload
-          });
-        }
+        await cdp.sendMany([
+          {
+            method: 'Input.setInterceptDrags',
+            params: { enabled: true }
+          },
+          ...DROP_PHASES.map((phase) => ({
+            method: 'Input.dispatchDragEvent',
+            params: {
+              type: phase,
+              x: Number(x),
+              y: Number(y),
+              data: payload
+            }
+          }))
+        ]);
         await primitives.settle();
         return {
           dropped: true,

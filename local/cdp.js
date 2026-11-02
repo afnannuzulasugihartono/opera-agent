@@ -74,6 +74,17 @@ export function createCdpClient(transport) {
         transport.send(JSON.stringify(frame));
       });
     },
+
+    // WHY BATCHING LIVES ON THE CLIENT AND NOT IN EACH CALLER.
+    // Every primitive that sends several commands in a fixed order pays one round trip per command, and over the bridge that is the whole cost of a drag.
+    // The transport decides how to carry a batch: the bridge sends one command that runs the list, a plain socket has no such door and pipelines the frames instead.
+    // The results come back in the order they were asked for, because a batch is a sequence and a caller that reordered it would be reading the wrong answer.
+
+    sendMany(frames = []) {
+      if (closed) return Promise.reject(new Error(CLOSED));
+      if (typeof transport.batch === 'function') return transport.batch(frames);
+      return Promise.all(frames.map((frame) => client.send(frame.method, frame.params ?? {})));
+    },
     on(
       method,
       handler

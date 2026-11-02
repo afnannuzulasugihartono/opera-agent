@@ -182,6 +182,47 @@ test('a CDP command reaches the browser with its tab and method intact', async (
   ]]);
 });
 
+test('a batch runs its commands in order on one tab and answers with every result', async () => {
+  debugged.length = 0;
+  const answer = await bridge.send('cdp.batch', {
+    tabId: 9,
+    commands: [
+      {
+        method: 'Input.setInterceptDrags',
+        params: { enabled: true }
+      },
+      {
+        method: 'Input.dispatchDragEvent',
+        params: { type: 'dragEnter' }
+      },
+      {
+        method: 'Input.dispatchDragEvent',
+        params: { type: 'drop' }
+      }
+    ]
+  });
+  assert.equal(answer.ok, true, 'the whole list crossed in one command');
+  assert.deepEqual(debugged.map((c) => [
+    c.tabId,
+    c.method
+  ]), [
+    [
+      9,
+      'Input.setInterceptDrags'
+    ],
+    [
+      9,
+      'Input.dispatchDragEvent'
+    ],
+    [
+      9,
+      'Input.dispatchDragEvent'
+    ]
+  ], 'every command ran on the tab it named, in the order it was given');
+  assert.equal(answer.result.results.length, 3, 'and every result came back');
+});
+
+
 test('a command the bridge refuses answers with the refusal, never silence', async () => {
   const pong = await bridge.send('ping');
   assert.equal(pong.ok, true);

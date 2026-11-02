@@ -186,3 +186,85 @@ test('a send after close fails instead of hanging forever on a dead transport', 
 
   await assert.rejects(cdp.send('Page.enable'), /closed/i);
 });
+
+
+// WHY A BATCH KEEPS ITS ORDER.
+// The batch exists to save crossings on a drag, where the order of the three phases is the meaning of the drag.
+// A transport that can carry the list is asked once; a plain socket has no such door, so the frames go out together and the answers come back in the order they were asked for.
+
+test('a batch goes out as one crossing when the transport can carry it', async () => {
+  const carried = [];
+  const client = createCdpClient({
+    send() {},
+    onMessage() {},
+    close() {},
+    async batch(frames) {
+      carried.push(frames.map((frame) => frame.method));
+      return [
+        'a',
+        'b',
+        'c'
+      ];
+    }
+  });
+
+  const out = await client.sendMany([
+    {
+      method: 'Input.setInterceptDrags',
+      params: { enabled: true }
+    },
+    {
+      method: 'Input.dispatchDragEvent',
+      params: { type: 'dragEnter' }
+    },
+    {
+      method: 'Input.dispatchDragEvent',
+      params: { type: 'drop' }
+    }
+  ]);
+
+  assert.deepEqual(out, [
+    'a',
+    'b',
+    'c'
+  ], 'the answers come back in the order they were asked for');
+  assert.deepEqual(carried, [[
+    'Input.setInterceptDrags',
+    'Input.dispatchDragEvent',
+    'Input.dispatchDragEvent'
+  ]], 'and the whole list crossed at once');
+});
+
+
+test('a transport without a batch door pipelines the same frames', async () => {
+  const h = fakeTransport();
+  const client = createCdpClient(h.transport);
+
+  const pending = client.sendMany([
+    {
+      method: 'One',
+      params: {}
+    },
+    {
+      method: 'Two',
+      params: {}
+    }
+  ]);
+
+  assert.deepEqual(h.sent.map((frame) => frame.method), [
+    'One',
+    'Two'
+  ], 'both frames are on the wire before either answers');
+  h.reply({
+    id: h.sent[0].id,
+    result: { ok: 1 }
+  });
+  h.reply({
+    id: h.sent[1].id,
+    result: { ok: 2 }
+  });
+  assert.deepEqual(await pending, [
+    { ok: 1 },
+    { ok: 2 }
+  ]);
+});

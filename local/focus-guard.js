@@ -33,6 +33,10 @@ import {
   askFocus
 } from './focus-confirm.js';
 
+// WHY THE GUARD'S BUDGET IS THIRTY-TWO MILLISECONDS AND NOT A HUNDRED AND TWENTY.
+// Measured live: a page that will hear input answers hasFocus in under a millisecond, and one that will not never answers at all - so the wait was paid in full, twice, on the path that takes the screen.
+// The click proves its own press now, so a window that is still settling cannot lose one; the budget is the settle's own quiet window, which is the same proof every action already accepts.
+
 export function createFocusGuard({
   focus = focusWindow,
   read = windowState,
@@ -40,7 +44,7 @@ export function createFocusGuard({
   browser = async () => null,
   ask = askFocus,
   machineTtlMs = 1500,
-  settleMs = 120,
+  settleMs = 32,
   sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
   clock = () => Date.now()
 } = {}) {

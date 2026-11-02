@@ -229,6 +229,18 @@ async function runCommand(command) {
       chrome.debugger.sendCommand(target, String(params.method || ''), params.params ?? {}));
     return result === undefined ? null : result;
   }
+  if (method === 'cdp.batch') {
+    const tabId = Number(params.tabId);
+    if (!Number.isInteger(tabId)) throw new Error('bridge: cdp.batch needs an integer tabId');
+    const commands = Array.isArray(params.commands) ? params.commands : [];
+    const results = [];
+    for (const one of commands) {
+      const result = await withDebugger(tabId, { debuggerSession: sessionFor(tabId) }, (target) =>
+        chrome.debugger.sendCommand(target, String(one?.method || ''), one?.params ?? {}));
+      results.push(result === undefined ? null : result);
+    }
+    return { results };
+  }
   throw new Error(`bridge: unknown method ${method || '(none)'}`);
 }
 

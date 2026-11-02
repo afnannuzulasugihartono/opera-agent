@@ -675,16 +675,24 @@ const windowMatch = async (
         // WHY THE ANSWER IS READ THROUGH THE TAB IT OPENED.
         // The unnamed driver is whatever page the browser listed first, which is not the tab this call just made, so reading through it would describe a page nobody asked about.
 
+        // WHY A NEW TAB IS NOT BROUGHT FORWARD AND NOBODY IS ASKED FOR IT.
+        // Measured live: an open cost 1,719 ms on the first call of a process and 108-140 ms after, and most of the warm cost was the question and the window coming forward.
+        // The tab is created in the background, so nothing on the person's screen moves; the first action that needs the screen asks then, through the input guard, which is the moment the answer can be used.
+
+        // WHY THE SESSION AND THE PAGE LOOK ARE LEFT FOR THE FIRST ACTION.
+        // Measured live: attaching a session and reading the new page cost more than opening it, and the answer already names the tab and the url.
+        // A page that nobody has read yet has nothing to say about its text or its rows, so the first read is the one that can answer - and it pays the attach then, once, instead of every open paying for a page it may never touch.
+
         const opened = await driver.open(args.url);
-        const openedDriver = await driverFor(String(opened.id)).catch(() => driver);
-        if (openedDriver !== driver) {
-          tabSaid.set(openedDriver, {
+        return asText({
+          action: opened,
+          tab: {
             id: String(opened.id),
-            title: String(opened.title ?? ''),
+            url: String(opened.url ?? args.url ?? ''),
             named: false
-          });
-        }
-        return afterAction(openedDriver, opened);
+          },
+          note: 'the page is attached and read when it is first driven or read, so this answer names the tab and the url'
+        });
       }
       case 'close_tab': {
         const out = await driver.close(args.tabId);
