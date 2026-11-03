@@ -3,7 +3,7 @@
 
 # handoff
 
-What is true now, and what to do next. Cap 180 lines. Spent detail: git history.
+What is true now, and what to do next. Cap 185 lines. Spent detail: git history.
 
 ## State
 
@@ -31,7 +31,7 @@ What is true now, and what to do next. Cap 180 lines. Spent detail: git history.
   fails a missing standard file, a pull request that skips CI, a CRLF file, or a dead path.
 - **The browser drive depends on nothing but the page it drives.** A ref dies with its
   document, its route or the extension epoch, so the drive re-finds what it clicks.
-- Gates: `npm test`, `npm run check` - 31 primitives, 185 runtime safety files, 1657 unit
+- Gates: `npm test`, `npm run check` - 31 primitives, 185 runtime safety files, 1659 unit
   tests, green.
 - **The local driver is modular, and its tests are too.** `local/primitives.js` assembles the
   modules; `tools.js` holds the MCP surface as data; the tests are one file per module.
@@ -148,12 +148,16 @@ What is true now, and what to do next. Cap 180 lines. Spent detail: git history.
 14. **The public price page is live.** `GET /harga` renders from `opera_price_list`, and
     `POST /harga` takes `action=price-order` with no operator token: it writes one
     `opera_price_orders` row, opens the invoice `${firm}:${period}`, and answers `303`. Thirty new
-    orders a rolling hour is the limit. The operator's query is:
+    orders a rolling hour is the limit, counted before the row is written, so a burst of
+    simultaneous orders passes it by the width of the burst. The operator's query is:
     `select o.created_at, o.firm, o.contact, o.kind, o.amount_cents, i.status, i.paid_at from
     opera_price_orders o join opera_invoices i on i.id = o.invoice_id order by o.created_at desc;`.
-    An unpaid test row is removed with `delete from opera_price_orders where firm = '...' and
-    period = '...';`; a paid row stays, because it is the money's record. An invoice nobody pays stays
-    open: the pay link it carries expires after 24 hours, and the operator closes the invoice by hand
+    An unpaid test order is removed with two statements, the row and its unpaid invoice:
+    `delete from opera_price_orders where firm = '...' and period = '...';` and
+    `delete from opera_invoices where id = '...' and paid_at is null;`. A paid row stays, because
+    it is the money's record. An invoice that no order row backs is never handed to a buyer:
+    the page answers `409` and the operator sends that link. An invoice nobody pays stays open:
+    the pay link it carries expires after 24 hours, and the operator closes the invoice by hand
     with `settle-manual`; nothing writes the `void` status today. The known limit: two
     firms with the same name in one month share one invoice. The live function and the live site
     came from the branch ref, so a deploy from `main` drops the page until the pull request merges.

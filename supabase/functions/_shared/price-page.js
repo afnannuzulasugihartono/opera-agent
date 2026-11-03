@@ -1,6 +1,6 @@
 // @last-edited: 2026-11-03 UTC+7.
 // @title: price-page — the public price page, rendered from the price list and nothing else.
-// @state: the two plans and the overage note, the order form, the error line, and the rules an order has to pass.
+// @state: the two plans and the overage note, the order form, the error line, the rules an order has to pass, and the rule that hands out an invoice.
 // @dependencies: ./billing.js.
 
 // WHY THE PAGE IS A FUNCTION OF THE PRICE LIST.
@@ -85,6 +85,17 @@ export function priceOrder(body, prices, now = Date.now()) {
 // WHY THE ERROR IS RENDERED WITH THE VALUES STILL IN THE FORM.
 // A rejected order must not make a buyer type the firm name again, and the values are the buyer's own bytes.
 // So they are escaped into the same page, and the one line above the form says what to fix.
+
+// WHY AN INVOICE IS HANDED OUT ONLY FOR AN ORDER OF ITS OWN.
+// The invoice id is the firm name and the month, so anybody can guess the id of an invoice the operator opened.
+// A token is the right to read an invoice, so it is minted only for an invoice this page's own order row backs.
+// An invoice with no order row behind it is refused, and the operator sends that link.
+
+export function priceOrderOutcome({ placed = false, invoiceExists = false } = {}) {
+  if (!invoiceExists) return { action: 'create', error: '' };
+  if (!placed) return { action: 'refuse', error: 'nama firma dan bulan ini sudah punya invoice, hubungi operator' };
+  return { action: 'return', error: '' };
+}
 
 export function pricePage(prices, { error = '', values = {}, now = Date.now() } = {}) {
   const plans = PLAN_KINDS.map((kind) => priceFor(prices, kind)).filter(Boolean);

@@ -10,7 +10,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { currentPeriod, priceOrder, pricePage } from '../supabase/functions/_shared/price-page.js';
+import { currentPeriod, priceOrder, priceOrderOutcome, pricePage } from '../supabase/functions/_shared/price-page.js';
 
 const PRICES = [
   { kind: 'statement.client_month', unit: 'delivered client-month above the plan', amount_cents: 1000000, currency: 'IDR', active: true },
@@ -122,4 +122,13 @@ test('the same firm and month is the same invoice', () => {
   const first = priceOrder({ firm: 'Firma Uji', contact: '081234567890', kind: 'plan.pilot' }, PRICES, NOW);
   const second = priceOrder({ firm: 'Firma Uji', contact: '081234567890', kind: 'plan.pilot' }, PRICES, NOW);
   assert.equal(`${first.customerId}:${first.period}`, `${second.customerId}:${second.period}`);
+});
+
+test('an invoice is handed out only for an order of its own', () => {
+  assert.equal(priceOrderOutcome({ placed: false, invoiceExists: false }).action, 'create');
+  assert.equal(priceOrderOutcome({ placed: true, invoiceExists: false }).action, 'create');
+  assert.equal(priceOrderOutcome({ placed: true, invoiceExists: true }).action, 'return');
+  const refused = priceOrderOutcome({ placed: false, invoiceExists: true });
+  assert.equal(refused.action, 'refuse');
+  assert.match(refused.error, /operator/);
 });

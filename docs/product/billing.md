@@ -96,8 +96,8 @@ priced lines (the price list)  ->  an invoice (one per customer per month)
   the one door for both kinds of bill: pass the deliveries for a per-delivery invoice,
   or pass the same deliveries with `plan` (`plan.pilot` or `plan.firm`) for a plan
   month. There is no second path for an operator to learn.
-- `tests/billing.test.mjs` — the money rules, proved (48 tests).
-- `tests/price-page.test.mjs` — the price page and the order rules, proved (12 tests).
+- `tests/billing.test.mjs` — the money rules, proved (49 tests).
+- `tests/price-page.test.mjs` — the price page and the order rules, proved (13 tests).
 - `tests/invoice-page.test.mjs` — every page state, escaped and read (11 tests).
 - `tests/invoice-worker.test.mjs` — the page proxy, its relabel, its redirect, its asset
   fallback, its failure page and the public price page (13 tests).
@@ -190,6 +190,12 @@ token. One `(firm, period)` is one order, so a resubmit returns the same invoice
 writes no second row, and an invoice that already exists is never re-priced by a
 resubmit: the resubmit only updates the contact. Thirty new orders in a rolling hour is
 the limit; over it the page answers `429` with one line of Indonesian text.
+
+The invoice link goes only to an invoice that the page's own order row backs. The
+invoice id is the firm name and the month, so a stranger can guess it, and a guessed id
+must never open an invoice the operator opened. So an invoice with no order row behind
+it is refused with `409` and one line of Indonesian text, no token is minted, and no
+row is written; the operator sends that link by hand.
 
 Two firms with the same name in the same month share one invoice, because the invoice
 id is the firm name and the month. That is the known limit of this shape: separating

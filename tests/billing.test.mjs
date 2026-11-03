@@ -652,3 +652,13 @@ test('the public price page and the public order are there, and the order asks f
   const branch = fn.slice(fn.indexOf('body.action === "price-order"'), fn.indexOf('const looksLikeNotification'));
   assert.doesNotMatch(branch, /BILLING_TOKEN/, 'the public branch never asks for the operator token');
 });
+
+test('the public order hands out a token only for an invoice its own order row backs', () => {
+  const fn = fs.readFileSync(new URL('../supabase/functions/opera-agent-billing/index.ts', import.meta.url), 'utf8');
+  const branch = fn.slice(fn.indexOf('body.action === "price-order"'), fn.indexOf('const looksLikeNotification'));
+  assert.match(branch, /priceOrderOutcome\(\{ placed: Boolean\(placed\), invoiceExists: Boolean\(current\) \}\)/, 'the branch asks the rule that decides');
+  const refuse = branch.indexOf('outcome.action === "refuse"');
+  const mint = branch.indexOf('invoiceToken(');
+  assert.ok(refuse > -1, 'the branch refuses an invoice no order row backs');
+  assert.ok(mint > refuse, 'the token is minted only after that refusal');
+});

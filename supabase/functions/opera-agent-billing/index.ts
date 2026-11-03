@@ -32,7 +32,7 @@ import "@supabase/edge-runtime";
 import { createEdgeLog } from "../_shared/edge-log.js";
 import { CORS_DEFAULT_ORIGINS, resolveAllowedOrigin } from "../_shared/cors.js";
 import { invoicePage } from "../_shared/invoice-page.js";
-import { priceOrder, pricePage } from "../_shared/price-page.js";
+import { priceOrder, priceOrderOutcome, pricePage } from "../_shared/price-page.js";
 import {
   amountFor,
   invoiceToken,
@@ -686,13 +686,14 @@ Deno.serve(async (req: Request) => {
         }
         const { data: placed, error: placedError } = await supabase
           .from("opera_price_orders")
-          .select("invoice_id")
+          .select("id")
           .eq("firm", order.customerId)
           .eq("period", order.period)
           .maybeSingle();
         if (placedError) throw new HttpError(500, `price orders unreadable: ${placedError.message}`);
         // WHY ONLY A NEW ORDER IS COUNTED.
         // A buyer who submits twice is one order, so the limit counts the rows written in the last hour and not the requests received.
+        // The count is read before the row is written, so a burst of simultaneous orders passes the limit by the width of the burst.
         if (!placed) {
           const { count, error: counted } = await supabase
             .from("opera_price_orders")
@@ -706,21 +707,29 @@ Deno.serve(async (req: Request) => {
             });
           }
         }
-        const invoiceId = placed?.invoice_id || `${order.customerId}:${order.period}`;
+        const invoiceId = `${order.customerId}:${order.period}`;
         try {
           // WHY THE INVOICE IS READ BEFORE THE ORDER IS WRITTEN.
           // The order row holds the plan and the price that were agreed, and the invoice holds what it charged.
           // So an invoice that already exists is returned as it is, the row keeps the price it carries, and only the contact follows the buyer.
           const { data: current } = await supabase.from("opera_invoices").select("status").eq("id", invoiceId).maybeSingle();
-          if (current) {
-            if (placed) {
-              const { error: contactError } = await supabase
-                .from("opera_price_orders")
-                .update({ contact: order.contact })
-                .eq("firm", order.customerId)
-                .eq("period", order.period);
-              if (contactError) throw new HttpError(500, `the order could not be updated: ${contactError.message}`);
-            }
+          // WHY THE ORDER ROW DECIDES WHETHER THE INVOICE IS HANDED OUT.
+          // The invoice id is the firm name and the month, so a stranger can guess the id of an invoice the operator opened.
+          // A token is the right to read an invoice, so it is minted only for an invoice this page's own order row backs.
+          const outcome = priceOrderOutcome({ placed: Boolean(placed), invoiceExists: Boolean(current) });
+          if (outcome.action === "refuse") {
+            return new Response(pricePage(prices, { error: outcome.error, values }), {
+              status: 409,
+              headers: pageHeaders(cors, { indexable: true })
+            });
+          }
+          if (outcome.action === "return") {
+            const { error: contactError } = await supabase
+              .from("opera_price_orders")
+              .update({ contact: order.contact })
+              .eq("firm", order.customerId)
+              .eq("period", order.period);
+            if (contactError) throw new HttpError(500, `the order could not be updated: ${contactError.message}`);
             const token = invoiceToken(invoiceId, BILLING_SECRET);
             return new Response(null, { status: 303, headers: { location: invoiceLink(invoiceId, token), ...cors } });
           }
