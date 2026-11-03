@@ -93,20 +93,24 @@ test('the pages that talk to Supabase still name only that origin', () => {
   }
 });
 
-test('every inline module script is named by a hash, and the CSP offers no unsafe-inline', () => {
+test('every inline script is named by a hash, and the CSP offers no unsafe-inline', () => {
 
-  const hashOf = (html) => {
-    const body = /<script type="module">([\s\S]*?)<\/script>/.exec(html)?.[1] ?? '';
-    return "'sha256-" + createHash('sha256').update(body, 'utf8').digest('base64') + "'";
-  };
-  for (const path of ['beranda.html', 'index.html', 'akun.html', 'dashboard.html', 'dukungan.html', 'oauth/consent.html']) {
+  const hashesOf = (html) => [...html.matchAll(/<script(?![^>]*src=)[^>]*>([\s\S]*?)<\/script>/g)]
+    .filter((m) => !m[0].includes('type="application/json"'))
+    .map((m) => "'sha256-" + createHash('sha256').update(m[1], 'utf8').digest('base64') + "'");
+  // WHY unduh-berkas.html STANDS OUTSIDE THIS GATE FOR NOW: its CSP has no path-scoped rule — the file is served under the /(.*) fallback without named hashes, while the typewriter script runs classic and lives behind a hash the policy does not carry.
+  // Tracking it here would ask the gate to prove something the deployment cannot yet promise: a named hash on a path with no rule.
+  const keyed = ['beranda.html', 'index.html', 'akun.html', 'dashboard.html', 'dukungan.html', 'oauth/consent.html', 'unduh.html'];
+  for (const path of keyed) {
     const rule = rules.find((r) => r.paths.includes(`/${path}`) || (path === 'index.html' && r.paths.includes('/')));
     const csp = rule?.headers['Content-Security-Policy'];
     const html = read(`landing/${path}`);
     assert.ok(csp, `${path} has a CSP`);
     assert.match(csp, /script-src 'self'/, `${path} runs scripts from itself only`);
     assert.doesNotMatch(csp, /script-src[^;]*unsafe-inline/, `${path} has no inline-script loophole`);
-    assert.ok(csp.includes(hashOf(html)), `${path} CSP names its exact inline script`);
+    for (const hash of hashesOf(html)) {
+      assert.ok(csp.includes(hash), `${path} CSP names its exact inline script ${hash.slice(0, 20)}…`);
+    }
   }
 });
 
