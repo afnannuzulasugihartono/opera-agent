@@ -291,6 +291,7 @@ test('the download pages read as one column, and the file table says what is tru
   assert.match(files, /<table class="support">/, 'the browser support table is the file table, and it stays');
   assert.doesNotMatch(files, /SHA-256<\/th>|Ukuran<\/th>/, 'and it claims no size or checksum it cannot hold');
   assert.match(cssOf('unduh-berkas.html'), /\.support th \{[^}]*border-bottom: 1px solid var\(--line-strong\)/s, 'its head rests on a line, not a shadow');
+  assert.doesNotMatch(files, /<h3>/, 'no heading skips a level under the title');
 });
 
 test('the 404 offers its exits as a list, and counts them honestly', () => {

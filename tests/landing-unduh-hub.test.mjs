@@ -52,7 +52,7 @@ test('the merged page carries one card per browser, each offering both files', (
   assert.deepEqual(cards.map((m) => m[1]), ['chrome', 'edge', 'brave', 'opera', 'vivaldi'], 'unduh-berkas.html names every browser once');
   const names = { chrome: 'Chrome', edge: 'Edge', brave: 'Brave', opera: 'Opera', vivaldi: 'Vivaldi' };
   for (const [, key, body] of cards) {
-    assert.ok(body.includes(`<h3>${names[key]}</h3>`), `${key} names itself`);
+    assert.ok(body.includes(`<h2>${names[key]}</h2>`), `${key} names itself`);
     assert.ok(body.includes('<span class="glyph"'), `${key} carries a text glyph, not an image asset`);
     assert.doesNotMatch(body, /<img/, `${key} loads no image`);
 

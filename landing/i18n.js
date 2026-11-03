@@ -13,10 +13,11 @@
     { code: 'en', text: 'EN', name: 'English' }
   ];
 
-  var CSS = '.lang{display:inline-flex;align-items:center;border:1px solid rgba(22,21,19,.14);border-radius:980px;padding:2px;white-space:nowrap}'
-    + '.lang button{width:auto;margin:0;border:0;background:transparent;color:#64615a;font:inherit;font-size:11.5px;font-weight:600;line-height:1;padding:5px 9px;border-radius:980px;cursor:pointer}'
-    + '.lang button:hover{color:#161513}'
-    + '.lang button[aria-pressed="true"]{background:rgba(11,107,82,.1);color:#0b6b52}'
+  // WHY THE TOGGLE READS THE CANVAS TOKENS: it paints its own styles, so a paper-coloured control on a dark page would read at 2.9:1 — the one thing a language button must never do.
+  var CSS = '.lang{display:inline-flex;align-items:center;border:1px solid var(--line);border-radius:var(--radius-sm);padding:2px;white-space:nowrap}'
+    + '.lang button{width:auto;margin:0;border:0;background:transparent;color:var(--muted);font:inherit;font-size:11.5px;font-weight:600;line-height:1;padding:5px 9px;border-radius:var(--radius-sm);cursor:pointer}'
+    + '.lang button:hover{color:var(--ink)}'
+    + '.lang button[aria-pressed="true"]{background:var(--accent-soft);color:var(--accent)}'
     + '.lang span[aria-hidden="true"]{display:none}';
 
   var painted = false;
