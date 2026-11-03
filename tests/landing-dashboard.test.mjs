@@ -445,8 +445,15 @@ test('the sidebar is the window\'s left column, not a column in the middle of it
   assert.match(css, /\.content \{[^}]*padding: 0 24px/, 'while the content keeps the measure it reads well at');
 });
 
+test('the marketing pages close on a dark band, the way the console opens', () => {
+  const sheet = read('site.css');
+  assert.match(sheet, /footer \{[^}]*background: #101312/, 'the footer is the console panel, so the two ends of the product share one ground');
+  assert.match(sheet, /footer \{[^}]*color: rgba\(239, 242, 236, \.62\)/, 'and its links read on that ground');
+});
+
 test('the shell is sized by the window, not by a number of pixels', () => {
   assert.match(css, /body:has\(main\.console\) \{[^}]*height: 100dvh/, 'the page is the window');
+  assert.match(css, /body:has\(main\.console\) \{[^}]*background: #0c0e11/, 'and the window behind the console is the console, not the paper');
   assert.match(css, /main\.console \{[^}]*flex: 1/, 'the console takes the space the chrome leaves');
   assert.match(css, /main\.console \{[^}]*min-height: 0/, 'and can shrink to nothing when the window does');
   assert.match(css, /\.layout \{[^}]*min-height: 0/, 'the layout can shrink, so the grid inside it can too');
