@@ -698,7 +698,6 @@ ul.commands li:first-child { border-top: 0; }
 .segmented button:hover { color: var(--ink); }
 
 .segmented button[aria-pressed="true"] {
-  background: var(--surface);
   color: var(--ink);
   background: var(--surface-2);
 }
