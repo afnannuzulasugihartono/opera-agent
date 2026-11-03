@@ -437,10 +437,16 @@ export function providerSignature(notification, serverKey) {
   return createHash('sha512').update(`${orderId}${statusCode}${grossAmount}${serverKey}`).digest('hex');
 }
 
+// WHY A LONG DIGIT RUN IS NOT RESTORED FROM THE NUMBER IT ARRIVED AS.
+// The provider JSON-encodes every field as a string except a digest of only digits, which it sends bare and JSON.parse reads as a double: 15 to 16 significant digits where the digest has 128, so the tail is lost.
+// Measured live on 2026-11-03: a "still pending" for a QRIS charge carried its signature as a number, was refused, and the invoice stayed open while the provider had nothing to correct.
+// Refusing is the right answer for a bare long number: nothing can prove it was the provider's digest, and one accepted proves nothing about the next.
+// A short run of digits is a digest the code base value already carries — the pinned vector begins with 4 digits — and that same text is still compared.
+
 export function notificationSignatureValid(notification, serverKey) {
   if (!notification || !serverKey) return false;
   const given = notification.signature_key ?? notification.signature;
-  if (!given) return false;
+  if (given === undefined || given === null || given === '') return false;
   return sameText(providerSignature(notification, serverKey), String(given));
 }
 
