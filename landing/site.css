@@ -502,7 +502,6 @@ footer .cols > span:first-child {
 .btn.ghost {
   border-color: transparent;
   background: transparent;
-  box-shadow: none;
 }
 
 .btn.ghost:hover {
