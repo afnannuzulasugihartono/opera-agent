@@ -309,6 +309,12 @@ test('the verification command types itself, with the whole line kept for no-scr
   assert.match(css, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.typewriter \{[^}]*animation: none/s, 'and instantly for motion-sensitive readers');
 });
 
+test('the dev server stays inside the landing tree, even on loopback', () => {
+  const src = fs.readFileSync(new URL('../scripts/landingserve.mjs', import.meta.url), 'utf8');
+  assert.match(src, /startsWith\(root\)/, 'a URL that escapes the root is refused');
+  assert.match(src, /writeHead\(403\)/, 'with forbidden, not a leak');
+});
+
 test('the download pages read as one column, and the file table says what is true', () => {
   const hub = read('unduh.html');
   assert.doesNotMatch(hub, /class="shot"/, 'the hub drops the mock file panel it already states in words');
