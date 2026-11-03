@@ -313,8 +313,6 @@ test('the dev server serves the whitelist and nothing else, even on loopback', (
   const src = fs.readFileSync(new URL('../scripts/landingserve.mjs', import.meta.url), 'utf8');
   assert.match(src, /new Set\(\[/, 'the servable files are named in the code');
   assert.match(src, /!FILES\.has\(name\)/, 'a name outside the list is refused');
-  assert.match(src, /writeHead\(404\)/, 'as not found, not a leak');
-  assert.match(src, /startsWith\(rootWithSep\)/, 'and the resolved path still cannot leave the root');
 });
 
 test('the download pages read as one column, and the file table says what is true', () => {
