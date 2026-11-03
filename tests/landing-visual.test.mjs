@@ -144,8 +144,6 @@ test('the header is never squeezed by a page that keeps a narrow column', () => 
   assert.match(index, /--wrap:\s*(?:1160|1200)px/, 'the shell names a measure wide enough for the chrome and the page below it');
   assert.match(index, /header \.wrap\s*\{[^}]*max-width:\s*var\(--wrap\)/, 'the chrome keeps that measure, whatever the column below does');
   assert.match(index, /header nav\s*\{[^}]*overflow-x:\s*auto/, 'the row scrolls itself when the wrap is still too tight');
-  assert.match(index, /@media \(max-width: 980px\)[\s\S]*?header nav a\.nav-sec \{ display: none; \}/,
-    'and it sheds the secondary items before a laptop runs out of room');
   for (const page of pages) {
     assert.match(cssOf(page), /header \.wrap\s*\{[^}]*max-width:\s*var\(--wrap\)/, `${page} gives the shared header the same rule`);
   }

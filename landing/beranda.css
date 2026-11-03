@@ -106,8 +106,8 @@
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 10px;
-  background: var(--ink-panel);
-  color: var(--panel-text);
+  background: var(--surface);
+  color: var(--ink);
   box-shadow: var(--shadow-lift);
   font-family: var(--font);
 }
@@ -163,7 +163,7 @@
   flex: 0 0 auto;
   padding: 3px 8px;
   border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: var(--pill);
+  border-radius: var(--radius-sm);
   color: rgba(239, 242, 236, 0.6);
   font-size: 10px;
   font-weight: 600;
@@ -418,8 +418,8 @@
 .signinPanel {
   padding: 30px;
   border-radius: var(--radius);
-  background: var(--ink-panel);
-  color: var(--panel-text);
+  background: var(--surface);
+  color: var(--ink);
   box-shadow: var(--shadow-lift);
 }
 
@@ -553,8 +553,8 @@
   margin: 0 0 96px;
   padding: 56px 48px;
   border-radius: var(--radius);
-  background: var(--ink-panel);
-  color: var(--panel-text);
+  background: var(--surface);
+  color: var(--ink);
   box-shadow: var(--shadow-lift);
 }
 

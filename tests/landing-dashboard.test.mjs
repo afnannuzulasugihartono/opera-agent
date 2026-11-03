@@ -445,10 +445,10 @@ test('the sidebar is the window\'s left column, not a column in the middle of it
   assert.match(css, /\.content \{[^}]*padding: 0 24px/, 'while the content keeps the measure it reads well at');
 });
 
-test('the marketing pages close on a dark band, the way the console opens', () => {
+test('the footer closes on the same ground every page sits on', () => {
   const sheet = read('site.css');
-  assert.match(sheet, /footer \{[^}]*background: #101312/, 'the footer is the console panel, so the two ends of the product share one ground');
-  assert.match(sheet, /footer \{[^}]*color: rgba\(239, 242, 236, \.62\)/, 'and its links read on that ground');
+  assert.match(sheet, /footer \{[^}]*background: var\(--surface\)/, 'the footer is a surface, not a second palette');
+  assert.match(sheet, /footer \{[^}]*color: var\(--muted\)/, 'and its links read on that surface');
 });
 
 test('the shell is sized by the window, not by a number of pixels', () => {
