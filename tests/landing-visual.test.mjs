@@ -202,16 +202,6 @@ test('the provider buttons show their marks, not bare text', () => {
   assert.match(html, /id="githubButton"[^>]*>[\s\S]*?<svg/, 'GitHub carries its mark inside the button');
 });
 
-test('the 404 exits are real doors, counted honestly', () => {
-
-  const html = read('404.html');
-  const tiles = [...html.matchAll(/<a class="tile" href="([^"]+)">/g)].map((m) => m[1]);
-  assert.ok(tiles.length >= 4, 'the exits exist as links, not divs');
-  const words = { 4: 'Empat', 5: 'Lima', 6: 'Enam' };
-  assert.match(html, new RegExp(`${words[tiles.length]} jalan keluar`), 'the copy counts what stands under it');
-  assert.match(read('site.css'), /\.tile:hover/, 'a tile answers the hover, so it reads clickable');
-});
-
 test('the legal pages open with a map, not a wall', () => {
 
   for (const page of ['privasi.html', 'syarat.html']) {
@@ -301,6 +291,25 @@ test('the download pages read as one column, and the file table says what is tru
   assert.match(files, /<table class="support">/, 'the browser support table is the file table, and it stays');
   assert.doesNotMatch(files, /SHA-256<\/th>|Ukuran<\/th>/, 'and it claims no size or checksum it cannot hold');
   assert.match(cssOf('unduh-berkas.html'), /\.support th \{[^}]*border-bottom: 1px solid var\(--line-strong\)/s, 'its head rests on a line, not a shadow');
+});
+
+test('the 404 offers its exits as a list, and counts them honestly', () => {
+  const html = read('404.html');
+  const exits = [...html.matchAll(/<li><a href="([^"]+)">/g)].map((m) => m[1]);
+  assert.ok(exits.length >= 4, `the exits exist as links, not divs, and there are ${exits.length}`);
+  const words = { 4: 'Empat', 5: 'Lima', 6: 'Enam' };
+  assert.match(html, new RegExp(`${words[exits.length]} jalan keluar`), 'the copy counts what stands under it');
+  assert.doesNotMatch(html, /class="tile"/, 'and no card shape survives');
+  assert.match(read('site.css'), /\.exitList a:hover/, 'a link answers the hover, so it reads clickable');
+});
+
+test('the reading pages keep their map beside the text', () => {
+  const css = read('site.css');
+  assert.match(css, /main\.prose:has\(\.toc\)/, 'a page with a map lays the map beside the text');
+  assert.match(css, /\.toc \{[^}]*background: var\(--surface\)/s, 'and the map is a surface of the canvas');
+  const dukung = read('dukungan.html');
+  assert.match(dukung, /<details>/, 'the support questions open in place');
+  assert.doesNotMatch(dukung, /<dl class="facts">/, 'and no flat list survives');
 });
 
 test('the shared radius is the only radius a control names', () => {

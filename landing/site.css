@@ -721,7 +721,7 @@ ol.steps strong { color: var(--ink); }
   margin: 0 0 32px;
   padding: 18px 20px;
   border: 1px solid var(--line);
-  border-radius: 16px;
+  border-radius: var(--radius);
   background: var(--surface);
   list-style: none;
   font-size: 14px;
@@ -732,6 +732,29 @@ ol.steps strong { color: var(--ink); }
 .toc li { margin: 0 0 6px; break-inside: avoid; }
 
 @media (max-width: 560px) { .toc { columns: 1; } }
+
+/*
+ * WHY THE MAP STANDS BESIDE THE TEXT: a legal page is read in one pass, and a map above the text sends the eye to the top of the page for every section it wants.
+ */
+
+@media (min-width: 900px) {
+  main.prose:has(.toc) {
+    display: grid;
+    grid-template-columns: 240px minmax(0, 1fr);
+    gap: 48px;
+    max-width: var(--wrap);
+    align-items: start;
+  }
+
+  main.prose:has(.toc) .toc {
+    position: sticky;
+    top: 92px;
+    columns: 1;
+    margin: 0;
+  }
+
+  main.prose:has(.toc) > :not(.toc) { grid-column: 2; }
+}
 
 /* ── forms ──────────────────────────────────────────────────────────────── */
 
@@ -909,6 +932,96 @@ ul.consents button { margin-left: auto; }
   font-size: 16px;
   letter-spacing: -.02em;
 }
+
+.exitList {
+  display: grid;
+  gap: 0;
+  margin: 32px 0 0;
+  padding: 0;
+  border-top: 1px solid var(--line);
+  list-style: none;
+}
+
+.exitList li { border-bottom: 1px solid var(--line); }
+
+.exitList a {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 24px;
+  padding: 18px 0;
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.exitList a strong {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.exitList a span {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.exitList a:hover { color: var(--accent); }
+
+/*
+ * WHY THE QUESTIONS OPEN IN PLACE: a reader who came with one question read all five answers before finding it, and opencode.ai puts its own questions behind a disclosure that needs no script.
+ */
+
+.faqList {
+  display: grid;
+  border-top: 1px solid var(--line);
+}
+
+.faqList details,
+.prose details {
+  border-bottom: 1px solid var(--line);
+}
+
+.faqList summary,
+.prose details > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 0;
+  color: var(--ink);
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  list-style: none;
+}
+
+.faqList summary::-webkit-details-marker,
+.prose details > summary::-webkit-details-marker { display: none; }
+
+.faqList summary::after,
+.prose details > summary::after {
+  content: "+";
+  flex: 0 0 auto;
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 16px;
+}
+
+.faqList details[open] summary::after,
+.prose details[open] > summary::after { content: "−"; }
+
+.faqList details p,
+.prose details > p {
+  margin: 0 0 18px;
+  max-width: 62ch;
+  color: var(--muted);
+  font-size: 15px;
+}
+
+.prose details > p { color: var(--ink); }
+
+.prose details > h3,
+.prose details > .copybox { margin-bottom: 16px; }
 
 /* ── motion and print ──────────────────────────────────────────────────── */
 
