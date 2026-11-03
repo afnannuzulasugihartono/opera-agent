@@ -3,7 +3,7 @@
 
 # handoff
 
-What is true now, and what to do next. Cap 185 lines. Spent detail: git history.
+What is true now, and what to do next. Cap 190 lines. Spent detail: git history.
 
 ## State
 
@@ -103,7 +103,11 @@ What is true now, and what to do next. Cap 185 lines. Spent detail: git history.
   The QRIS rail is not live, so no rupiah closed it and the invoice stayed open. The same
   order submitted again answered the same `Location` and left one order row and one invoice
   row. The unpaid test order row and its unpaid test invoice were then deleted, and
-  `opera_price_orders` is empty again.
+  `opera_price_orders` is empty again. A second drive the same day: an invoice that no
+  order row backs — one written by hand, the way the operator's own invoice looks — was
+  refused with `409`, the page carried the one Indonesian line and no token, and no order
+  row was written. A fresh order after that answered `303` and its resubmit answered the
+  same `Location`, so the refusal took nothing away from the buyer who places one.
 
 ## Still open
 
