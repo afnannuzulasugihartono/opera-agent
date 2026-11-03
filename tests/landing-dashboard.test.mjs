@@ -793,16 +793,15 @@ test('the shell is squared to the benchmark, not pill-shaped', () => {
   assert.match(app, /body\.app-dark \.btn \{[^}]*border-radius: var\(--radius-sm\)/, 'and the shared pill never reaches the shell');
 });
 
-test('the account nav label is a label, and the rule that sets it reaches the page', () => {
-  assert.match(app, /\.appCard\.accountNav h2 \{[^}]*font-size: 11px/, 'the nav label is 11px, the label scale the console uses');
-  assert.match(app, /\.appCard\.accountNav h2 \{[^}]*letter-spacing: \.08em/, 'and it tracks .08em');
+test('the account nav label is a readable label, and the rule that sets it reaches the page', () => {
+  assert.match(app, /\.appCard\.accountNav h2 \{[^}]*font-size: 13px/, 'the nav label reads at 13px, tracked labels do not');
+  assert.doesNotMatch(app, /\.appCard\.accountNav h2 \{[^}]*letter-spacing/, 'and it tracks nothing');
   assert.doesNotMatch(app, /^\.accountNav h2 \{/m, 'the rule that .appCard h2 outranked is gone, not left behind');
 });
 
-test('one label scale in the console: 11px, .08em, 600', () => {
+test('the console labels read, not whisper', () => {
   for (const selector of ['\\.metrics dt', '\\.railGroup', '\\.railList \\.konsolGroup', '\\.konsolGrid th']) {
-    assert.match(css, new RegExp(`${selector} \\{[^}]*font-size: 11px`), `${selector} is 11px, the size Cline prints its labels in`);
-    assert.match(css, new RegExp(`${selector} \\{[^}]*letter-spacing: \\.08em`), `${selector} tracks .08em, the way Cline tracks`);
+    assert.match(css, new RegExp(`${selector} \\{[^}]*font-size: 13px`), `${selector} reads at 13px`);
     assert.match(css, new RegExp(`${selector} \\{[^}]*font-weight: 600`), `${selector} carries the same weight`);
   }
   assert.match(css, /\.konsolGrid th\.mono \{[^}]*font-family: var\(--font\)/, 'and the band is one band, even over a column of ids');

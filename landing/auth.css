@@ -32,7 +32,29 @@ main.auth { padding-top: 64px; padding-bottom: 96px; }
 
 .brand .eyebrow {
   display: flex;
-  margin: 24px 0 14px;
+  align-items: center;
+  gap: 8px;
+  margin: 24px 0 16px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.brand .eyebrow > span:first-child {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.brand .eyebrow > span:first-child::before {
+  display: none;
+}
+
+.brand .eyebrow::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--brand);
 }
 
 .brand h1 {
@@ -59,10 +81,10 @@ main.auth { padding-top: 64px; padding-bottom: 96px; }
 .promises li {
   display: flex;
   gap: 12px;
-  padding: 14px 0;
+  padding: 15px 0 14px;
   border-bottom: 1px solid var(--line);
   color: var(--muted);
-  font-size: 14px;
+  font-size: 14.5px;
   line-height: 1.5;
 }
 
@@ -129,7 +151,7 @@ main.auth { padding-top: 64px; padding-bottom: 96px; }
 .tabs button:hover { color: var(--ink); }
 
 .tabs button[aria-selected="true"] {
-  border-color: var(--line);
+  border-color: transparent;
   background: var(--surface);
   color: var(--ink);
 }
