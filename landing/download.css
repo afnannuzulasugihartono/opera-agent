@@ -11,18 +11,19 @@
 
 .hero {
   display: grid;
-  grid-template-columns: 1.02fr .98fr;
-  gap: clamp(36px, 5vw, 72px);
-  align-items: center;
+  grid-template-columns: minmax(0, 1fr);
+  gap: clamp(24px, 3vw, 40px);
+  align-items: start;
+  max-width: 760px;
   margin: 16px 0 56px;
 }
 
 .hero-text h1 {
-  max-width: 15ch;
+  max-width: 20ch;
   margin: 0 0 18px;
   text-align: left;
-  font-size: clamp(38px, 4.6vw, 62px);
-  line-height: 1.02;
+  font-size: clamp(40px, 6vw, 76px);
+  line-height: .98;
   letter-spacing: -.045em;
 }
 
@@ -144,126 +145,8 @@
   font-weight: 650;
 }
 
-.shot {
-  padding: 18px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: var(--surface);
-  }
-
-.shotBar {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin: 0 0 16px;
-}
-
-.shotBar i {
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  background: var(--line-strong);
-}
-
-.shotBar span {
-  min-width: 0;
-  margin-left: 8px;
-  overflow: hidden;
-  color: var(--muted);
-  font-family: var(--mono);
-  font-size: 10.5px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.shotFile {
-  display: flex;
-  align-items: center;
-  gap: 13px;
-  padding: 16px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: var(--surface-soft);
-}
-
-.shotIcon {
-  display: grid;
-  place-items: center;
-  flex: 0 0 auto;
-  width: 38px;
-  height: 38px;
-  border-radius: var(--radius);
-  background: var(--accent);
-  color: var(--on-fill);
-  font-size: 18px;
-}
-
-.shotMeta {
-  display: grid;
-  gap: 2px;
-  min-width: 0;
-}
-
-.shotMeta strong {
-  overflow: hidden;
-  color: var(--ink);
-  font-family: var(--mono);
-  font-size: 12.5px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.shotMeta span {
-  color: var(--muted);
-  font-size: 11.5px;
-}
-
-.shotFile .chip { margin-left: auto; }
-
-.shotList {
-  margin: 12px 0 0;
-  padding: 0;
-  list-style: none;
-}
-
-.shotList li {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  padding: 9px 2px;
-  border-top: 1px solid var(--line);
-  color: var(--muted);
-  font-size: 12.5px;
-}
-
-.shotList li:first-child { border-top: 0; }
-
-.shotList .dot { background: var(--accent); }
-
-.shotList b {
-  margin-left: auto;
-  color: var(--ink);
-  font-size: 11.5px;
-  font-weight: 600;
-}
-
-.shotFoot {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px 12px;
-  margin: 12px 0 0;
-  padding: 13px 0 0;
-  border-top: 1px solid var(--line);
-  color: var(--muted);
-  font-size: 11.5px;
-}
-
-.shotFoot .chip { font-size: 10.5px; }
-
 @media (max-width: 860px) {
   .hero { grid-template-columns: 1fr; gap: 30px; margin-bottom: 40px; }
-  .shot { max-width: 460px; }
 }
 
 /* ── the file page ──────────────────────────────────────────────────────── */
@@ -500,6 +383,8 @@ table.support td {
 }
 
 table.support th {
+  padding: 12px 10px;
+  border-bottom: 1px solid var(--line-strong);
   color: var(--muted);
   font-size: 12px;
   font-weight: 600;
