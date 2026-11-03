@@ -78,69 +78,45 @@ main.wrap { padding-top: 68px; padding-bottom: 96px; }
   line-height: 1.35;
 }
 
-/* ── capability cards ───────────────────────────────────────────────────── */
+/* ── capability rows ────────────────────────────────────────────────────── */
 
-.featureGrid {
+/*
+ * WHY ROWS AND NOT CARDS: five cards in two columns plus one orphan read as a brochure grid, and a reader has to hunt for the sentence that answers a question.
+ * One numbered column beside a line between each entry reads the way a reference does, and it is the shape opencode.ai uses for its own abilities.
+ */
+
+.featureList {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
+  border-top: 1px solid var(--line);
   margin: 0 0 64px;
 }
 
-.featureCard {
-  display: flex;
-  flex-direction: column;
-  padding: 28px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: var(--surface);
+.featureRow {
+  display: grid;
+  grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr);
+  gap: 24px 48px;
+  align-items: start;
+  padding: 32px 0;
+  border-bottom: 1px solid var(--line);
 }
 
-.featureCard.wide {
-  grid-column: 1 / -1;
-  background: var(--surface);
-  color: var(--ink);
-  border-color: var(--line);
-  }
-
-.featureCard .num {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 26px;
-  height: 26px;
-  margin: 0 0 20px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
-  background: var(--surface-soft);
-  color: var(--muted);
-  font-family: var(--mono);
-  font-size: 11px;
-  font-weight: 600;
-}
-
-.featureCard h2 {
-  margin: 0 0 10px;
-  font-size: 22px;
-  letter-spacing: -.03em;
-}
-
-.featureCard p {
+.featureRow h2 {
   margin: 0;
+  font-size: 20px;
+  letter-spacing: -.025em;
+}
+
+.featureRow p {
+  margin: 0;
+  max-width: 60ch;
   color: var(--muted);
-  font-size: 14.5px;
+  font-size: 15px;
   line-height: 1.6;
 }
 
-.featureCard.wide .num {
-  border-color: var(--line-strong);
-  background: var(--surface-2);
-  color: var(--accent);
+@media (max-width: 760px) {
+  .featureRow { grid-template-columns: 1fr; gap: 8px; padding: 24px 0; }
 }
-
-.featureCard.wide h2 { color: var(--ink); }
-
-.featureCard.wide p { color: var(--muted); }
 
 /* ── permission panel ───────────────────────────────────────────────────── */
 
@@ -207,8 +183,7 @@ main.wrap { padding-top: 68px; padding-bottom: 96px; }
   main.wrap { padding-top: 44px; }
   .featureHero { margin-bottom: 40px; }
   .statBand { margin-bottom: 44px; }
-  .featureGrid { grid-template-columns: 1fr; margin-bottom: 44px; }
-  .featureCard.wide { grid-column: auto; }
+  .featureList { margin-bottom: 44px; }
   .permPanel { grid-template-columns: 1fr; gap: 22px; padding: 26px; margin-bottom: 44px; }
   .finalBand { padding: 34px 24px; }
 }
@@ -221,6 +196,5 @@ main.wrap { padding-top: 68px; padding-bottom: 96px; }
     border-top: 1px solid var(--line);
   }
   .statBand div:first-child { border-top: 0; padding-top: 0; }
-  .featureCard { padding: 24px; }
   .heroActions .btn { flex: 1 1 auto; }
 }

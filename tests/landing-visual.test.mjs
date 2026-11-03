@@ -278,6 +278,16 @@ test('the home hero speaks in one column, and the questions answer in place', ()
   assert.doesNotMatch(html, /<dl class="facts faq">/, 'and the old flat list is gone');
 });
 
+test('the features read as one numbered column, not as cards', () => {
+  const html = read('fitur.html');
+  assert.match(html, /<section class="featureList"/, 'the abilities stand in a list');
+  assert.equal((html.match(/<article class="featureRow">/g) || []).length, 5, 'five of them');
+  assert.doesNotMatch(html, /featureCard/, 'and no card survives');
+  const css = cssOf('fitur.html');
+  assert.match(css, /\.featureRow \{[^}]*grid-template-columns: minmax\(0, \.8fr\) minmax\(0, 1\.2fr\)/s, 'a title beside its body');
+  assert.match(css, /\.featureList \{[^}]*border-top: 1px solid var\(--line\)/s, 'and a line between each');
+});
+
 test('the shared radius is the only radius a control names', () => {
   const sheet = read('site.css');
   assert.match(sheet, /--radius:\s*8px/, 'a card is 8px, and the token says so');
