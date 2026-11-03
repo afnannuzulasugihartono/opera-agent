@@ -192,7 +192,6 @@
     <script>
       // WHY THE TYPEWRITER STAYS BEHIND A HASH: the page CSP names every inline classic script by its sha256, so this block is shaped to be hashed, not hidden.
       window.__typeLine = function () {
-      var run = function () {
       var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
       var line = document.querySelector('.typewriter');
       if (!line || reduce || !('IntersectionObserver' in window)) {
