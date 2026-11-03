@@ -312,6 +312,17 @@ test('the reading pages keep their map beside the text', () => {
   assert.doesNotMatch(dukung, /<dl class="facts">/, 'and no flat list survives');
 });
 
+test('the brand mark reads on the dark canvas, on every page', () => {
+  const sheet = read('site.css');
+  assert.match(sheet, /header nav \.brandMark rect \{[^}]*fill: var\(--accent\)/s, 'the mark is a filled square in the accent, not a dark one on a dark page');
+  assert.match(sheet, /header nav \.brandMark path \{[^}]*fill: var\(--bg\)/s, 'and its glyph is cut in the canvas colour');
+  for (const page of pages) {
+    const html = read(page);
+    assert.ok(html.includes('class="brandMark"'), `${page} carries the mark`);
+    assert.doesNotMatch(html, /brandMark[^>]*>\s*<rect[^>]*fill="#101512"/, `${page} paints no dark square on a dark page`);
+  }
+});
+
 test('the shared radius is the only radius a control names', () => {
   const sheet = read('site.css');
   assert.match(sheet, /--radius:\s*8px/, 'a card is 8px, and the token says so');
