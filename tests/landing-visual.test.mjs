@@ -311,7 +311,7 @@ test('the verification command types itself, with the whole line kept for no-scr
 
 test('the dev server stays inside the landing tree, even on loopback', () => {
   const src = fs.readFileSync(new URL('../scripts/landingserve.mjs', import.meta.url), 'utf8');
-  assert.match(src, /startsWith\(root\)/, 'a URL that escapes the root is refused');
+  assert.match(src, /rootWithSep/, 'a URL that escapes the root is refused');
   assert.match(src, /writeHead\(403\)/, 'with forbidden, not a leak');
   assert.match(src, /includes\('\\0'\)/, 'null bytes never reach the join');
   assert.match(src, /\\\.\\\./, 'and neither does a parent step');
