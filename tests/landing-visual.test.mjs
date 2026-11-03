@@ -309,12 +309,12 @@ test('the verification command types itself, with the whole line kept for no-scr
   assert.match(css, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.typewriter \{[^}]*animation: none/s, 'and instantly for motion-sensitive readers');
 });
 
-test('the dev server stays inside the landing tree, even on loopback', () => {
+test('the dev server serves the whitelist and nothing else, even on loopback', () => {
   const src = fs.readFileSync(new URL('../scripts/landingserve.mjs', import.meta.url), 'utf8');
-  assert.match(src, /rootWithSep/, 'a URL that escapes the root is refused');
-  assert.match(src, /writeHead\(403\)/, 'with forbidden, not a leak');
-  assert.match(src, /includes\('\\0'\)/, 'null bytes never reach the join');
-  assert.match(src, /\\\.\\\./, 'and neither does a parent step');
+  assert.match(src, /new Set\(\[/, 'the servable files are named in the code');
+  assert.match(src, /!FILES\.has\(name\)/, 'a name outside the list is refused');
+  assert.match(src, /writeHead\(404\)/, 'as not found, not a leak');
+  assert.match(src, /startsWith\(rootWithSep\)/, 'and the resolved path still cannot leave the root');
 });
 
 test('the download pages read as one column, and the file table says what is true', () => {
