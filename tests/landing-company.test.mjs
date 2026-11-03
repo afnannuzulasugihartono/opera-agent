@@ -91,7 +91,7 @@ test('no page claims invite-only access while sign-up stands open', () => {
   for (const page of ['index.html', 'syarat.html', 'beranda.html']) {
     assert.doesNotMatch(copy(page), /undangan/i, `${page} no longer rations access that is open`);
   }
-  assert.match(copy('index.html'), /Daftar terbuka/, 'the sign-in page says what is true');
+  assert.match(copy('index.html'), /Pendaftaran terbuka/, 'the sign-in page says what is true');
   assert.match(copy('syarat.html'), /Akses terbuka/, 'and so do the terms');
 });
 

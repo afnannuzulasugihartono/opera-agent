@@ -77,7 +77,7 @@ test('the two pages navigate both ways as one site', () => {
 
 test('the auth page says sign-up is open, because it is', () => {
 
-  assert.match(html, /Daftar terbuka/i, 'open sign-up is stated, not rationed');
+  assert.match(html, /Pendaftaran terbuka/i, 'open sign-up is stated, not rationed');
   assert.doesNotMatch(html, /undangan/i, 'no invitation wording remains');
 });
 
