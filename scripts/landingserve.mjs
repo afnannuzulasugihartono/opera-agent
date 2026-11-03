@@ -11,7 +11,7 @@ import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { extname, resolve, sep } from 'node:path';
 
-const root = new URL('../landing/', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1');
+const root = new URL('../landing/', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1').replace(/\//g, sep);
 const rootWithSep = root.endsWith(sep) ? root : root + sep;
 const types = { '.css': 'text/css', '.js': 'text/javascript', '.html': 'text/html; charset=utf-8', '.woff2': 'font/woff2', '.svg': 'image/svg+xml' };
 const port = Number(process.argv[2] || 8777);
@@ -27,8 +27,20 @@ const FILES = new Set([
 ]);
 
 createServer(async (req, res) => {
-  const path = decodeURIComponent((req.url || '/').split('?')[0]);
-  const name = (path === '/' ? 'beranda.html' : path.replace(/^\//, '')).split('/').filter(Boolean).join('/');
+  const raw = (req.url || '/').split('?')[0];
+  // WHY ENCODED CHARACTERS DIE HERE: the whitelist below is matched after decoding, so %2F must die before the match — otherwise /a%2Fb and /a%2fb name the same file and the set answers a question it was never asked.
+  if (/%|\\/.test(raw) || /\0|\.\./.test(raw)) {
+    res.writeHead(403);
+    res.end();
+    return;
+  }
+  const path = decodeURIComponent(raw);
+  const name = path === '/' ? 'beranda.html' : path.replace(/^\//, '');
+  if (!/^[A-Za-z0-9._-]+\/[A-Za-z0-9._-]+\.html$|^[A-Za-z0-9._-]+\.(html|css|js|svg|woff2)$/.test(name)) {
+    res.writeHead(404);
+    res.end();
+    return;
+  }
   if (!FILES.has(name)) {
     res.writeHead(404);
     res.end();
