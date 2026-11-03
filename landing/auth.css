@@ -31,30 +31,7 @@ main.auth { padding-top: 64px; padding-bottom: 96px; }
 }
 
 .brand .eyebrow {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin: 24px 0 16px;
-  color: var(--muted);
-  font-size: 14px;
-}
-
-.brand .eyebrow > span:first-child {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.brand .eyebrow > span:first-child::before {
   display: none;
-}
-
-.brand .eyebrow::before {
-  content: "";
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--brand);
 }
 
 .brand h1 {
