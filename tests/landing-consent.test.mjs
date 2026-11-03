@@ -1,6 +1,6 @@
-// @last-edited: 2026-10-10 UTC+7.
+// @last-edited: 2026-11-03 UTC+7.
 // @title: landing-consent — the OAuth permission screen, and the two defects it removes.
-// @state: 8 locks green; the separate deployment it replaced is still on disk until the production site URL moves.
+// @state: 9 locks green; the separate deployment it replaced is still on disk until the production site URL moves.
 // @dependencies: node:test, node:assert, node:fs.
 
 // The consent screen is the page where a person decides whether an application may drive their browser.
@@ -94,6 +94,10 @@ test('every page link resolves, including on the page that lives in a subdirecto
       return false;
     }
   };
+  // WHY ONE LINK IS NOT A FILE.
+  // The price page is served by the worker at /harga and has no file in landing/, so there is nothing on disk to resolve it to.
+  // The worker test in tests/invoice-worker.test.mjs proves that path answers.
+  const workerPages = new Set(['harga']);
   for (const page of pages) {
     const dir = page.includes('/') ? page.slice(0, page.lastIndexOf('/') + 1) : '';
     const html = read(`landing/${page}`);
@@ -107,6 +111,7 @@ test('every page link resolves, including on the page that lives in a subdirecto
         ? clean.slice(1)
         : path.posix.normalize(dir + clean);
       if (dir) assert.ok(clean.startsWith('/'), `${page} links to ${link}, which resolves against ${dir}`);
+      if (workerPages.has(target)) continue;
       assert.ok(exists(target), `${page} links to ${link}, which resolves to ${target} and does not exist`);
     }
   }
@@ -127,4 +132,11 @@ test('nothing the runtime reads still points at the separate consent deployment'
   }
 
   assert.ok(!fs.existsSync(new URL('oauth-consent/', root)), 'the separate consent deployment is gone from the tree');
+});
+
+test('every page that carries the nav offers the price page', () => {
+  for (const page of ['beranda.html', 'index.html', 'akun.html', 'dashboard.html', 'privasi.html', 'syarat.html', 'unduh.html', 'unduh-berkas.html', 'fitur.html', 'dukungan.html', '404.html', 'oauth/consent.html']) {
+    const nav = read(`landing/${page}`).match(/<nav>[\s\S]*?<\/nav>/)[0];
+    assert.match(nav, /<a href="\/harga"/, `${page} offers the price page`);
+  }
 });
