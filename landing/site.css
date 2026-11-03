@@ -32,6 +32,7 @@
   --accent-strong: #5fe0a5;
   --accent-soft: rgba(62, 207, 142, .12);
   --danger: #ff6b6b;
+  --danger-soft: rgba(255, 107, 107, .12);
   --warn: #f6c969;
   --danger-line: rgba(255, 107, 107, .28);
   --on-fill: #0a0a0a;
