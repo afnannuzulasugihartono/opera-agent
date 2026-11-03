@@ -41,20 +41,23 @@
     <p data-i18n="intro">Ini produk yang dioperasikan sendiri, jadi dukungan paling efektif adalah langkah
     konkret di bawah.</p>
 
-    <h2 data-i18n="nodev.title">Device tidak muncul di Dashboard</h2>
-    <p data-i18n-html="nodev.body">Buka <a href="./dashboard.html">Dashboard</a> dan lihat status tiap device. Jika
+    <details>
+      <summary data-i18n="nodev.title">Device tidak muncul di Dashboard</summary>
+      <p data-i18n="nodev.body">Buka <a href="./dashboard.html">Dashboard</a> dan lihat status tiap device. Jika
     offline, pasangkan ulang lewat kode baru di sana. Jangan biarkan device tak dikenal
     tetap ter-pairing; cabut yang tidak Anda kenal.</p>
-
-    <h2 data-i18n="noext.title">Ekstensi tidak ter-pasang</h2>
-    <p data-i18n-html="noext.body">Ikuti <a href="./unduh.html">Unduh</a>. Jika tombol instalasi otomatis
+    </details>
+    <details>
+      <summary data-i18n="noext.title">Ekstensi tidak ter-pasang</summary>
+      <p data-i18n="noext.body">Ikuti <a href="./unduh.html">Unduh</a>. Jika tombol instalasi otomatis
     diblokir, pakai arsip mentah dan aktifkan mode pengembang, lalu centang browser Anda
     dan tekan <strong>Pasang</strong>. Periksa <em>chrome://extensions</em> dan
     <em>chrome://policy</em>.</p>
-
-    <h2 id="hubungkan" data-i18n="mcp.title">Menghubungkan AI harness (OpenCode, Kilo, ChatGPT, Claude)</h2>
-    <p data-i18n="mcp.server">Server MCP:</p>
-    <div class="copybox">
+    </details>
+    <details>
+      <summary data-i18n="mcp.title">Menghubungkan AI harness (OpenCode, Kilo, ChatGPT, Claude)</summary>
+      <p data-i18n="mcp.server">Server MCP:</p>
+<div class="copybox">
       <pre><code id="mcp-url">https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp</code></pre>
       <button type="button" data-copy="mcp-url" data-i18n="copy">Salin</button>
     </div>
@@ -180,20 +183,21 @@
         });
       }
     </script>
-
-    <h2 data-i18n="session.title">Sesi Anda keluar sendiri</h2>
-    <p data-i18n-html="session.body">Token akses kedaluwarsa sekitar satu jam. Biasanya diperbarui otomatis lewat
+    </details>
+    <details>
+      <summary data-i18n="session.title">Sesi Anda keluar sendiri</summary>
+      <p data-i18n="session.body">Token akses kedaluwarsa sekitar satu jam. Biasanya diperbarui otomatis lewat
     refresh token yang tersimpan; jika refresh ikut gagal, Anda dipulangkan ke
     <a href="./index.html">Masuk</a>. Itu disengaja, bukan kehilangan akun. Riwayat
     perintah tetap ada.</p>
-
-    <h2 data-i18n="privacy.title">Privasi dan data</h2>
-    <p data-i18n-html="privacy.body">Pertanyaan tentang kendali data: semuanya mandiri di halaman
+    </details>
+    <details>
+      <summary data-i18n="privacy.title">Privasi dan data</summary>
+      <p data-i18n="privacy.body">Pertanyaan tentang kendali data: semuanya mandiri di halaman
     <a href="./akun.html">Akun</a> dan <a href="./privasi.html">Privasi</a>.
     Temuan keamanan jangan dibuka sebagai isu publik; laporkan privat lewat tab
     Security di repositori.</p>
-
-  </main>
+    </details>  </main>
 
   <footer>
     <div class="wrap cols">
