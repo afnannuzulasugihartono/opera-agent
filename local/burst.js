@@ -26,7 +26,8 @@ export const BURST_ACTIONS = Object.freeze([
   'scroll',
   'stream_keys',
   'resolve',
-  'wait'
+  'wait',
+  'wait_for_row'
 ]);
 
 // A read-only burst must not bring a window forward.
@@ -53,7 +54,8 @@ const STEP_KEYS = Object.freeze({
   scroll: ['action', 'y', 'end', 'text', 'selector'],
   stream_keys: ['action', 'events'],
   resolve: ['action', 'role', 'name'],
-  wait: ['action', 'text', 'role', 'name', 'absent', 'timeoutMs', 'intervalMs']
+  wait: ['action', 'text', 'role', 'name', 'absent', 'timeoutMs', 'intervalMs'],
+  wait_for_row: ['action', 'role', 'name', 'absent', 'timeoutMs']
 });
 
 const MODIFIERS = new Set(['Control', 'Alt', 'Shift', 'Meta']);
@@ -189,6 +191,19 @@ function normalizeStep(step, index) {
     return { action, events: streamEvents(step.events, where) };
   }
   if (action === 'wait') return waitStep(step, where);
+  if (action === 'wait_for_row') {
+    const out = { action, role: textOf(step.role, `${where} role`), name: textOf(step.name, `${where} name`) };
+    if (step.absent !== undefined) {
+      if (typeof step.absent !== 'boolean') throw new Error(`${where} absent must be true or false`);
+      out.absent = step.absent;
+    }
+    if (step.timeoutMs !== undefined) {
+      const value = Number(step.timeoutMs);
+      if (!Number.isFinite(value) || value < 0) throw new Error(`${where} timeoutMs must be a finite number`);
+      out.timeoutMs = value;
+    }
+    return out;
+  }
 
   const out = { action };
   if (step.y !== undefined) {
@@ -257,39 +272,51 @@ async function runStep(driver, step, results, remaining) {
     return driver.scroll(options);
   }
 
-  const absent = step.absent === true;
-  const options = {
-    timeoutMs: Math.max(0, remaining),
-    ...(step.intervalMs === undefined ? {} : { intervalMs: step.intervalMs })
-  };
-  if (step.text !== undefined) {
-    if (typeof driver.waitForText !== 'function') throw new Error('this driver cannot wait for text');
-    const state = await driver.waitForText(step.text, { ...options, absent });
-    const present = String(state?.text ?? '').includes(step.text);
-    if (present === absent) {
-      throw new Error(`wait for "${step.text}" to ${absent ? 'leave' : 'appear'} timed out`);
-    }
-    return {
-      found: true,
-      present,
-      absent,
-      url: state?.url ?? null,
-      title: state?.title ?? null,
-      textChars: String(state?.text ?? '').length
+  if (step.action === 'wait') {
+    const absent = step.absent === true;
+    const options = {
+      timeoutMs: Math.max(0, remaining),
+      ...(step.intervalMs === undefined ? {} : { intervalMs: step.intervalMs })
     };
+    if (step.text !== undefined) {
+      if (typeof driver.waitForText !== 'function') throw new Error('this driver cannot wait for text');
+      const state = await driver.waitForText(step.text, { ...options, absent });
+      const present = String(state?.text ?? '').includes(step.text);
+      if (present === absent) {
+        throw new Error(`wait for "${step.text}" to ${absent ? 'leave' : 'appear'} timed out`);
+      }
+      return {
+        found: true,
+        present,
+        absent,
+        url: state?.url ?? null,
+        title: state?.title ?? null,
+        textChars: String(state?.text ?? '').length
+      };
+    }
+    return waitForRowStep(driver, step, absent, options);
   }
 
+  if (step.action === 'wait_for_row') {
+    return waitForRowStep(driver, step, step.absent === true, { timeoutMs: Math.max(0, Math.min(remaining, step.timeoutMs ?? remaining)) });
+  }
+
+  throw new Error(`${step.action} is not a step this burst can run`);
+}
+
+function waitForRowStep(driver, step, absent, options) {
   if (typeof driver.waitForRow !== 'function') throw new Error('this driver cannot wait for a row');
-  const waited = await driver.waitForRow({
+  return driver.waitForRow({
     role: step.role,
     name: step.name,
     absent,
     ...options
+  }).then((waited) => {
+    if (waited?.found !== true) {
+      throw new Error(`wait for ${step.role} "${step.name}" to ${absent ? 'leave' : 'appear'} timed out`);
+    }
+    return waited;
   });
-  if (waited?.found !== true) {
-    throw new Error(`wait for ${step.role} "${step.name}" to ${absent ? 'leave' : 'appear'} timed out`);
-  }
-  return waited;
 }
 
 export async function runLocalBurst({ driver, steps, timeoutMs = BURST_MAX_TIMEOUT_MS, now = Date.now }) {
@@ -324,5 +351,10 @@ export async function runLocalBurst({ driver, steps, timeoutMs = BURST_MAX_TIMEO
     }
   }
 
-  return { ok: true, completedSteps: results.length, results, timingMs: Math.max(0, clock() - started) };
+  // WHY A BURST THAT SETTLED TELLS THE LOOK.
+  // A wait step ends on a settled page, and a chord-only stream returns a verdict that it watched the page go quiet.
+  // The look after the burst would settle the same page again, which is one round trip billed twice, so the burst passes the verdict it already has.
+  const settledStep = results.some((entry) => entry.action === 'wait' || entry.action === 'wait_for_row' || (entry.action === 'stream_keys' && entry.result?.settled === true));
+
+  return { ok: true, completedSteps: results.length, results, timingMs: Math.max(0, clock() - started), ...(settledStep ? { settled: true } : {}) };
 }

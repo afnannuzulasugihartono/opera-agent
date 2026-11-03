@@ -1021,8 +1021,29 @@ test('an action that already settled does not pay for a second settle', async ()
   assert.equal(c.driver.calls.filter(([name]) => name === 'settle').length, 0, 'the action settled once, and the page look trusts it');
 });
 
-test('an action settles on the page before looking, not on a timer', async () => {
-  const c = ctx();
+// WHY A WAIT THAT FOUND WHAT IT ASKED FOR DOES NOT LOOK AGAIN.
+// wait_for, wait_for_row and wait_still each settle the page while they look, so the answer they return is already the page as it stands.
+// A wait that ends on found:true paying a second settle before the snapshot is one round trip billed twice, measured at 42.0 ms of 48.1 ms for wait_for on a settled fixture.
+
+test('a wait trusts the settle it already paid', async () => {
+  for (const [name, args] of [
+    ['wait_for', { text: 'Row 7' }],
+    ['wait_for_row', { role: 'row', name: 'Row 7' }],
+    ['wait_still', {}]
+  ]) {
+    const c = ctx();
+    c.driver.waitForText = async () => ({ text: 'Row 7' });
+    c.driver.waitForRow = async () => ({ found: true, rows: [] });
+    c.driver.waitForStill = async () => ({ still: true, quietMs: 120 });
+    const server = createMcpServer(c);
+
+    await server.handle({ jsonrpc: '2.0', id: 37, method: 'tools/call', params: { name, arguments: args } });
+
+    assert.equal(c.driver.calls.filter(([called]) => called === 'settle').length, 0, `${name} settled the page itself, so the look trusts it`);
+  }
+});
+
+test('an action settles on the page before looking, not on a timer', async () => {  const c = ctx();
   const order = [];
   c.driver.settle = async () => { order.push('settle'); return { waitedMs: 1, why: 'quiet' }; };
   c.driver.snapshot = async () => { order.push('snapshot'); return []; };

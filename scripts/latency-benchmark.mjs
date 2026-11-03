@@ -168,6 +168,13 @@ try {
       { action: 'resolve', role: 'row', name: 'Row 5' }
     ]
   })));
+  tools.push(await bench('burst click+wait_row+wait', () => call('browser_burst', {
+    steps: [
+      { action: 'click_row', role: 'row', name: 'Row 9' },
+      { action: 'wait_for_row', role: 'row', name: 'Row 42', timeoutMs: 2000 },
+      { action: 'wait', text: 'Row 42' }
+    ]
+  })));
   for (const t of tools) console.log(line(t.label, t.s));
 } finally {
   session?.close();
