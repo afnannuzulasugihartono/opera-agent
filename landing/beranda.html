@@ -38,7 +38,6 @@
     <section class="hero hero--full">
       <div class="heroGrid">
         <div class="heroCopy">
-          <p class="eyebrow" id="heroEyebrow" data-i18n="hero.eyebrow">Daftar terbuka · Browser automation, under your control</p>
           <h1 data-i18n-html="hero.title">Asisten Anda, di <span class="accent">browser Anda.</span></h1>
           <p class="lede" data-i18n="hero.lede">Jembatan MCP aman ke browser Anda — tanpa eksekusi skrip sembarangan.</p>
           <div class="row" id="ctaOut">
@@ -111,7 +110,6 @@
     <section id="install" class="section reveal">
       <div class="sectionHead">
         <div>
-          <p class="eyebrow" data-i18n="install.eyebrow">Instalasi</p>
           <h2 data-i18n="install.title">Dari prompt ke hasil.</h2>
         </div>
         <p data-i18n-html="install.sub">Unduh. Masuk. Pair. <a href="./unduh.html">Lihat panduan instalasi</a> bila perlu.</p>
@@ -144,7 +142,6 @@
     <section id="model" class="section reveal">
       <div class="split reverse">
         <div>
-          <p class="eyebrow" data-i18n="model.eyebrow">Model</p>
           <h2 data-i18n="model.title">Bawa model Anda.</h2>
           <p class="sub" data-i18n="model.sub">Endpoint dan kunci disimpan di browser Anda, bukan di server kami.</p>
           <dl class="facts">
@@ -188,7 +185,6 @@
     <section id="signin" class="section reveal">
       <div class="sectionHead">
         <div>
-          <p class="eyebrow" data-i18n="signin.eyebrow">MCP</p>
           <h2 data-i18n="signin.title">Hubungkan asisten Anda.</h2>
         </div>
         <p data-i18n="signin.sub">MCP menghubungkan asisten Anda ke browser yang sudah di-pair.</p>
@@ -220,7 +216,6 @@
     <section id="privacy" class="section reveal">
       <div class="sectionHead">
         <div>
-          <p class="eyebrow" data-i18n="privacy.eyebrow">Privasi</p>
           <h2 data-i18n="privacy.title">Data Anda tetap milik Anda.</h2>
         </div>
         <p data-i18n-html="privacy.sub">Model, kunci, dan persetujuan tetap berada di bawah kendali Anda. <a href="./privasi.html">Baca kebijakan privasi</a>.</p>
@@ -248,7 +243,6 @@
     <section id="faq" class="section reveal">
       <div class="sectionHead">
         <div>
-          <p class="eyebrow" data-i18n="faq.eyebrow">FAQ</p>
           <h2 data-i18n="faq.title">Yang perlu diketahui.</h2>
         </div>
         <p data-i18n="faq.sub">Jawaban singkat.</p>
@@ -288,7 +282,6 @@
     "nav.privacy": "Privacy",
     "nav.features": "Features",
     "nav.support": "Support",
-    "hero.eyebrow": "Open signup · Browser automation, under your control",
     "hero.title": "Your assistant, in <span class=\"accent\">your browser.</span>",
     "hero.lede": "A secure MCP bridge to your browser — no reckless script execution.",
     "cta.download": "Get started",
@@ -360,20 +353,15 @@
     "footer.support": "Support",
     "demo.example": "Example",
     "demo.control": "Human control active",
-    "install.eyebrow": "Install",
     "install.panel.title": "Extension panel",
     "install.panel.body": "One device, one account, one key that stays in this browser.",
     "install.panel.one": "A device connected to your account",
     "install.panel.two": "A pairing code valid for ten minutes",
     "install.panel.three": "Every command leaves a status trail",
-    "model.eyebrow": "Model",
-    "signin.eyebrow": "MCP",
     "signin.panel.body": "One endpoint, one grant, one device. The assistant asks, the device runs.",
     "signin.panel.oauth": "OAuth",
     "signin.panel.scope": "openid · email",
-    "privacy.eyebrow": "Privacy",
     "privacy.shot.dt": "Screenshot",
-    "faq.eyebrow": "FAQ",
     "final.title": "Free to use. Bring your own model.",
     "final.sub": "One extension, one account, and full control of your browser."
   }
@@ -397,7 +385,6 @@
     try {
       if (globalThis.localStorage?.getItem('opera-agent-access-token')) {
         document.body.classList.add('signed-in');
-        $('heroEyebrow').textContent = 'Sesi aktif di browser ini';
         $('ctaOut').hidden = true;
         $('ctaIn').hidden = false;
         $('quickTiles').hidden = false;

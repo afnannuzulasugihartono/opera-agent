@@ -87,3 +87,4 @@ __pycache__/
 .agents/
 skills-lock.json
 graphify-out/
+.taste-skill/

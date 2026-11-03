@@ -239,7 +239,7 @@ test('home swaps to member actions on a stored session, and stays put without on
   assert.equal(signed.nodes.ctaOut.hidden, true, 'acquisition actions hide');
   assert.equal(signed.nodes.ctaIn.hidden, false, 'member actions show');
   assert.equal(signed.nodes.quickTiles.hidden, false, 'and the inward tiles show');
-  assert.equal(signed.nodes.heroEyebrow.textContent, 'Sesi aktif di browser ini', 'the eyebrow says what is true');
+  // WHY NO EYEBROW LINE IS ASSERTED: the taste audit removed the label above the headline on the home page, so the session's answer is the member actions and the tiles, not a line of small text.
   const stranger = await run('beranda.html', { stored: {} });
   assert.ok(!stranger.context.document.body.classList.contains('signed-in'), 'no session, no mark');
   assert.equal(stranger.nodes.ctaIn.hidden, true, 'member actions stay hidden');

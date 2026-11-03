@@ -131,6 +131,8 @@ export function createWaits({ cdp, sleep, readState, readRows, read, primitives,
     };
   }
 
+  // WHY ONLY A STILL PAGE IS REPORTED AS SETTLED.
+  // A wait that ran out of budget on a page that never stopped moving has not watched anything settle, and the look after it has to settle for itself.
   async function waitForStill({ timeoutMs = 8000, quietMs = 120, intervalMs = 60, limit = 120, now: clock = now } = {}) {
     const started = clock();
     let previous = null;
@@ -151,7 +153,7 @@ export function createWaits({ cdp, sleep, readState, readRows, read, primitives,
       (state) => state.still,
       { timeoutMs, now: clock }
     );
-    return { still: out.still, ms: out.ms, checks: out.checks, settled: out.checks > 1 };
+    return { still: out.still, ms: out.ms, checks: out.checks, settled: out.still === true && out.checks > 1 };
   }
 
   return { settle, waitForIdle, waitForMutation, waitForText, waitForRow, waitForStill };

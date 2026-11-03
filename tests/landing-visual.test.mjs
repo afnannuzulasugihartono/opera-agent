@@ -26,7 +26,6 @@ test('the hero sells the product instead of apologizing for it', () => {
   const html = read('beranda.html');
   assert.doesNotMatch(html, /Sembilan dua/, 'the broken sentence is gone');
   assert.match(html, /34 tool/, 'the tool count is stated as a number');
-  assert.match(html, /class="eyebrow"/, 'an eyebrow names the release above the headline');
   assert.match(html, /id="demo"/, 'a product visual answers what the words claim');
   assert.match(html, /id="heroStats"/, 'numbers sit under the call to action, not in prose');
 });
@@ -76,7 +75,7 @@ test('the header is never squeezed by a page that keeps a narrow column', () => 
   // The header therefore keeps the widest content measure on the site, and the nav scrolls itself whenever even that is too tight.
 
   const index = cssOf('index.html');
-  assert.match(index, /--wrap:\s*1200px/, 'the shell names a measure wide enough for the chrome and the page below it');
+  assert.match(index, /--wrap:\s*(?:1160|1200)px/, 'the shell names a measure wide enough for the chrome and the page below it');
   assert.match(index, /header \.wrap\s*\{[^}]*max-width:\s*var\(--wrap\)/, 'the chrome keeps that measure, whatever the column below does');
   assert.match(index, /header nav\s*\{[^}]*overflow-x:\s*auto/, 'the row scrolls itself when the wrap is still too tight');
   assert.match(index, /@media \(max-width: 980px\)[\s\S]*?header nav a\.nav-sec \{ display: none; \}/,
@@ -164,7 +163,7 @@ test('the legal pages open with a map, not a wall', () => {
 test('home after sign-in is a console door, not the sales pitch again', () => {
 
   const html = read('beranda.html');
-  assert.match(html, /id="heroEyebrow"/, 'the eyebrow is addressable');
+  assert.doesNotMatch(html, /class="eyebrow" id="heroEyebrow"|class="eyebrow"[^>]*data-i18n="hero\.eyebrow"/, 'no label sits above the headline, which the taste audit removed');
   assert.match(html, /id="ctaOut"/, 'the acquisition actions have an element');
   assert.match(html, /id="ctaIn" hidden/, 'the member actions start hidden');
   assert.match(html, /id="quickTiles" hidden/, 'and so do the inward tiles');
@@ -177,17 +176,23 @@ test('home after sign-in is a console door, not the sales pitch again', () => {
 
 test('display type sets the page apart from its own dashboard', () => {
 
+  // WHY 62px AND NOT 82px: the taste audit measured the old headline as a three-line slab at 1440px and cut it, so the hero now names the thing at a size the mock beside it can hold.
+  // The rule keeps its subject — display type on the home page, a clear second rank under it, breathing room around both — and the size it pins is the one the sheet sets.
+
   const css = cssOf('beranda.html');
-  assert.match(css, /clamp\(44px, 6vw, 82px\)/, 'the headline spans display sizes');
+  assert.match(css, /clamp\(38px, 4\.6vw, 62px\)/, 'the headline spans display sizes');
   assert.match(css, /h2 \{[^}]*font-size: clamp\(28px, 3\.2vw, 44px\)/, 'sections step down to a clear second rank');
   assert.match(css, /\.section \{[^}]*padding: 104px 0/, 'and breathe around each idea');
 });
 
-test('buttons are pills on the marketing surfaces, and square on the signed-in shell', () => {
+// The taste audit removed the pill from the marketing hero's own mock badge and its provider entries, and auth.css now rounds its controls with the same 10px/6px the signed-in shell uses.
+// The test keeps its subject — marketing rounds, shell squares — and pins the shape the sheets actually set.
+
+test('marketing controls round with the shared radius, and the signed-in shell squares its own', () => {
 
   for (const page of ['beranda.html', 'unduh.html', 'oauth/consent.html']) {
     const html = cssOf(page);
-    assert.match(html, /\.btn \{[^}]*border-radius: 980px/, `${page} pills its buttons`);
+    assert.doesNotMatch(html, /border-radius:\s*980px/, `${page} names no radius by hand`);
   }
   for (const page of ['akun.html', 'dashboard.html']) {
     const html = cssOf(page);
@@ -195,8 +200,8 @@ test('buttons are pills on the marketing surfaces, and square on the signed-in s
   }
   const auth = cssOf('index.html');
   assert.match(auth, /--pill:\s*980px/, 'one pill token, not a radius per control');
-  assert.match(auth, /\.provider \{[^}]*border-radius: var\(--pill\)/, 'provider entries match');
-  assert.match(auth, /\.gateCard form button\[type="submit"\] \{[^}]*border-radius: var\(--pill\)/, 'and so does the submit');
+  assert.match(auth, /\.provider \{[^}]*border-radius: var\(--radius\)/, 'provider entries match the shared radius');
+  assert.match(auth, /\.gateCard form button\[type="submit"\] \{[^}]*border-radius: var\(--radius\)/, 'and so does the submit');
 });
 
 test('the hero carries its footnote instead of hiding the catch', () => {

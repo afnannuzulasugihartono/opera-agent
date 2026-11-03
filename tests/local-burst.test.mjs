@@ -106,8 +106,58 @@ test('a ref carries the handle from resolve into the click, never a guessed poin
   assert.deepEqual(driver.calls, [['resolve', 'menuitem', 'Insert'], ['click', null, null, 'opera-7']]);
 });
 
-test('the first failure stops the burst and keeps the steps that finished', async () => {
+// WHY A BURST REPORTS THE SETTLE IT ALREADY PAID.
+// A wait step looks at the page until it stops moving, so a burst that holds one ends on a settled page.
+// Without the verdict the caller settles again before looking, which is one round trip billed twice; a burst of reads has no reason to say it.
+
+test('a burst that held a wait settled the page, and one that did not says nothing', async () => {
+  const waited = fakeDriver();
+  const withWait = normalizeBurst({ steps: [{ action: 'resolve', role: 'row', name: 'Row 1' }, { action: 'wait', text: 'Row 2' }] });
+  const quiet = await runLocalBurst({ driver: waited, steps: withWait.steps, timeoutMs: withWait.timeoutMs });
+  assert.equal(quiet.settled, true, 'the wait looked until the page stopped');
+
+  const reads = fakeDriver();
+  const withoutWait = normalizeBurst({ steps: [{ action: 'resolve', role: 'row', name: 'Row 1' }] });
+  const plain = await runLocalBurst({ driver: reads, steps: withoutWait.steps, timeoutMs: withoutWait.timeoutMs });
+  assert.equal(plain.settled, undefined, 'a burst of reads never claimed the page stopped moving');
+});
+
+test('a row that the click raises, and text that lands, happen in one call', async () => {
   const driver = fakeDriver();
+  const normalized = normalizeBurst({
+    steps: [
+      { action: 'click_row', role: 'button', name: 'Add row' },
+      { action: 'wait_for_row', role: 'row', name: 'Row 101', timeoutMs: 2000 },
+      { action: 'wait', text: 'Row 101' }
+    ]
+  });
+
+  const out = await runLocalBurst({ driver, steps: normalized.steps, timeoutMs: normalized.timeoutMs });
+
+  assert.equal(out.ok, true);
+  assert.equal(out.completedSteps, 3);
+  assert.equal(out.settled, true, 'both waits looked until the page stopped');
+  assert.deepEqual(driver.calls.map(([name]) => name), ['clickRow', 'waitForRow', 'waitForText']);
+});
+
+test('a row that never appears stops the burst where it did', async () => {
+  const driver = fakeDriver();
+  driver.waitForRow = async () => ({ found: false, rows: [] });
+  const normalized = normalizeBurst({
+    steps: [
+      { action: 'click_row', role: 'button', name: 'Add row' },
+      { action: 'wait_for_row', role: 'row', name: 'Row 101', timeoutMs: 500 }
+    ]
+  });
+
+  const out = await runLocalBurst({ driver, steps: normalized.steps, timeoutMs: normalized.timeoutMs });
+
+  assert.equal(out.ok, false);
+  assert.equal(out.failedAt, 1);
+  assert.match(out.error.message, /Row 101/);
+});
+
+test('the first failure stops the burst and keeps the steps that finished', async () => {  const driver = fakeDriver();
   driver.clickRow = async () => { throw new Error('menu is gone'); };
   const normalized = normalizeBurst({
     steps: [

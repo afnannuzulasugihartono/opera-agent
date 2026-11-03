@@ -221,7 +221,7 @@ export const TOOLS = Object.freeze([
   },
   {
     name: 'browser_burst',
-    description: 'Run 1-8 dependent steps on one tab in a single call: click, click_row, hover, press_key, type, append, scroll, stream_keys, resolve, or wait. Steps run in order and the first failure stops the burst, keeping the steps that finished. The page is settled and read once at the end, not after every step, so a menu walk costs one page look instead of four. refFromStep carries a handle from an earlier resolve into a later click, or a point into a later hover; there is no cross-tab step, no navigation, and no script. Use the named tools for upload, download, open_url, or anything that changes which page this is.',
+    description: 'Run 1-8 dependent steps on one tab in a single call: click, click_row, hover, press_key, type, append, scroll, stream_keys, resolve, wait, or wait_for_row. Steps run in order and the first failure stops the burst, keeping the steps that finished. The page is settled and read once at the end, not after every step, so a menu walk costs one page look instead of four. A wait or a wait_for_row step looks until the page stops moving, so click → wait_for_row → wait is one call for a job that used to be three, and the burst passes that settle on instead of paying it again. refFromStep carries a handle from an earlier resolve into a later click, or a point into a later hover; there is no cross-tab step, no navigation, and no script. Use the named tools for upload, download, open_url, or anything that changes which page this is.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -249,7 +249,8 @@ export const TOOLS = Object.freeze([
               end: { type: 'boolean', description: 'scroll to the end' },
               selector: { type: 'string', description: 'scroll this selector into view' },
               absent: { type: 'boolean', description: 'wait for the text or row to leave' },
-              intervalMs: { type: 'number', description: 'gap between wait checks' }
+              intervalMs: { type: 'number', description: 'gap between wait checks' },
+              timeoutMs: { type: 'number', description: 'budget for a wait or wait_for_row step, inside the burst budget' }
             },
             required: ['action']
           }
