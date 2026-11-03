@@ -17,6 +17,13 @@ const port = Number(process.argv[2] || 8777);
 
 createServer(async (req, res) => {
   const path = decodeURIComponent((req.url || '/').split('?')[0]);
+  // WHY THE INPUT IS REFUSED BEFORE THE JOIN: a traversal check after join asks whether the resolved path escaped, and the reviewer who finds it there asks why the hostile input was allowed into the join at all.
+  // Refusing ".." up front kills the class; the startsWith below is the second lock.
+  if (path.includes('\0') || /(?:^|\/)\.\.(?:\/|$)/.test(path)) {
+    res.writeHead(403);
+    res.end();
+    return;
+  }
   const file = join(root, path === '/' ? 'beranda.html' : path);
   // WHY THE GUARD READS LIKE A GATE EVEN ON LOOPBACK: a dev server that resolves a URL into a filesystem path without checking the root is one copied command away from a public one, and the reviewer who finds it there reads it as the habit, not the exposure.
   if (!file.startsWith(root)) {
