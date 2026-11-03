@@ -288,6 +288,21 @@ test('the features read as one numbered column, not as cards', () => {
   assert.match(css, /\.featureList \{[^}]*border-top: 1px solid var\(--line\)/s, 'and a line between each');
 });
 
+test('the download pages read as one column, and the file table says what is true', () => {
+  const hub = read('unduh.html');
+  assert.doesNotMatch(hub, /class="shot"/, 'the hub drops the mock file panel it already states in words');
+  assert.match(hub, /class="btn giant" href="\.\/unduh-berkas\.html"/, 'and keeps one giant door to the files page');
+  assert.match(hub, /<span class="stat-num">/, 'with the counts the code proves');
+
+  const css = cssOf('unduh.html');
+  assert.match(css, /\.hero \{[^}]*grid-template-columns: minmax\(0, 1fr\)/s, 'the hub hero is one column');
+
+  const files = read('unduh-berkas.html');
+  assert.match(files, /<table class="support">/, 'the browser support table is the file table, and it stays');
+  assert.doesNotMatch(files, /SHA-256<\/th>|Ukuran<\/th>/, 'and it claims no size or checksum it cannot hold');
+  assert.match(cssOf('unduh-berkas.html'), /\.support th \{[^}]*border-bottom: 1px solid var\(--line-strong\)/s, 'its head rests on a line, not a shadow');
+});
+
 test('the shared radius is the only radius a control names', () => {
   const sheet = read('site.css');
   assert.match(sheet, /--radius:\s*8px/, 'a card is 8px, and the token says so');
