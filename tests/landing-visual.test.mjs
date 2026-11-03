@@ -252,6 +252,22 @@ test('display type sets the page apart from its own dashboard', () => {
 // The taste audit removed the pill from the marketing hero's own mock badge and its provider entries, and auth.css now rounds its controls with the same 10px/6px the signed-in shell uses.
 // The test keeps its subject — marketing rounds, shell squares — and pins the shape the sheets actually set.
 
+test('a page sheet names no colour of its own', () => {
+  for (const sheet of ['beranda.css', 'auth.css', 'app.css', 'dashboard.css', 'download.css', 'features.css']) {
+    const css = read(sheet);
+    const literals = [...css.matchAll(/#[0-9a-fA-F]{3,8}\b|rgba?\(/g)].map((m) => m[0]);
+    assert.deepEqual(literals, [], `${sheet} reads every colour from a token`);
+  }
+});
+
+test('no page separates two surfaces with a shadow', () => {
+  const sheet = read('site.css');
+  assert.doesNotMatch(sheet, /--shadow/, 'the shadow token is gone');
+  for (const page of pages) {
+    assert.doesNotMatch(cssOf(page), /\.card \{[^}]*box-shadow/, `${page} separates cards with a line`);
+  }
+});
+
 test('the shared radius is the only radius a control names', () => {
   const sheet = read('site.css');
   assert.match(sheet, /--radius:\s*8px/, 'a card is 8px, and the token says so');

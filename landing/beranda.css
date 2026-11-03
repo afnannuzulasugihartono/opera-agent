@@ -104,12 +104,11 @@
 
 .demo {
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--line);
   border-radius: 10px;
   background: var(--surface);
   color: var(--ink);
-  box-shadow: var(--shadow-lift);
-  font-family: var(--font);
+    font-family: var(--font);
 }
 
 .demoBar {
@@ -117,8 +116,8 @@
   align-items: center;
   gap: 12px;
   padding: 12px 15px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.035);
+  border-bottom: 1px solid var(--line);
+  background: var(--surface-2);
 }
 
 .dots {
@@ -131,14 +130,14 @@
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--line-strong);
 }
 
 .dots span:first-child {
-  background: #ff8a7a;
+  background: var(--danger);
 }
 .dots span:nth-child(2) {
-  background: #f6c969;
+  background: var(--warn);
 }
 .dots span:nth-child(3) {
   background: var(--brand);
@@ -149,10 +148,10 @@
   min-width: 0;
   padding: 5px 10px;
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--line);
   border-radius: 7px;
-  background: rgba(0, 0, 0, 0.18);
-  color: rgba(239, 242, 236, 0.56);
+  background: var(--bg);
+  color: var(--muted);
   font-family: var(--mono);
   font-size: 10.5px;
   text-overflow: ellipsis;
@@ -162,9 +161,9 @@
 .mockBadge {
   flex: 0 0 auto;
   padding: 3px 8px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid var(--line);
   border-radius: var(--radius-sm);
-  color: rgba(239, 242, 236, 0.6);
+  color: var(--muted);
   font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.08em;
@@ -180,25 +179,25 @@
   align-items: center;
   gap: 9px;
   margin: 0 0 14px;
-  color: rgba(239, 242, 236, 0.72);
+  color: var(--ink);
   font-size: 12px;
 }
 
 .mockTop .dot {
   background: var(--brand);
-  box-shadow: 0 0 0 3px rgba(62, 207, 142, 0.14);
+  box-shadow: 0 0 0 3px var(--accent-soft);
 }
 
 .mockTop strong {
-  color: #fff;
+  color: var(--ink);
   font-weight: 600;
 }
 
 .mockTop .chip {
   margin-left: auto;
-  border-color: rgba(255, 255, 255, 0.1);
-  background: rgba(62, 207, 142, 0.1);
-  color: #a9edd0;
+  border-color: var(--line);
+  background: var(--accent-soft);
+  color: var(--accent);
 }
 
 .mockCmd {
@@ -207,7 +206,7 @@
   gap: 10px;
   align-items: center;
   padding: 9px 0;
-  border-top: 1px solid rgba(255, 255, 255, 0.07);
+  border-top: 1px solid var(--line);
   font-family: var(--mono);
   font-size: 11.5px;
 }
@@ -223,24 +222,24 @@
   overflow: hidden;
   border: 0;
   background: none;
-  color: #cfe9dd;
+  color: var(--ink);
   font-size: 11.5px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .mockCmd span {
-  color: rgba(239, 242, 236, 0.55);
+  color: var(--muted);
   font-family: var(--font);
   font-size: 11.5px;
   white-space: nowrap;
 }
 
 .mockCmd span.ok {
-  color: #9fe6c8;
+  color: var(--accent);
 }
 .mockCmd span.no {
-  color: #f0b394;
+  color: var(--danger);
 }
 
 .mockFoot {
@@ -250,15 +249,15 @@
   gap: 10px;
   margin-top: 12px;
   padding-top: 12px;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-  color: rgba(239, 242, 236, 0.4);
+  border-top: 1px solid var(--line);
+  color: var(--muted);
   font-size: 10.5px;
 }
 
 .mockFoot code {
   border: 0;
   background: none;
-  color: rgba(239, 242, 236, 0.62);
+  color: var(--muted);
 }
 
 @media (max-width: 940px) {
@@ -345,8 +344,7 @@
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: var(--surface);
-  box-shadow: var(--shadow);
-}
+  }
 
 .installCard .mockBadge {
   border-color: var(--line);
@@ -398,8 +396,7 @@
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: var(--surface);
-  box-shadow: var(--shadow);
-}
+  }
 
 .modelCard .row {
   margin-top: 4px;
@@ -420,42 +417,41 @@
   border-radius: var(--radius);
   background: var(--surface);
   color: var(--ink);
-  box-shadow: var(--shadow-lift);
-}
+  }
 
 .signinPanel .mockFoot {
-  border-color: rgba(255, 255, 255, 0.09);
+  border-color: var(--line);
 }
 
 .signinPanel h3 {
   margin: 0 0 10px;
-  color: #fff;
+  color: var(--ink);
   font-size: 20px;
 }
 
 .signinPanel p {
-  color: rgba(239, 242, 236, 0.62);
+  color: var(--muted);
   font-size: 13.5px;
 }
 
 .signinPanel code {
   display: inline-block;
   margin: 0 0 6px;
-  border-color: rgba(255, 255, 255, 0.1);
-  background: rgba(255, 255, 255, 0.06);
-  color: #b9f0d8;
+  border-color: var(--line);
+  background: var(--surface-2);
+  color: var(--accent);
 }
 
 .signinPanel .facts {
-  color: rgba(239, 242, 236, 0.62);
+  color: var(--muted);
 }
 
 .signinPanel .facts dt {
-  color: rgba(239, 242, 236, 0.42);
+  color: var(--muted);
 }
 
 .signinPanel .facts dd {
-  color: rgba(239, 242, 236, 0.8);
+  color: var(--ink);
 }
 
 /* ── privacy band and FAQ ───────────────────────────────────────────────── */
@@ -555,19 +551,18 @@
   border-radius: var(--radius);
   background: var(--surface);
   color: var(--ink);
-  box-shadow: var(--shadow-lift);
-}
+  }
 
 .finalBand h2 {
   max-width: 12ch;
   margin: 0 0 12px;
-  color: #fff;
+  color: var(--ink);
 }
 
 .finalBand p {
   max-width: 48ch;
   margin: 0 0 24px;
-  color: rgba(239, 242, 236, 0.62);
+  color: var(--muted);
 }
 
 @media (max-width: 640px) {

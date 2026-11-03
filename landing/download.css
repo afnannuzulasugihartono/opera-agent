@@ -50,7 +50,7 @@
   border: 1px solid var(--accent);
   border-radius: var(--radius);
   background: var(--accent);
-  color: #fff;
+  color: var(--on-fill);
   font-size: 19px;
   font-weight: 650;
   letter-spacing: .01em;
@@ -73,7 +73,7 @@
 .btn.giant:hover {
   border-color: var(--accent-strong);
   background: var(--accent-strong);
-  color: #fff;
+  color: var(--on-fill);
 }
 
 .stats {
@@ -149,8 +149,7 @@
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: var(--surface);
-  box-shadow: var(--shadow-lift);
-}
+  }
 
 .shotBar {
   display: flex;
@@ -195,7 +194,7 @@
   height: 38px;
   border-radius: var(--radius);
   background: var(--accent);
-  color: #fff;
+  color: var(--on-fill);
   font-size: 18px;
 }
 
@@ -359,11 +358,11 @@
   margin: 0;
   border-color: var(--accent);
   background: var(--accent);
-  color: #fff;
+  color: var(--on-fill);
   font-size: 14px;
 }
 
-.browser .btn:hover { background: var(--accent-strong); border-color: var(--accent-strong); color: #fff; }
+.browser .btn:hover { background: var(--accent-strong); border-color: var(--accent-strong); color: var(--on-fill); }
 
 /* WHY details and not a select: a select fires navigation on change, hides its choices from the keyboard and from the page's own text, and needs script to restore the closed state on load. */
 
@@ -433,7 +432,7 @@
   padding: 3px 10px;
   border-radius: var(--radius-sm);
   background: var(--accent);
-  color: #fff;
+  color: var(--on-fill);
   font-size: 10px;
   font-weight: 650;
   letter-spacing: .04em;

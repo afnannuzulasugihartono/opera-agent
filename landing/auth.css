@@ -85,8 +85,7 @@ main.auth { padding-top: 64px; padding-bottom: 96px; }
 
 .gateCard {
   padding: 30px;
-  box-shadow: var(--shadow);
-}
+  }
 
 .gateCard h2 {
   margin: 0 0 8px;
@@ -141,7 +140,7 @@ main.auth { padding-top: 64px; padding-bottom: 96px; }
   border: 1px solid var(--accent);
   border-radius: var(--radius);
   background: var(--accent);
-  color: #fff;
+  color: var(--on-fill);
   font: inherit;
   font-size: 15px;
   font-weight: 600;

@@ -453,7 +453,7 @@ test('the footer closes on the same ground every page sits on', () => {
 
 test('the shell is sized by the window, not by a number of pixels', () => {
   assert.match(css, /body:has\(main\.console\) \{[^}]*height: 100dvh/, 'the page is the window');
-  assert.match(css, /body:has\(main\.console\) \{[^}]*background: #0c0e11/, 'and the window behind the console is the console, not the paper');
+  assert.match(css, /body:has\(main\.console\) \{[^}]*background: var\(--bg\)/, 'and the window behind the console is the console, not a second palette');
   assert.match(css, /main\.console \{[^}]*flex: 1/, 'the console takes the space the chrome leaves');
   assert.match(css, /main\.console \{[^}]*min-height: 0/, 'and can shrink to nothing when the window does');
   assert.match(css, /\.layout \{[^}]*min-height: 0/, 'the layout can shrink, so the grid inside it can too');
