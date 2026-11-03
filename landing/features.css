@@ -99,8 +99,8 @@ main.wrap { padding-top: 68px; padding-bottom: 96px; }
 
 .featureCard.wide {
   grid-column: 1 / -1;
-  background: var(--ink-panel);
-  color: var(--panel-text);
+  background: var(--surface);
+  color: var(--ink);
   border-color: rgba(255, 255, 255, .08);
   box-shadow: var(--shadow-lift);
 }
@@ -189,8 +189,8 @@ main.wrap { padding-top: 68px; padding-bottom: 96px; }
   margin: 0;
   padding: 52px 46px;
   border-radius: var(--radius);
-  background: var(--ink-panel);
-  color: var(--panel-text);
+  background: var(--surface);
+  color: var(--ink);
   box-shadow: var(--shadow-lift);
 }
 
