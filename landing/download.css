@@ -59,6 +59,22 @@
   text-align: left;
   text-decoration: none;
   transition: background .2s var(--ease), border-color .2s var(--ease);
+  animation: giant-breathe 0.6s var(--ease) 0.2s backwards;
+}
+
+@keyframes giant-breathe {
+  from { transform: scale(1); }
+  50% { transform: scale(1.015); }
+  to { transform: scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn.giant { animation: none; }
+}
+
+.btn.giant:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--accent-soft);
 }
 
 .btn.giant::after {
@@ -395,5 +411,39 @@ table.support th {
 table.support td.yes { color: var(--accent); }
 table.support td.no { color: var(--muted); }
 table.support tr:last-child td { border-bottom: 0; }
+
+.typewriter {
+  display: inline-block;
+  overflow: hidden;
+  white-space: pre;
+  vertical-align: bottom;
+}
+
+.typewriter.live {
+  animation: type-ch 2.4s steps(120) forwards;
+}
+
+@keyframes type-ch {
+  from { max-width: 0; }
+  to { max-width: 100%; }
+}
+
+.typewriter + .cursor {
+  display: inline-block;
+  width: 7px;
+  height: 13px;
+  background: var(--accent);
+  vertical-align: baseline;
+  animation: cursor-blink 1s steps(2, start) infinite;
+}
+
+@keyframes cursor-blink {
+  to { visibility: hidden; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .typewriter { animation: none; white-space: pre-wrap; }
+  .typewriter + .cursor { display: none; }
+}
 
 .meta { color: var(--muted); font-size: 13px; }

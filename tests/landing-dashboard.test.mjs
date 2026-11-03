@@ -81,7 +81,8 @@ test('the hash marks the section being read, and nothing else does', () => {
   assert.match(html, /link\.removeAttribute\('aria-current'\)/, 'and unmarks the rest');
   assert.match(html, /section\.classList\.toggle\('active'/, 'and shows that section alone');
 
-  assert.doesNotMatch(html, /IntersectionObserver/, 'no second source of truth competes with the hash');
+  assert.doesNotMatch(html, /setAttribute\('aria-current', 'true'\)[\s\S]{0,400}IntersectionObserver/, 'no observer decides what is current');
+  assert.doesNotMatch(html, /IntersectionObserver[\s\S]{0,400}setAttribute\('aria-current', 'true'\)/, 'seen state never marks the rail');
 });
 
 test('the dashboard re-reads the marker instead of reading it once', () => {
@@ -436,6 +437,13 @@ test('the console uses the screen, the prose keeps its measure', () => {
 // The reader asked for it twice: the table was still raw, and the sidebar was not where a sidebar belongs.
 // Measured in their own browser: the console was a 1200px column floating in a 1455px window, so the rail sat 160px in from the edge, and the table pane stood 148px tall while the window had room for twice that.
 // Cline and OpenCode, measured side by side in Chrome, are both an app shell: the sidebar is the window's left column, flush to the edge and full height, and the content beside it takes what is left.
+
+test('the dashboard numbers count up to what the code proves, and never on their own', () => {
+  const html = read('dashboard.html');
+  assert.match(html, /data-count="/, 'the figures carry the number they will reach');
+  assert.match(html, /IntersectionObserver/, 'and they start only when seen');
+  assert.match(html, /prefers-reduced-motion/, 'or not at all for motion-sensitive readers');
+});
 
 test('the sidebar is the window\'s left column, not a column in the middle of it', () => {
   assert.match(css, /\.layout \{[^}]*grid-template-columns: 220px minmax\(0, 1fr\)/, 'the rail is the first column and the content takes the rest');

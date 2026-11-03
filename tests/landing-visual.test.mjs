@@ -180,6 +180,14 @@ test('the hero carries exactly one filled action, and it is the download', () =>
   assert.deepEqual(filledIn('ctaIn'), ['./dashboard.html'], 'a member is offered exactly one filled action, the dashboard');
 });
 
+test('the giant door answers the eye once, and keyboard visitors get the same answer', () => {
+  const sheet = read('download.css');
+  assert.match(sheet, /@keyframes giant-breathe/, 'the door breathes on arrival');
+  assert.match(sheet, /\.btn\.giant \{[^}]*animation: giant-breathe 0\.6s var\(--ease\) 0\.2s backwards/s, 'once, and backwards so it starts from still');
+  assert.match(sheet, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.btn\.giant \{[^}]*animation: none/s, 'and still for motion-sensitive readers');
+  assert.match(sheet, /\.btn\.giant:focus-visible \{[^}]*box-shadow: 0 0 0 3px var\(--accent-soft\)/s, 'while a keyboard ring names it');
+});
+
 test('the hero states each number once', () => {
 
   const hero = read('beranda.html').match(/<section class="hero[^"]*">[\s\S]*?<\/section>/)[0];
@@ -283,6 +291,22 @@ test('a disclosure opens smoothly, and instantly where it cannot', () => {
   assert.match(sheet, /\.faqList details,[\s\S]*?\{[^}]*display: grid/s, 'a question is a row that can stretch');
   assert.match(sheet, /grid-template-rows: auto 0fr/, 'and it opens from zero rows');
   assert.match(sheet, /\[open\][\s\S]*?\{[^}]*grid-template-rows: auto 1fr/s, 'to the full row when open');
+});
+
+test('the current door arrives by sliding, not by appearing', () => {
+  const sheet = read('site.css');
+  assert.match(sheet, /header nav a\[aria-current="page"\][^\{]*\{[^}]*background-size: 100% 1px/s, 'the line spans the link and stays there');
+  assert.match(sheet, /header nav a\[aria-current="page"\][^\{]*\{[^}]*animation: nav-line-in/s, 'and grows once when the page lands');
+  assert.match(sheet, /@keyframes nav-line-in/, 'from zero to full, then done');
+});
+
+test('the verification command types itself, with the whole line kept for no-script readers', () => {
+  const html = read('unduh-berkas.html');
+  assert.match(html, /<span class="typewriter" data-type="/, 'the line carries the text it types');
+  assert.match(html, /<noscript>/, 'and a still copy stands where the script cannot run');
+  const css = cssOf('unduh-berkas.html');
+  assert.match(css, /\.typewriter\.live \{[^}]*animation: type-ch [^;]*steps\(/s, 'one piece at a time');
+  assert.match(css, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.typewriter \{[^}]*animation: none/s, 'and instantly for motion-sensitive readers');
 });
 
 test('the download pages read as one column, and the file table says what is true', () => {
