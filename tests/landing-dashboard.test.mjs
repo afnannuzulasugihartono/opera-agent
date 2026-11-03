@@ -667,7 +667,7 @@ test('the rail scrolls itself, because a list of tables is longer than a window'
 
 test('the active rail item is filled, not a shade of paper', () => {
   assert.match(css, /\.rail a\[aria-current="true"\] \{[^}]*background: var\(--accent\)/, 'the current item carries the accent');
-  assert.match(css, /\.rail a\[aria-current="true"\] \{[^}]*color: var\(--on-fill, #fff\)/, 'and reads in an ink that answers the fill — white on paper, dark on the brand green');
+  assert.match(css, /\.rail a\[aria-current="true"\] \{[^}]*color: var\(--on-fill\)/, 'and reads in an ink that answers the fill — dark on the brand green');
 });
 
 test('the row count on a filled rail row is readable', () => {
@@ -740,21 +740,15 @@ test('the rail count cannot wipe the mark it rides beside', () => {
   assert.doesNotMatch(html, /querySelector\('\.rail a\[href="#device"\]'\)\.textContent/, 'writing the link itself would delete the mark');
 });
 
-// WHY THE CONSOLE RE-POINTS THE CORE TOKENS AT ALL.
-// The shared sheet's components read var(--paper), var(--surface) and var(--ink) directly, so a dark canvas cannot be expressed with new tokens alone.
-// The site's rule says a page may add a token and never override a core one, so this is the one deliberate exception, scoped to the two signed-in surfaces.
+// WHY THE CONSOLE DECLARES NO PALETTE OF ITS OWN.
+// The whole site now sits on one dark canvas, so the console has nothing to re-point: its old scoped dark scale existed only because a paper site carried a dark app inside it.
 
-test('the console declares its own dark scale, and the site keeps its own', () => {
-  assert.match(app, /body\.app-dark \{/, 'the app pages name the dark scale');
-
-  for (const token of ['--paper', '--surface', '--ink', '--muted', '--line', '--accent']) {
-    assert.match(app, new RegExp(`body\\.app-dark \\{[^}]*${token}\\s*:`), `${token} is re-pointed for the console, and nowhere else`);
-  }
-  assert.match(app, /--ink-panel|--panel-text/, 'and the dark scale reuses the language .panelDark already speaks');
-  assert.match(app, /--accent:\s*#3ecf8e|--accent:\s*var\(--brand\)/, 'the accent is the site\'s own brand green, which reads on a dark canvas');
-
+test('the console declares no palette of its own', () => {
+  assert.doesNotMatch(app, /body\.app-dark/, 'the shell reads the shared canvas');
+  assert.doesNotMatch(app, /--paper\s*:/, 'and redefines no core token');
+  assert.doesNotMatch(read('dashboard.html'), /class="app-dark"/, 'the page names no dark scale');
   assert.doesNotMatch(css, /:root\s*\{/, 'the page sheet still never opens the shared block');
-  for (const token of ['--paper', '--surface', '--ink', '--line', '--accent', '--radius', '--shadow']) {
+  for (const token of ['--bg', '--surface', '--ink', '--line', '--accent', '--radius']) {
     assert.doesNotMatch(css, new RegExp(`${token}\\s*:`), `dashboard.css restates no core token, ${token} least of all`);
   }
   assert.doesNotMatch(app, /:root\s*\{/, 'and neither does the shared app sheet');
@@ -762,29 +756,28 @@ test('the console declares its own dark scale, and the site keeps its own', () =
 
 test('the chrome of an app page answers in the same ink as its canvas', () => {
   const html = read('dashboard.html');
-  assert.match(html, /<body class="app-dark">/, 'the console names itself dark');
-  assert.match(app, /body\.app-dark header/, 'the shared header answers in it');
-  assert.match(app, /body\.app-dark footer/, 'and so does the footer');
-  assert.match(app, /body\.app-dark header nav \.navCta \{/, 'the sign-in pill cannot stay white ink on a dark canvas');
-  assert.match(app, /body\.app-dark \.brandMark rect \{/, 'and the brand mark answers in light, not in the canvas it sits on');
-  assert.match(app, /body\.app-dark \.chip\.warn \{/, 'the one tint site.css hardcodes is re-pointed too');
+  assert.doesNotMatch(html, /class="app-dark"/, 'the console names no scale of its own');
+  const sheet = read('site.css');
+  assert.match(sheet, /header \{[^}]*background: rgba\(10, 10, 10, \.86\)/, 'the shared header answers in the canvas');
+  assert.match(sheet, /header nav \.navCta \{[^}]*color: var\(--on-fill\)/, 'and the sign-in action takes the ink its fill asks for');
+  assert.match(sheet, /\.chip\.warn \{[^}]*color: var\(--warn\)/, 'and the one tint the shared sheet names is a token');
 });
 
 test('a primary action on a dark canvas carries dark ink', () => {
-  assert.match(app, /body\.app-dark \.btn\.primary \{/, 'the filled action is re-inked');
-  assert.match(app, /body\.app-dark \.btn\.primary \{[^}]*color: #06120d/, 'white on the brand green is 1.9:1, so the console inks it dark');
+  const sheet = read('site.css');
+  assert.match(sheet, /\.btn\.primary \{[^}]*color: var\(--on-fill\)/, 'the filled action is re-inked');
 });
 
 // Measured live on the dark canvas: the checklist tick still painted #fff on the brand green, and the danger button painted it on the light salmon.
 // Both read at under 2.4:1, which is a tick nobody can see.
 
 test('no white ink sits on a bright fill', () => {
-  for (const sheet of [css, app]) {
+  for (const sheet of [css, app, read('site.css')]) {
     assert.doesNotMatch(sheet, /background: var\(--(?:accent|danger)\)[^}]*color: #fff/, 'a bright fill takes the ink its canvas asks for');
     assert.doesNotMatch(sheet, /background: var\(--accent\)[^}]*color: #fff/, 'and the accent fill least of all');
   }
-  assert.match(css, /\.checklist li\.done \.box \{[^}]*color: var\(--on-fill, #fff\)/, 'the readiness tick answers the canvas');
-  assert.match(css, /\.btn\.danger:hover \{[^}]*color: var\(--on-fill, #fff\)/, 'and so does the destructive hover');
+  assert.match(css, /\.checklist li\.done \.box \{[^}]*color: var\(--on-fill\)/, 'the readiness tick answers the canvas');
+  assert.match(read('site.css'), /\.btn\.danger:hover \{[^}]*color: var\(--on-fill\)/, 'and so does the destructive hover');
 });
 
 // WHY THE SHELL IS SQUARED AND NOT PILLED.
@@ -793,11 +786,9 @@ test('no white ink sits on a bright fill', () => {
 // The numbers below are the benchmarks' own, measured in the reader's browser.
 
 test('the shell is squared to the benchmark, not pill-shaped', () => {
-  assert.match(css, /main\.console \{[^}]*--app-radius: 10px/, 'a card is 10px, the radius Cline measures');
-  assert.match(css, /main\.console \{[^}]*--app-radius-sm: 6px/, 'and a control is 6px, the radius Cline measures');
-  assert.match(app, /body\.app-dark \{[^}]*--radius: 10px/, 'the account page answers in the same shape');
-  assert.match(app, /body\.app-dark \{[^}]*--radius-sm: 6px/, 'controls included');
-  assert.match(app, /body\.app-dark \.btn \{[^}]*border-radius: var\(--radius-sm\)/, 'and the shared pill never reaches the shell');
+  assert.match(css, /main\.console \{[^}]*--app-radius: var\(--radius\)/, 'a card reads the shared radius');
+  assert.match(css, /main\.console \{[^}]*--app-radius-sm: var\(--radius-sm\)/, 'and so does a control');
+  assert.match(read('site.css'), /\.btn \{[^}]*border-radius: var\(--radius\)/, 'the account page answers in the same shape');
 });
 
 test('the account nav label is a readable label, and the rule that sets it reaches the page', () => {
