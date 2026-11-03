@@ -24,22 +24,22 @@
 }
 
 /*
- * WHY the glow is gone: a radial wash behind the headline was the brochure default the redesign audit named, and the taste rules bar gradients.
- * The hero's weight now comes from the mock beside it and the space around both.
+ * WHY the hero is one column: measured against opencode.ai on 2026-11-03, its hero is a single wide measure with the product visual below, and a two-column split at 1160px shrinks the headline to 15 characters a line, which breaks a sentence nobody chose to break.
  */
 
 .heroGrid {
   display: grid;
-  grid-template-columns: minmax(0, 1.02fr) minmax(0, 0.98fr);
-  gap: clamp(32px, 5vw, 72px);
-  align-items: center;
+  grid-template-columns: minmax(0, 1fr);
+  gap: clamp(32px, 4vw, 56px);
+  align-items: start;
+  max-width: 900px;
 }
 
 .heroCopy h1 {
-  max-width: 15ch;
+  max-width: 20ch;
   margin: 0 0 18px;
-  font-size: clamp(38px, 4.6vw, 62px);
-  line-height: 1.02;
+  font-size: clamp(40px, 6vw, 76px);
+  line-height: .98;
   letter-spacing: -0.045em;
   font-weight: 680;
 }
@@ -488,43 +488,49 @@
   }
 }
 
-.faq {
+/*
+ * WHY THE QUESTIONS OPEN IN PLACE: a flat two-column list made a reader scan every answer to find one, and opencode.ai puts its own questions behind a disclosure that needs no script.
+ */
+
+.faqList {
   display: grid;
-  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
-  margin: 0;
   border-top: 1px solid var(--line);
 }
 
-.faq dt,
-.faq dd {
-  margin: 0;
-  padding: 18px 0;
+.faqList details {
   border-bottom: 1px solid var(--line);
 }
 
-.faq dt {
-  padding-right: 24px;
+.faqList summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 0;
   color: var(--ink);
-  font-size: 14.5px;
+  font-size: 16px;
   font-weight: 600;
+  cursor: pointer;
+  list-style: none;
 }
 
-.faq dd {
+.faqList summary::-webkit-details-marker { display: none; }
+
+.faqList summary::after {
+  content: "+";
+  flex: 0 0 auto;
   color: var(--muted);
-  font-size: 14px;
+  font-family: var(--mono);
+  font-size: 16px;
 }
 
-@media (max-width: 640px) {
-  .faq {
-    grid-template-columns: 1fr;
-  }
-  .faq dt {
-    padding-bottom: 2px;
-    border-bottom: 0;
-  }
-  .faq dd {
-    padding-top: 0;
-  }
+.faqList details[open] summary::after { content: "−"; }
+
+.faqList details p {
+  margin: 0 0 18px;
+  max-width: 62ch;
+  color: var(--muted);
+  font-size: 15px;
 }
 
 /* ── signed-in quick tiles and final band ───────────────────────────────── */

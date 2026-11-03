@@ -240,11 +240,11 @@ test('home after sign-in is a console door, not the sales pitch again', () => {
 
 test('display type sets the page apart from its own dashboard', () => {
 
-  // WHY 62px AND NOT 82px: the taste audit measured the old headline as a three-line slab at 1440px and cut it, so the hero now names the thing at a size the mock beside it can hold.
+  // WHY 76px AND NOT 82px: the taste audit measured the old headline as a three-line slab at 1440px and cut it, so the hero now names the thing at a size the measure beneath it can hold.
   // The rule keeps its subject — display type on the home page, a clear second rank under it, breathing room around both — and the size it pins is the one the sheet sets.
 
   const css = cssOf('beranda.html');
-  assert.match(css, /clamp\(38px, 4\.6vw, 62px\)/, 'the headline spans display sizes');
+  assert.match(css, /clamp\(40px, 6vw, 76px\)/, 'the headline spans display sizes');
   assert.match(css, /h2 \{[^}]*font-size: clamp\(28px, 3\.2vw, 44px\)/, 'sections step down to a clear second rank');
   assert.match(css, /\.section \{[^}]*padding: 104px 0/, 'and breathe around each idea');
 });
@@ -266,6 +266,16 @@ test('no page separates two surfaces with a shadow', () => {
   for (const page of pages) {
     assert.doesNotMatch(cssOf(page), /\.card \{[^}]*box-shadow/, `${page} separates cards with a line`);
   }
+});
+
+test('the home hero speaks in one column, and the questions answer in place', () => {
+  const css = cssOf('beranda.html');
+  assert.match(css, /\.heroGrid \{[^}]*grid-template-columns: minmax\(0, 1fr\)/s, 'the hero is one column, the way opencode.ai reads');
+  assert.match(css, /\.heroCopy h1 \{[^}]*max-width: 20ch/s, 'and the headline may run wider than a half column');
+  const html = read('beranda.html');
+  assert.match(html, /<details>\s*<summary data-i18n="faq\.cost\.dt">/, 'a question opens and closes without script');
+  assert.equal((html.match(/<details>/g) || []).length, 5, 'the five questions are all there');
+  assert.doesNotMatch(html, /<dl class="facts faq">/, 'and the old flat list is gone');
 });
 
 test('the shared radius is the only radius a control names', () => {
