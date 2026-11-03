@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-21 UTC+7.
+// @last-edited: 2026-11-03 UTC+7.
 // @title: hygiene — runtime properties, the canonical comment form, allowlist paths, logic gates.
 // @state: The memoized read path, the comment form over every file in the tree, allowlist paths and four rule gates are locked.
 // @dependencies: node:test, strict, promises, path, child_process, url, focus-gate, format-comments, extension-source.

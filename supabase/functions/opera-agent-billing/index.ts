@@ -1,7 +1,7 @@
-// @last-edited: 2026-10-26 UTC+7.
-// @title: opera-agent-billing — the invoice a customer opens, and the callback that closes it.
-// @state: quotes a delivery into an amount, opens one payable transaction per invoice, serves the page in the state the row is in, closes it from a signed notification or the provider's own answer, records a transfer by hand, and opens a new link when the customer asks.
-// @dependencies: edge-runtime, supabase-js, ../_shared/billing.js, ../_shared/invoice-page.js, ../_shared/cors.js, ../_shared/edge-log.js.
+// @last-edited: 2026-11-03 UTC+7.
+// @title: opera-agent-billing — the invoice a customer opens, the public price page, and the callback that closes it.
+// @state: quotes a delivery into an amount, opens one payable transaction per invoice, serves the public price page and takes a public order without an operator, serves the invoice page in the state the row is in, closes it from a signed notification or the provider's own answer, records a transfer by hand, and opens a new link when the customer asks.
+// @dependencies: edge-runtime, supabase-js, ../_shared/billing.js, ../_shared/invoice-page.js, ../_shared/price-page.js, ../_shared/cors.js, ../_shared/edge-log.js.
 
 // WHY THIS FUNCTION EXISTS.
 // The product sells a delivered client-month, and a sale that nobody can pay for is a demo.
@@ -32,6 +32,7 @@ import "@supabase/edge-runtime";
 import { createEdgeLog } from "../_shared/edge-log.js";
 import { CORS_DEFAULT_ORIGINS, resolveAllowedOrigin } from "../_shared/cors.js";
 import { invoicePage } from "../_shared/invoice-page.js";
+import { priceOrder, priceOrderOutcome, pricePage } from "../_shared/price-page.js";
 import {
   amountFor,
   invoiceToken,
@@ -153,12 +154,16 @@ async function readBody(req: Request): Promise<Record<string, unknown>> {
 
 const PAGE_POLICY = "default-src 'none'; style-src 'unsafe-inline'; form-action 'self'; base-uri 'none'; frame-ancestors 'none'";
 
-function pageHeaders(cors: Record<string, string>): Record<string, string> {
+// WHY ONE PAGE MAY BE INDEXED AND THE OTHER MAY NOT.
+// The invoice page carries a token in its query string, so a crawler that followed it would hold somebody's invoice.
+// The price page carries no token and is meant to be found, so it keeps the policy and drops the no-referrer rule.
+
+function pageHeaders(cors: Record<string, string>, { indexable = false } = {}): Record<string, string> {
   return {
     ...cors,
     "content-type": "text/html; charset=utf-8",
     "cache-control": "no-store",
-    "referrer-policy": "no-referrer",
+    "referrer-policy": indexable ? "strict-origin-when-cross-origin" : "no-referrer",
     "x-content-type-options": "nosniff",
     "content-security-policy": PAGE_POLICY
   };
@@ -168,6 +173,22 @@ async function priceList(supabase: BillingClient): Promise<PriceRow[]> {
   const { data, error } = await supabase.from("opera_price_list").select("kind, unit, amount_cents, currency, active");
   if (error) throw new Error(`price list unreadable: ${error.message}`);
   return data || [];
+}
+
+// WHY THE PUBLIC ORDER IS LIMITED BY THE ROWS IT WRITES.
+// The action takes no token, so a script can post as fast as the function answers.
+// The order table is the only place that knows how many were written, so the count of the last hour is the limit: far above a day of real buyers, low enough that a loop cannot fill the table before an operator looks.
+
+const PRICE_ORDER_LIMIT = 30;
+const PRICE_ORDER_WINDOW_MS = 60 * 60 * 1000;
+
+// WHY THE INVOICE LINK IS BUILT IN ONE PLACE.
+// The operator's action and the public order both answer with the page that opens the invoice, and a second spelling of the query would drift.
+// BILLING_PAGE_URL names the site when it is set; the function's own URL is the fallback for a deployment that never set it.
+
+function invoiceLink(invoiceId: string, token: string): string {
+  const base = BILLING_PAGE_URL || `${SUPABASE_URL}/functions/v1/opera-agent-billing`;
+  return `${base}?invoice_id=${encodeURIComponent(invoiceId)}&token=${token}`;
 }
 
 async function readInvoice(invoiceId: string, token: string): Promise<InvoiceRow> {
@@ -624,6 +645,11 @@ Deno.serve(async (req: Request) => {
   const url = new URL(req.url);
   try {
     if (req.method === "GET") {
+      if (url.searchParams.get("page") === "harga") {
+        const supabase = await db();
+        const prices = await priceList(supabase);
+        return new Response(pricePage(prices), { status: 200, headers: pageHeaders(cors, { indexable: true }) });
+      }
       const invoiceId = url.searchParams.get("invoice_id") || "";
       const token = url.searchParams.get("token") || "";
       if (!invoiceId || !token) return json({ error: "invoice_id and token are required" }, 400, cors);
@@ -640,6 +666,96 @@ Deno.serve(async (req: Request) => {
     }
     if (req.method === "POST") {
       const body = await readBody(req);
+      // WHY A PRICE ORDER NEEDS NO OPERATOR TOKEN.
+      // The page is for a person who has nothing yet: no account, no invoice, no link.
+      // The body is the only thing a stranger controls, so the price, the month and the invoice id are derived here and never read from the request.
+      if (body.action === "price-order") {
+        const supabase = await db();
+        const prices = await priceList(supabase);
+        const values = {
+          firm: String(body.firm || ""),
+          contact: String(body.contact || ""),
+          kind: String(body.kind || "")
+        };
+        const order = priceOrder(values, prices);
+        if (!order.ok) {
+          return new Response(pricePage(prices, { error: order.error, values }), {
+            status: 400,
+            headers: pageHeaders(cors, { indexable: true })
+          });
+        }
+        const { data: placed, error: placedError } = await supabase
+          .from("opera_price_orders")
+          .select("id")
+          .eq("firm", order.customerId)
+          .eq("period", order.period)
+          .maybeSingle();
+        if (placedError) throw new HttpError(500, `price orders unreadable: ${placedError.message}`);
+        // WHY ONLY A NEW ORDER IS COUNTED.
+        // A buyer who submits twice is one order, so the limit counts the rows written in the last hour and not the requests received.
+        // The count is read before the row is written, so a burst of simultaneous orders passes the limit by the width of the burst.
+        if (!placed) {
+          const { count, error: counted } = await supabase
+            .from("opera_price_orders")
+            .select("id", { count: "exact", head: true })
+            .gte("created_at", new Date(Date.now() - PRICE_ORDER_WINDOW_MS).toISOString());
+          if (counted) throw new HttpError(500, `price orders unreadable: ${counted.message}`);
+          if ((count || 0) >= PRICE_ORDER_LIMIT) {
+            return new Response(pricePage(prices, { error: "terlalu banyak order, coba lagi nanti", values }), {
+              status: 429,
+              headers: pageHeaders(cors, { indexable: true })
+            });
+          }
+        }
+        const invoiceId = `${order.customerId}:${order.period}`;
+        try {
+          // WHY THE INVOICE IS READ BEFORE THE ORDER IS WRITTEN.
+          // The order row holds the plan and the price that were agreed, and the invoice holds what it charged.
+          // So an invoice that already exists is returned as it is, the row keeps the price it carries, and only the contact follows the buyer.
+          const { data: current } = await supabase.from("opera_invoices").select("status").eq("id", invoiceId).maybeSingle();
+          // WHY THE ORDER ROW DECIDES WHETHER THE INVOICE IS HANDED OUT.
+          // The invoice id is the firm name and the month, so a stranger can guess the id of an invoice the operator opened.
+          // A token is the right to read an invoice, so it is minted only for an invoice this page's own order row backs.
+          const outcome = priceOrderOutcome({ placed: Boolean(placed), invoiceExists: Boolean(current) });
+          if (outcome.action === "refuse") {
+            return new Response(pricePage(prices, { error: outcome.error, values }), {
+              status: 409,
+              headers: pageHeaders(cors, { indexable: true })
+            });
+          }
+          if (outcome.action === "return") {
+            const { error: contactError } = await supabase
+              .from("opera_price_orders")
+              .update({ contact: order.contact })
+              .eq("firm", order.customerId)
+              .eq("period", order.period);
+            if (contactError) throw new HttpError(500, `the order could not be updated: ${contactError.message}`);
+            const token = invoiceToken(invoiceId, BILLING_SECRET);
+            return new Response(null, { status: 303, headers: { location: invoiceLink(invoiceId, token), ...cors } });
+          }
+          // WHY THE LAST SUBMIT DECIDES THE PLAN UNTIL AN INVOICE EXISTS.
+          // Nothing has been charged yet, so the plan and the price the buyer just chose are the ones written and billed.
+          // Once an invoice exists the row is frozen, so a later submit never re-prices a month that was already offered.
+          const { error: orderError } = await supabase.from("opera_price_orders").upsert({
+            firm: order.customerId,
+            period: order.period,
+            contact: order.contact,
+            kind: order.kind,
+            amount_cents: order.amountCents,
+            invoice_id: invoiceId
+          }, { onConflict: "firm,period" });
+          if (orderError) throw new HttpError(500, `the order could not be written: ${orderError.message}`);
+          const out = await createInvoice({ customer_id: order.customerId, period: order.period, lines: order.lines });
+          return new Response(null, { status: 303, headers: { location: invoiceLink(out.invoice.id, out.token), ...cors } });
+        } catch (error) {
+          const why = error instanceof Error ? error.message : String(error);
+          log.error("PRICE_ORDER_FAILED", why);
+          return new Response(pricePage(prices, { error: "invoice belum bisa dibuat, coba lagi", values }), {
+            status: 500,
+            headers: pageHeaders(cors, { indexable: true })
+          });
+        }
+      }
       // WHY A NOTIFICATION IS RECOGNISED BY THE ORDER AND THE STATUS CODE.
       // Recognition used to demand a signature field, so a provider payload whose signature arrived under a different name fell through to "unknown action" and left no trace anywhere.
       // What makes a body a notification is what the provider says happened; whether it is believed is a separate question, answered by the signature.
@@ -757,9 +873,7 @@ Deno.serve(async (req: Request) => {
         }
         if (!lines.length) return json({ error: "no deliveries to charge for" }, 400, cors);
         const out = await createInvoice({ customer_id: customerId, period, lines });
-        const base = BILLING_PAGE_URL || `${SUPABASE_URL}/functions/v1/opera-agent-billing`;
-        const link = `${base}?invoice_id=${encodeURIComponent(out.invoice.id)}&token=${out.token}`;
-        return json({ invoice: out.invoice, url: link }, 200, cors);
+        return json({ invoice: out.invoice, url: invoiceLink(out.invoice.id, out.token) }, 200, cors);
       }
       return json({ error: "unknown action" }, 400, cors);
     }

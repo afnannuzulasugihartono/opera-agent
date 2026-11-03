@@ -1,6 +1,6 @@
-// @last-edited: 2026-10-26 UTC+7.
-// @title: _worker — serves the invoice page from the product's own domain, because the function's domain refuses HTML.
-// @state: proxies /invoice to the billing function with its query and body, relabels the page, and rewrites the refresh redirect back to /invoice; every other path is the asset server's.
+// @last-edited: 2026-11-03 UTC+7.
+// @title: _worker — serves the invoice and price pages from the product's own domain, because the function's domain refuses HTML.
+// @state: proxies /invoice and /harga to the billing function with their query and body, relabels the pages, rewrites the function's redirects back to /invoice, and leaves every other path to the asset server.
 // @dependencies: the deployed opera-agent-billing function, env.ASSETS.
 
 // WHY THIS FILE EXISTS.
@@ -10,14 +10,15 @@
 
 // WHY THE WORKER IS THE WHOLE SITE ONCE IT EXISTS.
 // A Pages project has one _worker.js, and every request passes through it.
-// So this worker owns /invoice and hands every other request to the asset server unchanged: the site is one directory, and the page is one path in it.
+// So this worker owns /invoice and /harga and hands every other request to the asset server unchanged: the site is one directory, and the pages are two paths in it.
 
 // WHY THE PAGE'S HEADERS ARE SET HERE AND NOT READ FROM THE FUNCTION.
 // The function sets them, and the gateway keeps the policy but replaces the content type with text/plain.
 // A page that carries a token must not be cached, must not leak the link as a referrer, and must not be framed or indexed, so the worker states all of it on the answer the browser actually receives.
 
 const FUNCTION_URL = 'https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-billing';
-const PAGE_PATH = '/invoice';
+const INVOICE_PATH = '/invoice';
+const PRICE_PATH = '/harga';
 const PAGE_POLICY = "default-src 'none'; style-src 'unsafe-inline'; form-action 'self'; base-uri 'none'; frame-ancestors 'none'";
 
 const PAGE_HEADERS = Object.freeze({
@@ -30,13 +31,26 @@ const PAGE_HEADERS = Object.freeze({
   'content-security-policy': PAGE_POLICY
 });
 
+// WHY THE PRICE PAGE IS ALLOWED TO BE INDEXED.
+// The invoice page carries a capability in its query string, so a crawler that followed it would hold somebody's invoice.
+// The price page carries no token and is meant to be found, so it keeps the policy and drops the two headers that hide a page.
+
+const PRICE_HEADERS = Object.freeze({
+  'content-type': 'text/html; charset=utf-8',
+  'cache-control': 'no-store',
+  'referrer-policy': 'strict-origin-when-cross-origin',
+  'x-content-type-options': 'nosniff',
+  'x-frame-options': 'DENY',
+  'content-security-policy': PAGE_POLICY
+});
+
 // WHY ONLY TWO HEADERS CROSS TO THE FUNCTION.
 // The page link is a capability in the query string, and the function needs the method, the query, the body and its type to answer.
 // A browser's cookies and origin headers belong to the site, not to this invoice, and forwarding them would hand the function a session it has no use for.
 
-async function askFunction(request) {
+async function askFunction(request, search) {
   const target = new URL(FUNCTION_URL);
-  target.search = new URL(request.url).search;
+  target.search = search === undefined ? new URL(request.url).search : search;
   const headers = new Headers();
   for (const name of ['accept', 'content-type']) {
     const value = request.headers.get(name);
@@ -67,7 +81,7 @@ function pageLocation(location) {
   const fn = new URL(FUNCTION_URL);
   const ours = location.startsWith('/') || at.origin === fn.origin;
   if (!ours) return '';
-  return `${PAGE_PATH}${at.search}`;
+  return `${INVOICE_PATH}${at.search}`;
 }
 
 // WHY THE BODY DECIDES WHAT THE PAGE IS, NOT THE CONTENT TYPE.
@@ -80,9 +94,24 @@ const looksLikePage = (body) => /^\s*(<!doctype html|<html[\s>])/i.test(body);
 // The customer cannot do anything with the worker's error, and the worker cannot say whether the invoice changed.
 // So a failure says only that the page could not be loaded and that nothing has changed, and the reason goes to the Pages log.
 
-function failure() {
-  const html = '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Invoice</title><style>body{font:16px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif;max-width:44rem;margin:1.5rem auto;padding:0 1rem;color:#111}</style></head><body><h1>The invoice could not be loaded just now.</h1><p>Nothing has changed. Try again in a moment.</p></body></html>';
-  return new Response(html, { status: 502, headers: PAGE_HEADERS });
+const FAILURES = Object.freeze({
+  [INVOICE_PATH]: ['The invoice could not be loaded just now.', 'Nothing has changed. Try again in a moment.'],
+  [PRICE_PATH]: ['Halaman harga tidak bisa dimuat sekarang.', 'Coba lagi sebentar lagi. Tidak ada yang berubah.']
+});
+
+function failure(path = INVOICE_PATH) {
+  const [heading, body] = FAILURES[path] || FAILURES[INVOICE_PATH];
+  const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Invoice</title><style>body{font:16px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif;max-width:44rem;margin:1.5rem auto;padding:0 1rem;color:#111}</style></head><body><h1>${heading}</h1><p>${body}</p></body></html>`;
+  return new Response(html, { status: 502, headers: path === PRICE_PATH ? PRICE_HEADERS : PAGE_HEADERS });
+}
+
+function redirectAnswer(upstream) {
+  const location = upstream.headers.get('location') || '';
+  const headers = new Headers({ 'cache-control': 'no-store' });
+  const rewritten = pageLocation(location);
+  if (rewritten) headers.set('location', rewritten);
+  else if (location) headers.set('location', location);
+  return new Response(null, { status: upstream.status, headers });
 }
 
 async function serveInvoice(request) {
@@ -93,14 +122,7 @@ async function serveInvoice(request) {
     console.error('INVOICE_PROXY_FAILED', error instanceof Error ? error.message : String(error));
     return failure();
   }
-  if (upstream.status >= 300 && upstream.status < 400) {
-    const location = upstream.headers.get('location') || '';
-    const headers = new Headers({ 'cache-control': 'no-store' });
-    const rewritten = pageLocation(location);
-    if (rewritten) headers.set('location', rewritten);
-    else if (location) headers.set('location', location);
-    return new Response(null, { status: upstream.status, headers });
-  }
+  if (upstream.status >= 300 && upstream.status < 400) return redirectAnswer(upstream);
   const body = await upstream.text();
   const type = upstream.headers.get('content-type') || '';
   if (type.includes('text/html') || looksLikePage(body)) {
@@ -117,10 +139,29 @@ async function serveInvoice(request) {
   });
 }
 
+// WHY THE PRICE PAGE ASKS A DIFFERENT QUESTION.
+// The function has one URL for both pages, so the page is named in the query for a GET and in the body for a POST.
+// A GET carries no body, and a POST that names the page in the body is the form the buyer submitted; neither path needs a second endpoint.
+
+async function servePrice(request) {
+  let upstream;
+  try {
+    upstream = await askFunction(request, request.method === 'GET' ? '?page=harga' : undefined);
+  } catch (error) {
+    console.error('PRICE_PROXY_FAILED', error instanceof Error ? error.message : String(error));
+    return failure(PRICE_PATH);
+  }
+  if (upstream.status >= 300 && upstream.status < 400) return redirectAnswer(upstream);
+  const body = await upstream.text();
+  if (!looksLikePage(body)) return failure(PRICE_PATH);
+  return new Response(body, { status: upstream.status, headers: PRICE_HEADERS });
+}
+
 export default {
   async fetch(request, env) {
     const path = new URL(request.url).pathname;
-    if (path === PAGE_PATH || path === `${PAGE_PATH}/`) return serveInvoice(request);
+    if (path === INVOICE_PATH || path === `${INVOICE_PATH}/`) return serveInvoice(request);
+    if (path === PRICE_PATH || path === `${PRICE_PATH}/`) return servePrice(request);
     return env.ASSETS.fetch(request);
   }
 };

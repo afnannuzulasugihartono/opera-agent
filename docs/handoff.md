@@ -1,9 +1,9 @@
-@last-edited: 2026-10-26 UTC+7.
+@last-edited: 2026-11-03 UTC+7.
 @related: [AGENTS.md](../AGENTS.md)
 
 # handoff
 
-What is true now, and what to do next. Cap 150 lines. Spent detail: git history.
+What is true now, and what to do next. Cap 190 lines. Spent detail: git history.
 
 ## State
 
@@ -31,12 +31,12 @@ What is true now, and what to do next. Cap 150 lines. Spent detail: git history.
   fails a missing standard file, a pull request that skips CI, a CRLF file, or a dead path.
 - **The browser drive depends on nothing but the page it drives.** A ref dies with its
   document, its route or the extension epoch, so the drive re-finds what it clicks.
-- Gates: `npm test`, `npm run check` - 31 primitives, 183 runtime safety files, 1561 unit
+- Gates: `npm test`, `npm run check` - 31 primitives, 185 runtime safety files, 1659 unit
   tests, green.
 - **The local driver is modular, and its tests are too.** `local/primitives.js` assembles the
   modules; `tools.js` holds the MCP surface as data; the tests are one file per module.
 - Production, measured against the live database: 76 `opera_*` functions (65
-  `SECURITY DEFINER`), 20 `opera_*` tables, and **9 deployed edge functions**.
+  `SECURITY DEFINER`), 22 `opera_*` tables, and **9 deployed edge functions**.
 - **Somebody can pay for a delivered client-month.** `invoice_create` prices manifest rows and
   returns a signed link; it is the one door for a per-delivery bill and a plan month.
 - **The everyday Chrome is drivable two ways.** `OPERA_LOCAL_TRANSPORT=bridge` runs the whole
@@ -78,6 +78,10 @@ What is true now, and what to do next. Cap 150 lines. Spent detail: git history.
 - **A deploy is a dispatch, not a push.** [`deploy-site.yml`](../.github/workflows/deploy-site.yml)
   publishes `landing/` with `wrangler pages deploy` after the unit and syntax gates; a push
   that does not deploy leaves CI green and the old build live. The Vercel CLI cannot deploy.
+- **The price page is served from the product's domain, not from a file.** `landing/_worker.js`
+  proxies `/harga` to `opera-agent-billing` because the shared function domain answers HTML as
+  `text/plain`; the page is rendered by `_shared/price-page.js` and proved by
+  `tests/price-page.test.mjs` (12 tests) and `tests/invoice-worker.test.mjs` (13 tests).
 - `landing/_headers` restates the `vercel.json` policy per path, with HSTS, a locked-down
   Permissions-Policy, same-origin COOP and CORP, and `X-Frame-Options: DENY`.
 
@@ -89,6 +93,21 @@ What is true now, and what to do next. Cap 150 lines. Spent detail: git history.
 - **Every MCP caller drives the one device named by `DEVICE_NAME`, and sign-up is open**, so
   the function admits the static token or a named account and nobody else, and a test bars
   any wider rule.
+- **The price page was driven live on 2026-11-03.** `GET https://opera-agent.pages.dev/harga`
+  answered `200` with `text/html; charset=utf-8` and no `x-robots-tag`, and the body held
+  `Rp 99.000`, `Rp 249.000` and `Rp 10.000` with no `<script` and no token. `POST` with
+  `action=price-order` answered `303` to
+  `/invoice?invoice_id=Firma%20Uji%20Harga%3A2026-11&token=…`, and that invoice page answered
+  `200` with `Rp 99.000` and a Midtrans sandbox pay link. The order wrote one row with
+  `amount_cents` `9900000` and the invoice read `status open`, `currency IDR`, `paid_at` null.
+  The QRIS rail is not live, so no rupiah closed it and the invoice stayed open. The same
+  order submitted again answered the same `Location` and left one order row and one invoice
+  row. The unpaid test order row and its unpaid test invoice were then deleted, and
+  `opera_price_orders` is empty again. A second drive the same day: an invoice that no
+  order row backs — one written by hand, the way the operator's own invoice looks — was
+  refused with `409`, the page carried the one Indonesian line and no token, and no order
+  row was written. A fresh order after that answered `303` and its resubmit answered the
+  same `Location`, so the refusal took nothing away from the buyer who places one.
 
 ## Still open
 
@@ -113,9 +132,10 @@ What is true now, and what to do next. Cap 150 lines. Spent detail: git history.
     tables through `SECURITY DEFINER` `opera_konsol_*` readers; a write side is next.
 10. **The update endpoint answers in a nested query string.** Ask with
     `?id=ofgemipoobcnbjkfanmofjbdonjapmgl`.
-11. **The price is decided and applied.** `plan.pilot` Rp 99.000 up to 15 client-months,
-    `plan.firm` Rp 249.000 up to 50, extra Rp 10.000; invoiced after the first accepted batch,
-    and none has arrived.
+11. **The price is decided and applied, and the public page sells it.** `plan.pilot` Rp 99.000
+    up to 15 client-months, `plan.firm` Rp 249.000 up to 50, extra Rp 10.000; the operator path
+    still invoices after the first accepted batch, and the public page at
+    `opera-agent.pages.dev/harga` invoices the moment the order arrives.
 12. **A bridged window on the taskbar is restored, not refused.** `tabs.activate` reads the
     window first and sends `state: 'normal'` with the focus ask when it is minimized, because
     `focused: true` alone was measured to leave it there; the live suite proves the restore.
@@ -129,6 +149,22 @@ What is true now, and what to do next. Cap 150 lines. Spent detail: git history.
     link opened attempt 2 while attempt 1 answered `expire`, its late expire notification cleared
     nothing, and a payment through attempt 2 closed `Uji Sandbox:2027-09` with its method and
     transaction id. No real money has moved: production is `[UNVERIFIED]`.
+14. **The public price page is live.** `GET /harga` renders from `opera_price_list`, and
+    `POST /harga` takes `action=price-order` with no operator token: it writes one
+    `opera_price_orders` row, opens the invoice `${firm}:${period}`, and answers `303`. Thirty new
+    orders a rolling hour is the limit, counted before the row is written, so a burst of
+    simultaneous orders passes it by the width of the burst. The operator's query is:
+    `select o.created_at, o.firm, o.contact, o.kind, o.amount_cents, i.status, i.paid_at from
+    opera_price_orders o join opera_invoices i on i.id = o.invoice_id order by o.created_at desc;`.
+    An unpaid test order is removed with two statements, the row and its unpaid invoice:
+    `delete from opera_price_orders where firm = '...' and period = '...';` and
+    `delete from opera_invoices where id = '...' and paid_at is null;`. A paid row stays, because
+    it is the money's record. An invoice that no order row backs is never handed to a buyer:
+    the page answers `409` and the operator sends that link. An invoice nobody pays stays open:
+    the pay link it carries expires after 24 hours, and the operator closes the invoice by hand
+    with `settle-manual`; nothing writes the `void` status today. The known limit: two
+    firms with the same name in one month share one invoice. The live function and the live site
+    came from the branch ref, so a deploy from `main` drops the page until the pull request merges.
 
 ## CI
 
