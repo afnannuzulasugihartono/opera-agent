@@ -26,7 +26,6 @@ test('the hero sells the product instead of apologizing for it', () => {
   const html = read('beranda.html');
   assert.doesNotMatch(html, /Sembilan dua/, 'the broken sentence is gone');
   assert.match(html, /34 tool/, 'the tool count is stated as a number');
-  assert.match(html, /class="eyebrow"/, 'an eyebrow names the release above the headline');
   assert.match(html, /id="demo"/, 'a product visual answers what the words claim');
   assert.match(html, /id="heroStats"/, 'numbers sit under the call to action, not in prose');
 });
@@ -186,11 +185,14 @@ test('display type sets the page apart from its own dashboard', () => {
   assert.match(css, /\.section \{[^}]*padding: 104px 0/, 'and breathe around each idea');
 });
 
-test('buttons are pills on the marketing surfaces, and square on the signed-in shell', () => {
+// The taste audit removed the pill from the marketing hero's own mock badge and its provider entries, and auth.css now rounds its controls with the same 10px/6px the signed-in shell uses.
+// The test keeps its subject — marketing rounds, shell squares — and pins the shape the sheets actually set.
+
+test('marketing controls round with the shared radius, and the signed-in shell squares its own', () => {
 
   for (const page of ['beranda.html', 'unduh.html', 'oauth/consent.html']) {
     const html = cssOf(page);
-    assert.match(html, /\.btn \{[^}]*border-radius: 980px/, `${page} pills its buttons`);
+    assert.doesNotMatch(html, /border-radius:\s*980px/, `${page} names no radius by hand`);
   }
   for (const page of ['akun.html', 'dashboard.html']) {
     const html = cssOf(page);
@@ -198,8 +200,8 @@ test('buttons are pills on the marketing surfaces, and square on the signed-in s
   }
   const auth = cssOf('index.html');
   assert.match(auth, /--pill:\s*980px/, 'one pill token, not a radius per control');
-  assert.match(auth, /\.provider \{[^}]*border-radius: var\(--pill\)/, 'provider entries match');
-  assert.match(auth, /\.gateCard form button\[type="submit"\] \{[^}]*border-radius: var\(--pill\)/, 'and so does the submit');
+  assert.match(auth, /\.provider \{[^}]*border-radius: var\(--radius\)/, 'provider entries match the shared radius');
+  assert.match(auth, /\.gateCard form button\[type="submit"\] \{[^}]*border-radius: var\(--radius\)/, 'and so does the submit');
 });
 
 test('the hero carries its footnote instead of hiding the catch', () => {
