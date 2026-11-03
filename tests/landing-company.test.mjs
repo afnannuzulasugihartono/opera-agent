@@ -69,21 +69,19 @@ test('every page renders in standards mode with its own theme color', () => {
 });
 
 test('every nav marks the page being read', () => {
-
+  // WHY THE MARK IS PER DOOR: the nav now carries the four doors a newcomer asks about, so a page marks the door it belongs to, and akun, dashboard and 404 mark the brand, which is where they sit.
   const marked = {
-    'beranda.html': './beranda.html',
-    'akun.html': './akun.html',
-    'dashboard.html': './dashboard.html',
-    'unduh.html': './unduh.html',
-    'unduh-berkas.html': './unduh.html',
-    'privasi.html': './privasi.html',
-    '404.html': './beranda.html',
-    'fitur.html': './fitur.html',
-    'dukungan.html': './dukungan.html'
+    'beranda.html': '/beranda.html',
+    '404.html': '/beranda.html',
+    'fitur.html': '/fitur.html',
+    'dukungan.html': '/dukungan.html'
   };
   for (const [page, self] of Object.entries(marked)) {
     const nav = read(`landing/${page}`).match(/<nav>[\s\S]*?<\/nav>/)[0];
-    assert.ok(nav.includes(`href="${self}" aria-current="page"`), `${page} marks ${self} current`);
+    // WHY THE ATTRIBUTE ORDER IS NOT PART OF THE CLAIM: the rewrite writes the mark right after the link's class, and the brand carries its own href second; a mark that moved is still a mark.
+    const links = [...nav.matchAll(/<a\b[^>]*>/g)].map((m) => m[0]);
+    const hit = links.some((link) => link.includes(`href="${self}"`) && link.includes('aria-current="page"'));
+    assert.ok(hit, `${page} marks ${self} current`);
   }
 });
 

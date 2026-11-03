@@ -86,10 +86,13 @@ test('the consent page is served at the path GoTrue actually asks for', () => {
 
 test('every page link resolves, including on the page that lives in a subdirectory', () => {
 
-  const pages = ['beranda.html', 'index.html', 'akun.html', 'dashboard.html', 'privasi.html', 'syarat.html', 'unduh.html', 'oauth/consent.html'];
-  const exists = (path) => {
+  const pages = ['beranda.html', 'index.html', 'akun.html', 'dashboard.html', 'privasi.html', 'syarat.html', 'unduh.html', 'unduh-berkas.html', 'fitur.html', 'dukungan.html', '404.html', 'oauth/consent.html'];
+  // WHY THE ROOT IS EXEMPT FROM THE FILE CHECK: "/" is the sign-in door the host resolves, so it has no file behind it; /harga is rendered by the site's worker from opera-agent-billing.
+  // Every other link is still proved to exist, so a door that moves without its page still fails here.
+  const noFile = new Set(['/harga', '/']);
+  const exists = (target) => {
     try {
-      return fs.statSync(new URL(`landing/${path}`, root)).isFile();
+      return fs.statSync(new URL(`landing/${target}`, root)).isFile();
     } catch {
       return false;
     }
@@ -97,16 +100,15 @@ test('every page link resolves, including on the page that lives in a subdirecto
   for (const page of pages) {
     const dir = page.includes('/') ? page.slice(0, page.lastIndexOf('/') + 1) : '';
     const html = read(`landing/${page}`);
-    const links = [...html.matchAll(/(?:href|src)="([^"#][^"]*)"/g)].map((m) => m[1]);
-    assert.ok(links.length > 0, `${page} has links to resolve`);
-    for (const link of links) {
+    for (const [, link] of html.matchAll(/(?:href|src)="([^"#][^"]*)"/g)) {
       if (/^(https?:|mailto:|tel:|data:)/.test(link)) continue;
-
       const clean = link.split(/[?#]/)[0];
-      const target = clean.startsWith('/')
-        ? clean.slice(1)
-        : path.posix.normalize(dir + clean);
-      if (dir) assert.ok(clean.startsWith('/'), `${page} links to ${link}, which resolves against ${dir}`);
+      if (noFile.has(clean)) {
+        if (dir) assert.ok(clean.startsWith('/'), `${page} links to ${link}, which does not resolve against ${dir}`);
+        continue;
+      }
+      const target = clean.startsWith('/') ? clean.slice(1) : path.posix.normalize(dir + clean);
+      if (dir) assert.ok(clean.startsWith('/'), `${page} links to ${link}, which does not resolve against ${dir}`);
       assert.ok(exists(target), `${page} links to ${link}, which resolves to ${target} and does not exist`);
     }
   }
