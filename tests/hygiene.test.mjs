@@ -378,7 +378,6 @@ test('no module under extension/, lib/, scripts/ or supabase/functions/ exports 
 const STAGED_FOR_THE_OPEN_TASK = new Map([
   ['lib/ax-menu.js', 'Task 9 of docs/superpowers/plans/2026-10-14-docs-paper-plan.md: the AX road reads live row names to compare against the label map'],
   ['supabase/functions/_shared/docs-ui-map.js', 'Task 9 of docs/superpowers/plans/2026-10-14-docs-paper-plan.md: the map the AX road is compared against'],
-  ['supabase/functions/_shared/price-page.js', 'Task 3 of docs/superpowers/plans/2026-11-03-public-pricing-page.md: the billing function calls it for the public page and the public order'],
 ]);
 
 test('a module with its own code is reached by the product, not only by its own test', async () => {

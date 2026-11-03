@@ -1,6 +1,6 @@
-// @last-edited: 2026-10-26 UTC+7.
+// @last-edited: 2026-11-03 UTC+7.
 // @title: billing — what a delivery is worth, and what makes a payment claim true.
-// @state: the amount of an invoice, the two signatures, the attempt id a retry gets, the one rule that says whether a payment link is payable, and the rule that an undelivered month is not charged.
+// @state: the amount of an invoice, the two signatures, the attempt id a retry gets, the one rule that says whether a payment link is payable, the rule that an undelivered month is not charged, and the public price page and order.
 // @dependencies: node:test, strict, node:crypto, ../supabase/functions/_shared/billing.js.
 
 // WHY THESE RULES ARE TESTED AND NOT ASSUMED.
@@ -533,7 +533,7 @@ test('the operator link names the page host, and falls back to the function', ()
     'the setting is read once and its trailing slash cannot double the page path');
   assert.match(fn, /const base = BILLING_PAGE_URL \|\| `\$\{SUPABASE_URL\}\/functions\/v1\/opera-agent-billing`/,
     'a deployment without the setting still answers with a link that works');
-  assert.match(fn, /const link = `\$\{base\}\?invoice_id=\$\{encodeURIComponent\(out\.invoice\.id\)\}&token=\$\{out\.token\}`/,
+  assert.match(fn, /return `\$\{base\}\?invoice_id=\$\{encodeURIComponent\(invoiceId\)\}&token=\$\{token\}`/,
     'the link carries the invoice and the token, encoded');
 });
 
@@ -636,4 +636,19 @@ test('a duplicate client-month is refused inside a plan too', () => {
   const out = planInvoiceLines([...rows, rows[0]], 'plan.pilot', '2026-10');
   assert.equal(out.lines.length, 0);
   assert.match(out.refused[0].reason, /twice/);
+});
+
+// WHY THE PUBLIC BRANCH IS PINNED BY ITS SOURCE.
+// The function runs on Deno where no Node test can call it, so the house rule is the one the operator link already follows: the source is read for the shape the promise needs.
+
+test('the public price page and the public order are there, and the order asks for no token', () => {
+  const fn = fs.readFileSync(new URL('../supabase/functions/opera-agent-billing/index.ts', import.meta.url), 'utf8');
+  assert.match(fn, /url\.searchParams\.get\("page"\) === "harga"/, 'the page is named in the query');
+  assert.match(fn, /pricePage\(prices\)/, 'the page is rendered from the live price list');
+  assert.match(fn, /priceOrder\(values, prices\)/, 'the rules are the ones the module proves');
+  assert.match(fn, /body\.action === "price-order"/, 'the order is named in the body');
+  assert.match(fn, /from\("opera_price_orders"\)/, 'the order is written');
+  assert.match(fn, /PRICE_ORDER_LIMIT = 30/, 'the rate limit is thirty new orders an hour');
+  const branch = fn.slice(fn.indexOf('body.action === "price-order"'), fn.indexOf('const looksLikeNotification'));
+  assert.doesNotMatch(branch, /BILLING_TOKEN/, 'the public branch never asks for the operator token');
 });
