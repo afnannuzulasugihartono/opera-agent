@@ -492,7 +492,7 @@ const windowMatch = async (tab, driver) => (tab ? String(tab.title ?? '') : page
         const rawGap = Number(args.intervalMs ?? 100);
         const intervalMs = Number.isFinite(rawGap) ? Math.min(5000, Math.max(50, rawGap)) : 100;
         const state = await driver.waitForText(args.text, { timeoutMs, intervalMs });
-        return afterAction(driver, { found: (state.text || '').includes(args.text), ms: Date.now() - started });
+        return afterAction(driver, { found: (state.text || '').includes(args.text), ms: Date.now() - started, settled: true });
       }
       case 'ask_page': {
         const method = String(args.method ?? '');
@@ -502,18 +502,18 @@ const windowMatch = async (tab, driver) => (tab ? String(tab.title ?? '') : page
         return asText({ method, result: await driver.ask(method, askParams(args)) });
       }
       case 'wait_for_row':
-        return afterAction(driver, await driver.waitForRow({
+        return afterAction(driver, { ...await driver.waitForRow({
           role: args.role,
           name: args.name,
           absent: args.absent === true,
           timeoutMs: budgetOf(args.timeoutMs, 10000),
           intervalMs: gapOf(args.intervalMs, 50, 50)
-        }));
+        }), settled: true });
       case 'wait_still':
-        return afterAction(driver, await driver.waitForStill({
+        return afterAction(driver, { ...await driver.waitForStill({
           timeoutMs: budgetOf(args.timeoutMs, 8000),
           quietMs: quietOf(args.quietMs, 120)
-        }));
+        }), settled: true });
       case 'guide':
         return asText(await driver.guide(args.topic));
       case 'list_menus':
