@@ -371,6 +371,7 @@ test('a page that never settles says so instead of pretending', async () => {
 
   assert.equal(out.still, false);
   assert.ok(out.checks >= 5, `a page moving every read is not still (read ${out.checks} times)`);
+  assert.equal(out.settled, false, 'a page that never went quiet did not settle, so the look after it must settle again');
 });
 
 
