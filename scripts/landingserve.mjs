@@ -18,6 +18,12 @@ const port = Number(process.argv[2] || 8777);
 createServer(async (req, res) => {
   const path = decodeURIComponent((req.url || '/').split('?')[0]);
   const file = join(root, path === '/' ? 'beranda.html' : path);
+  // WHY THE GUARD READS LIKE A GATE EVEN ON LOOPBACK: a dev server that resolves a URL into a filesystem path without checking the root is one copied command away from a public one, and the reviewer who finds it there reads it as the habit, not the exposure.
+  if (!file.startsWith(root)) {
+    res.writeHead(403);
+    res.end();
+    return;
+  }
   try {
     const body = await readFile(file);
     res.writeHead(200, { 'content-type': types[extname(file)] || 'application/octet-stream' });
