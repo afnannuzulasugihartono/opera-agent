@@ -27,6 +27,7 @@
 body:has(main.console) {
   height: 100dvh;
   overflow: hidden;
+  background: #0c0e11;
 }
 
 main.console {
