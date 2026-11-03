@@ -123,6 +123,24 @@ test('a payment notification is believed only when the provider signed it, by th
   assert.equal(notificationSignatureValid({ ...notification, signature_key: retired }, key), false, 'an HMAC with the key is not what Midtrans sends');
 });
 
+// WHY A DIGEST THAT ARRIVES AS A NUMBER IS REFUSED, AND NOT RESTORED.
+// The provider sends every field as a string except a digest of only digits, which JSON.parse reads as a double: 15 or 16 digits out of 128, and the tail is gone.
+// Measured live on 2026-11-03: a "still pending" for a QRIS charge carried its signature as a number, was refused, and the invoice stayed open.
+// No reading of that double is provably the provider's digest, so one is never invented to make it pass: restoring it would let a forged body through on a guess.
+// What the test holds is that no bare long number passes, and that the digit text the code base value already carries still does.
+
+test('a signature that arrives as a number is refused, because a double cannot carry the digest', () => {
+  const key = 'SB-Mid-server-test';
+  const notification = { order_id: 'oa-1', status_code: '200', gross_amount: '99000.00' };
+  const digest = providerSignature(notification, key);
+  const hex = BigInt(`0x${digest}`).toString().padStart(digest.length, '0');
+  const asNumber = Number(`0.${hex}`);
+  assert.equal(Number.isSafeInteger(asNumber), false, 'the sample really is the shape the provider sends');
+  assert.equal(notificationSignatureValid({ ...notification, signature_key: asNumber }, key), false, 'a double is not the digest, so it is not believed');
+  assert.equal(notificationSignatureValid({ ...notification, signature_key: digest }, key), true, 'the text the provider printed is the one that passes');
+  assert.equal(notificationSignatureValid({ ...notification, signature_key: 0 }, key), false);
+});
+
 // WHY THE PROVIDER'S FIELD NAME HAS A TEST OF ITS OWN.
 // The first rule read notification.signature while Midtrans sends signature_key, and the test above used the same invented name, so the test agreed with the bug instead of catching it.
 // Measured live: a sandbox payment settled, Midtrans answered PAID, and the invoice stayed open, because the signature arrived in a field this code did not read and the comparison was made against nothing.
