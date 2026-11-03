@@ -420,7 +420,7 @@
   border-radius: var(--radius);
   background: var(--ink-panel);
   color: var(--panel-text);
-  box-shadow: 0 34px 70px -34px rgba(16, 21, 18, 0.65);
+  box-shadow: var(--shadow-lift);
 }
 
 .signinPanel .mockFoot {
@@ -555,7 +555,7 @@
   border-radius: var(--radius);
   background: var(--ink-panel);
   color: var(--panel-text);
-  box-shadow: 0 40px 80px -38px rgba(16, 21, 18, 0.6);
+  box-shadow: var(--shadow-lift);
 }
 
 .finalBand h2 {

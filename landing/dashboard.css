@@ -123,9 +123,9 @@ header nav .navCta[hidden] { display: none; }
 
 .metrics dt {
   color: var(--muted);
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 600;
-  letter-spacing: .08em;
+  letter-spacing: -.01em;
   text-transform: uppercase;
 }
 
@@ -231,9 +231,9 @@ header nav .navCta[hidden] { display: none; }
   margin: 12px 0 4px;
   padding: 0 10px;
   color: var(--muted);
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 600;
-  letter-spacing: .08em;
+  letter-spacing: -.01em;
   text-transform: uppercase;
 }
 
@@ -741,9 +741,9 @@ table.history {
   border-bottom: 1px solid var(--line-strong);
   background: var(--surface);
   color: var(--muted);
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 600;
-  letter-spacing: .08em;
+  letter-spacing: -.01em;
   text-align: left;
   text-transform: uppercase;
   white-space: nowrap;
@@ -845,9 +845,9 @@ table.history {
 .railList .konsolGroup {
   padding: 12px 9px 4px;
   color: var(--muted);
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 600;
-  letter-spacing: .08em;
+  letter-spacing: -.01em;
   text-transform: uppercase;
 }
 
@@ -933,9 +933,9 @@ table.history {
   border-bottom: 1px solid var(--line-strong);
   background: var(--surface-soft);
   color: var(--muted);
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 600;
-  letter-spacing: .08em;
+  letter-spacing: -.01em;
   text-transform: uppercase;
 }
 
@@ -944,7 +944,7 @@ table.history {
  * The mono face belongs to the values, where the shape of the glyph carries meaning.
  */
 
-.konsolGrid th.mono { font-family: var(--font); font-size: 11px; }
+.konsolGrid th.mono { font-family: var(--font); font-size: 13px; }
 
 /*
  * WHY the first column stays: the grid scrolls sideways over a wide table, and once command_id has gone off the left edge a row of ellipses answers nothing.
