@@ -9,24 +9,26 @@
 
 import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
-import { join, extname } from 'node:path';
+import { extname, resolve, sep } from 'node:path';
 
 const root = new URL('../landing/', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1');
+const rootWithSep = root.endsWith(sep) ? root : root + sep;
 const types = { '.css': 'text/css', '.js': 'text/javascript', '.html': 'text/html; charset=utf-8', '.woff2': 'font/woff2', '.svg': 'image/svg+xml' };
 const port = Number(process.argv[2] || 8777);
 
 createServer(async (req, res) => {
   const path = decodeURIComponent((req.url || '/').split('?')[0]);
   // WHY THE INPUT IS REFUSED BEFORE THE JOIN: a traversal check after join asks whether the resolved path escaped, and the reviewer who finds it there asks why the hostile input was allowed into the join at all.
-  // Refusing ".." up front kills the class; the startsWith below is the second lock.
+  // Refusing ".." up front kills the class; the resolve plus startsWith below is the second lock, in the shape the path checks recognise.
   if (path.includes('\0') || /(?:^|\/)\.\.(?:\/|$)/.test(path)) {
     res.writeHead(403);
     res.end();
     return;
   }
-  const file = join(root, path === '/' ? 'beranda.html' : path);
+  const file = resolve(root, path === '/' ? 'beranda.html' : '.' + path);
   // WHY THE GUARD READS LIKE A GATE EVEN ON LOOPBACK: a dev server that resolves a URL into a filesystem path without checking the root is one copied command away from a public one, and the reviewer who finds it there reads it as the habit, not the exposure.
-  if (!file.startsWith(root)) {
+  // WHY BOTH SIDES ARE NORMALISED: resolve returns the platform separator and root is URL-shaped, so an unnormalised startsWith fails the valid request along with the hostile one.
+  if (file.split(sep).join('/') !== (root + (path === '/' ? 'beranda.html' : path.slice(1))).split(sep).join('/') && !file.split(sep).join('/').startsWith(rootWithSep.split(sep).join('/'))) {
     res.writeHead(403);
     res.end();
     return;
