@@ -1,6 +1,6 @@
-// @last-edited: 2026-10-26 UTC+7.
+// @last-edited: 2026-11-03 UTC+7.
 // @title: invoice-worker — the page reaches the browser as a page, and every other path is still the site.
-// @state: the proxy, the relabel, the redirect, the asset fallback, the failure page, and the absence of a secret.
+// @state: the proxy, the relabel, the redirect, the asset fallback, the failure page, the absence of a secret, and the public price page with its order.
 // @dependencies: node:test, node:assert, node:fs, ../landing/_worker.js.
 
 // WHY THE PROXY IS DRIVEN RATHER THAN DEPLOYED AND LOOKED AT.
@@ -180,4 +180,80 @@ test('the worker carries no secret, because a page worker is public code', () =>
   for (const name of ['SERVICE_ROLE', 'MIDTRANS_SERVER_KEY', 'BILLING_TOKEN', 'BILLING_SECRET', 'Bearer ', 'eyJ']) {
     assert.ok(!source.includes(name), `the worker must not name ${name}`);
   }
+});
+
+const PRICE_PAGE = 'https://opera-agent.pages.dev/harga';
+const PRICE_UPSTREAM = 'https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-billing?page=harga';
+
+test('the price page is fetched from the function and answered as an indexable page', async () => {
+  reset(() => new Response('<!doctype html><html lang="id"><body>Pilot Rp 99.000</body></html>', {
+    status: 200,
+    headers: { 'content-type': 'text/plain' }
+  }));
+
+  const response = await worker.fetch(new Request(PRICE_PAGE), env);
+
+  assert.equal(calls.length, 1, 'one question to the function, not a second one');
+  assert.equal(calls[0].url, PRICE_UPSTREAM, 'the function hears which page it must render');
+  assert.equal(calls[0].init.method, 'GET');
+  assert.equal(response.status, 200);
+  assert.equal(response.headers.get('content-type'), 'text/html; charset=utf-8');
+  assert.equal(response.headers.get('cache-control'), 'no-store');
+  assert.equal(response.headers.get('x-robots-tag'), null, 'the price page may be indexed');
+  assert.match(response.headers.get('content-security-policy'), /default-src 'none'/);
+  assert.match(response.headers.get('content-security-policy'), /form-action 'self'/);
+  assert.match(await response.text(), /Rp 99\.000/);
+});
+
+test('an order posted from the price page reaches the function with its body', async () => {
+  reset(() => new Response(null, {
+    status: 303,
+    headers: { location: 'https://opera-agent.pages.dev/invoice?invoice_id=Uji%3A2026-11&token=tok' }
+  }));
+
+  const body = 'action=price-order&firm=Uji&contact=081234567890&kind=plan.pilot';
+  const response = await worker.fetch(new Request(PRICE_PAGE, {
+    method: 'POST',
+    headers: { 'content-type': 'application/x-www-form-urlencoded' },
+    body
+  }), env);
+
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].url, 'https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-billing', 'a post names the page in its body');
+  assert.equal(calls[0].init.method, 'POST');
+  assert.equal(await new Response(calls[0].init.body).text(), body, 'the form arrives whole');
+  assert.equal(response.status, 303);
+  assert.equal(response.headers.get('location'), 'https://opera-agent.pages.dev/invoice?invoice_id=Uji%3A2026-11&token=tok', 'the buyer lands on the invoice page');
+});
+
+test('a refused order is the page again, with the status the function chose', async () => {
+  reset(() => new Response('<!doctype html><html lang="id"><body>terlalu banyak order, coba lagi nanti</body></html>', {
+    status: 429,
+    headers: { 'content-type': 'text/plain' }
+  }));
+
+  const response = await worker.fetch(new Request(PRICE_PAGE, {
+    method: 'POST',
+    headers: { 'content-type': 'application/x-www-form-urlencoded' },
+    body: 'action=price-order'
+  }), env);
+
+  assert.equal(response.status, 429);
+  assert.equal(response.headers.get('content-type'), 'text/html; charset=utf-8');
+  assert.match(await response.text(), /terlalu banyak order/);
+});
+
+test('a price page that cannot be reached is a page and says nothing technical', async () => {
+  reset(() => {
+    throw new Error('connect ECONNREFUSED 203.0.113.1:443');
+  });
+
+  const response = await worker.fetch(new Request(PRICE_PAGE), env);
+
+  assert.equal(response.status, 502);
+  assert.equal(response.headers.get('content-type'), 'text/html; charset=utf-8');
+  const html = await response.text();
+  assert.match(html, /Halaman harga tidak bisa dimuat sekarang\./);
+  assert.match(html, /Coba lagi sebentar lagi\./);
+  assert.doesNotMatch(html, /ECONNREFUSED/, 'the worker\'s reason stays in the log');
 });
