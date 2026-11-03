@@ -370,7 +370,18 @@ header nav a[aria-current="page"]:not(.brand):not(.navCta) {
   color: var(--ink);
 }
 
-header nav a[aria-current="page"]:not(.brand):not(.navCta) { box-shadow: inset 0 -1px 0 var(--ink); }
+header nav a[aria-current="page"]:not(.brand):not(.navCta) {
+  background-image: linear-gradient(currentColor, currentColor);
+  background-position: 0 100%;
+  background-repeat: no-repeat;
+  background-size: 100% 1px;
+  animation: nav-line-in .25s var(--ease);
+}
+
+@keyframes nav-line-in {
+  from { background-size: 0% 1px; }
+  to { background-size: 100% 1px; }
+}
 
 /* WHY the filled action keeps its own ink when the page it points at is the current one: without this, the current-page rule painted black on black and the button read as an empty pill. */
 

@@ -189,7 +189,29 @@
   }
   </script>
     <script src="./i18n.js"></script>
-    <script type="module">
+    <script>
+    (function () {
+      var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+      var line = document.querySelector('.typewriter');
+      if (!line || reduce || !('IntersectionObserver' in window)) {
+        if (line) line.textContent = line.dataset.type;
+        return;
+      }
+      var seen = new IntersectionObserver(function (entries) {
+        if (!entries[0].isIntersecting) return;
+        seen.disconnect();
+        var text = line.dataset.type;
+        var i = 0;
+        line.classList.add('live');
+        var tick = setInterval(function () {
+          line.textContent = text.slice(0, ++i);
+          if (i >= text.length) clearInterval(tick);
+        }, 18);
+      });
+      seen.observe(line);
+    })();
+  </script>
+  <script type="module">
       const cards = [...document.querySelectorAll('[data-browser]')];
       const brands = (navigator.userAgentData?.brands || []).map((entry) => entry.brand).join(' ');
       const agent = `${brands} ${navigator.userAgent || ''}`;
@@ -234,8 +256,7 @@
     <p data-i18n-html="verify.intro">Arsip dan berkas <code>.crx</code> selalu berisi build terbaru, jadi sidik jarinya
       ikut berubah setiap rilis dan tidak bisa dicetak di halaman statis. Ambil sidik jari
       yang sedang dilayani server, lalu bandingkan dengan milikmu:</p>
-    <pre><code>curl.exe -sI https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/download/opera-agent.zip | findstr /i x-opera-sha256
-Get-FileHash .\opera-agent-*.zip -Algorithm SHA256</code></pre>
+    <pre><code aria-hidden="true"><span class="typewriter" data-type="curl.exe -sI https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/download/opera-agent.zip | findstr /i x-opera-sha256"></span><span class="cursor" aria-hidden="true"></span></code></pre><noscript><pre><code>curl.exe -sI https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/download/opera-agent.zip | findstr /i x-opera-sha256</code></pre></noscript><pre><code>Get-FileHash .\opera-agent-*.zip -Algorithm SHA256</code></pre>
     <p data-i18n="verify.match">Kedua perintah itu harus menghasilkan angka yang sama. Kalau berbeda, berkasmu
       tidak utuh — unduh ulang.</p>
 

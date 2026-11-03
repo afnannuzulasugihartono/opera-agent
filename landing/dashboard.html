@@ -82,9 +82,9 @@
           <p class="status appStatus" id="status" role="status" aria-live="polite">&nbsp;</p>
 
           <dl class="metrics" id="metrics">
-            <div><dt>Device ter-pairing</dt><dd id="statDevices">–</dd></div>
-            <div><dt>Daring sekarang</dt><dd id="statOnline">–</dd></div>
-            <div><dt>Perintah selesai</dt><dd id="statCommands">–</dd></div>
+            <div><dt>Device ter-pairing</dt><dd id="statDevices" data-count="0">–</dd></div>
+            <div><dt>Daring sekarang</dt><dd id="statOnline" data-count="0">–</dd></div>
+            <div><dt>Perintah selesai</dt><dd id="statCommands" data-count="0">–</dd></div>
           </dl>
         </div>
 
@@ -265,6 +265,49 @@
       if (renewed.refresh_token) localStorage.setItem('opera-agent-refresh-token', renewed.refresh_token);
       return { ok: true, token: renewed.access_token };
     }
+  // WHY THE NUMBERS WAIT FOR THE EYE BUT THE HASH STAYS THE SOURCE OF TRUTH: a count that runs before the strip is visible finishes before anyone can verify it, but visibility is animation, not state — the strip reads data-count set by the same payload the list renders, and the hash alone owns which view is open.
+  // WHY THE GUARDS STACK THIS WAY: the dashboard runs in a real browser with matchMedia and IntersectionObserver, but its execution suite runs the same script against a stub DOM that has neither.
+  // Checking the names first keeps one script honest in both rooms.
+  const motionOK = typeof matchMedia === 'function' && !matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const countUp = (node, target) => {
+      node.dataset.count = String(target);
+      if (!motionOK || !('IntersectionObserver' in window)) {
+        node.textContent = target;
+        return;
+      }
+      const seen = new IntersectionObserver((entries) => {
+        if (!entries[0].isIntersecting) return;
+        seen.disconnect();
+        let shown = 0;
+        const tick = setInterval(() => {
+          shown = Math.min(target, shown + Math.max(1, Math.ceil(target / 40)));
+          node.textContent = String(shown);
+          if (shown >= target) clearInterval(tick);
+        }, 20);
+      }, { threshold: 0.4 });
+      seen.observe(node);
+    };
+
+    const countUpPair = (node, done, all) => {
+      node.dataset.done = String(done);
+      node.dataset.all = String(all);
+      if (!motionOK || !('IntersectionObserver' in window)) {
+        node.textContent = `${done} dari ${all}`;
+        return;
+      }
+      const seen = new IntersectionObserver((entries) => {
+        if (!entries[0].isIntersecting) return;
+        seen.disconnect();
+        let shown = 0;
+        const tick = setInterval(() => {
+          shown = Math.min(done, shown + Math.max(1, Math.ceil(done / 40)));
+          node.textContent = `${shown} dari ${all}`;
+          if (shown >= done) clearInterval(tick);
+        }, 20);
+      }, { threshold: 0.4 });
+      seen.observe(node);
+    };
+
     const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
     // WHY relative time: a raw 2026-10-05T03:51:03 timestamp is a database leak into the UI.
@@ -622,9 +665,11 @@
       const up = data.devices.filter((device) => device.status === 'online').length;
       const done = data.devices.reduce((n, device) => n + (device.completedCommands ?? 0), 0);
       const all = data.devices.reduce((n, device) => n + (device.totalCommands ?? 0), 0);
-      $('statDevices').textContent = total;
-      $('statOnline').textContent = up;
-      $('statCommands').textContent = `${done} dari ${all}`;
+      countUp($('statDevices'), total);
+      countUp($('statOnline'), up);
+      countUpPair($('statCommands'), done, all);
+
+
       lastSeen.devices = data.devices;
       lastSeen.total = all;
       renderChecklist();
