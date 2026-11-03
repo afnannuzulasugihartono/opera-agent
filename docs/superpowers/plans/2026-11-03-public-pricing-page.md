@@ -34,7 +34,7 @@
 - **The month belongs to Jakarta, not to the server.** An order sent at 23:30 UTC on 31 October is a November order, because the customers and the deadline read Jakarta time. Pinned by Task 2's `the Jakarta month is the month the invoice is for`.
 - **The price on the page and the price on the invoice are the same row.** A buyer who edits the body, or a page built from a stale list, must not buy a price of its own. Pinned by Task 2's `the price comes from the row, never from the body` and `a plan the rows do not carry is not for sale`.
 - **A contact nobody can reach.** A landline, a typo in the domain, or an empty field must be refused before a row is written, because the operator has no other way to reach a buyer. Pinned by Task 2's `a contact is an Indonesian mobile number or an email`.
-- **A double submit.** Two clicks, a retried form, a browser that posts twice: one row, one invoice, one amount. A paid invoice is never repriced by a resubmit. Pinned by Task 2's `the same firm and month is the same invoice` and proved live in Task 6.
+- **A double submit.** Two clicks, a retried form, a browser that posts twice: one row, one invoice, one amount. An invoice that already exists is returned as it is, so no resubmit re-prices it and no buyer is asked for a second payment for the same month. Pinned by Task 2's `the same firm and month is the same invoice` and proved live in Task 6.
 
 ---
 
@@ -746,7 +746,7 @@ with:
         }
         const { data: placed, error: placedError } = await supabase
           .from("opera_price_orders")
-          .select("invoice_id")
+          .select("invoice_id, kind, amount_cents")
           .eq("firm", order.customerId)
           .eq("period", order.period)
           .maybeSingle();
@@ -766,24 +766,34 @@ with:
         }
         const invoiceId = placed?.invoice_id || `${order.customerId}:${order.period}`;
         try {
-          // WHY THE PAID CHECK COMES BEFORE THE ORDER IS WRITTEN.
-          // The order row copies the price that was agreed, and a paid order is the record of that agreement.
-          // A resubmit of a paid order would overwrite the copy with today's price, so it returns the paid invoice and leaves the row alone.
+          // WHY THE INVOICE IS READ BEFORE THE ORDER IS WRITTEN.
+          // The order row fixes the plan and the amount that were agreed, and the invoice holds what it charged.
+          // So a resubmit returns that invoice as it is, touches only the contact, and never re-prices what was agreed.
           const { data: current } = await supabase.from("opera_invoices").select("status").eq("id", invoiceId).maybeSingle();
-          if (current?.status === "paid") {
+          if (current) {
+            const { error: contactError } = await supabase
+              .from("opera_price_orders")
+              .update({ contact: order.contact })
+              .eq("firm", order.customerId)
+              .eq("period", order.period);
+            if (contactError) throw new HttpError(500, `the order could not be updated: ${contactError.message}`);
             const token = invoiceToken(invoiceId, BILLING_SECRET);
             return new Response(null, { status: 303, headers: { location: invoiceLink(invoiceId, token), ...cors } });
           }
+          // WHY THE FIRST ORDER DECIDES THE PLAN.
+          // The order row is the record of what was agreed, so an order that already exists keeps the plan it names and the amount it holds.
+          const fixed = placed ? priceOrder({ firm: order.customerId, contact: order.contact, kind: placed.kind }, prices) : order;
+          const lines = fixed.ok ? fixed.lines : order.lines;
           const { error: orderError } = await supabase.from("opera_price_orders").upsert({
             firm: order.customerId,
             period: order.period,
             contact: order.contact,
-            kind: order.kind,
-            amount_cents: order.amountCents,
+            kind: placed?.kind || order.kind,
+            amount_cents: placed?.amount_cents || order.amountCents,
             invoice_id: invoiceId
           }, { onConflict: "firm,period" });
           if (orderError) throw new HttpError(500, `the order could not be written: ${orderError.message}`);
-          const out = await createInvoice({ customer_id: order.customerId, period: order.period, lines: order.lines });
+          const out = await createInvoice({ customer_id: order.customerId, period: order.period, lines });
           return new Response(null, { status: 303, headers: { location: invoiceLink(out.invoice.id, out.token), ...cors } });
         } catch (error) {
           const why = error instanceof Error ? error.message : String(error);
@@ -1406,9 +1416,9 @@ Every accepted order writes one row to `opera_price_orders`: the firm, the conta
 the plan, the amount in cents at that moment, and the invoice id. The table has RLS on
 and no policy, so only the service role reads it; it holds no IP, no user agent and no
 token. One `(firm, period)` is one order, so a resubmit returns the same invoice and
-writes no second row, and an invoice that is already paid is never repriced by a
-resubmit. Thirty new orders in a rolling hour is the limit; over it the page answers
-`429` with one line of Indonesian text.
+writes no second row, and an invoice that already exists is never re-priced by a
+resubmit: the resubmit only updates the contact. Thirty new orders in a rolling hour is
+the limit; over it the page answers `429` with one line of Indonesian text.
 
 Two firms with the same name in the same month share one invoice, because the invoice
 id is the firm name and the month. That is the known limit of this shape: separating
@@ -1466,7 +1476,8 @@ Then add the next item to the same list:
     An unpaid test row is removed with `delete from opera_price_orders where firm = '...' and
     period = '...';`; a paid row stays, because it is the money's record. An invoice nobody pays stays
     open: there is no automatic expiry on the QRIS path, so the operator closes it by hand with
-    `settle-manual` or voids it. The known limit: two
+    `settle-manual` or voids it, and a voided invoice stays voided until the operator opens a new
+    one by hand. The known limit: two
     firms with the same name in one month share one invoice.
 ```
 
@@ -1518,7 +1529,7 @@ The plan is done when all of this is true.
 - [ ] `opera_price_orders` exists in the live database, with the unique `(firm, period)`, RLS on and no policy, and a ledger row the file wrote for itself. **Task 1.**
 - [ ] `GET /harga` shows the two plans and the overage note from `opera_price_list`, with no script, no token and no price literal in the HTML. **Tasks 2, 3, 4.**
 - [ ] `POST /harga` writes one order row, opens one invoice, and answers `303` to the invoice page, without an operator token. **Task 3.**
-- [ ] A resubmit for the same firm and month returns the same invoice, writes no second row, and never reprices a paid invoice. **Tasks 2, 3, 6.**
+- [ ] A resubmit for the same firm and month returns the same invoice, writes no second row, and never re-prices an invoice that already exists. **Tasks 2, 3, 6.**
 - [ ] Over thirty new orders in a rolling hour, the answer is `429` and a page, not an error. **Task 3.**
 - [ ] Every page of the site carries the way to the price page. **Task 5.**
 - [ ] A real Rp 99.000 payment closes the invoice, or the handoff says plainly that the rail is not live yet. **Task 6.**
