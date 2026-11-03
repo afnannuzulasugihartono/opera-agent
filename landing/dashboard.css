@@ -31,8 +31,8 @@ body:has(main.console) {
 }
 
 main.console {
-  --app-radius: 10px;
-  --app-radius-sm: 6px;
+  --app-radius: var(--radius);
+  --app-radius-sm: var(--radius-sm);
   --app-title: 18px;
   --app-pad: 20px;
   display: flex;
@@ -262,7 +262,7 @@ header nav .navCta[hidden] { display: none; }
 
 .rail a[aria-current="true"] {
   background: var(--accent);
-  color: var(--on-fill, #fff);
+  color: var(--on-fill);
   font-weight: 600;
 }
 
@@ -463,7 +463,7 @@ section > .meta {
 .checklist li.done .box {
   border-color: var(--accent);
   background: var(--accent);
-  color: var(--on-fill, #fff);
+  color: var(--on-fill);
 }
 
 /* ── device cards ─────────────────────────────────────────────────────────── */
@@ -565,7 +565,7 @@ dl.facts {
 .btn.danger:hover {
   border-color: var(--danger);
   background: var(--danger);
-  color: var(--on-fill, #fff);
+  color: var(--on-fill);
 }
 
 @media (max-width: 640px) {
@@ -832,7 +832,7 @@ table.history {
 .railList button[aria-current="true"] {
   border-left-color: var(--accent);
   background: var(--accent);
-  color: var(--on-fill, #fff);
+  color: var(--on-fill);
 }
 
 /* WHY the count takes the row's ink: the muted grey on the brand green is 1.5:1, so the row count of the table the reader is looking at was unreadable. */
