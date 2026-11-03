@@ -445,7 +445,13 @@ test('the dashboard numbers count up to what the code proves, and never on their
   assert.match(html, /prefers-reduced-motion/, 'or not at all for motion-sensitive readers');
 });
 
-test('the sidebar is the window\'s left column, not a column in the middle of it', () => {
+test('the active segment is a surface, not a shade of paper', () => {
+  const css = read('dashboard.css');
+  assert.doesNotMatch(css, /\.segmented button\[aria-pressed="true"\] \{[^}]*\n\s*background: var\(--surface\);\n\s*color:[^}]*\n\s*background: var\(--surface-2\)\s*;/s, 'one background per rule, the token it means');
+  assert.match(css, /\.segmented button\[aria-pressed="true"\] \{[^}]*background:\s*var\(--surface-2\)/s, 'and the pressed segment lifts one level');
+});
+
+test("the sidebar is the window's left column, not a column in the middle of it", () => {
   assert.match(css, /\.layout \{[^}]*grid-template-columns: 220px minmax\(0, 1fr\)/, 'the rail is the first column and the content takes the rest');
   assert.match(css, /\.layout \{[^}]*gap: 0/, 'the two columns touch, the way an app shell has them');
   assert.match(css, /\.rail \{[^}]*border-right: 1px solid var\(--line\)/, 'the rail carries its own edge');
