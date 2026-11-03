@@ -574,11 +574,12 @@ footer .cols > span:first-child {
   background: var(--surface);
   color: inherit;
   text-decoration: none;
-  transition: border-color .2s var(--ease);
+  transition: border-color .12s var(--ease), transform .12s var(--ease);
 }
 
 .tile:hover {
   border-color: var(--line-strong);
+  transform: translateY(-1px);
 }
 
 .tile h3 { margin: 0 0 6px; font-size: 16px; }
@@ -988,7 +989,21 @@ ul.consents button { margin-left: auto; }
 
 .faqList details,
 .prose details {
+  display: grid;
+  grid-template-rows: auto 0fr;
   border-bottom: 1px solid var(--line);
+  transition: grid-template-rows 0.2s var(--ease);
+}
+
+.faqList details[open],
+.prose details[open] {
+  grid-template-rows: auto 1fr;
+}
+
+.faqList details > :not(summary),
+.prose details > :not(summary) {
+  overflow: hidden;
+  min-height: 0;
 }
 
 .faqList summary,
