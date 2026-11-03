@@ -1,6 +1,6 @@
-// @last-edited: 2026-10-22 UTC+7.
+// @last-edited: 2026-11-03 UTC+7.
 // @title: monetization — what a delivery is worth, to whom, and what an agent hands over.
-// @state: the offer shape, the decided price, the billing unit, and the two decisions still open.
+// @state: the offer shape, the decided price, the billing unit, the public price page and the two decisions still open.
 // @dependencies: none.
 
 // WHY THIS DOCUMENT EXISTS
@@ -28,8 +28,14 @@ One client, one portal, one month: a file with the right name, and a line of pro
 The unit is the **firm-month**: a plan of up to 15 client-months (Rp 99.000) or 50
 client-months (Rp 249.000), with each client-month above the cap at Rp 10.000. A
 client-month is one client, one portal, one month. A batch that is not delivered is
-not charged: the invoice is issued only after the firm accepts the first batch, and
-the proof is the reason the charge is defensible.
+not charged, and the proof is the reason the charge is defensible.
+
+The **public price page** changes when the invoice is issued. A buyer who orders from
+`https://opera-agent.pages.dev/harga` pays first: the invoice is issued the moment the
+order arrives, not after the first batch is accepted. A first batch the firm does not
+accept is refunded in full by the operator by hand, and there is no automatic refund,
+because no provider used here can refund. The operator's way back to the buyer is the
+`opera_price_orders` row, which holds the name and the contact the buyer typed.
 
 ## What the proof object is for
 
@@ -80,9 +86,10 @@ The price is a row in `opera_price_list`, applied 2026-10-22:
 | `plan.firm` | firm-month, up to 50 client-months | Rp 249.000 |
 | `statement.client_month` | delivered client-month above the plan | Rp 10.000 |
 
-The first three firms get the pilot price locked, and there is no setup fee. The
-invoice is issued after the first batch is accepted, so a failed batch is Rp 0. This
-is a decision, not evidence: the first three payments are what will prove it.
+The first three firms get the pilot price locked, and there is no setup fee. On the
+operator path the invoice is issued after the first batch is accepted, so a failed
+batch is Rp 0. This is a decision, not evidence: the first three payments are what
+will prove it.
 
 ## Two decisions still open
 

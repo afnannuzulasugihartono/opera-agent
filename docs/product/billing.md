@@ -1,4 +1,4 @@
-@last-edited: 2026-11-02 UTC+7.
+@last-edited: 2026-11-03 UTC+7.
 @related: [monetization](monetization.md) - [statement job](../jobs/statements.md) - [handoff](../handoff.md) - [qris rail probe](qris-rail-probe.md)
 
 # The money: how somebody pays for this
@@ -7,8 +7,10 @@
 
 A **firm-month**: up to 15 client-months for Rp 99.000, or up to 50 for Rp 249.000,
 with each client-month above the cap at Rp 10.000. A client-month is one client, one
-portal, one month. The month that was not delivered is not charged; the invoice is
-issued only after the firm accepts the first batch, and the proof is the manifest row.
+portal, one month. The month that was not delivered is not charged. On the operator
+path the invoice is issued only after the firm accepts the first batch, and the proof
+is the manifest row; on the public price page the buyer pays first, and a first batch
+the firm does not accept is refunded by hand.
 
 ## What makes people actually pay
 
@@ -73,23 +75,32 @@ priced lines (the price list)  ->  an invoice (one per customer per month)
 - `supabase/functions/_shared/invoice-page.js` — the page: one function of the row, no
   Deno API, no script and no asset, so a Node test can render every state a customer can
   open.
+- `supabase/functions/_shared/price-page.js` — the public price page and the order rules:
+  the two plans and the overage note are printed from the price rows it is given, the
+  firm name, the contact and the plan are checked, and the amount, the Jakarta month and
+  the invoice id are derived from them. It has no clock of its own and no database.
 - `supabase/functions/opera-agent-billing/index.ts` — the function: it opens an
   invoice, serves the invoice page, closes it from a signed notification or from the
   provider's own answer when the signature does not match, writes every notification
-  down, opens a new link when the customer asks for one, and records a transfer with the
-  operator's note.
-- `landing/_worker.js` — the site's path to the page: a proxy for `/invoice` that keeps
+  down, opens a new link when the customer asks for one, records a transfer with the
+  operator's note, and serves the public price page and its public order.
+- `landing/_worker.js` — the site's path to the pages: a proxy for `/invoice` that keeps
   the page's headers, labels the HTML as HTML, and rewrites the refresh redirect back to
-  `/invoice`; every other path goes to the static site unchanged.
+  `/invoice`, and a proxy for `/harga` that forwards the order body and keeps the
+  answer; every other path goes to the static site unchanged.
+- `supabase/migrations/20261103110000_opera_price_orders.sql` — `opera_price_orders`:
+  one row per `(firm, period)`, with the contact, the plan, the amount in cents and the
+  invoice id. RLS on, no policy, so only the service role reads it.
 - `supabase/functions/opera-agent-mcp/tools.ts` — the `invoice_create` tool, so the
   agent that delivered the statements can hand the operator the bill for them. It is
   the one door for both kinds of bill: pass the deliveries for a per-delivery invoice,
   or pass the same deliveries with `plan` (`plan.pilot` or `plan.firm`) for a plan
   month. There is no second path for an operator to learn.
-- `tests/billing.test.mjs` — the money rules, proved (47 tests).
+- `tests/billing.test.mjs` — the money rules, proved (48 tests).
+- `tests/price-page.test.mjs` — the price page and the order rules, proved (12 tests).
 - `tests/invoice-page.test.mjs` — every page state, escaped and read (11 tests).
 - `tests/invoice-worker.test.mjs` — the page proxy, its relabel, its redirect, its asset
-  fallback and its failure page (9 tests).
+  fallback, its failure page and the public price page (13 tests).
 
 ## The page a customer opens, and the link behind it
 
@@ -156,6 +167,37 @@ cleared nothing: the customer paid through the new link, the provider reported
 `settlement`, and the invoice closed with the method and the transaction id recorded.
 What remains unit-proved rather than live is a settlement that names an older attempt:
 no sandbox run has paid an attempt after the invoice moved past it.
+
+## The price page, and the order behind it
+
+The site sells one plan at a time from `https://opera-agent.pages.dev/harga`. The page
+is not a file: it is rendered by `opera-agent-billing` from the live `opera_price_list`
+rows, so a price exists in exactly one place and a plan that is switched off cannot be
+bought. The page carries no token, no script and no price literal, and it is the one
+public page that may be indexed; the invoice page stays `noindex`.
+
+The form posts to the same path. The worker forwards it to the function, the function
+answers `303`, and the buyer lands on the invoice page. That action takes **no
+operator token**: it is for a person who has no account, no invoice and no link yet.
+What it accepts is a firm name, one contact and a plan; what it derives is the amount,
+the Jakarta month and the invoice id `${firm}:${period}`. The price is read from the
+row, never from the request.
+
+Every accepted order writes one row to `opera_price_orders`: the firm, the contact,
+the plan, the amount in cents at that moment, and the invoice id. The table has RLS on
+and no policy, so only the service role reads it; it holds no IP, no user agent and no
+token. One `(firm, period)` is one order, so a resubmit returns the same invoice and
+writes no second row, and an invoice that already exists is never re-priced by a
+resubmit: the resubmit only updates the contact. Thirty new orders in a rolling hour is
+the limit; over it the page answers `429` with one line of Indonesian text.
+
+Two firms with the same name in the same month share one invoice, because the invoice
+id is the firm name and the month. That is the known limit of this shape: separating
+them needs a customer table, which this plan does not build.
+
+A first batch the firm does not accept is refunded by hand. No provider API used here
+can refund, so the operator does it outside the system and records it there; the page
+says so in the same words.
 
 ## Measured live, against the deployed functions
 
