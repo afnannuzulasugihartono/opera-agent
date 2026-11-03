@@ -1,7 +1,7 @@
 /*
- * @last-edited: 2026-10-26 UTC+7.
+ * @last-edited: 2026-11-03 UTC+7.
  * @title: site.css — the design tokens, reset, chrome and components every page of the site shares.
- * @state: a light paper canvas, one local typeface, an aligned 1200px shell, and the shared header, footer, card and control rules.
+ * @state: one dark canvas, one accent, one local typeface, an aligned 1160px shell, and the shared header, footer, card and control rules.
  * @dependencies: fonts/instrument-sans-latin.woff2.
  *
  * WHY one file: twelve pages that restate a palette drift a shade at a time.
@@ -21,37 +21,30 @@
 /* ── tokens ─────────────────────────────────────────────────────────────── */
 
 :root {
-  --paper: #f7f5ef;
-  --surface: #ffffff;
-  --surface-soft: #f1efe8;
-  --surface-strong: #e9e6dc;
-  --ink: #161513;
-  --muted: #5b5852;
-  --line: rgba(22, 21, 19, .11);
-  --line-strong: rgba(22, 21, 19, .2);
-  --brand: #3ecf8e;
-  --accent: #0f7a52;
-  --accent-strong: #0a5c3e;
-  --accent-soft: #e3f0ea;
-  --ink-panel: #101512;
-  --panel-text: #eff2ec;
-  --warn: #9a532c;
-  --danger: #b3261e;
-  --danger-soft: #fbecea;
-  --focus: #0f7a52;
-  --radius: 10px;
+  --bg: #0a0a0a;
+  --surface: #141414;
+  --surface-2: #1c1c1c;
+  --ink: #ededed;
+  --muted: #a1a1a1;
+  --line: rgba(255, 255, 255, .12);
+  --line-strong: rgba(255, 255, 255, .22);
+  --accent: #3ecf8e;
+  --accent-strong: #5fe0a5;
+  --accent-soft: rgba(62, 207, 142, .12);
+  --danger: #ff6b6b;
+  --warn: #f6c969;
+  --danger-line: rgba(255, 107, 107, .28);
+  --on-fill: #0a0a0a;
+  --focus: #3ecf8e;
+  --radius: 8px;
   --radius-sm: 6px;
-  --pill: 980px;
-  --shadow: 0 1px 2px rgba(22, 21, 19, .05);
-  --shadow-lift: 0 2px 4px rgba(22, 21, 19, .06), 0 18px 40px -28px rgba(22, 21, 19, .4);
   --ease: cubic-bezier(.22, .61, .24, 1);
   --font: "Instrument Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
   --wrap: 1160px;
   --prose: 680px;
-  --bg: var(--paper);
-  --text: var(--ink);
-  --lime: var(--brand);
+  --surface-soft: var(--surface-2);
+  --brand: var(--accent);
 }
 
 /* ── reset and type ─────────────────────────────────────────────────────── */
@@ -74,8 +67,9 @@ body {
   min-height: 100dvh;
   display: flex;
   flex-direction: column;
-  background: var(--paper);
+  background: var(--bg);
   color: var(--ink);
+  color-scheme: dark;
   font-family: var(--font);
   font-size: 16px;
   line-height: 1.62;
@@ -96,27 +90,10 @@ main {
 
 body:has(main.console),
 body:has(main.account) {
-  background: #0c0e11;
+  background: var(--bg);
 }
 
-body:has(main.console) header,
-body:has(main.account) header {
-  background: rgba(12, 14, 17, .86);
-  border-bottom-color: rgba(255, 255, 255, .08);
-}
-
-body:has(main.console) header nav a:not(.brand):not(.navCta),
-body:has(main.account) header nav a:not(.brand):not(.navCta) { color: rgba(239, 242, 236, .62); }
-body:has(main.console) header nav a:not(.brand):not(.navCta):hover,
-body:has(main.account) header nav a:not(.brand):not(.navCta):hover { color: #fff; }
-body:has(main.console) header .brand span,
-body:has(main.account) header .brand span { color: #fff; }
-body:has(main.console) header .lang,
-body:has(main.account) header .lang { color: rgba(239, 242, 236, .62); }
-body:has(main.console) header .lang .on,
-body:has(main.account) header .lang .on { color: #fff; }
-
-::selection { background: var(--brand); color: var(--ink); }
+::selection { background: var(--accent); color: var(--on-fill); }
 
 :focus-visible {
   outline: 2px solid var(--focus);

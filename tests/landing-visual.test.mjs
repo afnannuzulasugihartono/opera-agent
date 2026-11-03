@@ -22,6 +22,51 @@ const cssOf = (name) => {
 };
 const pages = ['beranda.html', 'akun.html', 'index.html', 'dashboard.html', 'unduh.html', 'unduh-berkas.html', 'privasi.html', 'syarat.html', '404.html', 'oauth/consent.html', 'fitur.html', 'dukungan.html'];
 
+const token = (name) => {
+  const value = new RegExp(`^\\s*${name}:\\s*(#[0-9a-fA-F]{6})\\s*;`, 'm').exec(read('site.css'))?.[1];
+  assert.ok(value, `site.css defines ${name} as a hex colour`);
+  return value;
+};
+
+const luminance = (hex) => {
+  const [r, g, b] = hex.replace('#', '').match(/../g)
+    .map((x) => parseInt(x, 16) / 255)
+    .map((c) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4));
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+};
+
+const contrast = (a, b) => {
+  const [x, y] = [luminance(a), luminance(b)].sort((m, n) => n - m);
+  return (x + 0.05) / (y + 0.05);
+};
+
+test('every page sits on one dark canvas', () => {
+  const bg = token('--bg');
+  assert.ok(luminance(bg) < 0.05, `--bg is dark, and measures ${luminance(bg).toFixed(3)}`);
+  for (const page of pages) {
+    const css = cssOf(page);
+    assert.match(css, /body \{[^}]*background: var\(--bg\)/s, `${page} paints the shared canvas`);
+    assert.doesNotMatch(css, /body \{[^}]*background: #f[0-9a-f]{5}/s, `${page} paints no light canvas of its own`);
+  }
+});
+
+test('every pair of text and ground clears its contrast floor', () => {
+  const bg = token('--bg');
+  assert.ok(contrast(token('--ink'), bg) >= 7, `body ink clears AAA, and measures ${contrast(token('--ink'), bg).toFixed(2)}`);
+  assert.ok(contrast(token('--muted'), bg) >= 4.5, `second-rank ink clears AA, and measures ${contrast(token('--muted'), bg).toFixed(2)}`);
+  assert.ok(contrast(token('--accent'), bg) >= 4.5, `the accent clears AA as text, and measures ${contrast(token('--accent'), bg).toFixed(2)}`);
+  assert.ok(contrast(token('--on-fill'), token('--ink')) >= 7, 'the filled action reads on its own fill');
+});
+
+test('one accent, and every other surface is neutral', () => {
+  for (const name of ['--bg', '--surface', '--surface-2', '--ink', '--muted']) {
+    const [r, g, b] = token(name).replace('#', '').match(/../g).map((x) => parseInt(x, 16));
+    assert.ok(Math.max(r, g, b) - Math.min(r, g, b) <= 3, `${name} carries no hue, and spans ${Math.max(r, g, b) - Math.min(r, g, b)}`);
+  }
+  const [r, g, b] = token('--accent').replace('#', '').match(/../g).map((x) => parseInt(x, 16));
+  assert.ok(Math.max(r, g, b) - Math.min(r, g, b) > 100, 'the accent is the only saturated colour');
+});
+
 test('the hero sells the product instead of apologizing for it', () => {
   const html = read('beranda.html');
   assert.doesNotMatch(html, /Sembilan dua/, 'the broken sentence is gone');
@@ -209,20 +254,13 @@ test('display type sets the page apart from its own dashboard', () => {
 // The taste audit removed the pill from the marketing hero's own mock badge and its provider entries, and auth.css now rounds its controls with the same 10px/6px the signed-in shell uses.
 // The test keeps its subject — marketing rounds, shell squares — and pins the shape the sheets actually set.
 
-test('marketing controls round with the shared radius, and the signed-in shell squares its own', () => {
-
-  for (const page of ['beranda.html', 'unduh.html', 'oauth/consent.html']) {
-    const html = cssOf(page);
-    assert.doesNotMatch(html, /border-radius:\s*980px/, `${page} names no radius by hand`);
+test('the shared radius is the only radius a control names', () => {
+  const sheet = read('site.css');
+  assert.match(sheet, /--radius:\s*8px/, 'a card is 8px, and the token says so');
+  assert.match(sheet, /--radius-sm:\s*6px/, 'a control is 6px');
+  for (const page of pages) {
+    assert.doesNotMatch(cssOf(page), /border-radius:\s*980px/, `${page} names no radius by hand`);
   }
-  for (const page of ['akun.html', 'dashboard.html']) {
-    const html = cssOf(page);
-    assert.match(html, /body\.app-dark \.btn \{[^}]*border-radius: var\(--radius-sm\)/, `${page} squares its buttons to the radius the benchmarks measure`);
-  }
-  const auth = cssOf('index.html');
-  assert.match(auth, /--pill:\s*980px/, 'one pill token, not a radius per control');
-  assert.match(auth, /\.provider \{[^}]*border-radius: var\(--radius\)/, 'provider entries match the shared radius');
-  assert.match(auth, /\.gateCard form button\[type="submit"\] \{[^}]*border-radius: var\(--radius\)/, 'and so does the submit');
 });
 
 test('the hero carries its footnote instead of hiding the catch', () => {
