@@ -27,27 +27,26 @@ main.auth { padding-top: 64px; padding-bottom: 96px; }
 .brand .mark {
   width: 46px;
   height: 46px;
-  border-radius: 13px;
-  box-shadow: 0 10px 24px -12px rgba(16, 21, 18, .55);
+  border-radius: var(--radius);
 }
 
 .brand .eyebrow {
   display: flex;
-  margin: 28px 0 14px;
+  margin: 24px 0 14px;
 }
 
 .brand h1 {
-  max-width: 13ch;
+  max-width: 15ch;
   margin: 0 0 18px;
-  font-size: clamp(36px, 4.2vw, 58px);
+  font-size: clamp(38px, 4.6vw, 62px);
   line-height: 1.02;
   letter-spacing: -.045em;
 }
 
 .brand .lede {
-  max-width: 44ch;
-  margin: 0 0 28px;
-  font-size: 17px;
+  max-width: 46ch;
+  margin: 0 0 26px;
+  font-size: 16px;
 }
 
 .promises {
@@ -75,7 +74,6 @@ main.auth { padding-top: 64px; padding-bottom: 96px; }
   margin-top: 7px;
   border-radius: 50%;
   background: var(--brand);
-  box-shadow: 0 0 0 3px rgba(62, 207, 142, .16);
 }
 
 /* ── the gate card ──────────────────────────────────────────────────────── */
@@ -88,12 +86,12 @@ main.auth { padding-top: 64px; padding-bottom: 96px; }
 
 .gateCard {
   padding: 30px;
-  box-shadow: var(--shadow-lift);
+  box-shadow: var(--shadow);
 }
 
 .gateCard h2 {
   margin: 0 0 8px;
-  font-size: 22px;
+  font-size: 20px;
   letter-spacing: -.03em;
 }
 
@@ -108,7 +106,7 @@ main.auth { padding-top: 64px; padding-bottom: 96px; }
   gap: 4px;
   margin: 0 0 24px;
   padding: 4px;
-  border-radius: var(--pill);
+  border-radius: var(--radius);
   background: var(--surface-soft);
 }
 
@@ -118,14 +116,14 @@ main.auth { padding-top: 64px; padding-bottom: 96px; }
   min-height: 38px;
   padding: 0 16px;
   border: 1px solid transparent;
-  border-radius: var(--pill);
+  border-radius: var(--radius-sm);
   background: transparent;
   color: var(--muted);
   font: inherit;
   font-size: 13.5px;
   font-weight: 600;
   cursor: pointer;
-  transition: background .2s var(--ease), color .2s var(--ease), box-shadow .2s var(--ease);
+  transition: background .2s var(--ease), color .2s var(--ease);
 }
 
 .tabs button:hover { color: var(--ink); }
@@ -134,7 +132,6 @@ main.auth { padding-top: 64px; padding-bottom: 96px; }
   border-color: var(--line);
   background: var(--surface);
   color: var(--ink);
-  box-shadow: 0 1px 2px rgba(22, 21, 19, .07);
 }
 
 .gateCard form button[type="submit"] {
@@ -143,14 +140,13 @@ main.auth { padding-top: 64px; padding-bottom: 96px; }
   margin: 2px 0 0;
   padding: 0 22px;
   border: 1px solid var(--accent);
-  border-radius: var(--pill);
+  border-radius: var(--radius);
   background: var(--accent);
   color: #fff;
   font: inherit;
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;
-  box-shadow: 0 10px 24px -14px rgba(11, 107, 82, .7);
   transition: background .2s var(--ease), border-color .2s var(--ease);
 }
 
@@ -185,7 +181,7 @@ main.auth { padding-top: 64px; padding-bottom: 96px; }
   margin: 0 0 10px;
   padding: 10px 20px;
   border: 1px solid var(--line-strong);
-  border-radius: var(--pill);
+  border-radius: var(--radius);
   background: var(--surface);
   color: var(--ink);
   font-size: 14.5px;

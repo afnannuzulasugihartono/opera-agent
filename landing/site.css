@@ -470,7 +470,7 @@ footer .cols > span:first-child {
   min-height: 44px;
   padding: 0 22px;
   border: 1px solid var(--line-strong);
-  border-radius: 980px;
+  border-radius: var(--radius);
   background: var(--surface);
   color: var(--ink);
   font-family: inherit;
@@ -481,14 +481,13 @@ footer .cols > span:first-child {
   text-decoration: none;
   white-space: nowrap;
   cursor: pointer;
-  box-shadow: 0 1px 0 rgba(22, 21, 19, .04);
-  transition: background .2s var(--ease), border-color .2s var(--ease), color .2s var(--ease), transform .2s var(--ease);
+  box-shadow: none;
+  transition: background .2s var(--ease), border-color .2s var(--ease), color .2s var(--ease);
 }
 
 .btn:hover {
   border-color: var(--ink);
   color: var(--ink);
-  transform: translateY(-1px);
 }
 
 .btn.primary {
