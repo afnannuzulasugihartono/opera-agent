@@ -188,7 +188,7 @@ test('the hero states each number once', () => {
     .replace(/<div class="demo"[\s\S]*?<\/div>\s*<\/div>/, '');
   assert.doesNotMatch(prose, /26 aksi/, 'no second 26 with another noun');
   assert.doesNotMatch(prose, /\d+\s+(tool|primitive|izin|aksi|permission)/i, 'the hero prose names no count at all');
-  assert.match(hero, /tanpa eksekusi skrip sembarangan/, 'the prose keeps its promise');
+  assert.match(hero, /Tanpa eksekusi skrip bebas/, 'the prose keeps its promise');
 });
 
 test('no script renames a link that is not there', () => {

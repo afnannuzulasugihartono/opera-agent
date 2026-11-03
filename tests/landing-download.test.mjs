@@ -152,7 +152,7 @@ test('the download page names no version, because a named version goes stale', (
   const html = read('unduh.html');
   assert.doesNotMatch(html.replace(/<!--[\s\S]*?-->/g, ''), /\b\d+\.\d+\.\d+\b/,
     'no version appears in the copy a reader sees');
-  assert.match(html, /build terbaru/, 'and the page says plainly that what it offers is the newest build');
+  assert.match(html, /Build terbaru/, 'and the page says plainly that what it offers is the newest build');
 });
 
 test('the download page offers one archive and says how to verify it', () => {
