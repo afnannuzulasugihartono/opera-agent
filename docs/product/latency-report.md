@@ -13,8 +13,8 @@ the same machine, so the difference is the change and not the hardware.
 
 | Tool call | Before, p50 | After, p50 | Why |
 |---|---|---|---|
-| `wait_for` (found) | 41.96 ms | 3.20 ms | the wait had already settled the page; the look settled it a second time |
-| `browser_burst`, click → wait_for_row → wait | three calls, ~150 ms | one call, 48.70 ms | a burst can now wait inside itself |
+| `wait_for` (found) | 41.96 ms | 2.97 ms | the wait had already settled the page; the look settled it a second time |
+| `browser_burst`, click → wait_for_row → wait | three calls, ~150 ms | one call, 48.54 ms | a burst can now wait inside itself |
 | `click` | 48.02 ms | 48.14 ms | unchanged |
 | `read_page` | 41.12 ms | 41.67 ms | unchanged |
 
@@ -23,6 +23,9 @@ the 32–120 ms settle again: the wait polls until the page stops moving, and th
 automatic page look then asked the same question. `wait_for`, `wait_for_row` and
 `wait_still` now hand their own settle verdict on, the same way `stream_keys` already
 did, so that round trip is gone. A wait that timed out is unchanged: it did not settle.
+`wait_still` also stopped claiming a settle after two reads on a page that never went
+quiet; only `still: true` is passed on now, so a look after a timed-out wait settles for
+itself.
 
 The second change is for tasks that used to need several calls. `browser_burst` takes
 `wait` and `wait_for_row` steps, so "click the button, wait for the row it raises, wait
