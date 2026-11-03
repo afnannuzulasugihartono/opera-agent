@@ -278,6 +278,13 @@ test('the features read as one numbered column, not as cards', () => {
   assert.match(css, /\.featureList \{[^}]*border-top: 1px solid var\(--line\)/s, 'and a line between each');
 });
 
+test('a disclosure opens smoothly, and instantly where it cannot', () => {
+  const sheet = read('site.css');
+  assert.match(sheet, /\.faqList details,[\s\S]*?\{[^}]*display: grid/s, 'a question is a row that can stretch');
+  assert.match(sheet, /grid-template-rows: auto 0fr/, 'and it opens from zero rows');
+  assert.match(sheet, /\[open\][\s\S]*?\{[^}]*grid-template-rows: auto 1fr/s, 'to the full row when open');
+});
+
 test('the download pages read as one column, and the file table says what is true', () => {
   const hub = read('unduh.html');
   assert.doesNotMatch(hub, /class="shot"/, 'the hub drops the mock file panel it already states in words');
@@ -322,6 +329,27 @@ test('the brand mark reads on the dark canvas, on every page', () => {
     assert.ok(html.includes('class="brandMark"'), `${page} carries the mark`);
     assert.doesNotMatch(html, /brandMark[^>]*>\s*<rect[^>]*fill="#101512"/, `${page} paints no dark square on a dark page`);
   }
+});
+
+test('the demo types its proof one line at a time, and never without motion', () => {
+  const html = read('beranda.html');
+  assert.match(html, /class="mockCmd in"/, 'one line carries the live mark');
+  assert.doesNotMatch(html, /class="mockCmd in".*class="mockCmd in"/s, 'only the first line starts live');
+  const count = (html.match(/<span class="cursor" aria-hidden="true"><\/span>/g) || []).length;
+  assert.equal(count, 3, 'each line carries a cursor the styles animate');
+  const css = cssOf('beranda.html');
+  assert.match(css, /\.mockCmd \{[^}]*animation:/s, 'each line enters on its own delay');
+  assert.match(css, /@keyframes mock-in/, 'the entrance exists');
+  assert.match(css, /\.mockCmd \.cursor/, 'a block cursor marks the live line');
+  assert.match(css, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.mockCmd \{[^}]*animation: none/s, 'and the motion bows out when asked');
+});
+
+test('a hover answers within 120ms, and nothing moves on its own', () => {
+  const sheet = read('site.css');
+  assert.match(sheet, /\.tile:hover \{[^}]*transform: translateY\(-1px\)/s, 'a tile lifts one pixel');
+  assert.match(sheet, /\.exitList a:hover \{[^}]*color: var\(--accent\)/s, 'a link answers in the accent');
+  assert.doesNotMatch(sheet, /@keyframes (float|drift|pulse|spin|glow)/, 'and no keyframe moves anything without the reader');
+  assert.doesNotMatch(read('beranda.css') + read('features.css') + read('download.css'), /animation-iteration-count: infinite/, 'except the live cursor the demo earns');
 });
 
 test('the shared radius is the only radius a control names', () => {

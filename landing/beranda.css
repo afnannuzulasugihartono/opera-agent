@@ -202,13 +202,42 @@
 
 .mockCmd {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   gap: 10px;
   align-items: center;
   padding: 9px 0;
   border-top: 1px solid var(--line);
   font-family: var(--mono);
   font-size: 11.5px;
+  opacity: 0;
+  transform: translateY(6px);
+  animation: mock-in 0.4s var(--ease) forwards;
+}
+
+.mockCmd:nth-of-type(2) { animation-delay: 0.4s; }
+
+.mockCmd:nth-of-type(3) { animation-delay: 0.8s; }
+
+.mockCmd:nth-of-type(4) { animation-delay: 1.2s; }
+
+@keyframes mock-in {
+  to { opacity: 1; transform: none; }
+}
+
+.mockCmd .cursor {
+  width: 7px;
+  height: 13px;
+  background: var(--accent);
+  animation: cursor-blink 1s steps(2, start) infinite;
+}
+
+@keyframes cursor-blink {
+  to { visibility: hidden; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mockCmd { opacity: 1; animation: none; }
+  .mockCmd .cursor { display: none; }
 }
 
 .mockCmd:first-of-type {
