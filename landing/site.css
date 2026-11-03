@@ -343,6 +343,15 @@ header nav .brand:hover { color: var(--ink); }
   border-radius: 7px;
 }
 
+/*
+ * WHY THE MARK IS CUT FROM THE CANVAS: the old mark was a dark square with a light glyph, which on a dark page is a hole with a light shape in it.
+ * The square now carries the accent and the glyph is cut out of it, so the mark reads at any size.
+ */
+
+header nav .brandMark rect { fill: var(--accent); }
+
+header nav .brandMark path { fill: var(--bg); }
+
 header nav a:not(.brand):not(.navCta) {
   flex: 0 0 auto;
   padding: 6px 0;
