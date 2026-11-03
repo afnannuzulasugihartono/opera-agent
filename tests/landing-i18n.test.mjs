@@ -117,7 +117,7 @@ test('the authored Indonesian stands byte-for-byte where the pins read it', () =
   const sentinels = [
     ['landing/beranda.html', 'Hak cipta dilindungi'],
     ['landing/beranda.html', 'Asisten AI di '],
-    ['landing/beranda.html', 'Bawa model Anda'],
+    ['landing/beranda.html', 'Pakai model sendiri'],
     ['landing/unduh-berkas.html', 'Kalau kebijakan ditolak'],
     ['landing/404.html', 'Lima jalan keluar'],
     ['landing/dukungan.html', 'Menghubungkan AI harness (OpenCode, Kilo, ChatGPT, Claude)'],
