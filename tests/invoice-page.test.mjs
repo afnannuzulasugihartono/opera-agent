@@ -172,3 +172,17 @@ test('a refresh that failed is one honest line above the form, with no provider 
   const clean = render(EXPIRED, { canRefresh: true });
   assert.doesNotMatch(clean, /could not be opened just now/);
 });
+
+// WHY THE QR BLOCK IS PINNED HERE.
+// The dynamic QRIS is the payment surface when the rail is qris-self: the customer scans one code and the amount is already in it.
+// A page that renders the QR without saying the amount is locked would send payers to an app showing an empty amount field - the static-QR failure the conversion exists to prevent.
+
+test('a dynamic QRIS is rendered with the amount locked, and only when the function supplied it', () => {
+  const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path d="M0 0h100v100H0z"/></svg>';
+  const html = render(INVOICE, { qrisSvg: svg });
+  assert.ok(html.includes(svg), 'the QR is inline SVG, so the script-free page can show it');
+  assert.match(html, /the amount is already locked in the code/);
+  assert.match(html, /Rp 99\.000/);
+  assert.doesNotMatch(render(INVOICE), /<svg/, 'without the rendered payload there is no QR, not a broken image');
+  assert.doesNotMatch(render(PAID, { qrisSvg: svg }), /class="qris"/, 'a paid invoice shows no QR');
+});
