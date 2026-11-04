@@ -60,11 +60,13 @@ test('a shared link carries a title, not a bare URL', () => {
 test('every page renders in standards mode with its own theme color', () => {
 
   const raw = (page) => fs.readFileSync(new URL(`landing/${page}`, root), 'utf8');
+  // WHY THE PAGE READS THE CANVAS INSTEAD OF A LITERAL: the canvas is a token, so the browser chrome follows it when it moves.
+  const canvas = /--bg:\s*(#[0-9a-fA-F]{6})/.exec(read('landing/site.css'))[1];
   for (const page of [...pages, 'oauth/consent.html']) {
     const full = raw(page);
     const head = full.slice(0, full.toLowerCase().indexOf('<!doctype html>')).replace(/<!--[\s\S]*?-->/g, '');
     assert.doesNotMatch(head, /\S/, `${page} has no text before the doctype`);
-    assert.match(full, /<meta name="theme-color" content="#0a0a0a"/, `${page} tints the browser chrome`);
+    assert.match(full, new RegExp(`<meta name="theme-color" content="${canvas}"`), `${page} tints the browser chrome with the shared canvas`);
   }
 });
 

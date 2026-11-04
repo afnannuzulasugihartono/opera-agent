@@ -772,7 +772,7 @@ test('the chrome of an app page answers in the same ink as its canvas', () => {
   const html = read('dashboard.html');
   assert.doesNotMatch(html, /class="app-dark"/, 'the console names no scale of its own');
   const sheet = read('site.css');
-  assert.match(sheet, /header \{[^}]*background: rgba\(10, 10, 10, \.86\)/, 'the shared header answers in the canvas');
+  assert.match(sheet, /header \{[^}]*background: rgba\(0, 0, 0, \.86\)/, 'the shared header answers in the canvas');
   assert.match(sheet, /header nav \.navCta \{[^}]*color: var\(--on-fill\)/, 'and the sign-in action takes the ink its fill asks for');
   assert.match(sheet, /\.chip\.warn \{[^}]*color: var\(--warn\)/, 'and the one tint the shared sheet names is a token');
 });

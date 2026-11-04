@@ -59,12 +59,21 @@ test('every pair of text and ground clears its contrast floor', () => {
 });
 
 test('one accent, and every other surface is neutral', () => {
+  // WHY THE SPAN MOVED FROM 3 TO 12: opencode.ai's greys are blue-tinted neutrals (#23262f spans 12).
+  // The claim being kept is the one that matters: no surface competes with the accent for attention.
   for (const name of ['--bg', '--surface', '--surface-2', '--ink', '--muted']) {
     const [r, g, b] = token(name).replace('#', '').match(/../g).map((x) => parseInt(x, 16));
-    assert.ok(Math.max(r, g, b) - Math.min(r, g, b) <= 3, `${name} carries no hue, and spans ${Math.max(r, g, b) - Math.min(r, g, b)}`);
+    assert.ok(Math.max(r, g, b) - Math.min(r, g, b) <= 12, `${name} carries no hue worth naming, and spans ${Math.max(r, g, b) - Math.min(r, g, b)}`);
   }
   const [r, g, b] = token('--accent').replace('#', '').match(/../g).map((x) => parseInt(x, 16));
   assert.ok(Math.max(r, g, b) - Math.min(r, g, b) > 100, 'the accent is the only saturated colour');
+});
+
+test('the canvas is opencode black, with opencode greys above it', () => {
+  assert.equal(token('--bg'), '#000000', 'the canvas is black, like opencode.ai');
+  assert.equal(token('--surface'), '#17181c', 'a panel is opencode gray-1');
+  assert.equal(token('--surface-2'), '#23262f', 'a raised panel is opencode gray-2');
+  assert.equal(token('--line-strong'), '#353841', 'and the strong edge is opencode gray-2');
 });
 
 test('the hero sells the product instead of apologizing for it', () => {
@@ -384,11 +393,24 @@ test('a hover answers within 120ms, and nothing moves on its own', () => {
 
 test('the shared radius is the only radius a control names', () => {
   const sheet = read('site.css');
-  assert.match(sheet, /--radius:\s*8px/, 'a card is 8px, and the token says so');
-  assert.match(sheet, /--radius-sm:\s*6px/, 'a control is 6px');
+  assert.match(sheet, /--radius:\s*6px/, 'a card is 6px, like opencode');
+  assert.match(sheet, /--radius-sm:\s*4px/, 'a control is 4px');
   for (const page of pages) {
     assert.doesNotMatch(cssOf(page), /border-radius:\s*980px/, `${page} names no radius by hand`);
   }
+});
+
+test('the motion is opencode motion: one easing, 150 to 200 milliseconds', () => {
+  const sheet = read('site.css');
+  assert.match(sheet, /--ease:\s*cubic-bezier\(\.25, \.46, \.45, \.94\)/, 'the easing is opencode own');
+  const slow = [...sheet.matchAll(/transition:[^;}]*?([\d.]+)s/g)].map((m) => Number(m[1])).filter((n) => n > 0.2);
+  assert.deepEqual(slow, [], `no transition runs longer than 200ms, and ${slow.length} do`);
+});
+
+test('the display type is mono, the way opencode sets its headings', () => {
+  const sheet = read('site.css');
+  assert.match(sheet, /h1,\s*\n?h2 \{[^}]*font-family:\s*var\(--mono\)/s, 'h1 and h2 speak in mono');
+  assert.match(sheet, /h1,\s*\n?h2 \{[^}]*font-weight:\s*500/s, 'and at the weight mono reads well');
 });
 
 test('the hero carries its footnote instead of hiding the catch', () => {

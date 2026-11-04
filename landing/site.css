@@ -21,13 +21,13 @@
 /* ── tokens ─────────────────────────────────────────────────────────────── */
 
 :root {
-  --bg: #0a0a0a;
-  --surface: #141414;
-  --surface-2: #1c1c1c;
+  --bg: #000000;
+  --surface: #17181c;
+  --surface-2: #23262f;
   --ink: #ededed;
   --muted: #a1a1a1;
-  --line: rgba(255, 255, 255, .12);
-  --line-strong: rgba(255, 255, 255, .22);
+  --line: #23262f;
+  --line-strong: #353841;
   --accent: #3ecf8e;
   --accent-strong: #5fe0a5;
   --accent-soft: rgba(62, 207, 142, .12);
@@ -37,9 +37,9 @@
   --danger-line: rgba(255, 107, 107, .28);
   --on-fill: #0a0a0a;
   --focus: #3ecf8e;
-  --radius: 8px;
-  --radius-sm: 6px;
-  --ease: cubic-bezier(.22, .61, .24, 1);
+  --radius: 6px;
+  --radius-sm: 4px;
+  --ease: cubic-bezier(.25, .46, .45, .94);
   --font: "Instrument Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
   --wrap: 1160px;
@@ -152,6 +152,17 @@ h2 {
   font-size: clamp(28px, 3.2vw, 44px);
   line-height: 1.06;
   letter-spacing: -.035em;
+}
+
+/*
+ * WHY THE DISPLAY TYPE IS MONO: opencode.ai sets its headings in a monospace face, and the site reads as a tool because of it.
+ * The body stays in Instrument Sans, because a long paragraph in mono is a chore to read.
+ */
+
+h1,
+h2 {
+  font-family: var(--mono);
+  font-weight: 500;
 }
 
 h3 {
@@ -300,7 +311,7 @@ header {
   top: 0;
   z-index: 20;
   border-bottom: 1px solid var(--line);
-  background: rgba(10, 10, 10, .86);
+  background: rgba(0, 0, 0, .86);
   -webkit-backdrop-filter: saturate(180%) blur(18px);
   backdrop-filter: saturate(180%) blur(18px);
 }
