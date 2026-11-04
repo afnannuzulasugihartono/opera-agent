@@ -310,6 +310,18 @@ test('the features page shows one task travelling from a sentence to a file', ()
   assert.doesNotMatch(css, /infinite/, 'nothing on this page loops on its own');
 });
 
+test('the home page pauses on one statement, and the accent word carries it', () => {
+  // WHY THE PAGE NEEDS A SHOUT: measured against firecrawl.dev on 2026-11-05, its home page stops on one line of large type between the product blocks, and a page of equal sections reads like a list instead of a story.
+  const html = read('beranda.html');
+  assert.match(html, /<section class="section statement"/, 'the page carries one statement block');
+  assert.match(html, /class="statementAccent"/, 'and one word in it carries the accent');
+  const css = cssOf('beranda.html');
+  assert.match(css, /statement\.in \.statementAccent::after \{[^}]*animation: statement-rule/s, 'the accent word draws its own rule when the band lands');
+  assert.match(css, /@keyframes statement-rule/, 'the rule exists');
+  assert.match(css, /\.statementLine \{[^}]*font-size: clamp\(/s, 'the statement is set in large type');
+  assert.match(css, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.statementAccent::after \{[^}]*animation: none/s, 'and the motion bows out when asked');
+});
+
 test('the shared spotlight script only paints what the pointer names', () => {
   const src = read('spotlight.js');
   assert.match(src, /pointermove/, 'it listens to the pointer');
