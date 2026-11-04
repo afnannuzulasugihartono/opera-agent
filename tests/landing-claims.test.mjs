@@ -19,7 +19,9 @@ const siteFiles = ['landing/beranda.html', 'landing/index.html', 'landing/akun.h
 const sitePages = siteFiles.map(read);
 const site = sitePages.join('\n');
 
-// WHY THE CONSOLE IS NOT IN THE MONEY-OWNER LOCK: the dashboard is the app a signed-in customer uses, and it reads the price from the server at open time. The public pages are what repeat a number by hand.
+// WHY THE CONSOLE IS NOT IN THE MONEY-OWNER LOCK: the dashboard is the app a signed-in customer uses, and it reads the price from the server at open time.
+// The public pages are what repeat a number by hand.
+
 const publicFiles = siteFiles.filter((file) => !file.includes('dashboard') && !file.includes('consent'));
 
 const manifest = JSON.parse(read('extension/manifest.json'));

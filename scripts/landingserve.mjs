@@ -24,7 +24,7 @@ const FILES = new Set([
   'unduh-berkas.html', 'privasi.html', 'syarat.html', '404.html', 'fitur.html',
   'dukungan.html', 'docs.html', 'harga.html', 'site.css', 'beranda.css',
   'features.css', 'download.css', 'auth.css', 'app.css', 'dashboard.css',
-  'i18n.js', 'oauth/consent.html'
+  'i18n.js', 'oauth/consent.html', 'fonts/instrument-sans-latin.woff2'
 ]);
 
 createServer(async (req, res) => {
@@ -37,7 +37,7 @@ createServer(async (req, res) => {
   }
   const path = decodeURIComponent(raw);
   const name = path === '/' ? 'beranda.html' : path.replace(/^\//, '');
-  if (!/^[A-Za-z0-9._-]+\/[A-Za-z0-9._-]+\.html$|^[A-Za-z0-9._-]+\.(html|css|js|svg|woff2)$/.test(name)) {
+  if (!/^[A-Za-z0-9._-]+\/[A-Za-z0-9._-]+\.(html|woff2)$|^[A-Za-z0-9._-]+\.(html|css|js|svg|woff2)$/.test(name)) {
     res.writeHead(404);
     res.end();
     return;
