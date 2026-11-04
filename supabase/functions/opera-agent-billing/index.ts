@@ -164,10 +164,11 @@ function db() {
 // The scheduled detector runs inside Postgres, and Postgres can only prove it is the cron with a secret it can read.
 // The function already holds that secret in its environment, so it publishes a copy into vault on its first request instead of asking a human to paste it there.
 
-let tokenPublished: Promise<unknown> | null = null;
+let tokenPublished = false;
 function publishOperatorToken(): void {
   if (!BILLING_TOKEN || tokenPublished) return;
-  tokenPublished = db().then((client) => client.rpc("opera_vault_put", {
+  tokenPublished = true;
+  db().then((client) => client.rpc("opera_vault_put", {
     p_name: "opera_billing_token",
     p_secret: BILLING_TOKEN,
     p_description: "Operator token for the billing function and its scheduled detector"
