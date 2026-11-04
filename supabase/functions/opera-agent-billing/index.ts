@@ -774,9 +774,13 @@ function walletDeps(req: Request) {
 
 
 Deno.serve(async (req: Request) => {
-  const cors = {
-    "access-control-allow-origin": resolveAllowedOrigin(req, CORS_DEFAULT_ORIGINS) || "",
-    "access-control-allow-headers": "authorization, content-type",
+
+// WHY apikey IS ALLOWED: the dashboard calls this function with the publishable key in the apikey header beside the bearer session, and a preflight that does not name apikey makes the browser drop the request before it is sent.
+// The bridge does not need it because the device sends only its own token in the body, and it keeps its own narrower list.
+
+const cors = {
+  "access-control-allow-origin": resolveAllowedOrigin(req, CORS_DEFAULT_ORIGINS) || "",
+  "access-control-allow-headers": "authorization, content-type, apikey",
     "access-control-allow-methods": "GET, POST, OPTIONS",
     "cache-control": "no-store"
   };

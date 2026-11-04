@@ -1188,8 +1188,17 @@
       const status = $('walletStatus');
       status.textContent = 'Memuat saldo…';
       status.className = 'status';
-      const balance = await walletCall('wallet-balance');
-      const history = await walletCall('wallet-history');
+      // WHY a dropped packet is a warn line and not a stuck status: a fetch refused by the browser or the network rejects instead of answering, and an unhandled rejection leaves the last line on screen forever — the reader cannot tell "loading" from "broken".
+      let balance = null;
+      let history = null;
+      try {
+        balance = await walletCall('wallet-balance');
+        history = await walletCall('wallet-history');
+      } catch {
+        status.textContent = 'Tidak bisa menjangkau server saldo. Coba muat ulang.';
+        status.className = 'status warn';
+        return;
+      }
       if (!balance?.ok || !history?.ok) {
         status.textContent = balance === null || history === null
           ? 'Tidak bisa memuat saldo sekarang.'
@@ -1223,7 +1232,14 @@
       const status = $('walletStatus');
       status.textContent = 'Membuka halaman pembayaran…';
       status.className = 'status';
-      const opened = await walletCall('wallet-deposit');
+      let opened = null;
+      try {
+        opened = await walletCall('wallet-deposit');
+      } catch {
+        status.textContent = 'Tidak bisa menjangkau server pembayaran. Coba lagi.';
+        status.className = 'status warn';
+        return;
+      }
       if (opened?.ok && opened.url) {
         globalThis.open(opened.url, '_blank', 'noopener');
         status.textContent = 'Halaman pembayaran dibuka di tab baru. Saldo bertambah setelah pembayaran dikonfirmasi.';
