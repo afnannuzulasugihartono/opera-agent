@@ -428,6 +428,16 @@ test('the strip of pages our users open moves once and stops when asked', () => 
   assert.match(css, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.marqueeTrack \{[^}]*animation: none/s, 'and it stops when the reader asks');
 });
 
+test('the mock types its commands instead of only fading them in', () => {
+  // WHY A TYPED REVEAL: measured against firecrawl.dev on 2026-11-04, its product visual writes itself, and a hero that only fades reads like a slide.
+  // The reveal is a clip in steps, so the text stays in the page for readers and for search engines.
+  const css = read('beranda.css');
+  assert.match(css, /\.mockCmd code \{[^}]*clip-path: inset\(0 100% 0 0\)/s, 'the command starts covered');
+  assert.match(css, /@keyframes type-in/, 'and it is uncovered by a keyframe');
+  assert.match(css, /\.mockCmd code \{[^}]*animation: type-in[^}]*steps\(/s, 'the uncover runs in steps, so it types');
+  assert.match(css, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.mockCmd code \{[^}]*clip-path: none/s, 'and the reader can refuse the typing');
+});
+
 test('the capability cards answer the pointer', () => {
   const html = read('beranda.html');
   const css = read('site.css');
