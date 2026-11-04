@@ -661,6 +661,37 @@
 
     // WHY the numbers count once: a reader who lands on the page watches the figures arrive instead of reading them as wallpaper.
     const reduceMotion = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    // WHY the demo plays once and then waits: measured against firecrawl.dev on 2026-11-05, its hero moves before a reader touches anything, and a still product picture reads as a picture.
+    // The sequence shows all three moments once and stops, so the page never loops on its own, and a reader who reaches for it ends the sequence at once.
+    const demo = document.querySelector('.demo');
+    let demoTimer = null;
+    let demoStep = 0;
+
+    const stopDemo = () => {
+      if (demoTimer) clearTimeout(demoTimer);
+      demoTimer = null;
+      demoStep = 0;
+    };
+
+    const playDemo = () => {
+      if (reduceMotion || tabs.length === 0) return;
+      demoStep += 1;
+      if (demoStep >= tabs.length) {
+        stopDemo();
+        return;
+      }
+      showPanel(tabs[demoStep].dataset.panel);
+      demoTimer = setTimeout(playDemo, 5500);
+    };
+
+    if (demo && !reduceMotion) {
+      demoTimer = setTimeout(playDemo, 3500);
+      demo.addEventListener('pointerenter', stopDemo);
+      demo.addEventListener('focusin', stopDemo);
+      for (const tab of tabs) tab.addEventListener('click', stopDemo);
+    }
+
     const stats = $('heroStats');
 
     const countUp = (node, target) => {

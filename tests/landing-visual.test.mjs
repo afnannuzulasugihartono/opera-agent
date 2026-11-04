@@ -418,6 +418,16 @@ test('the hero shows three moments of the product, not one picture', () => {
   assert.match(html, /class="demoTab"/, 'the tabs carry the class the sheet paints');
 });
 
+test('the hero demo plays once and then waits for the reader', () => {
+  // WHY THIS EXISTS: measured against firecrawl.dev on 2026-11-05, its hero moves before a reader touches anything, and a still product picture reads as a picture.
+  // The sequence shows all three moments once and stops, so the page never loops on its own, and a reader who reaches for it ends the sequence at once.
+  const html = read('beranda.html');
+  assert.match(html, /const playDemo = \(\) => \{/, 'the demo runs by itself');
+  assert.match(html, /demoStep >= tabs\.length/, 'and it stops after the last moment');
+  assert.match(html, /demo\.addEventListener\('pointerenter', stopDemo\)/, 'a reader who reaches for it ends the sequence');
+  assert.match(html, /if \(demo && !reduceMotion\)/, 'and a reader who asked for stillness never sees it');
+});
+
 test('the strip of pages our users open moves once and stops when asked', () => {
   const html = read('beranda.html');
   const css = read('beranda.css');
