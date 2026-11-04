@@ -168,7 +168,6 @@ main.wrap { padding-top: 68px; padding-bottom: 96px; }
   main.wrap { padding-top: 44px; }
   .featureHero { margin-bottom: 40px; }
   .statBand { margin-bottom: 44px; }
-  .featureList { margin-bottom: 44px; }
   .permPanel { grid-template-columns: 1fr; gap: 22px; padding: 26px; margin-bottom: 44px; }
   .finalBand { padding: 34px 24px; }
 }
