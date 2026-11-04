@@ -1,7 +1,7 @@
 <!-- @last-edited: 2026-10-26 UTC+7. -->
 <!-- @title: privasi — the data boundary in full sentences. -->
 <!-- @state: sentence A plus queue-history disclosure, contact, and retention. -->
-<!-- @dependencies: site.css, i18n.js. -->
+<!-- @dependencies: site.css, i18n.js, reveal.js. -->
 
 <!doctype html>
 <html lang="id">
@@ -47,33 +47,45 @@
       <li><a href="#ditolak">Yang selalu ditolak</a></li>
       <li><a href="#kontak">Kontak</a></li>
     </ul>
-    <p><strong>Hanya pergi ke endpoint model milik Anda.</strong> Konten dari halaman yang
-    Anda setujui untuk dibaca asisten hanya dikirim ke endpoint model yang Anda konfigurasi
-    sendiri. Kami tidak memilihkan model untuk Anda dan tidak menerima konten itu untuk
-    dibaca manusia.</p>
+    <section data-reveal>
+      <p><strong>Hanya pergi ke endpoint model milik Anda.</strong> Konten dari halaman yang
+      Anda setujui untuk dibaca asisten hanya dikirim ke endpoint model yang Anda konfigurasi
+      sendiri. Kami tidak memilihkan model untuk Anda dan tidak menerima konten itu untuk
+      dibaca manusia.</p>
+    </section>
 
-    <h2 id="relay">Relay perintah</h2>
-    <p>Agar asisten bisa bertindak di device Anda, perintah browser beserta hasilnya transit
-    melalui relay project dan <strong>disimpan sebagai riwayat antrean di database
-    project</strong>. Tidak ada data yang dihapus otomatis; riwayat ada selama akun ada.</p>
+    <section data-reveal>
+      <h2 id="relay">Relay perintah</h2>
+      <p>Agar asisten bisa bertindak di device Anda, perintah browser beserta hasilnya transit
+      melalui relay project dan <strong>disimpan sebagai riwayat antrean di database
+      project</strong>. Tidak ada data yang dihapus otomatis; riwayat ada selama akun ada.</p>
+    </section>
 
-    <h2 id="pihak-ketiga">Tidak pernah dibagikan ke pihak ketiga</h2>
-    <p>Konten halaman, hasil perintah, dan kunci API Anda tidak pernah dibagikan, dijual,
-    atau diberikan ke pihak ketiga mana pun untuk tujuan apa pun.</p>
+    <section data-reveal>
+      <h2 id="pihak-ketiga">Tidak pernah dibagikan ke pihak ketiga</h2>
+      <p>Konten halaman, hasil perintah, dan kunci API Anda tidak pernah dibagikan, dijual,
+      atau diberikan ke pihak ketiga mana pun untuk tujuan apa pun.</p>
+    </section>
 
-    <h2 id="kunci">Kunci Anda</h2>
-    <p>Kunci API model dan token device tersimpan di browser Anda masing-masing dan tidak
-    pernah ditampilkan kembali ke halaman web mana pun, termasuk halaman situs ini.</p>
+    <section data-reveal>
+      <h2 id="kunci">Kunci Anda</h2>
+      <p>Kunci API model dan token device tersimpan di browser Anda masing-masing dan tidak
+      pernah ditampilkan kembali ke halaman web mana pun, termasuk halaman situs ini.</p>
+    </section>
 
-    <h2 id="ditolak">Yang selalu ditolak</h2>
-    <p>Screenshot dan pembacaan halaman ditolak di halaman yang menampilkan password, kode
-    sekali pakai, atau kolom pembayaran, serta di tab private dan incognito.</p>
+    <section data-reveal>
+      <h2 id="ditolak">Yang selalu ditolak</h2>
+      <p>Screenshot dan pembacaan halaman ditolak di halaman yang menampilkan password, kode
+      sekali pakai, atau kolom pembayaran, serta di tab private dan incognito.</p>
+    </section>
 
-    <h2 id="kontak">Kontak</h2>
-    <p>Pertanyaan tentang data Anda: semua kendali mandiri ada di halaman
-    <a href="./akun.html">Akun</a> — lihat device yang ter-pairing, cabut yang tidak dikenal,
-    keluar dari sesi. Temuan keamanan jangan dibuka sebagai isu publik; laporkan privat
-    lewat tab Security di repositori.</p>
+    <section data-reveal>
+      <h2 id="kontak">Kontak</h2>
+      <p>Pertanyaan tentang data Anda: semua kendali mandiri ada di halaman
+      <a href="./akun.html">Akun</a> — lihat device yang ter-pairing, cabut yang tidak dikenal,
+      keluar dari sesi. Temuan keamanan jangan dibuka sebagai isu publik; laporkan privat
+      lewat tab Security di repositori.</p>
+    </section>
   </main>
 
     <footer>
@@ -135,5 +147,7 @@
   }
   </script>
   <script src="./i18n.js"></script>
+
+  <script src="/reveal.js"></script>
 </body>
 </html>

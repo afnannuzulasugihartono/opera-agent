@@ -1,7 +1,7 @@
 <!-- @last-edited: 2026-10-26 UTC+7. -->
 <!-- @title: beranda — the public home: one product proof, one action per idea, and your own model. -->
 <!-- @state: static page; the model form talks to the installed extension and to nothing else. -->
-<!-- @dependencies: site.css, beranda.css, i18n.js. -->
+<!-- @dependencies: site.css, beranda.css, i18n.js, reveal.js. -->
 
 <!doctype html>
 <html lang="id">
@@ -174,7 +174,7 @@
       </div>
     </section>
 
-    <section class="strip reveal" aria-label="Halaman yang bisa dikerjakan">
+    <section class="strip" data-reveal aria-label="Halaman yang bisa dikerjakan">
       <p class="stripLabel" data-i18n="strip.label">Halaman mana pun. Bukan daftar putih.</p>
       <div class="marquee" aria-hidden="true">
         <div class="marqueeTrack">
@@ -184,7 +184,7 @@
       </div>
     </section>
 
-    <section id="install" class="section reveal">
+    <section id="install" class="section" data-reveal>
       <div class="sectionHead">
         <div>
           <h2 data-i18n="install.title">Dari prompt ke hasil.</h2>
@@ -216,7 +216,7 @@
       </div>
     </section>
 
-    <section id="model" class="section reveal">
+    <section id="model" class="section" data-reveal>
       <div class="split reverse">
         <div>
           <h2 data-i18n="model.title">Pakai model sendiri.</h2>
@@ -254,7 +254,7 @@
       </div>
     </section>
 
-    <section id="signin" class="section reveal" aria-labelledby="abilityTitle">
+    <section id="signin" class="section" data-reveal aria-labelledby="abilityTitle">
       <div class="sectionHead">
         <div>
           <h2 id="abilityTitle" data-i18n="ability.title">Setelah pair, browser yang bekerja.</h2>
@@ -285,7 +285,7 @@
       </div>
     </section>
 
-    <section id="privacy" class="section reveal">
+    <section id="privacy" class="section" data-reveal>
       <div class="sectionHead">
         <div>
           <h2 data-i18n="privacy.title">Privasi lebih dulu.</h2>
@@ -308,7 +308,7 @@
       </div>
     </section>
 
-    <section id="faq" class="section reveal">
+    <section id="faq" class="section" data-reveal>
       <div class="sectionHead">
         <div>
           <h2 data-i18n="faq.title">Pertanyaan umum.</h2>
@@ -331,7 +331,7 @@
       </div>
     </section>
 
-    <section class="finalBand reveal" aria-labelledby="finalTitle">
+    <section class="finalBand" data-reveal aria-labelledby="finalTitle">
       <h2 id="finalTitle" data-i18n="final.title">Pasang. Pair. Kerja.</h2>
       <p data-i18n="final.sub">Satu extension, satu akun, satu browser.</p>
       <a class="btn primary" href="./unduh.html" data-i18n="cta.download">Pasang Opera Agent</a>
@@ -482,6 +482,7 @@
   </script>
   <script src="./i18n.js"></script>
   <script src="/spotlight.js"></script>
+  <script src="/reveal.js"></script>
   <script type="module">
 
     // WHY the extension id is written here and pinned by a test: the page must be able to name the extension it configures.
@@ -681,23 +682,6 @@
         }
       }, { threshold: 0.5 });
       counted.observe(stats);
-    }
-
-    // WHY last and fenced: motion must never gate content.
-    // The js class goes on <html> first so every hiding rule requires it, and a reader without JS — or with reduced motion — gets the full page with no animation at all.
-    try {
-      document.documentElement.classList.add('js');
-      const reduce = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
-      if (!reduce && 'IntersectionObserver' in globalThis) {
-        const seen = new IntersectionObserver((entries) => {
-          for (const entry of entries) {
-            if (entry.isIntersecting) { entry.target.classList.add('in'); seen.unobserve(entry.target); }
-          }
-        }, { threshold: 0.12 });
-        for (const el of document.querySelectorAll('.reveal')) seen.observe(el);
-      }
-    } catch (error) {
-      // Content stays visible; only the entrance motion is lost.
     }
   </script>
 </body>

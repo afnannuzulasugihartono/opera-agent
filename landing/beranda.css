@@ -766,33 +766,11 @@
 
 /* ── entrance motion ────────────────────────────────────────────────────── */
 
-html.js .reveal {
-  opacity: 0;
-  transform: translateY(10px);
-  transition:
-    opacity 0.45s var(--ease),
-    transform 0.45s var(--ease);
-}
-
-html.js .reveal.in {
-  opacity: 1;
-  transform: none;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  html.js .reveal {
-    opacity: 1;
-    transform: none;
-    transition: none;
-  }
-}
+/*
+ * WHY THE ARRIVAL RULE LIVES IN site.css: every public page now shares one arrival, and one rule beats ten copies of the same observer.
+ */
 
 @media print {
-  html.js .reveal {
-    opacity: 1;
-    transform: none;
-    transition: none;
-  }
   .hero {
     min-height: 0;
   }

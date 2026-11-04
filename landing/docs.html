@@ -1,7 +1,7 @@
 <!-- @last-edited: 2026-11-04 UTC+7. -->
 <!-- @title: docs — the guide: install, pairing, the first job, the wallet, MCP, and the limits the product keeps. -->
 <!-- @state: static page; every number on it is read from the code by tests/landing-docs.test.mjs. -->
-<!-- @dependencies: site.css, docs.css, i18n.js, docs.js. -->
+<!-- @dependencies: site.css, docs.css, i18n.js, docs.js, reveal.js. -->
 
 <!doctype html>
 <html lang="id">
@@ -58,7 +58,7 @@
         <h1>Docs</h1>
         <p class="updated">Pasang, pair, jalankan, hubungkan.</p>
 
-        <section>
+        <section data-reveal>
           <h2 id="pasang">Pasang extension</h2>
           <ol class="steps">
             <li><strong>Unduh.</strong> Ambil arsip <code>.zip</code> dari halaman <a href="./unduh.html">Unduh</a>.</li>
@@ -70,7 +70,7 @@
           <p>Pemasangan tidak dipungut biaya. Yang dibayar nanti adalah setiap pekerjaan yang selesai.</p>
         </section>
 
-        <section>
+        <section data-reveal>
           <h2 id="pairing">Masuk dan pair device</h2>
           <p>Masuk dengan magic link email, Google, atau GitHub dari halaman <a href="/">Masuk</a>.</p>
           <ol class="steps">
@@ -81,7 +81,7 @@
           <p>Device yang tidak dikenali bisa dicabut kapan saja di Dashboard.</p>
         </section>
 
-        <section>
+        <section data-reveal>
           <h2 id="tugas">Tugas pertama</h2>
           <p>Anda bicara, browser bekerja, hasilnya menjadi artefak nyata. Contoh: <em>Buka Google Maps, cari kopi dekat Monas, dan tulis hasilnya ke sheet.</em></p>
           <ul>
@@ -91,12 +91,12 @@
           </ul>
         </section>
 
-        <section>
+        <section data-reveal>
           <h2 id="saldo">Saldo dan tagihan</h2>
           <p>Isi saldo lewat QRIS dari Dashboard, tanpa langganan. Saldo yang kurang membuat pekerjaan ditolak sebelum mulai, dengan tautan isi ulang. Harga tetap, pengembalian, dan masa berlaku saldo ada di halaman <a href="/harga">Harga</a>.</p>
         </section>
 
-        <section>
+        <section data-reveal>
           <h2 id="mcp">Hubungkan AI harness</h2>
           <p>Server MCP untuk OpenCode, Kilo Code, Claude Code, dan konektor lain. Masuk dengan akun Anda (OAuth).</p>
           <p>Server MCP:</p>
@@ -157,7 +157,7 @@
           <p>Setelah terpasang: buka pengaturan konektor, pilih <strong>Allow all tools</strong>, lalu refresh atau buka chat baru. Daftar tool baru muncul sesudah itu — itu perilaku ChatGPT, bukan error koneksi.</p>
         </section>
 
-        <section>
+        <section data-reveal>
           <h2 id="batas">Batas yang dijaga</h2>
           <ul>
             <li>Password, kode sekali pakai, PIN, kartu, dan CVV selalu ditolak. Pekerjaan yang berhenti di situ gagal.</li>
@@ -231,6 +231,8 @@
   }
   </script>
   <script src="./i18n.js"></script>
+
+  <script src="/reveal.js"></script>
   <script src="/docs.js"></script>
   <script type="module">
     for (const button of document.querySelectorAll('[data-copy]')) {

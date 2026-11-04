@@ -1,7 +1,7 @@
 <!-- @last-edited: 2026-10-26 UTC+7. -->
 <!-- @title: index — sign in with a provider or a magic link, never a password of ours. -->
 <!-- @state: initiates project Auth login; device-to-account binding arrives with pairing. -->
-<!-- @dependencies: site.css, auth.css, i18n.js. -->
+<!-- @dependencies: site.css, auth.css, i18n.js, reveal.js. -->
 
 <!doctype html>
 <html lang="id">
@@ -38,7 +38,7 @@
   </header>
 
   <main class="wrap auth">
-    <div class="split">
+    <div class="split" data-reveal>
       <div class="brand">
         <svg class="mark" viewBox="0 0 16 16" aria-hidden="true"><rect width="16" height="16" rx="3" fill="#0b0d10" /><path d="M5.2 2.2v10.2l2.5-2.3 1.5 3.6 1.9-.8-1.6-3.6h3.1L5.2 2.2Z" fill="#3ecf8e" /></svg>
         <h1 id="pageTitle" data-i18n="gate.title">Masuk atau daftar</h1>
@@ -180,6 +180,8 @@
   }
   </script>
   <script src="./i18n.js"></script>
+
+  <script src="/reveal.js"></script>
   <script type="module">
 
     // WHY fetch is allowed exactly one destination here: the project Auth host.

@@ -366,7 +366,7 @@ test('the reading pages keep their map beside the text', () => {
   assert.match(css, /main\.prose:has\(\.toc\)/, 'a page with a map lays the map beside the text');
   assert.match(css, /\.toc \{[^}]*background: var\(--surface\)/s, 'and the map is a surface of the canvas');
   const dukung = read('dukungan.html');
-  assert.match(dukung, /<details>/, 'the support questions open in place');
+  assert.match(dukung, /<details[^>]*>/, 'the support questions open in place');
   assert.doesNotMatch(dukung, /<dl class="facts">/, 'and no flat list survives');
 });
 
@@ -488,12 +488,12 @@ test('motion is an enhancement, never the content', () => {
 
   const page = read('beranda.html');
   const css = cssOf('beranda.html');
-  assert.match(page, /documentElement\.classList\.add\('js'\)/, 'JS announces itself before anything hides');
-  assert.match(css, /html\.js \.reveal/, 'hiding requires that announcement');
+  assert.match(read('reveal.js'), /documentElement\.classList\.add\('js'\)/, 'JS announces itself before anything hides');
+  assert.match(css, /html\.js \[data-reveal\]/, 'hiding requires that announcement');
   assert.match(css, /prefers-reduced-motion/, 'and the motion bows out when asked');
-  assert.match(page, /IntersectionObserver/, 'one observer per page, not per pixel');
+  assert.match(read('reveal.js'), /IntersectionObserver/, 'one observer per page, not per pixel');
 
-  assert.match(css, /@media print\s*{[^}]*\.reveal[^}]*opacity:\s*1/s,
+  assert.match(css, /@media print\s*{[^}]*\[data-reveal\][^}]*opacity:\s*1/s,
     'print shows every section, or the motion has hidden the page from being read');
 });
 

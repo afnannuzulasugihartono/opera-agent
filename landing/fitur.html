@@ -1,7 +1,7 @@
 <!-- @last-edited: 2026-10-26 UTC+7. -->
 <!-- @title: fitur — practical reference: the surface, the permissions, and the model you bring. -->
 <!-- @state: static page; counts and permission names are read from the extension by the suite. -->
-<!-- @dependencies: site.css, features.css, i18n.js. -->
+<!-- @dependencies: site.css, features.css, i18n.js, reveal.js. -->
 
 <!doctype html>
 <html lang="id">
@@ -38,7 +38,7 @@
   </header>
 
   <main class="wrap">
-    <section class="featureHero">
+    <section class="featureHero" data-reveal>
       <h1 data-i18n="page.title">Browser Anda, alat kerja.</h1>
       <p class="lede" data-i18n="page.sub">Apa yang bisa dilakukan dan untuk siapa.</p>
       <p class="featureIntro" data-i18n-html="intro"><strong>Companion dengan AI di belakangnya.</strong> Anda berbicara. Browser bekerja. Hasilnya menjadi artefak nyata.</p>
@@ -54,7 +54,7 @@
       <div><dt>6</dt><dd data-i18n="stat.perms">izin</dd></div>
     </dl>
 
-    <section class="bento" aria-label="Kemampuan utama">
+    <section class="bento" data-reveal aria-label="Kemampuan utama">
       <article class="bentoArticle">
         <h2 data-i18n="s1.title">34 tool, 31 primitive</h2>
         <p data-i18n="s1.body">Baca halaman, isi formulir, navigasi, dan verifikasi hasil. Google Maps, YouTube, dan Docs adalah contoh awal.</p>
@@ -81,7 +81,7 @@
       </article>
     </section>
 
-    <section class="permPanel" aria-labelledby="permTitle">
+    <section class="permPanel" data-reveal aria-labelledby="permTitle">
       <div>
         <h2 id="permTitle" data-i18n="perm.title">Izin yang diminta</h2>
         <p data-i18n="perm.body">Tidak ada izin lain di luar daftar ini.</p>
@@ -91,7 +91,7 @@
       </div>
     </section>
 
-    <section class="finalBand" aria-labelledby="finalTitle">
+    <section class="finalBand" data-reveal aria-labelledby="finalTitle">
       <h2 id="finalTitle" data-i18n="final.title">Satu extension. Browser Anda.</h2>
       <p data-i18n-html="final.sub">Harga dan aturannya ada di halaman <a href="/harga">Harga</a>.</p>
       <a class="btn primary" href="./unduh.html" data-i18n="cta.download">Unduh</a>
@@ -182,6 +182,8 @@
   }
   </script>
   <script src="./i18n.js"></script>
+
+  <script src="/reveal.js"></script>
   <script src="/spotlight.js"></script>
 </body>
 </html>

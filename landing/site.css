@@ -1,6 +1,6 @@
 /*
  * @last-edited: 2026-11-03 UTC+7.
- * @title: site.css — the design tokens, reset, chrome and components every page of the site shares.
+ * @title: site.css â€” the design tokens, reset, chrome and components every page of the site shares.
  * @state: one dark canvas, one accent, one local typeface, an aligned 1160px shell, and the shared header, footer, card and control rules.
  * @dependencies: fonts/instrument-sans-latin.woff2.
  *
@@ -18,7 +18,7 @@
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 
-/* ── tokens ─────────────────────────────────────────────────────────────── */
+/* â”€â”€ tokens â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 :root {
   --bg: #000000;
@@ -48,7 +48,7 @@
   --brand: var(--accent);
 }
 
-/* ── reset and type ─────────────────────────────────────────────────────── */
+/* â”€â”€ reset and type â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 *,
 *::before,
@@ -220,7 +220,7 @@ hr {
   background: var(--line);
 }
 
-/* ── layout ─────────────────────────────────────────────────────────────── */
+/* â”€â”€ layout â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 .wrap {
   width: min(100% - 48px, var(--wrap));
@@ -304,7 +304,7 @@ main.wrap.auth { max-width: 1080px; }
   .sectionHead { grid-template-columns: 1fr; gap: 12px; align-items: start; }
 }
 
-/* ── header ─────────────────────────────────────────────────────────────── */
+/* â”€â”€ header â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 header {
   position: sticky;
@@ -445,7 +445,7 @@ header nav .navCta:hover {
   header nav .navCta { padding: 0 13px; }
 }
 
-/* ── footer ─────────────────────────────────────────────────────────────── */
+/* â”€â”€ footer â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 footer {
   border-top: 1px solid var(--line);
@@ -522,7 +522,7 @@ footer .doors a:hover { color: var(--ink); }
   .footGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
-/* ── buttons, chips and cards ───────────────────────────────────────────── */
+/* â”€â”€ buttons, chips and cards â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 .btn {
   display: inline-flex;
@@ -656,7 +656,7 @@ footer .doors a:hover { color: var(--ink); }
 
 @media (max-width: 700px) { .exitGrid { grid-template-columns: 1fr; } }
 
-/* ── bento grid ─────────────────────────────────────────────────────────── */
+/* â”€â”€ bento grid â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 /*
  * WHY THE GRID IS SHARED: the home page and the features page both answer "what does it do?" with the same four cards, and two copies of one grid drift apart in a week.
@@ -748,7 +748,7 @@ footer .doors a:hover { color: var(--ink); }
 .dot.offline,
 .dot.warn { background: var(--warn); }
 
-/* ── facts, steps and prose ─────────────────────────────────────────────── */
+/* â”€â”€ facts, steps and prose â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 dl.facts {
   display: grid;
@@ -871,7 +871,7 @@ ol.steps strong { color: var(--ink); }
   main.prose:has(.toc) > :not(.toc) { grid-column: 2; }
 }
 
-/* ── forms ──────────────────────────────────────────────────────────────── */
+/* â”€â”€ forms â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 label {
   display: block;
@@ -944,7 +944,7 @@ button { font-family: inherit; }
   line-height: 1.55;
 }
 
-/* ── surfaces ───────────────────────────────────────────────────────────── */
+/* â”€â”€ surfaces â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 .panelLight {
   border-radius: var(--radius);
@@ -960,7 +960,7 @@ button { font-family: inherit; }
 
 .panelLight a { color: var(--accent); }
 
-/* ── OAuth consent lists ────────────────────────────────────────────────── */
+/* â”€â”€ OAuth consent lists â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 ul.scopes {
   margin: 0;
@@ -999,7 +999,7 @@ ul.consents .when { color: var(--muted); font-size: 12.5px; }
 
 ul.consents button { margin-left: auto; }
 
-/* ── document utilities ────────────────────────────────────────────────── */
+/* â”€â”€ document utilities â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 .prose .updated,
 .lang-note {
@@ -1137,7 +1137,7 @@ ul.consents button { margin-left: auto; }
 }
 
 .faqList details[open] summary::after,
-.prose details[open] > summary::after { content: "−"; }
+.prose details[open] > summary::after { content: "âˆ’"; }
 
 .faqList details p,
 .prose details > p {
@@ -1152,13 +1152,36 @@ ul.consents button { margin-left: auto; }
 .prose details > h3,
 .prose details > .copybox { margin-bottom: 16px; }
 
-/* ── motion and print ──────────────────────────────────────────────────── */
+/* â”€â”€ motion and print â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+
+/*
+ * WHY THE ARRIVAL IS SHARED: every public page has blocks that come in as the reader reaches them, and one rule is easier to keep honest than ten pages of their own.
+ * WHY THE HIDE NEEDS THE js CLASS: only a page that announced itself may hide a block, so a reader without JavaScript â€” or with reduced motion â€” sees everything.
+ * WHY THE ARRIVAL IS SHORT: the site's own rule is 150 to 200 milliseconds, and a page that takes half a second to settle reads as slow.
+ */
+
+html.js [data-reveal] {
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity .2s var(--ease), transform .2s var(--ease);
+}
+
+html.js [data-reveal].in {
+  opacity: 1;
+  transform: none;
+}
 
 @media (prefers-reduced-motion: no-preference) {
   html { scroll-behavior: smooth; }
 }
 
 @media (prefers-reduced-motion: reduce) {
+  html.js [data-reveal] {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+
   *,
   *::before,
   *::after {
@@ -1175,6 +1198,11 @@ ul.consents button { margin-left: auto; }
 }
 
 @media print {
+  html.js [data-reveal] {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
   header,
   footer { display: none !important; }
   body { background: #fff; color: #000; }

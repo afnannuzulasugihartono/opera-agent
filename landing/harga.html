@@ -1,7 +1,7 @@
 <!-- @last-edited: 2026-11-04 UTC+7. -->
 <!-- @title: harga — what a finished job costs, and what a failed one costs. -->
 <!-- @state: prepaid wallet, flat price per completed job announced before it starts, full refund on failure, top-up from Rp10.000 by QRIS. -->
-<!-- @dependencies: site.css, harga.css, i18n.js. -->
+<!-- @dependencies: site.css, harga.css, i18n.js, reveal.js. -->
 
 <!doctype html>
 <html lang="id">
@@ -42,7 +42,7 @@
     <h1>Harga</h1>
     <p class="updated">Berlaku sejak 4 November 2026.</p>
 
-    <section class="priceCards" aria-label="Cara membayar">
+    <section class="priceCards" data-reveal aria-label="Cara membayar">
       <article class="priceCard">
         <h2>Isi saldo</h2>
         <p>QRIS sekali, mulai <strong>Rp10.000</strong>. Saldo tidak kedaluwarsa.</p>
@@ -57,7 +57,7 @@
       </article>
     </section>
 
-    <dl class="glance">
+    <dl class="glance" data-reveal>
       <div><dt>Top-up minimum</dt><dd>Rp10.000</dd></div>
       <div><dt>Pembayaran</dt><dd>Prabayar</dd></div>
       <div><dt>Satuan</dt><dd>Per pekerjaan</dd></div>
@@ -160,5 +160,7 @@
   }
   </script>
   <script src="./i18n.js"></script>
+
+  <script src="/reveal.js"></script>
 </body>
 </html>

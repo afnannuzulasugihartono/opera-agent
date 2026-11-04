@@ -121,7 +121,7 @@ test('every auth control has an accessible name', () => {
 
 test('the gate splits brand from form, and stacks on a narrow screen', () => {
 
-  assert.match(html, /<div class="split">/, 'brand and gate share one row');
+  assert.match(html, /<div class="split"[^>]*>/, 'brand and gate share one row');
   assert.match(html, /<div class="brand">/, 'the brand panel stands on the left');
   const mark = 'M5.2 2.2v10.2l2.5-2.3 1.5 3.6 1.9-.8-1.6-3.6h3.1L5.2 2.2Z';
   assert.ok(html.includes(`<path d="${mark}"`), 'the panel mark reuses the favicon path inline');
