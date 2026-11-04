@@ -73,7 +73,6 @@ pnpm-debug.log*
 
 .tmp/
 tmp/
-.vercel
 
 # Python test artifacts
 

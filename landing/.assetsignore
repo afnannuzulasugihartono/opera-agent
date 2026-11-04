@@ -1,16 +1,12 @@
-# @last-edited: 2026-10-05 17:05 UTC+7.
-# @title: .assetsignore — keep the Cloudflare upload identical to the Vercel upload.
-# @state: mirrors .vercelignore; tests/landing-hosting.test.mjs fails on drift.
+# @last-edited: 2026-11-04 UTC+7.
+# @title: .assetsignore — keep deploy-only files out of the Cloudflare upload.
+# @state: the single ignore file; tests/landing-hosting.test.mjs fails on drift.
 # @dependencies: none stated.
 
-# WHY this file exists: Cloudflare Pages uploads the whole directory, where Vercel reads .vercelignore.
-# Without it the two hosts publish different file sets, and the page that exists on one is a 404 on the other.
+# WHY this file exists: Cloudflare Pages uploads the whole directory, and files that are not the site must not ship.
 # Same exclusions, same order.
 
-.vercel
 .env*
 AGENTS.md
 .gitignore
-.vercelignore
-vercel.json
 .assetsignore

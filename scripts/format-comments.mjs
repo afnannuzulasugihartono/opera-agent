@@ -23,7 +23,7 @@ const EXTENSIONS = new Set([
 
 const NAMES = new Set([
   '.gitignore', '.gitattributes', '.dockerignore', '.npmignore',
-  '.assetsignore', '.vercelignore', 'CODEOWNERS', 'Dockerfile', 'Makefile',
+  '.assetsignore', 'CODEOWNERS', 'Dockerfile', 'Makefile',
 ]);
 
 // WHY THE AGENT-TOOL DIRECTORIES ARE SKIPPED.
