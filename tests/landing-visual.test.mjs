@@ -493,6 +493,16 @@ test('the product mock wears a travelling light, and the reader can refuse it', 
   assert.match(css, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.demo::after \{[^}]*animation: none/s, 'and it stops dead when the reader asks');
 });
 
+test('one page moves into the next, and the brand keeps its place', () => {
+  // WHY THIS EXISTS: measured against firecrawl.dev on 2026-11-05, moving between its pages is one motion, and a hard cut makes a site feel like a folder of documents.
+  // The move lasts as long as a hover, and the brand mark stays put across it so the reader never loses the frame.
+  const sheet = read('site.css');
+  assert.match(sheet, /@view-transition \{\s*navigation: auto;/s, 'the browser moves between pages on its own');
+  assert.match(sheet, /::view-transition-old\(root\)[\s\S]*?animation-duration: \.18s/s, 'and the move lasts as long as a hover');
+  assert.match(sheet, /header nav \.brand \{[^}]*view-transition-name: brand/s, 'while the brand keeps its place');
+  assert.match(sheet, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?::view-transition-new\(\*\)[\s\S]*?animation: none !important/s, 'and a reader who asks for stillness gets none of it');
+});
+
 test('a long page offers its way back, and a phone guide folds its map away', () => {
   // WHY THIS EXISTS: measured against docs.firecrawl.dev on 2026-11-05, its rail carries a way back to the top, and a phone reader met six section doors before the first line of the guide.
   // The way back appears only after the reader has scrolled, and the map opens only when it is asked for.

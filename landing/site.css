@@ -413,6 +413,7 @@ header nav .brand {
   letter-spacing: -.025em;
   text-decoration: none;
   white-space: nowrap;
+  view-transition-name: brand;
 }
 
 header nav .brand:hover { color: var(--ink); }
@@ -1447,6 +1448,22 @@ html.js [data-reveal].in {
   transform: none;
 }
 
+/*
+ * WHY THE PAGE FADES INTO THE NEXT ONE: measured against firecrawl.dev on 2026-11-05, moving between its pages is one motion, and a hard cut makes a site feel like a folder of documents.
+ * The brand mark keeps its place across the move, so the reader never loses the frame.
+ * The whole move lasts under 200ms, the length of a hover, so it reads as one page changing and not as a show.
+ */
+
+@view-transition {
+  navigation: auto;
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: .18s;
+  animation-timing-function: var(--ease);
+}
+
 @media (prefers-reduced-motion: no-preference) {
   html { scroll-behavior: smooth; }
 }
@@ -1465,6 +1482,12 @@ html.js [data-reveal].in {
     animation-iteration-count: 1 !important;
     transition-duration: .01ms !important;
     scroll-behavior: auto !important;
+  }
+
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
   }
 }
 
