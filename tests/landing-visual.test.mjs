@@ -449,6 +449,21 @@ test('the guide search shows where the keyboard is, and answers the slash key', 
   assert.match(script, /\.focus\(\)/, 'and it puts the cursor in the box');
 });
 
+test('the reader always knows where they are', () => {
+  // WHY THIS EXISTS: measured against firecrawl.dev on 2026-11-04, its pages tell the reader where they are — a progress line under the header and a marked section in the map.
+  // A long guide without either reads as a wall of text, and a reader who cannot find the section they left has to hunt for it.
+  const script = read('wayfind.js');
+  const sheet = read('site.css');
+  assert.match(sheet, /\.readProgress \{/, 'a line under the header shows how far the reader came');
+  assert.match(sheet, /\.toc a\[aria-current="true"\]/, 'the section being read is marked in the map');
+  assert.match(script, /scaleX/, 'the line grows with the scroll');
+  assert.match(script, /aria-current/, 'and the map marks the section in view');
+  assert.match(script, /requestAnimationFrame/, 'the scroll is read on frames, not on every event');
+  for (const page of pages) {
+    assert.match(read(page), /<script src="\/wayfind\.js"><\/script>/, `${page} carries the wayfinder`);
+  }
+});
+
 test('the capability cards answer the pointer', () => {
   const html = read('beranda.html');
   const css = read('site.css');

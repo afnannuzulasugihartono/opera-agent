@@ -332,6 +332,31 @@ header nav {
 
 header nav::-webkit-scrollbar { display: none; }
 
+/*
+ * WHY THE LINE UNDER THE HEADER: measured against firecrawl.dev on 2026-11-04, its pages show the reader how far they have come, and a long guide without that cue reads as a wall of text.
+ * The line is two pixels of accent and it grows with the scroll; it carries no text and asks for no attention.
+ */
+
+.readProgress {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: 2px;
+  background: var(--accent);
+  transform: scaleX(0);
+  transform-origin: left center;
+}
+
+/*
+ * WHY THE MAP MARKS THE SECTION IN VIEW: a reader who scrolls knows where they are, and the map must agree with the page or the map is a second thing to read.
+ */
+
+.toc a[aria-current="true"] {
+  color: var(--ink);
+  font-weight: 600;
+}
+
 header nav .brand {
   display: inline-flex;
   align-items: center;

@@ -2,7 +2,7 @@
 <!-- @title: dashboard — the control panel: devices, history, the project's tables, pairing, and one command. -->
 <!-- @state: an app shell, not a brochure: an app bar with the live status line and the next action, a metric strip above the views, one rail with three named groups, and one visible view at a time chosen by the hash. -->
 <!-- Reads only through opera_my_devices and the opera_konsol_* reader RPCs — never a raw table path; reads the content script's DOM marker to say whether the extension is installed here. -->
-<!-- @dependencies: site.css, app.css, dashboard.css, i18n.js. -->
+<!-- @dependencies: site.css, app.css, dashboard.css, i18n.js, wayfind.js. -->
 
 <!doctype html>
 <html lang="id">
@@ -281,6 +281,9 @@
   </footer>
 
   <script src="./i18n.js"></script>
+
+
+  <script src="/wayfind.js"></script>
   <script type="module">
 
     // WHY reader RPCs and no table paths: opera_my_devices returns the caller's devices with their ten latest commands, method and status only, and the opera_konsol_* pair returns one page of one table with the ownership filter, the page caps and the masking already applied server-side.

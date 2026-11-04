@@ -1,7 +1,7 @@
 <!-- @last-edited: 2026-10-26 UTC+7. -->
 <!-- @title: akun — who you are, which provider you signed in with, and how to leave. -->
 <!-- @state: reads only the session Supabase issued; strangers are sent to sign-in. -->
-<!-- @dependencies: site.css, app.css, i18n.js. -->
+<!-- @dependencies: site.css, app.css, i18n.js, wayfind.js. -->
 
 <!doctype html>
 <html lang="id">
@@ -146,6 +146,9 @@
   </footer>
 
   <script src="./i18n.js"></script>
+
+
+  <script src="/wayfind.js"></script>
   <script type="module">
 
     // WHY fetch is allowed exactly one destination here: the project Auth host, plus its REST reader for the device count.

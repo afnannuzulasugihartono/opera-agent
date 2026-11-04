@@ -1,7 +1,7 @@
 <!-- @last-edited: 2026-10-26 UTC+7. -->
 <!-- @title: consent — the OAuth permission screen, on the same origin as the rest of the site. -->
 <!-- @state: reads one authorization_id; no password, no external origin, no invented app name. -->
-<!-- @dependencies: site.css, i18n.js. -->
+<!-- @dependencies: site.css, i18n.js, wayfind.js. -->
 
 <!doctype html>
 <html lang="id">
@@ -110,6 +110,9 @@
   </footer>
 
   <script src="/i18n.js"></script>
+
+
+  <script src="/wayfind.js"></script>
   <script type="module">
 
     // WHY plain fetch and not the Supabase SDK from a CDN: every page here may reach one origin, pinned in vercel.json and _headers.
