@@ -464,6 +464,15 @@ header nav .navCta:hover {
  * The footer still carries every door.
  */
 
+/*
+ * WHY THE PHONE ROW KEEPS THE BRAND, THE DOOR, AND THE ACTION: measured at 390px on 2026-11-05, the five doors pushed the sign-in action 238px sideways, so a visitor had to swipe a row to find the one filled button.
+ * The doors are one tap away in the palette, which on a phone lists every page, and the footer still carries them all.
+ */
+
+@media (max-width: 620px) {
+  header nav a:not(.brand):not(.navCta) { display: none; }
+}
+
 @media (max-width: 620px) {
   header nav { gap: 12px; mask-image: none; -webkit-mask-image: none; }
   header nav .nav-account,
@@ -586,6 +595,15 @@ html.hasPalette .navSearch { display: inline-flex; }
   max-height: 46vh;
   overflow-y: auto;
   list-style: none;
+}
+
+.paletteCaption {
+  margin: 0;
+  padding: 10px 14px 2px;
+  color: var(--muted);
+  font-size: 10.5px;
+  letter-spacing: .09em;
+  text-transform: uppercase;
 }
 
 .paletteItem {
