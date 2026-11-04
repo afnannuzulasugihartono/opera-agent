@@ -464,6 +464,23 @@ test('the reader always knows where they are', () => {
   }
 });
 
+test('the reader searches the site from anywhere: one door, one key, one dialog', () => {
+  // WHY THIS EXISTS: measured against docs.firecrawl.dev on 2026-11-05, a reader searches the site from a dialog opened by a key, not by hunting a nav row of five doors.
+  // The lock holds the door on every page, the key that opens it, and the choice the reader can hear and see.
+  const script = read('palette.js');
+  const sheet = read('site.css');
+  assert.match(script, /ctrlKey \|\| event\.metaKey/, 'the key opens the palette');
+  assert.match(script, /showModal\(\)/, 'and it opens as a modal, so the page behind waits');
+  assert.match(script, /aria-activedescendant/, 'the reader knows which destination is chosen');
+  assert.match(sheet, /\.palette\[open\] \{[^}]*animation: palette-in \.18s var\(--ease\)/s, 'the dialog arrives in the site easing');
+  assert.match(sheet, /\.palette::backdrop \{[^}]*background: var\(--scrim\)/s, 'and the page behind it dims');
+  assert.match(sheet, /\.navSearch \{[^}]*display: none/s, 'the door stays shut without the script that answers it');
+  for (const page of pages) {
+    assert.match(read(page), /<script src="\/palette\.js"><\/script>/, `${page} carries the palette`);
+    assert.match(read(page), /class="navSearch"/, `${page} carries the search door`);
+  }
+});
+
 test('the product mock wears a travelling light, and the reader can refuse it', () => {
   // WHY THIS EXISTS: measured against firecrawl.dev on 2026-11-04, its product visual wears a slow rotating overlay, and a card that never moves reads as a picture of a product instead of a product at work.
   // The light is one pixel of accent walking the frame once every half minute, so it reads as a light and not as motion.

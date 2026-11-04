@@ -2,7 +2,7 @@
 <!-- @title: dashboard — the control panel: devices, history, the project's tables, pairing, and one command. -->
 <!-- @state: an app shell, not a brochure: an app bar with the live status line and the next action, a metric strip above the views, one rail with three named groups, and one visible view at a time chosen by the hash. -->
 <!-- Reads only through opera_my_devices and the opera_konsol_* reader RPCs — never a raw table path; reads the content script's DOM marker to say whether the extension is installed here. -->
-<!-- @dependencies: site.css, app.css, dashboard.css, i18n.js, wayfind.js. -->
+<!-- @dependencies: site.css, app.css, dashboard.css, i18n.js, wayfind.js, palette.js. -->
 
 <!doctype html>
 <html lang="id">
@@ -34,6 +34,7 @@
         <a href="/dukungan.html">Dukungan</a>
         <a href="/docs.html">Docs</a>
         <span class="lang" data-lang-toggle></span>
+        <button class="navSearch" type="button" aria-label="Cari halaman Ctrl K" aria-keyshortcuts="Control+K Meta+K"><svg class="navSearchIcon" viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><circle cx="7" cy="7" r="4.5" fill="none" stroke="currentColor" stroke-width="1.5"></circle><path d="M10.6 10.6 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path></svg><kbd class="navSearchKey">Ctrl K</kbd></button>
         <a class="navCta" href="/">Masuk</a>
       </nav>
     </div>
@@ -284,6 +285,7 @@
 
 
   <script src="/wayfind.js"></script>
+  <script src="/palette.js"></script>
   <script type="module">
 
     // WHY reader RPCs and no table paths: opera_my_devices returns the caller's devices with their ten latest commands, method and status only, and the opera_konsol_* pair returns one page of one table with the ownership filter, the page caps and the masking already applied server-side.

@@ -1,12 +1,13 @@
-// @last-edited: 2026-11-03 UTC+7.
-// @title: nav — one nav row for every page, rewritten in place.
-// @state: four doors and one action, measured against opencode.ai on 2026-11-03.
-// @dependencies: node:fs, node:url.
+// @last-edited: 2026-11-05 UTC+7.
+// @title: shell - the chrome every page carries: one nav row, the search door beside it, and the script that opens the palette.
+// @state: a writer, not a build; it rewrites the pages in place and refuses a page whose nav it cannot recognise.
+// @dependencies: node:fs, node:url, node:path.
 
 // WHY THIS SCRIPT EXISTS.
-// Eleven pages carry the same nav, and eleven hand edits is how a row drifts back to seven links.
-// This writes the one row the benchmark asks for, and refuses a page whose nav it cannot recognise.
+// Thirteen pages carry the same nav, and thirteen hand edits is how a row drifts back to seven links.
+// This writes the one row every page shares, the search door beside it, and the palette script that answers the door.
 // A page that carries no English dictionary gets the same row without translation keys, so no toggle promises a translation the page cannot make.
+// WHY THE SEARCH DOOR IS WRITTEN HERE AND NOT IN THE PAGES: a door that exists on one page and not another is a door nobody can find.
 
 import { readFileSync, writeFileSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -53,6 +54,28 @@ const doors = (current, translate) => [
   return `<a href="${href}"${lang}${mark}>${label}</a>`;
 }).join('\n        ');
 
+// WHY THE DOOR NAMES ITS KEY IN ITS LABEL: the visible text says Ctrl K, and an accessible name that leaves that text out reads as a different control from the one on the screen.
+
+const SEARCH = '<button class="navSearch" type="button" aria-label="Cari halaman Ctrl K" aria-keyshortcuts="Control+K Meta+K"><svg class="navSearchIcon" viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><circle cx="7" cy="7" r="4.5" fill="none" stroke="currentColor" stroke-width="1.5"></circle><path d="M10.6 10.6 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path></svg><kbd class="navSearchKey">Ctrl K</kbd></button>';
+
+// WHY THE SCRIPT FOLLOWS THE WAYFINDER: both are shell scripts that answer a reader, and the wayfinder is the last external script every page already loads.
+
+const withPaletteScript = (html) => {
+  if (html.includes('<script src="/palette.js"></script>')) return html;
+  const anchor = /^([ \t]*)<script src="\/wayfind\.js"><\/script>/m;
+  if (anchor.test(html)) return html.replace(anchor, (line, space) => `${line}\n${space}<script src="/palette.js"></script>`);
+  return html.replace('</body>', '  <script src="/palette.js"></script>\n</body>');
+};
+
+// WHY THE HEADER LIST NAMES THE SCRIPT: a page that loads a file it does not name is a page whose header lies about what it needs.
+
+const withPaletteDependency = (html) => {
+  const header = /<!-- @dependencies: ([^>]*?) -->/.exec(html);
+  if (!header || header[1].includes('palette.js')) return html;
+  const list = header[1].replace(/\.\s*$/, '');
+  return html.replace(header[0], `<!-- @dependencies: ${list}, palette.js. -->`);
+};
+
 for (const page of pages) {
   const path = join(root, page);
   const html = readFileSync(path, 'utf8');
@@ -75,7 +98,8 @@ for (const page of pages) {
   const action = translate
     ? cta.replace(/ href="[^"]*"/, ' href="/"').replace(' aria-current="page"', '')
     : '<a class="navCta" href="/">Masuk</a>';
-  const rebuilt = `<nav>\n        ${brand}\n        ${doors(door, translate)}\n        ${lang ? `${lang}\n        ` : ''}${action}\n      </nav>`;
-  writeFileSync(path, html.replace(nav, rebuilt));
-  console.log(`${page}: nav rewritten${translate ? '' : ' without translation keys'}`);
+  const rebuilt = `<nav>\n        ${brand}\n        ${doors(door, translate)}\n        ${lang ? `${lang}\n        ` : ''}${SEARCH}\n        ${action}\n      </nav>`;
+  const rewritten = withPaletteDependency(withPaletteScript(html.replace(nav, rebuilt)));
+  writeFileSync(path, rewritten);
+  console.log(`${page}: shell rewritten${translate ? '' : ' without translation keys'}`);
 }

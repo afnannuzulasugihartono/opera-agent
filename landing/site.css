@@ -46,6 +46,7 @@
   --prose: 680px;
   --surface-soft: var(--surface-2);
   --brand: var(--accent);
+  --scrim: rgba(0, 0, 0, .62);
 }
 
 /* â”€â”€ reset and type â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
@@ -468,6 +469,161 @@ header nav .navCta:hover {
   header nav .nav-account,
   header nav a[href$="dashboard.html"] { display: none; }
   header nav .navCta { padding: 0 13px; }
+}
+
+/* search door and palette */
+
+/*
+ * WHY THE DOOR STAYS CLOSED WITHOUT JAVASCRIPT: a button that opens nothing is worse than no button, so the door appears only when the script that answers it is on the page.
+ * WHY THE KEY IS WRITTEN ON THE DOOR: a reader who sees Ctrl K learns the shortcut without reading a sentence about it.
+ */
+
+.navSearch {
+  display: none;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 6px;
+  min-height: 30px;
+  padding: 0 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--muted);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  transition: color .16s var(--ease), border-color .16s var(--ease);
+}
+
+html.hasPalette .navSearch { display: inline-flex; }
+
+.navSearch:hover {
+  border-color: var(--line-strong);
+  color: var(--ink);
+}
+
+.navSearch:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.navSearchKey {
+  padding: 1px 5px;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  background: var(--surface-2);
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 10.5px;
+  line-height: 1.5;
+}
+
+.palette {
+  width: min(560px, calc(100vw - 32px));
+  margin: 12vh auto auto;
+  padding: 0;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--ink);
+  overflow: hidden;
+}
+
+.palette::backdrop { background: var(--scrim); }
+
+@keyframes palette-in {
+  from { opacity: 0; transform: translateY(-8px) scale(.985); }
+  to { opacity: 1; transform: none; }
+}
+
+.palette[open] { animation: palette-in .18s var(--ease) both; }
+
+.paletteBar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--line);
+}
+
+.paletteBar:focus-within {
+  outline: 2px solid var(--focus);
+  outline-offset: -2px;
+}
+
+.paletteIcon {
+  flex: 0 0 auto;
+  color: var(--muted);
+}
+
+.paletteInput {
+  flex: 1 1 auto;
+  min-width: 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  font-size: 14px;
+  outline: none;
+}
+
+.paletteInput::placeholder { color: var(--muted); }
+
+.paletteKey {
+  flex: 0 0 auto;
+  padding: 1px 5px;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  background: var(--surface-2);
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 10.5px;
+}
+
+.paletteList {
+  margin: 0;
+  padding: 6px 0;
+  max-height: 46vh;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.paletteItem {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 8px 14px;
+  border-left: 2px solid transparent;
+  font-size: 13.5px;
+  cursor: pointer;
+}
+
+.paletteItem.isActive,
+.paletteItem[aria-selected="true"] {
+  border-left-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.paletteHint {
+  color: var(--muted);
+  font-size: 11.5px;
+  text-align: right;
+}
+
+.paletteEmpty {
+  margin: 0;
+  padding: 14px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+/*
+ * WHY THE KEY HINT LEAVES THE PHONE ROW: at 390px the nav row is already tight, and the door itself still answers with a tap.
+ */
+
+@media (max-width: 720px) {
+  .navSearchKey { display: none; }
 }
 
 /* â”€â”€ footer â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
