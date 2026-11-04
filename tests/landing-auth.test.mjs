@@ -13,7 +13,25 @@ import fs from 'node:fs';
 const root = new URL('..', import.meta.url);
 const html = fs.readFileSync(new URL('landing/index.html', root), 'utf8');
 const authCss = fs.readFileSync(new URL('landing/auth.css', root), 'utf8');
-const vercel = JSON.parse(fs.readFileSync(new URL('landing/vercel.json', root), 'utf8'));
+
+function parse(text) {
+  const rules = [];
+  let current = null;
+  for (const line of text.split('\n')) {
+    if (!line.trim() || line.startsWith('#')) continue;
+    if (!/^\s/.test(line)) {
+      current = { paths: line.split(',').map((p) => p.trim()), headers: {} };
+      rules.push(current);
+      continue;
+    }
+    const at = line.indexOf(':');
+    current.headers[line.slice(0, at).trim()] = line.slice(at + 1).trim();
+  }
+  return rules;
+}
+
+const rules = parse(fs.readFileSync(new URL('landing/_headers', root), 'utf8'));
+const bySource = Object.fromEntries(rules.flatMap((r) => r.paths.map((p) => [p, r])));
 
 const AUTH_HOST = 'https://nenmkmtvjremqphfqnfw.supabase.co/auth/v1';
 
@@ -34,20 +52,18 @@ test('the auth page takes no password, only a magic link', () => {
 
 test('the landing page itself stays network-free while auth may reach only Supabase', () => {
 
-  assert.deepEqual(
-    vercel.headers.map((h) => h.source),
-    ['/(.*)', '/', '/index.html', '/beranda', '/beranda.html', '/akun', '/akun/:path*', '/akun.html', '/dashboard', '/dashboard/:path*', '/dashboard.html', '/oauth/consent', '/oauth/consent.html', '/robots.txt', '/sitemap.xml'],
-    'the catch-all stays first and the page entries follow'
-  );
-  const bySource = Object.fromEntries(vercel.headers.map((h) => [h.source, h.headers]));
-  const rootCsp = bySource['/(.*)'].find((h) => h.key === 'Content-Security-Policy').value;
+  const sources = rules.flatMap((r) => r.paths);
+  for (const source of ['/', '/index.html', '/beranda', '/beranda.html', '/akun', '/akun.html', '/dashboard', '/dashboard.html', '/oauth/consent', '/oauth/consent.html', '/robots.txt', '/sitemap.xml']) {
+    assert.ok(sources.includes(source), `_headers defines a policy for ${source}`);
+  }
+  const rootCsp = bySource['/beranda'].headers['Content-Security-Policy'];
   assert.match(rootCsp, /connect-src 'none'/, 'the marketing page still connects nowhere');
 
   const authSources = ['/', '/index.html', '/oauth/consent', '/oauth/consent.html'];
   for (const source of authSources) {
-    const entry = bySource[source];
-    assert.ok(entry, `vercel.json must define a header entry for ${source}`);
-    const csp = entry.find((h) => h.key === 'Content-Security-Policy').value;
+    const rule = bySource[source];
+    assert.ok(rule, `_headers must define a header entry for ${source}`);
+    const csp = rule.headers['Content-Security-Policy'];
     assert.match(csp, /connect-src https:\/\/\*\.supabase\.co/, `${source} may reach only Supabase`);
     assert.doesNotMatch(csp, /connect-src[^;]*https?:\/\/(?!\*\.supabase\.co)/, 'no second origin rides along');
   }

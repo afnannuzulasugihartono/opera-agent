@@ -11,7 +11,7 @@ site_url = "https://opera-agent.pages.dev"
 
 [auth.emailRedirect]
 
-redirect_urls = ["https://opera-agent.pages.dev", "https://opera-agent.vercel.app"]
+redirect_urls = ["https://opera-agent.pages.dev"]
 
 [auth.oauth_server]
 enabled = true

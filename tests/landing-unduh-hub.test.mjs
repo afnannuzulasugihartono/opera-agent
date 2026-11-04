@@ -103,19 +103,19 @@ test('the CRX section is framed enterprise-only, with the button untouched', () 
   assert.match(berkas, /namanya membawa versi build/, 'the filename note stays');
 });
 
-test('the hub needs no script hash, and the shared policy still names the merged script', () => {
+test('the hub needs no script hash, and the single host still names the merged script', () => {
 
   assert.doesNotMatch(hub, /<script type="module">/, 'the hub carries no inline module to name');
-  const vercel = JSON.parse(read('vercel.json'));
-  const csp = vercel.headers.find((h) => h.source === '/(.*)').headers
-    .find((h) => h.key === 'Content-Security-Policy').value;
   const headers = read('_headers');
+  const block = headers.split('\n\n').find((b) => b.startsWith('/unduh-berkas\n'));
+  assert.ok(block, 'the files page carries its own policy block');
+  const csp = /^ {2}Content-Security-Policy: (.*)$/m.exec(block)[1];
   const body = /<script type="module">([\s\S]*?)<\/script>/.exec(berkas)[1];
   const hash = "'sha256-" + createHash('sha256').update(body, 'utf8').digest('base64') + "'";
-  assert.ok(csp.includes(hash), 'vercel still names the unduh-berkas.html script');
+  assert.ok(csp.includes(hash), 'the single host names the unduh-berkas.html script');
   for (const path of ['/unduh-berkas.html', '/unduh-berkas']) {
-    const block = headers.split('\n\n').find((b) => b.startsWith(`${path}\n`));
-    assert.ok(block && block.includes(hash), `_headers still names it for ${path}`);
+    const b = headers.split('\n\n').find((x) => x.startsWith(`${path}\n`));
+    assert.ok(b && b.includes(hash), `_headers names it for ${path}`);
   }
 });
 

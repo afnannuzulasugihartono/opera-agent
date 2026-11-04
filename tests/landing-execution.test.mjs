@@ -89,7 +89,7 @@ async function run(page, shape = {}) {
   const context = vm.createContext({
     console, Intl, Date, JSON, Math, Number, String, Array, Object, RegExp, Error,
     URLSearchParams, encodeURIComponent, setTimeout,
-    location: { search, hash: '', pathname: `/${page}`, href: `https://opera-agent.vercel.app/${page}`, replace() {}, assign(url) { context.assigned = url; } },
+    location: { search, hash: '', pathname: `/${page}`, href: `https://opera-agent.pages.dev/${page}`, replace() {}, assign(url) { context.assigned = url; } },
     localStorage: {
       getItem: (key) => store[key] ?? null,
       setItem: (key, value) => { store[key] = String(value); },

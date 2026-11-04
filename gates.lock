@@ -175,7 +175,7 @@ tests/boundary-locks.test.mjs 3a9ae9e36aec03a4470ce2f9cf0971f66724ecf8
 # --- controls that decide what the product accepts at runtime ---
 extension/lib/protocol.js 344893e1cbb5b6a9309097af933e5fd2cbb897aa
 lib/secret-pattern.js 06386015c5756f83c08ee06cc571b9ae897d850a
-supabase/functions/_shared/cors.js 1563203a5f18b359e2831e52839cfcb935086bf9
+supabase/functions/_shared/cors.js 0ab87480c87a42d3f995d073c7be9d5d2b358af4
 
 # --- surfaces an owner, not an agent, should have to look at ---
 extension/manifest.json edc35efcd7e1476ad5f4f8898988e48bce6cce8f

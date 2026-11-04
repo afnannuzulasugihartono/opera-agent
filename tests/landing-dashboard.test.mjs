@@ -18,8 +18,25 @@ const root = new URL('..', import.meta.url);
 const read = (name) => fs.readFileSync(new URL(`landing/${name}`, root), 'utf8');
 const css = read('dashboard.css');
 const app = read('app.css');
-const vercel = JSON.parse(fs.readFileSync(new URL('landing/vercel.json', root), 'utf8'));
-const bySource = Object.fromEntries(vercel.headers.map((h) => [h.source, h.headers]));
+
+function parse(text) {
+  const rules = [];
+  let current = null;
+  for (const line of text.split('\n')) {
+    if (!line.trim() || line.startsWith('#')) continue;
+    if (!/^\s/.test(line)) {
+      current = { paths: line.split(',').map((p) => p.trim()), headers: {} };
+      rules.push(current);
+      continue;
+    }
+    const at = line.indexOf(':');
+    current.headers[line.slice(0, at).trim()] = line.slice(at + 1).trim();
+  }
+  return rules;
+}
+
+const rules = parse(fs.readFileSync(new URL('landing/_headers', root), 'utf8'));
+const bySource = Object.fromEntries(rules.flatMap((r) => r.paths.map((p) => [p, r])));
 
 test('the dashboard reads through scoped RPCs, never raw tables', () => {
   const html = read('dashboard.html');
@@ -212,10 +229,10 @@ test('the dashboard shares the site navigation and footer', () => {
 });
 
 test('the dashboard may reach only Supabase like the auth page', () => {
-  for (const source of ['/dashboard', '/dashboard/:path*', '/dashboard.html']) {
-    const entry = bySource[source];
-    assert.ok(entry, `vercel.json must define a header entry for ${source}`);
-    const csp = entry.find((h) => h.key === 'Content-Security-Policy').value;
+  for (const source of ['/dashboard', '/dashboard.html']) {
+    const rule = bySource[source];
+    assert.ok(rule, `_headers must define a header entry for ${source}`);
+    const csp = rule.headers['Content-Security-Policy'];
     assert.match(csp, /connect-src https:\/\/\*\.supabase\.co/, `${source} may reach only Supabase`);
   }
 });
