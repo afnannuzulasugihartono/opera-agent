@@ -10,6 +10,7 @@
 export const SUPABASE_PROJECT_REF = 'nenmkmtvjremqphfqnfw';
 const SUPABASE_URL = `https://${SUPABASE_PROJECT_REF}.supabase.co`;
 export const DEFAULT_BRIDGE_URL = `${SUPABASE_URL}/functions/v1/opera-agent-bridge`;
+export const BILLING_URL = `${SUPABASE_URL}/functions/v1/opera-agent-billing`;
 export const LISTEN_BASE_URL = `${SUPABASE_URL}/functions/v1/opera-agent-listen`;
 export const UPDATE_BASE_URL = `${SUPABASE_URL}/functions/v1/opera-agent-update`;
 export const CONSENT_CONFIG_URL = `${SUPABASE_URL}/functions/v1/opera-agent-auth/config`;

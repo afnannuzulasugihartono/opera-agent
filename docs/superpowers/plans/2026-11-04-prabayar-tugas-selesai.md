@@ -83,15 +83,19 @@
 - [ ] **Step 1: Tes RED** — reservation `open` dengan `expires_at` lewat → refund otomatis, status `expired`.
 - [ ] **Step 2: Implementasi, hijau, commit.**
 
-### Task 5: Client extension — reserve/settle/refund di sekitar eksekusi
+### Task 5: Client — reserve/settle/refund di sekitar eksekusi
 
 **Files:**
-- Create: `extension/lib/wallet-client.js` (panggil endpoint dengan token sesi; tidak pernah simpan saldo)
-- Modify: titik eksekusi task di extension worker (bungkus: reserve → jalan → settle/refund)
-- Test: `tests/wallet-client.test.mjs` (mock fetch)
+- Create: `local/wallet-client.js` (device token dari `~/.opera-agent/device.json`; tidak pernah simpan saldo)
+- Modify: `local/tools.js` + `local/mcp-server.js` (tujuh tool: pair, balance, quote, top_up, reserve, settle, refund)
+- Modify: `extension/lib/endpoints.js` (tambah `BILLING_URL`)
+- Test: `tests/wallet-client.test.mjs`, `tests/local-wallet-tools.test.mjs`
 
 - [ ] **Step 1: Tes RED** — reserve gagal (402) → task tidak jalan; settle idempoten.
 - [ ] **Step 2: Implementasi, hijau, commit.**
+
+**Kenapa di `local/`, bukan di `extension/`:** extension belum punya batas task. Ia menjalankan perintah primitif satu per satu lewat bridge, jadi tidak ada titik yang bisa berkata "pekerjaan ini mulai" dan "pekerjaan ini selesai". Jalur lokal punya batas itu: satu percakapan dengan asisten, satu plan, satu artefak. Wiring extension menunggu batas task itu ada; sampai saat itu, menaruh reserve/settle di sana akan menagih per perintah, bukan per pekerjaan.
+
 
 ### Task 6: Dashboard — saldo + riwayat + isi ulang
 

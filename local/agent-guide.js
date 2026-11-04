@@ -120,6 +120,13 @@ export const RECIPES = Object.freeze([
 // The two roads that replaced it are above, and a recipe that teaches guessing is worse than no recipe.
 
 export const SIDE_EFFECTS = Object.freeze({
+  wallet_pair: ['writes a device token to this machine\'s disk, which is the whole authority of the machine over the wallet'],
+  wallet_balance: [],
+  wallet_quote: [],
+  wallet_top_up: ['opens a payable invoice at the provider, which costs nothing until the person pays it'],
+  task_reserve: ['arms a hold of the quoted price, which the next settle or refund will close'],
+  task_settle: ['takes the held price from the wallet, once, for a job that was reported finished'],
+  task_refund: ['returns the whole held price to the wallet, once, for a job that did not finish'],
   browser_status: [],
   focus_window: ['brings a browser window to the front of the machine, which takes the keyboard away from whatever was in front'],
   dialog_state: [],
