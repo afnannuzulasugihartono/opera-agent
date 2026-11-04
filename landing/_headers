@@ -261,7 +261,7 @@
   X-Frame-Options: DENY
 
 /oauth/consent
- — the consent page reaches the same single origin
+  # the consent page reaches the same single origin
   Cache-Control: no-store
   Vercel-CDN-Cache-Control: no-store
   Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-qXDFNMCsYmcsKHs5fyYOfsIbOXOCxuxYYQ27e437vcs='; connect-src https://*.supabase.co; style-src 'self' 'unsafe-inline'; img-src data:; font-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
@@ -274,7 +274,7 @@
   X-Frame-Options: DENY
 
 /oauth/consent.html
- — the consent page reaches the same single origin
+  # the consent page reaches the same single origin
   Cache-Control: no-store
   Vercel-CDN-Cache-Control: no-store
   Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-qXDFNMCsYmcsKHs5fyYOfsIbOXOCxuxYYQ27e437vcs='; connect-src https://*.supabase.co; style-src 'self' 'unsafe-inline'; img-src data:; font-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'

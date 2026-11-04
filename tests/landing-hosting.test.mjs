@@ -47,6 +47,23 @@ test('no part of the repo still points at the retired host', () => {
   }
 });
 
+test('every shipped file that the _headers gate reads is covered, and no _headers block points nowhere', () => {
+  const shipped = new Set(fs.readdirSync(new URL('../landing/', import.meta.url), { withFileTypes: true })
+    .filter((e) => e.isFile()).map((e) => e.name));
+  shipped.add('oauth/consent.html');
+  for (const rule of rules) {
+    for (const path of rule.paths) {
+      const file = path === '/' ? 'index.html' : path.replace(/^\//, '');
+      const shippedFile = shipped.has(file) ? file : `${file}.html`;
+      assert.ok(shipped.has(shippedFile), `${path} names a file that ships (${shippedFile})`);
+    }
+  }
+  const named = new Set(rules.flatMap((r) => r.paths));
+  for (const page of [...shipped].filter((f) => f.endsWith('.html'))) {
+    assert.ok(named.has(`/${page}`), `${page} has a block, so its policy cannot be inherited`);
+  }
+});
+
 test('same-structure paths carry the same headers, because there is no second file to compare against', () => {
 
   assert.ok(rules.length > 0, 'the file has rules');
