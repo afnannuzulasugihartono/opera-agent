@@ -53,3 +53,13 @@ test('the detector is operator-gated, dry by default, and credits the wallet whe
   assert.match(fn, /await creditTopUp\(closed\)/, 'a feed-paid top-up credits the wallet on the same path as a notification');
   assert.match(fn, /grant_type.*refresh_token/, 'a 401 from the feed triggers one refresh retry');
 });
+
+test('every helper the function calls from billing.js is actually imported', () => {
+  const block = /import \{([\s\S]*?)\} from "\.\.\/_shared\/billing\.js"/.exec(fn)?.[1] ?? '';
+  const imported = new Set(block.split(',').map((name) => name.trim()).filter(Boolean));
+  assert.ok(imported.has('providerAmount'), 'providerAmount is called on the invoice page but was not imported, which 500s every page render');
+  for (const name of ['toDynamicQris']) {
+    const qrisBlock = /import \{([\s\S]*?)\} from "\.\.\/_shared\/qris\.js"/.exec(fn)?.[1] ?? '';
+    assert.ok(qrisBlock.includes(name), `${name} must be imported from qris.js`);
+  }
+});
