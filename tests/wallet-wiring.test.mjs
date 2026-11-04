@@ -28,10 +28,16 @@ test('every wallet rpc the function calls is declared by the migration', () => {
 });
 
 test('every argument the function sends is a parameter the migration declares', () => {
-  const declared = new Set([...sql.matchAll(/p_[a-z_]+/g)].map((match) => match[0]));
+  // WHY EVERY MIGRATION IS READ AND NOT ONLY THE WALLET ONE.
+  // The function also calls the guarded secret writer, and its parameters are declared in the migration that created it.
+  // A parameter declared nowhere is still a deploy that fails on the first call.
+  const migrations = fs.readdirSync(new URL('supabase/migrations/', root))
+    .filter((file) => file.endsWith('.sql'))
+    .map((file) => fs.readFileSync(new URL(`supabase/migrations/${file}`, root), 'utf8')).join('\n');
+  const declared = new Set([...migrations.matchAll(/p_[a-z_]+/g)].map((match) => match[0]));
   const sent = new Set([...fn.matchAll(/^\s+(p_[a-z_]+):/gm)].map((match) => match[1]));
   assert.ok(sent.size >= 9, 'the function should send the wallet parameters');
-  for (const name of sent) assert.ok(declared.has(name), `${name} is sent but the migration never declares it`);
+  for (const name of sent) assert.ok(declared.has(name), `${name} is sent but no migration declares it`);
 });
 
 test('the wallet owner is proved by a session or a device, never read from the body', () => {

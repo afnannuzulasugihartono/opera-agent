@@ -66,7 +66,7 @@ import {
 import { DEPOSIT_KIND } from "../_shared/wallet.js";
 import { handleWalletAction, isWalletAction } from "../_shared/wallet-api.js";
 import { toDynamicQris } from "../_shared/qris.js";
-import { FEED_URL, TOKEN_URL, detectorPlan, feedHeaders, feedQuery, matchOpenInvoices, parseFeed } from "../_shared/qris-detector.js";
+import { FEED_URL, TOKEN_URL, detectorPlan, feedHeaders, feedQuery, matchOpenInvoices, parseFeed, refreshBody, sessionHeaders } from "../_shared/qris-detector.js";
 
 type PriceRow = { kind: string; unit: string; amount_cents: number; currency: string; active: boolean };
 type Line = { kind: string; unit?: string; description?: string | null; quantity: number; amountCents: number; reason?: string };
@@ -158,6 +158,24 @@ function db() {
     }));
   }
   return clientPromise;
+}
+
+// WHY THE OPERATOR TOKEN IS COPIED INTO VAULT.
+// The scheduled detector runs inside Postgres, and Postgres can only prove it is the cron with a secret it can read.
+// The function already holds that secret in its environment, so it publishes a copy into vault on its first request instead of asking a human to paste it there.
+
+let tokenPublished: Promise<unknown> | null = null;
+function publishOperatorToken(): void {
+  if (!BILLING_TOKEN || tokenPublished) return;
+  tokenPublished = db().then((client) => client.rpc("opera_vault_put", {
+    p_name: "opera_billing_token",
+    p_secret: BILLING_TOKEN,
+    p_description: "Operator token for the billing function and its scheduled detector"
+  })).then((out: { error?: { message?: string } | null }) => {
+    if (out?.error) log.error("VAULT_PUBLISH_FAILED", String(out.error.message || "the token was not published"));
+  }).catch((error: unknown) => {
+    log.error("VAULT_PUBLISH_FAILED", (error as Error).message);
+  });
 }
 
 // WHY THE BODY IS READ BY ITS CONTENT TYPE.
@@ -837,14 +855,13 @@ async function qrisSvgForInvoice(invoice: InvoiceRow): Promise<string | null> {
 // WHY THE DETECTOR READS A WINDOW AND NOT "days".
 // The feed refused day-only and epoch windows on 2026-11-02; start_time and end_time in RFC3339 are the accepted form, so the window is computed here, from the oldest open invoice to now, capped to the page the API allows.
 
-async function fetchFeedOnce(accessToken: string): Promise<{ status: number; body: unknown }> {
+async function fetchFeedOnce(accessToken: string, startTime: string): Promise<{ status: number; body: unknown }> {
   const now = new Date();
-  const from = new Date(now.getTime() - 24 * 3600 * 1000);
   const query = feedQuery({
     merchantId: GOBIZ_MERCHANT_ID,
     from: 0,
-    size: 200,
-    startTime: from.toISOString(),
+    size: 100,
+    startTime,
     endTime: now.toISOString()
   });
   if (!query) return { status: 400, body: { error: "the feed query could not be built" } };
@@ -856,15 +873,18 @@ async function fetchFeedOnce(accessToken: string): Promise<{ status: number; bod
 }
 
 async function refreshGoBizToken(): Promise<string | null> {
-  if (!GOBIZ_REFRESH_TOKEN) return null;
+  const body = refreshBody(GOBIZ_REFRESH_TOKEN);
+  const headers = sessionHeaders({ accessToken: GOBIZ_ACCESS_TOKEN, uniqueId: GOBIZ_DEVICE_ID });
+  if (!body || !headers) return null;
   try {
     const response = await fetch(TOKEN_URL, {
       method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ grant_type: "refresh_token", refresh_token: GOBIZ_REFRESH_TOKEN })
+      headers,
+      body: JSON.stringify(body)
     });
-    const body = await response.json().catch(() => ({})) as Record<string, unknown>;
-    const token = typeof body.access_token === "string" ? body.access_token : null;
+    const data = await response.json().catch(() => ({})) as Record<string, unknown>;
+    const inner = (data.data || {}) as Record<string, unknown>;
+    const token = typeof data.access_token === "string" ? data.access_token : typeof inner.access_token === "string" ? inner.access_token : null;
     return response.ok ? token : null;
   } catch {
     return null;
@@ -906,14 +926,28 @@ async function runQrisDetect(): Promise<Record<string, unknown>> {
     .select("*").eq("status", "open").eq("provider", "qris-self").order("created_at", { ascending: true });
   if (error) throw new Error(`open invoices unreadable: ${error.message}`);
 
-  let feed = await fetchFeedOnce(GOBIZ_ACCESS_TOKEN);
+  // WHY THE WINDOW STARTS AT THE OLDEST OPEN INVOICE.
+  // A payment for an invoice opened three days ago still has to be inside the window, and the feed refuses a day-only window, so the start is that invoice's own creation time, never older than the seven days the feed accepts.
+  const oldest = (openInvoices || []).map((invoice) => Date.parse(String(invoice.created_at || ""))).filter((ms) => Number.isFinite(ms)).sort((a, b) => a - b)[0];
+  const startTime = new Date(Math.max(oldest || Date.now() - 24 * 3600 * 1000, Date.now() - 7 * 86400000)).toISOString();
+
+  // WHY SPENT TRANSACTIONS ARE EXCLUDED.
+  // A transaction that already closed an invoice is that money, spent once.
+  // Without this, an invoice settled by hand and its transaction would close a second invoice and credit the same money twice.
+  const { data: usedRows, error: usedError } = await supabase.from("opera_invoices")
+    .select("provider_transaction_id").not("provider_transaction_id", "is", null);
+  if (usedError) throw new Error(`spent transactions unreadable: ${usedError.message}`);
+  const spent = new Set((usedRows || []).map((row) => String(row.provider_transaction_id || "")).filter(Boolean));
+
+  let feed = await fetchFeedOnce(GOBIZ_ACCESS_TOKEN, startTime);
   if (feed.status === 401) {
     const renewed = await refreshGoBizToken();
-    if (renewed) feed = await fetchFeedOnce(renewed);
+    if (renewed) feed = await fetchFeedOnce(renewed, startTime);
   }
   if (feed.status !== 200) return { ok: false, why: `the feed answered ${feed.status}` };
 
-  const transactions = parseFeed(feed.body);
+  const seen = parseFeed(feed.body);
+  const transactions = seen.filter((tx) => !spent.has(tx.id));
   const byUnit = {
     rupiah: matchOpenInvoices(openInvoices || [], transactions, "rupiah"),
     minor: matchOpenInvoices(openInvoices || [], transactions, "minor")
@@ -926,11 +960,16 @@ async function runQrisDetect(): Promise<Record<string, unknown>> {
     }
     return { ok: true, mode: "live", closed, transactions: transactions.length };
   }
-  log.warn("QRIS_DETECT_DRY", JSON.stringify({ wouldClose: plan.wouldClose, rupiah: plan.rupiahMatches.length, minor: plan.minorMatches.length, transactions: transactions.length }));
-  return { ok: true, mode: "dry", wouldClose: plan.wouldClose, transactions: transactions.length };
+  log.warn("QRIS_DETECT_DRY", JSON.stringify({ wouldClose: plan.wouldClose, rupiah: plan.rupiahMatches.length, minor: plan.minorMatches.length, transactions: transactions.length, seen: seen.length, spent: spent.size }));
+  return { ok: true, mode: "dry", wouldClose: plan.wouldClose, transactions: transactions.length, seen: seen.length, spent: spent.size };
 }
 
+// WHY THE TOKEN IS PUBLISHED ON EVERY COLD START.
+// The cron reads the operator token from vault, and the function is the only party that holds it, so one request from anywhere is enough to arm the schedule.
+
 Deno.serve(async (req: Request) => {
+
+publishOperatorToken();
 
 // WHY apikey IS ALLOWED: the dashboard calls this function with the publishable key in the apikey header beside the bearer session, and a preflight that does not name apikey makes the browser drop the request before it is sent.
 // The bridge does not need it because the device sends only its own token in the body, and it keeps its own narrower list.

@@ -12,6 +12,7 @@ import fs from 'node:fs';
 
 const root = new URL('..', import.meta.url);
 const sql = fs.readFileSync(new URL('supabase/migrations/20261104130000_opera_qris_detect_cron.sql', root), 'utf8');
+const fix = fs.readFileSync(new URL('supabase/migrations/20261104150000_opera_qris_detect_cron_fix.sql', root), 'utf8');
 
 test('the cron function reads the operator token from vault, never from the file', () => {
   assert.match(sql, /vault\.decrypted_secrets/, 'the token is read from vault');
@@ -31,4 +32,11 @@ test('one schedule, every five minutes, named so it can be found in cron.job', (
   assert.equal(schedules.length, 1, 'exactly one schedule is created');
   assert.equal(schedules[0][1], 'opera-qris-detect');
   assert.equal(schedules[0][2], '*/5 * * * *');
+});
+
+test('the cron asks pg_net for a request id, because pg_net returns no answer', () => {
+  assert.match(fix, /v_request_id bigint/, 'the request id is a bigint, because that is what pg_net returns');
+  assert.match(fix, /v_request_id := net\.http_post\(/, 'the id is what the call hands back');
+  assert.doesNotMatch(fix, /status_code/, 'the response is not read off the call, which carries no response');
+  assert.match(fix, /jsonb_build_object\('ok', true, 'request_id', v_request_id\)/, 'the run reports the id the operator reads the answer under');
 });
