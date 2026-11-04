@@ -67,7 +67,7 @@ export function toDynamicQris(staticPayload, amountRupiah) {
   if (!Number.isInteger(amountRupiah) || amountRupiah <= 0) return null;
   const parsed = parseQris(staticPayload);
   if (!parsed.length) return null;
-  if (parsed[0]?.tag !== '00' || parsed[0].value !== '02') return null;
+  if (parsed[0]?.tag !== '00' || parsed[0].value !== '01') return null;
 
   let fields = parsed.filter((field) => field.tag !== '63');
   setField(fields, '01', '12');

@@ -15,7 +15,7 @@ import { crc16CcittFalse, parseQris, serializeQris, toDynamicQris, qrisAmount, q
 
 function staticPayload() {
   const fields = [
-    { tag: '00', value: '02' },
+    { tag: '00', value: '01' },
     { tag: '01', value: '11' },
     { tag: '26', value: '0014COM.GO-JEK.WWW' },
     { tag: '52', value: '5204' },
@@ -42,7 +42,7 @@ test('a static payload converts to the dynamic form a payer app accepted', () =>
   const dynamic = toDynamicQris(staticPayload(), 1000);
   assert.ok(dynamic, 'the conversion must produce a payload');
   const fields = parseQris(dynamic);
-  assert.equal(fields.find((f) => f.tag === '00').value, '02');
+  assert.equal(fields.find((f) => f.tag === '01').value, '12', 'tag 01 must say dynamic');
   assert.equal(fields.find((f) => f.tag === '01').value, '12', 'tag 01 must say dynamic');
   assert.equal(fields.find((f) => f.tag === '54').value, '1000', 'the amount is a whole rupiah string, never 1000.00');
   assert.equal(qrisCategory(dynamic), 'A02', 'tag 62/07 must say dynamic, not A01');
@@ -59,7 +59,7 @@ test('the amount tag lands before the country tag, the order that was scanned an
 
 test('a merchant payload without tag 62 still gets the dynamic category', () => {
   const fields = [
-    { tag: '00', value: '02' },
+    { tag: '00', value: '01' },
     { tag: '01', value: '11' },
     { tag: '26', value: '0014COM.GO-JEK.WWW' }
   ];
@@ -72,7 +72,7 @@ test('the conversion refuses what it cannot price', () => {
   assert.equal(toDynamicQris(staticPayload(), 1000.5), null, 'a fractional rupiah has no QRIS form');
   assert.equal(toDynamicQris(staticPayload(), 0), null);
   assert.equal(toDynamicQris('not-a-payload', 1000), null);
-  assert.equal(toDynamicQris('000201', 1000), null, 'a payload that is not tag 00 version 02 is not a QRIS payload');
+  assert.equal(toDynamicQris('0002AB0101021121', 1000), null, 'tag 00 must be the payload format indicator 01');
 });
 
 test('a payload whose CRC does not match is detectable', () => {
