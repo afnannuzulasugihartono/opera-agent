@@ -27,7 +27,7 @@
 -- WHY this drop, and why it must stay: applying this fix with the wrong parameter order does not replace the function, it ADDS a second overload, because PostgreSQL matches create or replace on the argument TYPE LIST including order.
 -- With two overloads PostgREST cannot choose one for a named-argument call, so the extension's pull loop fails to resolve the function at all.
 -- That happened once during this work: the fix was first written as (text,text,integer,text,integer,jsonb), which left the original 7-now() body live and call-broken until it was dropped.
--- The signature below is the one opera-agent-bridge actually calls, and the test in tests/postgres/ pins the overload count to one so a second copy cannot reappear.
+-- The drop above is the guard: the signature below is the one opera-agent-bridge calls, and removing the wrong-order copy first is what lets this replace take effect instead of adding a second overload.
 
 drop function if exists public.opera_claim_next_wait(text, text, integer, text, integer, jsonb);
 
