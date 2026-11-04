@@ -63,3 +63,12 @@ test('every helper the function calls from billing.js is actually imported', () 
     assert.ok(qrisBlock.includes(name), `${name} must be imported from qris.js`);
   }
 });
+
+test('the public price list is served before any token check and returns only active rows', () => {
+  const get = fn.slice(fn.indexOf('req.method === "GET"'), fn.indexOf('req.method === "POST"'));
+  const prices = get.indexOf('url.searchParams.get("prices") === "1"');
+  const tokenGate = get.indexOf('invoice_id and token are required');
+  assert.ok(prices > 0 && tokenGate > prices, 'the price list answers without a token, before the invoice branch');
+  assert.match(get, /\.eq\("active", true\)/, 'a retired price is not listed');
+  assert.doesNotMatch(get.slice(prices, tokenGate), /auth\.getUser|BILLING_TOKEN/, 'no credential is needed to read prices');
+});
