@@ -688,6 +688,29 @@ footer .doors a:hover { color: var(--ink); }
   transform: translateY(-2px);
 }
 
+/*
+ * WHY THE CARDS BREATHE: measured against firecrawl.dev on 2026-11-04, its cards carry a light that passes over them every seven seconds, and a grid that never moves reads as a picture.
+ * The sheen is one gradient on a pseudo-element, it rests most of the cycle, and the site's reduced-motion rule stops it dead.
+ */
+
+.bentoArticle::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(115deg, transparent 38%, var(--accent-soft) 50%, transparent 62%);
+  opacity: 0;
+  pointer-events: none;
+  animation: illuminate 7s linear infinite;
+}
+
+@keyframes illuminate {
+  0% { opacity: 0; transform: translateX(-38%); }
+  14% { opacity: .7; }
+  34% { opacity: 0; transform: translateX(38%); }
+  100% { opacity: 0; transform: translateX(-38%); }
+}
+
 .bentoArticle h3 {
   margin: 0 0 8px;
   font-size: 16px;
