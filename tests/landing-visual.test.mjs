@@ -428,6 +428,27 @@ test('the strip of pages our users open moves once and stops when asked', () => 
   assert.match(css, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.marqueeTrack \{[^}]*animation: none/s, 'and it stops when the reader asks');
 });
 
+test('the mock types its commands instead of only fading them in', () => {
+  // WHY A TYPED REVEAL: measured against firecrawl.dev on 2026-11-04, its product visual writes itself, and a hero that only fades reads like a slide.
+  // The reveal is a clip in steps, so the text stays in the page for readers and for search engines.
+  const css = read('beranda.css');
+  assert.match(css, /\.mockCmd code \{[^}]*clip-path: inset\(0 100% 0 0\)/s, 'the command starts covered');
+  assert.match(css, /@keyframes type-in/, 'and it is uncovered by a keyframe');
+  assert.match(css, /\.mockCmd code \{[^}]*animation: type-in[^}]*steps\(/s, 'the uncover runs in steps, so it types');
+  assert.match(css, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.mockCmd code \{[^}]*clip-path: none/s, 'and the reader can refuse the typing');
+});
+
+test('the guide search shows where the keyboard is, and answers the slash key', () => {
+  // WHY THE FOCUS RING STAYS: a shared rule takes the ring off every input, so the guide's own search box must put one back — otherwise a keyboard reader cannot see the cursor.
+  // WHY THE SLASH KEY: measured against docs.firecrawl.dev on 2026-11-04, its search opens on "/", and a reader who wants one section should not hunt for the box.
+  const sheet = read('docs.css');
+  assert.match(sheet, /\.docSearch input:focus-visible \{[^}]*outline:/s, 'the search keeps a visible ring');
+  assert.match(sheet, /\.docSearch::after \{[^}]*content: "\/"/s, 'and the box shows the key that opens it');
+  const script = read('docs.js');
+  assert.match(script, /key === '\/'/, 'the slash key is listened for');
+  assert.match(script, /\.focus\(\)/, 'and it puts the cursor in the box');
+});
+
 test('the capability cards answer the pointer', () => {
   const html = read('beranda.html');
   const css = read('site.css');
