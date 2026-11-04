@@ -1,0 +1,96 @@
+/*
+ * @last-edited: 2026-11-04 UTC+7.
+ * @title: docs.css — the guide page: a section column, a search box, and the text beside them.
+ * @state: a two-column layout that collapses to one column on a phone, with the column sticking while the text scrolls.
+ * @dependencies: site.css.
+ *
+ * WHY a page sheet: the guide's column and its search box belong to this page alone; the shell, the prose rules and the tokens come from site.css.
+ */
+
+.docLayout {
+  display: grid;
+  grid-template-columns: 236px minmax(0, 1fr);
+  gap: 52px;
+  align-items: start;
+  padding: 68px 0 96px;
+}
+
+.docNav {
+  position: sticky;
+  top: 92px;
+}
+
+/*
+ * WHY THE MAP LOSES ITS BOX HERE: the map is a column of doors beside the text, and the card frame that suits a map on a legal page makes it a box in a sidebar.
+ */
+
+.docNav .toc {
+  columns: 1;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+}
+
+.docNav .toc li {
+  margin: 0 0 2px;
+}
+
+.docNav .toc a {
+  display: block;
+  padding: 7px 10px;
+  border-left: 2px solid var(--line);
+  color: var(--muted);
+  text-decoration: none;
+  transition: color .16s var(--ease), border-color .16s var(--ease);
+}
+
+.docNav .toc a:hover {
+  border-left-color: var(--accent);
+  color: var(--ink);
+}
+
+.docSearch {
+  margin: 0 0 20px;
+}
+
+.docSearch input {
+  width: 100%;
+  min-height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 14px;
+}
+
+.docSearch input::placeholder {
+  color: var(--muted);
+}
+
+.docSearch input:focus {
+  border-color: var(--line-strong);
+  outline: none;
+}
+
+.docBody h2 {
+  scroll-margin-top: 92px;
+}
+
+.docBody h2:first-child {
+  margin-top: 0;
+}
+
+@media (max-width: 900px) {
+  .docLayout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 28px;
+    padding-top: 44px;
+  }
+
+  .docNav {
+    position: static;
+  }
+}

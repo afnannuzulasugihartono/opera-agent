@@ -1,14 +1,14 @@
 <!-- @last-edited: 2026-10-26 UTC+7. -->
 <!-- @title: beranda — the public home: one product proof, one action per idea, and your own model. -->
 <!-- @state: static page; the model form talks to the installed extension and to nothing else. -->
-<!-- @dependencies: site.css, beranda.css, i18n.js. -->
+<!-- @dependencies: site.css, beranda.css, i18n.js, reveal.js. -->
 
 <!doctype html>
 <html lang="id">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="theme-color" content="#0a0a0a" />
+  <meta name="theme-color" content="#000000" />
   <title>Opera Agent</title>
   <meta name="description" content="Opera Agent mengemudikan browser Anda sendiri dari asisten AI yang sudah Anda pakai. Anda membawa model sendiri; konten halaman hanya pergi ke endpoint model Anda." />
   <link rel="stylesheet" href="/site.css" />
@@ -29,8 +29,9 @@
         <a class="brand" href="/beranda.html" aria-current="page"><svg class="brandMark" viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="7"  /><path d="M8 5.6v12.8l3.1-2.9 1.9 4.5 2.4-1-2-4.5h3.9L8 5.6Z"  /></svg><span>Opera Agent</span></a>
         <a href="/fitur.html" data-i18n="nav.features">Fitur</a>
         <a href="/unduh.html" data-i18n="nav.download">Unduh</a>
-        <a href="/dukungan.html" data-i18n="nav.support">Dukungan</a>
         <a href="/harga" data-i18n="nav.price">Harga</a>
+        <a href="/dukungan.html" data-i18n="nav.support">Dukungan</a>
+        <a href="/docs.html" data-i18n="nav.docs">Docs</a>
         <span class="lang" data-lang-toggle></span>
         <a class="navCta" href="/" data-i18n="nav.signin">Masuk</a>
       </nav>
@@ -38,6 +39,11 @@
   </header>
 
   <main class="wrap">
+    <div class="announce">
+      <span data-i18n="announce.text">Harga tetap per pekerjaan selesai.</span>
+      <a href="/harga" data-i18n="announce.link">Lihat harga</a>
+    </div>
+
     <section class="hero hero--full">
       <div class="heroGrid">
         <div class="heroCopy">
@@ -47,7 +53,7 @@
             <a class="btn primary" href="./unduh.html" data-i18n="cta.download">Pasang Opera Agent</a>
             <a class="btn" href="#model" data-i18n="cta.model">Pakai model sendiri</a>
           </div>
-          <p class="footnote" data-i18n="hero.note">Gratis dipakai. Model ditagih penyedia Anda.</p>
+          <p class="footnote" data-i18n="hero.note">Harga tetap per pekerjaan selesai. Biaya model ke penyedia Anda.</p>
           <div class="row" id="ctaIn" hidden>
             <a class="btn primary" href="./dashboard.html" data-i18n="cta.dashboard">Buka Dashboard</a>
             <a class="btn" href="./dashboard.html#pairing" data-i18n="cta.pair">Pair device</a>
@@ -74,13 +80,19 @@
         </div>
 
         <div class="heroVisual">
-          <div class="demo" id="demo" role="img" aria-label="Contoh panel Opera Agent: tiga tab terbuka, ringkasan halaman, dan penolakan kolom pembayaran">
+          <div class="demo" id="demo">
             <div class="demoBar">
               <span class="dots" aria-hidden="true"><span></span><span></span><span></span></span>
               <span class="mockAddr">opera-agent.pages.dev/dashboard</span>
               <span class="mockBadge" data-i18n="demo.example">Contoh</span>
             </div>
-            <div class="demoBody">
+            <div class="demoTabs" role="tablist" aria-label="Contoh pekerjaan">
+              <button class="demoTab is-on" type="button" role="tab" id="tab-chrome" aria-controls="panel-chrome" aria-selected="true" data-panel="chrome" data-i18n="demo.tab.chrome">Chrome</button>
+              <button class="demoTab" type="button" role="tab" id="tab-docs" aria-controls="panel-docs" aria-selected="false" data-panel="docs" data-i18n="demo.tab.docs">Docs</button>
+              <button class="demoTab" type="button" role="tab" id="tab-maps" aria-controls="panel-maps" aria-selected="false" data-panel="maps" data-i18n="demo.tab.maps">Maps</button>
+            </div>
+
+            <div class="demoPanel" role="tabpanel" id="panel-chrome" aria-labelledby="tab-chrome">
               <div class="mockTop">
                 <span class="dot" aria-hidden="true"></span>
                 <strong>opera</strong>
@@ -105,12 +117,74 @@
                 <code>read-only</code>
               </div>
             </div>
+
+            <div class="demoPanel" role="tabpanel" id="panel-docs" aria-labelledby="tab-docs" hidden>
+              <div class="mockTop">
+                <span class="dot" aria-hidden="true"></span>
+                <strong>opera</strong>
+                <span>·</span>
+                <span>Docs</span>
+                <span class="chip">online</span>
+              </div>
+              <div class="mockCmd">
+                <code>docs.open “Cek onboarding Q4”</code>
+                <span class="ok" data-i18n="demo.docs.read">48 baris terbaca</span>
+              </div>
+              <div class="mockCmd">
+                <code>docs.write “Ringkasan”</code>
+                <span class="ok" data-i18n="demo.docs.write">3 baris ditambahkan</span>
+              </div>
+              <div class="mockCmd">
+                <code>artifact.save</code>
+                <span class="ok" data-i18n="demo.docs.artifact">ringkasan.md</span>
+              </div>
+              <div class="mockFoot">
+                <span data-i18n="demo.docs.foot">Hasil jadi berkas</span>
+                <code>saved</code>
+              </div>
+            </div>
+
+            <div class="demoPanel" role="tabpanel" id="panel-maps" aria-labelledby="tab-maps" hidden>
+              <div class="mockTop">
+                <span class="dot" aria-hidden="true"></span>
+                <strong>opera</strong>
+                <span>·</span>
+                <span>Maps</span>
+                <span class="chip">online</span>
+              </div>
+              <div class="mockCmd">
+                <code>maps.search “kopi dekat Monas”</code>
+                <span class="ok" data-i18n="demo.maps.find">3 hasil</span>
+              </div>
+              <div class="mockCmd">
+                <code>maps.pick “Kopi,proto”</code>
+                <span class="ok" data-i18n="demo.maps.pick">alamat lengkap</span>
+              </div>
+              <div class="mockCmd">
+                <code>artifact.save</code>
+                <span class="ok" data-i18n="demo.maps.artifact">daftar.md</span>
+              </div>
+              <div class="mockFoot">
+                <span data-i18n="demo.maps.foot">Tugas selesai</span>
+                <code>done</code>
+              </div>
+            </div>
           </div>
         </div>
       </div>
     </section>
 
-    <section id="install" class="section reveal">
+    <section class="strip" data-reveal aria-label="Halaman yang bisa dikerjakan">
+      <p class="stripLabel" data-i18n="strip.label">Halaman mana pun. Bukan daftar putih.</p>
+      <div class="marquee" aria-hidden="true">
+        <div class="marqueeTrack">
+          <span>Google Docs</span><span>Google Sheets</span><span>Google Maps</span><span>YouTube</span><span>Gmail</span><span>Notion</span><span>Figma</span><span>GitHub</span><span>Linear</span><span>Jira</span><span>Shopee</span><span>Traveloka</span>
+          <span>Google Docs</span><span>Google Sheets</span><span>Google Maps</span><span>YouTube</span><span>Gmail</span><span>Notion</span><span>Figma</span><span>GitHub</span><span>Linear</span><span>Jira</span><span>Shopee</span><span>Traveloka</span>
+        </div>
+      </div>
+    </section>
+
+    <section id="install" class="section" data-reveal>
       <div class="sectionHead">
         <div>
           <h2 data-i18n="install.title">Dari prompt ke hasil.</h2>
@@ -132,7 +206,7 @@
         <div class="installCard">
           <span class="mockBadge" data-i18n="demo.example">Contoh</span>
           <h3 data-i18n="install.panel.title">Panel extension</h3>
-          <p data-i18n="install.panel.body">Satu device, satu akun, satu kunci yang tetap di browser ini.</p>
+          <p data-i18n="install.panel.body">Satu device, satu akun, satu kunci lokal.</p>
           <ul class="installList">
             <li data-i18n="install.panel.one">Device terhubung ke akun Anda</li>
             <li data-i18n="install.panel.two">Kode pairing berlaku sepuluh menit</li>
@@ -142,16 +216,11 @@
       </div>
     </section>
 
-    <section id="model" class="section reveal">
+    <section id="model" class="section" data-reveal>
       <div class="split reverse">
         <div>
           <h2 data-i18n="model.title">Pakai model sendiri.</h2>
           <p class="sub" data-i18n="model.sub">Endpoint dan kunci disimpan di browser Anda, bukan di server kami.</p>
-          <dl class="facts">
-            <dt data-i18n="privacy.key.dt">Kunci API</dt><dd data-i18n="privacy.key.dd">Disimpan lokal. Tidak pernah diunggah.</dd>
-            <dt data-i18n="faq.model.dt">Model</dt><dd data-i18n="faq.model.dd">Gunakan endpoint cloud atau lokal.</dd>
-            <dt data-i18n="faq.data.dt">Data</dt><dd data-i18n="faq.data.dd">Konten pergi ke endpoint model Anda.</dd>
-          </dl>
         </div>
         <div class="card modelCard">
           <form id="modelForm">
@@ -185,38 +254,38 @@
       </div>
     </section>
 
-    <section id="signin" class="section reveal">
+    <section id="signin" class="section" data-reveal aria-labelledby="abilityTitle">
       <div class="sectionHead">
         <div>
-          <h2 data-i18n="signin.title">Pasang di browser Anda.</h2>
+          <h2 id="abilityTitle" data-i18n="ability.title">Setelah pair, browser yang bekerja.</h2>
         </div>
-        <p data-i18n="signin.sub">Asisten Anda berbicara dengan browser lewat MCP.</p>
+        <p data-i18n="ability.sub">Empat hal yang selalu benar.</p>
       </div>
-      <div class="split">
-        <div>
-          <p class="lede" data-i18n="signin.oauth.dd">Satu halaman. Satu scope. Anda selalu menekan tombol.</p>
-          <div class="row" style="margin-top: 24px;">
-            <a class="btn primary" href="./index.html" data-i18n="signin.cta">Masuk / Daftar</a>
-            <a class="btn" href="./fitur.html" data-i18n="nav.features">Fitur</a>
-          </div>
-          <dl class="facts" style="margin-top: 28px;">
-            <dt data-i18n="signin.human.dt">Kontrol manusia</dt><dd data-i18n="signin.human.dd">Password, kode sekali pakai, dan pembayaran selalu ditolak.</dd>
-            <dt>Tools</dt><dd data-i18n="signin.tools.dd">34 tools di atas 31 primitive browser.</dd>
-          </dl>
-        </div>
-        <div class="signinPanel">
-          <h3>MCP</h3>
-          <p data-i18n="signin.panel.body">Satu endpoint, satu izin, satu device. Asisten meminta, device menjalankan.</p>
-          <code>opera-agent-mcp</code>
-          <div class="mockFoot">
-            <span data-i18n="signin.panel.oauth">OAuth</span>
-            <span data-i18n="signin.panel.scope">openid · email</span>
-          </div>
-        </div>
+      <div class="bento">
+        <article class="bentoArticle">
+          <h3 data-i18n="ability.one.title">Satu device, satu akun</h3>
+          <p data-i18n="ability.one.body">Kode sekali pakai mengikat device. Cabut kapan saja.</p>
+        </article>
+        <article class="bentoArticle">
+          <h3 data-i18n="ability.two.title">MCP untuk harness apa pun</h3>
+          <p data-i18n-html="ability.two.body">OpenCode, Kilo, Claude: satu endpoint. <a href="./docs.html">Docs</a>.</p>
+        </article>
+        <article class="bentoArticle">
+          <h3 data-i18n="ability.three.title">Manusi memegang kendali</h3>
+          <p data-i18n="ability.three.body">Password, OTP, dan pembayaran selalu ditolak.</p>
+        </article>
+        <article class="bentoArticle">
+          <h3 data-i18n="ability.four.title">Jejak setiap perintah</h3>
+          <p data-i18n-html="ability.four.body">Status dan artefak tersimpan di <a href="./dashboard.html">Dashboard</a>.</p>
+        </article>
+      </div>
+      <div class="row" style="margin-top: 28px;">
+        <a class="btn primary" href="./index.html" data-i18n="signin.cta">Masuk / Daftar</a>
+        <a class="btn" href="./docs.html" data-i18n="ability.docs">Baca Docs</a>
       </div>
     </section>
 
-    <section id="privacy" class="section reveal">
+    <section id="privacy" class="section" data-reveal>
       <div class="sectionHead">
         <div>
           <h2 data-i18n="privacy.title">Privasi lebih dulu.</h2>
@@ -233,17 +302,13 @@
           <p data-i18n="privacy.key.dd">Disimpan lokal. Tidak pernah diunggah.</p>
         </article>
         <article>
-          <h3 data-i18n="privacy.commands.dt">Perintah</h3>
-          <p data-i18n="privacy.commands.dd">Transit melalui relay agar asisten dapat bertindak.</p>
-        </article>
-        <article>
           <h3 data-i18n="privacy.shot.dt">Screenshot</h3>
           <p data-i18n="privacy.shot.dd">Sensitif dan private selalu ditolak, tidak pernah dibagikan ke pihak ketiga.</p>
         </article>
       </div>
     </section>
 
-    <section id="faq" class="section reveal">
+    <section id="faq" class="section" data-reveal>
       <div class="sectionHead">
         <div>
           <h2 data-i18n="faq.title">Pertanyaan umum.</h2>
@@ -253,19 +318,11 @@
       <div class="faqList">
         <details>
           <summary data-i18n="faq.cost.dt">Biaya</summary>
-          <p data-i18n="faq.cost.dd">Opera Agent gratis. Model ditagih penyedianya.</p>
-        </details>
-        <details>
-          <summary data-i18n="faq.model.dt">Model</summary>
-          <p data-i18n="faq.model.dd">Gunakan endpoint cloud atau lokal.</p>
+          <p data-i18n="faq.cost.dd">Extension gratis dipasang. Setiap pekerjaan dibayar dari saldo.</p>
         </details>
         <details>
           <summary data-i18n="faq.data.dt">Data</summary>
           <p data-i18n="faq.data.dd">Konten pergi ke endpoint model Anda.</p>
-        </details>
-        <details>
-          <summary data-i18n="faq.offline.dt">Offline</summary>
-          <p data-i18n="faq.offline.dd">Model lokal bisa offline. Relay tetap membutuhkan koneksi.</p>
         </details>
         <details>
           <summary data-i18n="faq.stop.dt">Berhenti</summary>
@@ -274,35 +331,90 @@
       </div>
     </section>
 
-    <section class="finalBand reveal" aria-labelledby="finalTitle">
-      <h2 id="finalTitle" data-i18n="final.title">Gratis dipakai. Atur model sendiri.</h2>
+    <section class="finalBand" data-reveal aria-labelledby="finalTitle">
+      <h2 id="finalTitle" data-i18n="final.title">Pasang. Pair. Kerja.</h2>
       <p data-i18n="final.sub">Satu extension, satu akun, satu browser.</p>
       <a class="btn primary" href="./unduh.html" data-i18n="cta.download">Pasang Opera Agent</a>
     </section>
   </main>
 
-  <footer>
-    <div class="wrap cols">
-      <span data-i18n="footer.rights">&copy; 2026 Opera Agent. Hak cipta dilindungi.</span>
-      <span class="doors">
-        <a href="./beranda.html" data-i18n="footer.home">Beranda</a><a href="./privasi.html" data-i18n="footer.privacy">Privasi</a><a href="./syarat.html" data-i18n="footer.terms">Syarat</a><a href="./index.html" data-i18n="footer.signin">Masuk</a><a href="./akun.html" data-i18n="footer.account">Akun</a><a href="./dashboard.html">Dashboard</a><a href="./fitur.html" data-i18n="footer.features">Fitur</a><a href="./dukungan.html" data-i18n="footer.support">Dukungan</a>
-      </span>
+    <footer>
+    <div class="wrap footGrid">
+      <div class="footCol">
+        <span class="footBrand">Opera Agent</span>
+        <span class="footNote" data-i18n="footer.rights">© 2026 Opera Agent. Hak cipta dilindungi.</span>
+      </div>
+      <div class="footCol">
+        <h3 data-i18n="footer.product">Produk</h3>
+        <span class="doors">
+          <a href="./beranda.html" data-i18n="footer.home">Beranda</a>
+          <a href="./fitur.html" data-i18n="footer.features">Fitur</a>
+          <a href="./unduh.html" data-i18n="footer.download">Unduh</a>
+          <a href="./docs.html" data-i18n="footer.docs">Docs</a>
+        </span>
+      </div>
+      <div class="footCol">
+        <h3 data-i18n="footer.account">Akun</h3>
+        <span class="doors">
+          <a href="./index.html" data-i18n="footer.signin">Masuk</a>
+          <a href="./akun.html" data-i18n="footer.account">Akun</a>
+          <a href="./dashboard.html">Dashboard</a>
+        </span>
+      </div>
+      <div class="footCol">
+        <h3 data-i18n="footer.legal">Legal</h3>
+        <span class="doors">
+          <a href="./privasi.html" data-i18n="footer.privacy">Privasi</a>
+          <a href="./syarat.html" data-i18n="footer.terms">Syarat</a>
+          <a href="./dukungan.html" data-i18n="footer.support">Dukungan</a>
+        </span>
+      </div>
     </div>
   </footer>
 
   <script type="application/json" id="i18n-dict">
   {
     "en": {
+      "footer.legal": "Legal",
+      "footer.docs": "Docs",
+      "footer.download": "Download",
+      "footer.product": "Product",
       "nav.download": "Download",
       "nav.signin": "Sign in",
       "nav.features": "Features",
       "nav.price": "Pricing",
+      "nav.docs": "Docs",
+      "announce.text": "A flat price per finished job.",
+      "announce.link": "See the price",
+      "strip.label": "Any page. Not a whitelist.",
+      "demo.tab.chrome": "Chrome",
+      "demo.tab.docs": "Docs",
+      "demo.tab.maps": "Maps",
+      "demo.docs.read": "48 lines read",
+      "demo.docs.write": "3 lines added",
+      "demo.docs.artifact": "summary.md",
+      "demo.docs.foot": "The result is a file",
+      "demo.maps.find": "3 results",
+      "demo.maps.pick": "full address",
+      "demo.maps.artifact": "list.md",
+      "demo.maps.foot": "Job finished",
+      "ability.title": "After pairing, the browser works.",
+      "ability.sub": "Four things that stay true.",
+      "ability.one.title": "One device, one account",
+      "ability.one.body": "A one-time code binds the device. Revoke it any time.",
+      "ability.two.title": "MCP for any harness",
+      "ability.two.body": "OpenCode, Kilo, Claude: one endpoint. <a href=\"./docs.html\">Docs</a>.",
+      "ability.three.title": "The human holds control",
+      "ability.three.body": "Passwords, one-time codes, and payments are always refused.",
+      "ability.four.title": "A trail for every command",
+      "ability.four.body": "Status and artefacts live in the <a href=\"./dashboard.html\">Dashboard</a>.",
+      "ability.docs": "Read the Docs",
       "nav.support": "Support",
       "hero.title": "An AI assistant in <span class=\"accent\">your browser.</span>",
       "hero.lede": "An AI assistant that drives your browser. No free-running scripts.",
       "cta.download": "Install Opera Agent",
       "cta.model": "Connect any model",
-      "hero.note": "Free to use. Your provider bills the model.",
+      "hero.note": "A flat price per finished job. The model bill goes to your provider.",
       "cta.dashboard": "Open the dashboard",
       "cta.pair": "Pair a device",
       "tiles.devices.title": "Devices",
@@ -322,31 +434,20 @@
       "model.key": "API key",
       "model.save": "Save to the extension",
       "model.copy": "Just copy",
-      "signin.title": "Install in your browser.",
-      "signin.sub": "Your assistant talks to your browser over MCP.",
       "signin.cta": "Sign in / Sign up",
-      "signin.oauth.dd": "One page. One scope. You press the button.",
-      "signin.tools.dd": "34 tools on 31 browser primitives.",
-      "signin.human.dt": "Human control",
-      "signin.human.dd": "Passwords, one-time codes, and payments are refused.",
       "privacy.title": "Your data stays yours.",
       "privacy.content.dt": "Content",
       "privacy.content.dd": "Only goes to your model endpoint; queue history is stored in the project database.",
       "privacy.key.dt": "API key",
       "privacy.key.dd": "Stored locally. Never uploaded.",
-      "privacy.commands.dt": "Commands",
-      "privacy.commands.dd": "The relay lets your assistant act on your device.",
+      "privacy.shot.dt": "Screenshot",
       "privacy.shot.dd": "Sensitive and private pages are refused and never shared with third parties.",
       "faq.title": "Good to know.",
       "faq.sub": "Short answers.",
       "faq.cost.dt": "Cost",
-      "faq.cost.dd": "Opera Agent is free. Your provider bills the model.",
-      "faq.model.dt": "Model",
-      "faq.model.dd": "Use a cloud or local endpoint.",
+      "faq.cost.dd": "Installing the extension is free. Every job is paid from your balance.",
       "faq.data.dt": "Data",
       "faq.data.dd": "Content goes to your model endpoint.",
-      "faq.offline.dt": "Offline",
-      "faq.offline.dd": "Local models work offline. The relay needs a connection.",
       "faq.stop.dt": "Stop",
       "faq.stop.dd": "Sign out or revoke pairing at any time.",
       "hero.stat.tools": "MCP tools",
@@ -374,16 +475,14 @@
       "install.panel.one": "A device connected to your account",
       "install.panel.two": "A pairing code valid for ten minutes",
       "install.panel.three": "Every command leaves a status trail",
-      "signin.panel.body": "One endpoint, one grant, one device. The assistant asks, the device runs.",
-      "signin.panel.oauth": "OAuth",
-      "signin.panel.scope": "openid · email",
-      "privacy.shot.dt": "Screenshot",
-      "final.title": "Free to use. Bring your own model.",
+      "final.title": "Install. Pair. Work.",
       "final.sub": "One extension, one account, and full control of your browser."
     }
   }
   </script>
   <script src="./i18n.js"></script>
+  <script src="/spotlight.js"></script>
+  <script src="/reveal.js"></script>
   <script type="module">
 
     // WHY the extension id is written here and pinned by a test: the page must be able to name the extension it configures.
@@ -529,21 +628,60 @@
       }
     });
 
-    // WHY last and fenced: motion must never gate content.
-    // The js class goes on <html> first so every hiding rule requires it, and a reader without JS — or with reduced motion — gets the full page with no animation at all.
-    try {
-      document.documentElement.classList.add('js');
-      const reduce = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
-      if (!reduce && 'IntersectionObserver' in globalThis) {
-        const seen = new IntersectionObserver((entries) => {
-          for (const entry of entries) {
-            if (entry.isIntersecting) { entry.target.classList.add('in'); seen.unobserve(entry.target); }
-          }
-        }, { threshold: 0.12 });
-        for (const el of document.querySelectorAll('.reveal')) seen.observe(el);
+    // WHY the tabs answer one click: the visual proves three moments of the product, and the reader picks a moment instead of reading three paragraphs.
+    const tabs = [...document.querySelectorAll('.demoTab')];
+    const panels = [...document.querySelectorAll('.demoPanel')];
+
+    const showPanel = (name) => {
+      for (const tab of tabs) {
+        const on = tab.dataset.panel === name;
+        tab.classList.toggle('is-on', on);
+        tab.setAttribute('aria-selected', String(on));
       }
-    } catch (error) {
-      // Content stays visible; only the entrance motion is lost.
+      for (const panel of panels) {
+        panel.hidden = panel.id !== `panel-${name}`;
+      }
+    };
+
+    for (const tab of tabs) {
+      tab.addEventListener('click', () => showPanel(tab.dataset.panel));
+      tab.addEventListener('keydown', (event) => {
+        if (event.key !== 'ArrowRight' && event.key !== 'ArrowLeft') return;
+        event.preventDefault();
+        const step = event.key === 'ArrowRight' ? 1 : -1;
+        const next = tabs[(tabs.indexOf(tab) + step + tabs.length) % tabs.length];
+        next.focus();
+        showPanel(next.dataset.panel);
+      });
+    }
+
+    // WHY the numbers count once: a reader who lands on the page watches the figures arrive instead of reading them as wallpaper.
+    const reduceMotion = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const stats = $('heroStats');
+
+    const countUp = (node, target) => {
+      const start = performance.now();
+      const duration = 700;
+      const step = (now) => {
+        const progress = Math.min(1, (now - start) / duration);
+        const eased = 1 - ((1 - progress) ** 3);
+        node.textContent = String(Math.round(target * eased));
+        if (progress < 1) requestAnimationFrame(step);
+        else node.textContent = String(target);
+      };
+      requestAnimationFrame(step);
+    };
+
+    if (stats && !reduceMotion && 'IntersectionObserver' in globalThis) {
+      const targets = [...stats.querySelectorAll('dt')].map((node) => ({ node, value: Number(node.textContent) }));
+      const counted = new IntersectionObserver((entries) => {
+        for (const entry of entries) {
+          if (!entry.isIntersecting) continue;
+          counted.unobserve(entry.target);
+          for (const item of targets) countUp(item.node, item.value);
+        }
+      }, { threshold: 0.5 });
+      counted.observe(stats);
     }
   </script>
 </body>

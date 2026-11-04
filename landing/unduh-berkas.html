@@ -1,7 +1,7 @@
 <!-- @last-edited: 2026-10-26 UTC+7. -->
 <!-- @title: unduh-berkas — one card per browser, the archive filled and the rest closed, then every install path. -->
 <!-- @state: the merged page: each browser card fills the .zip and closes the .crx and the update manifest behind a details; the steps, verification, enterprise notes, and matrix live here, and the hub only opens the door. -->
-<!-- @dependencies: site.css, download.css, i18n.js. -->
+<!-- @dependencies: site.css, download.css, i18n.js, reveal.js. -->
 
 
 <!doctype html>
@@ -9,7 +9,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="theme-color" content="#0a0a0a" />
+  <meta name="theme-color" content="#000000" />
   <title data-i18n="meta.title">Unduh berkas — Opera Agent</title>
   <meta name="description" content="Unduh Opera Agent untuk Chrome, Edge, Brave, Opera, dan Vivaldi: arsip .zip manual atau CRX bertanda tangan untuk mesin enterprise." />
   <link rel="stylesheet" href="/site.css" />
@@ -29,8 +29,9 @@
         <a class="brand" href="/beranda.html" aria-current="page"><svg class="brandMark" viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="7"  /><path d="M8 5.6v12.8l3.1-2.9 1.9 4.5 2.4-1-2-4.5h3.9L8 5.6Z"  /></svg><span>Opera Agent</span></a>
         <a href="/fitur.html" data-i18n="nav.features">Fitur</a>
         <a href="/unduh.html" data-i18n="nav.download" aria-current="page">Unduh</a>
-        <a href="/dukungan.html" data-i18n="nav.support">Dukungan</a>
         <a href="/harga" data-i18n="nav.price">Harga</a>
+        <a href="/dukungan.html" data-i18n="nav.support">Dukungan</a>
+        <a href="/docs.html" data-i18n="nav.docs">Docs</a>
         <span class="lang" data-lang-toggle></span>
         <a class="navCta" href="/" data-i18n="nav.signin">Masuk</a>
       </nav>
@@ -38,7 +39,7 @@
   </header>
 
   <main class="wrap wide">
-    <div class="hero files">
+    <div class="hero files" data-reveal>
       <h1 data-i18n="page.title">Unduh berkas</h1>
       <p data-i18n="page.sub">Lima kartu, dua berkas yang sama. Opera Agent hanya punya satu build untuk
       semua browser Chromium, jadi tiap kartu berbeda pada halaman ekstensi yang Anda
@@ -137,10 +138,15 @@
     <script type="application/json" id="i18n-dict">
   {
     "en": {
+      "footer.legal": "Legal",
+      "footer.docs": "Docs",
+      "footer.download": "Download",
+      "footer.product": "Product",
       "nav.download": "Download",
       "nav.signin": "Sign in",
       "nav.features": "Features",
       "nav.price": "Pricing",
+      "nav.docs": "Docs",
       "nav.support": "Support",
       "meta.title": "Download files — Opera Agent",
       "page.title": "Download files",
@@ -189,6 +195,8 @@
   }
   </script>
     <script src="./i18n.js"></script>
+
+    <script src="/reveal.js"></script>
     <script>
       // WHY THE TYPEWRITER STAYS BEHIND A HASH: the page CSP names every inline classic script by its sha256, so this block is shaped to be hashed, not hidden.
       window.__typeLine = function () {
@@ -237,7 +245,7 @@
       }
     </script>
 
-    <div class="downloadBody centered">
+    <div class="downloadBody centered" data-reveal>
     <p data-i18n-html="fallback.body">Kalau kebijakan ditolak, atau browser kamu tidak ada di daftar di atas, ambil
     <a href="#berkas">arsip .zip</a> dari kartu di atas dan muat sendiri. Cara ini berjalan
     di semua browser Chromium.</p>
@@ -308,12 +316,37 @@
     </div>
   </main>
 
-  <footer>
-    <div class="wrap cols">
-      <span data-i18n="footer.rights">&copy; 2026 Opera Agent. Hak cipta dilindungi.</span>
-      <span class="doors">
-        <a href="./beranda.html" data-i18n="footer.home">Beranda</a><a href="./privasi.html" data-i18n="footer.privacy">Privasi</a><a href="./syarat.html" data-i18n="footer.terms">Syarat</a><a href="./index.html" data-i18n="footer.signin">Masuk</a><a href="./akun.html" data-i18n="footer.account">Akun</a><a href="./dashboard.html">Dashboard</a><a href="./fitur.html" data-i18n="footer.features">Fitur</a><a href="./dukungan.html" data-i18n="footer.support">Dukungan</a>
-      </span>
+    <footer>
+    <div class="wrap footGrid">
+      <div class="footCol">
+        <span class="footBrand">Opera Agent</span>
+        <span class="footNote" data-i18n="footer.rights">© 2026 Opera Agent. Hak cipta dilindungi.</span>
+      </div>
+      <div class="footCol">
+        <h3 data-i18n="footer.product">Produk</h3>
+        <span class="doors">
+          <a href="./beranda.html" data-i18n="footer.home">Beranda</a>
+          <a href="./fitur.html" data-i18n="footer.features">Fitur</a>
+          <a href="./unduh.html" data-i18n="footer.download">Unduh</a>
+          <a href="./docs.html" data-i18n="footer.docs">Docs</a>
+        </span>
+      </div>
+      <div class="footCol">
+        <h3 data-i18n="footer.account">Akun</h3>
+        <span class="doors">
+          <a href="./index.html" data-i18n="footer.signin">Masuk</a>
+          <a href="./akun.html" data-i18n="footer.account">Akun</a>
+          <a href="./dashboard.html">Dashboard</a>
+        </span>
+      </div>
+      <div class="footCol">
+        <h3 data-i18n="footer.legal">Legal</h3>
+        <span class="doors">
+          <a href="./privasi.html" data-i18n="footer.privacy">Privasi</a>
+          <a href="./syarat.html" data-i18n="footer.terms">Syarat</a>
+          <a href="./dukungan.html" data-i18n="footer.support">Dukungan</a>
+        </span>
+      </div>
     </div>
   </footer>
 </body>

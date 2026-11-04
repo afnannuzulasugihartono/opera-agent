@@ -78,47 +78,29 @@ main.wrap { padding-top: 68px; padding-bottom: 96px; }
   line-height: 1.35;
 }
 
-/* ── capability rows ────────────────────────────────────────────────────── */
+/* ── capability grid ────────────────────────────────────────────────────── */
 
 /*
- * WHY ROWS AND NOT CARDS: five cards in two columns plus one orphan read as a brochure grid, and a reader has to hunt for the sentence that answers a question.
- * One numbered column beside a line between each entry reads the way a reference does, and it is the shape opencode.ai uses for its own abilities.
+ * WHY THE GRID LIVES IN site.css: the home page and this page answer the same question with the same cards, and one copy of the grid drifts apart from the other in a week.
+ * The sheet here keeps only what this page alone needs.
  */
 
-.featureList {
-  display: grid;
-  border-top: 1px solid var(--line);
+.bento {
   margin: 0 0 64px;
 }
 
-.featureRow {
-  display: grid;
-  grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr);
-  gap: 24px 48px;
-  align-items: start;
-  padding: 32px 0;
-  border-bottom: 1px solid var(--line);
-  transition: transform .12s var(--ease);
+.bentoArticle h2 {
+  margin: 0 0 8px;
+  font-size: 17px;
+  letter-spacing: -.02em;
 }
 
-.featureRow:hover { transform: translateY(-1px); }
-
-.featureRow h2 {
-  margin: 0;
-  font-size: 20px;
-  letter-spacing: -.025em;
+.bentoArticle p {
+  font-size: 14px;
 }
 
-.featureRow p {
-  margin: 0;
-  max-width: 60ch;
-  color: var(--muted);
-  font-size: 15px;
-  line-height: 1.6;
-}
-
-@media (max-width: 760px) {
-  .featureRow { grid-template-columns: 1fr; gap: 8px; padding: 24px 0; }
+@media (max-width: 640px) {
+  .bento { margin-bottom: 44px; }
 }
 
 /* ── permission panel ───────────────────────────────────────────────────── */
@@ -186,7 +168,6 @@ main.wrap { padding-top: 68px; padding-bottom: 96px; }
   main.wrap { padding-top: 44px; }
   .featureHero { margin-bottom: 40px; }
   .statBand { margin-bottom: 44px; }
-  .featureList { margin-bottom: 44px; }
   .permPanel { grid-template-columns: 1fr; gap: 22px; padding: 26px; margin-bottom: 44px; }
   .finalBand { padding: 34px 24px; }
 }

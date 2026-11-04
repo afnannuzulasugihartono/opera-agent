@@ -21,7 +21,7 @@
         },
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'none'; script-src 'self' 'sha256-OudYeDevHgATP/9VWhiYmXtda7t/JBW7dpYB1LL+6fw=' 'sha256-fazsXaeghFR6veNLQNxT3Wp/S1Tzz4I6pN9HuLhjvaQ='; connect-src 'none'; style-src 'self' 'unsafe-inline'; img-src data:; font-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'"
+          "value": "default-src 'none'; script-src 'self' 'sha256-fazsXaeghFR6veNLQNxT3Wp/S1Tzz4I6pN9HuLhjvaQ=' 'sha256-1RBSiNv8Q8DEA/N65izj9lV9DVO5diN44zxidE8gRHc=' 'sha256-P4Dg7DTSUOLZaPFt9jgYbJ1cN1KfSWqDRYaDvVbvV8w='; connect-src 'none'; style-src 'self' 'unsafe-inline'; img-src data:; font-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'"
         },
         {
           "key": "Referrer-Policy",
@@ -156,7 +156,7 @@
         },
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'none'; script-src 'self' 'sha256-ddJx+lH0VE7sVKNgTIjSrBOGMXYB1Luh1mIZ/Ze5pSU='; connect-src 'none'; style-src 'self' 'unsafe-inline'; img-src data:; font-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'"
+          "value": "default-src 'none'; script-src 'self' 'sha256-HVfnIV8Ljd8EO8M50PUr7E45bLjHL8krwIOs9vbYjI8='; connect-src 'none'; style-src 'self' 'unsafe-inline'; img-src data:; font-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'"
         },
         {
           "key": "Referrer-Policy",
@@ -201,7 +201,7 @@
         },
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'none'; script-src 'self' 'sha256-ddJx+lH0VE7sVKNgTIjSrBOGMXYB1Luh1mIZ/Ze5pSU='; connect-src 'none'; style-src 'self' 'unsafe-inline'; img-src data:; font-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'"
+          "value": "default-src 'none'; script-src 'self' 'sha256-HVfnIV8Ljd8EO8M50PUr7E45bLjHL8krwIOs9vbYjI8='; connect-src 'none'; style-src 'self' 'unsafe-inline'; img-src data:; font-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'"
         },
         {
           "key": "Referrer-Policy",

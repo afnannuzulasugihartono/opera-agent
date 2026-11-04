@@ -20,7 +20,7 @@ const cssOf = (name) => {
   const links = [...html.matchAll(/<link[^>]+rel="stylesheet"[^>]+href="\/([^"]+)"/g)].map((match) => match[1]);
   return `${html}\n${links.map((file) => read(file)).join('\n')}`;
 };
-const pages = ['beranda.html', 'akun.html', 'index.html', 'dashboard.html', 'unduh.html', 'unduh-berkas.html', 'privasi.html', 'syarat.html', '404.html', 'oauth/consent.html', 'fitur.html', 'dukungan.html'];
+const pages = ['beranda.html', 'akun.html', 'index.html', 'dashboard.html', 'unduh.html', 'unduh-berkas.html', 'privasi.html', 'syarat.html', '404.html', 'oauth/consent.html', 'fitur.html', 'dukungan.html', 'docs.html'];
 
 const token = (name) => {
   const value = new RegExp(`^\\s*${name}:\\s*(#[0-9a-fA-F]{6})\\s*;`, 'm').exec(read('site.css'))?.[1];
@@ -59,18 +59,27 @@ test('every pair of text and ground clears its contrast floor', () => {
 });
 
 test('one accent, and every other surface is neutral', () => {
+  // WHY THE SPAN MOVED FROM 3 TO 12: opencode.ai's greys are blue-tinted neutrals (#23262f spans 12).
+  // The claim being kept is the one that matters: no surface competes with the accent for attention.
   for (const name of ['--bg', '--surface', '--surface-2', '--ink', '--muted']) {
     const [r, g, b] = token(name).replace('#', '').match(/../g).map((x) => parseInt(x, 16));
-    assert.ok(Math.max(r, g, b) - Math.min(r, g, b) <= 3, `${name} carries no hue, and spans ${Math.max(r, g, b) - Math.min(r, g, b)}`);
+    assert.ok(Math.max(r, g, b) - Math.min(r, g, b) <= 12, `${name} carries no hue worth naming, and spans ${Math.max(r, g, b) - Math.min(r, g, b)}`);
   }
   const [r, g, b] = token('--accent').replace('#', '').match(/../g).map((x) => parseInt(x, 16));
   assert.ok(Math.max(r, g, b) - Math.min(r, g, b) > 100, 'the accent is the only saturated colour');
 });
 
+test('the canvas is opencode black, with opencode greys above it', () => {
+  assert.equal(token('--bg'), '#000000', 'the canvas is black, like opencode.ai');
+  assert.equal(token('--surface'), '#17181c', 'a panel is opencode gray-1');
+  assert.equal(token('--surface-2'), '#23262f', 'a raised panel is opencode gray-2');
+  assert.equal(token('--line-strong'), '#353841', 'and the strong edge is opencode gray-2');
+});
+
 test('the hero sells the product instead of apologizing for it', () => {
   const html = read('beranda.html');
   assert.doesNotMatch(html, /Sembilan dua/, 'the broken sentence is gone');
-  assert.match(html, /34 tool/, 'the tool count is stated as a number');
+  assert.match(html, /<dt>\d+<\/dt><dd data-i18n="hero\.stat\.tools">tool MCP/, 'the tool count is stated as a number beside its name');
   assert.match(html, /id="demo"/, 'a product visual answers what the words claim');
   assert.match(html, /id="heroStats"/, 'numbers sit under the call to action, not in prose');
 });
@@ -103,13 +112,13 @@ test('every section closes before the next one opens', () => {
   assert.match(index, /<\/section>\s*<section id="faq"[^>]*>/, 'the FAQ stands beside privacy, not inside it');
 });
 
-test('the nav answers a visitor in one row: four doors and one action', () => {
+test('the nav answers a visitor in one row: five doors and one action', () => {
   // WHY THE NAV IS COUNTED, NOT DESCRIBED.
   // Measured on 2026-11-03 against opencode.ai: its nav is one short row with one filled action, while ours carried seven links beside a language toggle and the sign-in button.
   // Seven items is not a choice a reader makes; it is a list they scroll past, and the price page we shipped was not in it at all.
-  // The doors are the four a visitor asks about; everything else belongs in the footer.
+  // The doors are the five a visitor asks about; everything else belongs in the footer.
 
-  const doors = ['/fitur.html', '/harga', '/unduh.html', '/dukungan.html'];
+  const doors = ['/fitur.html', '/harga', '/unduh.html', '/dukungan.html', '/docs.html'];
   for (const page of pages) {
     const html = read(page);
     const nav = /<nav>([\s\S]*?)<\/nav>/.exec(html)?.[1] ?? '';
@@ -272,18 +281,29 @@ test('the home hero speaks in one column, and the questions answer in place', ()
   assert.match(css, /\.heroCopy h1 \{[^}]*max-width: 20ch/s, 'and the headline may run wider than a half column');
   const html = read('beranda.html');
   assert.match(html, /<details>\s*<summary data-i18n="faq\.cost\.dt">/, 'a question opens and closes without script');
-  assert.equal((html.match(/<details>/g) || []).length, 5, 'the five questions are all there');
+  assert.equal((html.match(/<details>/g) || []).length, 3, 'the three questions are all there');
   assert.doesNotMatch(html, /<dl class="facts faq">/, 'and the old flat list is gone');
 });
 
-test('the features read as one numbered column, not as cards', () => {
+test('the features read as a bento grid, and the light follows the pointer', () => {
+  // WHY THE GRID REPLACED THE NUMBERED COLUMN: measured against firecrawl.dev on 2026-11-04, its abilities stand in a bento grid whose cards answer the pointer, and a reference column of five rows reads like a table of contents instead of a product.
   const html = read('fitur.html');
-  assert.match(html, /<section class="featureList"/, 'the abilities stand in a list');
-  assert.equal((html.match(/<article class="featureRow">/g) || []).length, 5, 'five of them');
-  assert.doesNotMatch(html, /featureCard/, 'and no card survives');
+  assert.match(html, /<section class="bento"/, 'the abilities stand in a grid');
+  assert.ok((html.match(/class="bentoArticle"/g) || []).length >= 5, 'five of them');
+  assert.doesNotMatch(html, /featureRow/, 'and the numbered row is gone');
   const css = cssOf('fitur.html');
-  assert.match(css, /\.featureRow \{[^}]*grid-template-columns: minmax\(0, \.8fr\) minmax\(0, 1\.2fr\)/s, 'a title beside its body');
-  assert.match(css, /\.featureList \{[^}]*border-top: 1px solid var\(--line\)/s, 'and a line between each');
+  assert.match(css, /\.bentoArticle \{[^}]*--mx/s, 'a card reads the pointer');
+  assert.match(html, /src="\/spotlight\.js"/, 'and one shared script feeds every grid');
+});
+
+test('the shared spotlight script only paints what the pointer names', () => {
+  const src = read('spotlight.js');
+  assert.match(src, /pointermove/, 'it listens to the pointer');
+  assert.match(src, /--mx/, 'and writes the two numbers the card paints');
+  assert.doesNotMatch(src, /innerHTML|eval\(/, 'and it writes no markup and runs no code');
+  for (const page of ['beranda.html', 'fitur.html']) {
+    assert.match(read(page), /<script src="\/spotlight\.js"[^>]*><\/script>/, `${page} loads it from the site, not inline`);
+  }
 });
 
 test('a disclosure opens smoothly, and instantly where it cannot', () => {
@@ -346,7 +366,7 @@ test('the reading pages keep their map beside the text', () => {
   assert.match(css, /main\.prose:has\(\.toc\)/, 'a page with a map lays the map beside the text');
   assert.match(css, /\.toc \{[^}]*background: var\(--surface\)/s, 'and the map is a surface of the canvas');
   const dukung = read('dukungan.html');
-  assert.match(dukung, /<details>/, 'the support questions open in place');
+  assert.match(dukung, /<details[^>]*>/, 'the support questions open in place');
   assert.doesNotMatch(dukung, /<dl class="facts">/, 'and no flat list survives');
 });
 
@@ -374,40 +394,106 @@ test('the demo types its proof one line at a time, and never without motion', ()
   assert.match(css, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.mockCmd \{[^}]*animation: none/s, 'and the motion bows out when asked');
 });
 
-test('a hover answers within 120ms, and nothing moves on its own', () => {
+test('the home page shows more than it explains', () => {
+  const html = read('beranda.html');
+  // WHY THE DECORATIVE BLOCKS ARE LEFT OUT: the strip repeats site names for the loop and the quick tiles only exist for a signed-in reader.
+  // Neither is prose a visitor reads, so neither is counted against the copy budget.
+  const visible = html
+    .replace(/<script[\s\S]*?<\/script>/g, ' ')
+    .replace(/<!--[\s\S]*?-->/g, ' ')
+    .replace(/<div class="marquee" aria-hidden="true">[\s\S]*?<\/div>\s*<\/div>/g, ' ')
+    .replace(/<div class="grid" id="quickTiles" hidden>[\s\S]*?<\/div>\s*<\/div>/g, ' ')
+    .replace(/<div class="row" id="ctaIn" hidden>[\s\S]*?<\/div>/g, ' ')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&[a-z]+;/g, ' ');
+  const words = visible.split(/\s+/).filter(Boolean).length;
+  assert.ok(words <= 430, `the home page stays under 430 words, and carries ${words}`);
+});
+
+test('the hero shows three moments of the product, not one picture', () => {
+  const html = read('beranda.html');
+  assert.match(html, /role="tablist"/, 'the visual has tabs');
+  assert.ok((html.match(/role="tab"/g) || []).length >= 3, 'three tabs');
+  assert.ok((html.match(/role="tabpanel"/g) || []).length >= 3, 'three panels');
+  assert.match(html, /class="demoTab"/, 'the tabs carry the class the sheet paints');
+});
+
+test('the strip of pages our users open moves once and stops when asked', () => {
+  const html = read('beranda.html');
+  const css = read('beranda.css');
+  assert.match(html, /class="marquee"/, 'the strip is on the page');
+  const track = /class="marqueeTrack"[^>]*>([\s\S]*?)<\/div>\s*<\/div>/.exec(html)?.[1] ?? '';
+  assert.ok((track.match(/<span>/g) || []).length >= 20, 'the strip repeats so it can loop');
+  assert.match(css, /@keyframes marquee/, 'and it moves');
+  assert.match(css, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.marqueeTrack \{[^}]*animation: none/s, 'and it stops when the reader asks');
+});
+
+test('the capability cards answer the pointer', () => {
+  const html = read('beranda.html');
+  const css = read('site.css');
+  assert.match(html, /class="bento"/, 'the home carries a bento grid');
+  assert.ok((html.match(/class="bentoArticle"/g) || []).length >= 4, 'at least four cards');
+  assert.match(css, /\.bentoArticle \{[^}]*--mx/s, 'the card reads the pointer');
+  assert.match(read('spotlight.js'), /pointermove/, 'and the shared script feeds it');
+});
+
+test('the numbers count up once, when they arrive', () => {
+  const html = read('beranda.html');
+  assert.match(html, /requestAnimationFrame/, 'the count runs on frames');
+  assert.match(html, /prefers-reduced-motion/, 'and the reader can refuse it');
+});
+
+test('a hover answers within 120ms, and only the strip and the cursor move on their own', () => {
   const sheet = read('site.css');
   assert.match(sheet, /\.tile:hover \{[^}]*transform: translateY\(-1px\)/s, 'a tile lifts one pixel');
   assert.match(sheet, /\.exitList a:hover \{[^}]*color: var\(--accent\)/s, 'a link answers in the accent');
   assert.doesNotMatch(sheet, /@keyframes (float|drift|pulse|spin|glow)/, 'and no keyframe moves anything without the reader');
-  assert.doesNotMatch(read('beranda.css') + read('features.css') + read('download.css'), /animation-iteration-count: infinite/, 'except the live cursor the demo earns');
+  const loops = [...read('beranda.css').matchAll(/([^{}]+)\{([^}]*animation[^}]*)\}/g)]
+    .filter((match) => /infinite/.test(match[2]))
+    .map((match) => match[1].trim());
+  assert.ok(loops.every((selector) => /\.marqueeTrack|\.cursor|\.mockTop \.dot/.test(selector)), `only the strip, the cursor and the live dot loop, and ${loops.length} do`);
+  assert.doesNotMatch(read('features.css') + read('download.css'), /animation-iteration-count:\s*infinite/, 'the other pages keep their calm');
 });
 
 test('the shared radius is the only radius a control names', () => {
   const sheet = read('site.css');
-  assert.match(sheet, /--radius:\s*8px/, 'a card is 8px, and the token says so');
-  assert.match(sheet, /--radius-sm:\s*6px/, 'a control is 6px');
+  assert.match(sheet, /--radius:\s*6px/, 'a card is 6px, like opencode');
+  assert.match(sheet, /--radius-sm:\s*4px/, 'a control is 4px');
   for (const page of pages) {
     assert.doesNotMatch(cssOf(page), /border-radius:\s*980px/, `${page} names no radius by hand`);
   }
+});
+
+test('the motion is opencode motion: one easing, 150 to 200 milliseconds', () => {
+  const sheet = read('site.css');
+  assert.match(sheet, /--ease:\s*cubic-bezier\(\.25, \.46, \.45, \.94\)/, 'the easing is opencode own');
+  const slow = [...sheet.matchAll(/transition:[^;}]*?([\d.]+)s/g)].map((m) => Number(m[1])).filter((n) => n > 0.2);
+  assert.deepEqual(slow, [], `no transition runs longer than 200ms, and ${slow.length} do`);
+});
+
+test('the display type is mono, the way opencode sets its headings', () => {
+  const sheet = read('site.css');
+  assert.match(sheet, /h1,\s*\n?h2 \{[^}]*font-family:\s*var\(--mono\)/s, 'h1 and h2 speak in mono');
+  assert.match(sheet, /h1,\s*\n?h2 \{[^}]*font-weight:\s*500/s, 'and at the weight mono reads well');
 });
 
 test('the hero carries its footnote instead of hiding the catch', () => {
 
   const html = read('beranda.html');
   assert.match(html, /class="footnote"/, 'the line has an element');
-  assert.match(html, /Model ditagih penyedia Anda/, 'stating the only money that moves');
+  assert.match(html, /Biaya model ke penyedia Anda/, 'stating the only money that moves');
 });
 
 test('motion is an enhancement, never the content', () => {
 
   const page = read('beranda.html');
   const css = cssOf('beranda.html');
-  assert.match(page, /documentElement\.classList\.add\('js'\)/, 'JS announces itself before anything hides');
-  assert.match(css, /html\.js \.reveal/, 'hiding requires that announcement');
+  assert.match(read('reveal.js'), /documentElement\.classList\.add\('js'\)/, 'JS announces itself before anything hides');
+  assert.match(css, /html\.js \[data-reveal\]/, 'hiding requires that announcement');
   assert.match(css, /prefers-reduced-motion/, 'and the motion bows out when asked');
-  assert.match(page, /IntersectionObserver/, 'one observer per page, not per pixel');
+  assert.match(read('reveal.js'), /IntersectionObserver/, 'one observer per page, not per pixel');
 
-  assert.match(css, /@media print\s*{[^}]*\.reveal[^}]*opacity:\s*1/s,
+  assert.match(css, /@media print\s*{[^}]*\[data-reveal\][^}]*opacity:\s*1/s,
     'print shows every section, or the motion has hidden the page from being read');
 });
 

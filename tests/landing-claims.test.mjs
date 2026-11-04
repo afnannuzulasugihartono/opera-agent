@@ -15,8 +15,14 @@ import { mcpSurfaceSourceSync } from './helpers/mcp-surface-source.mjs';
 const root = new URL('..', import.meta.url);
 const read = (name) => fs.readFileSync(new URL(name, root), 'utf8');
 
-const site = ['landing/beranda.html', 'landing/index.html', 'landing/akun.html', 'landing/privasi.html', 'landing/syarat.html', 'landing/harga.html', 'landing/unduh.html', 'landing/unduh-berkas.html', 'landing/404.html', 'landing/fitur.html', 'landing/dukungan.html', 'landing/dashboard.html', 'landing/oauth/consent.html']
-  .map(read).join('\n');
+const siteFiles = ['landing/beranda.html', 'landing/index.html', 'landing/akun.html', 'landing/privasi.html', 'landing/syarat.html', 'landing/harga.html', 'landing/unduh.html', 'landing/unduh-berkas.html', 'landing/404.html', 'landing/fitur.html', 'landing/dukungan.html', 'landing/docs.html', 'landing/dashboard.html', 'landing/oauth/consent.html'];
+const sitePages = siteFiles.map(read);
+const site = sitePages.join('\n');
+
+// WHY THE CONSOLE IS NOT IN THE MONEY-OWNER LOCK: the dashboard is the app a signed-in customer uses, and it reads the price from the server at open time.
+// The public pages are what repeat a number by hand.
+
+const publicFiles = siteFiles.filter((file) => !file.includes('dashboard') && !file.includes('consent'));
 
 const manifest = JSON.parse(read('extension/manifest.json'));
 const mcp = mcpSurfaceSourceSync();
@@ -102,4 +108,22 @@ test('the pricing page states only what the wallet enforces', () => {
   assert.match(page, /10 aksi/, 'the ten-action cap is stated');
   assert.match(wallet, /ACTION_CAP = 10/, 'and the code caps one job at ten actions');
   assert.doesNotMatch(page, /langganan bulanan|per menit|per token|per langkah/i, 'no subscription or per-unit meter is advertised');
+});
+
+test('no page calls the product free while every job is prepaid', () => {
+  assert.doesNotMatch(site, /Gratis dipakai/i, 'a prepaid job is not free');
+  assert.doesNotMatch(site, /Opera Agent gratis/i, 'the extension installs free; the job is not free');
+  assert.match(site, /harga tetap/i, 'and the site says what a job costs');
+});
+
+test('the money facts live on one page', () => {
+  const facts = {
+    'the smallest top-up': /Rp10\.000/,
+    'the action cap': /10 aksi/,
+    'the thirty-minute hold': /30 menit/,
+  };
+  for (const [name, re] of Object.entries(facts)) {
+    const owners = publicFiles.filter((file) => re.test(read(file)));
+    assert.deepEqual(owners, ['landing/harga.html'], `${name} is stated once, on the price page`);
+  }
 });

@@ -1,14 +1,14 @@
 <!-- @last-edited: 2026-10-26 UTC+7. -->
 <!-- @title: fitur — practical reference: the surface, the permissions, and the model you bring. -->
 <!-- @state: static page; counts and permission names are read from the extension by the suite. -->
-<!-- @dependencies: site.css, features.css, i18n.js. -->
+<!-- @dependencies: site.css, features.css, i18n.js, reveal.js. -->
 
 <!doctype html>
 <html lang="id">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="theme-color" content="#0a0a0a" />
+  <meta name="theme-color" content="#000000" />
   <title data-i18n="meta.title">Fitur — Opera Agent</title>
   <meta name="description" content="Fitur Opera Agent: 34 tool dan 31 primitive, enam izin yang dijelaskan satu per satu, model milik Anda berjalan di perangkat Anda, pairing device yang tetap." />
   <link rel="stylesheet" href="/site.css" />
@@ -28,8 +28,9 @@
         <a class="brand" href="/beranda.html"><svg class="brandMark" viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="7"  /><path d="M8 5.6v12.8l3.1-2.9 1.9 4.5 2.4-1-2-4.5h3.9L8 5.6Z"  /></svg><span>Opera Agent</span></a>
         <a href="/fitur.html" data-i18n="nav.features" aria-current="page">Fitur</a>
         <a href="/unduh.html" data-i18n="nav.download">Unduh</a>
-        <a href="/dukungan.html" data-i18n="nav.support">Dukungan</a>
         <a href="/harga" data-i18n="nav.price">Harga</a>
+        <a href="/dukungan.html" data-i18n="nav.support">Dukungan</a>
+        <a href="/docs.html" data-i18n="nav.docs">Docs</a>
         <span class="lang" data-lang-toggle></span>
         <a class="navCta" href="/" data-i18n="nav.signin">Masuk</a>
       </nav>
@@ -37,7 +38,7 @@
   </header>
 
   <main class="wrap">
-    <section class="featureHero">
+    <section class="featureHero" data-reveal>
       <h1 data-i18n="page.title">Browser Anda, alat kerja.</h1>
       <p class="lede" data-i18n="page.sub">Apa yang bisa dilakukan dan untuk siapa.</p>
       <p class="featureIntro" data-i18n-html="intro"><strong>Companion dengan AI di belakangnya.</strong> Anda berbicara. Browser bekerja. Hasilnya menjadi artefak nyata.</p>
@@ -53,62 +54,96 @@
       <div><dt>6</dt><dd data-i18n="stat.perms">izin</dd></div>
     </dl>
 
-    <section class="featureList" aria-label="Kemampuan utama">
-      <article class="featureRow">
+    <section class="bento" data-reveal aria-label="Kemampuan utama">
+      <article class="bentoArticle">
         <h2 data-i18n="s1.title">34 tool, 31 primitive</h2>
         <p data-i18n="s1.body">Baca halaman, isi formulir, navigasi, dan verifikasi hasil. Google Maps, YouTube, dan Docs adalah contoh awal.</p>
       </article>
-      <article class="featureRow">
+      <article class="bentoArticle">
         <h2 data-i18n="s2.title">Enam izin, dijelaskan satu per satu</h2>
-        <p data-i18n="s2.body">Tabs, scripting, storage, alarms, debugger, dan downloads. Setiap izin dijelaskan dan dapat ditolak.</p>
+        <p data-i18n-html="s2.body">Setiap izin punya satu alasan yang bisa dibaca di halaman <a href="./unduh.html">Unduh</a>.</p>
       </article>
-      <article class="featureRow">
+      <article class="bentoArticle">
         <h2 data-i18n="s3.title">Model milik Anda</h2>
         <p data-i18n-html="s3.body">Endpoint dan kunci tetap di browser Anda. Konten halaman hanya pergi ke model yang Anda pilih. <a href="./privasi.html">Privasi</a>.</p>
       </article>
-      <article class="featureRow">
+      <article class="bentoArticle">
         <h2 data-i18n="s4.title">Pairing device</h2>
         <p data-i18n-html="s4.body">Kode sekali pakai mengikat device baru ke akun Anda dalam sepuluh menit. Kelola di <a href="./dashboard.html">Dashboard</a>.</p>
       </article>
-      <article class="featureRow">
+      <article class="bentoArticle">
         <h2 data-i18n="s5.title">Baca halaman tanpa eksploitasi</h2>
         <p data-i18n="s5.body">Password, kode sekali pakai, token, dan kolom pembayaran selalu ditolak.</p>
       </article>
+      <article class="bentoArticle">
+        <h2 data-i18n="s6.title">MCP untuk harness apa pun</h2>
+        <p data-i18n-html="s6.body">OpenCode, Kilo Code, dan Claude Code memakai satu endpoint. <a href="./docs.html">Docs</a>.</p>
+      </article>
     </section>
 
-    <section class="permPanel" aria-labelledby="permTitle">
+    <section class="permPanel" data-reveal aria-labelledby="permTitle">
       <div>
-        <h2 id="permTitle" data-i18n="perm.title">Enam izin. Tidak ada yang tersembunyi.</h2>
-        <p data-i18n="perm.body">Setiap izin punya satu alasan, dan setiap alasan bisa Anda baca sebelum memasang.</p>
+        <h2 id="permTitle" data-i18n="perm.title">Izin yang diminta</h2>
+        <p data-i18n="perm.body">Tidak ada izin lain di luar daftar ini.</p>
       </div>
       <div class="permChips" aria-label="Izin yang diminta">
         <code>tabs</code><code>scripting</code><code>storage</code><code>alarms</code><code>debugger</code><code>downloads</code>
       </div>
     </section>
 
-    <section class="finalBand" aria-labelledby="finalTitle">
+    <section class="finalBand" data-reveal aria-labelledby="finalTitle">
       <h2 id="finalTitle" data-i18n="final.title">Satu extension. Browser Anda.</h2>
-      <p data-i18n="final.sub">Gratis dipakai; model ditagih penyedia Anda.</p>
+      <p data-i18n-html="final.sub">Harga dan aturannya ada di halaman <a href="/harga">Harga</a>.</p>
       <a class="btn primary" href="./unduh.html" data-i18n="cta.download">Unduh</a>
     </section>
   </main>
 
-  <footer>
-    <div class="wrap cols">
-      <span data-i18n="footer.rights">&copy; 2026 Opera Agent. Hak cipta dilindungi.</span>
-      <span class="doors">
-        <a href="./beranda.html" data-i18n="footer.home">Beranda</a><a href="./privasi.html" data-i18n="footer.privacy">Privasi</a><a href="./syarat.html" data-i18n="footer.terms">Syarat</a><a href="./index.html" data-i18n="footer.signin">Masuk</a><a href="./akun.html" data-i18n="footer.account">Akun</a><a href="./dashboard.html">Dashboard</a><a href="./fitur.html" data-i18n="footer.features">Fitur</a><a href="./dukungan.html" data-i18n="footer.support">Dukungan</a>
-      </span>
+    <footer>
+    <div class="wrap footGrid">
+      <div class="footCol">
+        <span class="footBrand">Opera Agent</span>
+        <span class="footNote" data-i18n="footer.rights">© 2026 Opera Agent. Hak cipta dilindungi.</span>
+      </div>
+      <div class="footCol">
+        <h3 data-i18n="footer.product">Produk</h3>
+        <span class="doors">
+          <a href="./beranda.html" data-i18n="footer.home">Beranda</a>
+          <a href="./fitur.html" data-i18n="footer.features">Fitur</a>
+          <a href="./unduh.html" data-i18n="footer.download">Unduh</a>
+          <a href="./docs.html" data-i18n="footer.docs">Docs</a>
+        </span>
+      </div>
+      <div class="footCol">
+        <h3 data-i18n="footer.account">Akun</h3>
+        <span class="doors">
+          <a href="./index.html" data-i18n="footer.signin">Masuk</a>
+          <a href="./akun.html" data-i18n="footer.account">Akun</a>
+          <a href="./dashboard.html">Dashboard</a>
+        </span>
+      </div>
+      <div class="footCol">
+        <h3 data-i18n="footer.legal">Legal</h3>
+        <span class="doors">
+          <a href="./privasi.html" data-i18n="footer.privacy">Privasi</a>
+          <a href="./syarat.html" data-i18n="footer.terms">Syarat</a>
+          <a href="./dukungan.html" data-i18n="footer.support">Dukungan</a>
+        </span>
+      </div>
     </div>
   </footer>
 
   <script type="application/json" id="i18n-dict">
   {
     "en": {
+      "footer.legal": "Legal",
+      "footer.docs": "Docs",
+      "footer.download": "Download",
+      "footer.product": "Product",
       "nav.download": "Download",
       "nav.signin": "Sign in",
       "nav.features": "Features",
       "nav.price": "Pricing",
+      "nav.docs": "Docs",
       "nav.support": "Support",
       "meta.title": "Features — Opera Agent",
       "page.title": "Your browser, as a work tool.",
@@ -121,17 +156,19 @@
       "s1.title": "34 tools, 31 primitives",
       "s1.body": "Read pages, fill forms, navigate, and verify outcomes. Google Maps, YouTube, and Docs are the first examples.",
       "s2.title": "Six permissions, each explained",
-      "s2.body": "Tabs, scripting, storage, alarms, debugger, and downloads. Every permission is explained and optional.",
+      "s2.body": "Each permission has one reason you can read on the <a href=\"./unduh.html\">Download</a> page.",
       "s3.title": "Your own model",
       "s3.body": "Your endpoint and key stay in your browser. Page content only goes to the model you choose. <a href=\"./privasi.html\">Privacy</a>.",
       "s4.title": "Device pairing",
       "s4.body": "A one-time code binds a new device to your account for ten minutes. Manage it in the <a href=\"./dashboard.html\">Dashboard</a>.",
       "s5.title": "Read pages without exploits",
       "s5.body": "Passwords, one-time codes, tokens, and payment fields are always refused.",
-      "perm.title": "Six permissions. Nothing hidden.",
-      "perm.body": "Every permission has one reason, and every reason is readable before you install.",
+      "s6.title": "MCP for any harness",
+      "s6.body": "OpenCode, Kilo Code, and Claude Code share one endpoint. <a href=\"./docs.html\">Docs</a>.",
+      "perm.title": "The permissions we ask for",
+      "perm.body": "No permission outside this list.",
       "final.title": "One extension. Your browser.",
-      "final.sub": "Free to use; your provider bills the model.",
+      "final.sub": "The price and its rules are on the <a href=\"/harga\">Pricing</a> page.",
       "cta.download": "Download",
       "footer.rights": "© 2026 Opera Agent. All rights reserved.",
       "footer.home": "Home",
@@ -145,5 +182,8 @@
   }
   </script>
   <script src="./i18n.js"></script>
+
+  <script src="/reveal.js"></script>
+  <script src="/spotlight.js"></script>
 </body>
 </html>

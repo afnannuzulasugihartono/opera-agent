@@ -1,17 +1,18 @@
 <!-- @last-edited: 2026-11-04 UTC+7. -->
 <!-- @title: harga — what a finished job costs, and what a failed one costs. -->
 <!-- @state: prepaid wallet, flat price per completed job announced before it starts, full refund on failure, top-up from Rp10.000 by QRIS. -->
-<!-- @dependencies: site.css, i18n.js. -->
+<!-- @dependencies: site.css, harga.css, i18n.js, reveal.js. -->
 
 <!doctype html>
 <html lang="id">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="theme-color" content="#f7f5ef" />
+  <meta name="theme-color" content="#000000" />
   <title>Harga — Opera Agent</title>
   <meta name="description" content="Harga Opera Agent: prabayar, bayar per pekerjaan selesai, gagal dikembalikan penuh. Isi ulang mulai Rp10.000 lewat QRIS." />
   <link rel="stylesheet" href="/site.css" />
+  <link rel="stylesheet" href="/harga.css" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%230b0d10'/%3E%3Cpath d='M5.2 2.2v10.2l2.5-2.3 1.5 3.6 1.9-.8-1.6-3.6h3.1L5.2 2.2Z' fill='%233ecf8e'/%3E%3C/svg%3E" />
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="Opera Agent" />
@@ -24,11 +25,12 @@
   <header>
     <div class="wrap">
       <nav>
-        <a class="brand" href="/beranda.html"><svg class="brandMark" viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="7" fill="#101512" /><path d="M8 5.6v12.8l3.1-2.9 1.9 4.5 2.4-1-2-4.5h3.9L8 5.6Z" fill="#3ecf8e" /></svg><span>Opera Agent</span></a>
+        <a class="brand" href="/beranda.html" aria-current="page"><svg class="brandMark" viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="7" fill="#101512" /><path d="M8 5.6v12.8l3.1-2.9 1.9 4.5 2.4-1-2-4.5h3.9L8 5.6Z" fill="#3ecf8e" /></svg><span>Opera Agent</span></a>
         <a href="/fitur.html" data-i18n="nav.features">Fitur</a>
         <a href="/unduh.html" data-i18n="nav.download">Unduh</a>
+        <a href="/harga" data-i18n="nav.price">Harga</a>
         <a href="/dukungan.html" data-i18n="nav.support">Dukungan</a>
-        <a href="/harga" aria-current="page" data-i18n="nav.price">Harga</a>
+        <a href="/docs.html" data-i18n="nav.docs">Docs</a>
         <span class="lang" data-lang-toggle></span>
         <a class="navCta" href="/" data-i18n="nav.signin">Masuk</a>
       </nav>
@@ -39,10 +41,35 @@
     <p class="lang-note">Halaman ini tersedia dalam Bahasa Indonesia. / This page is available in Indonesian.</p>
     <h1>Harga</h1>
     <p class="updated">Berlaku sejak 4 November 2026.</p>
+
+    <section class="priceCards" data-reveal aria-label="Cara membayar">
+      <article class="priceCard">
+        <h2>Isi saldo</h2>
+        <p>QRIS sekali, mulai <strong>Rp10.000</strong>. Saldo tidak kedaluwarsa.</p>
+      </article>
+      <article class="priceCard">
+        <h2>Bayar per pekerjaan</h2>
+        <p>Harga tetap tampil sebelum mulai. Saldo berkurang saat hasil siap.</p>
+      </article>
+      <article class="priceCard">
+        <h2>Gagal, saldo kembali</h2>
+        <p>Dikembalikan <strong>dikembalikan penuh</strong>. Tanpa biaya admin.</p>
+      </article>
+    </section>
+
+    <dl class="glance" data-reveal>
+      <div><dt>Top-up minimum</dt><dd>Rp10.000</dd></div>
+      <div><dt>Pembayaran</dt><dd>Prabayar</dd></div>
+      <div><dt>Satuan</dt><dd>Per pekerjaan</dd></div>
+      <div><dt>Batas satu pekerjaan</dt><dd>10 aksi</dd></div>
+      <div><dt>Dana ditahan lebih dari</dt><dd>30 menit</dd></div>
+      <div><dt>Kegagalan</dt><dd>Dikembalikan penuh</dd></div>
+    </dl>
+
     <ul class="toc" aria-label="Di halaman ini">
       <li><a href="#prabayar">Prabayar, bukan langganan</a></li>
       <li><a href="#pekerjaan">Bayar per pekerjaan selesai</a></li>
-      <li><a href="#gagal">Pekerjaan gagal: gratis</a></li>
+      <li><a href="#gagal">Pekerjaan gagal: saldo kembali</a></li>
       <li><a href="#batas">Satu pekerjaan maksimal 10 aksi</a></li>
       <li><a href="#model">Biaya model tetap urusan Anda</a></li>
     </ul>
@@ -57,10 +84,11 @@
     Saat pekerjaan selesai dan artefaknya ada, saldo dipotong sebesar harga itu — tidak lebih.
     Tidak ada meteran lain yang memotong saldo Anda.</p>
 
-    <h2 id="gagal">Pekerjaan gagal: gratis</h2>
+    <h2 id="gagal">Pekerjaan gagal: saldo kembali</h2>
     <p>Kalau pekerjaan gagal — termasuk berhenti karena halaman meminta kata sandi, OTP, atau
     data kartu — dana yang ditahan <strong>dikembalikan penuh</strong>. Tidak ada potongan
-    proporsional, tidak ada biaya admin.</p>
+    proporsional, tidak ada biaya admin. Dana yang ditahan lebih dari <strong>30 menit</strong>
+    tanpa penyelesaian dikembalikan otomatis.</p>
 
     <h2 id="batas">Satu pekerjaan maksimal 10 aksi</h2>
     <p>Satu pekerjaan adalah satu hasil yang jelas: satu halaman, satu laporan, atau satu daftar
@@ -73,22 +101,52 @@
     Anda. Biaya pemakaian model dibayar langsung ke penyedia model itu, bukan ke Opera Agent.</p>
   </main>
 
-  <footer>
-    <div class="wrap cols">
-      <span data-i18n="footer.rights">&copy; 2026 Opera Agent. Hak cipta dilindungi.</span>
-      <span class="doors">
-        <a href="./beranda.html" data-i18n="footer.home">Beranda</a><a href="./privasi.html" data-i18n="footer.privacy">Privasi</a><a href="./syarat.html" data-i18n="footer.terms">Syarat</a><a href="./index.html" data-i18n="footer.signin">Masuk</a><a href="./akun.html" data-i18n="footer.account">Akun</a><a href="./dashboard.html">Dashboard</a><a href="./fitur.html" data-i18n="footer.features">Fitur</a><a href="./dukungan.html" data-i18n="footer.support">Dukungan</a>
-      </span>
+    <footer>
+    <div class="wrap footGrid">
+      <div class="footCol">
+        <span class="footBrand">Opera Agent</span>
+        <span class="footNote" data-i18n="footer.rights">© 2026 Opera Agent. Hak cipta dilindungi.</span>
+      </div>
+      <div class="footCol">
+        <h3 data-i18n="footer.product">Produk</h3>
+        <span class="doors">
+          <a href="./beranda.html" data-i18n="footer.home">Beranda</a>
+          <a href="./fitur.html" data-i18n="footer.features">Fitur</a>
+          <a href="./unduh.html" data-i18n="footer.download">Unduh</a>
+          <a href="./docs.html" data-i18n="footer.docs">Docs</a>
+        </span>
+      </div>
+      <div class="footCol">
+        <h3 data-i18n="footer.account">Akun</h3>
+        <span class="doors">
+          <a href="./index.html" data-i18n="footer.signin">Masuk</a>
+          <a href="./akun.html" data-i18n="footer.account">Akun</a>
+          <a href="./dashboard.html">Dashboard</a>
+        </span>
+      </div>
+      <div class="footCol">
+        <h3 data-i18n="footer.legal">Legal</h3>
+        <span class="doors">
+          <a href="./privasi.html" data-i18n="footer.privacy">Privasi</a>
+          <a href="./syarat.html" data-i18n="footer.terms">Syarat</a>
+          <a href="./dukungan.html" data-i18n="footer.support">Dukungan</a>
+        </span>
+      </div>
     </div>
   </footer>
 
   <script type="application/json" id="i18n-dict">
   {
     "en": {
+      "footer.legal": "Legal",
+      "footer.docs": "Docs",
+      "footer.download": "Download",
+      "footer.product": "Product",
       "nav.download": "Download",
       "nav.signin": "Sign in",
       "nav.features": "Features",
       "nav.price": "Pricing",
+      "nav.docs": "Docs",
       "nav.support": "Support",
       "footer.rights": "© 2026 Opera Agent. All rights reserved.",
       "footer.home": "Home",
@@ -102,5 +160,7 @@
   }
   </script>
   <script src="./i18n.js"></script>
+
+  <script src="/reveal.js"></script>
 </body>
 </html>
