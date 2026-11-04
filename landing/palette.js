@@ -9,8 +9,8 @@
 // WHY THE DIALOG IS BUILT AT RUN TIME: eleven pages would otherwise carry the same markup, and a copy of a dialog is a copy that drifts.
 
 const STRINGS = {
-  id: { label: 'Cari halaman', placeholder: 'Cari halaman atau bagian', empty: 'Tidak ada yang cocok.', key: 'Ctrl K' },
-  en: { label: 'Search pages', placeholder: 'Search pages and sections', empty: 'Nothing matches.', key: 'Ctrl K' }
+  id: { label: 'Cari halaman', placeholder: 'Cari halaman atau bagian', empty: 'Tidak ada yang cocok.', all: 'Semua halaman', key: 'Ctrl K' },
+  en: { label: 'Search pages', placeholder: 'Search pages and sections', empty: 'Nothing matches.', all: 'All pages', key: 'Ctrl K' }
 };
 
 const DESTINATIONS = [
@@ -40,6 +40,7 @@ const MARKUP = [
   '  <input class="paletteInput" type="text" role="combobox" aria-expanded="true" aria-controls="paletteList" aria-autocomplete="list" autocomplete="off" spellcheck="false">',
   '  <kbd class="paletteKey">Esc</kbd>',
   '</div>',
+  '<p class="paletteCaption"></p>',
   '<ul class="paletteList" id="paletteList" role="listbox"></ul>',
   '<p class="paletteEmpty" hidden></p>'
 ].join('');
@@ -67,6 +68,7 @@ const start = () => {
   const input = dialog.querySelector('.paletteInput');
   const list = dialog.querySelector('.paletteList');
   const empty = dialog.querySelector('.paletteEmpty');
+  const caption = dialog.querySelector('.paletteCaption');
   const button = document.querySelector('.navSearch');
   let hits = [];
   let cursor = 0;
@@ -75,6 +77,7 @@ const start = () => {
     const text = words();
     input.placeholder = text.placeholder;
     empty.textContent = text.empty;
+    caption.textContent = text.all;
     dialog.setAttribute('aria-label', text.label);
     if (button) {
       button.setAttribute('aria-label', text.label);
@@ -100,7 +103,8 @@ const start = () => {
 
   const paint = () => {
     const query = input.value.trim().toLowerCase();
-    hits = (query === '' ? DESTINATIONS : DESTINATIONS.filter((item) => matches(item, query))).slice(0, 8);
+    const limit = query === '' ? DESTINATIONS.length : 8;
+    hits = (query === '' ? DESTINATIONS : DESTINATIONS.filter((item) => matches(item, query))).slice(0, limit);
     cursor = 0;
     list.textContent = '';
     for (const [index, item] of hits.entries()) {
@@ -122,6 +126,7 @@ const start = () => {
       list.appendChild(row);
     }
     empty.hidden = hits.length > 0;
+    caption.hidden = query !== '';
     input.setAttribute('aria-activedescendant', hits.length > 0 ? 'paletteOpt0' : '');
   };
 

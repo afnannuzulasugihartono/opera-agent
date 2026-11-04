@@ -475,6 +475,8 @@ test('the reader searches the site from anywhere: one door, one key, one dialog'
   assert.match(sheet, /\.palette\[open\] \{[^}]*animation: palette-in \.18s var\(--ease\)/s, 'the dialog arrives in the site easing');
   assert.match(sheet, /\.palette::backdrop \{[^}]*background: var\(--scrim\)/s, 'and the page behind it dims');
   assert.match(sheet, /\.navSearch \{[^}]*display: none/s, 'the door stays shut without the script that answers it');
+  assert.match(script, /query === '' \? DESTINATIONS\.length : 8/, 'an empty box lists every page, so the palette doubles as the phone menu');
+  assert.match(sheet, /@media \(max-width: 620px\)[\s\S]*?header nav a:not\(\.brand\):not\(\.navCta\) \{[^}]*display: none/s, 'and the phone row leaves the five doors to the palette');
   for (const page of pages) {
     assert.match(read(page), /<script src="\/palette\.js"><\/script>/, `${page} carries the palette`);
     assert.match(read(page), /class="navSearch"/, `${page} carries the search door`);
