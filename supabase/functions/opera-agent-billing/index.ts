@@ -803,6 +803,19 @@ Deno.serve(async (req: Request) => {
         return json(out.body, out.status, cors);
       }
 
+      // WHY THE SWEEP IS AN OPERATOR CALL AND NOT A PUBLIC ONE.
+      // Expiring a hold refunds money, so the caller must be the operator and not any browser that guessed the action name.
+      // It is safe to run at any time: the query only touches holds whose window has already passed, and it leaves the ones a task may still settle.
+
+      if (body.action === "wallet-sweep") {
+        const token = req.headers.get("authorization") || "";
+        if (!BILLING_TOKEN || token !== `Bearer ${BILLING_TOKEN}`) {
+          return json({ error: "the operator token is missing or wrong" }, 401, cors);
+        }
+        const out = await walletRpc("opera_wallet_expire", { p_owner: null });
+        return json({ ok: true, ...out }, 200, cors);
+      }
+
       // WHY THE REFRESH FORM IS A POST AND NOT A LINK.
       // A link that opens a payable transaction can be fired by a prefetcher, a mail scanner or a stray click, and every one of those would open a new charge.
       // A POST carries the token from the form body, verifies it exactly as the page did, and answers with a redirect so a reload cannot post again.

@@ -51,3 +51,11 @@ test('the wallet action routing is the shared list, not a copy of the names', ()
   assert.match(fn, /isWalletAction\(String\(body\.action \|\| ""\)\)/, 'the function must use the shared list');
   assert.match(api, /export const WALLET_ACTIONS/, 'the shared list lives in wallet-api');
 });
+
+test('the sweep that refunds an abandoned hold needs the operator token', () => {
+  const sweep = fn.slice(fn.indexOf('body.action === "wallet-sweep"'));
+  const gate = sweep.indexOf('token !== `Bearer ${BILLING_TOKEN}`');
+  const call = sweep.indexOf('opera_wallet_expire');
+  assert.ok(gate > 0, 'the sweep must check the operator token');
+  assert.ok(call > gate, 'the check must come before the refund it guards');
+});
