@@ -1,5 +1,5 @@
 /*
- * @last-edited: 2026-11-03 UTC+7.
+ * @last-edited: 2026-11-05 UTC+7.
  * @title: site.css â€” the design tokens, reset, chrome and components every page of the site shares.
  * @state: one dark canvas, one accent, one local typeface, an aligned 1160px shell, and the shared header, footer, card and control rules.
  * @dependencies: fonts/instrument-sans-latin.woff2.
@@ -905,6 +905,7 @@ footer .doors a:hover { color: var(--ink); }
  * WHY THE GRID IS SHARED: the home page and the features page both answer "what does it do?" with the same four cards, and two copies of one grid drift apart in a week.
  * WHY THE CARDS FOLLOW THE POINTER: measured against firecrawl.dev on 2026-11-04, its cards carry a light under the cursor, so the reader knows which card is live before clicking it.
  * The light is painted with a gradient at --mx and --my, so the page writes two numbers per move and moves no node.
+ * WHY THE CARD CLIPS ITS OWN LIGHT: measured on 2026-11-05, the sheen travels past the card edge and dragged the page sideways on a 390px screen, so the card now keeps its light inside.
  */
 
 .bento {
@@ -918,6 +919,7 @@ footer .doors a:hover { color: var(--ink); }
   --my: 50%;
   position: relative;
   padding: 26px;
+  overflow: hidden;
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background:

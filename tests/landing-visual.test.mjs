@@ -293,7 +293,21 @@ test('the features read as a bento grid, and the light follows the pointer', () 
   assert.doesNotMatch(html, /featureRow/, 'and the numbered row is gone');
   const css = cssOf('fitur.html');
   assert.match(css, /\.bentoArticle \{[^}]*--mx/s, 'a card reads the pointer');
+  assert.match(css, /\.bentoArticle \{[^}]*overflow: hidden/s, 'and the card keeps its own light inside, so the page never scrolls sideways');
   assert.match(html, /src="\/spotlight\.js"/, 'and one shared script feeds every grid');
+});
+
+test('the features page shows one task travelling from a sentence to a file', () => {
+  // WHY THIS PAGE NEEDS A SHAPE: measured against firecrawl.dev on 2026-11-05, every block it ships answers with a picture of the work, and a features page made only of cards asks the reader to believe a claim instead of watching it.
+  const html = read('fitur.html');
+  assert.match(html, /<section class="taskStage"/, 'the page carries the shape of one task');
+  assert.equal((html.match(/class="taskStep"/g) || []).length, 4, 'four steps: talk, read, write, save');
+  assert.match(html, /<code class="taskFile">ringkasan\.md<\/code>/, 'and the task ends in a file');
+  const css = read('features.css');
+  assert.match(css, /taskStep:not\(:last-child\)::after \{[^}]*animation: rail-fill/s, 'a light walks the rail as the section lands');
+  assert.match(css, /@keyframes rail-fill/, 'the rail fills once');
+  assert.match(css, /taskStep:nth-child\(3\)[^{]*::after \{[^}]*animation-delay/s, 'and the steps light one after another');
+  assert.doesNotMatch(css, /infinite/, 'nothing on this page loops on its own');
 });
 
 test('the shared spotlight script only paints what the pointer names', () => {

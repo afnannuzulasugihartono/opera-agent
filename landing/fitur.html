@@ -1,6 +1,6 @@
-<!-- @last-edited: 2026-10-26 UTC+7. -->
+<!-- @last-edited: 2026-11-05 UTC+7. -->
 <!-- @title: fitur — practical reference: the surface, the permissions, and the model you bring. -->
-<!-- @state: static page; counts and permission names are read from the extension by the suite. -->
+<!-- @state: static page with one task rail that fills once on arrival; counts and permission names are read from the extension by the suite. -->
 <!-- @dependencies: site.css, features.css, i18n.js, reveal.js, wayfind.js, palette.js. -->
 
 <!doctype html>
@@ -54,6 +54,37 @@
       <div><dt>31</dt><dd data-i18n="stat.prims">primitive</dd></div>
       <div><dt>6</dt><dd data-i18n="stat.perms">izin</dd></div>
     </dl>
+
+    <section class="taskStage" data-reveal aria-labelledby="taskTitle">
+      <h2 id="taskTitle" data-i18n="task.title">Dari satu kalimat ke berkas.</h2>
+      <ol class="taskRail">
+        <li class="taskStep">
+          <span class="taskDot" aria-hidden="true"></span>
+          <span class="taskIndex" aria-hidden="true">01</span>
+          <h3 data-i18n="task.talk">Bicara</h3>
+          <p data-i18n="task.talk.body">Satu kalimat: ringkas cek onboarding Q4.</p>
+        </li>
+        <li class="taskStep">
+          <span class="taskDot" aria-hidden="true"></span>
+          <span class="taskIndex" aria-hidden="true">02</span>
+          <h3 data-i18n="task.read">Baca</h3>
+          <p data-i18n="task.read.body">Halaman, tombol, dan baris dibaca.</p>
+        </li>
+        <li class="taskStep">
+          <span class="taskDot" aria-hidden="true"></span>
+          <span class="taskIndex" aria-hidden="true">03</span>
+          <h3 data-i18n="task.write">Tulis</h3>
+          <p data-i18n="task.write.body">Formulir dan sel diisi, bukan diklik asal.</p>
+        </li>
+        <li class="taskStep">
+          <span class="taskDot" aria-hidden="true"></span>
+          <span class="taskIndex" aria-hidden="true">04</span>
+          <h3 data-i18n="task.save">Simpan</h3>
+          <p data-i18n="task.save.body">Berkas dan bukti ikut tersimpan.</p>
+          <code class="taskFile">ringkasan.md</code>
+        </li>
+      </ol>
+    </section>
 
     <section class="bento" data-reveal aria-label="Kemampuan utama">
       <article class="bentoArticle">
@@ -166,6 +197,15 @@
       "s5.body": "Passwords, one-time codes, tokens, and payment fields are always refused.",
       "s6.title": "MCP for any harness",
       "s6.body": "OpenCode, Kilo Code, and Claude Code share one endpoint. <a href=\"./docs.html\">Docs</a>.",
+      "task.title": "From one sentence to a file.",
+      "task.talk": "Talk",
+      "task.talk.body": "One sentence: summarise the Q4 onboarding check.",
+      "task.read": "Read",
+      "task.read.body": "Pages, buttons, and rows are read.",
+      "task.write": "Write",
+      "task.write.body": "Forms and cells are filled, not clicked blindly.",
+      "task.save": "Save",
+      "task.save.body": "The file and the proof are saved.",
       "perm.title": "The permissions we ask for",
       "perm.body": "No permission outside this list.",
       "final.title": "One extension. Your browser.",

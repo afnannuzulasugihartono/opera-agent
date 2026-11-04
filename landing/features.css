@@ -1,7 +1,7 @@
 /*
- * @last-edited: 2026-10-26 UTC+7.
- * @title: features.css — the capability page: a short pitch, three live counts, five cards, and the permission list.
- * @state: an editorial hero, a bordered stat band, a two-column card grid with one dark anchor card, and a dark closing band.
+ * @last-edited: 2026-11-05 UTC+7.
+ * @title: features.css — the capability page: a short pitch, three live counts, one task rail, five cards, and the permission list.
+ * @state: an editorial hero, a bordered stat band, a four step task rail that fills once on arrival, a two-column card grid with one dark anchor card, and a dark closing band.
  * @dependencies: site.css.
  *
  * WHY a page sheet: the stat band and the numbered cards belong to this page alone; the shell and controls come from site.css.
@@ -76,6 +76,142 @@ main.wrap { padding-top: 68px; padding-bottom: 96px; }
   color: var(--muted);
   font-size: 13px;
   line-height: 1.35;
+}
+
+/* ── one task, from a sentence to a file ──────────────────────────────────── */
+
+/*
+ * WHY THE PAGE NEEDS A SHAPE: measured against firecrawl.dev on 2026-11-05, every block it ships answers with a picture of the work, and a features page made only of cards asks the reader to believe a claim instead of watching it.
+ * The rail is one line with four dots, and the light walks it once, so the reader sees a task travel before reading what it does.
+ */
+
+.taskStage {
+  margin: 0 0 64px;
+}
+
+.taskStage h2 {
+  max-width: 20ch;
+  margin: 0 0 30px;
+  font-size: clamp(24px, 2.6vw, 34px);
+}
+
+.taskRail {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 22px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.taskStep {
+  position: relative;
+  padding-top: 26px;
+}
+
+.taskDot {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 13px;
+  height: 13px;
+  border: 1px solid var(--line-strong);
+  background: var(--bg);
+}
+
+/*
+ * WHY THE CONNECTOR LIVES ON THE STEP: the line has to start at one dot and end at the next, and a step knows both ends, so one rule draws the whole rail on every screen.
+ * The accent copy of the same line is what travels, and the plain copy stays behind as the road.
+ */
+
+.taskStep:not(:last-child)::before,
+.taskStep:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  top: 6px;
+  left: 19px;
+  width: calc(100% + 3px);
+  height: 1px;
+}
+
+.taskStep:not(:last-child)::before {
+  background: var(--line-strong);
+}
+
+.taskStep:not(:last-child)::after {
+  background: var(--accent);
+  transform-origin: left center;
+}
+
+html.js .taskStep:not(:last-child)::after {
+  transform: scaleX(0);
+}
+
+html.js .taskStage.in .taskStep:not(:last-child)::after {
+  animation: rail-fill .45s var(--ease) both;
+}
+
+html.js .taskStage.in .taskDot {
+  animation: dot-lit .2s var(--ease) both;
+}
+
+/*
+ * WHY THE STEPS WAIT THEIR TURN: the light crosses the rail one dot at a time, and the delay lives on both the dot and the line that leaves it, so the eye reads one step, not four.
+ */
+
+html.js .taskStage.in .taskStep:nth-child(1) .taskDot,
+html.js .taskStage.in .taskStep:nth-child(1)::after { animation-delay: .1s; }
+
+html.js .taskStage.in .taskStep:nth-child(2) .taskDot,
+html.js .taskStage.in .taskStep:nth-child(2)::after { animation-delay: .3s; }
+
+html.js .taskStage.in .taskStep:nth-child(3) .taskDot,
+html.js .taskStage.in .taskStep:nth-child(3)::after { animation-delay: .5s; }
+
+html.js .taskStage.in .taskStep:nth-child(4) .taskDot { animation-delay: .7s; }
+
+@keyframes rail-fill {
+  to { transform: scaleX(1); }
+}
+
+@keyframes dot-lit {
+  to {
+    background: var(--accent);
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-soft);
+  }
+}
+
+.taskIndex {
+  display: block;
+  margin: 0 0 6px;
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: .08em;
+}
+
+.taskStep h3 {
+  margin: 0 0 6px;
+  font-size: 16px;
+}
+
+.taskStep p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.taskFile {
+  display: inline-block;
+  margin-top: 12px;
+  padding: 5px 9px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 12px;
 }
 
 /* ── capability grid ────────────────────────────────────────────────────── */
@@ -164,6 +300,28 @@ main.wrap { padding-top: 68px; padding-bottom: 96px; }
   color: var(--muted);
 }
 
+@media (max-width: 900px) {
+  .taskRail { grid-template-columns: minmax(0, 1fr); gap: 30px; }
+  .taskStep:not(:last-child)::before,
+  .taskStep:not(:last-child)::after {
+    top: 19px;
+    left: 6px;
+    width: 1px;
+    height: calc(100% + 11px);
+  }
+  html.js .taskStep:not(:last-child)::after {
+    transform: scaleY(0);
+    transform-origin: top center;
+  }
+  html.js .taskStage.in .taskStep:not(:last-child)::after {
+    animation-name: rail-drop;
+  }
+}
+
+@keyframes rail-drop {
+  to { transform: scaleY(1); }
+}
+
 @media (max-width: 860px) {
   main.wrap { padding-top: 44px; }
   .featureHero { margin-bottom: 40px; }
@@ -181,4 +339,20 @@ main.wrap { padding-top: 68px; padding-bottom: 96px; }
   }
   .statBand div:first-child { border-top: 0; padding-top: 0; }
   .heroActions .btn { flex: 1 1 auto; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.js .taskStage .taskDot,
+  html.js .taskStage .taskStep:not(:last-child)::after {
+    animation: none !important;
+  }
+
+  html.js .taskStage .taskDot {
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+
+  html.js .taskStage .taskStep:not(:last-child)::after {
+    transform: none !important;
+  }
 }
