@@ -117,3 +117,15 @@
 
 - [ ] `npm test` hijau semua, `npm run check`, formatter, `py tests/browser_extension_test.py` exit 0.
 - [ ] Commit akhir; push branch; buat PR dengan template repo.
+
+## Progress (2026-11-04)
+
+Tasks 1–7 are implemented and committed; `npm test` 1690/1690 (3 skipped), `npm run check` ok.
+Deviations from this plan, all deliberate:
+
+- The hold is a row in `opera_reservations`, not a `reserve_hold` kind in the ledger. A hold moves no money, and duplicating it in the ledger gives two places to disagree. Balance is the sum of `deposit`/`refund`/`settle`/`adjust` only; `available` subtracts open holds.
+- The client lives in `local/wallet-client.js` + MCP tools, not in `extension/`. The extension has no task boundary (it runs one primitive per command), so wiring a reserve there would bill per command, not per job. See the note under Task 5.
+- The migration was proven behaviourally against the live database inside a rolled-back transaction (deposit replay, over-balance reserve, settle replay, late settle, sweep, sign and cap checks); `tests/wallet-schema.test.mjs` pins the text invariants for CI, which has no Postgres.
+- `/harga` was linked by every nav but had no page; `landing/harga.html` now exists and its claims are pinned against the migration and `wallet.js` in `tests/landing-claims.test.mjs`.
+
+Not done here, by rule: applying the migration and deploying the edge function happen one at a time from the main checkout after this branch merges (`docs/handoff.md`), not from this worktree.
