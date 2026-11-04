@@ -19,6 +19,7 @@ const RESERVATION_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f
 
 export const WALLET_ACTIONS = Object.freeze([
   'wallet-balance',
+  'wallet-history',
   'wallet-quote',
   'wallet-deposit',
   'task-reserve',
@@ -47,6 +48,10 @@ export async function handleWalletAction(action, body, deps) {
   if (action === 'wallet-balance') {
     const [balanceCents, availableCents] = await Promise.all([deps.balance(owner), deps.available(owner)]);
     return { status: 200, body: { ok: true, balanceCents, availableCents, currency: 'IDR' } };
+  }
+  if (action === 'wallet-history') {
+    const entries = await deps.history(owner);
+    return { status: 200, body: { ok: true, entries } };
   }
   if (action === 'wallet-quote') {
     const quote = quotePlan(body.plan, await prices());

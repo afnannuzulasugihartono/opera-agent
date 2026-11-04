@@ -27,6 +27,7 @@ function deps(overrides = {}) {
     prices: async () => PRICES,
     balance: async () => 1000000,
     available: async () => 990000,
+    history: async () => [{ at: '2026-11-04T00:00:00Z', kind: 'deposit', amountCents: 1000000, note: null, reservationId: null }],
     reserve: async (args) => { calls.push(['reserve', args]); return { ok: true, reservationId: RESERVATION, amountCents: args.amountCents, availableCents: 980000 }; },
     settle: async (args) => { calls.push(['settle', args]); return { ok: true, amountCents: 10000, balanceCents: 990000 }; },
     refund: async (args) => { calls.push(['refund', args]); return { ok: true, amountCents: 10000, balanceCents: 1000000 }; },
@@ -116,4 +117,12 @@ test('a top-up is opened for the owner the request proved, not one the body name
   assert.equal(out.status, 200);
   assert.equal(out.body.kind, 'wallet.deposit');
   assert.deepEqual(calls, [['deposit']], 'the handler must not pass a body field through to the top-up opener');
+});
+
+test('the history is one timeline the dashboard reads, and it carries no price of its own', async () => {
+  const { deps: d, calls } = deps();
+  const out = await handleWalletAction('wallet-history', { amount_cents: 1, owner_id: 'x' }, d);
+  assert.equal(out.status, 200);
+  assert.equal(out.body.entries[0].kind, 'deposit');
+  assert.deepEqual(calls, [], 'a history is a read, so nothing that changes money is called');
 });

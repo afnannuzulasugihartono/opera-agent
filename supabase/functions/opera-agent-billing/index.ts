@@ -711,6 +711,46 @@ function walletDeps(req: Request) {
     prices: async () => await priceList(await db()),
     balance: async (owner: string) => walletNumber("opera_wallet_balance", { p_owner: owner }),
     available: async (owner: string) => walletNumber("opera_wallet_available", { p_owner: owner }),
+    history: async (owner: string) => {
+      const supabase = await db();
+      const [ledger, reservations] = await Promise.all([
+        supabase.from("opera_ledger")
+          .select("kind, amount_cents, note, ref, created_at, reservation_id")
+          .eq("owner_id", owner)
+          .order("created_at", { ascending: false })
+          .limit(50),
+        supabase.from("opera_reservations")
+          .select("id, kind, amount_cents, status, actions_planned, actions_actual, created_at, expires_at, closed_at")
+          .eq("owner_id", owner)
+          .order("created_at", { ascending: false })
+          .limit(50)
+      ]);
+      if (ledger.error) throw new Error(`the ledger could not be read: ${ledger.error.message}`);
+      if (reservations.error) throw new Error(`the reservations could not be read: ${reservations.error.message}`);
+      // WHY TWO ROWS OF MONEY BECOME ONE LIST.
+      // A deposit and the task it paid for are the same event seen from two tables, and the person reading the dashboard reads one timeline, not two.
+      // The two lists are merged by the moment they happened and capped together, so the answer stays one page long.
+      const entries = [
+        ...(ledger.data || []).map((row) => ({
+          at: row.created_at,
+          kind: row.kind,
+          amountCents: Number(row.amount_cents),
+          note: row.note || null,
+          reservationId: row.reservation_id || null
+        })),
+        ...(reservations.data || []).map((row) => ({
+          at: row.created_at,
+          kind: `reservation.${row.status}`,
+          amountCents: Number(row.amount_cents),
+          note: row.kind,
+          reservationId: row.id,
+          actionsPlanned: row.actions_planned,
+          actionsActual: row.actions_actual,
+          closedAt: row.closed_at
+        }))
+      ].sort((a, b) => String(b.at).localeCompare(String(a.at))).slice(0, 50);
+      return entries;
+    },
     reserve: (args: { owner: string; kind: string; amountCents: number; actionsPlanned: number }) => walletRpc("opera_wallet_reserve", {
       p_owner: args.owner,
       p_kind: args.kind,
