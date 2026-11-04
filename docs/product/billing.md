@@ -91,6 +91,56 @@ priced lines (the price list)  ->  an invoice (one per customer per month)
 - `tests/invoice-worker.test.mjs` — the page proxy, its relabel, its redirect, its asset
   fallback and its failure page (9 tests).
 
+## The QRIS self-rail: our own merchant code, settled by our own detector
+
+Midtrans is one way to take money. The other is our own merchant QRIS code, converted
+per invoice so the amount is inside the code, and settled by reading our own merchant
+feed. The detector runs on a schedule inside the database, so no phone stays awake and
+no provider sits in the middle.
+
+Measured on 2026-11-04 against the live merchant account:
+
+| What was driven | What came back |
+|---|---|
+| a Rp 1.000 payment scanned from our own page, paid with GoPay | feed row `gross_amount 100000`, `channel_type DYNAMIC_QR`, `transaction_status SETTLEMENT`, `issuer GOPAY` — the feed counts minor units |
+| the merchant's printed static code, paid with BRImo | feed row `channel_type STATIC_QR`, `issuer BRI` — money with no invoice behind it |
+| the feed query with `size=200` | **422**; with `size=100`, `statuses=SETTLEMENT`, `payment_types=QRIS`, **200** |
+| the token route with a flat body | **400** `At least one required parameter is missing`; with `client_id`, `grant_type` and a nested `data`, **201** |
+| `opera_qris_detect_cron()` | queued request `31009`; the answer `{"ok":true,"mode":"dry","wouldClose":[],"transactions":1,"seen":2,"spent":2}` in `net._http_response` |
+| the same job after the flip to live | `{"ok":true,"mode":"live","closed":[],"transactions":1}` — no new money, so nothing closed |
+
+The rules the detector follows, each one a test in `tests/qris-detector.test.mjs`:
+
+- Only money scanned from our own page counts: `payment_type QRIS`, `channel_type
+  DYNAMIC_QR`, `transaction_status SETTLEMENT`. A payment against the printed static
+  code is the merchant's own money with no invoice behind it, so crediting a wallet
+  from it would be money out of thin air.
+- The amount is read in minor units, so only the minor reading may close an invoice.
+  The rupiah reading of the same number is a wrong amount that happens to match a
+  bigger invoice.
+- One transaction closes one invoice. The transactions that already closed an invoice
+  are read back and dropped before matching, and a unique index over
+  `provider_transaction_id` makes a second close impossible in the database.
+- Money that arrived before the invoice was opened is not that invoice's money, so the
+  clock is checked.
+- Only invoices on the `qris-self` rail are candidates. A Midtrans invoice is closed by
+  the provider's signed notification, and one payment may not close two invoices.
+
+The schedule is `cron.schedule('opera-qris-detect', '*/5 * * * *', …)`. It reads the
+operator token from `vault.decrypted_secrets`, and the function publishes a copy into
+vault on its first request, so no human pastes a secret into the database.
+
+`net.http_post` returns the id of the request it queued, not the response; the answer
+arrives in `net._http_response` under that id. The first version read a response off the
+call and raised a column error on every run, which is why the schedule moved nothing
+until it was fixed.
+
+The conversion from the printed code to a per-invoice code is in
+[`../../supabase/functions/_shared/qris.js`](../../supabase/functions/_shared/qris.js): tag
+`01` becomes `12`, tag `54` carries the bare rupiah amount, and the CRC is recomputed.
+The category tag is left exactly as printed, because the acquirer refuses the other
+spelling.
+
 ## The page a customer opens, and the link behind it
 
 The invoice link is a page, not a checkout: it names the invoice, the customer, the
@@ -284,7 +334,7 @@ in rupiah) or Wise/manual for the first few clients. The price for a foreign cus
 must be set in USD with a monthly minimum, not converted from Rp 99.000: at that unit the
 $0.50 fixed fee alone is larger than the whole invoice.
 
-## What the owner sets (five environment values)
+## What the owner sets
 
 | Value | What it is | Without it |
 |---|---|---|
@@ -293,6 +343,18 @@ $0.50 fixed fee alone is larger than the whole invoice.
 | `MIDTRANS_SERVER_KEY` | the payment provider's server key | invoices are created and served, but the pay button is replaced by a transfer instruction, and no notification is believed |
 | `MIDTRANS_ENVIRONMENT` | `sandbox` or `production`: which host the charge and the status question go to | the function assumes `production`, and a sandbox key is refused by that host |
 | `BILLING_BANK` | the account line printed on an unpaid invoice | the invoice says to transfer but does not name the account |
+
+The QRIS self-rail adds seven more, and all seven are the merchant's own account:
+
+| Value | What it is | Without it |
+|---|---|---|
+| `BILLING_RAIL` | `midtrans` or `qris-self`: which rail takes the money | the function uses `midtrans`, exactly as before |
+| `QRIS_STATIC_PAYLOAD` | the merchant's printed QRIS code, converted per invoice | no code can be shown; the customer is told to transfer |
+| `GOBIZ_ACCESS_TOKEN` | the merchant session that reads the feed | the detector answers "the GoBiz session is not configured" and closes nothing |
+| `GOBIZ_REFRESH_TOKEN` | the same session's renewal | a 401 from the feed cannot be answered, so the detector stops after the session expires |
+| `GOBIZ_DEVICE_ID` | the one device id that session is bound to | the feed answers 401 |
+| `GOBIZ_MERCHANT_ID` | the merchant the feed is read for | no feed, no detector |
+| `QRIS_DETECTOR_MODE` | `dry` or `live`: whether a match may close an invoice | the detector stays `dry` and only reports what it would close |
 
 The first two are set in the project's secrets already; the provider key and the
 environment are set for sandbox; the last is the owner's own account line, and the

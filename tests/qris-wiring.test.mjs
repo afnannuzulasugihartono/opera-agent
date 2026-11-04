@@ -51,7 +51,8 @@ test('the detector is operator-gated, dry by default, and credits the wallet whe
   assert.ok(gate > 0 && call > gate, 'the operator token is checked before the detector runs');
   assert.match(fn, /\.is\("paid_at", null\)/, 'a feed close is guarded against a second close');
   assert.match(fn, /await creditTopUp\(closed\)/, 'a feed-paid top-up credits the wallet on the same path as a notification');
-  assert.match(fn, /grant_type.*refresh_token/, 'a 401 from the feed triggers one refresh retry');
+  const detector = fs.readFileSync(new URL('supabase/functions/_shared/qris-detector.js', root), 'utf8');
+  assert.match(detector, /grant_type: 'refresh_token'/, 'a 401 from the feed triggers one refresh retry');
 });
 
 test('every helper the function calls from billing.js is actually imported', () => {
@@ -77,4 +78,17 @@ test('the public price list is served before any token check and returns only ac
 test('the detector matches only qris-self invoices, for any customer', () => {
   assert.match(fn, /\.eq\("provider", "qris-self"\)/, 'a Midtrans invoice is closed by its signed notification, not by the feed');
   assert.match(fn, /AtmoRouter included/, 'the match is by amount and customer, not by a customer list');
+});
+
+test('the detector never spends one transaction twice', () => {
+  assert.match(fn, /\.not\("provider_transaction_id", "is", null\)/, 'the transactions that already closed an invoice are read back');
+  assert.match(fn, /spent\.has\(tx\.id\)/, 'a spent transaction is dropped before matching');
+  assert.match(fn, /provider_transaction_id: match\.transactionId/, 'a feed close records which transaction it spent');
+});
+
+test('the feed call uses the page size and the token body the API accepts', () => {
+  assert.doesNotMatch(fn, /size: 200/, 'the API answered 422 for a page of 200 rows');
+  assert.match(fn, /size: 100/, 'the page size the API answered 200 for is 100');
+  assert.match(fn, /refreshBody\(GOBIZ_REFRESH_TOKEN\)/, 'the token body is the nested one the route accepts');
+  assert.match(fn, /sessionHeaders\(\{ accessToken: GOBIZ_ACCESS_TOKEN, uniqueId: GOBIZ_DEVICE_ID \}\)/, 'the token route has its own headers');
 });
