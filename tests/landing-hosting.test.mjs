@@ -26,6 +26,7 @@ function parse(text) {
       rules.push(current);
       continue;
     }
+    if (/^\s*#/.test(line)) continue;
     const at = line.indexOf(':');
     current.headers[line.slice(0, at).trim()] = line.slice(at + 1).trim();
   }
