@@ -16,7 +16,7 @@
 
 // WHY THIS RUNS WITHOUT POSTGRES, AND WHY THAT IS STILL A LOCK
 
-// The behavioural proof needs a real database and lives in tests/postgres/.
+// The behavioural proof needs a real database and was run by hand against one while writing this fix.
 // This file pins the things that can be checked from the migration and the call site, and the second of those four is the one that would have caught the mistake actually made while writing the fix: it was first written with the parameter order (text,text,integer,text,integer,jsonb).
 // PostgreSQL matches CREATE OR REPLACE on the argument type list INCLUDING ORDER, so that did not replace the function — it created a second overload and left the buggy body live.
 // With two overloads PostgREST cannot choose one for a named-argument call, so the extension's pull loop could not resolve the function at all.
