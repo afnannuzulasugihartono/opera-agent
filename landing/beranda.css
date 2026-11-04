@@ -1,7 +1,7 @@
 /*
- * @last-edited: 2026-10-26 UTC+7.
- * @title: beranda.css — the home page: one hero, one product proof, and one short section per idea.
- * @state: a two-column hero with a browser mock, an editorial section rhythm, and the model form and FAQ panels.
+ * @last-edited: 2026-11-05 UTC+7.
+ * @title: beranda.css — the home page: one hero, one product proof, one statement, and one short section per idea.
+ * @state: a two-column hero with a browser mock, a statement band in large type, an editorial section rhythm, and the model form and FAQ panels.
  * @dependencies: site.css.
  *
  * WHY a page sheet: the home page carries the only product mock and the only FAQ, so its rules stay off the other pages.
@@ -549,6 +549,76 @@
 
 .section > .sub {
   margin-bottom: 38px;
+}
+
+/*
+ * WHY THE PAGE NEEDS A SHOUT: measured against firecrawl.dev on 2026-11-05, its home page stops on one line of large type between the product blocks, and a page of equal sections reads like a list instead of a story.
+ * Two lines say what the product is, the accent word carries the point, and the rule under it draws itself when the band lands.
+ */
+
+.statementLine {
+  margin: 0;
+  font-family: var(--mono);
+  font-size: clamp(26px, 4.8vw, 58px);
+  line-height: 1.08;
+  letter-spacing: -.04em;
+  font-weight: 500;
+}
+
+.statementLine + .statementLine {
+  margin-top: 12px;
+}
+
+.statementAccent {
+  position: relative;
+  color: var(--accent);
+  white-space: nowrap;
+}
+
+.statementAccent::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -.14em;
+  height: 2px;
+  background: var(--accent);
+  transform: scaleX(0);
+  transform-origin: left center;
+}
+
+html.js .statement.in .statementAccent::after {
+  animation: statement-rule .5s var(--ease) .35s both;
+}
+
+html.js .statement.in .statementLine {
+  animation: statement-in .4s var(--ease) both;
+}
+
+html.js .statement.in .statementLine:nth-child(2) {
+  animation-delay: .12s;
+}
+
+@keyframes statement-in {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes statement-rule {
+  to { transform: scaleX(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .statementLine {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  .statementAccent::after {
+    animation: none !important;
+    transform: scaleX(1) !important;
+  }
 }
 
 .split {
