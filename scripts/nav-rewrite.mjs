@@ -29,7 +29,8 @@ const DOOR_OF = {
   'fitur.html': 'fitur.html',
   'unduh.html': 'unduh.html',
   'unduh-berkas.html': 'unduh.html',
-  'dukungan.html': 'dukungan.html'
+  'dukungan.html': 'dukungan.html',
+  'docs.html': 'docs.html'
 };
 
 // WHY THE BRAND IS MARKED ONCE AND ROOTED: a rerun reads a brand that already carries the mark, markBrand clears it before it writes it back, and every door beside it is root-relative, so the brand is too.
@@ -43,8 +44,9 @@ const brandOf = (nav, door) => {
 const doors = (current, translate) => [
   ['/fitur.html', 'nav.features', 'Fitur'],
   ['/unduh.html', 'nav.download', 'Unduh'],
+  ['/harga', 'nav.price', 'Harga'],
   ['/dukungan.html', 'nav.support', 'Dukungan'],
-  ['/harga', 'nav.price', 'Harga']
+  ['/docs.html', 'nav.docs', 'Docs']
 ].map(([href, key, label]) => {
   const mark = translate && current && href === `/${current}` ? ' aria-current="page"' : '';
   const lang = translate ? ` data-i18n="${key}"` : '';

@@ -82,7 +82,7 @@ test('the merged detection marks the matching card and phones nowhere', () => {
 
 test('the hero states the value in one sentence, and the steps live on the merged page', () => {
   assert.match(hub, /<h1\b[^>]*>Pasang Opera Agent<\/h1>/, 'the hero keeps its title');
-  assert.match(hub, /Gratis dan tanpa toko/, 'gratis and storeless in one sentence');
+  assert.match(hub, /Tanpa toko/, 'storeless in one sentence');
   assert.match(hub, /mesin enterprise/, 'enterprise named where the updates land');
   assert.doesNotMatch(hub.replace(/<!--[\s\S]*?-->/g, ''), /instan/i, 'no instant promise');
   assert.doesNotMatch(hub, /<ol class="steps">/, 'the hub itself keeps no steps beside the door');

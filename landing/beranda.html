@@ -29,8 +29,9 @@
         <a class="brand" href="/beranda.html" aria-current="page"><svg class="brandMark" viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="7"  /><path d="M8 5.6v12.8l3.1-2.9 1.9 4.5 2.4-1-2-4.5h3.9L8 5.6Z"  /></svg><span>Opera Agent</span></a>
         <a href="/fitur.html" data-i18n="nav.features">Fitur</a>
         <a href="/unduh.html" data-i18n="nav.download">Unduh</a>
-        <a href="/dukungan.html" data-i18n="nav.support">Dukungan</a>
         <a href="/harga" data-i18n="nav.price">Harga</a>
+        <a href="/dukungan.html" data-i18n="nav.support">Dukungan</a>
+        <a href="/docs.html" data-i18n="nav.docs">Docs</a>
         <span class="lang" data-lang-toggle></span>
         <a class="navCta" href="/" data-i18n="nav.signin">Masuk</a>
       </nav>
@@ -47,7 +48,7 @@
             <a class="btn primary" href="./unduh.html" data-i18n="cta.download">Pasang Opera Agent</a>
             <a class="btn" href="#model" data-i18n="cta.model">Pakai model sendiri</a>
           </div>
-          <p class="footnote" data-i18n="hero.note">Gratis dipakai. Model ditagih penyedia Anda.</p>
+          <p class="footnote" data-i18n="hero.note">Harga tetap per pekerjaan selesai. Biaya model ke penyedia Anda.</p>
           <div class="row" id="ctaIn" hidden>
             <a class="btn primary" href="./dashboard.html" data-i18n="cta.dashboard">Buka Dashboard</a>
             <a class="btn" href="./dashboard.html#pairing" data-i18n="cta.pair">Pair device</a>
@@ -149,7 +150,7 @@
           <p class="sub" data-i18n="model.sub">Endpoint dan kunci disimpan di browser Anda, bukan di server kami.</p>
           <dl class="facts">
             <dt data-i18n="privacy.key.dt">Kunci API</dt><dd data-i18n="privacy.key.dd">Disimpan lokal. Tidak pernah diunggah.</dd>
-            <dt data-i18n="faq.model.dt">Model</dt><dd data-i18n="faq.model.dd">Gunakan endpoint cloud atau lokal.</dd>
+            <dt data-i18n="model.choose.dt">Model</dt><dd data-i18n="model.choose.dd">Gunakan endpoint cloud atau lokal.</dd>
             <dt data-i18n="faq.data.dt">Data</dt><dd data-i18n="faq.data.dd">Konten pergi ke endpoint model Anda.</dd>
           </dl>
         </div>
@@ -232,14 +233,6 @@
           <h3 data-i18n="privacy.key.dt">Kunci API</h3>
           <p data-i18n="privacy.key.dd">Disimpan lokal. Tidak pernah diunggah.</p>
         </article>
-        <article>
-          <h3 data-i18n="privacy.commands.dt">Perintah</h3>
-          <p data-i18n="privacy.commands.dd">Transit melalui relay agar asisten dapat bertindak.</p>
-        </article>
-        <article>
-          <h3 data-i18n="privacy.shot.dt">Screenshot</h3>
-          <p data-i18n="privacy.shot.dd">Sensitif dan private selalu ditolak, tidak pernah dibagikan ke pihak ketiga.</p>
-        </article>
       </div>
     </section>
 
@@ -253,19 +246,11 @@
       <div class="faqList">
         <details>
           <summary data-i18n="faq.cost.dt">Biaya</summary>
-          <p data-i18n="faq.cost.dd">Opera Agent gratis. Model ditagih penyedianya.</p>
-        </details>
-        <details>
-          <summary data-i18n="faq.model.dt">Model</summary>
-          <p data-i18n="faq.model.dd">Gunakan endpoint cloud atau lokal.</p>
+          <p data-i18n="faq.cost.dd">Extension gratis dipasang. Setiap pekerjaan dibayar dari saldo.</p>
         </details>
         <details>
           <summary data-i18n="faq.data.dt">Data</summary>
           <p data-i18n="faq.data.dd">Konten pergi ke endpoint model Anda.</p>
-        </details>
-        <details>
-          <summary data-i18n="faq.offline.dt">Offline</summary>
-          <p data-i18n="faq.offline.dd">Model lokal bisa offline. Relay tetap membutuhkan koneksi.</p>
         </details>
         <details>
           <summary data-i18n="faq.stop.dt">Berhenti</summary>
@@ -275,7 +260,7 @@
     </section>
 
     <section class="finalBand reveal" aria-labelledby="finalTitle">
-      <h2 id="finalTitle" data-i18n="final.title">Gratis dipakai. Atur model sendiri.</h2>
+      <h2 id="finalTitle" data-i18n="final.title">Pasang. Pair. Kerja.</h2>
       <p data-i18n="final.sub">Satu extension, satu akun, satu browser.</p>
       <a class="btn primary" href="./unduh.html" data-i18n="cta.download">Pasang Opera Agent</a>
     </section>
@@ -297,12 +282,13 @@
       "nav.signin": "Sign in",
       "nav.features": "Features",
       "nav.price": "Pricing",
+      "nav.docs": "Docs",
       "nav.support": "Support",
       "hero.title": "An AI assistant in <span class=\"accent\">your browser.</span>",
       "hero.lede": "An AI assistant that drives your browser. No free-running scripts.",
       "cta.download": "Install Opera Agent",
       "cta.model": "Connect any model",
-      "hero.note": "Free to use. Your provider bills the model.",
+      "hero.note": "A flat price per finished job. The model bill goes to your provider.",
       "cta.dashboard": "Open the dashboard",
       "cta.pair": "Pair a device",
       "tiles.devices.title": "Devices",
@@ -334,21 +320,16 @@
       "privacy.content.dd": "Only goes to your model endpoint; queue history is stored in the project database.",
       "privacy.key.dt": "API key",
       "privacy.key.dd": "Stored locally. Never uploaded.",
-      "privacy.commands.dt": "Commands",
-      "privacy.commands.dd": "The relay lets your assistant act on your device.",
-      "privacy.shot.dd": "Sensitive and private pages are refused and never shared with third parties.",
       "faq.title": "Good to know.",
       "faq.sub": "Short answers.",
       "faq.cost.dt": "Cost",
-      "faq.cost.dd": "Opera Agent is free. Your provider bills the model.",
-      "faq.model.dt": "Model",
-      "faq.model.dd": "Use a cloud or local endpoint.",
+      "faq.cost.dd": "Installing the extension is free. Every job is paid from your balance.",
       "faq.data.dt": "Data",
       "faq.data.dd": "Content goes to your model endpoint.",
-      "faq.offline.dt": "Offline",
-      "faq.offline.dd": "Local models work offline. The relay needs a connection.",
       "faq.stop.dt": "Stop",
       "faq.stop.dd": "Sign out or revoke pairing at any time.",
+      "model.choose.dt": "Model",
+      "model.choose.dd": "Use a cloud or local endpoint.",
       "hero.stat.tools": "MCP tools",
       "hero.stat.prims": "browser primitives",
       "hero.stat.perms": "permissions, each explained",
@@ -377,8 +358,7 @@
       "signin.panel.body": "One endpoint, one grant, one device. The assistant asks, the device runs.",
       "signin.panel.oauth": "OAuth",
       "signin.panel.scope": "openid · email",
-      "privacy.shot.dt": "Screenshot",
-      "final.title": "Free to use. Bring your own model.",
+      "final.title": "Install. Pair. Work.",
       "final.sub": "One extension, one account, and full control of your browser."
     }
   }

@@ -24,11 +24,12 @@
   <header>
     <div class="wrap">
       <nav>
-        <a class="brand" href="/beranda.html" aria-current="page"><svg class="brandMark" viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="7"  /><path d="M8 5.6v12.8l3.1-2.9 1.9 4.5 2.4-1-2-4.5h3.9L8 5.6Z"  /></svg><span>Opera Agent</span></a>
+        <a class="brand" href="/beranda.html"><svg class="brandMark" viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="7"  /><path d="M8 5.6v12.8l3.1-2.9 1.9 4.5 2.4-1-2-4.5h3.9L8 5.6Z"  /></svg><span>Opera Agent</span></a>
         <a href="/fitur.html" data-i18n="nav.features">Fitur</a>
         <a href="/unduh.html" data-i18n="nav.download">Unduh</a>
-        <a href="/dukungan.html" data-i18n="nav.support">Dukungan</a>
         <a href="/harga" data-i18n="nav.price">Harga</a>
+        <a href="/dukungan.html" data-i18n="nav.support">Dukungan</a>
+        <a href="/docs.html" data-i18n="nav.docs" aria-current="page">Docs</a>
         <span class="lang" data-lang-toggle></span>
         <a class="navCta" href="/" data-i18n="nav.signin">Masuk</a>
       </nav>
@@ -71,20 +72,12 @@
     <p>Anda bicara, browser bekerja, hasilnya menjadi artefak nyata. Contoh: <em>Buka Google Maps, cari kopi dekat Monas, dan tulis hasilnya ke sheet.</em></p>
     <ul>
       <li>Satu pekerjaan berarti satu hasil: satu halaman, satu laporan, atau satu daftar.</li>
-      <li>Maksimal 10 aksi per pekerjaan. Perkiraan yang lebih besar ditolak di depan dengan tawaran dipecah, bukan gagal di tengah.</li>
-      <li>Dua kali replan yang gagal berarti pekerjaan gagal.</li>
+      <li>Jumlah aksinya dibatasi. Perkiraan yang lebih besar ditolak di depan dengan tawaran dipecah, bukan gagal di tengah. Batas dan harganya ada di halaman <a href="/harga">Harga</a>.</li>
       <li>Konten halaman hanya pergi ke endpoint model Anda; kunci API tersimpan di browser ini.</li>
     </ul>
 
     <h2 id="saldo">Saldo dan tagihan</h2>
-    <p>Prabayar, tanpa langganan. Saldo tidak kedaluwarsa.</p>
-    <ol class="steps">
-      <li><strong>Isi.</strong> Tombol isi ulang di Dashboard menghasilkan QRIS. Top-up mulai Rp10.000.</li>
-      <li><strong>Setujui.</strong> Sebelum pekerjaan jalan, harga tetapnya tampil dan Anda menyetujuinya.</li>
-      <li><strong>Selesai.</strong> Saldo dipotong sebesar harga itu saja, tidak lebih.</li>
-      <li><strong>Gagal.</strong> Dana yang ditahan <strong>dikembalikan penuh</strong>, tanpa potongan admin.</li>
-    </ol>
-    <p>Dana yang ditahan lebih dari 30 menit tanpa penyelesaian dikembalikan otomatis. Saldo yang kurang membuat pekerjaan ditolak sebelum mulai, dengan tautan isi ulang. Harga dibaca dari server; extension tidak pernah menentukan harga. Rinciannya ada di halaman <a href="./harga">Harga</a>.</p>
+    <p>Isi saldo lewat QRIS dari Dashboard, tanpa langganan. Saldo yang kurang membuat pekerjaan ditolak sebelum mulai, dengan tautan isi ulang. Harga tetap, pengembalian, dan masa berlaku saldo ada di halaman <a href="/harga">Harga</a>.</p>
 
     <h2 id="mcp">Hubungkan AI harness</h2>
     <p>Server MCP untuk OpenCode, Kilo Code, Claude Code, dan konektor lain. Masuk dengan akun Anda (OAuth).</p>
@@ -147,7 +140,7 @@
 
     <h2 id="batas">Batas yang dijaga</h2>
     <ul>
-      <li>Password, kode sekali pakai, PIN, kartu, dan CVV selalu ditolak. Pekerjaan yang berhenti di situ gagal, dan saldonya kembali.</li>
+      <li>Password, kode sekali pakai, PIN, kartu, dan CVV selalu ditolak. Pekerjaan yang berhenti di situ gagal.</li>
       <li>Tab private: screenshot ditolak. Tab non-http(s): primitive menolak.</li>
       <li>Enam izin: <code>tabs</code>, <code>scripting</code>, <code>storage</code>, <code>alarms</code>, <code>debugger</code>, <code>downloads</code>. Satu alasan untuk tiap izin ada di halaman <a href="./unduh.html">Unduh</a>.</li>
       <li>Yang masuk ke server untuk penagihan hanya: id reservasi, jenis tugas, status, dan hash artefak. Isi halaman tidak pernah ikut.</li>
@@ -171,6 +164,7 @@
       "nav.signin": "Sign in",
       "nav.features": "Features",
       "nav.price": "Pricing",
+      "nav.docs": "Docs",
       "nav.support": "Support",
       "copy": "Copy",
       "footer.rights": "© 2026 Opera Agent. All rights reserved.",

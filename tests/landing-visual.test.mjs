@@ -20,7 +20,7 @@ const cssOf = (name) => {
   const links = [...html.matchAll(/<link[^>]+rel="stylesheet"[^>]+href="\/([^"]+)"/g)].map((match) => match[1]);
   return `${html}\n${links.map((file) => read(file)).join('\n')}`;
 };
-const pages = ['beranda.html', 'akun.html', 'index.html', 'dashboard.html', 'unduh.html', 'unduh-berkas.html', 'privasi.html', 'syarat.html', '404.html', 'oauth/consent.html', 'fitur.html', 'dukungan.html'];
+const pages = ['beranda.html', 'akun.html', 'index.html', 'dashboard.html', 'unduh.html', 'unduh-berkas.html', 'privasi.html', 'syarat.html', '404.html', 'oauth/consent.html', 'fitur.html', 'dukungan.html', 'docs.html'];
 
 const token = (name) => {
   const value = new RegExp(`^\\s*${name}:\\s*(#[0-9a-fA-F]{6})\\s*;`, 'm').exec(read('site.css'))?.[1];
@@ -112,13 +112,13 @@ test('every section closes before the next one opens', () => {
   assert.match(index, /<\/section>\s*<section id="faq"[^>]*>/, 'the FAQ stands beside privacy, not inside it');
 });
 
-test('the nav answers a visitor in one row: four doors and one action', () => {
+test('the nav answers a visitor in one row: five doors and one action', () => {
   // WHY THE NAV IS COUNTED, NOT DESCRIBED.
   // Measured on 2026-11-03 against opencode.ai: its nav is one short row with one filled action, while ours carried seven links beside a language toggle and the sign-in button.
   // Seven items is not a choice a reader makes; it is a list they scroll past, and the price page we shipped was not in it at all.
-  // The doors are the four a visitor asks about; everything else belongs in the footer.
+  // The doors are the five a visitor asks about; everything else belongs in the footer.
 
-  const doors = ['/fitur.html', '/harga', '/unduh.html', '/dukungan.html'];
+  const doors = ['/fitur.html', '/harga', '/unduh.html', '/dukungan.html', '/docs.html'];
   for (const page of pages) {
     const html = read(page);
     const nav = /<nav>([\s\S]*?)<\/nav>/.exec(html)?.[1] ?? '';
@@ -281,7 +281,7 @@ test('the home hero speaks in one column, and the questions answer in place', ()
   assert.match(css, /\.heroCopy h1 \{[^}]*max-width: 20ch/s, 'and the headline may run wider than a half column');
   const html = read('beranda.html');
   assert.match(html, /<details>\s*<summary data-i18n="faq\.cost\.dt">/, 'a question opens and closes without script');
-  assert.equal((html.match(/<details>/g) || []).length, 5, 'the five questions are all there');
+  assert.equal((html.match(/<details>/g) || []).length, 3, 'the three questions are all there');
   assert.doesNotMatch(html, /<dl class="facts faq">/, 'and the old flat list is gone');
 });
 
@@ -417,7 +417,7 @@ test('the hero carries its footnote instead of hiding the catch', () => {
 
   const html = read('beranda.html');
   assert.match(html, /class="footnote"/, 'the line has an element');
-  assert.match(html, /Model ditagih penyedia Anda/, 'stating the only money that moves');
+  assert.match(html, /Biaya model ke penyedia Anda/, 'stating the only money that moves');
 });
 
 test('motion is an enhancement, never the content', () => {

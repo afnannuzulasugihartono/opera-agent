@@ -36,19 +36,24 @@ test('the docs page states the counts the code proves', () => {
   assert.match(html, /enam izin/i, 'the page states six permissions');
 });
 
-test('the docs page states the money the wallet enforces', () => {
+test('the docs page leaves the money to the price page, and the code proves that page', () => {
   const html = read('landing/docs.html');
+  const price = read('landing/harga.html');
   const wallet = read('supabase/functions/_shared/wallet.js');
+  assert.ok(html.includes('href="/harga"'), 'the docs page points at the price page');
+  for (const money of [/Rp10\.000/, /10 aksi/, /30 menit/, /dikembalikan penuh/]) {
+    assert.doesNotMatch(html, money, 'the docs page repeats no money fact');
+  }
   assert.match(wallet, /ACTION_CAP = 10/, 'the code caps a job at ten actions');
-  assert.match(html, /10 aksi/, 'and the page says so');
+  assert.match(price, /10 aksi/, 'and the price page says so');
   assert.match(wallet, /HOLD_MS = 30 \* 60 \* 1000/, 'the hold lasts thirty minutes');
-  assert.match(html, /30 menit/, 'and the page says so');
-  assert.match(html, /dikembalikan penuh/, 'a failed job is refunded in full');
+  assert.match(price, /30 menit/, 'and the price page says so');
+  assert.match(price, /dikembalikan penuh/, 'a failed job is refunded in full, on the price page');
 });
 
 test('the docs page links to the doors a reader needs', () => {
   const html = read('landing/docs.html');
-  for (const href of ['./unduh.html', './dashboard.html', './harga', './dukungan.html']) {
+  for (const href of ['./unduh.html', './dashboard.html', '/harga', './dukungan.html']) {
     assert.ok(html.includes(`href="${href}"`), `the page reaches ${href}`);
   }
 });
