@@ -950,6 +950,7 @@ const cors = {
         const { data, error } = await supabase.from("opera_price_list")
           .select("kind, unit, amount_cents, currency")
           .eq("active", true)
+          .or("kind.eq.wallet.deposit,kind.like.task.%")
           .order("amount_cents", { ascending: true });
         if (error) throw new Error(`the price list is unreadable: ${error.message}`);
         return json({ ok: true, prices: data || [] }, 200, cors);

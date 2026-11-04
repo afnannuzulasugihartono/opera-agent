@@ -70,5 +70,6 @@ test('the public price list is served before any token check and returns only ac
   const tokenGate = get.indexOf('invoice_id and token are required');
   assert.ok(prices > 0 && tokenGate > prices, 'the price list answers without a token, before the invoice branch');
   assert.match(get, /\.eq\("active", true\)/, 'a retired price is not listed');
+  assert.match(get, /kind\.eq\.wallet\.deposit,kind\.like\.task\.%/, 'operator plan prices are not customer prices and must not leak to the dashboard');
   assert.doesNotMatch(get.slice(prices, tokenGate), /auth\.getUser|BILLING_TOKEN/, 'no credential is needed to read prices');
 });
