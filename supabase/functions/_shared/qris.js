@@ -54,6 +54,9 @@ function setField(fields, tag, value) {
 // WHY TAG 54 IS PLACED BEFORE TAG 58 AND NOT APPENDED BLINDLY.
 // The accepted dynamic form measured on 2026-11-02 had tag 54 before tag 58; a payload with the amount after the country tag was not the one that was scanned and accepted.
 
+// WHY THE AMOUNT IS A BARE WHOLE RUPIAH.
+// The 2026-11-04 scan matrix in BRImo: tag 54 "1000.00" was refused (kode th 03) and "1000" was accepted, so the bare form is the one emitted.
+
 function insertAmount(fields, amount) {
   const without = fields.filter((field) => field.tag !== '54');
   const at = without.findIndex((field) => field.tag === '58');
@@ -73,17 +76,9 @@ export function toDynamicQris(staticPayload, amountRupiah) {
   setField(fields, '01', '12');
   fields = insertAmount(fields, amountRupiah);
 
-  // WHY THE CATEGORY LIVES IN TAG 62/07.
-  // Tag 62/07 is the QRIS category: A01 static, A02 dynamic.
-  // The 2026-11-02 probe showed changing only tag 01 is refused, so the category is set here, inside 62.
-  const category = fields.find((field) => field.tag === '62');
-  if (category) {
-    const sub = parseQris(category.value).filter((field) => field.tag !== '07');
-    sub.push({ tag: '07', value: 'A02' });
-    category.value = serializeQris(sub);
-  } else {
-    fields.push({ tag: '62', value: '0703A02' });
-  }
+  // WHY THE CATEGORY TAG IS LEFT EXACTLY AS THE MERCHANT PRINTED IT.
+  // The two payer apps measured so far disagree: ShopeePay refused tag 01=12 with 62/07 still A01 (2026-11-02 probe), while BRImo refused A02 and accepted the payload with 62/07 untouched (2026-11-04 scan matrix, variant D).
+  // So the category is not rewritten here: the merchant's own value is the one the acquirer issued the QR with, and rewriting it is what one app or the other rejects.
 
   const body = serializeQris(fields);
   return `${body}6304${crc16CcittFalse(`${body}6304`)}`;
