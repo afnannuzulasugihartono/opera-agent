@@ -54,26 +54,30 @@
       <div><dt>6</dt><dd data-i18n="stat.perms">izin</dd></div>
     </dl>
 
-    <section class="featureList" aria-label="Kemampuan utama">
-      <article class="featureRow">
+    <section class="bento" aria-label="Kemampuan utama">
+      <article class="bentoArticle">
         <h2 data-i18n="s1.title">34 tool, 31 primitive</h2>
         <p data-i18n="s1.body">Baca halaman, isi formulir, navigasi, dan verifikasi hasil. Google Maps, YouTube, dan Docs adalah contoh awal.</p>
       </article>
-      <article class="featureRow">
+      <article class="bentoArticle">
         <h2 data-i18n="s2.title">Enam izin, dijelaskan satu per satu</h2>
         <p data-i18n-html="s2.body">Setiap izin punya satu alasan yang bisa dibaca di halaman <a href="./unduh.html">Unduh</a>.</p>
       </article>
-      <article class="featureRow">
+      <article class="bentoArticle">
         <h2 data-i18n="s3.title">Model milik Anda</h2>
         <p data-i18n-html="s3.body">Endpoint dan kunci tetap di browser Anda. Konten halaman hanya pergi ke model yang Anda pilih. <a href="./privasi.html">Privasi</a>.</p>
       </article>
-      <article class="featureRow">
+      <article class="bentoArticle">
         <h2 data-i18n="s4.title">Pairing device</h2>
         <p data-i18n-html="s4.body">Kode sekali pakai mengikat device baru ke akun Anda dalam sepuluh menit. Kelola di <a href="./dashboard.html">Dashboard</a>.</p>
       </article>
-      <article class="featureRow">
+      <article class="bentoArticle">
         <h2 data-i18n="s5.title">Baca halaman tanpa eksploitasi</h2>
         <p data-i18n="s5.body">Password, kode sekali pakai, token, dan kolom pembayaran selalu ditolak.</p>
+      </article>
+      <article class="bentoArticle">
+        <h2 data-i18n="s6.title">MCP untuk harness apa pun</h2>
+        <p data-i18n-html="s6.body">OpenCode, Kilo Code, dan Claude Code memakai satu endpoint. <a href="./docs.html">Docs</a>.</p>
       </article>
     </section>
 
@@ -94,18 +98,47 @@
     </section>
   </main>
 
-  <footer>
-    <div class="wrap cols">
-      <span data-i18n="footer.rights">&copy; 2026 Opera Agent. Hak cipta dilindungi.</span>
-      <span class="doors">
-        <a href="./beranda.html" data-i18n="footer.home">Beranda</a><a href="./privasi.html" data-i18n="footer.privacy">Privasi</a><a href="./syarat.html" data-i18n="footer.terms">Syarat</a><a href="./index.html" data-i18n="footer.signin">Masuk</a><a href="./akun.html" data-i18n="footer.account">Akun</a><a href="./dashboard.html">Dashboard</a><a href="./fitur.html" data-i18n="footer.features">Fitur</a><a href="./dukungan.html" data-i18n="footer.support">Dukungan</a>
-      </span>
+    <footer>
+    <div class="wrap footGrid">
+      <div class="footCol">
+        <span class="footBrand">Opera Agent</span>
+        <span class="footNote" data-i18n="footer.rights">© 2026 Opera Agent. Hak cipta dilindungi.</span>
+      </div>
+      <div class="footCol">
+        <h3 data-i18n="footer.product">Produk</h3>
+        <span class="doors">
+          <a href="./beranda.html" data-i18n="footer.home">Beranda</a>
+          <a href="./fitur.html" data-i18n="footer.features">Fitur</a>
+          <a href="./unduh.html" data-i18n="footer.download">Unduh</a>
+          <a href="./docs.html" data-i18n="footer.docs">Docs</a>
+        </span>
+      </div>
+      <div class="footCol">
+        <h3 data-i18n="footer.account">Akun</h3>
+        <span class="doors">
+          <a href="./index.html" data-i18n="footer.signin">Masuk</a>
+          <a href="./akun.html" data-i18n="footer.account">Akun</a>
+          <a href="./dashboard.html">Dashboard</a>
+        </span>
+      </div>
+      <div class="footCol">
+        <h3 data-i18n="footer.legal">Legal</h3>
+        <span class="doors">
+          <a href="./privasi.html" data-i18n="footer.privacy">Privasi</a>
+          <a href="./syarat.html" data-i18n="footer.terms">Syarat</a>
+          <a href="./dukungan.html" data-i18n="footer.support">Dukungan</a>
+        </span>
+      </div>
     </div>
   </footer>
 
   <script type="application/json" id="i18n-dict">
   {
     "en": {
+      "footer.legal": "Legal",
+      "footer.docs": "Docs",
+      "footer.download": "Download",
+      "footer.product": "Product",
       "nav.download": "Download",
       "nav.signin": "Sign in",
       "nav.features": "Features",
@@ -130,6 +163,8 @@
       "s4.body": "A one-time code binds a new device to your account for ten minutes. Manage it in the <a href=\"./dashboard.html\">Dashboard</a>.",
       "s5.title": "Read pages without exploits",
       "s5.body": "Passwords, one-time codes, tokens, and payment fields are always refused.",
+      "s6.title": "MCP for any harness",
+      "s6.body": "OpenCode, Kilo Code, and Claude Code share one endpoint. <a href=\"./docs.html\">Docs</a>.",
       "perm.title": "The permissions we ask for",
       "perm.body": "No permission outside this list.",
       "final.title": "One extension. Your browser.",
@@ -147,5 +182,6 @@
   }
   </script>
   <script src="./i18n.js"></script>
+  <script src="/spotlight.js"></script>
 </body>
 </html>

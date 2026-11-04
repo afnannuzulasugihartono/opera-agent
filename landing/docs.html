@@ -1,7 +1,7 @@
 <!-- @last-edited: 2026-11-04 UTC+7. -->
 <!-- @title: docs — the guide: install, pairing, the first job, the wallet, MCP, and the limits the product keeps. -->
 <!-- @state: static page; every number on it is read from the code by tests/landing-docs.test.mjs. -->
-<!-- @dependencies: site.css, i18n.js. -->
+<!-- @dependencies: site.css, docs.css, i18n.js, docs.js. -->
 
 <!doctype html>
 <html lang="id">
@@ -12,6 +12,7 @@
   <title>Docs — Opera Agent</title>
   <meta name="description" content="Panduan Opera Agent: pasang extension, pair device, jalankan tugas pertama, isi saldo, hubungkan AI harness lewat MCP, dan batas yang dijaga." />
   <link rel="stylesheet" href="/site.css" />
+  <link rel="stylesheet" href="/docs.css" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%230b0d10'/%3E%3Cpath d='M5.2 2.2v10.2l2.5-2.3 1.5 3.6 1.9-.8-1.6-3.6h3.1L5.2 2.2Z' fill='%233ecf8e'/%3E%3C/svg%3E" />
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="Opera Agent" />
@@ -36,61 +37,78 @@
     </div>
   </header>
 
-  <main class="wrap prose">
-    <p class="lang-note">Halaman ini tersedia dalam Bahasa Indonesia. / This page is available in Indonesian.</p>
-    <h1>Docs</h1>
-    <p class="updated">Pasang, pair, jalankan, hubungkan.</p>
-    <ul class="toc" aria-label="Di halaman ini">
-      <li><a href="#pasang">Pasang extension</a></li>
-      <li><a href="#pairing">Masuk dan pair device</a></li>
-      <li><a href="#tugas">Tugas pertama</a></li>
-      <li><a href="#saldo">Saldo dan tagihan</a></li>
-      <li><a href="#mcp">Hubungkan AI harness</a></li>
-      <li><a href="#batas">Batas yang dijaga</a></li>
-    </ul>
+  <main class="wrap">
+    <div class="docLayout">
+      <nav class="docNav" aria-label="Bagian docs">
+        <label class="docSearch">
+          <input type="search" id="docSearch" placeholder="Cari bagian…" autocomplete="off" aria-label="Cari bagian" />
+        </label>
+        <ul class="toc" aria-label="Di halaman ini">
+          <li><a href="#pasang">Pasang extension</a></li>
+          <li><a href="#pairing">Masuk dan pair device</a></li>
+          <li><a href="#tugas">Tugas pertama</a></li>
+          <li><a href="#saldo">Saldo dan tagihan</a></li>
+          <li><a href="#mcp">Hubungkan AI harness</a></li>
+          <li><a href="#batas">Batas yang dijaga</a></li>
+        </ul>
+      </nav>
 
-    <h2 id="pasang">Pasang extension</h2>
-    <ol class="steps">
-      <li><strong>Unduh.</strong> Ambil arsip <code>.zip</code> dari halaman <a href="./unduh.html">Unduh</a>.</li>
-      <li><strong>Ekstrak.</strong> Ke folder yang tidak akan kamu rapikan lagi, misalnya <code>C:\OperaAgent\</code>.</li>
-      <li><strong>Muat.</strong> Buka <code>chrome://extensions</code> (Edge: <code>edge://extensions</code>, Brave: <code>brave://extensions</code>, Opera: <code>opera://extensions</code>), nyalakan Mode Pengembang, lalu muat folder tadi.</li>
-      <li><strong>Periksa.</strong> Opera Agent muncul di daftar extension.</li>
-    </ol>
-    <p>Mesin yang dikelola perusahaan memasang <code>.crx</code> bertanda tangan lewat <code>chrome://policy</code>. Firefox tidak didukung: tidak ada izin <code>debugger</code> di sana.</p>
-    <p>Pemasangan tidak dipungut biaya. Yang dibayar nanti adalah setiap pekerjaan yang selesai.</p>
+      <article class="prose docBody">
+        <p class="lang-note">Halaman ini tersedia dalam Bahasa Indonesia. / This page is available in Indonesian.</p>
+        <h1>Docs</h1>
+        <p class="updated">Pasang, pair, jalankan, hubungkan.</p>
 
-    <h2 id="pairing">Masuk dan pair device</h2>
-    <p>Masuk dengan magic link email, Google, atau GitHub dari halaman <a href="/">Masuk</a>.</p>
-    <ol class="steps">
-      <li><strong>Buat kode.</strong> Di <a href="./dashboard.html">Dashboard</a>, buka Pairing dan buat kode sekali pakai.</li>
-      <li><strong>Tempel.</strong> Kode berlaku sepuluh menit dan hanya dipakai sekali.</li>
-      <li><strong>Periksa.</strong> Device muncul di daftar dengan status daring.</li>
-    </ol>
-    <p>Device yang tidak dikenali bisa dicabut kapan saja di Dashboard.</p>
+        <section>
+          <h2 id="pasang">Pasang extension</h2>
+          <ol class="steps">
+            <li><strong>Unduh.</strong> Ambil arsip <code>.zip</code> dari halaman <a href="./unduh.html">Unduh</a>.</li>
+            <li><strong>Ekstrak.</strong> Ke folder yang tidak akan kamu rapikan lagi, misalnya <code>C:\OperaAgent\</code>.</li>
+            <li><strong>Muat.</strong> Buka <code>chrome://extensions</code> (Edge: <code>edge://extensions</code>, Brave: <code>brave://extensions</code>, Opera: <code>opera://extensions</code>), nyalakan Mode Pengembang, lalu muat folder tadi.</li>
+            <li><strong>Periksa.</strong> Opera Agent muncul di daftar extension.</li>
+          </ol>
+          <p>Mesin yang dikelola perusahaan memasang <code>.crx</code> bertanda tangan lewat <code>chrome://policy</code>. Firefox tidak didukung: tidak ada izin <code>debugger</code> di sana.</p>
+          <p>Pemasangan tidak dipungut biaya. Yang dibayar nanti adalah setiap pekerjaan yang selesai.</p>
+        </section>
 
-    <h2 id="tugas">Tugas pertama</h2>
-    <p>Anda bicara, browser bekerja, hasilnya menjadi artefak nyata. Contoh: <em>Buka Google Maps, cari kopi dekat Monas, dan tulis hasilnya ke sheet.</em></p>
-    <ul>
-      <li>Satu pekerjaan berarti satu hasil: satu halaman, satu laporan, atau satu daftar.</li>
-      <li>Jumlah aksinya dibatasi. Perkiraan yang lebih besar ditolak di depan dengan tawaran dipecah, bukan gagal di tengah. Batas dan harganya ada di halaman <a href="/harga">Harga</a>.</li>
-      <li>Konten halaman hanya pergi ke endpoint model Anda; kunci API tersimpan di browser ini.</li>
-    </ul>
+        <section>
+          <h2 id="pairing">Masuk dan pair device</h2>
+          <p>Masuk dengan magic link email, Google, atau GitHub dari halaman <a href="/">Masuk</a>.</p>
+          <ol class="steps">
+            <li><strong>Buat kode.</strong> Di <a href="./dashboard.html">Dashboard</a>, buka Pairing dan buat kode sekali pakai.</li>
+            <li><strong>Tempel.</strong> Kode berlaku sepuluh menit dan hanya dipakai sekali.</li>
+            <li><strong>Periksa.</strong> Device muncul di daftar dengan status daring.</li>
+          </ol>
+          <p>Device yang tidak dikenali bisa dicabut kapan saja di Dashboard.</p>
+        </section>
 
-    <h2 id="saldo">Saldo dan tagihan</h2>
-    <p>Isi saldo lewat QRIS dari Dashboard, tanpa langganan. Saldo yang kurang membuat pekerjaan ditolak sebelum mulai, dengan tautan isi ulang. Harga tetap, pengembalian, dan masa berlaku saldo ada di halaman <a href="/harga">Harga</a>.</p>
+        <section>
+          <h2 id="tugas">Tugas pertama</h2>
+          <p>Anda bicara, browser bekerja, hasilnya menjadi artefak nyata. Contoh: <em>Buka Google Maps, cari kopi dekat Monas, dan tulis hasilnya ke sheet.</em></p>
+          <ul>
+            <li>Satu pekerjaan berarti satu hasil: satu halaman, satu laporan, atau satu daftar.</li>
+            <li>Jumlah aksinya dibatasi. Perkiraan yang lebih besar ditolak di depan dengan tawaran dipecah, bukan gagal di tengah. Batas dan harganya ada di halaman <a href="/harga">Harga</a>.</li>
+            <li>Konten halaman hanya pergi ke endpoint model Anda; kunci API tersimpan di browser ini.</li>
+          </ul>
+        </section>
 
-    <h2 id="mcp">Hubungkan AI harness</h2>
-    <p>Server MCP untuk OpenCode, Kilo Code, Claude Code, dan konektor lain. Masuk dengan akun Anda (OAuth).</p>
-    <p>Server MCP:</p>
-    <div class="copybox">
-      <pre><code id="mcp-url">https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp</code></pre>
-      <button type="button" data-copy="mcp-url" data-i18n="copy">Salin</button>
-    </div>
+        <section>
+          <h2 id="saldo">Saldo dan tagihan</h2>
+          <p>Isi saldo lewat QRIS dari Dashboard, tanpa langganan. Saldo yang kurang membuat pekerjaan ditolak sebelum mulai, dengan tautan isi ulang. Harga tetap, pengembalian, dan masa berlaku saldo ada di halaman <a href="/harga">Harga</a>.</p>
+        </section>
 
-    <h3>OpenCode</h3>
-    <p>Tambah ke <code>opencode.json</code>, ganti <code>opera</code> dengan nama device Anda:</p>
-    <div class="copybox">
-      <pre><code id="cfg-opencode">{
+        <section>
+          <h2 id="mcp">Hubungkan AI harness</h2>
+          <p>Server MCP untuk OpenCode, Kilo Code, Claude Code, dan konektor lain. Masuk dengan akun Anda (OAuth).</p>
+          <p>Server MCP:</p>
+          <div class="copybox">
+            <pre><code id="mcp-url">https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp</code></pre>
+            <button type="button" data-copy="mcp-url" data-i18n="copy">Salin</button>
+          </div>
+
+          <h3>OpenCode</h3>
+          <p>Tambah ke <code>opencode.json</code>, ganti <code>opera</code> dengan nama device Anda:</p>
+          <div class="copybox">
+            <pre><code id="cfg-opencode">{
   "mcp": {
     "opera-agent": {
       "type": "remote",
@@ -104,13 +122,13 @@
     }
   }
 }</code></pre>
-      <button type="button" data-copy="cfg-opencode" data-i18n="copy">Salin</button>
-    </div>
+            <button type="button" data-copy="cfg-opencode" data-i18n="copy">Salin</button>
+          </div>
 
-    <h3>Kilo Code</h3>
-    <p>Tambah ke MCP settings (JSON), ganti <code>opera</code> dengan nama device Anda:</p>
-    <div class="copybox">
-      <pre><code id="cfg-kilo">{
+          <h3>Kilo Code</h3>
+          <p>Tambah ke MCP settings (JSON), ganti <code>opera</code> dengan nama device Anda:</p>
+          <div class="copybox">
+            <pre><code id="cfg-kilo">{
   "mcpServers": {
     "opera-agent": {
       "url": "https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp",
@@ -122,44 +140,78 @@
     }
   }
 }</code></pre>
-      <button type="button" data-copy="cfg-kilo" data-i18n="copy">Salin</button>
+            <button type="button" data-copy="cfg-kilo" data-i18n="copy">Salin</button>
+          </div>
+
+          <h3>Claude Code</h3>
+          <p>Di terminal, ganti <code>opera</code> dengan nama device Anda:</p>
+          <div class="copybox">
+            <pre><code id="cfg-claude">claude mcp add --transport http opera-agent https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp --header "X-Opera-Device: opera" --header "X-Opera-Provider: claude" --header "x-region: ap-southeast-1"</code></pre>
+            <button type="button" data-copy="cfg-claude" data-i18n="copy">Salin</button>
+          </div>
+
+          <p>Server itu menambah 34 tool di atas 31 primitive browser.</p>
+
+          <h3>ChatGPT dan konektor lain</h3>
+          <p>Cukup URL server di atas plus OAuth. Server memakai device pertama milik akun Anda dan menebak provider-nya. Untuk device lain, pair ulang.</p>
+          <p>Setelah terpasang: buka pengaturan konektor, pilih <strong>Allow all tools</strong>, lalu refresh atau buka chat baru. Daftar tool baru muncul sesudah itu — itu perilaku ChatGPT, bukan error koneksi.</p>
+        </section>
+
+        <section>
+          <h2 id="batas">Batas yang dijaga</h2>
+          <ul>
+            <li>Password, kode sekali pakai, PIN, kartu, dan CVV selalu ditolak. Pekerjaan yang berhenti di situ gagal.</li>
+            <li>Tab private: screenshot ditolak. Tab non-http(s): primitive menolak.</li>
+            <li>Enam izin: <code>tabs</code>, <code>scripting</code>, <code>storage</code>, <code>alarms</code>, <code>debugger</code>, <code>downloads</code>. Satu alasan untuk tiap izin ada di halaman <a href="./unduh.html">Unduh</a>.</li>
+            <li>Yang masuk ke server untuk penagihan hanya: id reservasi, jenis tugas, status, dan hash artefak. Isi halaman tidak pernah ikut.</li>
+          </ul>
+          <p>Macet? Halaman <a href="./dukungan.html">Dukungan</a> punya langkah yang bisa diikuti.</p>
+        </section>
+      </article>
     </div>
-
-    <h3>Claude Code</h3>
-    <p>Di terminal, ganti <code>opera</code> dengan nama device Anda:</p>
-    <div class="copybox">
-      <pre><code id="cfg-claude">claude mcp add --transport http opera-agent https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp --header "X-Opera-Device: opera" --header "X-Opera-Provider: claude" --header "x-region: ap-southeast-1"</code></pre>
-      <button type="button" data-copy="cfg-claude" data-i18n="copy">Salin</button>
-    </div>
-
-    <p>Server itu menambah 34 tool di atas 31 primitive browser.</p>
-
-    <h3>ChatGPT dan konektor lain</h3>
-    <p>Cukup URL server di atas plus OAuth. Server memakai device pertama milik akun Anda dan menebak provider-nya. Untuk device lain, pair ulang.</p>
-    <p>Setelah terpasang: buka pengaturan konektor, pilih <strong>Allow all tools</strong>, lalu refresh atau buka chat baru. Daftar tool baru muncul sesudah itu — itu perilaku ChatGPT, bukan error koneksi.</p>
-
-    <h2 id="batas">Batas yang dijaga</h2>
-    <ul>
-      <li>Password, kode sekali pakai, PIN, kartu, dan CVV selalu ditolak. Pekerjaan yang berhenti di situ gagal.</li>
-      <li>Tab private: screenshot ditolak. Tab non-http(s): primitive menolak.</li>
-      <li>Enam izin: <code>tabs</code>, <code>scripting</code>, <code>storage</code>, <code>alarms</code>, <code>debugger</code>, <code>downloads</code>. Satu alasan untuk tiap izin ada di halaman <a href="./unduh.html">Unduh</a>.</li>
-      <li>Yang masuk ke server untuk penagihan hanya: id reservasi, jenis tugas, status, dan hash artefak. Isi halaman tidak pernah ikut.</li>
-    </ul>
-    <p>Macet? Halaman <a href="./dukungan.html">Dukungan</a> punya langkah yang bisa diikuti.</p>
   </main>
 
-  <footer>
-    <div class="wrap cols">
-      <span data-i18n="footer.rights">&copy; 2026 Opera Agent. Hak cipta dilindungi.</span>
-      <span class="doors">
-        <a href="./beranda.html" data-i18n="footer.home">Beranda</a><a href="./privasi.html" data-i18n="footer.privacy">Privasi</a><a href="./syarat.html" data-i18n="footer.terms">Syarat</a><a href="./index.html" data-i18n="footer.signin">Masuk</a><a href="./akun.html" data-i18n="footer.account">Akun</a><a href="./dashboard.html">Dashboard</a><a href="./fitur.html" data-i18n="footer.features">Fitur</a><a href="./dukungan.html" data-i18n="footer.support">Dukungan</a>
-      </span>
+    <footer>
+    <div class="wrap footGrid">
+      <div class="footCol">
+        <span class="footBrand">Opera Agent</span>
+        <span class="footNote" data-i18n="footer.rights">© 2026 Opera Agent. Hak cipta dilindungi.</span>
+      </div>
+      <div class="footCol">
+        <h3 data-i18n="footer.product">Produk</h3>
+        <span class="doors">
+          <a href="./beranda.html" data-i18n="footer.home">Beranda</a>
+          <a href="./fitur.html" data-i18n="footer.features">Fitur</a>
+          <a href="./unduh.html" data-i18n="footer.download">Unduh</a>
+          <a href="./docs.html" data-i18n="footer.docs">Docs</a>
+        </span>
+      </div>
+      <div class="footCol">
+        <h3 data-i18n="footer.account">Akun</h3>
+        <span class="doors">
+          <a href="./index.html" data-i18n="footer.signin">Masuk</a>
+          <a href="./akun.html" data-i18n="footer.account">Akun</a>
+          <a href="./dashboard.html">Dashboard</a>
+        </span>
+      </div>
+      <div class="footCol">
+        <h3 data-i18n="footer.legal">Legal</h3>
+        <span class="doors">
+          <a href="./privasi.html" data-i18n="footer.privacy">Privasi</a>
+          <a href="./syarat.html" data-i18n="footer.terms">Syarat</a>
+          <a href="./dukungan.html" data-i18n="footer.support">Dukungan</a>
+        </span>
+      </div>
     </div>
   </footer>
 
   <script type="application/json" id="i18n-dict">
   {
     "en": {
+      "footer.legal": "Legal",
+      "footer.docs": "Docs",
+      "footer.download": "Download",
+      "footer.product": "Product",
       "nav.download": "Download",
       "nav.signin": "Sign in",
       "nav.features": "Features",
@@ -179,6 +231,7 @@
   }
   </script>
   <script src="./i18n.js"></script>
+  <script src="/docs.js"></script>
   <script type="module">
     for (const button of document.querySelectorAll('[data-copy]')) {
       button.addEventListener('click', async () => {

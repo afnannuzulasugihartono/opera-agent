@@ -285,14 +285,25 @@ test('the home hero speaks in one column, and the questions answer in place', ()
   assert.doesNotMatch(html, /<dl class="facts faq">/, 'and the old flat list is gone');
 });
 
-test('the features read as one numbered column, not as cards', () => {
+test('the features read as a bento grid, and the light follows the pointer', () => {
+  // WHY THE GRID REPLACED THE NUMBERED COLUMN: measured against firecrawl.dev on 2026-11-04, its abilities stand in a bento grid whose cards answer the pointer, and a reference column of five rows reads like a table of contents instead of a product.
   const html = read('fitur.html');
-  assert.match(html, /<section class="featureList"/, 'the abilities stand in a list');
-  assert.equal((html.match(/<article class="featureRow">/g) || []).length, 5, 'five of them');
-  assert.doesNotMatch(html, /featureCard/, 'and no card survives');
+  assert.match(html, /<section class="bento"/, 'the abilities stand in a grid');
+  assert.ok((html.match(/class="bentoArticle"/g) || []).length >= 5, 'five of them');
+  assert.doesNotMatch(html, /featureRow/, 'and the numbered row is gone');
   const css = cssOf('fitur.html');
-  assert.match(css, /\.featureRow \{[^}]*grid-template-columns: minmax\(0, \.8fr\) minmax\(0, 1\.2fr\)/s, 'a title beside its body');
-  assert.match(css, /\.featureList \{[^}]*border-top: 1px solid var\(--line\)/s, 'and a line between each');
+  assert.match(css, /\.bentoArticle \{[^}]*--mx/s, 'a card reads the pointer');
+  assert.match(html, /src="\/spotlight\.js"/, 'and one shared script feeds every grid');
+});
+
+test('the shared spotlight script only paints what the pointer names', () => {
+  const src = read('spotlight.js');
+  assert.match(src, /pointermove/, 'it listens to the pointer');
+  assert.match(src, /--mx/, 'and writes the two numbers the card paints');
+  assert.doesNotMatch(src, /innerHTML|eval\(/, 'and it writes no markup and runs no code');
+  for (const page of ['beranda.html', 'fitur.html']) {
+    assert.match(read(page), /<script src="\/spotlight\.js"[^>]*><\/script>/, `${page} loads it from the site, not inline`);
+  }
 });
 
 test('a disclosure opens smoothly, and instantly where it cannot', () => {
@@ -419,11 +430,11 @@ test('the strip of pages our users open moves once and stops when asked', () => 
 
 test('the capability cards answer the pointer', () => {
   const html = read('beranda.html');
-  const css = read('beranda.css');
+  const css = read('site.css');
   assert.match(html, /class="bento"/, 'the home carries a bento grid');
   assert.ok((html.match(/class="bentoArticle"/g) || []).length >= 4, 'at least four cards');
   assert.match(css, /\.bentoArticle \{[^}]*--mx/s, 'the card reads the pointer');
-  assert.match(html, /pointermove/, 'and the page feeds it');
+  assert.match(read('spotlight.js'), /pointermove/, 'and the shared script feeds it');
 });
 
 test('the numbers count up once, when they arrive', () => {
@@ -440,7 +451,7 @@ test('a hover answers within 120ms, and only the strip and the cursor move on th
   const loops = [...read('beranda.css').matchAll(/([^{}]+)\{([^}]*animation[^}]*)\}/g)]
     .filter((match) => /infinite/.test(match[2]))
     .map((match) => match[1].trim());
-  assert.ok(loops.every((selector) => /\.marqueeTrack|\.cursor/.test(selector)), `only the strip and the cursor loop, and ${loops.length} do`);
+  assert.ok(loops.every((selector) => /\.marqueeTrack|\.cursor|\.mockTop \.dot/.test(selector)), `only the strip, the cursor and the live dot loop, and ${loops.length} do`);
   assert.doesNotMatch(read('features.css') + read('download.css'), /animation-iteration-count:\s*infinite/, 'the other pages keep their calm');
 });
 

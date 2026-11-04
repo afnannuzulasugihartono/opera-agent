@@ -251,6 +251,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .demoPanel { animation: none; }
+  .mockTop .dot::after { animation: none; }
 }
 
 .mockTop {
@@ -263,8 +264,31 @@
 }
 
 .mockTop .dot {
+  position: relative;
+  width: 8px;
+  height: 8px;
   background: var(--brand);
   box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+/*
+ * WHY THE LIVE DOT CARRIES A RING: measured against firecrawl.dev on 2026-11-04, its page breathes on its own, and a site that only answers a hover feels dead on arrival.
+ * The ring turns once every half minute, so it reads as a device that is alive rather than as motion that wants attention.
+ * It is one border and one transform, and it bows out when the reader asks for stillness.
+ */
+
+.mockTop .dot::after {
+  content: "";
+  position: absolute;
+  inset: -5px;
+  border: 1px solid var(--accent-soft);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin-slow 32s linear infinite;
+}
+
+@keyframes spin-slow {
+  to { transform: rotate(360deg); }
 }
 
 .mockTop strong {
@@ -446,55 +470,6 @@
 
 @media (prefers-reduced-motion: reduce) {
   .marqueeTrack { animation: none; }
-}
-
-/* ── bento ──────────────────────────────────────────────────────────────── */
-
-/*
- * WHY the cards follow the pointer: the grid is the product list, and a light under the cursor tells the reader which card is live before they click it.
- * The light is painted with a gradient at --mx and --my, so the page writes two numbers per move instead of moving a node.
- */
-
-.bento {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
-}
-
-.bentoArticle {
-  --mx: 50%;
-  --my: 50%;
-  position: relative;
-  padding: 26px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background:
-    radial-gradient(320px circle at var(--mx) var(--my), var(--accent-soft), transparent 62%),
-    var(--surface);
-  transition: border-color .16s var(--ease), transform .16s var(--ease);
-}
-
-.bentoArticle:hover {
-  border-color: var(--line-strong);
-  transform: translateY(-2px);
-}
-
-.bentoArticle h3 {
-  margin: 0 0 8px;
-  font-size: 16px;
-}
-
-.bentoArticle p {
-  margin: 0;
-  color: var(--muted);
-  font-size: 14px;
-  line-height: 1.55;
-}
-
-@media (max-width: 640px) {
-  .bento {
-    grid-template-columns: 1fr;
-  }
 }
 
 /* ── sections ───────────────────────────────────────────────────────────── */

@@ -51,6 +51,56 @@ test('the docs page leaves the money to the price page, and the code proves that
   assert.match(price, /dikembalikan penuh/, 'a failed job is refunded in full, on the price page');
 });
 
+test('the price page shows its ways to buy as cards and its facts in one glance', () => {
+  // WHY THE CARDS: measured against firecrawl.dev/pricing on 2026-11-04, the reader sees the choices as cards and the rules as a single glance list.
+  // A reader who only skims still learns how to buy, and a reader who wants the rules finds every number in one list.
+  const html = read('landing/harga.html');
+  assert.ok((html.match(/class="priceCard"/g) || []).length >= 3, 'the ways to buy stand as cards');
+  assert.match(html, /class="glance"/, 'the facts stand in one glance list');
+  assert.match(html, /<dl class="glance"/, 'and the glance list is a definition list');
+  const sheet = read('landing/harga.css');
+  assert.match(sheet, /\.priceCards \{[^}]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\)/s, 'three cards on a wide screen');
+  assert.match(sheet, /@media \(max-width: 860px\)[\s\S]*?\.priceCards \{[^}]*grid-template-columns: 1fr/s, 'and one column on a phone');
+});
+
+test('the docs page reads like a manual: a sidebar, a search box, and the text', () => {
+  // WHY THE SIDEBAR: measured against docs.firecrawl.dev on 2026-11-04, the guide stands in a left column of sections beside the text, and a search box answers a question without scrolling.
+  const html = read('landing/docs.html');
+  assert.match(html, /<nav class="docNav"/, 'the guide has a section column');
+  assert.match(html, /class="docSearch"/, 'and a search box');
+  assert.match(html, /src="\/docs\.js"/, 'and the search runs from a shared file, not inline');
+  const sheet = read('landing/docs.css');
+  assert.match(sheet, /\.docNav \{[^}]*position: sticky/s, 'the column stays while the text scrolls');
+});
+
+test('the footer maps the site in columns, not in one long row', () => {
+  for (const page of ['beranda.html', 'fitur.html', 'harga.html', 'docs.html', 'unduh.html', 'dukungan.html', 'privasi.html', 'syarat.html', '404.html', 'index.html', 'unduh-berkas.html']) {
+    const html = read(`landing/${page}`);
+    assert.match(html, /<footer>[\s\S]*?class="[^"]*\bfootGrid\b/, `${page} carries the column footer`);
+    assert.ok((html.match(/class="footCol"/g) || []).length >= 3, `${page} groups its doors into columns`);
+  }
+  const css = read('landing/site.css');
+  assert.match(css, /\.footGrid \{[^}]*display: grid/s, 'the footer is a grid');
+  assert.match(css, /\.footGrid \{[^}]*grid-template-columns: repeat\(\d+, minmax\(0, 1fr\)\)/s, 'with columns that share the width');
+});
+
+test('the guide keeps its code inside the phone screen', () => {
+  // WHY THIS LOCK: measured at 390px on 2026-11-04, the guide's grid track took its width from the longest JSON line and the page scrolled 1237px sideways.
+  // A track of minmax(0, 1fr) cannot grow past the screen, so the code block scrolls inside its own box.
+  const sheet = read('landing/docs.css');
+  assert.match(sheet, /@media \(max-width: 900px\)[\s\S]*?\.docLayout \{[^}]*grid-template-columns: minmax\(0, 1fr\)/s, 'the phone track cannot grow past the screen');
+  assert.match(read('landing/site.css'), /pre \{[^}]*overflow-x: auto/s, 'and a long line scrolls inside its own box');
+});
+
+test('the ambient motion breathes slowly, and bows out when the reader asks', () => {
+  // WHY THE AMBIENT LOOP: firecrawl.dev breathes with slow loops on 2026-11-04, and a site that only answers a hover feels dead on arrival.
+  // The loop is slow enough to read as light rather than movement, and reduced motion stops it dead.
+  const css = read('landing/beranda.css');
+  assert.match(css, /@keyframes spin-slow/, 'the hero carries a slow spin');
+  assert.match(css, /animation: spin-slow 32s linear infinite/, 'and it turns once every half minute');
+  assert.match(css, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?animation: none/s, 'and it stops when the reader asks');
+});
+
 test('the docs page links to the doors a reader needs', () => {
   const html = read('landing/docs.html');
   for (const href of ['./unduh.html', './dashboard.html', '/harga', './dukungan.html']) {

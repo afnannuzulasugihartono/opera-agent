@@ -1,0 +1,87 @@
+/*
+ * @last-edited: 2026-11-04 UTC+7.
+ * @title: harga.css — the price page: three cards for the ways to buy, and one list for the facts.
+ * @state: a three-column card row over a two-column fact list, both collapsing to one column on a phone.
+ * @dependencies: site.css.
+ *
+ * WHY a page sheet: the cards and the glance list belong to this page alone; the shell, the buttons and the tokens come from site.css.
+ */
+
+.priceCards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin: 0 0 34px;
+}
+
+.priceCard {
+  padding: 24px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  transition: border-color .16s var(--ease), transform .16s var(--ease);
+}
+
+.priceCard:hover {
+  border-color: var(--line-strong);
+  transform: translateY(-2px);
+}
+
+.priceCard h2 {
+  margin: 0 0 8px;
+  font-size: 16px;
+  letter-spacing: -.02em;
+}
+
+.priceCard p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.priceCard strong {
+  color: var(--ink);
+  font-family: var(--mono);
+  font-weight: 500;
+}
+
+/* ── the glance list ─────────────────────────────────────────────────────── */
+
+.glance {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 36px;
+  margin: 0 0 40px;
+  padding: 6px 24px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.glance > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 13px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.glance dt {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.glance dd {
+  margin: 0;
+  color: var(--ink);
+  font-family: var(--mono);
+  font-size: 14px;
+  text-align: right;
+}
+
+@media (max-width: 860px) {
+  .priceCards { grid-template-columns: 1fr; }
+  .glance { grid-template-columns: 1fr; }
+}
