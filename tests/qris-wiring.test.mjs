@@ -42,3 +42,14 @@ test('the invoice page renders the QR only for an open invoice and only when giv
   assert.match(page, /status.*!== 'open'/, 'a paid invoice never carries a scannable code');
   assert.match(page, /the amount is already locked in the code/, 'the page says why the code is safe to scan');
 });
+
+test('the detector is operator-gated, dry by default, and credits the wallet when it closes', () => {
+  assert.match(fn, /QRIS_DETECTOR_MODE.*\|\| "dry"/, 'an unset mode must never close an invoice');
+  const detect = fn.slice(fn.indexOf('body.action === "qris-detect"'));
+  const gate = detect.indexOf('token !== `Bearer ${BILLING_TOKEN}`');
+  const call = detect.indexOf('runQrisDetect()');
+  assert.ok(gate > 0 && call > gate, 'the operator token is checked before the detector runs');
+  assert.match(fn, /\.is\("paid_at", null\)/, 'a feed close is guarded against a second close');
+  assert.match(fn, /await creditTopUp\(closed\)/, 'a feed-paid top-up credits the wallet on the same path as a notification');
+  assert.match(fn, /grant_type.*refresh_token/, 'a 401 from the feed triggers one refresh retry');
+});
