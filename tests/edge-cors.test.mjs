@@ -18,8 +18,7 @@ test('default origins are exactly the extension and the site', () => {
   assert.deepEqual(CORS_DEFAULT_ORIGINS, [
     'chrome-extension://ofgemipoobcnbjkfanmofjbdonjapmgl',
     'chrome-extension://ohbbpamcljckmjhcpkcmefdobkoeaick',
-    'https://opera-agent.pages.dev',
-    'https://opera-agent.vercel.app'
+    'https://opera-agent.pages.dev'
   ]);
 });
 
@@ -30,7 +29,6 @@ test('exact allowlisted origin is echoed', () => {
 
 test('lookalike evil origin is rejected', () => {
   assert.equal(resolveAllowedOrigin(req('https://opera-agent.pages.dev.evil.com')), null);
-  assert.equal(resolveAllowedOrigin(req('https://opera-agent.vercel.app.evil.com')), null);
   assert.equal(resolveAllowedOrigin(req('https://evil.com')), null);
 });
 

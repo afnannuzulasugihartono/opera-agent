@@ -4,13 +4,12 @@
 // @dependencies: none.
 
 // WHY both extension ids: the CRX signing key produced a new one, so an install that has not been replaced yet still presents the old id and would be refused if only the new one were listed.
-// WHY both site origins: the Cloudflare host is the product's front door and the Vercel one stays while installs in the wild still point at it, so neither origin is refused mid-migration.
+// WHY one site origin: Cloudflare Pages at opera-agent.pages.dev is the product's front door, and there is no second host to keep answering while installs migrate — the migration already happened when the backup died.
 
 const FALLBACK_ORIGINS = Object.freeze([
   'chrome-extension://ofgemipoobcnbjkfanmofjbdonjapmgl',
   'chrome-extension://ohbbpamcljckmjhcpkcmefdobkoeaick',
-  'https://opera-agent.pages.dev',
-  'https://opera-agent.vercel.app'
+  'https://opera-agent.pages.dev'
 ]);
 
 export const CORS_DEFAULT_ORIGINS = FALLBACK_ORIGINS;

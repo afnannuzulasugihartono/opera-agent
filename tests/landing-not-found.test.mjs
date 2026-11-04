@@ -11,7 +11,6 @@ const root = new URL('..', import.meta.url);
 const html = fs.readFileSync(new URL('landing/404.html', root), 'utf8');
 
 test('a wrong path lands on the site instead of a host error page', () => {
-  // WHY THERE IS NO REWRITE TO PIN: Cloudflare Pages serves landing/404.html for unknown paths by convention, so the claim lives on the file existing and on _headers covering only real paths.
   assert.ok(fs.existsSync(new URL('landing/404.html', root)), 'the 404 page ships');
   const paths = fs.readFileSync(new URL('landing/_headers', root), 'utf8')
     .split('\n')

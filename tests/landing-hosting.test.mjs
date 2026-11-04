@@ -40,6 +40,10 @@ test('no part of the repo still points at the retired host', () => {
   assert.doesNotMatch(body, /read\(['"]landing\/vercel\.json['"]\)|landing\/\.vercelignore/, 'no test body reads the retired files');
   assert.ok(!fs.existsSync(new URL('../landing/vercel.json', import.meta.url)), 'vercel.json is gone');
   assert.ok(!fs.existsSync(new URL('../landing/.vercelignore', import.meta.url)), '.vercelignore is gone');
+  for (const file of ['supabase/config.toml', 'supabase/functions/_shared/cors.js', 'docs/handoff.md']) {
+    const text = fs.readFileSync(new URL(`../${file}`, import.meta.url), 'utf8');
+    assert.doesNotMatch(text, /vercel\.app/, `${file} names no dead host`);
+  }
 });
 
 test('same-structure paths carry the same headers, because there is no second file to compare against', () => {
@@ -206,13 +210,15 @@ test('one ignore file decides the upload, so no page exists on only one host', (
   }
 });
 
+// WHY THE RETIRED-HOST PIN LIVES IN TASK 6, NOT INSIDE THE DEPLOY TEST: docs/handoff.md still names Vercel as the backup until the docs rewrite lands; asserting its absence inside this test would fail on a sentence the plan deletes next.
+// The pin itself sits at the top of this file, in the 'no part of the repo' test.
+
 test('the deploy invocation is written down where it will be found', () => {
 
   const handoff = read('docs/handoff.md');
   assert.match(handoff, /wrangler pages deploy|Cloudflare Pages/i, 'the host that serves the site is named');
   assert.match(handoff, /publish-crx\.yml|deploy-site\.yml/, 'and the workflow that publishes it');
   assert.match(read('docs/security.md'), /wrangler pages deploy|deploy-site\.yml/, 'the invocation sits with the operator manual');
-  // WHY THE RETIRED HOST IS PINNED IN TASK 6, NOT HERE: docs/handoff.md still names Vercel as the backup until the docs rewrite lands; asserting its absence now would fail on a sentence the plan deletes next.
 });
 
 test('the edge is told not to hold a page, because Cache-Control alone does not', () => {
