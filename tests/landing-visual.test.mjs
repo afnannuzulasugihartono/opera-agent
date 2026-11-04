@@ -464,6 +464,16 @@ test('the reader always knows where they are', () => {
   }
 });
 
+test('the product mock wears a travelling light, and the reader can refuse it', () => {
+  // WHY THIS EXISTS: measured against firecrawl.dev on 2026-11-04, its product visual wears a slow rotating overlay, and a card that never moves reads as a picture of a product instead of a product at work.
+  // The light is one pixel of accent walking the frame once every half minute, so it reads as a light and not as motion.
+  const css = read('beranda.css');
+  assert.match(css, /@property --sweep/, 'the angle the light walks is a registered property, so it can turn');
+  assert.match(css, /\.demo::after \{[^}]*background: conic-gradient\(/s, 'the light is a gradient around the frame');
+  assert.match(css, /\.demo::after \{[^}]*animation: sweep 32s linear infinite/s, 'and it turns once every half minute');
+  assert.match(css, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.demo::after \{[^}]*animation: none/s, 'and it stops dead when the reader asks');
+});
+
 test('the capability cards answer the pointer', () => {
   const html = read('beranda.html');
   const css = read('site.css');
@@ -479,7 +489,10 @@ test('the numbers count up once, when they arrive', () => {
   assert.match(html, /prefers-reduced-motion/, 'and the reader can refuse it');
 });
 
-test('a hover answers within 120ms, and only the strip and the cursor move on their own', () => {
+// WHY THE SWEEP JOINS THE LIST: measured against firecrawl.dev on 2026-11-04, its product visual wears a slow rotating overlay, so the light walking the mock frame is the one new loop this goal buys.
+// The lock still holds on the thing that matters: a loop must be slow enough to read as light, and nothing else moves on its own.
+
+test('a hover answers within 120ms, and only the strip, the cursor, the live dot and the walking light move on their own', () => {
   const sheet = read('site.css');
   assert.match(sheet, /\.tile:hover \{[^}]*transform: translateY\(-1px\)/s, 'a tile lifts one pixel');
   assert.match(sheet, /\.exitList a:hover \{[^}]*color: var\(--accent\)/s, 'a link answers in the accent');
@@ -487,7 +500,13 @@ test('a hover answers within 120ms, and only the strip and the cursor move on th
   const loops = [...read('beranda.css').matchAll(/([^{}]+)\{([^}]*animation[^}]*)\}/g)]
     .filter((match) => /infinite/.test(match[2]))
     .map((match) => match[1].trim());
-  assert.ok(loops.every((selector) => /\.marqueeTrack|\.cursor|\.mockTop \.dot/.test(selector)), `only the strip, the cursor and the live dot loop, and ${loops.length} do`);
+  assert.ok(loops.every((selector) => /\.marqueeTrack|\.cursor|\.mockTop \.dot|\.demo::after/.test(selector)), `only the strip, the cursor, the live dot and the walking light loop, and ${loops.length} do`);
+  for (const match of read('beranda.css').matchAll(/([^{}]+)\{([^}]*animation[^}]*infinite[^}]*)\}/g)) {
+    const selector = match[1].trim();
+    if (/\.cursor/.test(selector)) continue;
+    const seconds = Number(/([\d.]+)s/.exec(match[2])?.[1] ?? 0);
+    assert.ok(seconds >= 30, `${selector} turns once every ${seconds}s, so it reads as light and not as motion`);
+  }
   assert.doesNotMatch(read('features.css') + read('download.css'), /animation-iteration-count:\s*infinite/, 'the other pages keep their calm');
 });
 

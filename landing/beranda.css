@@ -134,12 +134,44 @@
 /* WHY the blurred panel is gone: the audit listed it with the hero glow as the same brochure tell, and a mock that needs a halo to sit on the page is not carrying its own weight. */
 
 .demo {
+  position: relative;
   overflow: hidden;
   border: 1px solid var(--line);
   border-radius: 10px;
   background: var(--surface);
   color: var(--ink);
     font-family: var(--font);
+}
+
+/*
+ * WHY THE LIGHT WALKS THE FRAME: measured against firecrawl.dev on 2026-11-04, its product visual wears a slow rotating overlay, and a card that never moves reads as a picture of a product instead of a product at work.
+ * The light is one pixel of accent walking the border once every half minute, so it reads as a light and not as motion.
+ * The angle is a registered property, so the gradient turns smoothly instead of jumping once per second.
+ */
+
+@property --sweep {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+
+.demo::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: conic-gradient(from var(--sweep), transparent 0 300deg, var(--accent) 330deg, transparent 360deg);
+  -webkit-mask: linear-gradient(var(--bg) 0 0) content-box, linear-gradient(var(--bg) 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(var(--bg) 0 0) content-box, linear-gradient(var(--bg) 0 0);
+  mask-composite: exclude;
+  animation: sweep 32s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes sweep {
+  to { --sweep: 360deg; }
 }
 
 .demoBar {
@@ -252,6 +284,7 @@
 @media (prefers-reduced-motion: reduce) {
   .demoPanel { animation: none; }
   .mockTop .dot::after { animation: none; }
+  .demo::after { animation: none; }
 }
 
 .mockTop {
