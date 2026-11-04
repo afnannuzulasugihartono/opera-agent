@@ -117,9 +117,10 @@ test('the privacy section discloses the relay instead of denying it', () => {
 });
 
 test('the site has no build step and no external origin', () => {
-  const vercel = JSON.parse(fs.readFileSync(new URL('landing/vercel.json', root), 'utf8'));
-  const rootEntry = vercel.headers.find((h) => h.source === '/(.*)');
-  const csp = rootEntry.headers.find((h) => h.key === 'Content-Security-Policy').value;
+  const headers = fs.readFileSync(new URL('landing/_headers', root), 'utf8');
+  const block = headers.split('\n\n').find((b) => b.startsWith('/beranda\n'));
+  assert.ok(block, 'the marketing page carries its own policy block');
+  const csp = /^ {2}Content-Security-Policy: (.*)$/m.exec(block)[1];
   assert.match(csp, /connect-src 'none'/, 'the page must be forbidden from connecting anywhere');
   assert.doesNotMatch(html, /src="https?:/, 'no external script or stylesheet');
   assert.doesNotMatch(html, /<link[^>]+href="https?:/, 'no external stylesheet');

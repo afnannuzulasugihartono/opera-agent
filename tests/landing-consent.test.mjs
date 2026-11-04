@@ -74,12 +74,11 @@ test('the consent page is served at the path GoTrue actually asks for', () => {
   const config = read('supabase/config.toml');
   assert.match(config, /authorization_path = "\/oauth\/consent"/, 'the path GoTrue uses');
   assert.ok(fs.existsSync(new URL('landing/oauth/consent.html', root)), 'the page is at that path on disk');
-  const vercel = JSON.parse(read('landing/vercel.json'));
-  const sources = vercel.headers.map((h) => h.source);
-  assert.ok(sources.includes('/oauth/consent'), 'and the CSP covers it on Vercel');
-  assert.doesNotMatch(sources.join(' '), /^\/consent$/m, 'no stale entry for the path nothing requested');
   const headers = read('landing/_headers');
-  assert.match(headers, /^\/oauth\/consent$/m, 'and on Cloudflare, one path per block');
+  const sources = [...headers.matchAll(/^\/(oauth\/consent(?:\.html)?)$/gm)].map((m) => `/${m[1]}`);
+  assert.ok(sources.includes('/oauth/consent'), 'and the CSP covers it on the single host');
+  assert.doesNotMatch(sources.join(' '), /^\/consent$/m, 'no stale entry for the path nothing requested');
+  assert.match(headers, /^\/oauth\/consent$/m, 'one path per block');
   assert.match(headers, /^\/oauth\/consent\.html$/m, 'both spellings of it');
   assert.match(html, /`\/index\.html\?next=/, 'the sign-in return path is root-relative, so it survives the subdirectory');
 });

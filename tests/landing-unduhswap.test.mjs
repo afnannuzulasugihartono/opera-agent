@@ -87,15 +87,11 @@ test('the merged detection marks the matching card and phones nowhere', () => {
   assert.doesNotMatch(script, /XMLHttpRequest|sendBeacon|WebSocket/, 'reaches no other network either');
 });
 
-test('the merged script is named by a hash on both hosts', () => {
+test('the merged script is named by a hash on the one host', () => {
 
-  const vercel = JSON.parse(read('vercel.json'));
-  const csp = vercel.headers.find((h) => h.source === '/(.*)').headers
-    .find((h) => h.key === 'Content-Security-Policy').value;
   const headers = read('_headers');
   const body = /<script type="module">([\s\S]*?)<\/script>/.exec(berkas)[1];
   const hash = "'sha256-" + createHash('sha256').update(body, 'utf8').digest('base64') + "'";
-  assert.ok(csp.includes(hash), 'vercel names the unduh-berkas.html script');
   for (const path of ['/unduh-berkas.html', '/unduh-berkas']) {
     const block = headers.split('\n\n').find((b) => b.startsWith(`${path}\n`));
     assert.ok(block && block.includes(hash), `_headers names it for ${path}`);

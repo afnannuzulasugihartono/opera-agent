@@ -17,12 +17,12 @@ const configUrl = new URL('../supabase/functions/opera-agent-mcp/deno.json', imp
 const authUrl = new URL('../supabase/functions/opera-agent-mcp/../opera-agent-auth/index.ts', import.meta.url);
 const consentUrl = new URL('../landing/oauth/consent.html', import.meta.url);
 const supabaseConfigUrl = new URL('../supabase/config.toml', import.meta.url);
-const siteVercelConfigUrl = new URL('../landing/vercel.json', import.meta.url);
+const siteHeadersUrl = new URL('../landing/_headers', import.meta.url);
 const source = await mcpSurfaceSource();
 const config = JSON.parse(await readFile(configUrl, 'utf8'));
 const authSource = await readFile(authUrl, 'utf8');
 const consentSource = await readFile(consentUrl, 'utf8');
-const siteVercelConfig = JSON.parse(await readFile(siteVercelConfigUrl, 'utf8'));
+const siteHeaders = await readFile(siteHeadersUrl, 'utf8');
 const supabaseConfig = await readFile(supabaseConfigUrl, 'utf8');
 const contract = JSON.parse(
   fs.readFileSync(new URL('./fixtures/mcp-contract-v1.json', import.meta.url), 'utf8')
@@ -663,8 +663,9 @@ test('hosted OAuth consent artifact has no embedded privileged secret', () => {
   assert.match(consentSource, /JSON\.stringify\(\{ action \}\)/);
   assert.doesNotMatch(consentSource, /service_role|OPERA_AGENT_MCP_TOKEN|eyJhbGci/);
   assert.doesNotMatch(consentSource, /type="password"/i, 'the screen asks for no password of ours');
-  assert.ok(siteVercelConfig.headers.some((entry) => entry.source === '/oauth/consent'), 'and the site serves it under the policy that permits only Supabase');
-  const policy = siteVercelConfig.headers.find((entry) => entry.source === '/oauth/consent').headers.find((h) => h.key === 'Content-Security-Policy').value;
+  assert.ok(siteHeaders.split('\n\n').some((b) => b.startsWith('/oauth/consent\n')), 'and the site serves it under its own policy block');
+  const block = siteHeaders.split('\n\n').find((b) => b.startsWith('/oauth/consent\n'));
+  const policy = /^ {2}Content-Security-Policy: (.*)$/m.exec(block)[1];
   assert.match(policy, /connect-src https:\/\/\*\.supabase\.co/, 'the consent page reaches Supabase and nothing else');
 });
 
