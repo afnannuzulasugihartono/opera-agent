@@ -1,5 +1,5 @@
 // @last-edited: 2026-10-28 UTC+7.
-// @title: bridge-server — the loopback command server, speaking the frames the cloud bridge speaks.
+// @title: bridge-ws — the loopback command server, speaking the frames the cloud bridge speaks.
 // @state: the heartbeat that keeps the worker alive, the idle reap, and the origin check.
 // @dependencies: none.
 

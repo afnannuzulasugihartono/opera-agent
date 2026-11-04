@@ -33,7 +33,7 @@ import {
   waitForBridgeLink
 } from '../local/bridge.js';
 import { createCdpClient } from '../local/cdp.js';
-import { createBridgeServer } from '../local/bridge-server.js';
+import { createBridgeServer } from '../local/bridge-ws.js';
 import { completionFrame, handshakeFrame, normalizeCommand, pongFrame } from '../extension/lib/socket-protocol.js';
 
 process.env.OPERA_BRIDGE_PORT = '0';

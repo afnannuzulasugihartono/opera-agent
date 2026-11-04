@@ -21,7 +21,7 @@
 // cdp.js already owns the half that is hard — matching a reply to the id that asked for it — and the whole drive runs on whatever client it is handed.
 // So the bridge hands over a transport, the same contract the real debugging port satisfies, and nothing above this line learns that the bytes went through an extension.
 
-import { createBridgeServer } from './bridge-server.js';
+import { createBridgeServer } from './bridge-ws.js';
 
 const DEFAULT_BRIDGE_PORT = 9451;
 const PROOF_TIMEOUT_MS = 2000;

@@ -242,7 +242,7 @@ wrong "background" answer is how text goes nowhere.
 
 The live extension was not connected during this run (`bridgeReachable()` was
 false), so the real extension path is **unverified**. A synthetic loopback
-device on the same `bridge-server` measured:
+device on the same `bridge-ws` measured:
 
 | Operation | p50 |
 |---|---:|

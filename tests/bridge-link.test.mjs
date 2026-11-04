@@ -1,16 +1,16 @@
 // @last-edited: 2026-10-14 UTC+7.
 // @title: bridge-link.test — the extension half of the loopback conversation, without a browser.
 // @state: the real socket server pushes; this worker answers CDP over it.
-// @dependencies: node:test, strict, ../extension/worker/bridge-link.js, ../local/bridge-server.js.
+// @dependencies: node:test, strict, ../extension/worker/bridge-link.js, ../local/bridge-ws.js.
 
 // WHY A REAL SERVER HERE.
 // The whole point of the socket road is that the device receives a command it never asked for, so a stubbed transport would prove nothing that matters.
-// This drives the same bridge-server.js that runs on the machine, over a real socket, and asserts the push arrives, the CDP routing works, and a CDP failure comes back as a named completion instead of silence.
+// This drives the same bridge-ws.js that runs on the machine, over a real socket, and asserts the push arrives, the CDP routing works, and a CDP failure comes back as a named completion instead of silence.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { createBridgeServer } from '../local/bridge-server.js';
+import { createBridgeServer } from '../local/bridge-ws.js';
 import { encodeText } from '../local/ws-server.js';
 
 const listeners = {};
