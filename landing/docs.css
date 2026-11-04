@@ -125,6 +125,10 @@
   margin-top: 0;
 }
 
+.docMapToggle {
+  display: none;
+}
+
 @media (max-width: 900px) {
   .docLayout {
     grid-template-columns: minmax(0, 1fr);
@@ -134,5 +138,55 @@
 
   .docNav {
     position: static;
+  }
+
+  /*
+   * WHY THE MAP FOLDS AWAY ON A PHONE: measured at 390px on 2026-11-05, the six section doors stood between the reader and the guide, and a reader who wanted one section had to scroll past all six to reach the text.
+   * The door opens the same map, so nothing is lost and the first screen of the guide is the guide.
+   */
+
+  .docMapToggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    width: 100%;
+    min-height: 42px;
+    margin: 0 0 12px;
+    padding: 0 12px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    color: var(--ink);
+    font-family: inherit;
+    font-size: 13.5px;
+    font-weight: 600;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .docMapToggle::after {
+    content: "›";
+    color: var(--muted);
+    font-size: 17px;
+    transform: rotate(90deg);
+    transition: transform .16s var(--ease);
+  }
+
+  .docMapToggle[aria-expanded="true"]::after {
+    transform: rotate(-90deg);
+  }
+
+  .docMapToggle:focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+  }
+
+  .docNav .toc {
+    display: none;
+  }
+
+  .docNav[data-map="open"] .toc {
+    display: block;
   }
 }

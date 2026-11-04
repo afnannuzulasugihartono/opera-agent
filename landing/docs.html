@@ -44,7 +44,8 @@
         <label class="docSearch">
           <input type="search" id="docSearch" placeholder="Cari bagian…" autocomplete="off" aria-label="Cari bagian" aria-keyshortcuts="/" />
         </label>
-        <ul class="toc" aria-label="Di halaman ini">
+        <button class="docMapToggle" type="button" data-i18n="map.toggle" aria-expanded="false" aria-controls="docMap">Di halaman ini</button>
+        <ul class="toc" id="docMap" aria-label="Di halaman ini">
           <li><a href="#pasang">Pasang extension</a></li>
           <li><a href="#pairing">Masuk dan pair device</a></li>
           <li><a href="#tugas">Tugas pertama</a></li>
@@ -220,6 +221,7 @@
       "nav.docs": "Docs",
       "nav.support": "Support",
       "copy": "Copy",
+      "map.toggle": "On this page",
       "footer.rights": "© 2026 Opera Agent. All rights reserved.",
       "footer.home": "Home",
       "footer.privacy": "Privacy",

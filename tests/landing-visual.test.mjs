@@ -493,12 +493,27 @@ test('the product mock wears a travelling light, and the reader can refuse it', 
   assert.match(css, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.demo::after \{[^}]*animation: none/s, 'and it stops dead when the reader asks');
 });
 
+test('a long page offers its way back, and a phone guide folds its map away', () => {
+  // WHY THIS EXISTS: measured against docs.firecrawl.dev on 2026-11-05, its rail carries a way back to the top, and a phone reader met six section doors before the first line of the guide.
+  // The way back appears only after the reader has scrolled, and the map opens only when it is asked for.
+  const script = read('wayfind.js');
+  const sheet = read('site.css');
+  const guide = read('docs.css');
+  assert.match(script, /className = 'toTop'/, 'the page builds a way back');
+  assert.match(script, /scrollY > 600/, 'and it waits until the reader has scrolled far');
+  assert.match(script, /prefers-reduced-motion/, 'and it obeys the reader who asks for stillness');
+  assert.match(sheet, /\.toTop\[data-shown="true"\]/, 'the button shows itself only when it is wanted');
+  assert.match(guide, /\.docNav\[data-map="open"\] \.toc/, 'the phone map opens on demand');
+  assert.match(read('docs.html'), /class="docMapToggle"/, 'and the guide carries the door');
+});
+
 test('the capability cards answer the pointer', () => {
   const html = read('beranda.html');
   const css = read('site.css');
   assert.match(html, /class="bento"/, 'the home carries a bento grid');
   assert.ok((html.match(/class="bentoArticle"/g) || []).length >= 4, 'at least four cards');
   assert.match(css, /\.bentoArticle \{[^}]*--mx/s, 'the card reads the pointer');
+  assert.match(css, /\.bentoArticle:nth-child\(2\)::after \{[^}]*animation-delay: 1s/s, 'and the cards light in turn instead of blinking together');
   assert.match(read('spotlight.js'), /pointermove/, 'and the shared script feeds it');
 });
 

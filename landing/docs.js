@@ -39,3 +39,22 @@ if (input) {
   input.addEventListener('search', apply);
   document.addEventListener('keydown', openFromKey);
 }
+
+const toggle = document.querySelector('.docMapToggle');
+const nav = document.querySelector('.docNav');
+
+if (toggle && nav) {
+  // WHY THE MAP CLOSES ITSELF AFTER A CHOICE: a phone reader who taps a section wants that section, not the list of sections under it.
+  const setMap = (open) => {
+    toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+    nav.dataset.map = open ? 'open' : 'closed';
+  };
+
+  toggle.addEventListener('click', () => {
+    setMap(toggle.getAttribute('aria-expanded') !== 'true');
+  });
+
+  for (const door of document.querySelectorAll('.docNav .toc a')) {
+    door.addEventListener('click', () => setMap(false));
+  }
+}
