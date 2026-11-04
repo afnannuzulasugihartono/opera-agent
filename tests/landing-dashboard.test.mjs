@@ -852,3 +852,11 @@ test('the saldo view also lists the prices from the server, not a hardcoded tabl
   assert.match(html, /\$\{BILLING_FN\}\?prices=1/, 'the prices are fetched from the billing function');
   assert.match(html, /priceLabel\[price\.kind\]/, 'unknown kinds still render under their own name');
 });
+
+test('the top-up button names the price the server charges, not one written in the page', () => {
+  const html = read('dashboard.html');
+  const button = /id="walletTopUp"[^>]*>([^<]*)</.exec(html)?.[1] ?? '';
+  assert.doesNotMatch(button, /\d/, `the button names no amount of its own, found: ${button}`);
+  assert.match(html, /price\.kind === 'wallet\.deposit'/, 'the button reads the deposit price');
+  assert.match(html, /walletTopUp'\)\.textContent = `Isi ulang \$\{walletNf\(deposit\.amount_cents\)\}`/, 'the button says what the server charges');
+});

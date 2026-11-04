@@ -168,7 +168,7 @@
               <div><dt>Tersedia sekarang</dt><dd id="walletAvailable">–</dd></div>
             </dl>
             <div class="row">
-              <button class="btn" id="walletTopUp" type="button">Isi ulang Rp10.000</button>
+              <button class="btn" id="walletTopUp" type="button">Isi ulang</button>
               <button class="btn ghost sm" id="walletRefresh" type="button">Muat ulang</button>
             </div>
             <p class="status" id="walletStatus" role="status" aria-live="polite">&nbsp;</p>
@@ -1224,6 +1224,11 @@
             }
             rows.appendChild(tr);
           }
+          // WHY THE BUTTON READS THE PRICE FROM THE SERVER.
+          // The page used to name Rp10.000 while the server charged Rp1.000, so the button lied about the money.
+          // The price is one row on the server, and the button now says what that row says.
+          const deposit = priceAnswer.prices.find((price) => price.kind === 'wallet.deposit');
+          if (deposit) $('walletTopUp').textContent = `Isi ulang ${walletNf(deposit.amount_cents)}`;
           $('priceEmpty').hidden = priceAnswer.prices.length > 0;
         } else {
           $('priceEmpty').hidden = false;
