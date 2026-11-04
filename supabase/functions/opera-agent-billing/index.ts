@@ -64,6 +64,7 @@ import {
 } from "../_shared/billing.js";
 import { DEPOSIT_KIND } from "../_shared/wallet.js";
 import { handleWalletAction, isWalletAction } from "../_shared/wallet-api.js";
+import { toDynamicQris } from "../_shared/qris.js";
 
 type PriceRow = { kind: string; unit: string; amount_cents: number; currency: string; active: boolean };
 type Line = { kind: string; unit?: string; description?: string | null; quantity: number; amountCents: number; reason?: string };
@@ -119,6 +120,18 @@ const BILLING_PAGE_URL = (Deno.env.get("BILLING_PAGE_URL") || "").replace(/\/+$/
 const MIDTRANS_SERVER_KEY = Deno.env.get("MIDTRANS_SERVER_KEY") || "";
 const KEY_SHAPE = secretShape(MIDTRANS_SERVER_KEY);
 const MIDTRANS_ENVIRONMENT = Deno.env.get("MIDTRANS_ENVIRONMENT") || "production";
+
+// WHY THE RAIL IS AN ENV AND NOT A FIELD.
+// Which rail a rupiah invoice uses is a deployment decision, and flipping it must not need a code release.
+// The default stays midtrans, so a deploy without the new env answers exactly as before; qris-self is opt-in until the detector is proven live.
+
+const BILLING_RAIL = (Deno.env.get("BILLING_RAIL") || "midtrans").trim().toLowerCase();
+
+// WHY THE STATIC PAYLOAD IS AN ENV AND NEVER IN THE TREE.
+// The merchant QRIS string is a credential-shaped secret: it names where the money goes.
+// It lives in the function's env like every other secret, and the tests use a synthetic payload.
+
+const QRIS_STATIC_PAYLOAD = Deno.env.get("QRIS_STATIC_PAYLOAD") || "";
 
 // The first customers pay by transfer; the account line is theirs to read, so it is configuration and never code.
 
@@ -371,7 +384,7 @@ async function writeInvoice(row: Record<string, unknown>, existing: InvoiceRow |
   return fresh;
 }
 
-async function createInvoice({ customer_id, period, lines }: { customer_id: string; period: string; lines: Line[] }): Promise<{ invoice: InvoiceRow; token: string }> {
+async function createInvoice({ customer_id, period, lines, rail = "midtrans" }: { customer_id: string; period: string; lines: Line[]; rail?: string }): Promise<{ invoice: InvoiceRow; token: string }> {
   if (!BILLING_SECRET) throw new HttpError(500, "BILLING_SECRET is not set; invoices cannot be signed.");
   const supabase = await db();
   const prices = await priceList(supabase);
@@ -423,6 +436,12 @@ async function createInvoice({ customer_id, period, lines }: { customer_id: stri
       pay_url: existing?.pay_url || null,
       pay_url_expires_at: existing?.pay_url_expires_at || null
     };
+  } else if (rail === "qris-self") {
+    // WHY THE QRIS RAIL WRITES A LOCAL ORDER ID AND NO PAY URL.
+    // The payment is a QR code rendered on the invoice page from the merchant's own payload, not a link a provider hosts, so there is no URL to store.
+    // The order id is derived from the invoice, which keeps a repeated create idempotent: the same invoice names the same order.
+    const orderId = `qris-${id}-1`;
+    link = { ...link, provider: "qris-self", provider_ref: orderId, provider_order_id: orderId, provider_order_ids: [...history, orderId] };
   } else if (MIDTRANS_SERVER_KEY && payment.chargeable) {
     const opened = await openNewAttempt(existing ?? {
       id,
@@ -696,7 +715,8 @@ async function openTopUp(owner: string): Promise<{ url: string; amountCents: num
   const out = await createInvoice({
     customer_id: owner,
     period: `wallet-${Date.now().toString(36)}`,
-    lines: [{ kind: DEPOSIT_KIND, quantity: 1 }]
+    lines: [{ kind: DEPOSIT_KIND, quantity: 1 }],
+    rail: BILLING_RAIL
   });
   const base = BILLING_PAGE_URL || `${SUPABASE_URL}/functions/v1/opera-agent-billing`;
   return {
@@ -773,6 +793,35 @@ function walletDeps(req: Request) {
 }
 
 
+// WHY THE QR IS RENDERED SERVER-SIDE AS SVG.
+// The invoice page's CSP allows no script, so the QR cannot be drawn in the browser; rendering it here keeps the page script-free and the code scannable from the same HTML the link opened.
+
+async function qrisSvgFor(payload: string): Promise<string | null> {
+  try {
+    const { default: QRCode } = await import("qrcode");
+    return await QRCode.toString(payload, { type: "svg", margin: 1, errorCorrectionLevel: "M" });
+  } catch (error) {
+    log.error("QRIS_SVG_FAILED", error instanceof Error ? error.message : String(error));
+    return null;
+  }
+}
+
+// WHY THE DYNAMIC PAYLOAD IS DERIVED AT RENDER TIME AND NOT STORED.
+// The payload is a pure function of the merchant's static payload and the invoice amount, so storing it would be a second copy that can disagree with the row.
+// Deriving it also means a price correction on an open invoice changes the QR to match the new total.
+
+async function qrisSvgForInvoice(invoice: InvoiceRow): Promise<string | null> {
+  if (BILLING_RAIL !== "qris-self") return null;
+  if (String(invoice.currency || "").toUpperCase() !== "IDR") return null;
+  if (String(invoice.status || "") !== "open") return null;
+  if (!QRIS_STATIC_PAYLOAD) return null;
+  const amount = providerAmount(Number(invoice.amount_cents), invoice.currency);
+  if (!amount) return null;
+  const dynamic = toDynamicQris(QRIS_STATIC_PAYLOAD, amount);
+  if (!dynamic) return null;
+  return qrisSvgFor(dynamic);
+}
+
 Deno.serve(async (req: Request) => {
 
 // WHY apikey IS ALLOWED: the dashboard calls this function with the publishable key in the apikey header beside the bearer session, and a preflight that does not name apikey makes the browser drop the request before it is sent.
@@ -799,7 +848,8 @@ const cors = {
         token,
         bank: BILLING_BANK,
         canRefresh,
-        refreshFailed: url.searchParams.get("refresh") === "failed"
+        refreshFailed: url.searchParams.get("refresh") === "failed",
+        qrisSvg: await qrisSvgForInvoice(invoice)
       }), { headers: pageHeaders(cors) });
     }
     if (req.method === "POST") {

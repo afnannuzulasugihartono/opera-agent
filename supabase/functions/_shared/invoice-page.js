@@ -127,13 +127,31 @@ function paymentBlock(invoice, { token, bank, canRefresh, now, refreshFailed }) 
   return `<p>Transfer ${total} and quote invoice ${escapeHtml(invoice.id)}.</p>${bankLine}${form}`;
 }
 
+// WHY THE QR BLOCK SAYS THE AMOUNT IS LOCKED.
+// A static merchant QR lets the payer type any amount; the whole point of the dynamic conversion is that the scanned code already carries the invoice total.
+// Saying it in words is the check the payer can do with their eyes before scanning: the app should show the same number, not an empty field.
+
+// WHY THE PAGE ITSELF REFUSES A QR ON A NON-OPEN INVOICE.
+// The function only derives a payload for an open invoice, but the page is the thing a customer reads: a paid invoice carrying a scannable code invites a second payment.
+
+function qrisBlockFor(invoice, qrisSvg) {
+  if (!qrisSvg) return '';
+  if (String(invoice.status || '').toLowerCase() !== 'open') return '';
+  return qrisBlock(invoice, qrisSvg);
+}
+
+function qrisBlock(invoice, qrisSvg) {
+  const total = escapeHtml(money(invoice.amount_cents, invoice.currency));
+  return `<div class="qris"><p class="state">Scan this QRIS with any payment app to pay <strong>${total}</strong> — the amount is already locked in the code.</p>${qrisSvg}</div>`;
+}
+
 function lineRows(invoice) {
   const priced = (invoice.lines?.priced || []).map((line) => `<tr><td>${escapeHtml(line.description || line.unit || line.kind)}</td><td>${escapeHtml(line.quantity)}</td><td class="amount">${escapeHtml(money(line.amountCents, invoice.currency))}</td></tr>`).join('');
   const unpriced = (invoice.lines?.unpriced || []).map((line) => `<tr><td>${escapeHtml(line.description || line.kind)}</td><td colspan="2">not charged: ${escapeHtml(line.reason)}</td></tr>`).join('');
   return `${priced}${unpriced}`;
 }
 
-export function invoicePage(invoice, { token, bank = '', now = Date.now(), canRefresh = false, refreshFailed = false } = {}) {
+export function invoicePage(invoice, { token, bank = '', now = Date.now(), canRefresh = false, refreshFailed = false, qrisSvg = null } = {}) {
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -157,6 +175,8 @@ export function invoicePage(invoice, { token, bank = '', now = Date.now(), canRe
  .notice{color:#7a1d1d}
  button{font:inherit;background:#fff;color:#1d4ed8;border:1px solid #1d4ed8;padding:.8rem 1.2rem;border-radius:.4rem;font-weight:600;cursor:pointer}
  .pay:focus-visible,button:focus-visible{outline:3px solid #1d4ed8;outline-offset:2px}
+ .qris{margin:1rem 0}
+ .qris svg{width:min(240px,70vw);height:auto;display:block}
  small{color:#555}
  form{margin:1rem 0}
  @media (min-width:36rem){body{margin:3rem auto}h1{font-size:1.5rem}}
@@ -171,7 +191,7 @@ export function invoicePage(invoice, { token, bank = '', now = Date.now(), canRe
 ${lineRows(invoice)}
 </table>
 <p class="total">Total ${escapeHtml(money(invoice.amount_cents, invoice.currency))}</p>
-${paymentBlock(invoice, { token, bank, canRefresh, now, refreshFailed })}
+${paymentBlock(invoice, { token, bank, canRefresh, now, refreshFailed })}${qrisBlockFor(invoice, qrisSvg)}
 <p><small>Only what was delivered is charged. A delivery that failed is not on this invoice.</small></p>
 </main>
 </body>
