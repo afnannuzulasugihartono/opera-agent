@@ -213,11 +213,24 @@
           <span class="mockBadge" data-i18n="demo.example">Contoh</span>
           <h3 data-i18n="install.panel.title">Panel extension</h3>
           <p data-i18n="install.panel.body">Satu device, satu akun, satu kunci lokal.</p>
-          <ul class="installList">
-            <li data-i18n="install.panel.one">Device terhubung ke akun Anda</li>
-            <li data-i18n="install.panel.two">Kode pairing berlaku sepuluh menit</li>
-            <li data-i18n="install.panel.three">Setiap perintah punya jejak status</li>
-          </ul>
+          <div class="mockTop">
+            <span class="dot" aria-hidden="true"></span>
+            <strong>opera</strong>
+            <span>·</span>
+            <span data-i18n="install.panel.device">Laptop kantor</span>
+            <span class="chip" data-i18n="install.panel.online">daring</span>
+          </div>
+          <div class="pairRow">
+            <span data-i18n="install.panel.code">Kode pairing</span>
+            <code class="pairCode">4F2K-9Q</code>
+            <span data-i18n="install.panel.left">berlaku</span>
+            <code class="pairTime" id="pairTime">10:00</code>
+          </div>
+          <div class="pairRow">
+            <span data-i18n="install.panel.status">Jejak status</span>
+            <span class="pairTask" data-i18n="install.panel.task">Isi sheet onboarding</span>
+            <span class="chip good" data-i18n="install.panel.done">selesai</span>
+          </div>
         </div>
       </div>
     </section>
@@ -481,9 +494,13 @@
       "demo.control": "Human control active",
       "install.panel.title": "Extension panel",
       "install.panel.body": "One device, one account, one key that stays in this browser.",
-      "install.panel.one": "A device connected to your account",
-      "install.panel.two": "A pairing code valid for ten minutes",
-      "install.panel.three": "Every command leaves a status trail",
+      "install.panel.device": "Office laptop",
+      "install.panel.online": "online",
+      "install.panel.code": "Pairing code",
+      "install.panel.left": "valid for",
+      "install.panel.status": "Status trail",
+      "install.panel.task": "Fill the onboarding sheet",
+      "install.panel.done": "done",
       "final.title": "Install. Pair. Work.",
       "final.sub": "One extension, one account, and full control of your browser."
     }
@@ -698,6 +715,30 @@
       demo.addEventListener('pointerenter', stopDemo);
       demo.addEventListener('focusin', stopDemo);
       for (const tab of tabs) tab.addEventListener('click', stopDemo);
+    }
+
+    // WHY THE PAIRING CLOCK RUNS: a pairing code that never changes is a picture, and the panel is the one place the reader learns that a code expires.
+    // A code that runs out is replaced the way the dashboard replaces it, and a reader who asks for stillness sees the code stand still.
+    const pairTime = $('pairTime');
+    const pairCode = document.querySelector('.pairCode');
+    const codes = ['4F2K-9Q', '7RTM-3X', 'B9WD-52'];
+
+    if (pairTime && !reduceMotion) {
+      let left = 600;
+      let code = 0;
+      const paint = () => {
+        const minutes = String(Math.floor(left / 60)).padStart(2, '0');
+        const seconds = String(left % 60).padStart(2, '0');
+        pairTime.textContent = minutes + ':' + seconds;
+        left -= 1;
+        if (left < 0) {
+          left = 600;
+          code = (code + 1) % codes.length;
+          if (pairCode) pairCode.textContent = codes[code];
+        }
+      };
+      paint();
+      setInterval(paint, 1000);
     }
 
     const stats = $('heroStats');

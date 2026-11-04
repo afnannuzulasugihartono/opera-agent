@@ -86,9 +86,14 @@ async function run(page, shape = {}) {
 
   for (const [id, state] of Object.entries(HOME_ELEMENTS)) Object.assign(element(id), state);
 
+  // WHY THE TIMERS ARE FAKES: a real interval keeps the test process alive and never fires, so the stub records the work and lets the test drive it.
+  const timers = [];
+
   const context = vm.createContext({
     console, Intl, Date, JSON, Math, Number, String, Array, Object, RegExp, Error,
     URLSearchParams, encodeURIComponent, setTimeout,
+    setInterval: (fn, ms) => { timers.push({ fn, ms }); return timers.length; },
+    clearInterval: () => {},
     location: { search, hash: '', pathname: `/${page}`, href: `https://opera-agent.vercel.app/${page}`, replace() {}, assign(url) { context.assigned = url; } },
     localStorage: {
       getItem: (key) => store[key] ?? null,
@@ -171,7 +176,7 @@ async function run(page, shape = {}) {
   } finally {
     process.off('unhandledRejection', onRejection);
   }
-  return { nodes, store, cleared, rejected, context };
+  return { nodes, store, cleared, rejected, context, timers };
 }
 
 const SIGNED_IN_PAGES = ['akun.html', 'dashboard.html', 'oauth/consent.html'];
@@ -239,6 +244,12 @@ test('home swaps to member actions on a stored session, and stays put without on
   assert.equal(signed.nodes.ctaOut.hidden, true, 'acquisition actions hide');
   assert.equal(signed.nodes.ctaIn.hidden, false, 'member actions show');
   assert.equal(signed.nodes.quickTiles.hidden, false, 'and the inward tiles show');
+  // WHY THE CLOCK IS PROVED HERE: the pairing panel is only honest if its countdown actually moves, so the stub drives the scheduled tick and reads the clock.
+  const clock = signed.timers.find((timer) => timer.ms === 1000);
+  assert.ok(clock, 'the pairing clock asks for a second');
+  assert.equal(signed.nodes.pairTime.textContent, '10:00', 'and it starts at ten minutes');
+  clock.fn();
+  assert.equal(signed.nodes.pairTime.textContent, '09:59', 'then it ticks down');
   // WHY NO EYEBROW LINE IS ASSERTED: the taste audit removed the label above the headline on the home page, so the session's answer is the member actions and the tiles, not a line of small text.
   const stranger = await run('beranda.html', { stored: {} });
   assert.ok(!stranger.context.document.body.classList.contains('signed-in'), 'no session, no mark');
