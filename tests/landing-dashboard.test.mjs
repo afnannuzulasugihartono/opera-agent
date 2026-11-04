@@ -566,8 +566,8 @@ test('the rail groups its links instead of listing eight equals', () => {
   const rail = html.slice(html.indexOf('<nav class="rail"'), html.indexOf('</nav>', html.indexOf('<nav class="rail"')));
   const groups = [...rail.matchAll(/<p class="railGroup">([^<]+)<\/p>/g)].map((match) => match[1]);
 
-  assert.deepEqual(groups.filter((group) => group !== 'Tabel data'), ['Pantau', 'Kelola', 'Akun'], 'three named view groups, in reading order');
-  assert.equal(groups.length, 4, 'and one contextual group, which only the view that needs it asks for');
+  assert.deepEqual(groups.filter((group) => group !== 'Tabel data'), ['Pantau', 'Kelola', 'Uang', 'Akun'], 'four named view groups, in reading order');
+  assert.equal(groups.length, 5, 'and one contextual group, which only the view that needs it asks for');
   assert.match(rail, /<p class="railGroup">Tabel data<\/p>/, 'that group names the tables, so views and objects never read as one list');
   assert.match(css, /\.railGroup \{/, 'and a rule that sets them apart from the links');
 });
@@ -832,4 +832,16 @@ test('the console\'s spacing sits on one scale', () => {
   assert.match(css, /section > \.meta \{[^}]*margin: 0 0 16px/, 'a note is followed by 16');
   assert.match(css, /\.konsolBar \{[^}]*margin: 0 0 8px/, 'a bar is followed by 8');
   assert.match(css, /\.railHead \{[^}]*min-height: 36px/, 'and the rail head is as tall as the row it shares a line with');
+});
+
+test('the wallet view reads through the billing function with the session, never a raw ledger table', () => {
+  const html = read('dashboard.html');
+  assert.match(html, /functions\/v1\/opera-agent-billing/, 'the wallet is read through its own function');
+  assert.match(html, /walletCall\('wallet-balance'\)/, 'the balance is read from the server');
+  assert.match(html, /walletCall\('wallet-history'\)/, 'the timeline is read from the server');
+  assert.match(html, /walletCall\('wallet-deposit'\)/, 'the top-up is opened by the server');
+  assert.match(html, /id="saldo"/, 'the view exists');
+  assert.match(html, /href="#saldo"/, 'the rail reaches the view');
+  assert.doesNotMatch(html, /rest\/v1\/(opera_ledger|opera_wallets|opera_reservations)/, 'no raw money table is named by the page');
+  assert.doesNotMatch(html, /localStorage[^;]*[Bb]alance/, 'the page never stores a balance locally');
 });

@@ -64,6 +64,8 @@
         </div>
         <a href="#pairing"><svg class="railIcon" viewBox="0 0 16 16" aria-hidden="true"><path d="M6.5 9.5a3 3 0 0 1 0-4.2l1.4-1.4a3 3 0 0 1 4.2 4.2l-.7.7" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" /><path d="M9.5 6.5a3 3 0 0 1 0 4.2L8.1 12.1a3 3 0 0 1-4.2-4.2l.7-.7" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" /></svg><span>Pairing</span></a>
         <a href="#aksi"><svg class="railIcon" viewBox="0 0 16 16" aria-hidden="true"><path d="M5.5 3.75 12 8l-6.5 4.25z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" /></svg><span>Aksi</span></a>
+        <p class="railGroup">Uang</p>
+        <a href="#saldo"><svg class="railIcon" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="5.25" fill="none" stroke="currentColor" stroke-width="1.5" /><path d="M8 5.25v5.5M6.4 6.6h2.4a1.2 1.2 0 0 1 0 2.4H6.4" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" /></svg><span>Saldo</span></a>
         <p class="railGroup">Akun</p>
         <a href="#akun"><svg class="railIcon" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="5.75" r="2.75" fill="none" stroke="currentColor" stroke-width="1.5" /><path d="M3 13.25a5 5 0 0 1 10 0" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" /></svg><span>Akun</span></a>
       </nav>
@@ -157,6 +159,31 @@
           <div id="listens"></div>
         </section>
 
+        <section id="saldo">
+          <h1>Saldo</h1>
+          <p class="meta">Saldo prabayar untuk pekerjaan yang selesai: diisi lewat QRIS, dipotong saat satu pekerjaan selesai, dikembalikan penuh saat gagal. Angka di sini dibaca dari server setiap kali halaman ini dibuka.</p>
+          <div class="card">
+            <dl class="metrics">
+              <div><dt>Saldo</dt><dd id="walletBalance">–</dd></div>
+              <div><dt>Tersedia sekarang</dt><dd id="walletAvailable">–</dd></div>
+            </dl>
+            <div class="row">
+              <button class="btn" id="walletTopUp" type="button">Isi ulang Rp10.000</button>
+              <button class="btn ghost sm" id="walletRefresh" type="button">Muat ulang</button>
+            </div>
+            <p class="status" id="walletStatus" role="status" aria-live="polite">&nbsp;</p>
+          </div>
+          <div class="card tableCard">
+            <table class="history">
+              <thead>
+                <tr><th>Waktu</th><th>Jenis</th><th>Jumlah</th><th>Catatan</th></tr>
+              </thead>
+              <tbody id="walletRows"></tbody>
+            </table>
+            <div class="empty" id="walletEmpty" hidden><strong>Belum ada pergerakan saldo.</strong><p>Isi ulang dulu, lalu jalankan satu pekerjaan dari tab Aksi.</p></div>
+          </div>
+        </section>
+
       <div class="duo">
         <section id="pairing">
           <h1>Pairing manual</h1>
@@ -223,6 +250,7 @@
     // WHY reader RPCs and no table paths: opera_my_devices returns the caller's devices with their ten latest commands, method and status only, and the opera_konsol_* pair returns one page of one table with the ownership filter, the page caps and the masking already applied server-side.
     // A page that queried raw tables would need grants the project deliberately never hands out.
     const REST = 'https://nenmkmtvjremqphfqnfw.supabase.co/rest/v1';
+    const BILLING_FN = 'https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-billing';
     const AUTH_HOST = 'https://nenmkmtvjremqphfqnfw.supabase.co/auth/v1';
     const PUBLISHABLE_KEY = 'sb_publishable_jAbS_QIQsmXQA-Rj8RWPcg_JVeBedJ6';
 
@@ -1137,6 +1165,75 @@
       }
     });
 
+    // WHY THE WALLET IS READ THROUGH THE FUNCTION AND NOT THE TABLES.
+    // The ledger tables are closed to every browser role, so a page that queried them directly would need a grant the project deliberately never hands out.
+    // The function reads them with the service role and takes the owner from the session, which is also why the balance here cannot be edited from the page.
+
+    const walletNf = (cents) => `Rp${(Number(cents) / 100).toLocaleString('id-ID')}`;
+    const walletKindLabel = { deposit: 'Isi ulang', settle: 'Pekerjaan selesai', refund: 'Pengembalian', adjust: 'Penyesuaian' };
+
+    async function walletCall(action, body = {}) {
+      const session = await currentSession();
+      if (!session) return null;
+      const response = await fetch(BILLING_FN, {
+        method: 'POST',
+        headers: headersFor(session.token),
+        body: JSON.stringify({ action, ...body })
+      });
+      const answer = await response.json().catch(() => ({}));
+      return { status: response.status, ...answer };
+    }
+
+    async function walletLoad() {
+      const status = $('walletStatus');
+      status.textContent = 'Memuat saldo…';
+      status.className = 'status';
+      const balance = await walletCall('wallet-balance');
+      const history = await walletCall('wallet-history');
+      if (!balance?.ok || !history?.ok) {
+        status.textContent = balance === null || history === null
+          ? 'Tidak bisa memuat saldo sekarang.'
+          : `Gagal memuat saldo: ${balance?.why || history?.why || 'server menolak'}.`;
+        status.className = 'status warn';
+        return;
+      }
+      $('walletBalance').textContent = walletNf(balance.balanceCents);
+      $('walletAvailable').textContent = walletNf(balance.availableCents);
+      const rows = $('walletRows');
+      rows.textContent = '';
+      for (const entry of history.entries) {
+        const tr = document.createElement('tr');
+        const kind = entry.kind.startsWith('reservation.')
+          ? `Tugas ${entry.kind.slice('reservation.'.length)}`
+          : (walletKindLabel[entry.kind] || entry.kind);
+        for (const text of [relativeTime(entry.at), kind, walletNf(entry.amountCents), entry.note || '–']) {
+          const td = document.createElement('td');
+          td.textContent = text;
+          tr.appendChild(td);
+        }
+        rows.appendChild(tr);
+      }
+      $('walletEmpty').hidden = history.entries.length > 0;
+      status.textContent = 'Saldo dibaca dari server.';
+      status.className = 'status ok';
+    }
+
+    $('walletRefresh').addEventListener('click', walletLoad);
+    $('walletTopUp').addEventListener('click', async () => {
+      const status = $('walletStatus');
+      status.textContent = 'Membuka halaman pembayaran…';
+      status.className = 'status';
+      const opened = await walletCall('wallet-deposit');
+      if (opened?.ok && opened.url) {
+        globalThis.open(opened.url, '_blank', 'noopener');
+        status.textContent = 'Halaman pembayaran dibuka di tab baru. Saldo bertambah setelah pembayaran dikonfirmasi.';
+        status.className = 'status ok';
+      } else {
+        status.textContent = `Tidak bisa membuka isi ulang: ${opened?.why || opened?.error || 'server menolak'}.`;
+        status.className = 'status warn';
+      }
+    });
+
     // WHY one visible section: eight stacked jobs read as a form nobody finished.
     // Tabs show one at a time, deep-linked by hash so #riwayat is shareable.
     function showSection() {
@@ -1162,6 +1259,8 @@
       // WHY lazy: the sidebar is sixteen counts over tables nobody who opens #riwayat asked about.
       // The editor pays for them once, on first visit, and the rest of the session is local state plus one page per click.
       if (target === 'tabel') konsolInit();
+      // WHY the wallet loads with its view: a balance read on every hash change would be a number nobody asked for, and a view that opens with "–" is a view that forgot to load.
+      if (target === 'saldo') walletLoad();
     }
     if (typeof globalThis.addEventListener === 'function') globalThis.addEventListener('hashchange', showSection);
 

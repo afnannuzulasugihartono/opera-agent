@@ -63,7 +63,7 @@ const MAX_RETRY_MS = 30000;
 // WHY A CONNECTING SOCKET IS DETACHED RATHER THAN CLOSED.
 // Measured in the console: closing a socket whose readyState is still 0 aborts the TCP handshake Chrome has already begun, before the WebSocket handshake completes, and Chrome reports it as "WebSocket is closed before the connection is established".
 // The abort is not free of consequence either way, so the handlers are detached instead: a detached socket can neither deliver a command nor schedule the retry its close would have scheduled.
-// That is safe here and nowhere else, because the bridge pushes nothing before it has read a hello this socket will never send - verified in bridge-server, which answers false for every push while handshaken is false.
+// That is safe here and nowhere else, because the bridge pushes nothing before it has read a hello this socket will never send - verified in bridge-ws, which answers false for every push while handshaken is false.
 // A socket that never opened is therefore inert rather than dangerous, and no console error is bought for it.
 
 // WHY the mapping from socket events to connection state lives here as a pure function instead of inline in the worker.

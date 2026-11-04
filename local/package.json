@@ -11,7 +11,7 @@
     "action-strategy.js",
     "advice.js",
     "agent-guide.js",
-    "bridge-server.js",
+    "bridge-ws.js",
     "bridge.js",
     "browsers.js",
     "burst.js",
@@ -40,6 +40,7 @@
     "tools.js",
     "transport.js",
     "waits.js",
+    "wallet-client.js",
     "window-focus.js",
     "ws-server.js"
   ],

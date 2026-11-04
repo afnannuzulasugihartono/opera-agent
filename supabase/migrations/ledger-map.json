@@ -7,14 +7,14 @@
   "name": 24,
   "content": 20,
   "ledger-names-the-file": 1,
-  "no-ledger-row": 2,
+  "no-ledger-row": 3,
   "part-of-combined": 13,
   "applied-outside-ledger": 2,
   "applied-then-recorded": 2
  },
- "treeFiles": 108,
+ "treeFiles": 109,
  "resolved": 104,
- "unapplied": 2,
+ "unapplied": 3,
  "map": [
   {
    "file": "20260907204146_opera_agent_1_0_0_core.sql",
@@ -663,6 +663,11 @@
    "remote": "20261026120000",
    "evidence": "applied-then-recorded",
    "cover": 1
+  },
+  {
+   "file": "20261104120000_opera_wallet.sql",
+   "remote": null,
+   "evidence": "no-ledger-row"
   }
  ]
 }

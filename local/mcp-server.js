@@ -34,6 +34,7 @@ import { documentFromFile } from './documents.js';
 import { BURST_INPUT_ACTIONS, normalizeBurst, runLocalBurst } from './burst.js';
 import { leaseTab, releaseTab } from './bridge.js';
 import { TOOLS, ASKABLE, askParams, STRAY_FILE_TAB } from './tools.js';
+import { pairDevice, taskRefund, taskReserve, taskSettle, walletBalance, walletQuote, walletTopUp } from './wallet-client.js';
 
 // The tool table lives in tools.js: the surface is data, and this file is the protocol that answers it.
 
@@ -51,6 +52,16 @@ function requireArguments(args, required) {
 
 function asText(value) {
   return { content: [{ type: 'text', text: typeof value === 'string' ? value : JSON.stringify(value, null, 1) }] };
+}
+
+// WHY A PLAN IS BUILT FIELD BY FIELD.
+// The server prices what it is told the job will produce, so an object passed straight through is an object a caller could widen with a price or an owner the server would then read.
+// Three named fields are the whole vocabulary of a quote, and a fourth is refused by not being read.
+
+function planFrom(args) {
+  const plan = { artifact: args.artifact, estSteps: args.estSteps };
+  if (typeof args.items === 'number') plan.items = args.items;
+  return plan;
 }
 
 // WHY THE AUTO PAGE IS A STATE LINE AND NOT THE ROWS.
@@ -396,6 +407,28 @@ const windowMatch = async (tab, driver) => (tab ? String(tab.title ?? '') : page
         valueColumn: args.valueColumn,
         out: args.out ?? null
       }));
+    }
+
+    // WHY THESE CALLS NEVER RESOLVE A TAB.
+    // A wallet lives on the server, so a wallet call that needed a tab would refuse to answer with the browser closed — which is exactly when a person checks their balance or pays for the last job.
+    // The plan is assembled from named fields rather than passed through, so a caller cannot smuggle a price or an owner into the object the server prices.
+
+    if (name === 'wallet_pair') {
+      return asText(await pairDevice({ code: args.code, deviceName: args.deviceName, version: context.version }));
+    }
+    if (name === 'wallet_balance') return asText(await walletBalance());
+    if (name === 'wallet_top_up') return asText(await walletTopUp());
+    if (name === 'wallet_quote') return asText(await walletQuote(planFrom(args)));
+    if (name === 'task_reserve') return asText(await taskReserve(planFrom(args)));
+    if (name === 'task_settle') {
+      return asText(await taskSettle({
+        reservationId: args.reservationId,
+        artifactHash: args.artifactHash,
+        actionsActual: typeof args.actionsActual === 'number' ? args.actionsActual : null
+      }));
+    }
+    if (name === 'task_refund') {
+      return asText(await taskRefund({ reservationId: args.reservationId, reason: args.reason ?? null }));
     }
 
     const tab = name === 'close_tab' ? null : await resolvedTab(args?.tabId);

@@ -1,7 +1,7 @@
 // @last-edited: 2026-10-26 UTC+7.
 // @title: opera-agent-billing — the invoice a customer opens, and the callback that closes it.
-// @state: quotes a delivery into an amount, opens one payable transaction per invoice, serves the page in the state the row is in, closes it from a signed notification or the provider's own answer, records a transfer by hand, and opens a new link when the customer asks.
-// @dependencies: edge-runtime, supabase-js, ../_shared/billing.js, ../_shared/invoice-page.js, ../_shared/cors.js, ../_shared/edge-log.js.
+// @state: quotes a delivery into an amount, opens one payable transaction per invoice, serves the page in the state the row is in, closes it from a signed notification or the provider's own answer, records a transfer by hand, opens a new link when the customer asks, and answers a wallet's balance, quote, reserve, settle, refund and top-up.
+// @dependencies: edge-runtime, supabase-js, ../_shared/billing.js, ../_shared/wallet.js, ../_shared/wallet-api.js, ../_shared/invoice-page.js, ../_shared/cors.js, ../_shared/edge-log.js.
 
 // WHY THIS FUNCTION EXISTS.
 // The product sells a delivered client-month, and a sale that nobody can pay for is a demo.
@@ -19,6 +19,11 @@
 // WHY THE CALLBACK DOES NOT ASK FOR AN "action" FIELD.
 // A provider posts its own body to the URL it was given, so a notification is recognised by the order id and the signature it carries, not by a field the provider never sends.
 // The operator's own calls still name their action, and the two shapes cannot be confused: one carries a signature, the other carries a bearer token.
+
+// WHY THE WALLET LIVES IN THE SAME FUNCTION AS THE INVOICE.
+// A top-up is an invoice with one line, so the path that prices it, opens the charge, checks the signed notification and compares the amount is already here and already proved by a real settlement.
+// A separate function would be a second place where money can arrive, and the second place is always the one that forgets to reconcile.
+// What the wallet adds is one direction the invoice never had: money that stays after it is paid, and leaves only when a task is finished or has failed.
 
 // WHY THE CALLBACK ALSO CHECKS THE AMOUNT.
 // A signature proves the provider sent the notification; it does not prove the invoice was for this much.
@@ -57,6 +62,8 @@ import {
   payLinkDeadline,
   payLinkState
 } from "../_shared/billing.js";
+import { DEPOSIT_KIND } from "../_shared/wallet.js";
+import { handleWalletAction, isWalletAction } from "../_shared/wallet-api.js";
 
 type PriceRow = { kind: string; unit: string; amount_cents: number; currency: string; active: boolean };
 type Line = { kind: string; unit?: string; description?: string | null; quantity: number; amountCents: number; reason?: string };
@@ -555,7 +562,27 @@ async function invoiceForOrder(orderId: string): Promise<InvoiceRow | null> {
 // Clearing the link a customer is holding because an older attempt died would take away the one way to pay that still works.
 // So the row is left open and only the current attempt's link is removed; a pending or settled notification never clears a link, because one means money may still arrive and the other means it did.
 
-async function markPaid(notification: Record<string, unknown>): Promise<{ ok: boolean; why?: string; invoice?: string; retry?: boolean }> {
+// WHY A PAID TOP-UP IS CREDITED ON THE SAME PATH THAT CLOSES THE INVOICE.
+// The notification is the only event that proves the money arrived, so the wallet must be credited before the event is acknowledged and forgotten.
+// The credit is keyed by the invoice, not by the notification: the provider repeats notifications, and a repeated credit would turn one payment into a larger balance.
+
+async function creditTopUp(invoice: InvoiceRow): Promise<string | null> {
+  const priced = Array.isArray(invoice.lines?.priced) ? invoice.lines.priced : [];
+  if (!priced.some((line) => line.kind === DEPOSIT_KIND)) return null;
+  if (!UUID_SHAPE.test(String(invoice.customer_id || ""))) {
+    log.error("WALLET_TOPUP_UNOWNED", invoice.id);
+    return "the top-up names no wallet owner";
+  }
+  const out = await walletRpc("opera_wallet_credit", {
+    p_owner: invoice.customer_id,
+    p_amount_cents: Number(invoice.amount_cents),
+    p_ref: invoice.id,
+    p_note: "QRIS top-up"
+  });
+  return out.credited ? "the wallet was credited" : "the wallet was already credited";
+}
+
+async function markPaid(notification: Record<string, unknown>): Promise<{ ok: boolean; why?: string; invoice?: string; retry?: boolean; wallet?: string | null }> {
   const supabase = await db();
   const orderId = String(notification.order_id || "");
   const invoice = await invoiceForOrder(orderId);
@@ -581,8 +608,10 @@ async function markPaid(notification: Record<string, unknown>): Promise<{ ok: bo
     return { ok: false, why: `the paid amount (${String(notification.gross_amount)}) is not the invoice amount (${invoice.amount_cents} cents)` };
   }
   if (!needsClosing(invoice)) {
-    return { ok: true, invoice: invoice.id, why: `the invoice was already paid at ${invoice.paid_at}` };
+    const wallet = await creditTopUp(invoice);
+    return { ok: true, invoice: invoice.id, wallet, why: `the invoice was already paid at ${invoice.paid_at}` };
   }
+  const wallet = await creditTopUp(invoice);
   const paidMethod = String(notification.payment_type || "").trim();
   const transactionId = String(notification.transaction_id || "").trim();
   const { data: closed, error: updateError } = await supabase.from("opera_invoices")
@@ -596,8 +625,8 @@ async function markPaid(notification: Record<string, unknown>): Promise<{ ok: bo
     .is("paid_at", null)
     .select("id");
   if (updateError) throw new Error(`invoice not closed: ${updateError.message}`);
-  if (!closed || closed.length === 0) return { ok: true, invoice: invoice.id, why: "another notification closed the invoice first" };
-  return { ok: true, invoice: invoice.id };
+  if (!closed || closed.length === 0) return { ok: true, invoice: invoice.id, wallet, why: "another notification closed the invoice first" };
+  return { ok: true, invoice: invoice.id, wallet };
 }
 
 class HttpError extends Error {
@@ -612,6 +641,137 @@ const json = (data: unknown, status = 200, headers: Record<string, string> = {})
   status,
   headers: { "content-type": "application/json; charset=utf-8", ...headers }
 });
+
+// WHY THE WALLET TRUSTS A PAIRED DEVICE AND NOT ONLY A SESSION.
+// The work runs in a browser extension on the customer's own machine, where the thing it holds is a device token, not a password.
+// A device is paired by a signed-in person, so the person it belongs to is the wallet's owner, and the token proves the device rather than the person.
+// A session is the other way in, for the dashboard, and both arrive at the same owner column.
+
+const UUID_SHAPE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+async function walletOwner(req: Request, body: Record<string, unknown>): Promise<string | null> {
+  const header = req.headers.get("authorization") || "";
+  const bearer = header.startsWith("Bearer ") ? header.slice(7).trim() : "";
+  if (bearer && bearer !== BILLING_TOKEN) {
+    const supabase = await db();
+    const { data } = await supabase.auth.getUser(bearer);
+    if (data?.user?.id) return data.user.id;
+  }
+  const deviceName = String(body.device_name || body.deviceName || "").trim();
+  const deviceToken = String(body.device_token || body.deviceToken || "").trim();
+  if (!deviceName || !deviceToken) return null;
+  const supabase = await db();
+  const { data } = await supabase.from("opera_devices")
+    .select("user_id")
+    .eq("device_name", deviceName)
+    .eq("token_hash", await sha256(deviceToken.toLowerCase()))
+    .maybeSingle();
+  const owner = (data as { user_id?: string | null } | null)?.user_id;
+  return owner && UUID_SHAPE.test(owner) ? owner : null;
+}
+
+// WHY A WALLET FUNCTION'S ERROR IS RAISED AND NOT RETURNED AS A REFUSAL.
+// A refusal is the database saying "no" about money, and it arrives as a body with a reason.
+// A transport error is this function having no idea what happened, and answering "insufficient" for it would teach a customer to top up for a fault on our side.
+
+async function walletRpc(name: string, args: Record<string, unknown>): Promise<Record<string, unknown>> {
+  const supabase = await db();
+  const { data, error } = await supabase.rpc(name, args);
+  if (error) throw new Error(`${name} refused: ${error.message}`);
+  return (data || {}) as Record<string, unknown>;
+}
+
+async function walletNumber(name: string, args: Record<string, unknown>): Promise<number> {
+  const supabase = await db();
+  const { data, error } = await supabase.rpc(name, args);
+  if (error) throw new Error(`${name} refused: ${error.message}`);
+  return Number(data || 0);
+}
+
+// WHY THE TOP-UP IS AN ORDINARY INVOICE.
+// The page that takes the money, the notification that closes it and the amount check already exist and are already proved by a real settlement.
+// A second payment path would be a second place for money to arrive and a second place to forget to reconcile it.
+
+async function openTopUp(owner: string): Promise<{ url: string; amountCents: number }> {
+  const out = await createInvoice({
+    customer_id: owner,
+    period: `wallet-${Date.now().toString(36)}`,
+    lines: [{ kind: DEPOSIT_KIND, quantity: 1 }]
+  });
+  const base = BILLING_PAGE_URL || `${SUPABASE_URL}/functions/v1/opera-agent-billing`;
+  return {
+    url: `${base}?invoice_id=${encodeURIComponent(out.invoice.id)}&token=${out.token}`,
+    amountCents: Number(out.invoice.amount_cents)
+  };
+}
+
+function walletDeps(req: Request) {
+  return {
+    owner: (body: Record<string, unknown>) => walletOwner(req, body),
+    prices: async () => await priceList(await db()),
+    balance: async (owner: string) => walletNumber("opera_wallet_balance", { p_owner: owner }),
+    available: async (owner: string) => walletNumber("opera_wallet_available", { p_owner: owner }),
+    history: async (owner: string) => {
+      const supabase = await db();
+      const [ledger, reservations] = await Promise.all([
+        supabase.from("opera_ledger")
+          .select("kind, amount_cents, note, ref, created_at, reservation_id")
+          .eq("owner_id", owner)
+          .order("created_at", { ascending: false })
+          .limit(50),
+        supabase.from("opera_reservations")
+          .select("id, kind, amount_cents, status, actions_planned, actions_actual, created_at, expires_at, closed_at")
+          .eq("owner_id", owner)
+          .order("created_at", { ascending: false })
+          .limit(50)
+      ]);
+      if (ledger.error) throw new Error(`the ledger could not be read: ${ledger.error.message}`);
+      if (reservations.error) throw new Error(`the reservations could not be read: ${reservations.error.message}`);
+      // WHY TWO ROWS OF MONEY BECOME ONE LIST.
+      // A deposit and the task it paid for are the same event seen from two tables, and the person reading the dashboard reads one timeline, not two.
+      // The two lists are merged by the moment they happened and capped together, so the answer stays one page long.
+      const entries = [
+        ...(ledger.data || []).map((row) => ({
+          at: row.created_at,
+          kind: row.kind,
+          amountCents: Number(row.amount_cents),
+          note: row.note || null,
+          reservationId: row.reservation_id || null
+        })),
+        ...(reservations.data || []).map((row) => ({
+          at: row.created_at,
+          kind: `reservation.${row.status}`,
+          amountCents: Number(row.amount_cents),
+          note: row.kind,
+          reservationId: row.id,
+          actionsPlanned: row.actions_planned,
+          actionsActual: row.actions_actual,
+          closedAt: row.closed_at
+        }))
+      ].sort((a, b) => String(b.at).localeCompare(String(a.at))).slice(0, 50);
+      return entries;
+    },
+    reserve: (args: { owner: string; kind: string; amountCents: number; actionsPlanned: number }) => walletRpc("opera_wallet_reserve", {
+      p_owner: args.owner,
+      p_kind: args.kind,
+      p_amount_cents: args.amountCents,
+      p_actions_planned: args.actionsPlanned
+    }),
+    settle: (args: { owner: string; reservationId: string; artifactHash: string; actionsActual: number | null }) => walletRpc("opera_wallet_settle", {
+      p_reservation: args.reservationId,
+      p_owner: args.owner,
+      p_artifact_hash: args.artifactHash,
+      p_actions_actual: args.actionsActual
+    }),
+    refund: (args: { owner: string; reservationId: string; reason: string | null }) => walletRpc("opera_wallet_refund", {
+      p_reservation: args.reservationId,
+      p_owner: args.owner,
+      p_reason: args.reason
+    }),
+    depositTopUp: (owner: string) => openTopUp(owner)
+  };
+}
+
 
 Deno.serve(async (req: Request) => {
   const cors = {
@@ -672,6 +832,28 @@ Deno.serve(async (req: Request) => {
         await noteNotification(notification, signatureField, out.ok, `${source}; ${out.why || "the invoice is closed"}`, req);
 
         return json(out, notificationAcknowledged(out) ? 200 : 400, cors);
+      }
+
+      // WHY THE WALLET ANSWERS BEFORE THE REFRESH FORM.
+      // A wallet action is recognised by its own name, and the refresh form is recognised by its token, so the two cannot be confused.
+      // Putting the wallet first keeps every money answer in one shape: a status that says whether the caller may try again, and a body that says why not.
+
+      if (isWalletAction(String(body.action || ""))) {
+        const out = await handleWalletAction(String(body.action), body, walletDeps(req));
+        return json(out.body, out.status, cors);
+      }
+
+      // WHY THE SWEEP IS AN OPERATOR CALL AND NOT A PUBLIC ONE.
+      // Expiring a hold refunds money, so the caller must be the operator and not any browser that guessed the action name.
+      // It is safe to run at any time: the query only touches holds whose window has already passed, and it leaves the ones a task may still settle.
+
+      if (body.action === "wallet-sweep") {
+        const token = req.headers.get("authorization") || "";
+        if (!BILLING_TOKEN || token !== `Bearer ${BILLING_TOKEN}`) {
+          return json({ error: "the operator token is missing or wrong" }, 401, cors);
+        }
+        const out = await walletRpc("opera_wallet_expire", { p_owner: null });
+        return json({ ok: true, ...out }, 200, cors);
       }
 
       // WHY THE REFRESH FORM IS A POST AND NOT A LINK.

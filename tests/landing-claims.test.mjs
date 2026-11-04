@@ -15,7 +15,7 @@ import { mcpSurfaceSourceSync } from './helpers/mcp-surface-source.mjs';
 const root = new URL('..', import.meta.url);
 const read = (name) => fs.readFileSync(new URL(name, root), 'utf8');
 
-const site = ['landing/beranda.html', 'landing/index.html', 'landing/akun.html', 'landing/privasi.html', 'landing/syarat.html', 'landing/unduh.html', 'landing/unduh-berkas.html', 'landing/404.html', 'landing/fitur.html', 'landing/dukungan.html', 'landing/dashboard.html', 'landing/oauth/consent.html']
+const site = ['landing/beranda.html', 'landing/index.html', 'landing/akun.html', 'landing/privasi.html', 'landing/syarat.html', 'landing/harga.html', 'landing/unduh.html', 'landing/unduh-berkas.html', 'landing/404.html', 'landing/fitur.html', 'landing/dukungan.html', 'landing/dashboard.html', 'landing/oauth/consent.html']
   .map(read).join('\n');
 
 const manifest = JSON.parse(read('extension/manifest.json'));
@@ -89,4 +89,17 @@ test('the shared-key rule is stated as a refusal, not as a promise', () => {
 
   assert.match(site, /tidak pernah menerbitkan kunci bersama/, 'the terms refuse a shared key');
   assert.doesNotMatch(site, /kunci API kami|api key kami|shared (model )?key/i, 'no page offers a key of ours');
+});
+
+test('the pricing page states only what the wallet enforces', () => {
+  const page = read('landing/harga.html');
+  const sql = read('supabase/migrations/20261104120000_opera_wallet.sql');
+  const wallet = read('supabase/functions/_shared/wallet.js');
+  assert.match(page, /Rp10\.000/, 'the smallest top-up is stated');
+  assert.match(sql, /1000000, 'IDR'/, 'and the migration prices it at Rp10.000 in cents');
+  assert.match(page, /dikembalikan penuh/, 'a failed job is refunded in full');
+  assert.match(sql, /'refund'/, 'and the ledger has a refund row for it');
+  assert.match(page, /10 aksi/, 'the ten-action cap is stated');
+  assert.match(wallet, /ACTION_CAP = 10/, 'and the code caps one job at ten actions');
+  assert.doesNotMatch(page, /langganan bulanan|per menit|per token|per langkah/i, 'no subscription or per-unit meter is advertised');
 });

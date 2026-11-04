@@ -482,5 +482,78 @@ export const TOOLS = Object.freeze([
       },
       required: ['source', 'client', 'title', 'period', 'groupBy', 'valueColumn']
     }
+  },
+  {
+    name: 'wallet_pair',
+    description: 'Pair this machine with the account that will pay for its work, using the code the dashboard shows a signed-in person. The token it stores is the whole authority of this machine over that wallet, so the code must come from the person who owns it, and a code is spent by the first machine that uses it. Pairing once is enough: every later wallet call uses the stored device.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        code: stringArg('the pairing code from the dashboard'),
+        deviceName: stringArg('the name the dashboard will show for this machine')
+      },
+      required: ['code', 'deviceName']
+    }
+  },
+  {
+    name: 'wallet_balance',
+    description: 'Read the wallet the server holds for this machine\'s owner: the balance, and what is still available after the holds a running task has taken. The balance counts every deposit and refund minus every settle, so a task in flight does not lower it; available is the number a new task must fit inside. Nothing is cached: the answer is what the server says now, and a machine that cannot reach it gets an error rather than a number that was true once.',
+    inputSchema: { type: 'object', properties: {} }
+  },
+  {
+    name: 'wallet_quote',
+    description: 'Price one job before anything is held. The plan is what the work will produce and roughly how many actions it takes: artifact page or document, or list with an item count. The answer is the price, the task kind, how many independent reservations a list becomes, and the balance left after it. Show this number to the person and get their yes before calling task_reserve - the reserve is the moment the money is spoken for.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        artifact: stringArg('page, document, or list'),
+        items: numberArg('how many independent items the list has; ignored for a single artifact'),
+        estSteps: numberArg('roughly how many actions the job takes, per item for a list')
+      },
+      required: ['artifact', 'estSteps']
+    }
+  },
+  {
+    name: 'wallet_top_up',
+    description: 'Open a top-up for this machine\'s owner and answer with the payment page. The smallest top-up is Rp10.000, and the wallet is credited when the provider confirms the payment, not when this call returns. Opening the page costs nothing: an unpaid top-up is an open invoice that expires, never a charge.',
+    inputSchema: { type: 'object', properties: {} }
+  },
+  {
+    name: 'task_reserve',
+    description: 'Hold the price of one job before it starts, and answer with the reservation id that settle or refund will name. Call it only after a person has seen the quote and agreed to the price. A refusal with insufficient means the job must not start at all: show the available balance and the top-up page instead of doing the work and asking later. A refusal with steps-over-cap means the plan is more than one job and must be split, which is also refused before any money is held.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        artifact: stringArg('page, document, or list'),
+        items: numberArg('how many independent items the list has; ignored for a single artifact'),
+        estSteps: numberArg('roughly how many actions the job takes, per item for a list')
+      },
+      required: ['artifact', 'estSteps']
+    }
+  },
+  {
+    name: 'task_settle',
+    description: 'Charge the reserved price for a job that finished, naming the artifact the job produced. The hash is the sha256 of the finished artifact, in lowercase hex; it is the only thing about the work that leaves this machine. Settling twice answers the same and charges once, so a dropped reply is safe to retry. Never call it for work that failed: the price is charged for a finished job, and a failure is refunded in full.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        reservationId: stringArg('the id task_reserve answered with'),
+        artifactHash: stringArg('sha256 of the finished artifact, lowercase hex'),
+        actionsActual: numberArg('how many actions the job really took, for price calibration only')
+      },
+      required: ['reservationId', 'artifactHash']
+    }
+  },
+  {
+    name: 'task_refund',
+    description: 'Give the whole reserved price back for a job that did not finish, and say in one line why so the reason is on the record. A job that failed, overran its ten actions, or stopped because a page asked for a password, an OTP or a card is refunded in full - there is no partial refund and no charge for the steps it managed. Refunding after a settle is refused, because the work was delivered.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        reservationId: stringArg('the id task_reserve answered with'),
+        reason: stringArg('one line the person would understand, such as the page asked for a password')
+      },
+      required: ['reservationId', 'reason']
+    }
   }
 ]);
