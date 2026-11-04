@@ -51,6 +51,16 @@
 }
 
 /*
+ * WHY THE SECTION IN VIEW IS MARKED HERE: the map in the column must agree with the page the reader is on, and this sheet owns that map's border and colour.
+ */
+
+.docNav .toc a[aria-current="true"] {
+  border-left-color: var(--accent);
+  color: var(--ink);
+  font-weight: 600;
+}
+
+/*
  * WHY THE BOX SHOWS ITS KEY: measured against docs.firecrawl.dev on 2026-11-04, its search shows the shortcut it answers, so a reader knows the box is one key away instead of hunting for it.
  */
 

@@ -25,7 +25,7 @@ const FILES = new Set([
   'dukungan.html', 'docs.html', 'harga.html', 'site.css', 'beranda.css',
   'features.css', 'download.css', 'auth.css', 'app.css', 'dashboard.css',
   'harga.css', 'docs.css', 'i18n.js', 'spotlight.js', 'docs.js', 'reveal.js',
-  'oauth/consent.html', 'fonts/instrument-sans-latin.woff2'
+  'wayfind.js', 'oauth/consent.html', 'fonts/instrument-sans-latin.woff2'
 ]);
 
 createServer(async (req, res) => {
