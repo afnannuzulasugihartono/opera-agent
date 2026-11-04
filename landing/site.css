@@ -350,6 +350,49 @@ header nav::-webkit-scrollbar { display: none; }
 }
 
 /*
+ * WHY THE WAY BACK LIVES IN THE CORNER: a reader who scrolled a long page wants one tap back to the top, and measured against docs.firecrawl.dev on 2026-11-05, its rail carries that one door.
+ * The button stays out of the way until the reader has scrolled past a screen and a half, so it never covers the page on arrival.
+ */
+
+.toTop {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 40;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  color: var(--ink);
+  font-size: 15px;
+  cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(6px);
+  transition: opacity .16s var(--ease), transform .16s var(--ease), border-color .16s var(--ease), color .16s var(--ease);
+}
+
+.toTop[data-shown="true"] {
+  opacity: 1;
+  pointer-events: auto;
+  transform: none;
+}
+
+.toTop:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.toTop:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+/*
  * WHY THE MAP MARKS THE SECTION IN VIEW: a reader who scrolls knows where they are, and the map must agree with the page or the map is a second thing to read.
  */
 
@@ -909,6 +952,17 @@ footer .doors a:hover { color: var(--ink); }
   34% { opacity: 0; transform: translateX(38%); }
   100% { opacity: 0; transform: translateX(-38%); }
 }
+
+/*
+ * WHY THE CARDS LIGHT IN TURN: measured against firecrawl.dev on 2026-11-04, its grid breathes in one wave, and cards that flash together read as one blinking block instead of four living cards.
+ * A delay of a seventh of the cycle moves the light one card at a time.
+ */
+
+.bentoArticle:nth-child(2)::after { animation-delay: 1s; }
+.bentoArticle:nth-child(3)::after { animation-delay: 2s; }
+.bentoArticle:nth-child(4)::after { animation-delay: 3s; }
+.bentoArticle:nth-child(5)::after { animation-delay: 4s; }
+.bentoArticle:nth-child(6)::after { animation-delay: 5s; }
 
 .bentoArticle h3 {
   margin: 0 0 8px;
