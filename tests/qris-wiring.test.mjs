@@ -73,3 +73,8 @@ test('the public price list is served before any token check and returns only ac
   assert.match(get, /kind\.eq\.wallet\.deposit,kind\.like\.task\.%/, 'operator plan prices are not customer prices and must not leak to the dashboard');
   assert.doesNotMatch(get.slice(prices, tokenGate), /auth\.getUser|BILLING_TOKEN/, 'no credential is needed to read prices');
 });
+
+test('the detector matches only qris-self invoices, for any customer', () => {
+  assert.match(fn, /\.eq\("provider", "qris-self"\)/, 'a Midtrans invoice is closed by its signed notification, not by the feed');
+  assert.match(fn, /AtmoRouter included/, 'the match is by amount and customer, not by a customer list');
+});

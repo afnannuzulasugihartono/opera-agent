@@ -898,9 +898,12 @@ async function runQrisDetect(): Promise<Record<string, unknown>> {
   if (!GOBIZ_ACCESS_TOKEN || !GOBIZ_MERCHANT_ID || !GOBIZ_DEVICE_ID) {
     return { ok: false, why: "the GoBiz session is not configured on this function" };
   }
+  // WHY ONLY qris-self INVOICES ARE MATCHED.
+  // An invoice on the Midtrans rail is closed by the provider's signed notification, and matching it to a feed transaction too would let one payment close two invoices.
+  // The detector's money is QRIS scanned from our own page, so only invoices opened on that rail are candidates — for any customer, AtmoRouter included.
   const supabase = await db();
   const { data: openInvoices, error } = await supabase.from("opera_invoices")
-    .select("*").eq("status", "open").order("created_at", { ascending: true });
+    .select("*").eq("status", "open").eq("provider", "qris-self").order("created_at", { ascending: true });
   if (error) throw new Error(`open invoices unreadable: ${error.message}`);
 
   let feed = await fetchFeedOnce(GOBIZ_ACCESS_TOKEN);
