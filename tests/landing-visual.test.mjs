@@ -79,7 +79,7 @@ test('the canvas is opencode black, with opencode greys above it', () => {
 test('the hero sells the product instead of apologizing for it', () => {
   const html = read('beranda.html');
   assert.doesNotMatch(html, /Sembilan dua/, 'the broken sentence is gone');
-  assert.match(html, /34 tool/, 'the tool count is stated as a number');
+  assert.match(html, /<dt>\d+<\/dt><dd data-i18n="hero\.stat\.tools">tool MCP/, 'the tool count is stated as a number beside its name');
   assert.match(html, /id="demo"/, 'a product visual answers what the words claim');
   assert.match(html, /id="heroStats"/, 'numbers sit under the call to action, not in prose');
 });
@@ -383,12 +383,65 @@ test('the demo types its proof one line at a time, and never without motion', ()
   assert.match(css, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.mockCmd \{[^}]*animation: none/s, 'and the motion bows out when asked');
 });
 
-test('a hover answers within 120ms, and nothing moves on its own', () => {
+test('the home page shows more than it explains', () => {
+  const html = read('beranda.html');
+  // WHY THE DECORATIVE BLOCKS ARE LEFT OUT: the strip repeats site names for the loop and the quick tiles only exist for a signed-in reader.
+  // Neither is prose a visitor reads, so neither is counted against the copy budget.
+  const visible = html
+    .replace(/<script[\s\S]*?<\/script>/g, ' ')
+    .replace(/<!--[\s\S]*?-->/g, ' ')
+    .replace(/<div class="marquee" aria-hidden="true">[\s\S]*?<\/div>\s*<\/div>/g, ' ')
+    .replace(/<div class="grid" id="quickTiles" hidden>[\s\S]*?<\/div>\s*<\/div>/g, ' ')
+    .replace(/<div class="row" id="ctaIn" hidden>[\s\S]*?<\/div>/g, ' ')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&[a-z]+;/g, ' ');
+  const words = visible.split(/\s+/).filter(Boolean).length;
+  assert.ok(words <= 430, `the home page stays under 430 words, and carries ${words}`);
+});
+
+test('the hero shows three moments of the product, not one picture', () => {
+  const html = read('beranda.html');
+  assert.match(html, /role="tablist"/, 'the visual has tabs');
+  assert.ok((html.match(/role="tab"/g) || []).length >= 3, 'three tabs');
+  assert.ok((html.match(/role="tabpanel"/g) || []).length >= 3, 'three panels');
+  assert.match(html, /class="demoTab"/, 'the tabs carry the class the sheet paints');
+});
+
+test('the strip of pages our users open moves once and stops when asked', () => {
+  const html = read('beranda.html');
+  const css = read('beranda.css');
+  assert.match(html, /class="marquee"/, 'the strip is on the page');
+  const track = /class="marqueeTrack"[^>]*>([\s\S]*?)<\/div>\s*<\/div>/.exec(html)?.[1] ?? '';
+  assert.ok((track.match(/<span>/g) || []).length >= 20, 'the strip repeats so it can loop');
+  assert.match(css, /@keyframes marquee/, 'and it moves');
+  assert.match(css, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.marqueeTrack \{[^}]*animation: none/s, 'and it stops when the reader asks');
+});
+
+test('the capability cards answer the pointer', () => {
+  const html = read('beranda.html');
+  const css = read('beranda.css');
+  assert.match(html, /class="bento"/, 'the home carries a bento grid');
+  assert.ok((html.match(/class="bentoArticle"/g) || []).length >= 4, 'at least four cards');
+  assert.match(css, /\.bentoArticle \{[^}]*--mx/s, 'the card reads the pointer');
+  assert.match(html, /pointermove/, 'and the page feeds it');
+});
+
+test('the numbers count up once, when they arrive', () => {
+  const html = read('beranda.html');
+  assert.match(html, /requestAnimationFrame/, 'the count runs on frames');
+  assert.match(html, /prefers-reduced-motion/, 'and the reader can refuse it');
+});
+
+test('a hover answers within 120ms, and only the strip and the cursor move on their own', () => {
   const sheet = read('site.css');
   assert.match(sheet, /\.tile:hover \{[^}]*transform: translateY\(-1px\)/s, 'a tile lifts one pixel');
   assert.match(sheet, /\.exitList a:hover \{[^}]*color: var\(--accent\)/s, 'a link answers in the accent');
   assert.doesNotMatch(sheet, /@keyframes (float|drift|pulse|spin|glow)/, 'and no keyframe moves anything without the reader');
-  assert.doesNotMatch(read('beranda.css') + read('features.css') + read('download.css'), /animation-iteration-count: infinite/, 'except the live cursor the demo earns');
+  const loops = [...read('beranda.css').matchAll(/([^{}]+)\{([^}]*animation[^}]*)\}/g)]
+    .filter((match) => /infinite/.test(match[2]))
+    .map((match) => match[1].trim());
+  assert.ok(loops.every((selector) => /\.marqueeTrack|\.cursor/.test(selector)), `only the strip and the cursor loop, and ${loops.length} do`);
+  assert.doesNotMatch(read('features.css') + read('download.css'), /animation-iteration-count:\s*infinite/, 'the other pages keep their calm');
 });
 
 test('the shared radius is the only radius a control names', () => {

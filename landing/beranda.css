@@ -12,6 +12,37 @@
   max-width: var(--wrap);
 }
 
+/* ── announcement bar ───────────────────────────────────────────────────── */
+
+/*
+ * WHY the bar sits above the hero and names one fact: it is the one line a reader who scrolls nothing else still gets.
+ * It carries no number, because the price page owns the numbers.
+ */
+
+.announce {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin: 0 0 8px;
+  padding: 9px 16px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.announce a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.announce a:hover {
+  text-decoration: underline;
+}
+
 /* ── hero ───────────────────────────────────────────────────────────────── */
 
 .hero {
@@ -170,8 +201,56 @@
   text-transform: uppercase;
 }
 
-.demoBody {
+.demoTabs {
+  display: flex;
+  gap: 4px;
+  padding: 10px 12px 0;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface-2);
+}
+
+.demoTab {
+  padding: 7px 12px;
+  border: 1px solid transparent;
+  border-bottom: 0;
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  background: none;
+  color: var(--muted);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .01em;
+  cursor: pointer;
+  transition: color .16s var(--ease), background-color .16s var(--ease), border-color .16s var(--ease);
+}
+
+.demoTab:hover {
+  color: var(--ink);
+}
+
+.demoTab.is-on {
+  border-color: var(--line);
+  background: var(--surface);
+  color: var(--accent);
+}
+
+.demoTab:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: -2px;
+}
+
+.demoPanel {
   padding: 18px;
+  animation: panel-in .22s var(--ease) both;
+}
+
+@keyframes panel-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .demoPanel { animation: none; }
 }
 
 .mockTop {
@@ -312,6 +391,109 @@
   }
   .heroStats {
     gap: 14px 26px;
+  }
+}
+
+/* ── site strip ─────────────────────────────────────────────────────────── */
+
+/*
+ * WHY the strip moves on its own: it is the one thing on the page that answers "where does it work?" without a sentence.
+ * It stops the moment the reader asks for stillness, and it pauses under the pointer so a name can be read.
+ */
+
+.strip {
+  padding: 34px 0 30px;
+  border-top: 1px solid var(--line);
+}
+
+.stripLabel {
+  margin: 0 0 16px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.marquee {
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(90deg, transparent, var(--bg) 8%, var(--bg) 92%, transparent);
+  mask-image: linear-gradient(90deg, transparent, var(--bg) 8%, var(--bg) 92%, transparent);
+}
+
+.marqueeTrack {
+  display: flex;
+  width: max-content;
+  animation: marquee 42s linear infinite;
+}
+
+.marqueeTrack span {
+  margin-right: 42px;
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+.marquee:hover .marqueeTrack {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .marqueeTrack { animation: none; }
+}
+
+/* ── bento ──────────────────────────────────────────────────────────────── */
+
+/*
+ * WHY the cards follow the pointer: the grid is the product list, and a light under the cursor tells the reader which card is live before they click it.
+ * The light is painted with a gradient at --mx and --my, so the page writes two numbers per move instead of moving a node.
+ */
+
+.bento {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.bentoArticle {
+  --mx: 50%;
+  --my: 50%;
+  position: relative;
+  padding: 26px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background:
+    radial-gradient(320px circle at var(--mx) var(--my), var(--accent-soft), transparent 62%),
+    var(--surface);
+  transition: border-color .16s var(--ease), transform .16s var(--ease);
+}
+
+.bentoArticle:hover {
+  border-color: var(--line-strong);
+  transform: translateY(-2px);
+}
+
+.bentoArticle h3 {
+  margin: 0 0 8px;
+  font-size: 16px;
+}
+
+.bentoArticle p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+@media (max-width: 640px) {
+  .bento {
+    grid-template-columns: 1fr;
   }
 }
 
