@@ -65,6 +65,7 @@ import {
 import { DEPOSIT_KIND } from "../_shared/wallet.js";
 import { handleWalletAction, isWalletAction } from "../_shared/wallet-api.js";
 import { toDynamicQris } from "../_shared/qris.js";
+import { FEED_URL, TOKEN_URL, detectorPlan, feedHeaders, feedQuery, matchOpenInvoices, parseFeed } from "../_shared/qris-detector.js";
 
 type PriceRow = { kind: string; unit: string; amount_cents: number; currency: string; active: boolean };
 type Line = { kind: string; unit?: string; description?: string | null; quantity: number; amountCents: number; reason?: string };
@@ -132,6 +133,16 @@ const BILLING_RAIL = (Deno.env.get("BILLING_RAIL") || "midtrans").trim().toLower
 // It lives in the function's env like every other secret, and the tests use a synthetic payload.
 
 const QRIS_STATIC_PAYLOAD = Deno.env.get("QRIS_STATIC_PAYLOAD") || "";
+
+// WHY THE DETECTOR'S CREDENTIALS ARE ENVS LIKE EVERY OTHER SECRET.
+// The GoBiz session is the merchant's own login, held by the function so a cron can poll without a phone.
+// The mode env is the gate: dry is the default because the feed's amount unit was never measured, and live without that measurement closes the wrong invoice.
+
+const QRIS_DETECTOR_MODE = (Deno.env.get("QRIS_DETECTOR_MODE") || "dry").trim().toLowerCase();
+const GOBIZ_ACCESS_TOKEN = Deno.env.get("GOBIZ_ACCESS_TOKEN") || "";
+const GOBIZ_REFRESH_TOKEN = Deno.env.get("GOBIZ_REFRESH_TOKEN") || "";
+const GOBIZ_DEVICE_ID = Deno.env.get("GOBIZ_DEVICE_ID") || "";
+const GOBIZ_MERCHANT_ID = Deno.env.get("GOBIZ_MERCHANT_ID") || "";
 
 // The first customers pay by transfer; the account line is theirs to read, so it is configuration and never code.
 
@@ -822,6 +833,99 @@ async function qrisSvgForInvoice(invoice: InvoiceRow): Promise<string | null> {
   return qrisSvgFor(dynamic);
 }
 
+// WHY THE DETECTOR READS A WINDOW AND NOT "days".
+// The feed refused day-only and epoch windows on 2026-11-02; start_time and end_time in RFC3339 are the accepted form, so the window is computed here, from the oldest open invoice to now, capped to the page the API allows.
+
+async function fetchFeedOnce(accessToken: string): Promise<{ status: number; body: unknown }> {
+  const now = new Date();
+  const from = new Date(now.getTime() - 24 * 3600 * 1000);
+  const query = feedQuery({
+    merchantId: GOBIZ_MERCHANT_ID,
+    from: 0,
+    size: 200,
+    startTime: from.toISOString(),
+    endTime: now.toISOString()
+  });
+  if (!query) return { status: 400, body: { error: "the feed query could not be built" } };
+  const headers = feedHeaders({ accessToken, uniqueId: GOBIZ_DEVICE_ID });
+  if (!headers) return { status: 400, body: { error: "the GoBiz session is not configured" } };
+  const response = await fetch(`${FEED_URL}?${query}`, { headers });
+  const body = await response.json().catch(() => ({}));
+  return { status: response.status, body };
+}
+
+async function refreshGoBizToken(): Promise<string | null> {
+  if (!GOBIZ_REFRESH_TOKEN) return null;
+  try {
+    const response = await fetch(TOKEN_URL, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ grant_type: "refresh_token", refresh_token: GOBIZ_REFRESH_TOKEN })
+    });
+    const body = await response.json().catch(() => ({})) as Record<string, unknown>;
+    const token = typeof body.access_token === "string" ? body.access_token : null;
+    return response.ok ? token : null;
+  } catch {
+    return null;
+  }
+}
+
+// WHY LIVE MODE CLOSES THROUGH THE SAME GUARD AS A NOTIFICATION.
+// paid_at is null in the update's WHERE, so two detectors racing on one transaction close it once and the loser's credit is the no-op the ledger's unique ref already enforces.
+
+async function closeFromFeed(match: { invoiceId: string; transactionId: string; method: string }): Promise<boolean> {
+  const supabase = await db();
+  const { data: closed, error } = await supabase.from("opera_invoices")
+    .update({
+      status: "paid",
+      paid_at: new Date().toISOString(),
+      paid_method: match.method || "qris",
+      provider_transaction_id: match.transactionId
+    })
+    .eq("id", match.invoiceId)
+    .eq("status", "open")
+    .is("paid_at", null)
+    .select("*")
+    .maybeSingle();
+  if (error) throw new Error(`the feed-paid invoice could not be closed: ${error.message}`);
+  if (!closed) return false;
+  await creditTopUp(closed);
+  return true;
+}
+
+async function runQrisDetect(): Promise<Record<string, unknown>> {
+  if (!GOBIZ_ACCESS_TOKEN || !GOBIZ_MERCHANT_ID || !GOBIZ_DEVICE_ID) {
+    return { ok: false, why: "the GoBiz session is not configured on this function" };
+  }
+  const supabase = await db();
+  const { data: openInvoices, error } = await supabase.from("opera_invoices")
+    .select("*").eq("status", "open").order("created_at", { ascending: true });
+  if (error) throw new Error(`open invoices unreadable: ${error.message}`);
+
+  let feed = await fetchFeedOnce(GOBIZ_ACCESS_TOKEN);
+  if (feed.status === 401) {
+    const renewed = await refreshGoBizToken();
+    if (renewed) feed = await fetchFeedOnce(renewed);
+  }
+  if (feed.status !== 200) return { ok: false, why: `the feed answered ${feed.status}` };
+
+  const transactions = parseFeed(feed.body);
+  const byUnit = {
+    rupiah: matchOpenInvoices(openInvoices || [], transactions, "rupiah"),
+    minor: matchOpenInvoices(openInvoices || [], transactions, "minor")
+  };
+  const plan = detectorPlan(QRIS_DETECTOR_MODE, byUnit);
+  if (plan.mode === "live") {
+    const closed = [];
+    for (const match of plan.closes) {
+      if (await closeFromFeed(match)) closed.push(match.invoiceId);
+    }
+    return { ok: true, mode: "live", closed, transactions: transactions.length };
+  }
+  log.warn("QRIS_DETECT_DRY", JSON.stringify({ wouldClose: plan.wouldClose, rupiah: plan.rupiahMatches.length, minor: plan.minorMatches.length, transactions: transactions.length }));
+  return { ok: true, mode: "dry", wouldClose: plan.wouldClose, transactions: transactions.length };
+}
+
 Deno.serve(async (req: Request) => {
 
 // WHY apikey IS ALLOWED: the dashboard calls this function with the publishable key in the apikey header beside the bearer session, and a preflight that does not name apikey makes the browser drop the request before it is sent.
@@ -908,6 +1012,17 @@ const cors = {
         }
         const out = await walletRpc("opera_wallet_expire", { p_owner: null });
         return json({ ok: true, ...out }, 200, cors);
+      }
+
+      // WHY THE DETECTOR IS AN OPERATOR CALL LIKE THE SWEEP.
+      // In live mode it closes invoices, which moves money into wallets, so the caller must be the operator; in dry mode it only logs, but the same gate keeps one code path for both.
+
+      if (body.action === "qris-detect") {
+        const token = req.headers.get("authorization") || "";
+        if (!BILLING_TOKEN || token !== `Bearer ${BILLING_TOKEN}`) {
+          return json({ error: "the operator token is missing or wrong" }, 401, cors);
+        }
+        return json(await runQrisDetect(), 200, cors);
       }
 
       // WHY THE REFRESH FORM IS A POST AND NOT A LINK.
