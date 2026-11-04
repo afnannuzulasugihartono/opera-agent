@@ -59,3 +59,8 @@ test('the sweep that refunds an abandoned hold needs the operator token', () => 
   assert.ok(gate > 0, 'the sweep must check the operator token');
   assert.ok(call > gate, 'the check must come before the refund it guards');
 });
+
+test('the preflight names the apikey header the dashboard sends', () => {
+  assert.match(fn, /access-control-allow-headers": "authorization, content-type, apikey"/,
+    'the dashboard calls this function with the publishable key in apikey, and a preflight that does not name it makes the browser drop the call before it is sent');
+});
