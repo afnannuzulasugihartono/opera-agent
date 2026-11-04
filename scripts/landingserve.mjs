@@ -22,8 +22,9 @@ const port = Number(process.argv[2] || 8777);
 const FILES = new Set([
   'beranda.html', 'index.html', 'akun.html', 'dashboard.html', 'unduh.html',
   'unduh-berkas.html', 'privasi.html', 'syarat.html', '404.html', 'fitur.html',
-  'dukungan.html', 'site.css', 'beranda.css', 'features.css', 'download.css',
-  'auth.css', 'app.css', 'dashboard.css', 'i18n.js', 'oauth/consent.html'
+  'dukungan.html', 'docs.html', 'harga.html', 'site.css', 'beranda.css',
+  'features.css', 'download.css', 'auth.css', 'app.css', 'dashboard.css',
+  'i18n.js', 'oauth/consent.html'
 ]);
 
 createServer(async (req, res) => {
