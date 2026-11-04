@@ -322,6 +322,19 @@ test('the home page pauses on one statement, and the accent word carries it', ()
   assert.match(css, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.statementAccent::after \{[^}]*animation: none/s, 'and the motion bows out when asked');
 });
 
+test('the install panel shows a live pairing code, and the hero mock drifts with the scroll', () => {
+  // WHY THE PANEL MOVES: a pairing code that never changes is a picture, and the panel is where the reader learns that a code expires.
+  // WHY THE MOCK LAGS: measured against firecrawl.dev on 2026-11-05, its product visual sits at its own depth, and a page where every part travels together reads flat.
+  const html = read('beranda.html');
+  assert.match(html, /class="pairCode"/, 'the panel shows a pairing code');
+  assert.match(html, /id="pairTime"/, 'and the time it has left');
+  assert.match(html, /setInterval\(paint, 1000\)/, 'the clock ticks');
+  const css = cssOf('beranda.html');
+  assert.match(css, /\.pairRow \{[^}]*grid-template-columns/s, 'the panel rows line up');
+  assert.match(css, /@supports \(animation-timeline: scroll\(\)\) \{[\s\S]*?\.demo \{[^}]*animation-timeline: scroll\(root block\)/s, 'and the mock drifts where the browser can scroll a timeline');
+  assert.match(css, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.demo \{[^}]*animation: none/s, 'and the drift bows out when asked');
+});
+
 test('the shared spotlight script only paints what the pointer names', () => {
   const src = read('spotlight.js');
   assert.match(src, /pointermove/, 'it listens to the pointer');
