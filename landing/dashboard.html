@@ -174,6 +174,16 @@
             <p class="status" id="walletStatus" role="status" aria-live="polite">&nbsp;</p>
           </div>
           <div class="card tableCard">
+            <p class="meta">Daftar harga — dibaca dari server setiap halaman dibuka, sama seperti saldo. Yang dipotong hanya saat satu pekerjaan selesai.</p>
+            <table class="history">
+              <thead>
+                <tr><th>Pekerjaan</th><th>Harga</th></tr>
+              </thead>
+              <tbody id="priceRows"></tbody>
+            </table>
+            <div class="empty" id="priceEmpty" hidden><strong>Belum bisa memuat harga.</strong><p>Coba tombol muat ulang.</p></div>
+          </div>
+          <div class="card tableCard">
             <table class="history">
               <thead>
                 <tr><th>Waktu</th><th>Jenis</th><th>Jumlah</th><th>Catatan</th></tr>
@@ -1171,6 +1181,12 @@
 
     const walletNf = (cents) => `Rp${(Number(cents) / 100).toLocaleString('id-ID')}`;
     const walletKindLabel = { deposit: 'Isi ulang', settle: 'Pekerjaan selesai', refund: 'Pengembalian', adjust: 'Penyesuaian' };
+    const priceLabel = {
+      'wallet.deposit': 'Isi ulang saldo (QRIS)',
+      'task.simple': 'Pekerjaan sederhana — saat selesai',
+      'task.report': 'Laporan — saat selesai',
+      'task.batch_item': 'Per item batch — saat selesai'
+    };
 
     async function walletCall(action, body = {}) {
       const session = await currentSession();
@@ -1194,6 +1210,24 @@
       try {
         balance = await walletCall('wallet-balance');
         history = await walletCall('wallet-history');
+        const priceResponse = await fetch(`${BILLING_FN}?prices=1`);
+        const priceAnswer = await priceResponse.json().catch(() => ({}));
+        if (priceResponse.ok && Array.isArray(priceAnswer.prices)) {
+          const rows = $('priceRows');
+          rows.textContent = '';
+          for (const price of priceAnswer.prices) {
+            const tr = document.createElement('tr');
+            for (const text of [priceLabel[price.kind] || price.kind, walletNf(price.amount_cents)]) {
+              const td = document.createElement('td');
+              td.textContent = text;
+              tr.appendChild(td);
+            }
+            rows.appendChild(tr);
+          }
+          $('priceEmpty').hidden = priceAnswer.prices.length > 0;
+        } else {
+          $('priceEmpty').hidden = false;
+        }
       } catch {
         status.textContent = 'Tidak bisa menjangkau server saldo. Coba muat ulang.';
         status.className = 'status warn';

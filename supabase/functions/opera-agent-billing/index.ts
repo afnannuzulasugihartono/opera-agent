@@ -942,6 +942,18 @@ const cors = {
   const url = new URL(req.url);
   try {
     if (req.method === "GET") {
+      // WHY THE PRICE LIST IS PUBLIC AND NEEDS NO TOKEN.
+      // A price the customer cannot see before agreeing is not a price, it is a surprise, and the harga page and the dashboard both read it.
+      // Only active rows are returned, so a retired price disappears from every reader at once.
+      if (url.searchParams.get("prices") === "1") {
+        const supabase = await db();
+        const { data, error } = await supabase.from("opera_price_list")
+          .select("kind, unit, amount_cents, currency")
+          .eq("active", true)
+          .order("amount_cents", { ascending: true });
+        if (error) throw new Error(`the price list is unreadable: ${error.message}`);
+        return json({ ok: true, prices: data || [] }, 200, cors);
+      }
       const invoiceId = url.searchParams.get("invoice_id") || "";
       const token = url.searchParams.get("token") || "";
       if (!invoiceId || !token) return json({ error: "invoice_id and token are required" }, 400, cors);

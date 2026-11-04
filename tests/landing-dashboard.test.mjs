@@ -845,3 +845,10 @@ test('the wallet view reads through the billing function with the session, never
   assert.doesNotMatch(html, /rest\/v1\/(opera_ledger|opera_wallets|opera_reservations)/, 'no raw money table is named by the page');
   assert.doesNotMatch(html, /localStorage[^;]*[Bb]alance/, 'the page never stores a balance locally');
 });
+
+test('the saldo view also lists the prices from the server, not a hardcoded table', () => {
+  const html = read('dashboard.html');
+  assert.match(html, /id="priceRows"/, 'the price list has its own table');
+  assert.match(html, /\$\{BILLING_FN\}\?prices=1/, 'the prices are fetched from the billing function');
+  assert.match(html, /priceLabel\[price\.kind\]/, 'unknown kinds still render under their own name');
+});
