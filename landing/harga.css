@@ -15,10 +15,16 @@
 }
 
 .priceCard {
+  --mx: 50%;
+  --my: 50%;
+  position: relative;
   padding: 24px;
+  overflow: hidden;
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  background: var(--surface);
+  background:
+    radial-gradient(300px circle at var(--mx) var(--my), var(--accent-soft), transparent 62%),
+    var(--surface);
   transition: border-color .16s var(--ease), transform .16s var(--ease);
 }
 
@@ -84,4 +90,23 @@
 @media (max-width: 860px) {
   .priceCards { grid-template-columns: 1fr; }
   .glance { grid-template-columns: 1fr; }
+}
+
+/* ── the rules, answered in place ─────────────────────────────────────────── */
+
+/*
+ * WHY THE RULES OPEN IN PLACE: measured against firecrawl.dev/pricing on 2026-11-05, its billing rules wait behind questions that open where they stand, and five open paragraphs read as a wall before the reader has a question.
+ */
+
+.qa > summary { font-size: 18px; }
+
+.qa:first-of-type { border-top: 1px solid var(--line); }
+
+/*
+ * WHY THE PHONE KEEPS ONLY THE RULES: the rows are their own map, and the same five labels twice in a row is a list that reads as a stutter.
+ * The sidebar stays on a wide screen, where it sits beside the text instead of above it.
+ */
+
+@media (max-width: 899px) {
+  main.prose .toc { display: none; }
 }

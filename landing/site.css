@@ -1416,7 +1416,7 @@ ul.consents button { margin-left: auto; }
 }
 
 .faqList details[open] summary::after,
-.prose details[open] > summary::after { content: "âˆ’"; }
+.prose details[open] > summary::after { content: "−"; }
 
 .faqList details p,
 .prose details > p {
