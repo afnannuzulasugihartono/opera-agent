@@ -1,7 +1,7 @@
-<!-- @last-edited: 2026-10-26 UTC+7. -->
+<!-- @last-edited: 2026-11-05 UTC+7. -->
 <!-- @title: dukungan.html — practical reference, real links only. -->
-<!-- @state: Dukungan. -->
-<!-- @dependencies: site.css, i18n.js, reveal.js, wayfind.js, palette.js. -->
+<!-- @state: a standing lead beside five ranked answers that open in place. -->
+<!-- @dependencies: site.css, support.css, i18n.js, reveal.js, wayfind.js, palette.js. -->
 
 <!doctype html>
 <html lang="id">
@@ -12,6 +12,7 @@
   <title data-i18n="meta.title">Dukungan — Opera Agent</title>
   <meta name="description" content="Dukungan Opera Agent: cara mengatasi device yang tidak muncul, ekstensi yang tidak ter-pasang, sesi yang keluar sendiri, dan laporan privasi yang benar." />
   <link rel="stylesheet" href="/site.css" />
+  <link rel="stylesheet" href="/support.css" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%230b0d10'/%3E%3Cpath d='M5.2 2.2v10.2l2.5-2.3 1.5 3.6 1.9-.8-1.6-3.6h3.1L5.2 2.2Z' fill='%233ecf8e'/%3E%3C/svg%3E" />
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="Opera Agent" />
@@ -37,44 +38,50 @@
     </div>
   </header>
 
-  <main class="wrap prose">
-    <h1 data-i18n="page.title">Dukungan</h1>
-    <p class="updated" data-i18n="page.sub">Tempat bertanya dan melapor.</p>
-    <p data-i18n="intro">Ini produk yang dioperasikan sendiri, jadi dukungan paling efektif adalah langkah
+  <main class="wrap prose supportMain">
+    <header class="supportHero" data-reveal>
+      <h1 data-i18n="page.title">Dukungan</h1>
+      <p class="updated" data-i18n="page.sub">Tempat bertanya dan melapor.</p>
+      <p data-i18n="intro">Ini produk yang dioperasikan sendiri, jadi dukungan paling efektif adalah langkah
     konkret di bawah.</p>
+      <p class="supportHint" data-i18n-html="hint">Tidak ada di daftar? <kbd>Ctrl</kbd> <kbd>K</kbd> mencari semua halaman.</p>
+    </header>
 
-    <details data-reveal>
-      <summary data-i18n="nodev.title">Device tidak muncul di Dashboard</summary>
-      <p data-i18n="nodev.body">Buka <a href="./dashboard.html">Dashboard</a> dan lihat status tiap device. Jika
+    <div class="fixList">
+      <details class="fix" id="device" data-reveal>
+        <summary><span class="fixIndex" aria-hidden="true">01</span><span data-i18n="nodev.title">Device tidak muncul di Dashboard</span></summary>
+        <p data-i18n="nodev.body">Buka <a href="./dashboard.html">Dashboard</a> dan lihat status tiap device. Jika
     offline, pasangkan ulang lewat kode baru di sana. Jangan biarkan device tak dikenal
     tetap ter-pairing; cabut yang tidak Anda kenal.</p>
-    </details>
-    <details data-reveal>
-      <summary data-i18n="noext.title">Ekstensi tidak ter-pasang</summary>
-      <p data-i18n="noext.body">Ikuti <a href="./unduh.html">Unduh</a>. Jika tombol instalasi otomatis
+      </details>
+      <details class="fix" id="ext" data-reveal>
+        <summary><span class="fixIndex" aria-hidden="true">02</span><span data-i18n="noext.title">Ekstensi tidak ter-pasang</span></summary>
+        <p data-i18n="noext.body">Ikuti <a href="./unduh.html">Unduh</a>. Jika tombol instalasi otomatis
     diblokir, pakai arsip mentah dan aktifkan mode pengembang, lalu centang browser Anda
     dan tekan <strong>Pasang</strong>. Periksa <em>chrome://extensions</em> dan
     <em>chrome://policy</em>.</p>
-    </details>
-    <details data-reveal>
-      <summary data-i18n="mcp.title">Menghubungkan AI harness (OpenCode, Kilo, ChatGPT, Claude)</summary>
-      <p data-i18n-html="mcp.pointer">Server MCP, header device, dan config OpenCode, Kilo, serta Claude ada di halaman <a href="./docs.html">Docs</a>.</p>
+      </details>
+      <details class="fix" id="mcp" data-reveal>
+        <summary><span class="fixIndex" aria-hidden="true">03</span><span data-i18n="mcp.title">Menghubungkan AI harness (OpenCode, Kilo, ChatGPT, Claude)</span></summary>
+        <p data-i18n-html="mcp.pointer">Server MCP, header device, dan config OpenCode, Kilo, serta Claude ada di halaman <a href="./docs.html">Docs</a>.</p>
 
-    </details>
-    <details data-reveal>
-      <summary data-i18n="session.title">Sesi Anda keluar sendiri</summary>
-      <p data-i18n="session.body">Token akses kedaluwarsa sekitar satu jam. Biasanya diperbarui otomatis lewat
+      </details>
+      <details class="fix" id="sesi" data-reveal>
+        <summary><span class="fixIndex" aria-hidden="true">04</span><span data-i18n="session.title">Sesi Anda keluar sendiri</span></summary>
+        <p data-i18n="session.body">Token akses kedaluwarsa sekitar satu jam. Biasanya diperbarui otomatis lewat
     refresh token yang tersimpan; jika refresh ikut gagal, Anda dipulangkan ke
     <a href="./index.html">Masuk</a>. Itu disengaja, bukan kehilangan akun. Riwayat
     perintah tetap ada.</p>
-    </details>
-    <details data-reveal>
-      <summary data-i18n="privacy.title">Privasi dan data</summary>
-      <p data-i18n="privacy.body">Pertanyaan tentang kendali data: semuanya mandiri di halaman
+      </details>
+      <details class="fix" id="privasi" data-reveal>
+        <summary><span class="fixIndex" aria-hidden="true">05</span><span data-i18n="privacy.title">Privasi dan data</span></summary>
+        <p data-i18n="privacy.body">Pertanyaan tentang kendali data: semuanya mandiri di halaman
     <a href="./akun.html">Akun</a> dan <a href="./privasi.html">Privasi</a>.
     Temuan keamanan jangan dibuka sebagai isu publik; laporkan privat lewat tab
     Security di repositori.</p>
-    </details>  </main>
+      </details>
+    </div>
+  </main>
 
     <footer>
     <div class="wrap footGrid">
@@ -126,6 +133,7 @@
       "page.title": "Support",
       "page.sub": "Where you can ask for help, and where you can report.",
       "intro": "This is a self-operated product, so the most effective support is the concrete steps below.",
+      "hint": "Missing something? <kbd>Ctrl</kbd> <kbd>K</kbd> searches every page.",
       "nodev.title": "Device missing from the dashboard",
       "noext.title": "Extension not installed",
       "mcp.title": "Connecting an AI harness (OpenCode, Kilo, ChatGPT, Claude)",

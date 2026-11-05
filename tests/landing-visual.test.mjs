@@ -443,6 +443,23 @@ test('the 404 offers its exits as a list, and counts them honestly', () => {
   assert.match(read('site.css'), /\.exitList a:hover/, 'a link answers the hover, so it reads clickable');
 });
 
+test('the support page sets its answers beside the question it opens with', () => {
+  // WHY THIS PAGE NEEDS A SHAPE: measured against firecrawl.dev (support and troubleshooting pages) on 2026-11-05, its help pages rank each symptom and answer it beside a standing lead; this page was five identical rows on a 900px screen with no rank and no entry.
+  const html = read('dukungan.html');
+  assert.match(html, /<header class="supportHero"/, 'the page opens with a standing lead');
+  const ids = [...html.matchAll(/<details class="fix" id="([a-z]+)"/g)].map((match) => match[1]);
+  assert.deepEqual(ids, ['device', 'ext', 'mcp', 'sesi', 'privasi'], 'each symptom opens in place and keeps an anchor of its own');
+  assert.equal((html.match(/class="fixIndex"/g) || []).length, 5, 'and carries its rank');
+  assert.ok(html.includes('rel="stylesheet" href="/support.css"'), 'the page has a sheet of its own');
+  const sheet = read('support.css');
+  assert.match(sheet, /\.supportMain \{[^}]*grid-template-columns: minmax\(0, 340px\) minmax\(0, 680px\)/s, 'the lead stands beside the answers on a wide screen');
+  assert.match(sheet, /\.supportHero \{[^}]*position: sticky/s, 'and stays while the answers scroll');
+  assert.match(sheet, /\.fix\[open\]/, 'an open answer takes the accent');
+  assert.match(sheet, /@keyframes fix-in/, 'the rows arrive once');
+  assert.match(sheet, /\.fix:nth-child\(3\)[^{]*\{[^}]*animation-delay/s, 'in turn');
+  assert.doesNotMatch(sheet, /#[0-9a-f]{3,6}\b/i, 'and the sheet paints no colour literal');
+});
+
 test('the reading pages keep their map beside the text', () => {
   const css = read('site.css');
   assert.match(css, /main\.prose:has\(\.toc\)/, 'a page with a map lays the map beside the text');
