@@ -150,7 +150,7 @@ test('a deck carries a figure the report checked, and refuses one it does not ho
   assert.ok(entries.has('ppt/theme/theme1.xml'));
   assert.ok(entries.has('ppt/slides/slide4.xml'));
 
-  const slide = entries.get('ppt/slides/slide3.xml').toString('utf8');
+  const slide = entries.get('ppt/slides/slide4.xml').toString('utf8');
   const figure = workbook.figures.find((item) => item.id === 'group:Pendapatan Penjualan');
   assert.ok(slide.includes(figure.display), 'the slide shows the checked value');
 
@@ -171,7 +171,74 @@ test('a paper becomes a Word file with its headings, its tables and its numbers'
   assert.ok(document.includes('Dampak Promosi terhadap Kinerja Kanal Sinar Jaya'));
   assert.ok(document.includes('Ringkasan eksekutif'));
   assert.ok(document.includes('Tambahan pendapatan per kanal'));
-  assert.ok(document.includes('12500000'), 'the graph carries the numbers it was checked against');
+  assert.ok(document.includes('12.500.000'), 'the graph carries the numbers it was checked against, read the Indonesian way');
+});
+
+test('the workbook reads as a document, not as a dump of cells', () => {
+  const dir = workspace();
+  const { workbook } = buildMockup(dir);
+
+  const entries = readZip(fs.readFileSync(workbook.out));
+  const sheet = entries.get('xl/worksheets/sheet1.xml').toString('utf8');
+  const styles = entries.get('xl/styles.xml').toString('utf8');
+
+  assert.ok(sheet.includes('Laporan Keuangan September 2026'), 'the sheet names the report it holds');
+  assert.ok(sheet.includes('Sinar Jaya'), 'the sheet names the client it is for');
+  assert.match(sheet, /showGridLines="0"/, 'the gridlines are off, so the sheet reads as a document');
+  assert.match(sheet, /<pane [^>]*state="frozen"/, 'the header stays put while the rows scroll');
+  assert.match(sheet, /<cols>[\s\S]*customWidth="1"/, 'the columns are as wide as their content');
+  assert.match(sheet, /<col min="2" max="2" width="1[5-9]/, 'the money column is wide enough to show the money');
+  assert.match(styles, /rgb="FF3ECF8E"/, 'the accent colour is in the styles');
+  assert.match(styles, /rgb="FF17181C"/, 'the ink colour is in the styles');
+  assert.match(styles, /id-ID/, 'the money reads the Indonesian way');
+  assert.match(sheet, /<c r="A4" s="\d+"/, 'the header row carries a style of its own');
+});
+
+test('the deck opens on a cover, and every slide carries the house style', () => {
+  const dir = workspace();
+  const { deck, workbook } = buildMockup(dir);
+
+  const entries = readZip(fs.readFileSync(deck.out));
+  const cover = entries.get('ppt/slides/slide1.xml').toString('utf8');
+  assert.ok(cover.includes('Rencana Strategis 2027'), 'the cover names the deck');
+  assert.match(cover, /val="17181C"/, 'the cover is ink');
+  assert.match(cover, /sz="4000"/, 'the cover title is 40pt');
+  assert.match(cover, /val="3ECF8E"/, 'the cover carries the accent');
+
+  const slide = entries.get('ppt/slides/slide2.xml').toString('utf8');
+  assert.match(slide, /sz="2800"/, 'the slide title is 28pt');
+  assert.match(slide, /sz="1600"/, 'the bullets are 16pt');
+  assert.match(slide, /val="3ECF8E"/, 'the accent rule is on the slide');
+  assert.ok(slide.includes('Rencana Strategis 2027'), 'the footer names the deck');
+  assert.match(slide, />02</, 'the slide carries its own number');
+
+  const figure = workbook.figures.find((item) => item.id === 'group:Pendapatan Penjualan');
+  const figureSlide = entries.get('ppt/slides/slide4.xml').toString('utf8');
+  assert.ok(figureSlide.includes(figure.display), 'the slide shows the checked value');
+  assert.match(figureSlide, /prst="roundRect"/, 'the checked figure sits in a card of its own');
+});
+
+test('the paper carries the house style, a padded table and a page footer', () => {
+  const dir = workspace();
+  const { paper } = buildMockup(dir);
+
+  const entries = readZip(fs.readFileSync(paper.out));
+  assert.ok(entries.has('word/footer1.xml'), 'the paper has a footer part');
+  const footer = entries.get('word/footer1.xml').toString('utf8');
+  assert.ok(footer.includes('Halaman'), 'the footer counts the pages');
+  assert.match(footer, /PAGE/, 'the footer holds a page field');
+
+  const document = entries.get('word/document.xml').toString('utf8');
+  const styles = entries.get('word/styles.xml').toString('utf8');
+  assert.match(document, /w:footerReference/, 'the section points at the footer');
+  assert.match(document, /w:fill="17181C"/, 'the table header is ink');
+  assert.match(document, /w:fill="F4F5F6"/, 'the table rows alternate');
+  assert.match(document, /w:tblW w:w="5000" w:type="pct"/, 'the table fills the width of the page');
+  assert.match(document, /w:tblCellMar/, 'the cells have padding, so the words do not touch');
+  assert.match(document, /12\.500\.000/, 'a number in a table reads the Indonesian way');
+  assert.match(document, /1,98/, 'a ratio reads the Indonesian way');
+  assert.match(styles, /w:line="276"/, 'the lines breathe');
+  assert.match(styles, /w:color="3ECF8E"/, 'the accent rules the headings');
 });
 
 test('a month outside the period stops the workbook before the file exists', () => {
@@ -210,12 +277,22 @@ test('the real readers open what this writes, where they are installed', (t) => 
 import openpyxl, pptx, docx
 book = openpyxl.load_workbook(r'${workbook.out}')
 assert book.sheetnames == ['Laporan', 'Sumber', 'Angka'], book.sheetnames
-rows = [[cell.value for cell in row] for row in book['Laporan'].iter_rows()]
-assert rows[1][1] == -36500000, rows[1]
+sheet = book['Laporan']
+rows = [[cell.value for cell in row] for row in sheet.iter_rows()]
+assert rows[4][1] == -36500000, rows[4]
+assert sheet.freeze_panes == 'A5', sheet.freeze_panes
+assert sheet.sheet_view.showGridLines is False
+assert sheet['A1'].font.b and sheet['A1'].font.sz == 14
+assert sheet['A4'].fill.fgColor.rgb == 'FF17181C', sheet['A4'].fill.fgColor.rgb
+assert sheet['A4'].font.color.rgb == 'FFFFFFFF', sheet['A4'].font.color.rgb
+assert sheet.column_dimensions['B'].width >= 15, sheet.column_dimensions['B'].width
+assert 'Rp' in sheet['B5'].number_format, sheet['B5'].number_format
+assert sheet.sheet_properties.tabColor.rgb == 'FF3ECF8E'
 presentation = pptx.Presentation(r'${deck.out}')
-assert len(presentation.slides) == 4, len(presentation.slides)
+assert len(presentation.slides) == 5, len(presentation.slides)
 paper = docx.Document(r'${paper.out}')
 assert any('Dampak Promosi' in paragraph.text for paragraph in paper.paragraphs)
+assert paper.tables[0].rows[0].cells[0].text == 'Kanal', paper.tables[0].rows[0].cells[0].text
 print('readers ok')
 `;
   const out = execFileSync(python, ['-c', script], { encoding: 'utf8' });

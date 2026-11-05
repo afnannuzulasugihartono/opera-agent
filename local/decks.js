@@ -71,16 +71,17 @@ export function deckFromFile({ source, out = null, report = null } = {}) {
       .filter((bullet) => bullet !== '');
 
     const figureId = slide?.figure === null || slide?.figure === undefined ? null : String(slide.figure).trim();
+    let figure = null;
     if (figureId !== null && figureId !== '') {
-      const figure = figures.get(figureId);
-      if (!figure) {
+      const checked = figures.get(figureId);
+      if (!checked) {
         throw new Error(`slide ${index + 1} names the figure "${figureId}", and the report does not hold it; a slide may only show a figure the report checked.`);
       }
-      bullets.push(`${figure.label}: ${figure.display}`);
-      used.push({ slide: index + 1, id: figure.id, label: figure.label, display: figure.display, source: figure.source });
+      figure = { label: checked.label, display: checked.display };
+      used.push({ slide: index + 2, id: checked.id, label: checked.label, display: checked.display, source: checked.source });
     }
 
-    return { title: slideTitle, bullets };
+    return { title: slideTitle, bullets, figure };
   });
 
   const deck = buildDeck({ title, slides });
@@ -100,7 +101,7 @@ export function deckFromFile({ source, out = null, report = null } = {}) {
     source: from,
     title,
     generatedAt: new Date().toISOString(),
-    slides: slides.map((slide, index) => ({ index: index + 1, title: slide.title, bullets: slide.bullets })),
+    slides: slides.map((slide, index) => ({ index: index + 2, title: slide.title, bullets: slide.bullets, figure: slide.figure })),
     figures: used
   };
   fs.writeFileSync(planPath, `${JSON.stringify(provenance, null, 1)}\n`);
