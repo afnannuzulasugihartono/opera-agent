@@ -425,3 +425,22 @@ test('createObserveMethods exposes the reads of the page', () => {
     ['capture', 'captureSized', 'computed', 'menuTree', 'openMenu', 'pageState', 'readRows', 'readState', 'resolveRow', 'scroll', 'snapshot', 'viewport']);
 });
 
+// WHY THE PAGE READ MASKS A CREDENTIAL IN THE ADDRESS.
+// Measured live on 2026-11-05: a sign-in form that submits by GET put the password in the address of the page, and every read of that page carried the secret back to the model.
+// The address is read on the way into the answer, so the mask belongs where the address is read, not in each tool that answers with it.
+
+test('the page reads mask a password that sits in the address', async () => {
+  const methods = createObserveMethods({
+    cdp: { send: async () => ({ result: { value: { url: 'https://contoh.co.id/beranda?email=budi@example.com&password=rahasia123', title: 'Beranda', text: 'halo', textChars: 4, focus: null } } }) },
+    primitives: {},
+    capped: (limit) => limit
+  });
+
+  const state = await methods.pageState();
+  const read = await methods.readState();
+
+  assert.ok(!state.url.includes('rahasia123'), 'the page state carries no secret');
+  assert.ok(!read.url.includes('rahasia123'), 'the page read carries no secret');
+  assert.match(state.url, /password=\*\*\*/);
+});
+

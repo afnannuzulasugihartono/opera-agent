@@ -33,6 +33,11 @@ export const GATE_PROBE_EXPRESSION = `(() => {
     const r = el.getBoundingClientRect();
     return { x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2), left: Math.round(r.left), top: Math.round(r.top), width: Math.round(r.width), height: Math.round(r.height) };
   };
+  const formOf = (el) => {
+    const form = el.form || el.closest('form');
+    if (!form) return { method: '', action: '' };
+    return { method: String(form.getAttribute('method') || 'get').toLowerCase(), action: form.getAttribute('action') ?? '' };
+  };
   const shown = (el) => {
     const r = el.getBoundingClientRect();
     if (r.width <= 0 || r.height <= 0) return false;
@@ -48,7 +53,7 @@ export const GATE_PROBE_EXPRESSION = `(() => {
     const type = (el.getAttribute('type') || 'text').toLowerCase();
     if (type === 'hidden' || type === 'file' || type === 'submit' || type === 'button' || type === 'checkbox' || type === 'radio' || type === 'image') continue;
     const said = attr(el);
-    if (type === 'password') { password.push(box(el)); continue; }
+    if (type === 'password') { password.push({ ...box(el), ...formOf(el) }); continue; }
     if (/one-time-code|one time|\\botp\\b|kode verifikasi|verification code|kode otp/.test(said)) { otp.push(box(el)); continue; }
     if (/captcha|verifikasi|kode keamanan/.test(said)) { captchaInput.push(box(el)); continue; }
     text.push(box(el));
@@ -75,6 +80,36 @@ export const GATE_PROBE_EXPRESSION = `(() => {
 })()`;
 
 const defaultSleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+// WHY A CREDENTIAL IN AN ADDRESS IS MASKED.
+// Measured live on 2026-11-05: a sign-in form that submits by GET put the password in the address of the page, so every read of that page carried the secret back into the model's context, into the history, and into the server log.
+// The mask sits where the address is read, so every answer that carries an address carries a safe one.
+
+const CREDENTIAL_KEYS = /^(password|passwd|pwd|pass|secret|api_key|apikey)$/i;
+
+export function maskCredentialUrl(url) {
+  const raw = String(url ?? '');
+  if (!raw) return raw;
+  let parsed;
+  try {
+    parsed = new URL(raw);
+  } catch {
+    return raw;
+  }
+  let touched = false;
+  for (const key of [...parsed.searchParams.keys()]) {
+    if (CREDENTIAL_KEYS.test(key)) {
+      parsed.searchParams.set(key, '***');
+      touched = true;
+    }
+  }
+  if (parsed.username || parsed.password) {
+    parsed.username = parsed.username ? '***' : '';
+    parsed.password = '***';
+    touched = true;
+  }
+  return touched ? parsed.toString() : raw;
+}
 
 // WHY THE CLASSIFIER ANSWERS ONE PRIMARY GATE AND THE WHOLE LIST.
 // A page can hold a password box and a captcha at once, and the next move depends on which one is asked for by name.
@@ -125,7 +160,7 @@ export async function detectGate(driver) {
   const page = facts && typeof facts === 'object' ? facts : {};
   return {
     ...classifyGate(page),
-    url: String(page.url ?? ''),
+    url: maskCredentialUrl(page.url),
     title: String(page.title ?? ''),
     fields: {
       text: Array.isArray(page.text) ? page.text : [],
@@ -238,6 +273,14 @@ export async function loginWithCredentials(driver, { credentialsPath, timeoutMs 
   const usernameField = before.fields.text[0] ?? null;
   const passwordField = before.fields.password[0];
   const submit = before.fields.submit[0] ?? null;
+
+  // WHY A GET FORM IS REFUSED.
+  // Measured live on 2026-11-05: the form submitted by GET, so the password came back in the address of the page - in the answer, in the history, in the server log, and in the referrer of every later request.
+  // A secret that travels in a URL leaks, so the agent refuses to type into a form that puts it there and leaves the sign-in to the person.
+  const method = String(passwordField.method ?? '').toLowerCase();
+  if (method === 'get') {
+    throw new Error(`the password field on ${before.url || 'this page'} sits in a form that submits by GET, so the password would travel in the URL; the agent refuses to put a secret in an address. Use a POST form, or sign in by hand.`);
+  }
 
   if (usernameField) {
     await driver.click(usernameField.x, usernameField.y);
