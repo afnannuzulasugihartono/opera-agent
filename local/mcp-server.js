@@ -30,7 +30,11 @@ const PROTOCOL_VERSION = '2024-11-05';
 import { randomUUID } from 'node:crypto';
 import { statementCard, statementDelivered } from './statements.js';
 import { reportFromFile } from './reports.js';
-import { documentFromFile } from './documents.js';
+import { spreadsheetFromFile } from './spreadsheets.js';
+import { deckFromFile } from './decks.js';
+import { documentFromFile, documentDocxFromFile } from './documents.js';
+import { detectGate, waitForGateClear, loginWithCredentials } from './gates.js';
+import { captchaAllowed, solverSettings, solveImageCaptcha } from './captcha-solver.js';
 import { BURST_INPUT_ACTIONS, normalizeBurst, runLocalBurst } from './burst.js';
 import { leaseTab, releaseTab } from './bridge.js';
 import { TOOLS, ASKABLE, askParams, STRAY_FILE_TAB } from './tools.js';
@@ -280,7 +284,7 @@ const livePort = (context) => (typeof context.port === 'function' ? context.port
 // Measured live on this product's own author: an agent that copies an eight-digit id wrong is told "No page target", and the number is the one thing it cannot check - it cannot read a digit back off a screenshot, but it can read a title.
 // So a tabId that is not a number is looked for by title or address, and a name that fits two tabs is refused with both of them, because picking one and saying nothing is how a drive ends up typing into the wrong document.
 
-const INPUT_TOOLS = new Set(['click', 'click_row', 'hover', 'type', 'stream_keys', 'press_key', 'upload', 'drop_file', 'open_menu', 'download']);
+const INPUT_TOOLS = new Set(['click', 'click_row', 'hover', 'type', 'stream_keys', 'press_key', 'upload', 'drop_file', 'open_menu', 'download', 'login', 'captcha_solve']);
 
 // WHY THE OWNER IS A LABEL AND A NUMBER.
 // The label is what a refusal reads back to an agent that can go and drive another tab, and the number keeps two agents that share a label from sharing one claim.
@@ -405,6 +409,31 @@ const windowMatch = async (tab, driver) => (tab ? String(tab.title ?? '') : page
         periodColumn: args.periodColumn ?? null,
         groupBy: args.groupBy,
         valueColumn: args.valueColumn,
+        out: args.out ?? null
+      }));
+    }
+    if (name === 'spreadsheet_build') {
+      return asText(spreadsheetFromFile({
+        source: args.source,
+        client: args.client,
+        title: args.title,
+        period: args.period,
+        periodColumn: args.periodColumn ?? null,
+        groupBy: args.groupBy,
+        valueColumn: args.valueColumn,
+        out: args.out ?? null
+      }));
+    }
+    if (name === 'deck_build') {
+      return asText(deckFromFile({
+        source: args.source,
+        out: args.out ?? null,
+        report: args.report ?? null
+      }));
+    }
+    if (name === 'document_write') {
+      return asText(documentDocxFromFile({
+        source: args.source,
         out: args.out ?? null
       }));
     }
@@ -610,6 +639,50 @@ const windowMatch = async (tab, driver) => (tab ? String(tab.title ?? '') : page
             { type: 'text', text: JSON.stringify({ viewport: shot.viewport, dpr: shot.dpr, image: shot.image, note: shot.note }) }
           ]
         };
+      }
+      case 'gate_detect':
+        return asText(await detectGate(driver));
+      case 'gate_wait': {
+        const out = await waitForGateClear(driver, {
+          timeoutMs: budgetOf(args.timeoutMs, 30000),
+          intervalMs: gapOf(args.intervalMs, 500, 50)
+        });
+        return afterAction(driver, { ...out, settled: true });
+      }
+      case 'login': {
+        const out = await loginWithCredentials(driver, {
+          credentialsPath: args.credentialsPath,
+          timeoutMs: budgetOf(args.timeoutMs, 30000),
+          intervalMs: gapOf(args.intervalMs, 500, 50)
+        });
+        return afterAction(driver, out);
+      }
+      case 'captcha_solve': {
+        const settings = solverSettings(process.env);
+        if (!settings.configured) {
+          throw new Error('captcha_solve is opt-in and no solver is configured: set OPERA_CAPTCHA_API_URL, OPERA_CAPTCHA_API_KEY and OPERA_CAPTCHA_DOMAINS, or let the person solve it and use gate_wait.');
+        }
+        const gate = await detectGate(driver);
+        if (!captchaAllowed(settings, gate.url)) {
+          throw new Error(`captcha_solve refuses ${gate.url || 'this page'}: its host is not in OPERA_CAPTCHA_DOMAINS, and the allowlist is what makes the spend the person's decision.`);
+        }
+        const image = gate.fields.captchaImage[0];
+        const field = gate.fields.captchaInput[0];
+        if (!image) throw new Error('captcha_solve found no captcha image on this page; a widget is solved in the browser, not by a solver.');
+        if (!field) throw new Error('captcha_solve found a captcha image but no field to type the answer into.');
+        const shot = await driver.ask('Page.captureScreenshot', {
+          format: 'png',
+          clip: { x: image.left, y: image.top, width: image.width, height: image.height, scale: 1 }
+        });
+        const solved = await solveImageCaptcha({
+          baseUrl: settings.baseUrl,
+          apiKey: settings.apiKey,
+          image: shot?.data,
+          timeoutMs: budgetOf(args.timeoutMs, 60000)
+        });
+        await driver.click(field.x, field.y);
+        await driver.type(solved.text);
+        return afterAction(driver, { solved: true, chars: solved.text.length, taskId: solved.taskId });
       }
       default:
         throw new Error(`Unknown tool: ${name}`);

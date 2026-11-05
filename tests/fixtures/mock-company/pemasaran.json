@@ -1,0 +1,56 @@
+{
+  "title": "Rencana Pemasaran 2027 - Sinar Jaya",
+  "author": "Tim Pemasaran Sinar Jaya",
+  "sections": [
+    {
+      "heading": "Tujuan",
+      "body": "Rencana ini memakai satu sumber angka: laporan kas bulanan yang sudah dicek ulang. Setiap inisiatif di bawah harus menunjuk kanal dan tabelnya, supaya ukuran keberhasilan tidak berubah setiap kali presentasi."
+    },
+    {
+      "heading": "Segmentasi",
+      "body": "Tiga kelompok pelanggan, satu cara bicara untuk masing-masing.",
+      "tables": [
+        {
+          "headers": ["Segmen", "Kanal Utama", "Keluhan Terbesar", "Tawaran"],
+          "rows": [
+            ["Langganan", "Email dan grup komunitas", "Tidak tahu apa yang akan dibayar bulan depan", "Satu paket, satu harga"],
+            ["Proyek", "Panggilan dan proposal", "Harga berubah di tengah jalan", "Harga tetap di awal"],
+            ["Pelatihan", "Kelas terbuka", "Materi tidak rapi", "Materi yang sama setiap sesi"]
+          ]
+        }
+      ]
+    },
+    {
+      "heading": "Poin pembeda",
+      "body": "Kami menjual hasil yang bisa dihitung: setiap program punya biaya, tanggal, dan tambahan pendapatan yang tercatat di satu tempat.",
+      "tables": [
+        {
+          "headers": ["Program", "Biaya Promo", "Tambahan Pendapatan", "Rasio Tambahan per Biaya"],
+          "rows": [
+            ["Diskon perpanjangan", 6300000, 12500000, 1.98],
+            ["Iklan kanal", 3900000, 9800000, 2.51],
+            ["Kelas terbuka", 4200000, 7600000, 1.81]
+          ]
+        }
+      ]
+    },
+    {
+      "heading": "Rencana sembilan bulan",
+      "body": "Tiga kuartal pertama dipakai untuk mengukur, bukan menambah kanal.",
+      "tables": [
+        {
+          "headers": ["Kuartal", "Fokus", "Ukuran Keberhasilan"],
+          "rows": [
+            ["Q1", "Satu paket langganan dan halaman harga", "Paket dipakai pelanggan yang sudah ada"],
+            ["Q2", "Kelas pelatihan pertama", "Kelas berjalan tanpa biaya tambahan"],
+            ["Q3", "Proyek repeatable pertama", "Proyek dikerjakan dari template yang sama"]
+          ]
+        }
+      ]
+    },
+    {
+      "heading": "Cara mengukur",
+      "body": "Setiap bulan, angka pada tiga tabel di atas disalin dari laporan yang sama, sehingga presentasi dan laporan tidak pernah berbeda."
+    }
+  ]
+}

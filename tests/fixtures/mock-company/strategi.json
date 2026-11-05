@@ -1,0 +1,38 @@
+{
+  "title": "Rencana Strategis 2027 - Sinar Jaya",
+  "slides": [
+    {
+      "title": "Posisi hari ini",
+      "bullets": [
+        "Pendapatan datang dari tiga kanal: langganan, proyek, pelatihan.",
+        "Langganan berjalan paling stabil; proyek memberi lonjakan yang tidak terduga.",
+        "Beban pokok layanan adalah pos terbesar, jadi produktivitas tim menentukan margin."
+      ]
+    },
+    {
+      "title": "Tiga pilar 2027",
+      "bullets": [
+        "Langganan: satu paket, satu harga, satu onboarding.",
+        "Proyek: dari satu proyek besar menjadi lima proyek kecil yang repeatable.",
+        "Pelatihan: kelas bulanan dengan materi yang sama sekali ditulis."
+      ]
+    },
+    {
+      "title": "Di mana uangnya",
+      "bullets": [
+        "Angka pada slide ini diambil dari laporan September yang sudah dicek ulang terhadap baris aslinya.",
+        "Laporan dan provenance-nya ditulis di sebelah file ini."
+      ],
+      "figure": "group:Pendapatan Penjualan"
+    },
+    {
+      "title": "Rencana 90 hari",
+      "bullets": [
+        "Hari 1-30: satu paket langganan, satu halaman harga, satu rumus margin.",
+        "Hari 31-60: kelas pelatihan pertama, lima materi, satu jam.",
+        "Hari 61-90: proyek repeatable pertama, diukur dari template yang sama.",
+        "Setiap 30 hari: tinjau angka, bukan perasaan."
+      ]
+    }
+  ]
+}

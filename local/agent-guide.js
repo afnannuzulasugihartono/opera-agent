@@ -104,6 +104,31 @@ export const RECIPES = Object.freeze([
     note: 'JSON in, a checked document plan out, written beside the source. No browser is touched. Every graph names its table and columns, and the graph is recomputed from those rows before the file exists — a graph without a source, or one whose number disagrees with the table, stops the paper instead of reaching a reader.'
   },
   {
+    task: 'Turn an exported sheet into an Excel workbook',
+    do: ['spreadsheet_build'],
+    note: 'CSV in, an .xlsx out: the report lines, the source rows, and the ledger of which rows produced each figure. The totals are numbers, so the customer can use them in another sheet. The plan is rechecked against those rows before the file exists, and the plan is written beside the workbook for the next artifact that needs the same figures.'
+  },
+  {
+    task: 'Turn a written plan into slides',
+    do: ['deck_build'],
+    note: 'JSON in, a .pptx out. A slide names a figure from the checked report and carries its value; a name the report does not hold stops the deck. The provenance of every figure is written beside the presentation, so the author can answer "where did this number come from" without opening the slide.'
+  },
+  {
+    task: 'Turn a paper into a Word file',
+    do: ['document_write'],
+    note: 'JSON in, a .docx out: the headings, paragraphs, tables and graphs of the checked plan, with a picture on this disk embedded. The plan is rechecked against the source rows before the file exists.'
+  },
+  {
+    task: 'Sign in to a portal',
+    do: ['gate_detect', 'login', 'gate_wait'],
+    note: 'One read says whether the page wants a password, a one-time code, or a captcha. login fills the fields from a credential file the person wrote, matched by the page\'s own domain, and never returns the secret. A one-time code is never answered: gate_wait waits while the person signs in in their own browser, and the same tab is used again. Without a credentials file the default stands - the person signs in and gate_wait waits for them.'
+  },
+  {
+    task: 'Solve a captcha',
+    do: ['gate_detect', 'captcha_solve', 'gate_wait'],
+    note: 'gate_detect names the captcha and which kind it is. captcha_solve is opt-in: it reads the image through the solver the person configured, only on a host they allowlisted, and types the answer. A token widget cannot be solved this way - let the person click it and use gate_wait. With no solver configured, captcha_solve refuses and types nothing.'
+  },
+  {
     task: 'Prove it worked',
     do: ['capture_page', 'read_page'],
     note: 'A picture and the text, compared against what you expected. A tool saying it succeeded is not proof; the page saying so is.'
@@ -167,6 +192,13 @@ export const SIDE_EFFECTS = Object.freeze({
   statement_delivered: ['writes the client-month into the manifest on disk, replacing the record only when asked'],
   report_build: ['writes a checked report file beside the source; no page is touched'],
   document_build: ['writes a checked document file beside the source; no page is touched'],
+  spreadsheet_build: ['writes an Excel workbook and a checked report plan beside the source; no page is touched'],
+  deck_build: ['writes a PowerPoint presentation and the provenance of its figures beside the source; no page is touched'],
+  document_write: ['writes a Word file beside the source; no page is touched'],
+  gate_detect: [],
+  gate_wait: [],
+  login: ['fills the username and password fields from the credential file and submits; the secret never returns in the answer'],
+  captcha_solve: ['reads a captcha image through the configured solver, which spends the person\'s money at that service, then types the answer into the captcha field'],
   capture_page: [],
   ax_snapshot: []
 });
@@ -189,7 +221,7 @@ export function guide(topic) {
       'A tool that reports success is not proof. The page saying so is.',
       'A page cannot see whether the window in front of it is the one the machine has in front. Clicks and keys go nowhere while browser_status says the window is not focused.',
       'focus_window with no match answers the state without moving anything — pass a piece of the window title. An empty match used to bring an arbitrary window forward.',
-      'A complex document or report is built as a plan on disk (report_build, document_build) before it reaches a page, not by driving cells one by one.'
+      'A complex document or report is built as a plan on disk (report_build, document_build, spreadsheet_build, deck_build, document_write) before it reaches a page, not by driving cells one by one.'
     ]
   };
 }
