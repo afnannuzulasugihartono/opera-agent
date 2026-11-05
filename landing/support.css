@@ -1,7 +1,7 @@
 /*
  * @last-edited: 2026-11-05 UTC+7.
  * @title: support.css — the support page: a standing lead and the ranked answers beside it.
- * @state: two columns on a wide screen with the lead stuck to the top; one column on a phone.
+ * @state: two columns on a wide screen with the lead stuck to the top; one column on a phone; the contact door below the answers.
  * @dependencies: site.css.
  *
  * WHY a page sheet: the standing lead and the ranked rows belong to this page alone; the shell, the prose rules and the tokens come from site.css.
@@ -98,6 +98,51 @@ html.js .fix:nth-child(5).in { animation-delay: .28s; }
     opacity: 0;
     transform: translateY(6px);
   }
+}
+
+/*
+ * WHY THE CONTACT DOOR SITS BELOW THE ANSWERS: a reader who found their answer leaves, and the one who did not reaches the end of the list and finds a door.
+ */
+
+.supportCol {
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+  min-width: 0;
+}
+
+.contactCard {
+  padding: 28px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.contactCard h2 {
+  margin: 0 0 10px;
+  font-size: 19px;
+}
+
+.prose .contactList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.prose .contactList li {
+  margin: 0 0 10px;
+  overflow-wrap: anywhere;
+}
+
+.contactKind {
+  display: inline-block;
+  min-width: 96px;
+  color: var(--ink);
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: .08em;
+  text-transform: uppercase;
 }
 
 @media (max-width: 960px) {

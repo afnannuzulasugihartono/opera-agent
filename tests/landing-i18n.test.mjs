@@ -1,6 +1,6 @@
-// @last-edited: 2026-10-26 UTC+7.
+// @last-edited: 2026-11-05 UTC+7.
 // @title: landing-i18n — the shared toggle swaps English on, and only on, the pages that carry a dict.
-// @state: 12 locks; the mechanism file is executed against a stub DOM, the pages are read as source.
+// @state: 14 locks; the mechanism file is executed against a stub DOM, the pages are read as source.
 // @dependencies: test, assert, fs, vm.
 
 import test from 'node:test';
@@ -189,6 +189,55 @@ function runMechanism({ stored = null, dict = { en: { greeting: 'Hello', ph: 'Wr
     click: (button) => button.handlers.click.call(button),
   };
 }
+
+test('a paragraph that carries markup is swapped as markup, so English shows links and not tag soup', () => {
+  // WHY THE SCANNER AND NOT A REGEX: the page nests, and only the element that holds the mark can say whether markup rides a text swap.
+  const VOID = new Set(['area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta', 'param', 'source', 'track', 'wbr']);
+  const stack = [];
+  const hits = [];
+  const tag = /<(\/?)([a-zA-Z][\w-]*)((?:"[^"]*"|'[^']*'|[^>])*)>/g;
+  let match;
+  for (const page of DICT_PAGES) {
+    const html = read(`landing/${page}`);
+    stack.length = 0;
+    while ((match = tag.exec(html))) {
+      const closing = match[1] === '/';
+      const name = match[2].toLowerCase();
+      const attrs = match[3] || '';
+      if (VOID.has(name)) continue;
+      if (name === 'script' || name === 'style') {
+        const close = html.indexOf(`</${name}`, tag.lastIndex);
+        if (close !== -1) {
+          stack.push({ tag: name, key: null, start: tag.lastIndex });
+          tag.lastIndex = close;
+        }
+        continue;
+      }
+      if (closing) {
+        const open = stack.pop();
+        if (!open || open.tag !== name) continue;
+        if (open.key && /<[a-zA-Z]/.test(html.slice(open.start, match.index))) hits.push(`${page}:${open.key}`);
+        continue;
+      }
+      if (attrs.trim().endsWith('/')) continue;
+      const key = (/data-i18n="([^"]+)"/.exec(attrs) || [])[1] || null;
+      stack.push({ tag: name, key, start: tag.lastIndex });
+    }
+  }
+  assert.deepEqual(hits, [], 'markup rides no text swap');
+});
+
+test('a text swap carries no markup in English, because text cannot render it', () => {
+  for (const page of DICT_PAGES) {
+    const html = read(`landing/${page}`);
+    const dict = pageDict(page).en;
+    for (const [, key] of html.matchAll(/data-i18n="([^"]+)"/g)) {
+      const value = dict[key];
+      if (typeof value !== 'string') continue;
+      assert.doesNotMatch(value, /</, `${page}: ${key} is swapped as text, so its English carries no markup`);
+    }
+  }
+});
 
 test('a stored choice swaps on load, presses its button, and never blanks a missing key', () => {
   const run = runMechanism({ stored: 'en' });
