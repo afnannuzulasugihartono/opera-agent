@@ -1,0 +1,118 @@
+/*
+ * @last-edited: 2026-11-05 UTC+7.
+ * @title: support.css — the support page: a standing lead and the ranked answers beside it.
+ * @state: two columns on a wide screen with the lead stuck to the top; one column on a phone.
+ * @dependencies: site.css.
+ *
+ * WHY a page sheet: the standing lead and the ranked rows belong to this page alone; the shell, the prose rules and the tokens come from site.css.
+ */
+
+main.wrap.supportMain {
+  max-width: var(--wrap);
+}
+
+.supportMain {
+  display: grid;
+  grid-template-columns: minmax(0, 340px) minmax(0, 680px);
+  gap: 64px;
+  align-items: start;
+  padding: 64px 0 96px;
+}
+
+/*
+ * WHY THE LEAD STAYS: a reader who lost a device scrolls the answers, and a heading that scrolls away leaves only rows and no page.
+ */
+
+.supportHero {
+  position: sticky;
+  top: 96px;
+}
+
+.supportHero h1 {
+  margin: 0 0 14px;
+  font-size: clamp(38px, 4.4vw, 54px);
+  line-height: 1;
+  letter-spacing: -.04em;
+}
+
+.supportHero > p {
+  margin: 0 0 12px;
+  color: var(--muted);
+  font-size: 15px;
+}
+
+.supportHint kbd {
+  display: inline-block;
+  margin: 0 2px;
+  padding: 2px 6px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  color: var(--ink);
+  font-family: var(--mono);
+  font-size: 11.5px;
+}
+
+/*
+ * WHY THE ANSWERS ARE RANKED: five rows in the same weight read as a list nobody chose from, and the number beside each symptom is the whole difference between a directory and a wall.
+ * The answers keep the reading measure of the rest of the site, and the rank sits in the accent so the eye finds the first one.
+ */
+
+.fixList {
+  max-width: var(--prose);
+  border-top: 1px solid var(--line);
+}
+
+.prose .fix {
+  transition: grid-template-rows .2s var(--ease), background-color .18s var(--ease);
+}
+
+.prose .fix > summary {
+  justify-content: flex-start;
+  gap: 18px;
+  padding: 20px 0;
+  font-size: 17px;
+}
+
+.prose .fix > summary::after {
+  margin-left: auto;
+}
+
+.fixIndex {
+  flex: 0 0 auto;
+  color: var(--accent);
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.prose .fix[open] {
+  background: var(--accent-soft);
+}
+
+html.js .fix.in {
+  animation: fix-in .2s var(--ease) both;
+}
+
+html.js .fix:nth-child(1).in { animation-delay: .04s; }
+html.js .fix:nth-child(2).in { animation-delay: .1s; }
+html.js .fix:nth-child(3).in { animation-delay: .16s; }
+html.js .fix:nth-child(4).in { animation-delay: .22s; }
+html.js .fix:nth-child(5).in { animation-delay: .28s; }
+
+@keyframes fix-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+@media (max-width: 960px) {
+  .supportMain {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 28px;
+    padding: 44px 0 72px;
+  }
+
+  .supportHero { position: static; }
+}
