@@ -90,6 +90,8 @@ __pycache__/
 .kilo/
 .superpowers/
 .agents/
+.serena/
+.ruff_cache/
 skills-lock.json
 graphify-out/
 .taste-skill/

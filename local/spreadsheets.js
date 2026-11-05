@@ -65,11 +65,15 @@ export function spreadsheetFromFile({
     ]);
   }
 
+  const clientName = String(client ?? '').trim();
+  const periodName = String(period ?? '').trim();
+  const subtitle = [clientName, periodName].filter((part) => part !== '').join(' · ');
+
   const workbook = buildWorkbook({
     sheets: [
-      { name: 'Laporan', rows: reportRows },
-      { name: 'Sumber', rows: sourceRows },
-      { name: 'Angka', rows: ledgerRows }
+      { name: 'Laporan', title: String(title ?? '').trim(), subtitle, rows: reportRows },
+      { name: 'Sumber', title: 'Baris sumber', subtitle: `${subtitle} · ${table.rows.length} baris`, rows: sourceRows },
+      { name: 'Angka', title: 'Asal setiap angka', subtitle, rows: ledgerRows }
     ]
   });
 

@@ -415,7 +415,7 @@ export function documentDocxFromFile({ source, out = null } = {}) {
     return media ? { ...block, bytes: media.bytes, extension: media.extension } : block;
   });
 
-  const file = buildDocumentFile({ title: built.docplan.title, blocks });
+  const file = buildDocumentFile({ title: built.docplan.title, subtitle: built.docplan.author, blocks });
 
   const base = path.join(path.dirname(from), path.basename(from, path.extname(from)));
   const outPath = out === null || out === undefined || String(out).trim() === ''
