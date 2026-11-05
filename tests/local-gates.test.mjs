@@ -13,6 +13,7 @@ import {
   GATE_PROBE_EXPRESSION,
   classifyGate,
   detectGate,
+  maskCredentialUrl,
   waitForGateClear,
   loginWithCredentials
 } from '../local/gates.js';
@@ -179,6 +180,50 @@ test('a one-time code is refused before anything is typed', async () => {
     /one-time|otp|verification code/i
   );
   assert.equal(driver.calls.filter((call) => call[0] === 'type').length, 0, 'nothing was typed');
+});
+
+// WHY A GET FORM IS REFUSED.
+// Measured live on 2026-11-05: the sign-in form submitted by GET, so the password came back in the address of the page the agent was on - in the answer, in the history, in the server log, and in the referrer of every later request.
+// A secret that travels in a URL is a secret that leaks, so the agent refuses to type into a form that puts it there.
+
+test('a sign-in into a form that submits by GET is refused before anything is typed', async () => {
+  const file = credentialFile([{ domain: 'contoh.co.id', username: 'budi@example.com', password: 'rahasia123' }]);
+  const driver = fakeDriver([facts({ password: [{ x: 10, y: 20, method: 'get' }], text: [{ x: 5, y: 5 }] })]);
+
+  await assert.rejects(
+    () => loginWithCredentials(driver, { credentialsPath: file, timeoutMs: 100, intervalMs: 10, sleep }),
+    /GET|url/i
+  );
+  assert.equal(driver.calls.filter((call) => call[0] === 'type').length, 0, 'nothing was typed');
+});
+
+test('a POST form is signed in, because the password does not travel in the address', async () => {
+  const file = credentialFile([{ domain: 'contoh.co.id', username: 'budi@example.com', password: 'rahasia123' }]);
+  const driver = fakeDriver([
+    facts({ password: [{ x: 10, y: 20, method: 'post' }], text: [{ x: 5, y: 5 }], submit: [{ x: 30, y: 40, name: 'Masuk' }] }),
+    facts({ url: 'https://contoh.co.id/beranda', title: 'Beranda' })
+  ]);
+
+  const out = await loginWithCredentials(driver, { credentialsPath: file, timeoutMs: 5000, intervalMs: 10, sleep });
+
+  assert.equal(out.signedIn, true);
+});
+
+test('a URL that carries a password is masked before it reaches the answer', async () => {
+  const driver = fakeDriver([facts({ url: 'https://contoh.co.id/beranda?email=budi@example.com&password=rahasia123' })]);
+
+  const gate = await detectGate(driver);
+
+  assert.ok(!gate.url.includes('rahasia123'), 'the secret is not in the answer');
+  assert.match(gate.url, /password=\*\*\*/);
+});
+
+test('the mask takes the credential out of an address and leaves the rest alone', () => {
+  assert.equal(maskCredentialUrl('https://contoh.co.id/a?password=rahasia&keep=1'), 'https://contoh.co.id/a?password=***&keep=1');
+  assert.equal(maskCredentialUrl('https://contoh.co.id/a?keep=1'), 'https://contoh.co.id/a?keep=1');
+  assert.equal(maskCredentialUrl('https://budi:rahasia@contoh.co.id/a'), 'https://***:***@contoh.co.id/a');
+  assert.equal(maskCredentialUrl('not a url'), 'not a url');
+  assert.equal(maskCredentialUrl(''), '');
 });
 
 test('the captcha solver refuses a page outside the allowed domains', () => {

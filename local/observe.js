@@ -27,6 +27,7 @@
 // The words themselves belong to read_page, where the caller asked for them.
 
 import { findNode, menuTreeExpression, nearestNames, revealOf, stateOf } from './menu-tree.js';
+import { maskCredentialUrl } from './gates.js';
 import {
   HANDLE_PREFIX,
   PAGE_STATE_TEXT_EXPRESSION,
@@ -109,7 +110,8 @@ export function createObserveMethods({ cdp, primitives, capped, sleep = () => Pr
       expression: PAGE_STATE_TEXT_EXPRESSION,
       returnByValue: true
     });
-    return result?.value ?? { title: '', url: '', text: '' };
+    const state = result?.value ?? { title: '', url: '', text: '' };
+    return { ...state, url: maskCredentialUrl(state.url) };
   };
 
   const pageState = async () => {
@@ -117,7 +119,8 @@ export function createObserveMethods({ cdp, primitives, capped, sleep = () => Pr
       expression: PAGE_STATE_EXPRESSION,
       returnByValue: true
     });
-    return result?.value ?? { url: '', title: '', textChars: 0, focus: null };
+    const state = result?.value ?? { url: '', title: '', textChars: 0, focus: null };
+    return { ...state, url: maskCredentialUrl(state.url) };
   };
 
   async function viewport() {
