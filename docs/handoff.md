@@ -11,8 +11,10 @@ What is true now, and what to do next. Cap 150 lines. Spent detail: git history.
   merge; a branch starts from `main` and merges back by `--rebase` once the four checks are green.
 - Version `1.6.27` in [`extension/manifest.json`](../extension/manifest.json) is the source
   of truth; [`check.mjs`](../scripts/check.mjs) also asserts the MCP version, the store form, and the secret regex.
-- **1.6.27 shipped on 2026-10-15.** #86 merged as `e99bf5a`; the CRX route answers 200 with
+- **1.6.27 shipped on 2026-10-15** as `e99bf5a`; the CRX route answers 200 with
   `x-opera-sha256` equal to the bytes, and the release carries both zips, the CRX and SHA256SUMS.
+  The two releases published with no files on 2026-10-25 are drafts now, and `release.yml`
+  counts the four files before it publishes and gives Latest to the newest version.
 - **The standard is a test, not a document.** `tests/code-standard.test.mjs` bars a file over
   1,200 lines, leftover markers, a repeated block, and an unexercised export.
 - **The comment rule is a formatter, not a scanner.** Column-zero blocks are section headers
@@ -31,8 +33,7 @@ What is true now, and what to do next. Cap 150 lines. Spent detail: git history.
   fails a missing standard file, a pull request that skips CI, a CRLF file, or a dead path.
 - **The browser drive depends on nothing but the page it drives.** A ref dies with its
   document, its route or the extension epoch, so the drive re-finds what it clicks.
-- Gates: `npm test`, `npm run check` - 31 primitives, 183 runtime safety files, 1561 unit
-  tests, green.
+- Gates: `npm test`, `npm run check` - 31 primitives, 191 runtime safety files, 1824 unit tests, green.
 - **The local driver is modular, and its tests are too.** `local/primitives.js` assembles the
   modules; `tools.js` holds the MCP surface as data; the tests are one file per module.
 - Production, measured against the live database: 76 `opera_*` functions (65
@@ -142,7 +143,6 @@ What is true now, and what to do next. Cap 150 lines. Spent detail: git history.
 ## Blocked, needs the owner at the machine
 
 - Use `py`, not `python`, which hits the Microsoft Store shim; `py` is 3.13 with playwright.
-  The owner merges #87 and the chain; the agent does not merge pull requests on its own.
 
 ## Do not touch
 

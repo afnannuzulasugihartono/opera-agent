@@ -1,7 +1,11 @@
-# @last-edited: 2026-10-21 UTC+7.
+# @last-edited: 2026-11-05 UTC+7.
 # @title: release — the signed CRX and the extension zip, published when a tag is pushed.
-# @state: the version it resolves, the build it validates, the CRX it verifies, the checksums it writes and the release it creates.
+# @state: the version it resolves, the build it validates, the CRX it verifies, the checksums it writes, and the release it publishes with its four files counted and the Latest mark given to the newest version.
 # @dependencies: none stated.
+
+# WHY THE RELEASE IS COUNTED AND NOT ASSUMED: a release without its files is a dead download for every buyer who clicks it, and the tags v1.6.25 and v1.6.26 published exactly that on 2026-10-25.
+# WHY A DRAFT IS PUBLISHED: a release made by hand can sit as a draft, and a draft is invisible to the person who needs the file.
+# WHY LATEST FOLLOWS THE VERSION AND NOT THE DATE: GitHub points Latest at the newest release by date, so an old tag published late becomes the download a buyer gets.
 
 name: Release
 
@@ -77,26 +81,33 @@ jobs:
             "Opera-Agent-${VERSION}-source.zip" \
             "Opera-Agent-${VERSION}.crx" > SHA256SUMS
 
-      - name: Create GitHub Release
+      - name: Publish GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
           NOTES="docs/releases/${VERSION}.md"
           if [ -f "$NOTES" ]; then NOTES_ARGS=(--notes-file "$NOTES"); else NOTES_ARGS=(--generate-notes); fi
+          ASSETS=("Opera-Agent-${VERSION}-extension.zip" "Opera-Agent-${VERSION}-source.zip" "Opera-Agent-${VERSION}.crx" SHA256SUMS)
+
           if gh release view "$TAG" >/dev/null 2>&1; then
-            gh release upload "$TAG" \
-              "Opera-Agent-${VERSION}-extension.zip" \
-              "Opera-Agent-${VERSION}-source.zip" \
-              "Opera-Agent-${VERSION}.crx" \
-              SHA256SUMS --clobber
+            gh release upload "$TAG" "${ASSETS[@]}" --clobber
           else
-            gh release create "$TAG" \
-              "Opera-Agent-${VERSION}-extension.zip" \
-              "Opera-Agent-${VERSION}-source.zip" \
-              "Opera-Agent-${VERSION}.crx" \
-              SHA256SUMS \
+            gh release create "$TAG" "${ASSETS[@]}" \
               --target "$GITHUB_SHA" \
               --title "Opera Agent ${VERSION}" \
               "${NOTES_ARGS[@]}"
+          fi
+
+          COUNT="$(gh release view "$TAG" --json assets --jq '.assets | length')"
+          if [ "$COUNT" != "4" ]; then
+            echo "::error::release ${TAG} carries ${COUNT} assets, not 4"
+            exit 1
+          fi
+
+          gh release edit "$TAG" --draft=false
+
+          HIGHEST="$(gh release list --limit 100 --json tagName --jq '.[].tagName' | sed 's/^v//' | sort -V | tail -1)"
+          if [ "$VERSION" = "$HIGHEST" ]; then
+            gh release edit "$TAG" --latest
           fi
