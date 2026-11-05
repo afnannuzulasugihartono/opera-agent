@@ -1,6 +1,6 @@
 // @last-edited: 2026-11-05 UTC+7.
 // @title: landing-company — the site reads as a real company site.
-// @state: red first: no favicon, mismatched footer, no crawler files, stale invite-only copy; a support page with no door to write to.
+// @state: red first: no favicon, mismatched footer, no crawler files, stale invite-only copy; a support page with no door to write to; no door to the public source.
 // @dependencies: test, assert, fs.
 
 // A company site is trusted before it is read: every tab shows its mark, every footer offers the same doors, crawlers are told what exists, shared links carry a title, and the legal pages match the live product.
@@ -12,7 +12,7 @@ import fs from 'node:fs';
 
 const root = new URL('..', import.meta.url);
 const read = (name) => fs.readFileSync(new URL(name, root), 'utf8');
-const pages = ['beranda.html', 'akun.html', 'index.html', 'dashboard.html', 'unduh.html', 'unduh-berkas.html', 'privasi.html', 'syarat.html', '404.html', 'fitur.html', 'dukungan.html', 'docs.html'];
+const pages = ['beranda.html', 'akun.html', 'index.html', 'dashboard.html', 'unduh.html', 'unduh-berkas.html', 'privasi.html', 'syarat.html', '404.html', 'fitur.html', 'studi.html', 'dukungan.html', 'docs.html'];
 
 test('every head carries the mark, so no tab looks unfinished', () => {
   for (const page of pages) {
@@ -106,6 +106,14 @@ test('no page points at support that does not exist', () => {
   assert.match(privasi, /<h2[^>]*>Kontak<\/h2>/, 'the privacy contact section stays');
   assert.doesNotMatch(privasi, /balas dari akun/, 'but it no longer invents a reply channel');
   assert.match(privasi, /\.\/akun\.html/, 'it points at the self-service that exists');
+});
+
+test('every footer reaches the public source, because a product that drives a browser shows its code', () => {
+  // WHY THIS LOCK: the site asks for six browser permissions, so the reader is owed the place where the code is read, not a promise that it is open.
+  for (const page of pages) {
+    const footer = read(`landing/${page}`).match(/<footer[\s\S]*?<\/footer>/)[0];
+    assert.ok(footer.includes('href="https://github.com/afnannuzulasugihartono/opera-agent"'), `${page} points at the source`);
+  }
 });
 
 test('the support page carries a way to reach a human', () => {
