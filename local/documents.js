@@ -1,10 +1,12 @@
-// @last-edited: 2026-10-25 UTC+7.
+// @last-edited: 2026-11-05 UTC+7.
 // @title: documents — a paper is planned on disk with tables, images and graphs, and a plan that cannot be checked is refused.
-// @state: JSON in, a docplan with blocks and a figure ledger out, plus the recheck that catches an edited number.
-// @dependencies: node:fs, node:path.
+// @state: JSON in, a docplan with blocks and a figure ledger out, the recheck that catches an edited number, and the Word file the plan becomes.
+// @dependencies: node:fs, node:path, ./office/docx.js.
 
 import fs from 'node:fs';
 import path from 'node:path';
+
+import { buildDocumentFile } from './office/docx.js';
 
 function nonEmptyString(value) {
   return typeof value === 'string' && value.trim() !== '';
@@ -327,9 +329,12 @@ export function verifyDocument({ document, doc } = {}) {
   return { ok: mismatches.length === 0, checked: document.figures.length, mismatches };
 }
 
-export function documentFromFile({ source, out = null } = {}) {
+// WHY THE SOURCE IS READ ONCE AND BY ONE HELPER.
+// A plan on disk and a Word file from the same plan must refuse the same broken paper the same way, and one helper is where that promise is kept.
+
+function readPaperSource(source, toolName) {
   if (source === null || source === undefined || String(source).trim() === '') {
-    throw new Error('document_build needs source: the JSON describing the paper.');
+    throw new Error(`${toolName} needs source: the JSON describing the paper.`);
   }
   const from = path.resolve(String(source));
   let stat;
@@ -340,6 +345,11 @@ export function documentFromFile({ source, out = null } = {}) {
   }
   if (!stat.isFile()) throw new Error(`${from} is not a file; a folder cannot be a paper source.`);
   if (stat.size === 0) throw new Error(`${from} is zero bytes; an empty file is not a paper.`);
+  return from;
+}
+
+export function documentFromFile({ source, out = null } = {}) {
+  const from = readPaperSource(source, 'document_build');
 
   const doc = parseDocument(fs.readFileSync(from, 'utf8'));
   const built = buildDocument({ doc });
@@ -365,4 +375,67 @@ export function documentFromFile({ source, out = null } = {}) {
   fs.renameSync(tmp, outPath);
 
   return { source: from, out: outPath, verified, document: built };
+}
+
+// WHY THE WORD FILE IS WRITTEN FROM THE PLAN AND NOT FROM THE PAPER.
+// The plan is what the recheck just read, so a number that the check would refuse cannot reach the file.
+// The paper is read again only to find the bytes of an image.
+
+// WHY AN IMAGE THAT IS NOT ON THIS DISK IS NAMED INSTEAD OF EMBEDDED.
+// A paper that points at a file the reader cannot open reads as a broken paper, so the file carries the picture's own words where the picture was.
+
+const IMAGE_EXTENSIONS = new Set(['png', 'jpg', 'jpeg']);
+
+function imageBytes(source) {
+  if (!nonEmptyString(source)) return null;
+  const from = path.resolve(source.trim());
+  if (!fs.existsSync(from)) return null;
+  const extension = path.extname(from).replace(/^\./, '').toLowerCase();
+  if (!IMAGE_EXTENSIONS.has(extension)) return null;
+  try {
+    return { bytes: fs.readFileSync(from), extension };
+  } catch (error) {
+    return null;
+  }
+}
+
+export function documentDocxFromFile({ source, out = null } = {}) {
+  const from = readPaperSource(source, 'document_write');
+
+  const doc = parseDocument(fs.readFileSync(from, 'utf8'));
+  const built = buildDocument({ doc });
+  const verified = verifyDocument({ document: built, doc });
+  if (!verified.ok) {
+    throw new Error(`the document failed its own recheck: ${verified.mismatches.map((miss) => miss.why ?? miss.id).join('; ')}`);
+  }
+
+  const blocks = built.docplan.blocks.map((block) => {
+    if (block.kind !== 'image') return block;
+    const media = imageBytes(block.src);
+    return media ? { ...block, bytes: media.bytes, extension: media.extension } : block;
+  });
+
+  const file = buildDocumentFile({ title: built.docplan.title, blocks });
+
+  const base = path.join(path.dirname(from), path.basename(from, path.extname(from)));
+  const outPath = out === null || out === undefined || String(out).trim() === ''
+    ? `${base}.docx`
+    : path.resolve(String(out));
+
+  fs.mkdirSync(path.dirname(outPath), { recursive: true });
+  const tmp = `${outPath}.writing`;
+  fs.writeFileSync(tmp, file);
+  fs.rmSync(outPath, { force: true });
+  fs.renameSync(tmp, outPath);
+
+  const images = blocks.filter((block) => block.kind === 'image');
+  return {
+    source: from,
+    out: outPath,
+    bytes: file.length,
+    verified,
+    title: built.docplan.title,
+    blocks: blocks.length,
+    images: { total: images.length, embedded: images.filter((image) => image.bytes).length }
+  };
 }

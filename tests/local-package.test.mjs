@@ -18,15 +18,24 @@ const here = dirname(fileURLToPath(import.meta.url));
 const local = resolve(here, '..', 'local');
 const shipped = JSON.parse(readFileSync(join(local, 'package.json'), 'utf8')).files;
 
-const IMPORT = /from '\.{1,2}\/([a-z-]+(?:\/[a-z-]+)?)\.js'/g;
+const IMPORT = /from '(\.{1,2}\/[^']+)'/g;
+
+// WHY THE IMPORT IS RESOLVED AGAINST THE FILE THAT NAMES IT.
+// A module in a folder imports its neighbour by a path relative to itself, so "./zip.js" inside office/ is office/zip.js and not a missing file at the package root.
 
 const reachable = (entry) => {
   const seen = new Set();
   const walk = (name) => {
     if (seen.has(name)) return;
     seen.add(name);
-    const source = readFileSync(join(local, `${name}.js`), 'utf8');
-    for (const [, next] of source.matchAll(IMPORT)) walk(next);
+    const file = join(local, `${name}.js`);
+    const source = readFileSync(file, 'utf8');
+    for (const [, specifier] of source.matchAll(IMPORT)) {
+      const absolute = resolve(dirname(file), specifier);
+      if (!absolute.startsWith(`${local}/`) && absolute !== local) continue;
+      const next = absolute.slice(local.length + 1).replace(/\\/g, '/').replace(/\.js$/, '');
+      walk(next);
+    }
   };
   walk(entry);
   return seen;
@@ -49,9 +58,20 @@ test('every module the bin can reach is inside the published files', () => {
   assert.deepEqual(missing, [], `npx opera-local would install a package that dies on import: ${missing.join(', ')}`);
 });
 
-test('the list names nothing the package does not have', () => {
-  const onDisk = readdirSync(local).filter((name) => name.endsWith('.js'));
+// WHY THE LIST IS COMPARED AGAINST THE DISK AND NOT AGAINST MEMORY.
+// A module that lives in a folder is shipped by its path, so the check has to walk the folders too.
+// A list that names a file which is not there ships an install that dies on import, which is the exact failure this file exists to prevent.
 
-  const extra = shipped.filter((name) => name !== 'bin' && !onDisk.includes(name));
+test('the list names nothing the package does not have', () => {
+  const onDisk = new Set();
+  for (const entry of readdirSync(local, { withFileTypes: true })) {
+    if (entry.isFile() && entry.name.endsWith('.js')) onDisk.add(entry.name);
+    if (!entry.isDirectory()) continue;
+    for (const child of readdirSync(join(local, entry.name), { withFileTypes: true })) {
+      if (child.isFile() && child.name.endsWith('.js')) onDisk.add(`${entry.name}/${child.name}`);
+    }
+  }
+
+  const extra = shipped.filter((name) => name !== 'bin' && !onDisk.has(name));
   assert.deepEqual(extra, [], `the package lists files it does not have: ${extra.join(', ')}`);
 });

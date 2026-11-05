@@ -484,6 +484,91 @@ export const TOOLS = Object.freeze([
     }
   },
   {
+    name: 'spreadsheet_build',
+    description: 'Turn a sheet exported to CSV into an Excel workbook: the report lines on the first sheet, the source rows on the second, and the ledger that says which rows produced each figure on the third. The totals are numbers, not sentences, so the customer can add them to another sheet. Every figure names the column and the exact rows it came from, and the plan is rechecked against those rows before the file exists. Writes the workbook and the plan beside the source. No browser is touched: month-end reports must not depend on a tab being open.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        source: stringArg('the CSV file exported from the workbook'),
+        client: stringArg('the client the report is for'),
+        title: stringArg('the report title, as the person wants it read'),
+        period: stringArg('the month the report covers, YYYY-MM'),
+        periodColumn: stringArg('the column that holds each row\'s date, when the sheet has one'),
+        groupBy: stringArg('the column whose values become the report lines'),
+        valueColumn: stringArg('the money column that is summed'),
+        out: stringArg('where to write the workbook; defaults beside the source')
+      },
+      required: ['source', 'client', 'title', 'period', 'groupBy', 'valueColumn']
+    }
+  },
+  {
+    name: 'deck_build',
+    description: 'Turn a deck described as JSON (a title, and slides with titles, bullets and figures) into a PowerPoint file. A slide may name a figure from a checked report, and the slide then carries that figure\'s value; a figure the report does not hold stops the deck, so no slide can show a number nobody checked. Writes the presentation and the provenance of every figure it used beside the source. No browser is touched: a deck is written where the report is, not where a tab happens to be.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        source: stringArg('the JSON file describing the deck'),
+        report: stringArg('the report plan the slides may name figures from'),
+        out: stringArg('where to write the presentation; defaults beside the source')
+      },
+      required: ['source']
+    }
+  },
+  {
+    name: 'document_write',
+    description: 'Turn a paper described as JSON into a Word file: the headings, paragraphs, tables and graphs of the checked plan, with a picture that is on this disk embedded and a picture that is not named by its own words. The plan is rechecked against the source rows before the file exists, so a number the check refuses cannot reach the reader. Writes the file beside the source. No browser is touched.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        source: stringArg('the JSON file describing the paper'),
+        out: stringArg('where to write the document; defaults beside the source')
+      },
+      required: ['source']
+    }
+  },
+  {
+    name: 'gate_detect',
+    description: 'Read one tab once and name the gate on it: a sign-in, a one-time code, a captcha, or nothing. The answer carries the gate, every gate the page holds, why, and what was counted - so an agent that was about to type into a page knows it is a sign-in before it touches a field. It never types and never solves anything: a one-time code is named as one only the person can answer, and a captcha as one to solve or to wait on. Use it first on any page that asked for something before showing its work.',
+    inputSchema: { type: 'object', properties: { tabId: tabArg } }
+  },
+  {
+    name: 'gate_wait',
+    description: 'Wait for the gate on one tab to clear, so the person can sign in or solve a captcha in their own browser and the agent continues on the same tab. Ends on the page, not on a clock: it reads the gate until it is gone, returns before and after so the change is visible, and gives up with the page as it stands and why. Nothing is typed, so this is the road that never touches a credential.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        tabId: tabArg,
+        timeoutMs: numberArg('budget to wait, default 30000, capped at 300000'),
+        intervalMs: numberArg('gap between checks, default 500')
+      }
+    }
+  },
+  {
+    name: 'login',
+    description: "Sign in on one tab from a credential file the person wrote: { accounts: [{ domain, username, password }] }. The account is matched by the page's own domain, the fields are filled from that file, and the answer names the domain and a masked user - the secret never enters the model's context and never comes back. Refuses a page that asks for a one-time code, a page with no password field, and a domain with no account, typing nothing in each case. Omit it and the default stands: never type a password, and let the person sign in in their own browser.",
+    inputSchema: {
+      type: 'object',
+      properties: {
+        tabId: tabArg,
+        credentialsPath: stringArg('the JSON file holding { accounts: [{ domain, username, password }] }'),
+        timeoutMs: numberArg('how long to wait for the gate to clear after submitting, default 30000'),
+        intervalMs: numberArg('gap between checks, default 500')
+      },
+      required: ['credentialsPath']
+    }
+  },
+  {
+    name: 'captcha_solve',
+    description: "Opt-in: read the captcha image on one tab through the solver the person configured (OPERA_CAPTCHA_API_URL, OPERA_CAPTCHA_API_KEY, OPERA_CAPTCHA_DOMAINS), then type the answer into the captcha field. Refuses when no solver is configured, when this page's host is not in the allowlist, when the page holds a token widget rather than an image, or when the image or its field cannot be found - every refusal types nothing and says which of those it is. The domain allowlist is what makes the spend the person's decision, so this never runs on a host they did not name.",
+    inputSchema: {
+      type: 'object',
+      properties: {
+        tabId: tabArg,
+        timeoutMs: numberArg('how long to wait for the solver, default 60000')
+      }
+    }
+  },
+  {
     name: 'wallet_pair',
     description: 'Pair this machine with the account that will pay for its work, using the code the dashboard shows a signed-in person. The token it stores is the whole authority of this machine over that wallet, so the code must come from the person who owns it, and a code is spent by the first machine that uses it. Pairing once is enough: every later wallet call uses the stored device.',
     inputSchema: {

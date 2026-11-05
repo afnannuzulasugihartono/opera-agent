@@ -1,0 +1,87 @@
+{
+  "title": "Dampak Promosi terhadap Kinerja Kanal Sinar Jaya",
+  "author": "Tim Riset Sinar Jaya",
+  "sections": [
+    {
+      "heading": "Ringkasan eksekutif",
+      "body": "Studi ini mengukur berapa pendapatan tambahan yang sebuah program promosi di kanal langganan, proyek, dan pelatihan. Pengukuran memakai satu bulan berjalan, September 2026, dan memakai data kas yang sudah dicocokkan dengan pembukuan. Hasilnya menjadi dasar keputusan paket promosi untuk tahun depan.",
+      "tables": [
+        {
+          "headers": ["Kanal", "Biaya Promo", "Tambahan Pendapatan"],
+          "rows": [
+            ["Langganan", 6300000, 12500000],
+            ["Proyek", 3900000, 9800000],
+            ["Pelatihan", 4200000, 7600000]
+          ]
+        }
+      ],
+      "graphs": [
+        {
+          "kind": "bar",
+          "title": "Tambahan pendapatan per kanal",
+          "caption": "Sumber: tabel ringkasan eksekutif.",
+          "source": {
+            "table": 0,
+            "labelColumn": "Kanal",
+            "valueColumn": "Tambahan Pendapatan",
+            "aggregate": "sum"
+          },
+          "data": [
+            { "label": "Langganan", "value": 12500000 },
+            { "label": "Proyek", "value": 9800000 },
+            { "label": "Pelatihan", "value": 7600000 }
+          ]
+        }
+      ]
+    },
+    {
+      "heading": "Metode",
+      "body": "Setiap program promosi dicatat dari hari biaya dikeluarkan sampai hari ke-30, agar pendapatan dari langganan berikutnya tidak ikut dihitung sebagai tambahan. Biaya promosi mencakup diskon, iklan, dan waktu tim.",
+      "tables": [
+        {
+          "headers": ["Kanal", "Program", "Periode", "Biaya Promo"],
+          "rows": [
+            ["Langganan", "Diskon perpanjangan", "2026-09-01 s/d 2026-09-30", 6300000],
+            ["Proyek", "Iklan kanal", "2026-09-01 s/d 2026-09-30", 3900000],
+            ["Pelatihan", "Kelas terbuka", "2026-09-01 s/d 2026-09-30", 4200000]
+          ]
+        }
+      ],
+      "graphs": [
+        {
+          "kind": "bar",
+          "title": "Jumlah program per kanal",
+          "caption": "Sumber: tabel metode.",
+          "source": {
+            "table": 0,
+            "labelColumn": "Kanal",
+            "aggregate": "count"
+          },
+          "data": [
+            { "label": "Langganan", "value": 1 },
+            { "label": "Proyek", "value": 1 },
+            { "label": "Pelatihan", "value": 1 }
+          ]
+        }
+      ]
+    },
+    {
+      "heading": "Hasil",
+      "body": "Program dengan biaya terbesar memberi tambahan pendapatan terbesar, tetapi rasio tambahan pendapatan terhadap biaya paling tinggi ada di kanal pelatihan.",
+      "tables": [
+        {
+          "headers": ["Kanal", "Program", "Tambahan Pendapatan", "Rasio Tambahan per Biaya"],
+          "rows": [
+            ["Langganan", "Diskon perpanjangan", 12500000, 1.98],
+            ["Proyek", "Iklan kanal", 9800000, 2.51],
+            ["Pelatihan", "Kelas terbuka", 7600000, 1.81]
+          ]
+        }
+      ]
+    },
+    {
+      "heading": "Batasan",
+      "body": "Studi ini mengukur satu bulan dan tiga kanal, jadi hasilnya belum dapat digeneralisasi ke bulan lain. Pengalaman pelanggan setelah program juga belum diukur, dan studi lanjutan harus memuatkannya."
+    }
+  ]
+}
