@@ -191,6 +191,10 @@
   }
 }
 
+.docTools {
+  margin: 0 0 24px;
+}
+
 /*
  * WHY THE GUIDE OPENS WITH THREE DOORS: measured against docs.firecrawl.dev on 2026-11-05, its first screen is the shortest path to a working call, and this guide opened on four paragraphs about installing.
  * The doors arrive in the order they are walked, one shot, so the path reads as a path and not as three more cards.

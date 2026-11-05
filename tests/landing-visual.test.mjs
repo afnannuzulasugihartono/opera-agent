@@ -720,6 +720,17 @@ test('motion is an enhancement, never the content', () => {
     'print shows every section, or the motion has hidden the page from being read');
 });
 
+test('the guide can leave as Markdown, the way an AI harness wants it', () => {
+  // WHY THIS PAGE NEEDS THE DOOR: measured against docs.firecrawl.dev on 2026-11-05, its guide carries a copy-as-Markdown door, and this product exists to feed AI harnesses, so a reader should be able to take the whole guide with one tap.
+  const html = read('docs.html');
+  assert.match(html, /data-md-copy/, 'the guide offers the door');
+  assert.match(html, /<script src="\/markdown\.js"><\/script>/, 'and the builder is a file of its own');
+  const script = read('markdown.js');
+  assert.match(script, /navigator\.clipboard\.writeText/, 'the door writes the guide to the clipboard');
+  assert.match(script, /window\.OperaAgentMarkdown/, 'and the builder is reachable for a check');
+  assert.match(script, /\\?`\\?`\\?`/, 'the code blocks keep their fence');
+});
+
 test('a block that arrives after the scripts still arrives', () => {
   // WHY THIS LOCK: measured on production on 2026-11-05, the archive page ran its scripts before the text under the browser cards was parsed, so that text stayed invisible for every reader who did not scroll.
   const script = read('reveal.js');
