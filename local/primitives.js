@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-23 UTC+7.
+// @last-edited: 2026-11-05 UTC+7.
 // @title: primitives — the local driver assembled from the modules that each answer one question.
 // @state: navigation, focus and the raw protocol escape hatch, with the typing, pointer, reads, waits, canvas and file verbs assigned from their own modules.
 // @dependencies: ./input.js, ./pointer.js, ./observe.js, ./waits.js, ./canvas.js, ./primitives-file.js, ./window-focus.js.
@@ -129,7 +129,7 @@ export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Pr
 
   };
 
-  const observe = createObserveMethods({ cdp, primitives, capped });
+  const observe = createObserveMethods({ cdp, primitives, capped, sleep });
   Object.assign(primitives, observe);
   const { readState, readRows } = observe;
 

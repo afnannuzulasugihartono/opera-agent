@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-27 UTC+7.
+// @last-edited: 2026-11-05 UTC+7.
 // @title: local-canvas — a surface that is not a page full of text, read through the ladder with the caret-moving step gated.
 // @state: the ladder walk on a canvas surface, the gate in front of the borrow, and the caret line read.
 // @dependencies: node:test, strict, ../local/primitives.js.
@@ -6,7 +6,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { SETTLE_POLL_MS } from '../local/page-expressions.js';
 import { createPrimitives } from '../local/primitives.js';
 import { createCanvasMethods } from '../local/canvas.js';
 import { DOC_URL } from './helpers/local-page.mjs';
@@ -237,7 +236,8 @@ test('a caret line reads the selection, collapses, and reports its verdict', asy
   assert.deepEqual(keys.map((k) => [k.params.key, k.params.modifiers ?? 0]),
     [['Home', 0], ['Home', 0], ['End', 8], ['End', 8], ['End', 0], ['End', 0]],
     'home, shift-end, then the collapse, each on both edges');
-  assert.ok(slept.filter((ms) => ms === SETTLE_POLL_MS).length >= 2,
+  const settles = cdp.calls.filter((c) => String(c.params?.expression).includes('opera-settle-arm'));
+  assert.ok(settles.length >= 2,
     'a settle after each selection move, not a fixed beat');
 });
 

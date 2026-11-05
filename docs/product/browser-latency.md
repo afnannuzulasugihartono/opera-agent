@@ -222,6 +222,41 @@ that timer. That intermediate shape measured **p50 998.93 ms / p95 1,009.30 ms**
 while `snapshot(120)` of the same page took **4.28 ms**. Moving the quiet clock
 to Node is what brought the same page to 46 ms.
 
+### Post-change: the watcher that stays
+
+Same machine, same 100-row fixture, same headless Chrome launch, 30 runs each.
+The `before` column is the run before the change, the `after` column the run
+after it. The change is one thing: the settle's `MutationObserver` stays on the
+page instead of being re-armed for every settle, so the quiet clock keeps
+running and a page that is already still answers in one round trip.
+
+| Operation | Before p50 | Before p95 | After p50 | After p95 | What changed |
+|---|---:|---:|---:|---:|---|
+| `driver.settle()` | 41.55 ms | 48.24 ms | 0.47 ms | 1.45 ms | one read of a watcher that is already running |
+| `driver.read()` | 40.42 ms | 55.56 ms | 1.51 ms | 2.33 ms | the second sample waits on the page, not on a fresh quiet window |
+| MCP `click` | 42.62 ms | 50.58 ms | 5.21 ms | 6.32 ms | the settle after the click is one round trip |
+| MCP `click_row` | 47.81 ms | 57.49 ms | 8.30 ms | 9.55 ms | same |
+| MCP `press_key` | 70.61 ms | 83.18 ms | 28.15 ms | 40.88 ms | the key beat stays; the settle does not |
+| MCP `read_page` | 41.43 ms | 50.38 ms | 2.30 ms | 2.96 ms | the page look reads a still page |
+| MCP `caret_line` | 154.71 ms | 172.00 ms | 62.54 ms | 93.60 ms | two settles become two reads |
+| MCP `append` | 111.09 ms | 119.10 ms | 27.95 ms | 32.79 ms | the end key is followed by a read, not a quiet window |
+| MCP `stream_keys` text | 75.79 ms | 93.26 ms | 28.21 ms | 40.57 ms | one beat per chord, and the settle is free |
+| MCP `browser_burst` (3 steps) | 44.37 ms | 54.51 ms | 10.06 ms | 11.36 ms | one settle at the end of the burst |
+| MCP `wait_for` (found) | 3.23 ms | 4.48 ms | 3.48 ms | 4.78 ms | the text was already there; nothing to wait for |
+| MCP `wait_still` | 128.78 ms | 165.53 ms | 131.83 ms | 139.24 ms | stillness is two identical reads, not a settle |
+
+The waits did not get faster because they never paid the settle: `wait_for`
+found its text on the first read, and `wait_still` is two identical row reads
+with a 120 ms quiet window. They did not get slower either, because a wait that
+has not found its answer waits one settle beat before it looks again: the settle
+used to cost 41 ms on every check, and a page that is already quiet would
+otherwise be asked as fast as it can answer.
+
+The watcher is one `MutationObserver` per open page, installed on the first
+settle and left in place until the page navigates. The page that replaces its
+root element is still watched, because the observer watches the document and not
+the root.
+
 ### OS focus tail — replaced on the CDP path
 
 | Operation | p50 | p95 | n |

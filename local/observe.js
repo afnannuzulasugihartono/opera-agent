@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-23 UTC+7.
+// @last-edited: 2026-11-05 UTC+7.
 // @title: observe — what the page says about itself, read in as few round trips as it can be read in.
 // @state: snapshot, resolveRow, menuTree, openMenu, computed, scroll, viewport, capture and the two page-state reads.
 // @dependencies: ./menu-tree.js, ./page-expressions.js.
@@ -30,6 +30,7 @@ import { findNode, menuTreeExpression, nearestNames, revealOf, stateOf } from '.
 import {
   HANDLE_PREFIX,
   PAGE_STATE_TEXT_EXPRESSION,
+  SETTLE_POLL_MS,
   computedExpression,
   imageSize,
   scrollExpression,
@@ -93,7 +94,7 @@ function scrollWhy({ seen, wanted, end }) {
   return '';
 }
 
-export function createObserveMethods({ cdp, primitives, capped }) {
+export function createObserveMethods({ cdp, primitives, capped, sleep = () => Promise.resolve() }) {
   const readRows = async (limit) => {
     const { result } = await cdp.send('Runtime.evaluate', {
       expression: snapshotExpression(limit),
@@ -206,6 +207,9 @@ export function createObserveMethods({ cdp, primitives, capped }) {
     return rows.map((row) => ({ ...row, state: stateOf(row), revealedBy: revealOf(row), handle: null }));
   }
 
+  // WHY THE MENU WALK WAITS A BEAT.
+  // The settle used to cost 41 ms, so the walk asked the page for a tree at that pace.
+  // A quiet page costs the settle nothing, so the walk would ask as fast as the page can answer.
   async function openMenu({ path = [], clickLeaf = false, limit, timeoutMs = 8000 } = {}) {
     const wanted = path.map((step) => String(step ?? '').trim()).filter(Boolean);
     if (wanted.length === 0) return { opened: false, at: [], tree: await menuTree({ limit }) };
@@ -260,6 +264,7 @@ export function createObserveMethods({ cdp, primitives, capped }) {
           if (rows.some((found) => found.depth === index + 1) || Date.now() >= childDeadline) break;
           if (hoverAgain) await primitives.hoverRow(row);
           await primitives.settle();
+          await sleep(SETTLE_POLL_MS);
         }
       } else {
         rows = await menuTree({ limit });
