@@ -7,15 +7,20 @@
 // WHY THE js CLASS GOES FIRST: only a page that announced itself may hide a block, so a reader without JavaScript sees the whole page.
 // WHY THE FENCE: motion must never gate content, so a failure here leaves the page exactly as it was found.
 // WHY REDUCED MOTION GETS EVERY BLOCK: the observer is skipped, so the blocks are marked as arrived before anything paints.
+// WHY THE PAGE IS READ WHOLE: a script that runs while the parser is still below the content would watch an empty page and leave the rest of it hidden forever.
 
 try {
   document.documentElement.classList.add('js');
-  const blocks = document.querySelectorAll('[data-reveal]');
-  const reduce = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  if (reduce || !('IntersectionObserver' in globalThis)) {
-    for (const block of blocks) block.classList.add('in');
-  } else {
+  const start = () => {
+    const blocks = document.querySelectorAll('[data-reveal]');
+    const reduce = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    if (reduce || !('IntersectionObserver' in globalThis)) {
+      for (const block of blocks) block.classList.add('in');
+      return;
+    }
+
     const seen = new IntersectionObserver((entries) => {
       for (const entry of entries) {
         if (!entry.isIntersecting) continue;
@@ -23,7 +28,14 @@ try {
         seen.unobserve(entry.target);
       }
     }, { threshold: 0.12 });
+
     for (const block of blocks) seen.observe(block);
+  };
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', start);
+  } else {
+    start();
   }
 } catch (error) {
 }

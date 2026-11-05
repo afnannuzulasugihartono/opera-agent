@@ -195,60 +195,6 @@
     }
   }
   </script>
-    <script src="./i18n.js"></script>
-
-    <script src="/wayfind.js"></script>
-    <script src="/palette.js"></script>
-
-    <script src="/reveal.js"></script>
-    <script>
-      // WHY THE TYPEWRITER STAYS BEHIND A HASH: the page CSP names every inline classic script by its sha256, so this block is shaped to be hashed, not hidden.
-      window.__typeLine = function () {
-      var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
-      var line = document.querySelector('.typewriter');
-      if (!line || reduce || !('IntersectionObserver' in window)) {
-        if (line) line.textContent = line.dataset.type;
-        return;
-      }
-      // WHY THE LINE IS LOOKED UP LATE: a classic script runs while the parser is still above the element it needs, so querySelector at parse time finds nothing.
-      // Ready-state first, element second.
-      // WHY THE PARENT IS WATCHED, NOT THE LINE: the span starts empty and an empty inline box has a zero-area intersection record, so the callback would never fire.
-      // The wrapping pre has the box the reader scrolls to.
-      var box = line.closest('pre') || line;
-      var seen = new IntersectionObserver(function (entries) {
-        if (!entries[0].isIntersecting) return;
-        seen.disconnect();
-        var text = line.dataset.type;
-        var i = 0;
-        line.classList.add('live');
-        var tick = setInterval(function () {
-          line.textContent = text.slice(0, ++i);
-          if (i >= text.length) clearInterval(tick);
-        }, 18);
-      });
-      seen.observe(box);
-      };
-      if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', window.__typeLine);
-      else window.__typeLine();
-  </script>
-  <script type="module">
-      const cards = [...document.querySelectorAll('[data-browser]')];
-      const brands = (navigator.userAgentData?.brands || []).map((entry) => entry.brand).join(' ');
-      const agent = `${brands} ${navigator.userAgent || ''}`;
-      const found = /OPR\/|Opera/i.test(agent) ? 'opera'
-        : /Edg/i.test(agent) ? 'edge'
-        : /Brave/i.test(agent) ? 'brave'
-        : /Vivaldi/i.test(agent) ? 'vivaldi'
-        : /Chrome/i.test(agent) ? 'chrome'
-        : '';
-      if (found) {
-        const card = cards.find((element) => element.dataset.browser === found);
-        card?.classList.add('yours');
-        const badge = card?.querySelector('.badge');
-        if (badge) badge.hidden = false;
-      }
-    </script>
-
     <div class="downloadBody centered" data-reveal>
     <p data-i18n-html="fallback.body">Kalau kebijakan ditolak, atau browser kamu tidak ada di daftar di atas, ambil
     <a href="#berkas">arsip .zip</a> dari kartu di atas dan muat sendiri. Cara ini berjalan
@@ -353,5 +299,59 @@
       </div>
     </div>
   </footer>
+    <script src="./i18n.js"></script>
+
+    <script src="/wayfind.js"></script>
+    <script src="/palette.js"></script>
+
+    <script src="/reveal.js"></script>
+    <script>
+      // WHY THE TYPEWRITER STAYS BEHIND A HASH: the page CSP names every inline classic script by its sha256, so this block is shaped to be hashed, not hidden.
+      window.__typeLine = function () {
+      var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+      var line = document.querySelector('.typewriter');
+      if (!line || reduce || !('IntersectionObserver' in window)) {
+        if (line) line.textContent = line.dataset.type;
+        return;
+      }
+      // WHY THE LINE IS LOOKED UP LATE: a classic script runs while the parser is still above the element it needs, so querySelector at parse time finds nothing.
+      // Ready-state first, element second.
+      // WHY THE PARENT IS WATCHED, NOT THE LINE: the span starts empty and an empty inline box has a zero-area intersection record, so the callback would never fire.
+      // The wrapping pre has the box the reader scrolls to.
+      var box = line.closest('pre') || line;
+      var seen = new IntersectionObserver(function (entries) {
+        if (!entries[0].isIntersecting) return;
+        seen.disconnect();
+        var text = line.dataset.type;
+        var i = 0;
+        line.classList.add('live');
+        var tick = setInterval(function () {
+          line.textContent = text.slice(0, ++i);
+          if (i >= text.length) clearInterval(tick);
+        }, 18);
+      });
+      seen.observe(box);
+      };
+      if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', window.__typeLine);
+      else window.__typeLine();
+  </script>
+  <script type="module">
+      const cards = [...document.querySelectorAll('[data-browser]')];
+      const brands = (navigator.userAgentData?.brands || []).map((entry) => entry.brand).join(' ');
+      const agent = `${brands} ${navigator.userAgent || ''}`;
+      const found = /OPR\/|Opera/i.test(agent) ? 'opera'
+        : /Edg/i.test(agent) ? 'edge'
+        : /Brave/i.test(agent) ? 'brave'
+        : /Vivaldi/i.test(agent) ? 'vivaldi'
+        : /Chrome/i.test(agent) ? 'chrome'
+        : '';
+      if (found) {
+        const card = cards.find((element) => element.dataset.browser === found);
+        card?.classList.add('yours');
+        const badge = card?.querySelector('.badge');
+        if (badge) badge.hidden = false;
+      }
+    </script>
+
 </body>
 </html>

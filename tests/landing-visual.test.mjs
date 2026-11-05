@@ -720,6 +720,14 @@ test('motion is an enhancement, never the content', () => {
     'print shows every section, or the motion has hidden the page from being read');
 });
 
+test('a block that arrives after the scripts still arrives', () => {
+  // WHY THIS LOCK: measured on production on 2026-11-05, the archive page ran its scripts before the text under the browser cards was parsed, so that text stayed invisible for every reader who did not scroll.
+  const script = read('reveal.js');
+  assert.match(script, /document\.addEventListener\('DOMContentLoaded', start\)/, 'the observer waits for the whole page');
+  const page = read('unduh-berkas.html');
+  assert.ok(page.indexOf('class="downloadBody centered"') < page.indexOf('<script src="./i18n.js">'), 'and the page keeps its content before its scripts');
+});
+
 test('nothing spills out of a 320px screen', () => {
 
   for (const page of pages) {
