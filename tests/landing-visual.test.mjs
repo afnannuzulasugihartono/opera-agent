@@ -330,6 +330,18 @@ test('an open question keeps its minus sign', () => {
   assert.match(sheet, /content: "\u2212"/, 'the open marker is one minus');
 });
 
+test('the download page shows one archive fanning out to every browser', () => {
+  // WHY THIS PAGE NEEDS A PICTURE: measured against firecrawl.dev on 2026-11-05, its blocks answer with a picture of the work, and this hub left half its hero empty while it asked the reader to believe "satu arsip, semua browser".
+  const html = read('unduh.html');
+  assert.match(html, /<aside class="pack"/, 'the hero carries the archive');
+  assert.equal((html.match(/class="packTile"/g) || []).length, 5, 'and one tile per supported browser');
+  assert.match(html, /<code>opera-agent\.zip<\/code>/, 'the archive is the file the cards serve');
+  const css = read('download.css');
+  assert.match(css, /\.packTile:nth-child\(3\) \{[^}]*animation-delay/s, 'the tiles light in turn');
+  assert.match(css, /@keyframes pack-light/, 'the light is one shot');
+  assert.match(css, /\.hero \{[^}]*grid-template-columns: minmax\(0, 1fr\) minmax\(/s, 'and the picture fills the column the copy leaves');
+});
+
 test('the home page pauses on one statement, and the accent word carries it', () => {
   // WHY THE PAGE NEEDS A SHOUT: measured against firecrawl.dev on 2026-11-05, its home page stops on one line of large type between the product blocks, and a page of equal sections reads like a list instead of a story.
   const html = read('beranda.html');

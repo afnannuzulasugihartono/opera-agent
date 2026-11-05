@@ -11,10 +11,10 @@
 
 .hero {
   display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: clamp(24px, 3vw, 40px);
-  align-items: start;
-  max-width: 760px;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, .85fr);
+  gap: clamp(24px, 3vw, 56px);
+  align-items: center;
+  max-width: none;
   margin: 16px 0 56px;
 }
 
@@ -141,28 +141,122 @@
   font-size: 13.5px;
 }
 
-.chips {
-  display: flex;
-  gap: 7px;
-  margin: 16px 0 0;
-}
+/*
+ * WHY THE HERO CARRIES A PICTURE: measured against firecrawl.dev on 2026-11-05, a hero that only says "satu arsip" asks the reader to believe it, and the right half of this one stood empty.
+ * One file fans out to the five browsers, and the light crosses the fan once when the block lands, so the claim is seen before it is read.
+ */
 
-.chips span {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
+.pack {
+  display: grid;
+  justify-items: center;
+  padding: 34px 24px 30px;
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: var(--radius);
   background: var(--surface);
-  color: var(--muted);
-  font-size: 12px;
-  font-weight: 650;
 }
 
-@media (max-width: 860px) {
-  .hero { grid-template-columns: 1fr; gap: 30px; margin-bottom: 40px; }
+.pack code {
+  position: relative;
+  padding: 8px 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  color: var(--ink);
+  font-size: 13px;
+}
+
+.pack code::after,
+.pack code::before {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  width: 1px;
+  height: 22px;
+  transform-origin: top center;
+}
+
+.pack code::after { background: var(--line-strong); }
+
+.pack code::before { background: var(--accent); }
+
+.packRow {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+  width: 100%;
+  margin: 32px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.packRow::after,
+.packRow::before {
+  content: "";
+  position: absolute;
+  top: -11px;
+  left: 10%;
+  right: 10%;
+  height: 1px;
+  transform-origin: left center;
+}
+
+.packRow::before { background: var(--line-strong); }
+
+.packRow::after { background: var(--accent); }
+
+.packTile {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 13px;
+}
+
+html.js .pack code::before { transform: scaleY(0); }
+
+html.js .packRow::after { transform: scaleX(0); }
+
+html.js .pack.in code::before { animation: pack-stem .24s var(--ease) both; }
+
+html.js .pack.in .packRow::after { animation: pack-bar .3s var(--ease) .2s both; }
+
+html.js .pack.in .packTile { animation: pack-light .2s var(--ease) both; }
+
+/*
+ * WHY THE TILES WAIT THEIR TURN: the light reaches one browser at a time, so the eye reads a fan and not five lamps switching together.
+ */
+
+html.js .pack.in .packTile:nth-child(1) { animation-delay: .36s; }
+html.js .pack.in .packTile:nth-child(2) { animation-delay: .46s; }
+html.js .pack.in .packTile:nth-child(3) { animation-delay: .56s; }
+html.js .pack.in .packTile:nth-child(4) { animation-delay: .66s; }
+html.js .pack.in .packTile:nth-child(5) { animation-delay: .76s; }
+
+@keyframes pack-stem {
+  to { transform: scaleY(1); }
+}
+
+@keyframes pack-bar {
+  to { transform: scaleX(1); }
+}
+
+@keyframes pack-light {
+  to {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+}
+
+@media (max-width: 900px) {
+  .hero { grid-template-columns: minmax(0, 1fr); gap: 30px; margin-bottom: 40px; }
+  .pack { max-width: 420px; }
 }
 
 /* ── the file page ──────────────────────────────────────────────────────── */
