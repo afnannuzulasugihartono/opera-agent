@@ -15,7 +15,7 @@ import { mcpSurfaceSourceSync } from './helpers/mcp-surface-source.mjs';
 const root = new URL('..', import.meta.url);
 const read = (name) => fs.readFileSync(new URL(name, root), 'utf8');
 
-const siteFiles = ['landing/beranda.html', 'landing/index.html', 'landing/akun.html', 'landing/privasi.html', 'landing/syarat.html', 'landing/harga.html', 'landing/unduh.html', 'landing/unduh-berkas.html', 'landing/404.html', 'landing/fitur.html', 'landing/dukungan.html', 'landing/docs.html', 'landing/dashboard.html', 'landing/oauth/consent.html'];
+const siteFiles = ['landing/beranda.html', 'landing/index.html', 'landing/akun.html', 'landing/privasi.html', 'landing/syarat.html', 'landing/harga.html', 'landing/unduh.html', 'landing/unduh-berkas.html', 'landing/404.html', 'landing/fitur.html', 'landing/studi.html', 'landing/dukungan.html', 'landing/docs.html', 'landing/dashboard.html', 'landing/oauth/consent.html'];
 const sitePages = siteFiles.map(read);
 const site = sitePages.join('\n');
 

@@ -1,0 +1,160 @@
+/*
+ * @last-edited: 2026-11-05 UTC+7.
+ * @title: studi.css - the case study page: one ledger in, four files out, and the figures each one names.
+ * @state: an editorial hero, a ledger block, a file grid, a figure table, and a closing band.
+ * @dependencies: site.css.
+ *
+ * WHY a page sheet: the ledger, the figure table, and the file grid belong to this page alone; the shell and controls come from site.css.
+ */
+
+main.wrap { padding-top: 68px; padding-bottom: 96px; }
+
+/* ── hero ───────────────────────────────────────────────────────────────── */
+
+.studyHero {
+  max-width: 900px;
+  margin: 0 0 64px;
+}
+
+.studyHero .eyebrow {
+  margin: 0 0 14px;
+  color: var(--muted);
+  font-size: 12px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
+.studyHero h1 {
+  max-width: 16ch;
+  margin: 0 0 18px;
+  font-size: clamp(38px, 4.6vw, 62px);
+  line-height: 1.02;
+  letter-spacing: -.045em;
+}
+
+.studyHero .lede {
+  max-width: 62ch;
+  margin: 0 0 22px;
+  font-size: clamp(16px, 1.15vw, 18px);
+}
+
+.heroActions { margin: 26px 0 0; }
+
+/* ── blocks ─────────────────────────────────────────────────────────────── */
+
+.studyBlock { margin: 0 0 76px; }
+
+.studyBlock .sectionHead p { max-width: 52ch; }
+
+.studyBlock h2 {
+  max-width: 20ch;
+  margin: 0 0 10px;
+  font-size: clamp(24px, 2.6vw, 34px);
+}
+
+/* ── the input ledger ──────────────────────────────────────────────────── */
+
+/*
+ * WHY THE RAW FILE IS SHOWN: a claim about turning data into files is worth nothing while the reader imagines a template, so the page prints the first rows of the file the report was made from.
+ * The sheet only frames it: the numbers stay the numbers the file holds.
+ */
+
+.ledger {
+  margin: 24px 0 0;
+  padding: 20px 22px;
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--mono);
+  font-size: 13px;
+  line-height: 1.7;
+  white-space: pre;
+}
+
+.ledger code { background: none; padding: 0; }
+
+/* ── the four files ─────────────────────────────────────────────────────── */
+
+.bento { margin: 24px 0 0; }
+
+.bentoArticle h3 {
+  margin: 0 0 8px;
+  font-size: 17px;
+  letter-spacing: -.02em;
+}
+
+.bentoArticle p { font-size: 14px; }
+
+/* ── the figures ────────────────────────────────────────────────────────── */
+
+/*
+ * WHY THE TABLE SHOWS ITS ROWS: the point of the report is that every number names the rows behind it, so the page prints the rows beside the number instead of asking the reader to trust it.
+ */
+
+.figureTable {
+  width: 100%;
+  margin: 24px 0 0;
+  border-collapse: collapse;
+  font-size: 14.5px;
+}
+
+.figureTable th,
+.figureTable td {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+}
+
+.figureTable th {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+.figureTable .num {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.figureTable td:last-child { color: var(--muted); }
+
+.studyBlock .footnote { margin: 14px 0 0; }
+
+/* ── closing action ─────────────────────────────────────────────────────── */
+
+.finalBand {
+  margin: 0;
+  padding: 52px 46px;
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--ink);
+}
+
+.finalBand h2 {
+  max-width: 18ch;
+  margin: 0 0 10px;
+  color: var(--ink);
+}
+
+.finalBand p {
+  max-width: 56ch;
+  margin: 0 0 24px;
+  color: var(--muted);
+}
+
+@media (max-width: 860px) {
+  main.wrap { padding-top: 44px; }
+  .studyHero { margin-bottom: 44px; }
+  .studyBlock { margin-bottom: 52px; }
+  .finalBand { padding: 34px 24px; }
+}
+
+@media (max-width: 600px) {
+  .heroActions .btn { flex: 1 1 auto; }
+  .figureTable th,
+  .figureTable td { padding: 10px 8px; font-size: 13.5px; }
+}
