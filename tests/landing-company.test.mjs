@@ -1,6 +1,6 @@
-// @last-edited: 2026-10-26 UTC+7.
+// @last-edited: 2026-11-05 UTC+7.
 // @title: landing-company — the site reads as a real company site.
-// @state: red first: no favicon, mismatched footer, no crawler files, stale invite-only copy.
+// @state: red first: no favicon, mismatched footer, no crawler files, stale invite-only copy; a support page with no door to write to.
 // @dependencies: test, assert, fs.
 
 // A company site is trusted before it is read: every tab shows its mark, every footer offers the same doors, crawlers are told what exists, shared links carry a title, and the legal pages match the live product.
@@ -106,6 +106,17 @@ test('no page points at support that does not exist', () => {
   assert.match(privasi, /<h2[^>]*>Kontak<\/h2>/, 'the privacy contact section stays');
   assert.doesNotMatch(privasi, /balas dari akun/, 'but it no longer invents a reply channel');
   assert.match(privasi, /\.\/akun\.html/, 'it points at the self-service that exists');
+});
+
+test('the support page carries a way to reach a human', () => {
+  // WHY THIS LOCK: the page held five answers and no door, so a buyer whose question was not among them had nobody to write to.
+  const html = read('landing/dukungan.html');
+  const plugin = JSON.parse(read('landing/chatgpt-plugin/ai-plugin.json'));
+  const repo = /https:\/\/github\.com\/([^/]+\/[^/]+)\//.exec(read('.github/ISSUE_TEMPLATE/config.yml'))?.[1];
+  assert.ok(repo, 'the repository states where a report goes');
+  assert.ok(html.includes(`href="mailto:${plugin.contact_email}"`), 'the page writes to the address the plugin manifest publishes');
+  assert.ok(html.includes(`href="https://github.com/${repo}/issues"`), 'and opens the public tracker for everything else');
+  assert.ok(html.includes(`href="https://github.com/${repo}/security/advisories/new"`), 'and keeps a security finding off the public tracker');
 });
 
 test('no page sells billing that does not exist', () => {

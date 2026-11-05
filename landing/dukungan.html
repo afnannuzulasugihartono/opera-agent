@@ -1,6 +1,6 @@
 <!-- @last-edited: 2026-11-05 UTC+7. -->
 <!-- @title: dukungan.html — practical reference, real links only. -->
-<!-- @state: a standing lead beside five ranked answers that open in place. -->
+<!-- @state: a standing lead beside five ranked answers that open in place, and a door to write to. -->
 <!-- @dependencies: site.css, support.css, i18n.js, reveal.js, wayfind.js, palette.js. -->
 
 <!doctype html>
@@ -47,39 +47,51 @@
       <p class="supportHint" data-i18n-html="hint">Tidak ada di daftar? <kbd>Ctrl</kbd> <kbd>K</kbd> mencari semua halaman.</p>
     </header>
 
-    <div class="fixList">
-      <details class="fix" id="device" data-reveal>
-        <summary><span class="fixIndex" aria-hidden="true">01</span><span data-i18n="nodev.title">Device tidak muncul di Dashboard</span></summary>
-        <p data-i18n="nodev.body">Buka <a href="./dashboard.html">Dashboard</a> dan lihat status tiap device. Jika
+    <div class="supportCol">
+      <div class="fixList">
+        <details class="fix" id="device" data-reveal>
+          <summary><span class="fixIndex" aria-hidden="true">01</span><span data-i18n="nodev.title">Device tidak muncul di Dashboard</span></summary>
+          <p data-i18n-html="nodev.body">Buka <a href="./dashboard.html">Dashboard</a> dan lihat status tiap device. Jika
     offline, pasangkan ulang lewat kode baru di sana. Jangan biarkan device tak dikenal
     tetap ter-pairing; cabut yang tidak Anda kenal.</p>
-      </details>
-      <details class="fix" id="ext" data-reveal>
-        <summary><span class="fixIndex" aria-hidden="true">02</span><span data-i18n="noext.title">Ekstensi tidak ter-pasang</span></summary>
-        <p data-i18n="noext.body">Ikuti <a href="./unduh.html">Unduh</a>. Jika tombol instalasi otomatis
+        </details>
+        <details class="fix" id="ext" data-reveal>
+          <summary><span class="fixIndex" aria-hidden="true">02</span><span data-i18n="noext.title">Ekstensi tidak ter-pasang</span></summary>
+          <p data-i18n-html="noext.body">Ikuti <a href="./unduh.html">Unduh</a>. Jika tombol instalasi otomatis
     diblokir, pakai arsip mentah dan aktifkan mode pengembang, lalu centang browser Anda
     dan tekan <strong>Pasang</strong>. Periksa <em>chrome://extensions</em> dan
     <em>chrome://policy</em>.</p>
-      </details>
-      <details class="fix" id="mcp" data-reveal>
-        <summary><span class="fixIndex" aria-hidden="true">03</span><span data-i18n="mcp.title">Menghubungkan AI harness (OpenCode, Kilo, ChatGPT, Claude)</span></summary>
-        <p data-i18n-html="mcp.pointer">Server MCP, header device, dan config OpenCode, Kilo, serta Claude ada di halaman <a href="./docs.html">Docs</a>.</p>
+        </details>
+        <details class="fix" id="mcp" data-reveal>
+          <summary><span class="fixIndex" aria-hidden="true">03</span><span data-i18n="mcp.title">Menghubungkan AI harness (OpenCode, Kilo, ChatGPT, Claude)</span></summary>
+          <p data-i18n-html="mcp.pointer">Server MCP, header device, dan config OpenCode, Kilo, serta Claude ada di halaman <a href="./docs.html">Docs</a>.</p>
 
-      </details>
-      <details class="fix" id="sesi" data-reveal>
-        <summary><span class="fixIndex" aria-hidden="true">04</span><span data-i18n="session.title">Sesi Anda keluar sendiri</span></summary>
-        <p data-i18n="session.body">Token akses kedaluwarsa sekitar satu jam. Biasanya diperbarui otomatis lewat
+        </details>
+        <details class="fix" id="sesi" data-reveal>
+          <summary><span class="fixIndex" aria-hidden="true">04</span><span data-i18n="session.title">Sesi Anda keluar sendiri</span></summary>
+          <p data-i18n-html="session.body">Token akses kedaluwarsa sekitar satu jam. Biasanya diperbarui otomatis lewat
     refresh token yang tersimpan; jika refresh ikut gagal, Anda dipulangkan ke
     <a href="./index.html">Masuk</a>. Itu disengaja, bukan kehilangan akun. Riwayat
     perintah tetap ada.</p>
-      </details>
-      <details class="fix" id="privasi" data-reveal>
-        <summary><span class="fixIndex" aria-hidden="true">05</span><span data-i18n="privacy.title">Privasi dan data</span></summary>
-        <p data-i18n="privacy.body">Pertanyaan tentang kendali data: semuanya mandiri di halaman
+        </details>
+        <details class="fix" id="privasi" data-reveal>
+          <summary><span class="fixIndex" aria-hidden="true">05</span><span data-i18n="privacy.title">Privasi dan data</span></summary>
+          <p data-i18n-html="privacy.body">Pertanyaan tentang kendali data: semuanya mandiri di halaman
     <a href="./akun.html">Akun</a> dan <a href="./privasi.html">Privasi</a>.
     Temuan keamanan jangan dibuka sebagai isu publik; laporkan privat lewat tab
     Security di repositori.</p>
-      </details>
+        </details>
+      </div>
+
+      <section class="contactCard" id="kontak" data-reveal>
+        <h2 data-i18n="contact.title">Tidak ketemu jawabannya?</h2>
+        <p data-i18n="contact.body">Tiga pintu supaya pertanyaan Anda sampai ke orang yang bisa menjawab.</p>
+        <ul class="contactList">
+          <li><span class="contactKind" data-i18n="contact.emailKind">Email</span> <a href="mailto:afnannuzulasugihartono@gmail.com">afnannuzulasugihartono@gmail.com</a></li>
+          <li><span class="contactKind" data-i18n="contact.issueKind">Isu publik</span> <a href="https://github.com/afnannuzulasugihartono/opera-agent/issues" data-i18n="contact.issue">Buka isu baru</a></li>
+          <li><span class="contactKind" data-i18n="contact.securityKind">Keamanan</span> <a href="https://github.com/afnannuzulasugihartono/opera-agent/security/advisories/new" data-i18n="contact.security">Laporkan secara privat</a></li>
+        </ul>
+      </section>
     </div>
   </main>
 
@@ -140,6 +152,13 @@
       "mcp.pointer": "The MCP server, the device header, and the OpenCode, Kilo, and Claude configs live on the <a href=\"./docs.html\">Docs</a> page.",
       "session.title": "Your session keeps expiring",
       "privacy.title": "Privacy and data",
+      "contact.title": "No answer here?",
+      "contact.body": "Three doors so your question reaches someone who can answer it.",
+      "contact.emailKind": "Email",
+      "contact.issueKind": "Public issue",
+      "contact.securityKind": "Security",
+      "contact.issue": "Open a new issue",
+      "contact.security": "Report it privately",
       "nodev.body": "Open the <a href=\"./dashboard.html\">Dashboard</a> and check each device's status. If it is offline, re-pair with a fresh code there. Never leave an unknown device paired; revoke any you do not know.",
       "noext.body": "Follow <a href=\"./unduh.html\">Download</a>. If the automatic install button is blocked, use the raw archive and enable developer mode, then tick your browser and press <strong>Install</strong>. Check <em>chrome://extensions</em> and <em>chrome://policy</em>.",
       "session.body": "Access tokens expire after about an hour. They are usually refreshed automatically through the stored refresh token; if the refresh fails too, you are sent back to <a href=\"./index.html\">Sign in</a>. That is deliberate, not a lost account. Command history stays.",
