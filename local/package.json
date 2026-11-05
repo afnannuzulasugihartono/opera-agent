@@ -31,6 +31,7 @@
     "menu-tree.js",
     "observe.js",
     "office/docx.js",
+    "office/palette.js",
     "office/pptx.js",
     "office/xlsx.js",
     "office/xml.js",

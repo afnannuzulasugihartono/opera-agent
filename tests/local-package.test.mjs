@@ -15,13 +15,16 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join, resolve } from 'node:path';
 
 const here = dirname(fileURLToPath(import.meta.url));
-const local = resolve(here, '..', 'local');
+const local = resolve(here, '..', 'local').replace(/\\/g, '/');
 const shipped = JSON.parse(readFileSync(join(local, 'package.json'), 'utf8')).files;
 
 const IMPORT = /from '(\.{1,2}\/[^']+)'/g;
 
 // WHY THE IMPORT IS RESOLVED AGAINST THE FILE THAT NAMES IT.
 // A module in a folder imports its neighbour by a path relative to itself, so "./zip.js" inside office/ is office/zip.js and not a missing file at the package root.
+
+// WHY THE PATHS ARE COMPARED WITH FORWARD SLASHES.
+// A Windows path holds backslashes, and a check that looks for "local/" in "local\office\zip.js" finds nothing, so the walk stopped at the first folder on a Windows machine and the test passed on a package that dies on import.
 
 const reachable = (entry) => {
   const seen = new Set();
@@ -31,9 +34,9 @@ const reachable = (entry) => {
     const file = join(local, `${name}.js`);
     const source = readFileSync(file, 'utf8');
     for (const [, specifier] of source.matchAll(IMPORT)) {
-      const absolute = resolve(dirname(file), specifier);
+      const absolute = resolve(dirname(file), specifier).replace(/\\/g, '/');
       if (!absolute.startsWith(`${local}/`) && absolute !== local) continue;
-      const next = absolute.slice(local.length + 1).replace(/\\/g, '/').replace(/\.js$/, '');
+      const next = absolute.slice(local.length + 1).replace(/\.js$/, '');
       walk(next);
     }
   };
