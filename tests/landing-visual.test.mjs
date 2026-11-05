@@ -443,6 +443,21 @@ test('the 404 offers its exits as a list, and counts them honestly', () => {
   assert.match(read('site.css'), /\.exitList a:hover/, 'a link answers the hover, so it reads clickable');
 });
 
+test('the lost page shows its own number and a way to search', () => {
+  // WHY THIS PAGE NEEDS A SHAPE: measured against firecrawl.dev on 2026-11-05, every page answers with a picture and a door; this page answered a dead link with one sentence and a flat list.
+  const html = read('404.html');
+  assert.match(html, /<main class="wrap lost"/, 'the page carries its own shape');
+  assert.match(html, /class="lostNum" aria-hidden="true">404</, 'the number it failed on is on the page');
+  assert.match(html, /data-i18n-html="hint"/, 'and the visitor gets a way to search instead of guessing');
+  assert.ok(html.includes('rel="stylesheet" href="/notfound.css"'), 'the page has a sheet of its own');
+  const sheet = read('notfound.css');
+  assert.match(sheet, /\.lostNum \{[^}]*font-size: clamp\(/s, 'the number is set at display size');
+  assert.match(sheet, /\.lostHero h1 \{[^}]*margin: -/s, 'and the title sits on the number');
+  assert.match(sheet, /@keyframes lost-rise/, 'the number arrives once');
+  assert.match(sheet, /\.exitList[^{]*li:nth-child\(3\)[^{]*\{[^}]*animation-delay/s, 'and the ways out arrive in turn');
+  assert.doesNotMatch(sheet, /#[0-9a-f]{3,6}\b/i, 'and the sheet paints no colour literal');
+});
+
 test('the support page sets its answers beside the question it opens with', () => {
   // WHY THIS PAGE NEEDS A SHAPE: measured against firecrawl.dev (support and troubleshooting pages) on 2026-11-05, its help pages rank each symptom and answer it beside a standing lead; this page was five identical rows on a 900px screen with no rank and no entry.
   const html = read('dukungan.html');

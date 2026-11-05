@@ -1,7 +1,7 @@
-<!-- @last-edited: 2026-10-26 UTC+7. -->
+<!-- @last-edited: 2026-11-05 UTC+7. -->
 <!-- @title: 404 — a lost visitor gets the four ways out, not a host error. -->
-<!-- @state: served by the catch-all rewrite in vercel.json. -->
-<!-- @dependencies: site.css, i18n.js, reveal.js, wayfind.js, palette.js. -->
+<!-- @state: served by the catch-all rewrite in vercel.json; the number stands behind the title and the ways out arrive in turn. -->
+<!-- @dependencies: site.css, notfound.css, i18n.js, reveal.js, wayfind.js, palette.js. -->
 
 <!doctype html>
 <html lang="id">
@@ -12,6 +12,7 @@
   <title data-i18n="meta.title">Halaman tidak ditemukan — Opera Agent</title>
   <meta name="description" content="Halaman ini tidak ada. Tautan ke beranda, unduhan, akun, dan dashboard Opera Agent." />
   <link rel="stylesheet" href="/site.css" />
+  <link rel="stylesheet" href="/notfound.css" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%230b0d10'/%3E%3Cpath d='M5.2 2.2v10.2l2.5-2.3 1.5 3.6 1.9-.8-1.6-3.6h3.1L5.2 2.2Z' fill='%233ecf8e'/%3E%3C/svg%3E" />
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="Opera Agent" />
@@ -38,9 +39,13 @@
     </div>
   </header>
 
-  <main class="wrap">
-    <h1 data-i18n="page.title">Halaman ini tidak ada</h1>
-    <p class="lede" data-i18n="page.sub">Alamatnya mungkin salah ketik, atau halaman itu sudah dipindahkan. Lima jalan keluar:</p>
+  <main class="wrap lost">
+    <section class="lostHero" data-reveal>
+      <p class="lostNum" aria-hidden="true">404</p>
+      <h1 data-i18n="page.title">Halaman ini tidak ada</h1>
+      <p class="lede" data-i18n="page.sub">Alamatnya mungkin salah ketik, atau halaman itu sudah dipindahkan. Lima jalan keluar:</p>
+      <p class="lostHint" data-i18n-html="hint">Atau cari halaman yang Anda maksud: <kbd>Ctrl</kbd> <kbd>K</kbd>.</p>
+    </section>
     <ul class="exitList" data-reveal>
       <li><a href="./beranda.html"><strong data-i18n="tile.home.title">Beranda</strong><span data-i18n="tile.home.body">Cara kerjanya dan semua jawaban umum.</span></a></li>
       <li><a href="./unduh.html"><strong data-i18n="tile.download.title">Unduh</strong><span data-i18n="tile.download.body">Arsip extension dan sidik jarinya.</span></a></li>
@@ -100,6 +105,7 @@
       "meta.title": "Page not found — Opera Agent",
       "page.title": "This page does not exist",
       "page.sub": "The address may be mistyped, or the page may have moved. Five ways out:",
+      "hint": "Or search for the page you meant: <kbd>Ctrl</kbd> <kbd>K</kbd>.",
       "tile.home.title": "Home",
       "tile.home.body": "How it works, and every common answer.",
       "tile.download.title": "Download",
