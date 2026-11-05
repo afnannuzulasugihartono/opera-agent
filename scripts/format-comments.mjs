@@ -31,7 +31,7 @@ const NAMES = new Set([
 // The gate reads the files a person would ship, and a skill that a colleague never installs must not turn the suite red.
 
 const SKIP_DIRS = new Set([
-  '.git', 'node_modules', '.kilo', '.agents', '.superpowers', 'dist', 'build', 'tmp', 'coverage',
+  '.git', 'node_modules', '.kilo', '.agents', '.superpowers', '.serena', 'dist', 'build', 'tmp', 'coverage',
   '.next', '.vercel', '__pycache__', '.temp',
 ]);
 
