@@ -34,6 +34,17 @@ const sections = doors
   .map((door) => document.getElementById(door.getAttribute('href').slice(1)))
   .filter(Boolean);
 
+// WHY A DOOR OPENS WHAT IT NAMES: a rule that opens in place is closed until the reader asks for it, and a door that lands on a closed row answers nothing.
+
+const openNamed = (hash) => {
+  const target = hash ? document.getElementById(hash.slice(1)) : null;
+  if (target?.tagName === 'DETAILS') target.open = true;
+};
+
+for (const door of doors) door.addEventListener('click', () => openNamed(door.getAttribute('href')));
+window.addEventListener('hashchange', () => openNamed(window.location.hash));
+openNamed(window.location.hash);
+
 let queued = false;
 
 const paint = () => {

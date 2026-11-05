@@ -310,6 +310,26 @@ test('the features page shows one task travelling from a sentence to a file', ()
   assert.doesNotMatch(css, /infinite/, 'nothing on this page loops on its own');
 });
 
+test('the price page answers each rule in place, and its cards answer the pointer', () => {
+  // WHY THIS PAGE NEEDS A SHAPE: measured against firecrawl.dev/pricing on 2026-11-05, its billing rules sit behind questions that open in place, and its cards answer the pointer; five open paragraphs read as a wall.
+  const html = read('harga.html');
+  const rules = [...html.matchAll(/<details class="qa" id="([a-z]+)">/g)].map((match) => match[1]);
+  assert.deepEqual(rules, ['prabayar', 'pekerjaan', 'gagal', 'batas', 'model'], 'each rule opens in place and keeps the anchor its map names');
+  for (const id of rules) assert.ok(html.includes(`href="#${id}"`), `the map still reaches ${id}`);
+  assert.match(html, /<script src="\/spotlight\.js"[^>]*><\/script>/, 'and the cards take the shared pointer light');
+  const sheet = read('harga.css');
+  assert.match(sheet, /\.priceCard \{[^}]*radial-gradient\([^;]*var\(--mx\)/s, 'the card paints a light at the two numbers the pointer writes');
+  assert.match(sheet, /@media \(max-width: 899px\)[\s\S]*?main\.prose \.toc \{[^}]*display: none/s, 'and a phone reads the rules themselves as its map');
+  assert.match(read('wayfind.js'), /\.open = true/, 'a map door opens the rule it names');
+});
+
+test('an open question keeps its minus sign', () => {
+  // WHY THIS LOCK: the open marker was mojibake in the sheet, so every opened question wore three broken characters instead of one minus.
+  const sheet = read('site.css');
+  assert.doesNotMatch(sheet, /content:\s*"[^"\n]*\u00e2[^"\n]*"/, 'no marker carries mojibake');
+  assert.match(sheet, /content: "\u2212"/, 'the open marker is one minus');
+});
+
 test('the home page pauses on one statement, and the accent word carries it', () => {
   // WHY THE PAGE NEEDS A SHOUT: measured against firecrawl.dev on 2026-11-05, its home page stops on one line of large type between the product blocks, and a page of equal sections reads like a list instead of a story.
   const html = read('beranda.html');
@@ -340,7 +360,7 @@ test('the shared spotlight script only paints what the pointer names', () => {
   assert.match(src, /pointermove/, 'it listens to the pointer');
   assert.match(src, /--mx/, 'and writes the two numbers the card paints');
   assert.doesNotMatch(src, /innerHTML|eval\(/, 'and it writes no markup and runs no code');
-  for (const page of ['beranda.html', 'fitur.html']) {
+  for (const page of ['beranda.html', 'fitur.html', 'harga.html']) {
     assert.match(read(page), /<script src="\/spotlight\.js"[^>]*><\/script>/, `${page} loads it from the site, not inline`);
   }
 });

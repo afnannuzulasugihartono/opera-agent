@@ -75,31 +75,43 @@
       <li><a href="#model">Biaya model tetap urusan Anda</a></li>
     </ul>
 
-    <h2 id="prabayar">Prabayar, bukan langganan</h2>
-    <p>Tidak ada paket bulanan. Anda mengisi saldo sekali lewat <strong>QRIS mulai Rp10.000</strong>,
-    dan saldo itu <strong>tidak kedaluwarsa</strong>. Saldo hanya berkurang saat satu pekerjaan
-    benar-benar selesai.</p>
+    <div class="qaList">
+      <details class="qa" id="prabayar">
+        <summary>Prabayar, bukan langganan</summary>
+        <p>Tidak ada paket bulanan. Anda mengisi saldo sekali lewat <strong>QRIS mulai Rp10.000</strong>,
+        dan saldo itu <strong>tidak kedaluwarsa</strong>. Saldo hanya berkurang saat satu pekerjaan
+        benar-benar selesai.</p>
+      </details>
 
-    <h2 id="pekerjaan">Bayar per pekerjaan selesai</h2>
-    <p>Sebelum satu pekerjaan mulai, Anda melihat <strong>harga tetapnya</strong> dan menyetujuinya.
-    Saat pekerjaan selesai dan artefaknya ada, saldo dipotong sebesar harga itu — tidak lebih.
-    Tidak ada meteran lain yang memotong saldo Anda.</p>
+      <details class="qa" id="pekerjaan">
+        <summary>Bayar per pekerjaan selesai</summary>
+        <p>Sebelum satu pekerjaan mulai, Anda melihat <strong>harga tetapnya</strong> dan menyetujuinya.
+        Saat pekerjaan selesai dan artefaknya ada, saldo dipotong sebesar harga itu — tidak lebih.
+        Tidak ada meteran lain yang memotong saldo Anda.</p>
+      </details>
 
-    <h2 id="gagal">Pekerjaan gagal: saldo kembali</h2>
-    <p>Kalau pekerjaan gagal — termasuk berhenti karena halaman meminta kata sandi, OTP, atau
-    data kartu — dana yang ditahan <strong>dikembalikan penuh</strong>. Tidak ada potongan
-    proporsional, tidak ada biaya admin. Dana yang ditahan lebih dari <strong>30 menit</strong>
-    tanpa penyelesaian dikembalikan otomatis.</p>
+      <details class="qa" id="gagal">
+        <summary>Pekerjaan gagal: saldo kembali</summary>
+        <p>Kalau pekerjaan gagal — termasuk berhenti karena halaman meminta kata sandi, OTP, atau
+        data kartu — dana yang ditahan <strong>dikembalikan penuh</strong>. Tidak ada potongan
+        proporsional, tidak ada biaya admin. Dana yang ditahan lebih dari <strong>30 menit</strong>
+        tanpa penyelesaian dikembalikan otomatis.</p>
+      </details>
 
-    <h2 id="batas">Satu pekerjaan maksimal 10 aksi</h2>
-    <p>Satu pekerjaan adalah satu hasil yang jelas: satu halaman, satu laporan, atau satu daftar
-    yang dipecah otomatis menjadi kelompok 10 item, masing-masing dengan harga dan
-    pengembalian sendiri. Pekerjaan yang diperkirakan lebih dari 10 aksi ditolak di depan
-    dengan tawaran untuk dipecah — bukan gagal di tengah jalan.</p>
+      <details class="qa" id="batas">
+        <summary>Satu pekerjaan maksimal 10 aksi</summary>
+        <p>Satu pekerjaan adalah satu hasil yang jelas: satu halaman, satu laporan, atau satu daftar
+        yang dipecah otomatis menjadi kelompok 10 item, masing-masing dengan harga dan
+        pengembalian sendiri. Pekerjaan yang diperkirakan lebih dari 10 aksi ditolak di depan
+        dengan tawaran untuk dipecah — bukan gagal di tengah jalan.</p>
+      </details>
 
-    <h2 id="model">Biaya model tetap urusan Anda</h2>
-    <p>Opera Agent memakai model yang Anda bawa sendiri: endpoint, nama model, dan kunci API
-    Anda. Biaya pemakaian model dibayar langsung ke penyedia model itu, bukan ke Opera Agent.</p>
+      <details class="qa" id="model">
+        <summary>Biaya model tetap urusan Anda</summary>
+        <p>Opera Agent memakai model yang Anda bawa sendiri: endpoint, nama model, dan kunci API
+        Anda. Biaya pemakaian model dibayar langsung ke penyedia model itu, bukan ke Opera Agent.</p>
+      </details>
+    </div>
   </main>
 
     <footer>
@@ -164,6 +176,7 @@
 
   <script src="/wayfind.js"></script>
   <script src="/palette.js"></script>
+  <script src="/spotlight.js"></script>
 
   <script src="/reveal.js"></script>
 </body>
