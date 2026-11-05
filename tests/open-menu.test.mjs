@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-15 UTC+7.
+// @last-edited: 2026-11-05 UTC+7.
 // @title: open-menu — walk a menu to a row, and click only what the caller named.
 // @state: a fake page that answers the menu tree, the box of every row and the clicks.
 // @dependencies: node:test, assert, ../local/primitives.js.
@@ -7,7 +7,6 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import { createPrimitives } from '../local/primitives.js';
-import { SETTLE_POLL_MS } from '../local/page-expressions.js';
 
 // WHY THESE CLAIMS EXIST.
 // Measured live on Google Docs: a walk for ["Insert", "Image", "Upload from computer"] opened the two menus and then clicked the leaf on the way, which opened the operating system's own file dialog - a window nothing inside the browser can close again - and the answer still said acted: false.
@@ -112,7 +111,8 @@ test('a menu walk settles between pointer moves instead of sleeping fixed gaps',
 
   await createPrimitives(cdp, { sleep: async (ms) => { slept.push(ms); } }).openMenu({ path: ['Insert', 'Image'], timeoutMs: 1000 });
 
-  assert.ok(slept.includes(SETTLE_POLL_MS), 'the walk waits on the page settle');
+  const settles = cdp.calls.filter((c) => String(c.params?.expression).includes('opera-settle-read'));
+  assert.ok(settles.length >= 1, 'the walk waits on the page settle');
   assert.ok(!slept.some((ms) => ms === 120 || ms === 260 || ms === 90), 'and not on the old fixed hover/open/poll gaps');
 });
 

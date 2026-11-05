@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-23 UTC+7.
+// @last-edited: 2026-11-05 UTC+7.
 // @title: local-waits — a wait ends on evidence, not on a clock that guessed how long a page takes.
 // @state: the page settle, the mutation wait, and the text, row and stillness waits built on it.
 // @dependencies: node:test, strict, ../local/primitives.js.
@@ -28,11 +28,61 @@ test('settle watches the page from Node, so a hidden tab cannot clamp its timer'
   assert.equal(arm.params.awaitPromise, undefined, 'no page-side promise waits on a throttled timer');
   assert.ok(read, 'settle asks the watcher how quiet the page is');
   assert.match(read.params.expression, /__operaSettle/);
-  assert.ok(disarm, 'settle removes its watcher');
+  assert.equal(disarm, undefined, 'the watcher stays on the page, so nothing removes it between settles');
   assert.equal(out.why, 'quiet');
   assert.equal(out.changes, 1);
   assert.equal(out.maxMs, SETTLE_MAX_MS);
-  assert.deepEqual(slept, [SETTLE_POLL_MS]);
+  assert.deepEqual(slept, [], 'a page that is already quiet is not waited on');
+});
+
+// WHY THE WATCHER STAYS.
+// Measured on 2026-11-05: every settle re-armed its observer, and a fresh observer starts its quiet clock at zero, so a page that had been still for ten seconds still paid 32 ms of quiet and four round trips before a single word was read.
+// The observer is cheap, the clock it keeps is the truth, and the page is still watched when the root element is replaced, so it stays installed and the settle reads how long the page has been still.
+
+test('a settle on a page that has been quiet asks once and waits for nothing', async () => {
+  const cdp = recordingCdp();
+  const slept = [];
+  const p = createPrimitives(cdp, { sleep: async (ms) => { slept.push(ms); } });
+
+  const out = await p.settle();
+
+  assert.equal(out.why, 'quiet');
+  assert.deepEqual(slept, [], 'nothing slept: the page had been quiet already');
+  const reads = cdp.calls.filter((call) => String(call.params?.expression).includes('opera-settle-read'));
+  assert.equal(reads.length, 1, 'one read of the watcher, not a poll every 8 ms');
+});
+
+test('the watcher is installed once and stays between settles', async () => {
+  const cdp = recordingCdp();
+  const p = createPrimitives(cdp, { sleep: async () => {} });
+
+  await p.settle();
+  await p.settle();
+
+  const arms = cdp.calls.filter((call) => String(call.params?.expression).includes('opera-settle-arm'));
+  assert.equal(arms.length, 1, 'the page is watched once; the quiet clock is not reset');
+});
+
+test('a page that lost the watcher is watched again', async () => {
+  let reads = 0;
+  const cdp = {
+    calls: [],
+    send: async (method, params = {}) => {
+      cdp.calls.push({ method, params });
+      if (method === 'Runtime.evaluate' && String(params.expression).includes('opera-settle-read')) {
+        reads += 1;
+        if (reads === 1) return { result: { value: { missing: true } } };
+        return { result: { value: { changes: 0, quietMs: 40, elapsedMs: 40, visibility: 'visible' } } };
+      }
+      return { result: { value: true } };
+    }
+  };
+
+  const out = await createPrimitives(cdp, { sleep: async () => {} }).settle();
+
+  assert.equal(out.why, 'quiet', 'a page that navigated is watched again rather than reported as lost');
+  const arms = cdp.calls.filter((call) => String(call.params?.expression).includes('opera-settle-arm'));
+  assert.equal(arms.length, 2, 'the watcher was installed again after the page lost it');
 });
 
 
@@ -83,7 +133,7 @@ test('a text wait settles the page between checks instead of sleeping a fixed ga
 
   assert.equal(out.text, 'Heading is here');
   assert.ok(cdp.calls.some((call) => call.params?.expression?.includes('opera-settle-arm')), 'the wait waits on a mutation settle');
-  assert.ok(slept.includes(SETTLE_POLL_MS), 'and sleeps the settle beat, not the fixed 100 ms gap');
+  assert.ok(cdp.calls.some((call) => call.params?.expression?.includes('opera-settle-read')), 'and asks the page how quiet it is');
   assert.ok(!slept.includes(100), 'the fixed interval is not the method anymore');
 });
 
@@ -122,7 +172,7 @@ test('a read on a settled page takes two samples and says the text stood still',
   const asks = cdp.calls.filter((c) => c.method === 'Runtime.evaluate').map((c) => c.params.expression);
   assert.ok(asks.some((expression) => expression.includes('opera-settle-arm')), 'the read settles before its second sample');
   assert.ok(asks.some((expression) => expression.includes('opera-settle-read')), 'and asks the page how quiet it is');
-  assert.deepEqual(slept, [SETTLE_POLL_MS], 'the settle is a beat, not a hundred milliseconds');
+  assert.deepEqual(slept, [], 'a page that is already quiet is not waited on');
 });
 
 // WHY A READ THAT RETURNS A TENTH OF THE PAGE IS THE BUG THIS PINS.

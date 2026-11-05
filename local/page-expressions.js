@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-21 UTC+7.
+// @last-edited: 2026-11-05 UTC+7.
 // @title: page-expressions — the JavaScript the page runs, and the helpers that build it.
 // @state: the snapshot, focus, caret, scroll, upload and edit expressions, and the pure helpers around them.
 // @dependencies: node:buffer.
@@ -807,6 +807,11 @@ export const EDIT_POLLS = 12;
 // The page installs only the watcher; Node waits 8ms, asks the watcher how long the page has been still, and stops after 32ms of quiet or 120ms total.
 // Fifteen asks is the worst case, and four is the common one; no page-side timer is left for a hidden tab to clamp.
 
+// WHY THE WATCHER STAYS BETWEEN SETTLES.
+// Measured on 2026-11-05: every settle re-armed its observer, and a fresh observer starts its quiet clock at zero, so a page that had been still for ten seconds still paid 32 ms of quiet and four round trips before a word was read.
+// The observer is cheap, the clock it keeps is the truth, and a page that replaces its root element is still watched when the observer watches the document, so it stays installed and the settle reads how long the page has been still.
+// The page installs only the watcher; Node reads the watcher, so a hidden tab cannot clamp a page-side timer.
+
 export const SETTLE_QUIET_MS = 32;
 export const SETTLE_MAX_MS = 120;
 export const SETTLE_POLL_MS = 8;
@@ -814,7 +819,7 @@ export const SETTLE_POLL_MS = 8;
 export const SETTLE_ARM_EXPRESSION = `(() => {
   const key = '__operaSettle';
   const old = window[key];
-  if (old?.observer) { try { old.observer.disconnect(); } catch { /* a page already gone has nothing to disconnect */ } }
+  if (old?.observer) return { kept: true, changes: old.changes };
   const started = performance.now();
   const state = { started, lastChange: started, changes: 0, observer: null };
   state.observer = new MutationObserver(() => {
@@ -822,10 +827,10 @@ export const SETTLE_ARM_EXPRESSION = `(() => {
     state.lastChange = performance.now();
   });
   try {
-    state.observer.observe(document.documentElement || document, { subtree: true, childList: true, attributes: true, characterData: true });
+    state.observer.observe(document, { subtree: true, childList: true, attributes: true, characterData: true });
   } catch { /* settling a page that refuses observation is still cheaper than not looking */ }
   window[key] = state;
-  return true;
+  return { kept: false, changes: 0 };
 })() /*opera-settle-arm*/`;
 
 export const SETTLE_READ_EXPRESSION = `(() => {
@@ -839,13 +844,6 @@ export const SETTLE_READ_EXPRESSION = `(() => {
     visibility: document.visibilityState
   };
 })() /*opera-settle-read*/`;
-
-export const SETTLE_DISARM_EXPRESSION = `(() => {
-  const state = window.__operaSettle;
-  if (state?.observer) { try { state.observer.disconnect(); } catch { /* a page already gone has nothing to disconnect */ } }
-  try { delete window.__operaSettle; } catch { /* a page that froze its globals still loses the observer */ }
-  return true;
-})() /*opera-settle-disarm*/`;
 
 // WHY THE APPEND WAITS AFTER THE END KEY.
 // The end key asks the editor to move its caret and scroll to it; a document that scrolls answers the next insert before the view has caught up, and text lands where the caret used to be.

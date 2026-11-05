@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-23 UTC+7.
+// @last-edited: 2026-11-05 UTC+7.
 // @title: waits — the page's own settle, and the event-driven waits built on it.
 // @state: settle and waitForIdle, then one mutation wait with text, row and stillness on top.
 // @dependencies: ./page-expressions.js.
@@ -9,7 +9,6 @@
 
 import {
   SETTLE_ARM_EXPRESSION,
-  SETTLE_DISARM_EXPRESSION,
   SETTLE_MAX_MS,
   SETTLE_POLL_MS,
   SETTLE_QUIET_MS,
@@ -18,53 +17,66 @@ import {
 import { MIN_DOM_TEXT, probeSurface } from './surface-profile.js';
 
 export function createWaits({ cdp, sleep, readState, readRows, read, primitives, now = Date.now }) {
-  // WHY SETTLE IS A PRIMITIVE AND NOT A TOOL.
+  // WHY THE SETTLE IS A PRIMITIVE AND NOT A TOOL.
   // Every action needs the same short look before the page is read, so the wait belongs beside the actions, not in the surface where a caller has to remember it.
   // The page expression resolves with what it saw, which makes the cost inspectable instead of a blind sleep: quiet means the last change was at least 32ms ago, deadline means the page was still moving when the 120ms cap arrived.
+
+  // WHY THE WATCHER IS INSTALLED ONCE AND KEPT.
+  // Measured on 2026-11-05: every settle re-armed its observer, and a fresh observer starts its quiet clock at zero, so a page that had been still for ten seconds still paid 32ms of quiet and four round trips before a word was read.
+  // So the watcher stays on the page, the settle reads how long the page has been still, and a page that is still answers in one round trip.
+  // A page that navigates loses the watcher with its document, so the settle asks for it again when the page says it is missing.
+  let watched = false;
+  let baseline = 0;
+
   async function settle() {
     const started = Date.now();
+    let from = baseline;
     const answer = (why, state, detail) => ({
       waitedMs: Date.now() - started,
       quietMs: Number(state?.quietMs) || 0,
       maxMs: SETTLE_MAX_MS,
-      changes: Number(state?.changes) || 0,
+      changes: Math.max(0, (Number(state?.changes) || 0) - from),
       why,
       visibility: state?.visibility ?? null,
       ...(detail ? { detail } : {})
     });
 
-    let armed = false;
-    let last = null;
-    try {
-      await cdp.send('Runtime.evaluate', {
-        expression: SETTLE_ARM_EXPRESSION,
+    const ask = async (expression) => {
+      const { result } = await cdp.send('Runtime.evaluate', {
+        expression,
         returnByValue: true
       });
-      armed = true;
+      return result?.value;
+    };
+
+    const watch = async () => {
+      await ask(SETTLE_ARM_EXPRESSION);
+      watched = true;
+      baseline = 0;
+      from = 0;
+    };
+
+    try {
+      if (!watched) await watch();
+      let state = null;
       const polls = Math.ceil(SETTLE_MAX_MS / SETTLE_POLL_MS);
-      for (let poll = 0; poll < polls; poll += 1) {
-        await sleep(SETTLE_POLL_MS);
-        const { result } = await cdp.send('Runtime.evaluate', {
-          expression: SETTLE_READ_EXPRESSION,
-          returnByValue: true
-        });
-        const state = result?.value;
+      for (let poll = 0; poll <= polls; poll += 1) {
+        if (poll > 0) await sleep(SETTLE_POLL_MS);
+        state = await ask(SETTLE_READ_EXPRESSION);
         if (!state || state.missing) {
-          return answer('failed', null, 'the page lost the settle watcher');
+          await watch();
+          state = await ask(SETTLE_READ_EXPRESSION);
+          if (!state || state.missing) return answer('failed', null, 'the page lost the settle watcher');
         }
-        last = state;
-        if (state.quietMs >= SETTLE_QUIET_MS) return answer('quiet', state);
+        if (Number(state.quietMs) >= SETTLE_QUIET_MS) {
+          baseline = Number(state.changes) || 0;
+          return answer('quiet', state);
+        }
       }
-      return answer('deadline', last);
+      baseline = Number(state?.changes) || baseline;
+      return answer('deadline', state);
     } catch (error) {
       return answer('failed', null, error?.message || String(error));
-    } finally {
-      if (armed) {
-        await cdp.send('Runtime.evaluate', {
-          expression: SETTLE_DISARM_EXPRESSION,
-          returnByValue: true
-        }).catch(() => null);
-      }
     }
   }
 
@@ -78,13 +90,18 @@ export function createWaits({ cdp, sleep, readState, readRows, read, primitives,
     }
   }
 
+  // WHY A QUIET PAGE STILL PACES THE WAIT.
+  // The settle used to cost 41 ms on every check, so the wait never asked twice in a breath.
+  // A page that is already quiet costs the settle nothing, so the wait would ask again as fast as the page can answer.
+  // So a check that found nothing waits one settle beat before the next one: the page is watched, not hammered.
   async function waitForMutation(read, predicate, { timeoutMs = 10000, now: clock = now } = {}) {
     const deadline = clock() + timeoutMs;
     for (;;) {
       const state = await read();
       if (predicate(state)) return state;
       if (clock() >= deadline) return state;
-      await primitives.settle();
+      const settled = await primitives.settle();
+      if (Number(settled?.waitedMs) < SETTLE_POLL_MS) await sleep(SETTLE_POLL_MS);
     }
   }
 
