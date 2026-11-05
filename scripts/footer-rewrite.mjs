@@ -1,6 +1,6 @@
-// @last-edited: 2026-11-04 UTC+7.
+// @last-edited: 2026-11-05 UTC+7.
 // @title: footer — one column footer for every page, rewritten in place.
-// @state: four columns and one rights line, measured against firecrawl.dev on 2026-11-04.
+// @state: four columns, one rights line and one source door, measured against firecrawl.dev on 2026-11-04.
 // @dependencies: node:fs, node:url, node:path.
 
 // WHY THIS SCRIPT EXISTS.
@@ -49,6 +49,10 @@ const COLUMNS = [
 
 const RIGHTS = { id: '© 2026 Opera Agent. Hak cipta dilindungi.', key: 'footer.rights', en: '© 2026 Opera Agent. All rights reserved.' };
 
+// WHY THE SOURCE STANDS UNDER THE BRAND: the site asks for six browser permissions, so the reader is owed the place where the code is read.
+
+const SOURCE = { href: 'https://github.com/afnannuzulasugihartono/opera-agent', key: 'footer.source', id: 'Kode sumber', en: 'Source code' };
+
 // WHY THE CONSENT PAGE KEEPS ROOT-RELATIVE DOORS: it lives one folder down, and a relative door there would point at a file that does not exist.
 
 const prefix = (page, href) => (page === 'oauth/consent.html' ? `/${href}` : `./${href}`);
@@ -75,12 +79,16 @@ const build = (page, translate) => {
   const rights = translate
     ? `<span class="footNote" data-i18n="${RIGHTS.key}">${RIGHTS.id}</span>`
     : `<span class="footNote">${RIGHTS.id}</span>`;
+  const source = translate
+    ? `<span class="doors"><a href="${SOURCE.href}" data-i18n="${SOURCE.key}">${SOURCE.id}</a></span>`
+    : `<span class="doors"><a href="${SOURCE.href}">${SOURCE.id}</a></span>`;
   const columns = COLUMNS.map((spec) => column(page, spec, translate)).join('\n');
-  return `  <footer>
+  return `    <footer>
     <div class="wrap footGrid">
       <div class="footCol">
         <span class="footBrand">Opera Agent</span>
         ${rights}
+        ${source}
       </div>
 ${columns}
     </div>
@@ -97,6 +105,7 @@ const addKeys = (html, translate) => {
     for (const item of spec.doors) if (item.key) wanted.set(item.key, item.en);
   }
   wanted.set(RIGHTS.key, RIGHTS.en);
+  wanted.set(SOURCE.key, SOURCE.en);
 
   const block = /<script type="application\/json" id="i18n-dict">([\s\S]*?)<\/script>/.exec(html);
   if (!block) return html;
@@ -111,7 +120,7 @@ const addKeys = (html, translate) => {
 for (const page of pages) {
   const path = join(root, page);
   const html = readFileSync(path, 'utf8');
-  const footer = /<footer>[\s\S]*?<\/footer>/.exec(html)?.[0];
+  const footer = /^[ \t]*<footer>[\s\S]*?<\/footer>/m.exec(html)?.[0];
   if (!footer) {
     console.log(`${page}: no footer, skipped`);
     continue;
