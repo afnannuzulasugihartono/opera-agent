@@ -190,3 +190,78 @@
     display: block;
   }
 }
+
+/*
+ * WHY THE GUIDE OPENS WITH THREE DOORS: measured against docs.firecrawl.dev on 2026-11-05, its first screen is the shortest path to a working call, and this guide opened on four paragraphs about installing.
+ * The doors arrive in the order they are walked, one shot, so the path reads as a path and not as three more cards.
+ */
+
+.quickStart {
+  margin: 0 0 44px;
+}
+
+.quickStart h2 {
+  margin: 0 0 16px;
+  font-size: 20px;
+}
+
+.quickDoors {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.quickDoor {
+  display: grid;
+  gap: 4px;
+  align-content: start;
+  height: 100%;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  text-decoration: none;
+  transition: border-color .16s var(--ease), transform .16s var(--ease);
+}
+
+.quickDoor:hover {
+  border-color: var(--line-strong);
+  transform: translateY(-2px);
+}
+
+.quickIndex {
+  color: var(--accent);
+  font-family: var(--mono);
+  font-size: 12px;
+}
+
+.quickDoor strong {
+  color: var(--ink);
+  font-size: 15px;
+}
+
+.quickDoor span:last-child {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+html.js .quickStart.in .quickDoor { animation: door-in .2s var(--ease) both; }
+
+html.js .quickStart.in .quickDoor:nth-child(1) { animation-delay: .05s; }
+html.js .quickStart.in .quickDoor:nth-child(2) { animation-delay: .12s; }
+html.js .quickStart.in .quickDoor:nth-child(3) { animation-delay: .19s; }
+
+@keyframes door-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+@media (max-width: 720px) {
+  .quickDoors { grid-template-columns: 1fr; }
+}
