@@ -59,3 +59,42 @@ test('the artifacts the site offers are a fresh build of the mock company', () =
     fs.rmSync(out, { recursive: true, force: true });
   }
 });
+
+// WHY THE PAGE IS CHECKED AGAINST THE REPORT.
+// The case study page prints three figures and the rows behind them, so a reader can check the page against the file they downloaded.
+// A page that prints a number the report no longer holds is a claim nothing keeps, so the page is read against a fresh build.
+
+test('the case study page prints the figures the report holds', () => {
+  const out = fs.mkdtempSync(path.join(os.tmpdir(), 'opera-study-'));
+  try {
+    const workbook = spreadsheetFromFile({
+      source: path.join(company, 'transaksi-2026-09.csv'),
+      client: 'Sinar Jaya',
+      title: 'Laporan Keuangan September 2026',
+      period: '2026-09',
+      periodColumn: 'Tanggal',
+      groupBy: 'Akun',
+      valueColumn: 'Jumlah',
+      out: path.join(out, 'laporan-keuangan-2026-09.xlsx')
+    });
+    const plan = JSON.parse(fs.readFileSync(workbook.plan, 'utf8'));
+    const page = fs.readFileSync(path.join(root, 'landing', 'studi.html'), 'utf8');
+
+    for (const id of ['group:Pendapatan Penjualan', 'group:Beban Pokok Layanan', 'total']) {
+      const figure = plan.report.figures.find((entry) => entry.id === id);
+      assert.ok(figure, `the report holds ${id}`);
+      assert.ok(page.includes(figure.display), `the page prints ${figure.display}`);
+      const rows = figure.source.rows;
+      const range = `${Math.min(...rows)}–${Math.max(...rows)}`;
+      assert.ok(page.includes(range), `the page prints the rows ${range}`);
+    }
+
+    assert.equal(plan.verified.ok, true, 'the report checked its own figures');
+    assert.equal(plan.verified.checked, 7, 'and it checked seven');
+    assert.ok(page.includes('Tujuh angka diperiksa'), 'the page says how many figures were checked');
+    assert.equal(workbook.sheets.length, 3, 'the workbook holds three sheets');
+    assert.ok(page.includes('Tiga sheet'), 'and the page says so');
+  } finally {
+    fs.rmSync(out, { recursive: true, force: true });
+  }
+});
