@@ -330,6 +330,17 @@ test('an open question keeps its minus sign', () => {
   assert.match(sheet, /content: "\u2212"/, 'the open marker is one minus');
 });
 
+test('the guide opens with three doors to the first task', () => {
+  // WHY A QUICKSTART: measured against docs.firecrawl.dev on 2026-11-05, its first screen is the shortest path to a working call, and this guide opened on four paragraphs about installing.
+  const html = read('docs.html');
+  assert.match(html, /<ol class="quickDoors"/, 'the guide opens with the short path');
+  assert.equal((html.match(/class="quickDoor"/g) || []).length, 3, 'pass, pair, task');
+  for (const id of ['pasang', 'pairing', 'tugas']) assert.ok(html.includes(`href="#${id}"`), `the door to ${id} lands on its section`);
+  const sheet = read('docs.css');
+  assert.match(sheet, /\.quickDoor:nth-child\(3\) \{[^}]*animation-delay/s, 'the doors arrive one after another');
+  assert.match(sheet, /@keyframes door-in/, 'and the arrival is one shot');
+});
+
 test('the download page shows one archive fanning out to every browser', () => {
   // WHY THIS PAGE NEEDS A PICTURE: measured against firecrawl.dev on 2026-11-05, its blocks answer with a picture of the work, and this hub left half its hero empty while it asked the reader to believe "satu arsip, semua browser".
   const html = read('unduh.html');
