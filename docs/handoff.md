@@ -49,9 +49,9 @@ What is true now, and what to do next. Cap 150 lines. Spent detail: git history.
   line; `statement.download` does it on the device without a person watching. On a
   password-gated portal the gate was detected, the drive stopped, and the download landed
   renamed in 464 ms ([`jobs/statements.md`](jobs/statements.md)).
-- **The pilot needs three bookkeepers, not more code.** The offer and checklist are in
-  [`product/first-three-bookkeepers.md`](product/first-three-bookkeepers.md); only a fixture
-  bank portal is proven, so a pilot runs on the client's machine.
+- **The pilot needs three bookkeepers, not more code, and it runs on their machine.** The offer is
+  in [`product/first-three-bookkeepers.md`](product/first-three-bookkeepers.md) and the run in
+  [`../proof/run.md`](../proof/run.md) rebuilt four site files byte for byte; fixture portal only.
 - **The bridge is a WebSocket with a heartbeat, not a held `POST /poll`.** Chrome ends an idle
   service worker after about thirty seconds and an inbound frame does not wake it, so the
   server pings.
