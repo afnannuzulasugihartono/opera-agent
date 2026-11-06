@@ -4,8 +4,12 @@ Drive your own Chromium browser from an MCP client, over the Chrome DevTools
 Protocol, with no cloud round trip and no dependencies.
 
 ```bash
-npx opera-local
+node local/bin/opera-local.js
 ```
+
+`npx opera-local` is the published form of this package, and it is not on the
+registry yet — `npm view opera-local` answers 404 — so the command above is the
+one that works today, from a clone.
 
 ## Why this exists
 
@@ -59,16 +63,16 @@ bridge is the road that remains: the extension polls this machine on loopback an
 carries raw CDP both ways, so the whole surface below runs on your real tabs with
 no flags, no queue and no cloud.
 
-The transport is a held `POST /poll` plus a `POST /reply`, not a WebSocket. It
-was one, and this Chrome never handed an inbound loopback frame to an extension
-service worker: the worker's own counters read zero messages after hundreds sent,
-the same frames reached a real WebSocket client every time, and the identical
-code path delivers inbound frames from the cloud relay without trouble. A fetch
-is the one thing Chrome will start a service worker for, so the poll is the
-transport, the wake-up and the keepalive at once.
+The transport is one WebSocket on loopback (`local/bridge-ws.js`). The
+extension opens it, the server pushes a command the moment one exists, and the
+completion frame carries the answer back. The device refuses a command it has
+not been given a `ready` for, so the first command waits in the queue and goes
+out the instant the handshake lands. A ping every twenty seconds resets
+Chrome's service worker timer, so the socket stays live without asking for
+work.
 
 ```bash
-OPERA_LOCAL_TRANSPORT=bridge npx opera-local
+OPERA_LOCAL_TRANSPORT=bridge node local/bin/opera-local.js
 ```
 
 Load the extension unpacked once from `extension/` (it persists in the
@@ -83,8 +87,8 @@ Point a client at it:
 {
   "mcpServers": {
     "opera-local": {
-      "command": "npx",
-      "args": ["opera-local"],
+      "command": "node",
+      "args": ["local/bin/opera-local.js"],
       "env": { "OPERA_LOCAL_PORT": "9333" }
     }
   }
@@ -100,15 +104,19 @@ Point a client at it:
 
 ## Tools
 
-The server advertises 39 tools; `guide()` returns them as tasks rather than a list.
+The server advertises 54 tools; `guide()` returns them as tasks rather than a list.
 
 `browser_status`, `focus_window`, `dialog_state`, `dialog_type`, `dialog_press`,
-`list_tabs`, `open_url`, `close_tab`, `read_page`, `find_elements`, `click`,
-`resolve_row`, `click_row`, `hover`, `press_key`, `type`, `get_computed`, `scroll`,
-`append`, `stream_keys`, `browser_burst`, `wait_for`, `ask_page`, `wait_for_row`,
-`wait_still`, `caret_line`, `upload`, `drop_file`, `intercept_file_chooser`, `download`,
-`list_menus`, `open_menu`, `guide`, `capture_page`, `ax_snapshot`, `statement_card`,
-`statement_delivered`, `report_build`, `document_build`.
+`list_tabs`, `open_url`, `close_tab`, `surface_profile`, `read_page`,
+`find_elements`, `click`, `resolve_row`, `click_row`, `hover`, `press_key`,
+`type`, `get_computed`, `scroll`, `append`, `stream_keys`, `browser_burst`,
+`wait_for`, `ask_page`, `wait_for_row`, `wait_still`, `caret_line`, `upload`,
+`drop_file`, `intercept_file_chooser`, `download`, `list_menus`, `open_menu`,
+`guide`, `capture_page`, `ax_snapshot`, `statement_card`, `statement_delivered`,
+`document_build`, `report_build`, `spreadsheet_build`, `deck_build`,
+`document_write`, `gate_detect`, `gate_wait`, `login`, `captcha_solve`,
+`wallet_pair`, `wallet_balance`, `wallet_quote`, `wallet_top_up`,
+`task_reserve`, `task_settle`, `task_refund`.
 
 `browser_burst` runs 1-8 dependent steps on one tab in a single call and reads the page
 once at the end; the first failure stops the burst and keeps the steps that finished.

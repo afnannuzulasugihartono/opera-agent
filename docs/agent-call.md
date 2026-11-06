@@ -1,0 +1,138 @@
+# Calling Opera Agent
+
+Three surfaces reach the same browser. Pick the one that matches where the agent
+runs and where the browser already is.
+
+| surface | the agent runs | the browser is | the caller needs |
+|---|---|---|---|
+| hosted MCP | anywhere | the paired device's browser | an account, an OAuth login, a paired device |
+| local stdio MCP | on the browser's machine | a browser with a debugging port | Node 20, a Chromium |
+| the extension road | on the browser's machine | the everyday browser | the extension loaded, the loopback bridge |
+
+## 1. Hosted MCP
+
+The server speaks MCP over HTTP and asks for an OAuth token before it answers.
+
+```
+https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp
+```
+
+A client that has no token is told so, and the answer names where the token
+comes from:
+
+```
+HTTP/1.1 401 Unauthorized
+WWW-Authenticate: Bearer resource_metadata="https://.../.well-known/oauth-protected-resource"
+```
+
+Add it to `opencode.json`:
+
+```json
+{
+  "mcp": {
+    "opera-agent": {
+      "type": "remote",
+      "url": "https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp",
+      "oauth": { "clientId": "bbc5eb76-f385-435b-8b13-8e339b45e633" },
+      "headers": {
+        "X-Opera-Device": "opera",
+        "X-Opera-Provider": "opencode",
+        "x-region": "ap-southeast-1"
+      }
+    }
+  }
+}
+```
+
+Or add it from the terminal:
+
+```bash
+claude mcp add --transport http opera-agent https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp --header "X-Opera-Device: opera" --header "X-Opera-Provider: claude" --header "x-region: ap-southeast-1"
+```
+
+What a caller gets wrong: the device header names which of your devices does
+the work, and the server uses the first paired device when the header is
+missing. A device that is offline is a device that answers nothing. The server
+adds 34 tools to the browser primitives, and every one of them acts on the
+paired device's browser, not on the machine the agent runs on.
+
+## 2. Local stdio MCP
+
+The server speaks MCP over stdio and drives a browser on this machine.
+
+```bash
+node local/bin/opera-local.js
+```
+
+Point a client at it:
+
+```json
+{
+  "mcpServers": {
+    "opera-local": {
+      "command": "node",
+      "args": ["local/bin/opera-local.js"]
+    }
+  }
+}
+```
+
+| variable | default | meaning |
+|---|---|---|
+| `OPERA_LOCAL_PORT` | `9333` | the debugging port to drive |
+| `OPERA_LOCAL_BROWSER` | first installed | which browser to launch if none is listening |
+| `OPERA_LOCAL_TRANSPORT` | unset (CDP) | `bridge` drives the everyday profile through the extension |
+| `OPERA_BRIDGE_PORT` | `9451` | the loopback port the extension dials into |
+
+What a caller gets wrong: the default transport is a debugging port, and Chrome
+refuses a debugging port on the Default profile. A client pointed at port 9333
+on the everyday Chrome opens a second browser on a fresh profile, signed into
+nothing. `browser_status` answers with the port the drive is really on, so read
+it first: `port: 9451` means the extension road, `port: 9333` means a debugging
+port.
+
+The server advertises 54 tools. `guide()` returns them as tasks rather than a
+list, and the full list is in [`local/README.md`](../local/README.md).
+
+## 3. The extension road
+
+The extension in `extension/` opens a socket to this machine and carries CDP
+both ways, so the everyday browser can be driven without a debugging port and
+without a cloud round trip. The socket is one WebSocket on `127.0.0.1:9451`.
+
+1. Install the extension. The archive is on the site's download page, and
+   `chrome://extensions` with developer mode on loads it unpacked.
+2. Start the local server with `OPERA_LOCAL_TRANSPORT=bridge`.
+3. Read `browser_status`. `port: 9451` means the extension is linked.
+
+What a caller gets wrong: the bridge holds one device socket, so a second
+extension connection evicts the first. Two drivers on one machine share the
+bridge rather than fight for it, and the everyday Chrome can only be linked to
+one bridge at a time.
+
+### The record
+
+`scripts/extension-run.mjs` drives a real browser through the extension and
+writes what happened:
+
+```bash
+node scripts/extension-run.mjs
+node --test tests/extension-run.test.mjs
+```
+
+- [`proof/extension-run.md`](../proof/extension-run.md) — the readable record.
+- [`proof/extension-run.jsonl`](../proof/extension-run.jsonl) — one line per call.
+- [`proof/extension-portal.jpg`](../proof/extension-portal.jpg) — the picture the run took.
+
+The last recorded run carried seven calls over the bridge — `browser_status`,
+`open_url`, `read_page`, `find_elements`, `download`, `capture_page`,
+`close_tab` — and the CSV it pulled down hashed equal to the file the portal
+served. The test rechecks the hash, so the record cannot drift away from the
+code that makes it.
+
+## Which road is this product on?
+
+The hosted server and the local driver are two ways to call the same tools. The
+hosted one needs an account and a paired device; the local one needs a browser
+on the machine. The extension is what makes the local road reach the browser
+you are already using.
