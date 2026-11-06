@@ -28,6 +28,7 @@ function fakeDriver() {
   return {
     calls,
     tabs: async () => [{ id: 't1', url: 'https://docs.google.com/', title: 'Docs' }],
+    windowState: async () => ({ platform: 'win32', foreground: '', windows: [], minimized: [] }),
     open: async (url) => { calls.push(['open', url]); return { id: 't2', url, title: '' }; },
     close: async (tabId) => { calls.push(['close', tabId]); return { id: tabId, closed: true }; },
     read: async () => ({ url: 'https://docs.google.com/document/d/1', title: 'Paper', text: 'canvas text' }),
@@ -121,6 +122,20 @@ test('the surface covers what the driver can actually do', async () => {
   for (const required of ['browser_status', 'open_url', 'close_tab', 'list_tabs', 'read_page', 'find_elements', 'click', 'click_row', 'hover', 'press_key', 'type', 'append', 'scroll', 'get_computed', 'stream_keys', 'wait_for', 'caret_line', 'upload', 'drop_file', 'intercept_file_chooser', 'download', 'capture_page', 'ax_snapshot', 'browser_burst']) {
     assert.ok(names.includes(required), `missing ${required}`);
   }
+});
+
+// WHY THE PORT IS A NUMBER AND NOT A PROMISE.
+// The entry point hands the server a function that answers the port per call, because the pipe is chosen per call.
+// The status answer used to hand that promise straight to the caller, and JSON turned it into an empty object, so an agent asking "where am I" was told nothing at all - and the answer that names the road is the one an agent reads first.
+
+test('browser_status names the port the drive is on', async () => {
+  const server = createMcpServer({ ...ctx(), port: async () => 9451 });
+  const res = await server.handle({
+    jsonrpc: '2.0', id: 9, method: 'tools/call',
+    params: { name: 'browser_status', arguments: {} }
+  });
+  const payload = JSON.parse(res.result.content[0].text);
+  assert.equal(payload.port, 9451);
 });
 
 // WHY THIS ONE IS DRIVEN WITHOUT A BROWSER.
