@@ -97,7 +97,7 @@ Point a client at it:
 | variable | default | meaning |
 |---|---|---|
 | `OPERA_LOCAL_PORT` | `9333` | the debugging port to drive |
-| `OPERA_LOCAL_BROWSER` | first installed | which browser to launch if none is listening |
+| `OPERA_LOCAL_BROWSER` | first installed | which browser a session that opens one is aimed at |
 | `OPERA_LOCAL_TRANSPORT` | unset (auto) | unset picks the bridge when an extension is linked, CDP otherwise; `bridge`/`cdp` force one |
 | `OPERA_BRIDGE_PORT` | `9451` | the loopback port the extension dials into |
 
