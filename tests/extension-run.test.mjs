@@ -1,7 +1,7 @@
 // @last-edited: 2026-11-06 UTC+7.
 // @title: extension-run — the shipped extension drove a real browser, and the record says so.
-// @state: the recorded call sequence, the transport it used, the download hash, and the picture.
-// @dependencies: node:test, strict, node:fs, node:path, node:url.
+// @state: the recorded call sequence, the transport it used, the press and the download hash, the picture, and the markdown that must match the jsonl.
+// @dependencies: node:test, strict, node:crypto, node:fs, node:path, node:url, scripts/extension-run.mjs.
 
 // WHY THIS FILE EXISTS.
 // The product ships a browser extension and claims it drives the everyday browser without a debugging port.
@@ -14,6 +14,8 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+
+import { recordMarkdown, roadFor, chromeIgnoresLoadExtension } from '../scripts/extension-run.mjs';
 
 const root = path.resolve(fileURLToPath(new URL('..', import.meta.url)));
 const proof = (name) => path.join(root, 'proof', name);
@@ -51,4 +53,45 @@ test('the record shows the press, not only the file it fetched', () => {
   assert.equal(download.pressed.control?.name, 'Unduh CSV', 'the press names the control it pushed');
   const markdown = fs.readFileSync(proof('extension-run.md'), 'utf8');
   assert.match(markdown, /pressed the download control "Unduh CSV"/, 'the readable record says the press in words');
+});
+
+// WHY THE MARKDOWN IS REGENERATED FROM THE JSONL AND LOCKED EQUAL.
+// The two files were written by one run, so a sentence that survives an edit to the generator is a sentence nobody can trust.
+// Regenerating the markdown from the recorded rows proves the readable record is what the recorded run says.
+
+test('the readable record is the recorded rows, regenerated', () => {
+  const markdown = fs.readFileSync(proof('extension-run.md'), 'utf8');
+  const header = rows().find((entry) => entry.kind === 'header');
+  const regenerated = recordMarkdown({
+    rows: rows(),
+    browser: header.browser,
+    extensionId: header.extensionId
+  });
+  assert.equal(markdown, regenerated, 'the markdown file is what recordMarkdown produces from the jsonl');
+  assert.match(markdown, /`tests\/extension-run\.test\.mjs` re-hashes the fixture/, 'the closing sentence names what the test re-checks');
+  assert.doesNotMatch(markdown, /cannot drift/, 'the record does not claim the test re-proves it');
+});
+
+// WHY THE ROAD SENTENCE IS A FUNCTION OF THE MODE.
+// A run that launches its own Chrome has a debugging port open on that browser; saying "no debugging port" next to it is the one claim the run cannot make.
+
+test('the road sentence is true of the mode that ran', () => {
+  const joined = roadFor({ mode: 'joined' });
+  assert.match(joined, /joined that bridge/);
+  assert.match(joined, /No debugging port, no cloud relay\./);
+
+  const own = roadFor({ mode: 'own' });
+  assert.match(own, /loaded into a real Chrome/);
+  assert.doesNotMatch(own, /No debugging port/, 'a run that had to open one cannot claim it did not');
+  assert.match(own, /still travelled over the bridge/s, 'the calls travelled over the bridge even in own mode');
+});
+
+// WHY THE LOAD LIMIT IS NAMED BEFORE THE WAIT.
+// Branded Chrome 137 and newer ignore --load-extension, so own mode waits sixty seconds for a link that cannot come and reports the wrong cause.
+
+test('a branded Chrome that ignores --load-extension is named, not waited out', () => {
+  assert.equal(chromeIgnoresLoadExtension('Chrome/153.0.8010.36'), true);
+  assert.equal(chromeIgnoresLoadExtension('Chrome/136.0.0.0'), false);
+  assert.equal(chromeIgnoresLoadExtension('HeadlessChrome/153.0.8010.36'), false, 'Chrome for Testing still honours the flag');
+  assert.equal(chromeIgnoresLoadExtension('Chromium/153.0.0.0'), false, 'Chromium still honours the flag');
 });
