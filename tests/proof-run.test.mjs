@@ -1,7 +1,7 @@
 // @last-edited: 2026-11-06 UTC+7.
 // @title: proof-run — a real browser drive that has to leave the same four files the site ships.
 // @state: the fixture portal over loopback, a throwaway browser, the MCP client, the four artifacts, and the record the suite rechecks.
-// @dependencies: node:test, strict, node:fs, node:path, ../local/driver.js, ../scripts/proof-run.mjs.
+// @dependencies: node:test, strict, node:fs, node:os, node:path, ../local/driver.js, ../scripts/proof-run.mjs.
 
 // WHY THIS FILE EXISTS.
 // The product claims it drives a browser and hands back designed office files, and until this run the claim rested on separate tests: one drove a fake page, another wrote a workbook.
@@ -10,11 +10,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { installedBrowsers } from '../local/driver.js';
-import { launchProofBrowser, serveCompany, speakMcp } from '../scripts/proof-run.mjs';
+import { launchProofBrowser, runProof, serveCompany, sha256, speakMcp } from '../scripts/proof-run.mjs';
 
 const root = path.resolve(fileURLToPath(new URL('..', import.meta.url)));
 const company = path.join(root, 'tests', 'fixtures', 'mock-company');
@@ -89,5 +90,32 @@ test('the server opens the portal tab and reads the page', { skip: noBrowser }, 
     await mcp.close();
     browser.close();
     await portal.close();
+  }
+});
+
+test('one drive downloads the CSV and leaves the four files the site ships', { skip: noBrowser }, async () => {
+  const work = fs.mkdtempSync(path.join(os.tmpdir(), 'opera-proof-test-'));
+  try {
+    const result = await runProof({
+      root,
+      out: path.join(work, 'out'),
+      downloads: path.join(work, 'downloads')
+    });
+
+    assert.equal(result.slides, 5, 'the deck holds a cover and four content slides');
+    assert.equal(result.hashes.length, 4, 'four artifacts were compared');
+
+    for (const row of result.hashes) {
+      const name = path.basename(row.file);
+      assert.equal(row.sha256, sha256(path.join(root, 'landing', 'contoh', name)), `${name} is not the file the site ships`);
+      assert.equal(row.bytes, fs.statSync(path.join(work, 'out', name)).size, `${name} is the file the run made`);
+    }
+
+    const downloaded = result.steps.find((step) => step.tool === 'download');
+    assert.equal(downloaded.ok, true);
+    assert.equal(downloaded.sha256, sha256(path.join(company, 'transaksi-2026-09.csv')), 'the CSV came off the portal unchanged');
+    assert.ok(result.jpeg && result.jpeg.length > 1000, 'the run captured the portal it read');
+  } finally {
+    fs.rmSync(work, { recursive: true, force: true });
   }
 });

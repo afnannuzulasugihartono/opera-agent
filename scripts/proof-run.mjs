@@ -1,13 +1,14 @@
 // @last-edited: 2026-11-06 UTC+7.
 // @title: proof-run — one real drive: a browser reads a portal, the CSV lands, and four office files come out with the bytes the site ships.
 // @state: the fixture portal, a throwaway Chrome, the MCP client over stdio, the five steps, and the record the suite rechecks.
-// @dependencies: node:child_process, node:fs, node:http, node:os, node:path, ../local/browsers.js, ../local/driver.js, ../local/transport.js.
+// @dependencies: node:child_process, node:crypto, node:fs, node:http, node:os, node:path, ../local/browsers.js, ../local/driver.js, ../local/transport.js.
 
 // WHY THIS FILE EXISTS.
 // The product claims it drives a browser and hands back designed office files, and until this run the claim rested on separate tests: one drove a fake page, another wrote a workbook.
 // A run that does both in one breath is the only thing that answers "can it actually do the job", and the hashes are what make the answer checkable instead of a story.
 
 import { spawn } from 'node:child_process';
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import http from 'node:http';
 import os from 'node:os';
@@ -187,4 +188,199 @@ export function speakMcp({ port, cwd = process.cwd(), env = process.env } = {}) 
       });
     }
   };
+}
+
+export const sha256 = (file) => crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex');
+
+const relative = (root, file) => path.relative(root, file).split(path.sep).join('/');
+
+// WHY THE SLIDE COUNT IS READ FROM THE FILE.
+// The builder says how many slides it was given, and the cover is added without a word in that answer.
+// The count that matters is what PowerPoint will show, so it is read from the archive's own directory.
+
+export function slideCount(bytes) {
+  const buffer = Buffer.from(bytes);
+  let end = -1;
+  for (let index = buffer.length - 22; index >= 0; index -= 1) {
+    if (buffer.readUInt32LE(index) === 0x06054b50) {
+      end = index;
+      break;
+    }
+  }
+  if (end < 0) throw new Error('the presentation carries no end of central directory, so it is not an archive');
+  const entries = buffer.readUInt16LE(end + 10);
+  let cursor = buffer.readUInt32LE(end + 16);
+  let slides = 0;
+  for (let index = 0; index < entries; index += 1) {
+    const nameLength = buffer.readUInt16LE(cursor + 28);
+    const extraLength = buffer.readUInt16LE(cursor + 30);
+    const commentLength = buffer.readUInt16LE(cursor + 32);
+    const name = buffer.toString('utf8', cursor + 46, cursor + 46 + nameLength);
+    if (/^ppt\/slides\/slide\d+\.xml$/.test(name)) slides += 1;
+    cursor += 46 + nameLength + extraLength + commentLength;
+  }
+  return slides;
+}
+
+// WHY EVERY STEP THROWS INSTEAD OF COLLECTING.
+// A proof that carries on after a failed download writes a record of something that did not happen.
+// The first wrong answer ends the run, and the message names the call and what it left behind.
+
+const MARKS = ['Portal Mitra', 'Unduh CSV'];
+
+// WHY THE PAPERS ARE READ FROM A COPY.
+// The deck builder writes its provenance beside its source, so pointing it at the fixture would rewrite a tracked file on every run.
+// The copy costs three kilobytes and keeps the run from touching the tree it is proving.
+
+const PAPERS = ['strategi.json', 'riset-promo.json', 'pemasaran.json'];
+
+export async function runProof({
+  root = process.cwd(),
+  out = path.join(root, 'proof', 'out'),
+  downloads = path.join(root, 'proof', 'downloads')
+} = {}) {
+  const company = path.join(root, 'tests', 'fixtures', 'mock-company');
+  const portal = await serveCompany(company);
+  const browser = await launchProofBrowser();
+  const mcp = speakMcp({ port: browser.port, cwd: root });
+  const steps = [];
+
+  const note = (step) => {
+    steps.push({ n: steps.length + 1, ...step });
+    return step;
+  };
+
+  const compared = (name, file, extra = {}) => {
+    const hash = sha256(file);
+    const shipped = sha256(path.join(root, 'landing', 'contoh', name));
+    if (hash !== shipped) throw new Error(`${name} came out as ${hash}, and the site ships ${shipped}`);
+    return note({
+      ...extra,
+      ok: true,
+      file: relative(root, file),
+      bytes: fs.statSync(file).size,
+      sha256: hash,
+      matches: `landing/contoh/${name}`
+    });
+  };
+
+  try {
+    const ready = await mcp.initialize();
+    note({ tool: 'initialize', ok: true, note: `server ${ready?.serverInfo?.name ?? 'unknown'}` });
+
+    const names = await mcp.listTools();
+    for (const wanted of ['open_url', 'read_page', 'download', 'spreadsheet_build', 'deck_build', 'document_write', 'capture_page', 'close_tab']) {
+      if (!names.includes(wanted)) throw new Error(`the server no longer offers ${wanted}`);
+    }
+    note({ tool: 'tools/list', ok: true, note: `${names.length} tools` });
+
+    const opened = await mcp.tool('open_url', { url: portal.url });
+    const tabId = opened.answer?.action?.id;
+    if (!tabId) throw new Error('open_url returned no tab id');
+    note({ tool: 'open_url', ms: opened.ms, ok: true, note: `tab ${tabId} · ${portal.url}` });
+
+    const read = await mcp.tool('read_page', { tabId });
+    const pageText = String(read.answer?.text ?? '');
+    for (const mark of MARKS) {
+      if (!pageText.includes(mark)) throw new Error(`read_page did not show ${mark}`);
+    }
+    note({ tool: 'read_page', ms: read.ms, ok: true, note: `${pageText.length} characters read` });
+
+    fs.mkdirSync(downloads, { recursive: true });
+    const grabbed = await mcp.tool('download', {
+      tabId,
+      role: 'link',
+      name: 'Unduh CSV',
+      dir: downloads,
+      saveAs: 'transaksi-2026-09.csv',
+      timeoutMs: 30000
+    });
+    if (grabbed.answer?.downloaded !== true) throw new Error(`download failed: ${grabbed.answer?.why ?? 'no reason given'}`);
+    const csv = grabbed.answer.path;
+    const csvHash = sha256(csv);
+    const fixtureHash = sha256(path.join(company, 'transaksi-2026-09.csv'));
+    if (csvHash !== fixtureHash) throw new Error(`the downloaded CSV is not the fixture: ${csvHash} versus ${fixtureHash}`);
+    note({
+      tool: 'download',
+      ms: grabbed.ms,
+      ok: true,
+      note: `${grabbed.answer.bytes} bytes landed`,
+      file: relative(root, csv),
+      bytes: grabbed.answer.bytes,
+      sha256: csvHash,
+      sameAs: 'tests/fixtures/mock-company/transaksi-2026-09.csv'
+    });
+
+    const papers = {};
+    for (const name of PAPERS) {
+      papers[name] = path.join(downloads, name);
+      fs.copyFileSync(path.join(company, name), papers[name]);
+    }
+    note({ tool: 'stage', ok: true, note: `${PAPERS.length} paper sources copied beside the CSV` });
+
+    fs.mkdirSync(out, { recursive: true });
+
+    const workbook = await mcp.tool('spreadsheet_build', {
+      source: csv,
+      client: 'Sinar Jaya',
+      title: 'Laporan Keuangan September 2026',
+      period: '2026-09',
+      periodColumn: 'Tanggal',
+      groupBy: 'Akun',
+      valueColumn: 'Jumlah',
+      out: path.join(out, 'laporan-keuangan-2026-09.xlsx')
+    });
+    const workbookFile = workbook.answer?.out;
+    if (!workbookFile) throw new Error('spreadsheet_build returned no file');
+    compared('laporan-keuangan-2026-09.xlsx', workbookFile, {
+      tool: 'spreadsheet_build',
+      ms: workbook.ms,
+      note: `${workbook.answer.sheets?.length ?? 0} sheets, ${workbook.answer.verified?.checked ?? 0} figures checked`
+    });
+
+    const deck = await mcp.tool('deck_build', {
+      source: papers['strategi.json'],
+      report: workbook.answer.plan,
+      out: path.join(out, 'rencana-strategis-2027.pptx')
+    });
+    const deckFile = deck.answer?.out;
+    if (!deckFile) throw new Error('deck_build returned no file');
+    compared('rencana-strategis-2027.pptx', deckFile, {
+      tool: 'deck_build',
+      ms: deck.ms,
+      note: `${deck.answer.slides ?? 0} content slides and a cover`
+    });
+
+    for (const [source, name] of [['riset-promo.json', 'riset-promo.docx'], ['pemasaran.json', 'rencana-pemasaran-2027.docx']]) {
+      const paper = await mcp.tool('document_write', {
+        source: papers[source],
+        out: path.join(out, name)
+      });
+      if (!paper.answer?.out) throw new Error(`document_write returned no file for ${source}`);
+      compared(name, paper.answer.out, {
+        tool: 'document_write',
+        ms: paper.ms,
+        note: `${paper.answer.blocks ?? 0} blocks, ${paper.answer.title ?? ''}`
+      });
+    }
+
+    const shot = await mcp.tool('capture_page', { tabId });
+    if (!shot.image) throw new Error('capture_page returned no picture');
+    note({ tool: 'capture_page', ms: shot.ms, ok: true, note: `${Math.round((shot.image.length * 3) / 4)} picture bytes` });
+
+    const closed = await mcp.tool('close_tab', { tabId });
+    note({ tool: 'close_tab', ms: closed.ms, ok: true, note: `tab ${closed.answer?.id ?? tabId} closed` });
+
+    return {
+      steps,
+      hashes: steps.filter((step) => step.sha256 && step.matches),
+      slides: slideCount(fs.readFileSync(deckFile)),
+      browser: browser.name,
+      jpeg: shot.image
+    };
+  } finally {
+    await mcp.close().catch(() => null);
+    browser.close();
+    await portal.close();
+  }
 }
