@@ -98,7 +98,7 @@ Point a client at it:
 | variable | default | meaning |
 |---|---|---|
 | `OPERA_LOCAL_PORT` | `9333` | the debugging port to drive |
-| `OPERA_LOCAL_BROWSER` | first installed | which browser to launch if none is listening |
+| `OPERA_LOCAL_BROWSER` | first installed | which browser a session that opens one is aimed at |
 | `OPERA_LOCAL_TRANSPORT` | unset (auto) | unset picks the bridge when an extension is linked, CDP otherwise; `bridge` drives the everyday profile through the extension |
 | `OPERA_BRIDGE_PORT` | `9451` | the loopback port the extension dials into |
 
@@ -127,7 +127,11 @@ Actions answer with where the page stands and the rows that changed; `ax_snapsho
 is the deliberate look at every row.
 
 `download` writes a file to the folder the caller names and proves it by the file on
-disk — a `.crdownload` is not a result. The last two tools are the statement job: a
+disk — a `.crdownload` is not a result, and two files landing at once is not a
+result either: the newest of an ambiguous pair is somebody else's download, so the
+answer names both and moves neither. Over the extension the browser's own folder is
+watched instead of an armed one, because `chrome.debugger` refuses browser-level
+commands there. The last two tools are the statement job: a
 card that names the file before the drive, and a delivery that verifies it and adds the
 client-month to a manifest. See [`docs/jobs/statements.md`](../docs/jobs/statements.md).
 

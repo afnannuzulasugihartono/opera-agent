@@ -23,38 +23,38 @@
 
 **Files:** `docs/agent-call.md`, `local/README.md`, `tests/agent-call-docs.test.mjs`
 
-- [ ] RED: add doc locks — transport default is `unset (auto)` with meaning "bridge when an extension is linked, CDP otherwise" (guide + README env table); port 9333 refusal wording `No browser is listening on port 9333.` with a pointer to `local/README.md`; hosted claim dated from `proof/hosted-mcp.json` `checkedAt`; OpenCode snippet uses `mcp.servers` + `oauth.client_id` + the registered `redirect_uri`; the guide names the OAuth client id pinned in `scripts/hosted-mcp-check.mjs`; the "cannot drift" sentence is gone from the guide; tool count read from `import { TOOLS }` instead of a loose regex.
-- [ ] GREEN: fix `docs/agent-call.md` and `local/README.md` (incl. `polls` → `dials` at README:62).
-- [ ] Gates.
+- [x] RED: add doc locks — transport default is `unset (auto)` with meaning "bridge when an extension is linked, CDP otherwise" (guide + README env table); port 9333 refusal wording `No browser is listening on port 9333.` with a pointer to `local/README.md`; hosted claim dated from `proof/hosted-mcp.json` `checkedAt`; OpenCode snippet uses `mcp.servers` + `oauth.client_id` + the registered `redirect_uri`; the guide names the OAuth client id pinned in `scripts/hosted-mcp-check.mjs`; the "cannot drift" sentence is gone from the guide; tool count read from `import { TOOLS }` instead of a loose regex.
+- [x] GREEN: fix `docs/agent-call.md` and `local/README.md` (incl. `polls` → `dials` at README:62).
+- [x] Gates.
 
 ### Task 2: hosted MCP check records a scrubbed, dated snapshot and proves the pinned OAuth client
 
 **Files:** `scripts/hosted-mcp-check.mjs`, `proof/hosted-mcp.json`, `tests/hosted-mcp.test.mjs`
 
-- [ ] RED: test that a token-shaped string in a response body never reaches the record; test that the record keeps only status/error fields; test that the record carries an `authorize` probe result for the pinned client id + redirect (302 → consent path, query dropped).
-- [ ] GREEN: scrub token-shaped strings, record selected fields only, add the authorize probe, export `HOSTED_MCP_URL` / `OAUTH_CLIENT_ID` / `OAUTH_REDIRECT_URI`; re-run the script to regenerate `proof/hosted-mcp.json`.
-- [ ] Gates.
+- [x] RED: test that a token-shaped string in a response body never reaches the record; test that the record keeps only status/error fields; test that the record carries an `authorize` probe result for the pinned client id + redirect (302 → consent path, query dropped).
+- [x] GREEN: scrub token-shaped strings, record selected fields only, add the authorize probe, export `HOSTED_MCP_URL` / `OAUTH_CLIENT_ID` / `OAUTH_REDIRECT_URI`; re-run the script to regenerate `proof/hosted-mcp.json`.
+- [x] Gates.
 
 ### Task 3: the extension-road download cannot move the wrong file
 
 **Files:** `local/primitives-file.js`, `tests/local-file.test.mjs`
 
-- [ ] RED: two new finished files in the watched folder → `downloaded:false` naming both, nothing moved or renamed; the browser folder watch covers `~/Downloads` and `~/OneDrive\Downloads`; the failure message names every watched folder.
-- [ ] GREEN: implement candidate-folder watch list + ambiguity refusal.
-- [ ] Gates.
+- [x] RED: two new finished files in the watched folder → `downloaded:false` naming both, nothing moved or renamed; the browser folder watch covers `~/Downloads` and `~/OneDrive\Downloads`; the failure message names every watched folder.
+- [x] GREEN: implement candidate-folder watch list + ambiguity refusal.
+- [x] Gates.
 
 ### Task 4: the proof runner and its record tell the truth about mode and limits
 
 **Files:** `scripts/extension-run.mjs`, `proof/extension-run.md`, `tests/extension-run.test.mjs`
 
-- [ ] RED: join the existing bridge only when `holder.linked === true`; own mode fails fast naming the `--load-extension` Chrome 137+ limit for branded Chrome; `recordMarkdown` says "No debugging port, no cloud relay." only in joined mode; the closing sentence says what the test actually re-checks; `proof/extension-run.md` equals `recordMarkdown(rows from jsonl)`.
-- [ ] GREEN: implement, regenerate `proof/extension-run.md` from the recorded jsonl (no browser drive needed), add the equality lock to the test.
-- [ ] Gates.
+- [x] RED: join the existing bridge only when `holder.linked === true`; own mode fails fast naming the `--load-extension` Chrome 137+ limit for branded Chrome; `recordMarkdown` says "No debugging port, no cloud relay." only in joined mode; the closing sentence says what the test actually re-checks; `proof/extension-run.md` equals `recordMarkdown(rows from jsonl)`.
+- [x] GREEN: implement, regenerate `proof/extension-run.md` from the recorded jsonl (no browser drive needed), add the equality lock to the test.
+- [x] Gates.
 
 ### Task 5: ledger, PR, merge
 
 **Files:** `.superpowers/sdd/2026-11-06-agent-call-path/progress.md` (copy in from the previous worktree), PR body from `.github/pull_request_template.md`
 
-- [ ] Update the ledger: press-proof outcome (#191), the focus-emulation probe + the public correction posted on PR #190, review findings and rulings (incl. deferred minors: hosted MCP URL literal in 3 places, loose tool-count regex — fixed here by import — and the update-service `/health` staleness, still open).
-- [ ] `npm test`, `npm run check`, `node scripts/format-comments.mjs --check`; conventional commit; push; PR; `gh pr merge <n> --squash --admin --delete-branch=false`.
-- [ ] No `landing/` change → no deploy dispatch.
+- [x] Update the ledger: press-proof outcome (#191), the focus-emulation probe + the public correction posted on PR #190, review findings and rulings (incl. deferred minors: hosted MCP URL literal in 3 places, loose tool-count regex — fixed here by import — and the update-service `/health` staleness, still open).
+- [x] `npm test`, `npm run check`, `node scripts/format-comments.mjs --check`; conventional commit; push; PR; `gh pr merge <n> --squash --admin --delete-branch=false`.
+- [x] No `landing/` change → no deploy dispatch.

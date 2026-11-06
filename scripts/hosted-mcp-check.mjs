@@ -82,18 +82,29 @@ async function ask(base, suffix, init) {
 // Asking the authorization server whether it accepts the pinned pair is enough to keep the guide honest, and a consent request id buys another answer later and belongs to nobody who reads the record.
 // The query is dropped, so the record holds the redirect target and not the one-time handle inside it.
 
-async function askAuthorize(authority) {
-  const url = new URL(`${authority || AUTH_URL}/oauth/authorize`);
-  url.search = new URLSearchParams({
-    client_id: OAUTH_CLIENT_ID,
-    redirect_uri: OAUTH_REDIRECT_URI,
-    response_type: 'code',
-    code_challenge: crypto.randomBytes(32).toString('base64url'),
-    code_challenge_method: 'S256',
-    state: 'hosted-mcp-check',
-    scope: 'openid email'
-  }).toString();
+async function askAuthorize(discovered, override) {
   const shape = { clientId: OAUTH_CLIENT_ID, redirectUri: OAUTH_REDIRECT_URI, status: null, consentPath: null };
+  const authority = override ?? discovered ?? AUTH_URL;
+
+  // WHY THE URL IS BUILT INSIDE THE TRY.
+  // The authority arrives from a discovery document the server wrote, and a discovery document can hold anything.
+  // A malformed entry must fail the probe and leave the rest of the record standing, not take the whole run down with it.
+
+  let url;
+  try {
+    url = new URL(`${authority || AUTH_URL}/oauth/authorize`);
+    url.search = new URLSearchParams({
+      client_id: OAUTH_CLIENT_ID,
+      redirect_uri: OAUTH_REDIRECT_URI,
+      response_type: 'code',
+      code_challenge: crypto.randomBytes(32).toString('base64url'),
+      code_challenge_method: 'S256',
+      state: 'hosted-mcp-check',
+      scope: 'openid email'
+    }).toString();
+  } catch (error) {
+    return { ...shape, error: scrubbed(error?.message ?? String(error)) };
+  }
   try {
     const response = await fetch(url, { redirect: 'manual', signal: AbortSignal.timeout(TIMEOUT_MS) });
     const location = response.headers.get('location') ?? '';
@@ -107,7 +118,7 @@ async function askAuthorize(authority) {
   }
 }
 
-export async function checkHostedMcp({ base = BASE } = {}) {
+export async function checkHostedMcp({ base = BASE, authority = null } = {}) {
   const discovery = await ask(base, '/.well-known/oauth-protected-resource', {
     method: 'GET',
     headers: { accept: 'application/json' }
@@ -126,19 +137,19 @@ export async function checkHostedMcp({ base = BASE } = {}) {
       }
     })
   });
-  const authority = Array.isArray(discovery.body?.authorization_servers)
+  const authorityFromDiscovery = Array.isArray(discovery.body?.authorization_servers) && typeof discovery.body.authorization_servers[0] === 'string'
     ? discovery.body.authorization_servers[0]
     : null;
-  const authorize = await askAuthorize(authority);
+  const authorize = await askAuthorize(authorityFromDiscovery, authority);
   return {
     url: base,
     checkedAt: new Date().toISOString(),
     discovery: {
       status: discovery.status,
-      resource: discovery.body?.resource ?? null,
-      authorization_servers: discovery.body?.authorization_servers ?? [],
-      bearer_methods_supported: discovery.body?.bearer_methods_supported ?? [],
-      scopes_supported: discovery.body?.scopes_supported ?? []
+      resource: typeof discovery.body?.resource === 'string' ? scrubbed(discovery.body.resource) : null,
+      authorization_servers: (discovery.body?.authorization_servers ?? []).filter((entry) => typeof entry === 'string').map(scrubbed),
+      bearer_methods_supported: (discovery.body?.bearer_methods_supported ?? []).filter((entry) => typeof entry === 'string').map(scrubbed),
+      scopes_supported: (discovery.body?.scopes_supported ?? []).filter((entry) => typeof entry === 'string').map(scrubbed)
     },
     initialize: {
       status: initialize.status,

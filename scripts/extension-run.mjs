@@ -36,32 +36,38 @@ const MARKS = ['Portal Mitra', 'Unduh CSV'];
 
 const CONTROL = { role: 'link', name: 'Unduh CSV' };
 
+// WHY THE OWN LINK WAIT IS SHORT.
+// A browser that loaded the extension reaches the bridge on its own schedule, which is seconds, so the default sixty seconds is a minute of waiting to learn what five seconds learns.
+// The joined road keeps the long wait, because that extension may be asleep rather than absent.
+
+const OWN_LINK_WAIT_MS = 5000;
+
 // WHY THE VERSION IS READ BEFORE THE LINK IS WAITED FOR.
 // Chrome 137 removed --load-extension from the branded build, so an own-mode run on a current Chrome loads no extension at all and can only fail after the full link timeout.
-// Chrome for Testing and Chromium still honour the flag, which is the "/json/version" product tells apart: a branded build answers "Chrome/", the others answer "HeadlessChrome/" or "Chromium/".
+// A build that answers "Chrome/<major>" is a suspect when the link does not come: branded Chrome from 137 on is known to ignore the flag, while Chrome for Testing and Chromium still honour it, and only one of those differences is invisible in this payload.
 
 export function chromeIgnoresLoadExtension(product) {
   const match = /^Chrome\/(\d+)\./.exec(String(product ?? '').trim());
   return match ? Number(match[1]) >= 137 : false;
 }
 
-// WHY THE MESSAGE NAMES THE LIMIT AND THE WAY OUT.
-// "the extension did not connect" points at the extension; the flag points at the launch.
-// The two builds that still load a folder are the two fixes worth naming.
-
-export function chromeLoadLimit(product) {
-  if (!chromeIgnoresLoadExtension(product)) return '';
-  return `this build is branded Chrome 137 or newer, which ignores --load-extension. Use Chrome for Testing or Chromium for own mode, or link the extension in an everyday browser (joined mode).`;
+export function majorOf(product) {
+  const match = /^Chrome\/(\d+)\./.exec(String(product ?? '').trim());
+  return match ? Number(match[1]) : null;
 }
 
-// WHY THE ROAD SENTENCE DEPENDS ON THE MODE.
+// WHY THE ROAD SENTENCE DEPENDS ON THE MODE, AND WHY AN ABSENT HEADER IS NOT A ROAD.
 // Own mode opens a debugging port to launch its Chrome and loads the extension into it; joined mode touches no port at all.
-// One sentence covers both, so the joined run can claim what the own run may not.
+// A row set with no header is not a record of either road, and guessing one is the drift the sentence is supposed to prevent, so it says so instead of defaulting.
 
 export function roadFor({ mode } = {}) {
-  return mode === 'own'
-    ? 'The extension in `extension/` was loaded into a real Chrome, it opened the loopback bridge itself, and the local MCP server answered over that bridge. A debugging port was open on that Chrome to launch it; every call below still travelled over the bridge.'
-    : 'The loopback bridge was already up on this machine with the extension linked to it, so the local MCP server joined that bridge and every call below travelled through the extension. No debugging port, no cloud relay.';
+  if (mode === 'own') {
+    return 'The extension in `extension/` was loaded into a real Chrome, it opened the loopback bridge itself, and the local MCP server answered over that bridge. A debugging port was open on that Chrome to launch it; every call below still travelled over the bridge.';
+  }
+  if (mode === 'joined') {
+    return 'The loopback bridge was already up on this machine with the extension linked to it, so the local MCP server joined that bridge and every call below travelled through the extension. No debugging port, no cloud relay.';
+  }
+  return 'The recorded rows carry no header, so the road this run took cannot be read from the jsonl.';
 }
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -150,13 +156,21 @@ export async function runExtensionProof({
         ]
       });
 
-      // WHY THE FLAG LIMIT IS CHECKED BEFORE THE LINK WAIT.
-      // Branded Chrome 137 and newer ignore --load-extension, so own mode would sit through the whole link timeout on a browser that silently loaded no extension and then report the wrong cause.
-      // Chrome for Testing and Chromium still honour the flag, and the check reads the version the browser itself answers with.
+      // WHY THE VERSION IS READ, AND WHY IT CANNOT REFUSE THE RUN ON ITS OWN.
+      // Branded Chrome 137 and newer ignore --load-extension, so own mode would sit through the whole link timeout on a browser that loaded no extension and then blame the extension for it.
+      // But /json/version answers "Chrome/<major>" for branded Chrome and for Chrome for Testing alike, and the two differ exactly here: one ignores the flag and the other honours it.
+      // So the version goes into the link-wait timeout instead: the link still has to arrive, and the wait is short so a dead extension is caught in seconds, while the failure names the flag limit as a suspect rather than as the verdict.
 
-      const limit = chromeLoadLimit(await fetch(`http://127.0.0.1:${debugPort}/json/version`).then((r) => r.json()));
-      if (limit) {
-        throw new Error(`this Chrome ignores --load-extension: ${limit}`);
+      const version = await fetch(`http://127.0.0.1:${debugPort}/json/version`)
+        .then((response) => response.json())
+        .catch(() => null);
+      const link = await waitForLink(bridgePort, { timeoutMs: OWN_LINK_WAIT_MS })
+        .then((answer) => answer, () => null);
+      if (!link) {
+        const suspect = chromeIgnoresLoadExtension(version?.Browser)
+          ? ` The launched Chrome is major ${majorOf(version.Browser)}, and branded Chrome 137 and newer ignore --load-extension - Chrome for Testing and Chromium still honour it.`
+          : '';
+        throw new Error(`the extension did not reach the bridge on 127.0.0.1:${bridgePort} within ${OWN_LINK_WAIT_MS} ms; health said ${JSON.stringify(link ? { ok: true, linked: true } : null)}.${suspect} Own mode launches its own browser; link the extension in an everyday browser instead and run with that bridge already up.`);
       }
     }
     const version = browser

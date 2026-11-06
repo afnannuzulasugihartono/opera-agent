@@ -463,6 +463,56 @@ test('a redirected Downloads folder is watched too, and the failure names both f
   assert.ok(missed.why.includes(redirected), 'and the redirected folder OneDrive can move it to');
 });
 
+// WHY THE CANDIDATE IS KEYED BY WHOLE PATH.
+// Two watched folders can hold the same file name, so a name is not an identity: a download landing beside a same-named file in the other folder is still new.
+
+test('a file with a name the other watched folder already holds is still new', async () => {
+  const disk = fakeDisk();
+  const home = path.resolve('opera-download-home-shadowed');
+  const browserFolder = path.join(home, 'Downloads');
+  const redirected = path.join(home, 'OneDrive', 'Downloads');
+  disk.put(path.join(redirected, 'statement-2026-09.pdf'), 7);
+  const dir = path.resolve('opera-download-shadowed');
+  const cdp = downloadCdp(disk, {
+    onRelease: () => disk.put(path.join(browserFolder, 'statement-2026-09.pdf'), 1234)
+  });
+  const p = createPrimitives(cdp, { fs: disk, os: { homedir: () => home }, path, bridge: true });
+
+  const out = await p.download({ x: 10, y: 10, dir, saveAs: 'klien-2026-09.pdf', settleMs: 0 });
+
+  assert.equal(out.downloaded, true, 'the download in the home folder is the new one, not a shadow of the other');
+  assert.equal(out.landedAt, path.join(browserFolder, 'statement-2026-09.pdf'));
+});
+
+// WHY THE REFUSAL IS ALSO TRUE ON THE DEBUGGING ROAD.
+// A debugging port arms one folder, but that folder is still a folder the person uses, and a second file in it during the click is still a coin toss.
+// The rule is one rule over the watched folders, not one rule per road.
+
+test('a busy folder on the debugging road is a refusal too', async () => {
+  const disk = fakeDisk();
+  const dir = path.resolve('opera-download-busy');
+  const cdp = downloadCdp(disk, {
+    onRelease: () => {
+      disk.put(path.join(dir, 'statement-2026-09.pdf'), 1234);
+      disk.put(path.join(dir, 'invoice-copy.pdf'), 99);
+    }
+  });
+  const p = createPrimitives(cdp, { fs: disk, sleep: async () => {} });
+
+  const out = await p.download({ x: 10, y: 10, dir, settleMs: 0 });
+
+  assert.equal(out.downloaded, false);
+  assert.match(out.why, /two files appeared/);
+  assert.deepEqual(out.candidates, [
+    path.join(dir, 'statement-2026-09.pdf'),
+    path.join(dir, 'invoice-copy.pdf')
+  ]);
+  const armed = cdp.calls.filter((c) => c.method === 'Browser.setDownloadBehavior' && c.params.behavior === 'allow');
+  assert.equal(armed.length, 1, 'the folder is still armed');
+  const last = cdp.calls.filter((c) => c.method === 'Browser.setDownloadBehavior').at(-1);
+  assert.equal(last.params.behavior, 'default', 'and handed back either way');
+});
+
 test('a click that downloads nothing says what it saw, and names the next move', async () => {
   const disk = fakeDisk();
   const dir = path.resolve('opera-download-test-empty');

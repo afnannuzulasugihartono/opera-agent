@@ -15,7 +15,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { recordMarkdown, roadFor, chromeIgnoresLoadExtension } from '../scripts/extension-run.mjs';
+import { chromeIgnoresLoadExtension, majorOf, recordMarkdown, roadFor } from '../scripts/extension-run.mjs';
 
 const root = path.resolve(fileURLToPath(new URL('..', import.meta.url)));
 const proof = (name) => path.join(root, 'proof', name);
@@ -72,8 +72,22 @@ test('the readable record is the recorded rows, regenerated', () => {
   assert.doesNotMatch(markdown, /cannot drift/, 'the record does not claim the test re-proves it');
 });
 
+// WHY THE VERSION IS READ BEFORE THE LINK IS WAITED FOR, AND WHY IT CANNOT REFUSE THE RUN.
+// /json/version answers "Chrome/<major>" for branded Chrome and for Chrome for Testing alike, and the two differ exactly here.
+// So the payload is a suspect for the failure, never the verdict: a link that arrives ends the matter, and only a link that does not arrive hears about the flag.
+
+test('the version number is a suspect for the failure, not the verdict', () => {
+  assert.equal(chromeIgnoresLoadExtension('Chrome/153.0.8010.36'), true, 'a build that answers Chrome/153 is a suspect');
+  assert.equal(chromeIgnoresLoadExtension('Chrome/137.0.0.0'), true, 'the boundary itself is a suspect');
+  assert.equal(chromeIgnoresLoadExtension('Chrome/136.0.0.0'), false, 'and 136 is not');
+  assert.equal(chromeIgnoresLoadExtension('HeadlessChrome/153.0.8010.36'), false, 'chrome-headless-shell answers with its own product');
+  assert.equal(majorOf('Chrome/153.0.8010.36'), 153);
+  assert.equal(majorOf('nothing'), null);
+});
+
 // WHY THE ROAD SENTENCE IS A FUNCTION OF THE MODE.
 // A run that launches its own Chrome has a debugging port open on that browser; saying "no debugging port" next to it is the one claim the run cannot make.
+// Rows with no header are a record of no road at all, and guessing one is exactly the drift the sentence exists to prevent.
 
 test('the road sentence is true of the mode that ran', () => {
   const joined = roadFor({ mode: 'joined' });
@@ -84,14 +98,8 @@ test('the road sentence is true of the mode that ran', () => {
   assert.match(own, /loaded into a real Chrome/);
   assert.doesNotMatch(own, /No debugging port/, 'a run that had to open one cannot claim it did not');
   assert.match(own, /still travelled over the bridge/s, 'the calls travelled over the bridge even in own mode');
-});
 
-// WHY THE LOAD LIMIT IS NAMED BEFORE THE WAIT.
-// Branded Chrome 137 and newer ignore --load-extension, so own mode waits sixty seconds for a link that cannot come and reports the wrong cause.
-
-test('a branded Chrome that ignores --load-extension is named, not waited out', () => {
-  assert.equal(chromeIgnoresLoadExtension('Chrome/153.0.8010.36'), true);
-  assert.equal(chromeIgnoresLoadExtension('Chrome/136.0.0.0'), false);
-  assert.equal(chromeIgnoresLoadExtension('HeadlessChrome/153.0.8010.36'), false, 'Chrome for Testing still honours the flag');
-  assert.equal(chromeIgnoresLoadExtension('Chromium/153.0.0.0'), false, 'Chromium still honours the flag');
+  const headless = roadFor({ mode: undefined });
+  assert.doesNotMatch(headless, /No debugging port/, 'a record with no header claims no road at all');
+  assert.match(headless, /no header/, 'and says so');
 });

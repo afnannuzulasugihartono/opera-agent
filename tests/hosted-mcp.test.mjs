@@ -1,7 +1,7 @@
 // @last-edited: 2026-11-06 UTC+7.
-// @title: hosted-mcp — what the hosted MCP surface answers a client that has no token.
-// @state: the recorded discovery document, the 401, the challenge that names where the token comes from, and the authorize probe for the pinned client.
-// @dependencies: node:test, strict, node:http, node:fs, node:url.
+// @title: hosted-mcp — what the hosted MCP surface answers a client that has no token, and what its checker refuses to keep.
+// @state: the recorded discovery document, the 401, the challenge that names where the token comes from, the authorize probe for the pinned client, and the token scrub.
+// @dependencies: node:test, strict, node:http, node:fs, node:url, ../scripts/hosted-mcp-check.mjs.
 
 // WHY THE RECORD EXISTS.
 // The hosted server is the surface a reader is told to point a client at.
@@ -50,12 +50,17 @@ test('the record proves the pinned OAuth client is still accepted', () => {
   assert.equal(record.authorize.consentPath, '/oauth/consent', 'and the consent page is the one the site serves');
   assert.equal(record.authorize.clientId, 'bbc5eb76-f385-435b-8b13-8e339b45e633');
   assert.equal(record.authorize.redirectUri, 'http://127.0.0.1:19876/mcp/oauth/callback');
-  assert.ok(!String(record.authorize.location ?? '').includes('authorization_id'), 'the one-shot consent request id is not recorded');
+  assert.deepEqual(Object.keys(record.authorize).sort(), ['clientId', 'consentPath', 'redirectUri', 'status'], 'the probe keeps four fields');
+  assert.ok(!JSON.stringify(record.authorize).includes('authorization_id'), 'the one-shot consent request id is not recorded');
 });
 
 // WHY A TOKEN-SHAPED STRING IS REFUSED BY THE CHECKER ITSELF.
 // A server that ever echoes a credential into an error body would be written into the tree by the very script that promised not to record one.
 // The probe keeps only status and error fields, and any token-shaped substring is replaced before it can reach the file.
+
+// WHY THE DISCOVERY DOCUMENT IS SCRUBBED TOO.
+// The claim is that no token-shaped string reaches the tree, and a discovery document is an answer like any other.
+// The authorize path is asserted here rather than left to the live snapshot, because the mapping from a 302 to a consent path is the part the live run alone could not repeat.
 
 test('the checker records only status and error fields, and never a token', async () => {
   const seen = [];
@@ -65,34 +70,49 @@ test('the checker records only status and error fields, and never a token', asyn
     if (url.pathname.endsWith('/.well-known/oauth-protected-resource')) {
       response.writeHead(200, { 'content-type': 'application/json' });
       response.end(JSON.stringify({
-        resource: 'http://127.0.0.1:39999/mcp',
-        authorization_servers: ['http://127.0.0.1:39999/auth'],
+        resource: `${origin}/mcp`,
+        authorization_servers: [`${origin}/auth`],
         bearer_methods_supported: ['header'],
         scopes_supported: ['openid'],
         leaked_token: 'eyJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJwcm9vZiJ9.c2lnbmF0dXJl'
       }));
       return;
     }
-    response.writeHead(401, {
-      'content-type': 'application/json',
-      'www-authenticate': 'Bearer resource_metadata="http://127.0.0.1:39999/.well-known/oauth-protected-resource"'
-    });
-    response.end(JSON.stringify({
-      error: 'unauthorized',
-      error_description: 'token eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJwcm9vZiJ9.c2lnbmF0dXJl is not a valid access token',
-      session_id: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
-    }));
+    if (url.pathname === '/auth/oauth/authorize') {
+      seen.push({ method: request.method, authorize: url.search });
+      response.writeHead(302, { location: 'https://example.test/oauth/consent?authorization_id=onseshot' });
+      response.end();
+      return;
+    }
+    if (url.pathname === '/mcp') {
+      response.writeHead(401, {
+        'content-type': 'application/json',
+        'www-authenticate': 'Bearer resource_metadata="http://127.0.0.1:0/.well-known/oauth-protected-resource"'
+      });
+      response.end(JSON.stringify({
+        error: 'unauthorized',
+        error_description: 'token eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJwcm9vZiJ9.c2lnbmF0dXJl is not a valid access token',
+        session_id: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
+      }));
+      return;
+    }
+    response.writeHead(404, { 'content-type': 'application/json' });
+    response.end(JSON.stringify({ error: 'not_found' }));
   });
 
   await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
   const { port } = server.address();
+  const origin = `http://127.0.0.1:${port}`;
   try {
-    const answer = await checkHostedMcp({ base: `http://127.0.0.1:${port}/mcp` });
+    const answer = await checkHostedMcp({ base: `${origin}/mcp`, authority: `${origin}/auth` });
     assert.equal(answer.initialize.status, 401);
     assert.equal(answer.initialize.body.error, 'unauthorized');
     assert.ok(answer.initialize.body.error_description.includes('[redacted]'), 'a token-shaped string in an error body is redacted');
     assert.equal(answer.initialize.body.session_id, undefined, 'a field the record does not keep never reaches it');
     assert.equal(answer.discovery.leaked_token, undefined, 'an unexpected response field is dropped');
+    assert.equal(answer.authorize.status, 302);
+    assert.equal(answer.authorize.consentPath, '/oauth/consent');
+    assert.ok(seen.some((entry) => entry.authorize?.includes('client_id=bbc5')), 'the probe asks about the pinned client');
     assert.ok(!JSON.stringify(answer).includes('eyJ'), 'no token-shaped string survives into the record');
     assert.ok(seen.some((entry) => entry.path.endsWith('/.well-known/oauth-protected-resource')), 'the resource document is asked first');
   } finally {
