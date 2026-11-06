@@ -25,6 +25,10 @@ HTTP/1.1 401 Unauthorized
 WWW-Authenticate: Bearer resource_metadata="https://.../.well-known/oauth-protected-resource"
 ```
 
+The record of what the server answers without a token is
+[`proof/hosted-mcp.json`](../proof/hosted-mcp.json), taken by
+`node scripts/hosted-mcp-check.mjs`.
+
 Add it to `opencode.json`:
 
 ```json
