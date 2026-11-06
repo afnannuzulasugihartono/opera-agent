@@ -1,7 +1,7 @@
 // @last-edited: 2026-11-06 UTC+7.
 // @title: proof-run — a real browser drive that has to leave the same four files the site ships.
 // @state: the fixture portal over loopback, a throwaway browser, the MCP client, the four artifacts, and the record the suite rechecks.
-// @dependencies: node:test, strict, node:fs, node:os, node:path, ../scripts/proof-run.mjs.
+// @dependencies: node:test, strict, node:fs, node:path, ../local/driver.js, ../scripts/proof-run.mjs.
 
 // WHY THIS FILE EXISTS.
 // The product claims it drives a browser and hands back designed office files, and until this run the claim rested on separate tests: one drove a fake page, another wrote a workbook.
@@ -13,10 +13,18 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { serveCompany } from '../scripts/proof-run.mjs';
+import { installedBrowsers } from '../local/driver.js';
+import { launchProofBrowser, serveCompany } from '../scripts/proof-run.mjs';
 
 const root = path.resolve(fileURLToPath(new URL('..', import.meta.url)));
 const company = path.join(root, 'tests', 'fixtures', 'mock-company');
+
+const browsers = installedBrowsers();
+const canShowWindow = process.platform !== 'linux'
+  || Boolean(process.env.DISPLAY || process.env.WAYLAND_DISPLAY);
+const noBrowser = browsers.length > 0 && canShowWindow
+  ? false
+  : 'this machine cannot start a browser window';
 
 test('the fixture portal answers with the page and the CSV a drive needs', async () => {
   const portal = await serveCompany(company);
@@ -35,4 +43,23 @@ test('the fixture portal answers with the page and the CSV a drive needs', async
   } finally {
     await portal.close();
   }
+});
+
+test('the proof browser answers its own port and is gone when the run ends', { skip: noBrowser }, async () => {
+  const browser = await launchProofBrowser();
+  const { port } = browser;
+  try {
+    const version = await (await fetch(`http://127.0.0.1:${port}/json/version`)).json();
+    assert.match(String(version.Browser ?? ''), /Chrome|Chromium/);
+  } finally {
+    browser.close();
+  }
+
+  const deadline = Date.now() + 5000;
+  let alive = true;
+  while (alive && Date.now() < deadline) {
+    alive = await fetch(`http://127.0.0.1:${port}/json/version`).then(() => true, () => false);
+    if (alive) await new Promise((resolve) => setTimeout(resolve, 100));
+  }
+  assert.equal(alive, false, 'the browser the run started must close with it');
 });

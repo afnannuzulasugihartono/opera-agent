@@ -46,3 +46,41 @@ export async function serveCompany(company = path.resolve('tests', 'fixtures', '
     close: () => new Promise((resolve) => server.close(resolve))
   };
 }
+
+// WHY THE PORT IS NOT THE EVERYDAY ONE.
+// A browser started on the shared port is the browser the person is using, and a proof that drives that one can destroy their session.
+// The shared port is refused by name rather than left to a comment.
+
+const SHARED_PORT = 9222;
+
+// WHY THE PROFILE IS TEMPORARY AND ITS REMOVAL IS FORGIVING.
+// The cookies and history the run makes must die with it, and a profile folder Chrome still holds for a moment is cleared by the operating system later.
+// A cleanup that could throw would mask the step that actually failed.
+
+export async function launchProofBrowser({ port = Number(process.env.OPERA_PROOF_PORT || 9444), env = process.env } = {}) {
+  if (port === SHARED_PORT) throw new Error(`${SHARED_PORT} is the shared browser; the proof run refuses to drive it.`);
+  const [entry] = installedBrowsers({ env });
+  if (!entry?.binary) throw new Error('No Chromium browser was found on this machine.');
+  const userDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'opera-proof-'));
+  const child = spawn(entry.binary, launchArgs({ browser: entry, port, userDataDir }), { stdio: 'ignore' });
+
+  const up = await waitForBrowser(port, { timeoutMs: 15000 }).then(() => true, () => false);
+  if (!up) {
+    child.kill();
+    fs.rmSync(userDataDir, { recursive: true, force: true });
+    throw new Error(`${entry.name} did not answer port ${port}; nothing was driven.`);
+  }
+
+  return {
+    port,
+    name: entry.name,
+    close() {
+      child.kill();
+      try {
+        fs.rmSync(userDataDir, { recursive: true, force: true });
+      } catch {
+
+      }
+    }
+  };
+}
