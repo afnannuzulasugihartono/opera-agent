@@ -1,0 +1,8 @@
+{"kind":"header","transport":"bridge","mode":"joined","bridgePort":9451,"extensionId":"ofgemipoobcnbjkfanmofjbdonjapmgl","browser":"the browser the extension was linked to","browserVersion":"","server":"opera-local","toolCount":54,"startedAt":"2026-11-06T06:08:24.893Z"}
+{"kind":"call","tool":"browser_status","ok":true,"ms":1721,"note":"the bridge on 9451 is the road in use"}
+{"kind":"call","tool":"open_url","ok":true,"ms":326,"note":"tab 1517046820 opened the fixture portal"}
+{"kind":"call","tool":"read_page","ok":true,"ms":121,"note":"423 characters read from the portal"}
+{"kind":"call","tool":"find_elements","ok":true,"ms":13,"note":"1 match for \"Unduh CSV\""}
+{"kind":"download","tool":"download","ok":true,"ms":540,"file":"transaksi-2026-09.csv","bytes":1109,"sha256":"8e0f64810fd70e91101051afb85a814df12a87b1eafde048272049ed6a3667a2","sameAs":"tests/fixtures/mock-company/transaksi-2026-09.csv","note":"1109 bytes landed, armed through browser-folder"}
+{"kind":"call","tool":"capture_page","ok":true,"ms":74,"note":"53301 picture bytes"}
+{"kind":"call","tool":"close_tab","ok":true,"ms":36,"note":"tab 1517046820 closed"}

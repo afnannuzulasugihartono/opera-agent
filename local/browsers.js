@@ -83,13 +83,14 @@ export function protocolsFor(options) {
   return [...new Set(detectBrowsers(options).map((entry) => entry.protocol))];
 }
 
-export function launchArgs({ browser: entry, port, userDataDir }) {
+export function launchArgs({ browser: entry, port, userDataDir, extraArgs = [] }) {
   if (!entry) return [];
 
   return [
     `--remote-debugging-port=${port}`,
     `--user-data-dir=${userDataDir}`,
     ...CHROMIUM_FLAGS,
+    ...extraArgs,
     'about:blank'
   ];
 }
