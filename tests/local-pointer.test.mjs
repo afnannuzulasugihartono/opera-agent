@@ -199,6 +199,38 @@ test('a refused spotlight never breaks the click it decorates', async () => {
   assert.equal(cdp.calls.filter((c) => c.method === 'Input.dispatchMouseEvent').length, 3);
 });
 
+// WHY A POINTER EVENT ASKS FOR FOCUS EMULATION.
+// Measured live on this machine: a synthetic click in a tab Chrome had not drawn went nowhere.
+// The page never saw the click, the file never landed, and the answer still said the link was hit.
+// Chrome hands pointer input to a widget it believes is focused, and a background tab is not.
+// So the dispatch asks for the focus emulation Chrome's own DevTools uses, and gives it back straight after: a page that believes it has focus for good is a page the focus guard can no longer read.
+
+test('a click asks for focus emulation, and gives it back', async () => {
+  const cdp = recordingCdp();
+
+  await createPrimitives(cdp).clickAt(384, 46);
+
+  const asked = cdp.calls.filter((call) => call.method === 'Emulation.setFocusEmulationEnabled');
+  assert.equal(asked.length, 2, 'the emulation is asked for and handed back');
+  assert.equal(asked[0].params.enabled, true);
+  assert.equal(asked[1].params.enabled, false);
+  const firstMove = cdp.calls.findIndex((call) => call.method === 'Input.dispatchMouseEvent');
+  const lastMove = cdp.calls.findLastIndex((call) => call.method === 'Input.dispatchMouseEvent');
+  assert.ok(cdp.calls.indexOf(asked[0]) < firstMove, 'the emulation is on before the pointer moves');
+  assert.ok(cdp.calls.indexOf(asked[1]) > lastMove, 'and off after the pointer is done');
+});
+
+test('a hover asks for focus emulation too', async () => {
+  const cdp = recordingCdp();
+
+  await createPrimitives(cdp).hover(10, 20);
+
+  const asked = cdp.calls.filter((call) => call.method === 'Emulation.setFocusEmulationEnabled');
+  assert.equal(asked.length, 2, 'the emulation is asked for and handed back');
+  assert.equal(asked[0].params.enabled, true);
+  assert.equal(asked[1].params.enabled, false);
+});
+
 // WHY THIS USED TO BE THE OTHER WAY ROUND.
 // This test once asserted that a hover must NOT wait for the page's reply, and it proved that with a promise that never settles.
 // That was measured as a hover that returned in one millisecond while its move sat in the worker's queue for five, and the next command's liveness proof then queued behind it and failed — so one lie became two failures.
