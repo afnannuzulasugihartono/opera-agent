@@ -1,7 +1,7 @@
 // @last-edited: 2026-11-06 UTC+7.
 // @title: proof-run — one real drive: a browser reads a portal, the CSV lands, and four office files come out with the bytes the site ships.
 // @state: the fixture portal, a throwaway Chrome, the MCP client over stdio, the five steps, and the record the suite rechecks.
-// @dependencies: node:child_process, node:crypto, node:fs, node:http, node:os, node:path, ../local/browsers.js, ../local/driver.js, ../local/transport.js.
+// @dependencies: node:child_process, node:crypto, node:fs, node:http, node:os, node:path, node:url, ../local/browsers.js, ../local/driver.js, ../local/transport.js.
 
 // WHY THIS FILE EXISTS.
 // The product claims it drives a browser and hands back designed office files, and until this run the claim rested on separate tests: one drove a fake page, another wrote a workbook.
@@ -13,6 +13,7 @@ import fs from 'node:fs';
 import http from 'node:http';
 import os from 'node:os';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 import { launchArgs } from '../local/browsers.js';
 import { installedBrowsers } from '../local/driver.js';
@@ -383,4 +384,43 @@ export async function runProof({
     browser.close();
     await portal.close();
   }
+}
+
+// WHY THE RECORD IS MARKDOWN AND JSONL BOTH.
+// The JSONL is what the suite reads, one call per line, and the Markdown is what a person reads, one table.
+// Neither is generated from the other, so a change to one cannot quietly erase the other.
+
+export function recordMarkdown({ steps, browser, slides }) {
+  const calls = steps.map((step) => `| ${step.n} | \`${step.tool}\` | ${step.ms ?? '-'} | ${step.note ?? 'ok'} |`);
+  const files = steps
+    .filter((step) => step.sha256)
+    .map((step) => `| \`${step.file}\` | ${step.bytes} | \`${step.sha256}\` | \`${step.matches ?? step.sameAs}\` |`);
+  return [
+    '# Proof run: one browser, four files',
+    '',
+    'The local MCP server drove a throwaway Chrome over stdio: it opened the fixture portal, read the page, downloaded the CSV, and built the four files the site offers. Each file was hashed and compared with the same-named file in `landing/contoh/`.',
+    '',
+    `Browser: ${browser}. Deck slides: ${slides}.`,
+    '',
+    '| # | call | ms | what it left |',
+    '| --- | --- | --- | --- |',
+    ...calls,
+    '',
+    '| file | bytes | sha256 | equals |',
+    '| --- | --- | --- | --- |',
+    ...files,
+    '',
+    'The hashes in `run.jsonl` are rechecked against `landing/contoh/` by `tests/proof-run.test.mjs`, so this record cannot drift away from what the code makes.',
+    ''
+  ].join('\n');
+}
+
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  const result = await runProof();
+  const dir = path.join(process.cwd(), 'proof');
+  fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(path.join(dir, 'portal.jpg'), Buffer.from(result.jpeg, 'base64'));
+  fs.writeFileSync(path.join(dir, 'run.jsonl'), `${result.steps.map((step) => JSON.stringify(step)).join('\n')}\n`);
+  fs.writeFileSync(path.join(dir, 'run.md'), recordMarkdown(result));
+  console.log(`proof run: ${result.steps.length} calls, ${result.hashes.length} files match, ${result.slides} slides`);
 }

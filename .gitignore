@@ -60,6 +60,11 @@ supabase/.temp/
 
 .spec-kit-venv/
 
+# The proof run writes its own copies beside its record; the same bytes already ship in landing/contoh/.
+
+proof/out/
+proof/downloads/
+
 # Editor / OS
 
 .vscode/

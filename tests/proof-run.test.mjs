@@ -119,3 +119,26 @@ test('one drive downloads the CSV and leaves the four files the site ships', { s
     fs.rmSync(work, { recursive: true, force: true });
   }
 });
+
+test('the recorded run still leaves the files the site ships', () => {
+  const record = path.join(root, 'proof', 'run.jsonl');
+  assert.ok(fs.existsSync(record), 'the proof record exists; run node scripts/proof-run.mjs');
+  const rows = fs.readFileSync(record, 'utf8').split('\n').filter(Boolean).map((line) => JSON.parse(line));
+
+  assert.ok(rows.every((row) => row.ok === true), 'every recorded step said ok');
+  const artifacts = rows.filter((row) => row.sha256 && row.matches);
+  assert.equal(artifacts.length, 4, 'the record carries four artifacts');
+
+  for (const row of artifacts) {
+    const name = path.basename(row.file);
+    assert.equal(row.matches, `landing/contoh/${name}`, `${name} says what it was compared with`);
+    assert.equal(sha256(path.join(root, 'landing', 'contoh', name)), row.sha256, `${name} on the site moved away from the record`);
+    assert.ok(!path.isAbsolute(row.file), 'the record carries a repository path, not a machine path');
+  }
+
+  const deck = rows.find((row) => row.tool === 'deck_build');
+  assert.ok(deck, 'the record carries the deck step');
+  const written = fs.readFileSync(path.join(root, 'proof', 'run.md'), 'utf8');
+  assert.match(written, /Deck slides: 5/, 'the record states the slide count the file holds');
+  assert.ok(written.includes(deck.sha256), 'the readable record carries the deck hash');
+});
