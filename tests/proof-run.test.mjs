@@ -14,7 +14,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { installedBrowsers } from '../local/driver.js';
-import { launchProofBrowser, serveCompany } from '../scripts/proof-run.mjs';
+import { launchProofBrowser, serveCompany, speakMcp } from '../scripts/proof-run.mjs';
 
 const root = path.resolve(fileURLToPath(new URL('..', import.meta.url)));
 const company = path.join(root, 'tests', 'fixtures', 'mock-company');
@@ -62,4 +62,32 @@ test('the proof browser answers its own port and is gone when the run ends', { s
     if (alive) await new Promise((resolve) => setTimeout(resolve, 100));
   }
   assert.equal(alive, false, 'the browser the run started must close with it');
+});
+
+test('the server opens the portal tab and reads the page', { skip: noBrowser }, async () => {
+  const portal = await serveCompany(company);
+  const browser = await launchProofBrowser();
+  const mcp = speakMcp({ port: browser.port, cwd: root });
+  try {
+    const ready = await mcp.initialize();
+    assert.equal(ready?.serverInfo?.name, 'opera-local');
+    const names = await mcp.listTools();
+    for (const wanted of ['open_url', 'read_page', 'download', 'spreadsheet_build', 'deck_build', 'document_write', 'capture_page', 'close_tab']) {
+      assert.ok(names.includes(wanted), `the server offers ${wanted}`);
+    }
+
+    const opened = await mcp.tool('open_url', { url: portal.url });
+    const tabId = opened.answer?.action?.id;
+    assert.ok(tabId, 'open_url names the tab it opened');
+
+    const read = await mcp.tool('read_page', { tabId });
+    assert.match(String(read.answer?.text ?? ''), /Portal Mitra/);
+    assert.match(String(read.answer?.text ?? ''), /Unduh CSV/);
+
+    await mcp.tool('close_tab', { tabId });
+  } finally {
+    await mcp.close();
+    browser.close();
+    await portal.close();
+  }
 });

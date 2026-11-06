@@ -84,3 +84,107 @@ export async function launchProofBrowser({ port = Number(process.env.OPERA_PROOF
     }
   };
 }
+
+// WHY THE CLIENT IS THIS SMALL.
+// MCP over stdio is one JSON object per line, and the server answers every request with the id it was given.
+// A client that framed anything else would be testing its own idea of the protocol instead of the one the product ships.
+
+const CALL_TIMEOUT_MS = 60000;
+
+const parseAnswer = (text) => {
+  try {
+    return JSON.parse(text);
+  } catch {
+    return text;
+  }
+};
+
+export function speakMcp({ port, cwd = process.cwd(), env = process.env } = {}) {
+  const child = spawn(process.execPath, [path.join(cwd, 'local', 'bin', 'opera-local.js')], {
+    cwd,
+    env: { ...env, OPERA_LOCAL_TRANSPORT: 'cdp', OPERA_LOCAL_PORT: String(port) },
+    stdio: ['pipe', 'pipe', 'inherit']
+  });
+
+  const waiting = new Map();
+  let buffer = '';
+  let nextId = 1;
+
+  child.stdout.setEncoding('utf8');
+  child.stdout.on('data', (chunk) => {
+    buffer += chunk;
+    const lines = buffer.split('\n');
+    buffer = lines.pop() ?? '';
+    for (const line of lines) {
+      const text = line.trim();
+      if (!text) continue;
+      let message;
+      try {
+        message = JSON.parse(text);
+      } catch {
+        continue;
+      }
+      const pending = waiting.get(message.id);
+      if (!pending) continue;
+      waiting.delete(message.id);
+      if (message.error) pending.reject(new Error(`${pending.method}: ${message.error.message}`));
+      else pending.resolve(message.result);
+    }
+  });
+
+  const call = (method, params) => new Promise((resolve, reject) => {
+    const id = nextId;
+    nextId += 1;
+    const timer = setTimeout(() => {
+      waiting.delete(id);
+      reject(new Error(`${method} did not answer within ${CALL_TIMEOUT_MS} ms`));
+    }, CALL_TIMEOUT_MS);
+    waiting.set(id, {
+      method,
+      resolve: (result) => {
+        clearTimeout(timer);
+        resolve(result);
+      },
+      reject: (error) => {
+        clearTimeout(timer);
+        reject(error);
+      }
+    });
+    child.stdin.write(`${JSON.stringify({ jsonrpc: '2.0', id, method, params })}\n`);
+  });
+
+  const tool = async (name, args = {}) => {
+    const result = await call('tools/call', { name, arguments: args });
+    const blocks = Array.isArray(result?.content) ? result.content : [];
+    const texts = blocks.filter((block) => block.type === 'text').map((block) => block.text);
+    const ms = Number(String(texts.at(-1) ?? '').replace(/\s*ms$/, ''));
+    const body = texts.slice(0, Math.max(0, texts.length - 1)).join('\n');
+    return {
+      name,
+      ms: Number.isFinite(ms) ? ms : null,
+      answer: parseAnswer(body),
+      text: body,
+      image: blocks.find((block) => block.type === 'image')?.data ?? null
+    };
+  };
+
+  return {
+    call,
+    tool,
+    initialize: () => call('initialize', { protocolVersion: '2025-06-18', capabilities: {}, clientInfo: { name: 'proof-run', version: '1' } }),
+    listTools: async () => ((await call('tools/list', {}))?.tools ?? []).map((entry) => entry.name),
+    close: async () => {
+      child.stdin.end();
+      await new Promise((resolve) => {
+        const timer = setTimeout(() => {
+          child.kill();
+          resolve();
+        }, 5000);
+        child.once('exit', () => {
+          clearTimeout(timer);
+          resolve();
+        });
+      });
+    }
+  };
+}
