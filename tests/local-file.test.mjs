@@ -410,6 +410,59 @@ test('over the extension the file lands in the browser folder and is moved to th
   assert.equal(cdp.calls.some((call) => call.method.includes('setDownloadBehavior')), false, 'the extension road does not pretend to arm a folder it cannot arm');
 });
 
+// WHY MORE THAN ONE CANDIDATE IS A REFUSAL.
+// The browser folder holds everything the person downloads, so a second file appearing mid-click is another download, not this one.
+// Handing back the newest of an ambiguous pair is how a bookkeeper ends up with somebody else's statement, so the answer says which files appeared and moves neither.
+
+test('two finished files in the watched folder is a refusal, not a guess', async () => {
+  const disk = fakeDisk();
+  const home = path.resolve('opera-download-home-ambiguous');
+  const browserFolder = path.join(home, 'Downloads');
+  const dir = path.resolve('opera-download-ambiguous');
+  const cdp = downloadCdp(disk, {
+    onRelease: () => {
+      disk.put(path.join(browserFolder, 'statement-2026-09.pdf'), 1234);
+      disk.put(path.join(browserFolder, 'invoice-copy.pdf'), 99);
+    }
+  });
+  const p = createPrimitives(cdp, { fs: disk, os: { homedir: () => home }, path, bridge: true });
+
+  const out = await p.download({ x: 10, y: 10, dir, saveAs: 'klien-2026-09.pdf', settleMs: 0 });
+
+  assert.equal(out.downloaded, false);
+  assert.match(out.why, /two files appeared/);
+  assert.ok(out.why.includes('statement-2026-09.pdf') && out.why.includes('invoice-copy.pdf'), 'both candidates are named');
+  assert.equal(disk.files.has(path.join(dir, 'klien-2026-09.pdf')), false, 'neither file was moved');
+  assert.equal(disk.files.has(path.join(browserFolder, 'statement-2026-09.pdf')), true, 'the browser copy stays where it landed');
+});
+
+// WHY THE WATCH COVERS BOTH FOLDERS CHROME MAY USE.
+// OneDrive can move the Downloads known folder, and Chrome honours that move, so the browser folder is not always the one under the home directory.
+// The failure names every folder the answer did not find the file in, which is the only place a reader can see the list.
+
+test('a redirected Downloads folder is watched too, and the failure names both folders', async () => {
+  const disk = fakeDisk();
+  const home = path.resolve('opera-download-home-onedrive');
+  const redirected = path.join(home, 'OneDrive', 'Downloads');
+  const dir = path.resolve('opera-download-onedrive');
+  const cdp = downloadCdp(disk, {
+    onRelease: () => disk.put(path.join(redirected, 'statement-2026-09.pdf'), 1234)
+  });
+  const p = createPrimitives(cdp, { fs: disk, os: { homedir: () => home }, path, bridge: true });
+
+  const out = await p.download({ x: 10, y: 10, dir, saveAs: 'klien-2026-09.pdf', settleMs: 0 });
+
+  assert.equal(out.downloaded, true, 'a file that landed in the redirected folder is still found');
+  assert.equal(out.landedAt, path.join(redirected, 'statement-2026-09.pdf'));
+
+  const empty = downloadCdp(fakeDisk());
+  const missed = await createPrimitives(empty, { fs: fakeDisk(), os: { homedir: () => home }, path, bridge: true, sleep: async () => {} })
+    .download({ x: 5, y: 5, dir, timeoutMs: 500, settleMs: 0 });
+  assert.equal(missed.downloaded, false);
+  assert.ok(missed.why.includes(path.join(home, 'Downloads')), 'the failure names the home downloads folder');
+  assert.ok(missed.why.includes(redirected), 'and the redirected folder OneDrive can move it to');
+});
+
 test('a click that downloads nothing says what it saw, and names the next move', async () => {
   const disk = fakeDisk();
   const dir = path.resolve('opera-download-test-empty');
