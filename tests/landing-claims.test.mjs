@@ -110,6 +110,16 @@ test('the pricing page states only what the wallet enforces', () => {
   assert.doesNotMatch(page, /langganan bulanan|per menit|per token|per langkah/i, 'no subscription or per-unit meter is advertised');
 });
 
+// WHY THE GUIDE IS NAMED ON THE PAGE A READER LANDS ON.
+// A reader on the guide asks how to call Opera Agent, and the answer lives in one file in the repository.
+// A page that sends nobody there leaves the answer where nobody looks.
+
+test('the docs page points at the guide that names every road', () => {
+  const page = read('landing/docs.html');
+  assert.match(page, /agent-call\.md/, 'the docs page names the call guide');
+  assert.ok(fs.existsSync(new URL('docs/agent-call.md', root)), 'and the guide it names is in the repository');
+});
+
 test('no page calls the product free while every job is prepaid', () => {
   assert.doesNotMatch(site, /Gratis dipakai/i, 'a prepaid job is not free');
   assert.doesNotMatch(site, /Opera Agent gratis/i, 'the extension installs free; the job is not free');

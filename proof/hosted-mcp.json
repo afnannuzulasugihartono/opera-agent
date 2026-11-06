@@ -1,0 +1,26 @@
+{
+  "url": "https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp",
+  "checkedAt": "2026-11-06T06:36:22.887Z",
+  "discovery": {
+    "status": 200,
+    "resource": "https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp",
+    "authorization_servers": [
+      "https://nenmkmtvjremqphfqnfw.supabase.co/auth/v1"
+    ],
+    "bearer_methods_supported": [
+      "header"
+    ],
+    "scopes_supported": [
+      "openid",
+      "email"
+    ]
+  },
+  "initialize": {
+    "status": 401,
+    "wwwAuthenticate": "Bearer resource_metadata=\"https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp/.well-known/oauth-protected-resource\"",
+    "body": {
+      "error": "unauthorized",
+      "error_description": "A valid Opera Agent access token is required."
+    }
+  }
+}

@@ -34,7 +34,10 @@ waktunya jadi tidak bisa dibandingkan.
    Harusnya mencetak versi Chrome. Kalau gagal, port atau profil salah.
 5. Pasang opencode bila belum ada (Node 20+), lalu jalankan:
 
-   npx opera-local
+   node local/bin/opera-local.js
+
+   Paket `opera-local` belum ada di npm (`npm view opera-local` jawab 404),
+   jadi yang dipakai perintah di atas, dari clone repo.
 
    dengan `OPERA_LOCAL_PORT=9333` (default). MCP client (opencode/Claude Desktop)
    diarahkan ke server ini.
