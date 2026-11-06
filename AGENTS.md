@@ -7,7 +7,7 @@ MV3 browser extension + Supabase backend. This file binds every task, in every a
 
 The agent has 100 percent freedom: simplify, delete, and rewrite anything — tests included — as long as the Goals below move and every word here stays true. A test removed is a claim retired, so replace it with proof of equal strength, never with silence.
 
-> Standard: military-grade correctness, company-grade trust, Apple-grade finish — full freedom, every word binds the agent.
+> Standard: Apple-grade finish — full freedom, every word binds the agent.
 
 ## Always
 
