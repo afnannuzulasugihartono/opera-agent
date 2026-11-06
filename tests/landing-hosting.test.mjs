@@ -58,7 +58,7 @@ test('every _headers rule restates a vercel.json entry verbatim', () => {
 test('every path of the site is covered, so no rule can be reached by inheritance', () => {
 
   const covered = new Set(rules.flatMap((rule) => rule.paths));
-  for (const page of ['/', '/beranda', '/beranda.html', '/index.html', '/akun', '/akun.html', '/dashboard', '/dashboard.html', '/unduh', '/unduh.html', '/unduh-berkas', '/unduh-berkas.html', '/privasi', '/privasi.html', '/syarat', '/syarat.html', '/fitur', '/fitur.html', '/studi', '/studi.html', '/dukungan', '/dukungan.html', '/docs', '/docs.html', '/harga', '/404.html', '/robots.txt', '/sitemap.xml']) {
+  for (const page of ['/', '/beranda', '/beranda.html', '/index.html', '/akun', '/akun.html', '/dashboard', '/dashboard.html', '/unduh', '/unduh.html', '/unduh-berkas', '/unduh-berkas.html', '/privasi', '/privasi.html', '/syarat', '/syarat.html', '/fitur', '/fitur.html', '/studi', '/studi.html', '/bukti', '/bukti.html', '/dukungan', '/dukungan.html', '/docs', '/docs.html', '/harga', '/404.html', '/robots.txt', '/sitemap.xml']) {
     assert.ok(covered.has(page), `_headers must cover ${page}`);
   }
 });

@@ -26,6 +26,7 @@ const COLUMNS = [
       { href: 'beranda.html', key: 'footer.home', id: 'Beranda', en: 'Home' },
       { href: 'fitur.html', key: 'footer.features', id: 'Fitur', en: 'Features' },
       { href: 'unduh.html', key: 'footer.download', id: 'Unduh', en: 'Download' },
+      { href: 'bukti.html', key: 'footer.bukti', id: 'Bukti', en: 'Proof' },
       { href: 'docs.html', key: 'footer.docs', id: 'Docs', en: 'Docs' }
     ]
   },

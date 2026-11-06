@@ -17,6 +17,7 @@ const DESTINATIONS = [
   { path: '/beranda.html', id: 'Beranda', en: 'Home', hint: { id: 'Mulai dari sini', en: 'Start here' }, keys: 'beranda home mulai awal ringkasan overview' },
   { path: '/fitur.html', id: 'Fitur', en: 'Features', hint: { id: 'Yang bisa dikerjakan', en: 'What it can do' }, keys: 'fitur features kemampuan bento tugas capability' },
   { path: '/studi.html', id: 'Studi kasus', en: 'Case study', hint: { id: 'Satu file jadi empat berkas', en: 'One file becomes four files' }, keys: 'studi kasus case study contoh sample laporan excel deck pptx word docx' },
+  { path: '/bukti.html', id: 'Bukti', en: 'Proof', hint: { id: 'Satu jalannya, empat berkas', en: 'One run, four files' }, keys: 'bukti proof hash sha256 jalannya run record bukti jalan' },
   { path: '/harga', id: 'Harga', en: 'Pricing', hint: { id: 'Biaya dan saldo', en: 'Cost and balance' }, keys: 'harga pricing biaya cost saldo top up money' },
   { path: '/unduh.html', id: 'Unduh', en: 'Download', hint: { id: 'Extension browser', en: 'Browser extension' }, keys: 'unduh download extension pasang install chrome' },
   { path: '/unduh-berkas.html', id: 'Berkas', en: 'Files', hint: { id: 'Berkas rilis', en: 'Release files' }, keys: 'berkas files zip rilis release' },
