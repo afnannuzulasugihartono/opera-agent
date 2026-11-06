@@ -1,0 +1,53 @@
+<!-- @last-edited: 2026-11-06 UTC+7.
+<!-- @title: portal.html — the fixture company portal the proof run reads and downloads from.
+<!-- @state: one page, four rows, one CSV link; it carries no product code.
+<!-- @dependencies: none stated. -->
+
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Portal Mitra · Sinar Jaya</title>
+<style>
+  :root { --accent:#3ECF8E; --ink:#17181C; --muted:#6B7280; --line:#E5E7EB; --light:#F4F5F6; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--light); color:var(--ink); font:15px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  header { background:var(--ink); color:#fff; padding:20px 32px; display:flex; justify-content:space-between; align-items:center; }
+  header strong { font-size:18px; letter-spacing:.2px; }
+  .badge { border:1px solid rgba(255,255,255,.35); border-radius:999px; padding:4px 12px; font-size:12px; }
+  main { max-width:960px; margin:32px auto; background:#fff; border:1px solid var(--line); border-radius:12px; padding:32px; }
+  h1 { font-size:22px; margin:0 0 4px; }
+  p.lead { margin:0 0 24px; color:var(--muted); }
+  table { width:100%; border-collapse:collapse; font-variant-numeric:tabular-nums; }
+  th, td { text-align:left; padding:10px 12px; border-bottom:1px solid var(--line); }
+  th { font-size:12px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); }
+  td.num, th.num { text-align:right; }
+  a.download { display:inline-block; margin-top:24px; background:var(--accent); color:var(--ink); font-weight:600; text-decoration:none; padding:12px 20px; border-radius:8px; }
+  footer { max-width:960px; margin:0 auto 40px; padding:0 32px; color:var(--muted); font-size:12px; }
+</style>
+</head>
+<body>
+<header>
+  <strong>Portal Mitra · Sinar Jaya</strong>
+  <span class="badge">Data contoh</span>
+</header>
+<main>
+  <h1>Tagihan &amp; transaksi September 2026</h1>
+  <p class="lead">Periode 1–30 September 2026 · rekening operasional</p>
+  <table>
+    <thead>
+      <tr><th>Tanggal</th><th>Keterangan</th><th>Kanal</th><th class="num">Jumlah</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>2026-09-02</td><td>Pendapatan Penjualan</td><td>Langganan</td><td class="num">48.250.000</td></tr>
+      <tr><td>2026-09-05</td><td>Pendapatan Penjualan</td><td>Proyek</td><td class="num">31.400.000</td></tr>
+      <tr><td>2026-09-09</td><td>Pendapatan Penjualan</td><td>Langganan</td><td class="num">22.900.000</td></tr>
+      <tr><td>2026-09-03</td><td>Beban Pokok Layanan</td><td>Proyek</td><td class="num">-28.900.000</td></tr>
+    </tbody>
+  </table>
+  <a class="download" href="transaksi-2026-09.csv" download="transaksi-2026-09.csv">Unduh CSV</a>
+</main>
+<footer>Berkas contoh untuk uji lokal. Bukan portal bank.</footer>
+</body>
+</html>
