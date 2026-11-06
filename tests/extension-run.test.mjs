@@ -42,3 +42,13 @@ test('the download came off the portal unchanged', () => {
   const fixture = path.join(root, 'tests', 'fixtures', 'mock-company', 'transaksi-2026-09.csv');
   assert.equal(download.sha256, sha256(fixture), 'the CSV landed as the portal served it');
 });
+
+test('the record shows the press, not only the file it fetched', () => {
+  const download = rows().find((entry) => entry.kind === 'download');
+  assert.ok(download.pressed, 'the download row names the press that fetched the file');
+  assert.equal(typeof download.pressed.x, 'number', 'the press has a point on the page');
+  assert.equal(typeof download.pressed.y, 'number', 'the press has a point on the page');
+  assert.equal(download.pressed.control?.name, 'Unduh CSV', 'the press names the control it pushed');
+  const markdown = fs.readFileSync(proof('extension-run.md'), 'utf8');
+  assert.match(markdown, /pressed the download control "Unduh CSV"/, 'the readable record says the press in words');
+});
