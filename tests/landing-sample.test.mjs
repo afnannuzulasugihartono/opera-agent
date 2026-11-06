@@ -95,6 +95,26 @@ test('the proof page names the extension road and prints what that road pulled',
   assert.ok(page.includes(String(download.bytes)), 'and the size it landed');
 });
 
+// WHY THE PRESS IS ON THE PAGE.
+// A file that arrived says the drive fetched something, not that it pushed a button to get it.
+// The press is the claim, so the page names the control the record shows was pressed.
+
+test('the proof page says the drive pressed the control, and names it', () => {
+  const page = fs.readFileSync(path.join(root, 'landing', 'bukti.html'), 'utf8');
+  const record = fs.readFileSync(path.join(root, 'proof', 'extension-run.jsonl'), 'utf8')
+    .split('\n').filter(Boolean).map((line) => JSON.parse(line));
+  const download = record.find((line) => line.kind === 'download');
+
+  const road = /aria-labelledby="roadTitle"[\s\S]*?<\/section>/.exec(page)?.[0] ?? '';
+  const dict = JSON.parse(/<script type="application\/json" id="i18n-dict">([\s\S]*?)<\/script>/.exec(page)[1]);
+
+  assert.ok(download.pressed, 'the record carries the press');
+  assert.ok(road.includes(download.pressed.control.name), 'the road steps name the control that was pressed');
+  assert.match(road, /ditekan/, 'the Indonesian road steps say the button was pressed');
+  assert.ok(dict.en['road.three'].includes(download.pressed.control.name), 'the English road steps name it too');
+  assert.match(dict.en['road.three'], /pressed/, 'the English road steps say the button was pressed');
+});
+
 // WHY THE PAGE IS CHECKED AGAINST THE REPORT.
 // The case study page prints three figures and the rows behind them, so a reader can check the page against the file they downloaded.
 // A page that prints a number the report no longer holds is a claim nothing keeps, so the page is read against a fresh build.

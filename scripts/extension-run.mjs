@@ -31,6 +31,11 @@ const DEBUG_PORT = 9455;
 
 const MARKS = ['Portal Mitra', 'Unduh CSV'];
 
+// WHY THE CONTROL IS ONE CONSTANT.
+// The record names the control the drive pressed, and the call must press that same control, so one constant carries both.
+
+const CONTROL = { role: 'link', name: 'Unduh CSV' };
+
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 // WHY THE EXTENSION ID IS READ FROM THE MANIFEST KEY.
@@ -160,8 +165,7 @@ export async function runExtensionProof({
     process.stderr.write('extension run: find_elements done\n');
     const grabbed = await mcp.tool('download', {
       tabId,
-      role: 'link',
-      name: 'Unduh CSV',
+      ...CONTROL,
       dir: work,
       saveAs: 'transaksi-2026-09.csv',
       timeoutMs: 30000
@@ -172,6 +176,15 @@ export async function runExtensionProof({
     const hash = sha256(csv);
     const fixtureHash = sha256(path.join(company, 'transaksi-2026-09.csv'));
     if (hash !== fixtureHash) throw new Error(`the downloaded CSV is not the fixture: ${hash} versus ${fixtureHash}`);
+
+    // WHY THE PRESS IS RECORDED WITH THE FILE.
+    // A file that landed says the drive fetched something, not that it pushed a button to get it.
+    // The press is the product's claim, so the record carries the point it pushed and what was under that point.
+
+    const pressed = grabbed.answer.clicked;
+    if (!pressed || !Number.isFinite(Number(pressed.x)) || !Number.isFinite(Number(pressed.y))) {
+      throw new Error('the download arrived without a press behind it, so nothing was recorded');
+    }
     note({
       kind: 'download',
       tool: 'download',
@@ -181,7 +194,14 @@ export async function runExtensionProof({
       bytes: grabbed.answer.bytes,
       sha256: hash,
       sameAs: 'tests/fixtures/mock-company/transaksi-2026-09.csv',
-      note: `${grabbed.answer.bytes} bytes landed, armed through ${grabbed.answer.armedVia}`
+      pressed: {
+        x: Math.round(Number(pressed.x)),
+        y: Math.round(Number(pressed.y)),
+        control: CONTROL,
+        hit: pressed.hit ?? null,
+        handle: pressed.handle ?? null
+      },
+      note: `pressed the download control "${CONTROL.name}" at ${Math.round(Number(pressed.x))},${Math.round(Number(pressed.y))}; ${grabbed.answer.bytes} bytes landed, armed through ${grabbed.answer.armedVia}`
     });
 
     const shot = await mcp.tool('capture_page', { tabId });
