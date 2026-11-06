@@ -59,12 +59,12 @@ const SHARED_PORT = 9222;
 // The cookies and history the run makes must die with it, and a profile folder Chrome still holds for a moment is cleared by the operating system later.
 // A cleanup that could throw would mask the step that actually failed.
 
-export async function launchProofBrowser({ port = Number(process.env.OPERA_PROOF_PORT || 9444), env = process.env } = {}) {
+export async function launchProofBrowser({ port = Number(process.env.OPERA_PROOF_PORT || 9444), env = process.env, extraArgs = [] } = {}) {
   if (port === SHARED_PORT) throw new Error(`${SHARED_PORT} is the shared browser; the proof run refuses to drive it.`);
   const [entry] = installedBrowsers({ env });
   if (!entry?.binary) throw new Error('No Chromium browser was found on this machine.');
   const userDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'opera-proof-'));
-  const child = spawn(entry.binary, launchArgs({ browser: entry, port, userDataDir }), { stdio: 'ignore' });
+  const child = spawn(entry.binary, launchArgs({ browser: entry, port, userDataDir, extraArgs }), { stdio: 'ignore' });
 
   const up = await waitForBrowser(port, { timeoutMs: 15000 }).then(() => true, () => false);
   if (!up) {
@@ -101,10 +101,10 @@ const parseAnswer = (text) => {
   }
 };
 
-export function speakMcp({ port, cwd = process.cwd(), env = process.env } = {}) {
+export function speakMcp({ port, cwd = process.cwd(), env = process.env, transport = 'cdp' } = {}) {
   const child = spawn(process.execPath, [path.join(cwd, 'local', 'bin', 'opera-local.js')], {
     cwd,
-    env: { ...env, OPERA_LOCAL_TRANSPORT: 'cdp', OPERA_LOCAL_PORT: String(port) },
+    env: { ...env, OPERA_LOCAL_TRANSPORT: transport, OPERA_LOCAL_PORT: String(port) },
     stdio: ['pipe', 'pipe', 'inherit']
   });
 

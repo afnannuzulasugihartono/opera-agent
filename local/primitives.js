@@ -29,7 +29,7 @@ import { createWaits } from './waits.js';
 import { createCanvasMethods } from './canvas.js';
 import { windowState as osWindowState, focusWindow as osFocusWindow } from './window-focus.js';
 
-export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Promise((r) => setTimeout(r, ms)), fs = nodeFs, os = nodeOs, path = nodePath, now = Date.now } = {}) {
+export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Promise((r) => setTimeout(r, ms)), fs = nodeFs, os = nodeOs, path = nodePath, now = Date.now, bridge = false } = {}) {
   const capped = (limit) => Math.min(Math.max(1, Number(limit) || 120), 500);
 
   const primitives = {
@@ -145,7 +145,7 @@ export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Pr
   const waits = createWaits({ cdp, sleep, readState, readRows, read: () => primitives.read(), primitives, now });
   Object.assign(primitives, waits);
 
-  Object.assign(primitives, filePrimitives(primitives, { cdp, sleep, fs, os, path, readState }));
+  Object.assign(primitives, filePrimitives(primitives, { cdp, sleep, fs, os, path, readState, bridge }));
 
   return primitives;
 }

@@ -81,7 +81,7 @@ async function openBridgeSession({ tabUrl, targetId, timeoutMs, primitivesOption
     bridge: true,
     targetId: numericId,
     cdp,
-    ...createPrimitives(cdp, primitivesOptions),
+    ...createPrimitives(cdp, { ...primitivesOptions, bridge: true }),
     close() {
       cdp.close();
     }

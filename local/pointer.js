@@ -121,6 +121,22 @@ export function createPointerMethods({ cdp, primitives }) {
     }
   };
 
+  // WHY A POINTER EVENT ASKS FOR FOCUS EMULATION.
+  // Measured live on this machine: a synthetic click in a tab Chrome had not drawn went nowhere.
+  // The page never saw the click, the file never landed, and the answer still said the link was hit.
+  // Chrome hands pointer input to a widget it believes is focused, and a background tab is not.
+  // So the dispatch asks for the focus emulation Chrome's own DevTools uses, and gives it back straight after.
+  // A page that believes it has focus for good is a page the focus guard can no longer read.
+
+  const withInputFocus = async (work) => {
+    await cdp.send('Emulation.setFocusEmulationEnabled', { enabled: true }).catch(() => null);
+    try {
+      return await work();
+    } finally {
+      await cdp.send('Emulation.setFocusEmulationEnabled', { enabled: false }).catch(() => null);
+    }
+  };
+
   async function clickAt(x, y) {
     const px = Number(x);
     const py = Number(y);
@@ -132,12 +148,12 @@ export function createPointerMethods({ cdp, primitives }) {
       throw new Error(`click refused: ${at} is outside the ${box} viewport - scroll({text}) or scroll({y}) to bring it into view, then click again`);
     }
     const common = { x: px, y: py, button: 'left', clickCount: 1, buttons: 1 };
-    await Promise.all([
+    await withInputFocus(() => Promise.all([
       spot(x, y, 'rgb(255,60,60)'),
       cdp.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x, y, buttons: 0 }),
       cdp.send('Input.dispatchMouseEvent', { type: 'mousePressed', ...common }),
       cdp.send('Input.dispatchMouseEvent', { type: 'mouseReleased', ...common })
-    ]);
+    ]));
     return { x, y, hit: await hitAt(x, y) };
   }
 
@@ -154,9 +170,10 @@ export function createPointerMethods({ cdp, primitives }) {
   }
 
   async function hover(x, y) {
-    const mark = spot(x, y, 'rgb(66,133,244)');
-    const moved = cdp.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x, y, buttons: 0 });
-    await Promise.all([mark, moved]);
+    await withInputFocus(() => Promise.all([
+      spot(x, y, 'rgb(66,133,244)'),
+      cdp.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x, y, buttons: 0 })
+    ]));
     return { x, y };
   }
 

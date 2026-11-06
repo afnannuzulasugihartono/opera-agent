@@ -253,7 +253,7 @@ const windowTruth = (window, browsers, tabs = []) => {
 // The pipe is chosen per call because a worker can wake up late, so a port captured at startup is a lie the moment after it.
 // Measured on the user's own machine: the drive was already on the bridge, list_tabs returned the real tabs, and browser_status still named the debugging port nothing was listening on — the kind of wrong answer that sends someone off to debug a port that was never in the way.
 
-const livePort = (context) => (typeof context.port === 'function' ? context.port() : context.port);
+const livePort = async (context) => (typeof context.port === 'function' ? await context.port() : context.port);
 
 // WHY EVERY ANSWER NAMES THE TAB IT HIT.
 // An agent that named a tab rather than numbering it has to be told which tab that turned out to be, because the name it wrote is not an id and the answer is where the id belongs.
@@ -483,7 +483,7 @@ const windowMatch = async (tab, driver) => (tab ? String(tab.title ?? '') : page
         const pages = await fallback.tabs().catch(() => []);
         return asText({
           browsers: context.browsers,
-          port: livePort(context),
+          port: await livePort(context),
           window: windowTruth(window, context.browsers, pages)
         });
       }

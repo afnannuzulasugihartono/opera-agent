@@ -386,6 +386,30 @@ test('a download is proven by the file on disk, and the folder is armed before t
 });
 
 
+// WHY THE EXTENSION ROAD WATCHES THE BROWSER'S OWN FOLDER.
+// chrome.debugger refuses browser-level commands, so a drive over the extension cannot arm a download folder.
+// The file lands where Chrome puts it, and the driver moves it to the folder the caller named - or says it did not land.
+
+test('over the extension the file lands in the browser folder and is moved to the folder the caller named', async () => {
+  const disk = fakeDisk();
+  const home = path.resolve('opera-download-home');
+  const browserFolder = path.join(home, 'Downloads');
+  const dir = path.resolve('opera-download-bridge');
+  const cdp = downloadCdp(disk, {
+    onRelease: () => disk.put(path.join(browserFolder, 'statement-2026-09.pdf'), 1234)
+  });
+  const p = createPrimitives(cdp, { fs: disk, os: { homedir: () => home }, path, bridge: true });
+
+  const out = await p.download({ x: 10, y: 10, dir, saveAs: 'klien-2026-09.pdf', settleMs: 0 });
+
+  assert.equal(out.downloaded, true);
+  assert.equal(out.path, path.join(dir, 'klien-2026-09.pdf'));
+  assert.equal(out.file, 'klien-2026-09.pdf');
+  assert.equal(out.bytes, 1234);
+  assert.equal(out.landedAt, path.join(browserFolder, 'statement-2026-09.pdf'), 'the answer says where the browser put it');
+  assert.equal(cdp.calls.some((call) => call.method.includes('setDownloadBehavior')), false, 'the extension road does not pretend to arm a folder it cannot arm');
+});
+
 test('a click that downloads nothing says what it saw, and names the next move', async () => {
   const disk = fakeDisk();
   const dir = path.resolve('opera-download-test-empty');

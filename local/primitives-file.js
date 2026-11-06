@@ -30,7 +30,7 @@ import {
   dragMimeType
 } from './page-expressions.js';
 
-export function filePrimitives(primitives, { cdp, sleep, fs, os, path, readState }) {
+export function filePrimitives(primitives, { cdp, sleep, fs, os, path, readState, bridge = false }) {
 
   // WHY THE FILE IS PREPARED IN ONE PLACE.
   // Upload and drop take the same two inputs - a base64 payload or a path - and must answer the same three questions: where the bytes are, how many there are, and how to remove the temporary copy.
@@ -212,17 +212,35 @@ export function filePrimitives(primitives, { cdp, sleep, fs, os, path, readState
       }
       const target = dir ? path.resolve(String(dir)) : path.join(os.homedir(), 'Downloads', 'opera-agent');
       fs.mkdirSync(target, { recursive: true });
-      const before = new Set(fs.readdirSync(target));
+
+      // WHY THE EXTENSION ROAD WATCHES THE BROWSER'S OWN FOLDER.
+      // chrome.debugger refuses browser-level commands, so a drive over the extension cannot arm a download folder: "Browser.setDownloadBehavior" is not found on a page target and "Page.setDownloadBehavior" is refused as browser-level.
+      // The file lands where Chrome puts it, and the driver moves it to the folder the caller named - or says it did not land.
+
+      const bridged = bridge === true;
+      const watched = bridged ? path.join(os.homedir(), 'Downloads') : target;
+      const listDir = (dir) => {
+        try {
+          return fs.readdirSync(dir);
+        } catch {
+          return [];
+        }
+      };
+      const before = new Set(listDir(watched));
 
       let armedVia = 'browser';
-      try {
-        await cdp.send('Browser.setDownloadBehavior', { behavior: 'allow', downloadPath: target });
-      } catch (browserError) {
+      if (bridged) {
+        armedVia = 'browser-folder';
+      } else {
         try {
-          await cdp.send('Page.setDownloadBehavior', { behavior: 'allow', downloadPath: target });
-          armedVia = 'page';
-        } catch (pageError) {
-          throw new Error(`download could not arm a folder: Browser said "${browserError?.message}", Page said "${pageError?.message}"`);
+          await cdp.send('Browser.setDownloadBehavior', { behavior: 'allow', downloadPath: target });
+        } catch (browserError) {
+          try {
+            await cdp.send('Page.setDownloadBehavior', { behavior: 'allow', downloadPath: target });
+            armedVia = 'page';
+          } catch (pageError) {
+            throw new Error(`download could not arm a folder: Browser said "${browserError?.message}", Page said "${pageError?.message}"`);
+          }
         }
       }
 
@@ -246,7 +264,21 @@ export function filePrimitives(primitives, { cdp, sleep, fs, os, path, readState
         const handOver = (newest, full, size) => {
           let file = newest;
           let where = full;
-          if (renameTo !== null && renameTo !== newest) {
+          if (bridged) {
+            file = renameTo ?? newest;
+            where = path.join(target, file);
+            fs.rmSync(where, { force: true });
+            try {
+              fs.renameSync(full, where);
+            } catch (error) {
+              try {
+                fs.copyFileSync(full, where);
+                fs.unlinkSync(full);
+              } catch (copyError) {
+                throw new Error(`the browser put the file at ${full}, and it could not be moved to ${where}: ${copyError.message}`);
+              }
+            }
+          } else if (renameTo !== null && renameTo !== newest) {
             file = renameTo;
             where = path.join(target, renameTo);
             fs.rmSync(where, { force: true });
@@ -265,17 +297,18 @@ export function filePrimitives(primitives, { cdp, sleep, fs, os, path, readState
             ms: Date.now() - started,
             armedVia,
             clicked,
-            ...(file === newest ? {} : { landedAs: newest })
+            ...(file === newest ? {} : { landedAs: newest }),
+            ...(bridged ? { landedAt: full } : {})
           };
         };
         for (;;) {
-          const fresh = fs.readdirSync(target).filter((file) => !before.has(file));
+          const fresh = listDir(watched).filter((file) => !before.has(file));
           const finished = fresh.filter((file) => !file.endsWith('.crdownload') && !file.endsWith('.tmp'));
           if (finished.length) {
             const newest = finished
-              .map((file) => ({ file, at: fs.statSync(path.join(target, file)).mtimeMs }))
+              .map((file) => ({ file, at: fs.statSync(path.join(watched, file)).mtimeMs }))
               .sort((a, b) => b.at - a.at)[0].file;
-            const full = path.join(target, newest);
+            const full = path.join(watched, newest);
             const size = fs.statSync(full).size;
             if (size > 0) {
               if (!growing || growing.size !== size || growing.file !== newest) {
@@ -288,18 +321,19 @@ export function filePrimitives(primitives, { cdp, sleep, fs, os, path, readState
           }
 
           if (Date.now() >= deadline) {
-            const partial = fs.readdirSync(target).find((file) => file.endsWith('.crdownload'));
+            const partial = listDir(watched).find((file) => file.endsWith('.crdownload'));
             const after = await readState().catch(() => ({ url: pageBefore.url }));
             const navigated = after.url && after.url !== pageBefore.url;
             const why = partial
               ? `a download started but ${partial} was still being written after ${limit} ms; call again with a longer timeoutMs`
               : navigated
                 ? `the click navigated to ${after.url} instead of downloading; that page may render the file, so capture_page() it or use the page's own download control`
-                : `no file appeared in ${target} within ${limit} ms; the clicked control may open a viewer or a menu, or Chrome may be showing a save dialog - dialog_state() says which`;
+                : `no file appeared in ${watched} within ${limit} ms; the clicked control may open a viewer or a menu, or Chrome may be showing a save dialog - dialog_state() says which`;
             return {
               downloaded: false,
               why,
               dir: target,
+              watched,
               ms: Date.now() - started,
               armedVia,
               partial: partial ?? null,
@@ -309,8 +343,10 @@ export function filePrimitives(primitives, { cdp, sleep, fs, os, path, readState
           await sleep(intervalMs);
         }
       } finally {
-        await cdp.send('Browser.setDownloadBehavior', { behavior: 'default' }).catch(() => null);
-        await cdp.send('Page.setDownloadBehavior', { behavior: 'default' }).catch(() => null);
+        if (!bridged) {
+          await cdp.send('Browser.setDownloadBehavior', { behavior: 'default' }).catch(() => null);
+          await cdp.send('Page.setDownloadBehavior', { behavior: 'default' }).catch(() => null);
+        }
       }
     },
   };
