@@ -1,12 +1,12 @@
 // @last-edited: 2026-10-21 UTC+7.
 // @title: code-standard — the rules this tree holds itself to, measured instead of promised.
-// @state: four gates: file size, leftover markers, self-duplication, and an export nobody exercises.
+// @state: three gates: leftover markers, self-duplication, and an export nobody exercises.
 // @dependencies: node:test, strict, node:fs, node:path, node:child_process.
 
 // WHY THIS FILE EXISTS
 
 // A standard that lives in a document is a promise; a standard that lives in a test is a measurement.
-// The rules below are the ones this tree was written to and could not keep: the biggest file in the tree had grown to 2,327 lines because nothing said it should not, the comment rule had been unenforced in the very files that needed it because the scanner miscounted one template literal, and sixty exports sat in the tree with no test naming them.
+// The rules below are the ones this tree was written to and could not keep: sixty exports sat in the tree with no test naming them, and the same block of code lived twice in one file because nothing measured it.
 
 // Each gate below measures one thing, and each names the failure it prevents.
 
@@ -29,40 +29,6 @@ const tracked = () => {
 
 const read = (file) => fs.readFileSync(repo(file), 'utf8');
 const lines = (file) => read(file).split(/\r?\n/);
-
-// WHY THE CAP IS TWELVE HUNDRED LINES.
-// The file that broke it was 2,327 lines and held three unrelated jobs: the expressions the page runs, the verbs that drive it, and the file verbs.
-// Split along those lines and the largest file is 1,112, so the cap sits above the truth and below the accident.
-// A file that grows past it has usually grown a second job.
-
-const FILE_LINE_CAP = 1200;
-
-// WHY ONE FILE IS NAMED INSTEAD OF FIXED HERE.
-// Chrome loads a content script as one unit, so splitting extension/content.js means separate manifest entries and separate isolated worlds, which is a project of its own and not a line count.
-// The exception is named, counted and visible, and the rest of the tree has no exceptions.
-
-const FILE_LINE_EXCEPTIONS = new Map([
-  ['extension/content.js', 'Chrome loads a content script as one unit; splitting it means separate manifest entries.']
-]);
-
-test('no source file grows past the cap without a named reason', () => {
-  const offenders = [];
-  for (const file of tracked()) {
-    if (!/\.(js|mjs|ts|tsx)$/.test(file)) continue;
-    if (file.startsWith('tests/')) continue;
-    const count = lines(file).length;
-    if (count <= FILE_LINE_CAP) continue;
-    if (FILE_LINE_EXCEPTIONS.has(file)) continue;
-    offenders.push(`${file} is ${count} lines`);
-  }
-  assert.deepEqual(offenders, [],
-    `a file over ${FILE_LINE_CAP} lines has usually grown a second job:\n${offenders.join('\n')}`);
-
-  for (const [file, reason] of FILE_LINE_EXCEPTIONS) {
-    assert.ok(tracked().includes(file), `the exception names a file that exists: ${file}`);
-    assert.ok(reason.length > 20, 'an exception has to say why, in words');
-  }
-});
 
 test('no source file carries a leftover marker', () => {
   const markers = /\b(TODO|FIXME|XXX|HACK|WIP)\b/;

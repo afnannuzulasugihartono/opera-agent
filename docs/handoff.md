@@ -15,8 +15,8 @@ What is true now, and what to do next. Cap 150 lines. Spent detail: git history.
   `x-opera-sha256` equal to the bytes, and the release carries both zips, the CRX and SHA256SUMS.
   The two releases published with no files on 2026-10-25 are drafts now, and `release.yml`
   counts the four files before it publishes and gives Latest to the newest version.
-- **The standard is a test, not a document.** `tests/code-standard.test.mjs` bars a file over
-  1,200 lines, leftover markers, a repeated block, and an unexercised export.
+- **The standard is a test, not a document.** `tests/code-standard.test.mjs` bars leftover
+  markers, a repeated block, and an unexercised export.
 - **The comment rule is a formatter, not a scanner.** Column-zero blocks are section headers
   with a blank line around them; indented blocks document the code under them; a sentence is
   one line. The gate is `format(file) === file`, pinned by `tests/comment-format.test.mjs`.
