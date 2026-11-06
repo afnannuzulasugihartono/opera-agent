@@ -1,6 +1,6 @@
 <!-- @last-edited: 2026-11-06 UTC+7. -->
-<!-- @title: bukti - satu jalannya, empat berkas, dan hash yang sama persis. -->
-<!-- @state: static page with the run in plain steps, the four files with their sha256, and the portal the run read. -->
+<!-- @title: bukti - empat berkas, hash yang sama persis, dan jalan lewat extension. -->
+<!-- @state: static page with the run in plain steps, the four files with their sha256, the extension road with the CSV it pulled, and the portal the run read. -->
 <!-- @dependencies: site.css, bukti.css, i18n.js, reveal.js, wayfind.js, palette.js. -->
 
 <!doctype html>
@@ -17,7 +17,7 @@
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="Opera Agent" />
   <meta property="og:title" content="Bukti — Opera Agent" />
-  <meta property="og:description" content="Satu jalannya, empat berkas, dan hash yang sama persis." />
+  <meta property="og:description" content="Empat berkas, dan hash yang sama persis." />
   <meta property="og:url" content="https://opera-agent.pages.dev/bukti" />
   <meta property="og:locale" content="id_ID" />
 </head>
@@ -41,7 +41,7 @@
   <main class="wrap">
     <section class="proofHero" data-reveal>
       <p class="eyebrow" data-i18n="hero.eyebrow">Bukti</p>
-      <h1 data-i18n="hero.title">Satu jalannya, empat berkas, sama persis.</h1>
+      <h1 data-i18n="hero.title">Empat berkas, sama persis.</h1>
       <p class="lede" data-i18n="hero.sub">Opera Agent menjalankan peramban sungguhan di portal contoh, mengunduh CSV-nya, lalu membangun ulang empat berkas yang ada di halaman studi kasus. Setiap berkas dicocokkan dengan berkas yang bisa Anda unduh: sha256-nya sama, byte per byte.</p>
       <div class="row heroActions">
         <a class="btn primary" href="/studi.html" data-i18n="cta.files">Lihat keempat berkasnya</a>
@@ -107,6 +107,42 @@
         </tbody>
       </table>
       <p class="footnote" data-i18n="files.note">Bandingkan dengan berkas yang Anda unduh: sha256sum berkas-anda harus sama persis dengan hash di tabel.</p>
+    </section>
+
+    <section class="proofBlock" data-reveal aria-labelledby="roadTitle">
+      <div class="sectionHead">
+        <div>
+          <h2 id="roadTitle" data-i18n="road.title">Jalan lewat extension.</h2>
+        </div>
+        <p data-i18n="road.sub">Jalannya di atas memakai peramban terpisah. Yang Anda pakai sehari-hari berjalan lewat extension Opera Agent: extension itu menyambung sendiri ke server lokal dan menjalankan peramban yang sedang Anda buka. Jalur itu sudah dijalankan dan dicatat.</p>
+      </div>
+      <ol class="proofSteps">
+        <li data-i18n="road.one">Extension menyambung sendiri ke server lokal di komputer ini, jadi peramban yang sedang dipakai tidak perlu port debugging.</li>
+        <li data-i18n="road.two">Server membuka portal contoh di tab peramban yang sedang dipakai.</li>
+        <li data-i18n="road.three">Halaman dibaca dan tombol unduhnya ditemukan.</li>
+        <li data-i18n="road.four">CSV mendarat di folder unduhan peramban, lalu dipindahkan ke folder kerja.</li>
+        <li data-i18n="road.five">Tab ditutup dan jalannya ditutup.</li>
+      </ol>
+      <table class="proofTable">
+        <thead>
+          <tr>
+            <th scope="col" data-i18n="files.head.name">Berkas</th>
+            <th scope="col" class="num" data-i18n="files.head.size">Ukuran (byte)</th>
+            <th scope="col" data-i18n="files.head.hash">sha256</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>transaksi-2026-09.csv</td>
+            <td class="num">1109</td>
+            <td class="hash"><code>8e0f64810fd70e91101051afb85a814df12a87b1eafde048272049ed6a3667a2</code></td>
+          </tr>
+        </tbody>
+      </table>
+      <p class="footnote" data-i18n="road.note">Berkas itu sama persis dengan CSV yang jadi sumber keempat berkas di atas. Bandingkan sha256-nya: sama, byte per byte.</p>
+      <div class="row heroActions">
+        <a class="btn" href="https://github.com/afnannuzulasugihartono/opera-agent/blob/main/proof/extension-run.md" data-i18n="road.cta">Buka catatan jalannya</a>
+      </div>
     </section>
 
     <section class="proofBlock" data-reveal aria-labelledby="shotTitle">
@@ -182,7 +218,7 @@
       "nav.support": "Support",
       "meta.title": "Proof — Opera Agent",
       "hero.eyebrow": "Proof",
-      "hero.title": "One run, four files, exactly the same.",
+      "hero.title": "Four files, exactly the same.",
       "hero.sub": "Opera Agent drove a real browser at a mock company portal, downloaded its CSV, and rebuilt the four files on the case study page. Every file was compared with the file you can download: the same sha256, byte for byte.",
       "cta.files": "See the four files",
       "cta.record": "Open the record",
@@ -202,6 +238,15 @@
       "files.head.size": "Size (bytes)",
       "files.head.hash": "sha256",
       "files.note": "Compare it with the file you download: sha256sum of your file must be exactly the hash in this table.",
+      "road.title": "The road through the extension.",
+      "road.sub": "The run above used a separate browser. What you use every day runs through the Opera Agent extension: the extension dials the local server on its own and drives the browser you already have open. That road was run too, and it is written down.",
+      "road.one": "The extension dials the local server on this machine on its own, so the browser in use needs no debugging port.",
+      "road.two": "The server opens the mock portal in a tab of the browser in use.",
+      "road.three": "The page is read and its download button is found.",
+      "road.four": "The CSV lands in the browser download folder, then moves to the work folder.",
+      "road.five": "The tab closes and the run ends.",
+      "road.note": "That file is byte for byte the same CSV that fed the four files above. Compare the sha256: the same, byte for byte.",
+      "road.cta": "Open the record of that run",
       "shot.title": "The page the run read.",
       "shot.sub": "This is the mock portal the run opened. Its download button is what put the CSV on disk.",
       "shot.caption": "A screenshot of the tab the run read.",

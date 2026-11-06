@@ -74,6 +74,27 @@ test('the proof page prints the digest of the file the site ships', () => {
   }
 });
 
+// WHY THE EXTENSION ROAD IS ON THE PROOF PAGE.
+// The product ships a browser extension and claims it drives the everyday browser without a debugging port.
+// The run that built the four files used a separate browser, so the page would leave a reader thinking that is the only road.
+// The extension run is the road a reader can actually get, so the page names it and prints what it pulled, read from the record rather than typed by hand.
+
+// WHY THE DIGEST COMES FROM THE RECORD: a hash typed into the page is a claim nothing keeps.
+// The record holds the bytes the extension road pulled, so the page is checked against it.
+
+test('the proof page names the extension road and prints what that road pulled', () => {
+  const page = fs.readFileSync(path.join(root, 'landing', 'bukti.html'), 'utf8');
+  const record = fs.readFileSync(path.join(root, 'proof', 'extension-run.jsonl'), 'utf8')
+    .split('\n').filter(Boolean).map((line) => JSON.parse(line));
+  const download = record.find((line) => line.kind === 'download');
+
+  assert.ok(download, 'the extension run pulled a file');
+  assert.match(page, /extension/i, 'the page names the extension');
+  assert.match(page, /extension-run\.md/, 'and links the record of that run');
+  assert.ok(page.includes(download.sha256), 'and prints the sha256 the extension road pulled');
+  assert.ok(page.includes(String(download.bytes)), 'and the size it landed');
+});
+
 // WHY THE PAGE IS CHECKED AGAINST THE REPORT.
 // The case study page prints three figures and the rows behind them, so a reader can check the page against the file they downloaded.
 // A page that prints a number the report no longer holds is a claim nothing keeps, so the page is read against a fresh build.
