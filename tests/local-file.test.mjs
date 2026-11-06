@@ -410,6 +410,109 @@ test('over the extension the file lands in the browser folder and is moved to th
   assert.equal(cdp.calls.some((call) => call.method.includes('setDownloadBehavior')), false, 'the extension road does not pretend to arm a folder it cannot arm');
 });
 
+// WHY MORE THAN ONE CANDIDATE IS A REFUSAL.
+// The browser folder holds everything the person downloads, so a second file appearing mid-click is another download, not this one.
+// Handing back the newest of an ambiguous pair is how a bookkeeper ends up with somebody else's statement, so the answer says which files appeared and moves neither.
+
+test('two finished files in the watched folder is a refusal, not a guess', async () => {
+  const disk = fakeDisk();
+  const home = path.resolve('opera-download-home-ambiguous');
+  const browserFolder = path.join(home, 'Downloads');
+  const dir = path.resolve('opera-download-ambiguous');
+  const cdp = downloadCdp(disk, {
+    onRelease: () => {
+      disk.put(path.join(browserFolder, 'statement-2026-09.pdf'), 1234);
+      disk.put(path.join(browserFolder, 'invoice-copy.pdf'), 99);
+    }
+  });
+  const p = createPrimitives(cdp, { fs: disk, os: { homedir: () => home }, path, bridge: true });
+
+  const out = await p.download({ x: 10, y: 10, dir, saveAs: 'klien-2026-09.pdf', settleMs: 0 });
+
+  assert.equal(out.downloaded, false);
+  assert.match(out.why, /two files appeared/);
+  assert.ok(out.why.includes('statement-2026-09.pdf') && out.why.includes('invoice-copy.pdf'), 'both candidates are named');
+  assert.equal(disk.files.has(path.join(dir, 'klien-2026-09.pdf')), false, 'neither file was moved');
+  assert.equal(disk.files.has(path.join(browserFolder, 'statement-2026-09.pdf')), true, 'the browser copy stays where it landed');
+});
+
+// WHY THE WATCH COVERS BOTH FOLDERS CHROME MAY USE.
+// OneDrive can move the Downloads known folder, and Chrome honours that move, so the browser folder is not always the one under the home directory.
+// The failure names every folder the answer did not find the file in, which is the only place a reader can see the list.
+
+test('a redirected Downloads folder is watched too, and the failure names both folders', async () => {
+  const disk = fakeDisk();
+  const home = path.resolve('opera-download-home-onedrive');
+  const redirected = path.join(home, 'OneDrive', 'Downloads');
+  const dir = path.resolve('opera-download-onedrive');
+  const cdp = downloadCdp(disk, {
+    onRelease: () => disk.put(path.join(redirected, 'statement-2026-09.pdf'), 1234)
+  });
+  const p = createPrimitives(cdp, { fs: disk, os: { homedir: () => home }, path, bridge: true });
+
+  const out = await p.download({ x: 10, y: 10, dir, saveAs: 'klien-2026-09.pdf', settleMs: 0 });
+
+  assert.equal(out.downloaded, true, 'a file that landed in the redirected folder is still found');
+  assert.equal(out.landedAt, path.join(redirected, 'statement-2026-09.pdf'));
+
+  const empty = downloadCdp(fakeDisk());
+  const missed = await createPrimitives(empty, { fs: fakeDisk(), os: { homedir: () => home }, path, bridge: true, sleep: async () => {} })
+    .download({ x: 5, y: 5, dir, timeoutMs: 500, settleMs: 0 });
+  assert.equal(missed.downloaded, false);
+  assert.ok(missed.why.includes(path.join(home, 'Downloads')), 'the failure names the home downloads folder');
+  assert.ok(missed.why.includes(redirected), 'and the redirected folder OneDrive can move it to');
+});
+
+// WHY THE CANDIDATE IS KEYED BY WHOLE PATH.
+// Two watched folders can hold the same file name, so a name is not an identity: a download landing beside a same-named file in the other folder is still new.
+
+test('a file with a name the other watched folder already holds is still new', async () => {
+  const disk = fakeDisk();
+  const home = path.resolve('opera-download-home-shadowed');
+  const browserFolder = path.join(home, 'Downloads');
+  const redirected = path.join(home, 'OneDrive', 'Downloads');
+  disk.put(path.join(redirected, 'statement-2026-09.pdf'), 7);
+  const dir = path.resolve('opera-download-shadowed');
+  const cdp = downloadCdp(disk, {
+    onRelease: () => disk.put(path.join(browserFolder, 'statement-2026-09.pdf'), 1234)
+  });
+  const p = createPrimitives(cdp, { fs: disk, os: { homedir: () => home }, path, bridge: true });
+
+  const out = await p.download({ x: 10, y: 10, dir, saveAs: 'klien-2026-09.pdf', settleMs: 0 });
+
+  assert.equal(out.downloaded, true, 'the download in the home folder is the new one, not a shadow of the other');
+  assert.equal(out.landedAt, path.join(browserFolder, 'statement-2026-09.pdf'));
+});
+
+// WHY THE REFUSAL IS ALSO TRUE ON THE DEBUGGING ROAD.
+// A debugging port arms one folder, but that folder is still a folder the person uses, and a second file in it during the click is still a coin toss.
+// The rule is one rule over the watched folders, not one rule per road.
+
+test('a busy folder on the debugging road is a refusal too', async () => {
+  const disk = fakeDisk();
+  const dir = path.resolve('opera-download-busy');
+  const cdp = downloadCdp(disk, {
+    onRelease: () => {
+      disk.put(path.join(dir, 'statement-2026-09.pdf'), 1234);
+      disk.put(path.join(dir, 'invoice-copy.pdf'), 99);
+    }
+  });
+  const p = createPrimitives(cdp, { fs: disk, sleep: async () => {} });
+
+  const out = await p.download({ x: 10, y: 10, dir, settleMs: 0 });
+
+  assert.equal(out.downloaded, false);
+  assert.match(out.why, /two files appeared/);
+  assert.deepEqual(out.candidates, [
+    path.join(dir, 'statement-2026-09.pdf'),
+    path.join(dir, 'invoice-copy.pdf')
+  ]);
+  const armed = cdp.calls.filter((c) => c.method === 'Browser.setDownloadBehavior' && c.params.behavior === 'allow');
+  assert.equal(armed.length, 1, 'the folder is still armed');
+  const last = cdp.calls.filter((c) => c.method === 'Browser.setDownloadBehavior').at(-1);
+  assert.equal(last.params.behavior, 'default', 'and handed back either way');
+});
+
 test('a click that downloads nothing says what it saw, and names the next move', async () => {
   const disk = fakeDisk();
   const dir = path.resolve('opera-download-test-empty');

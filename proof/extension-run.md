@@ -18,4 +18,4 @@ Browser: the browser the extension was linked to. Extension id: `ofgemipoobcnbjk
 | --- | --- | --- | --- |
 | `transaksi-2026-09.csv` | 1109 | `8e0f64810fd70e91101051afb85a814df12a87b1eafde048272049ed6a3667a2` | `tests/fixtures/mock-company/transaksi-2026-09.csv` |
 
-The hashes in `extension-run.jsonl` are rechecked by `tests/extension-run.test.mjs`, so this record cannot drift away from what the code makes.
+`tests/extension-run.test.mjs` re-hashes the fixture in the tree and compares it with the hash in `extension-run.jsonl`, so the record cannot claim bytes the fixture does not hold. It does not drive a browser again, so the calls themselves are proven by the run and not by the test.

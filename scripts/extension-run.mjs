@@ -36,6 +36,40 @@ const MARKS = ['Portal Mitra', 'Unduh CSV'];
 
 const CONTROL = { role: 'link', name: 'Unduh CSV' };
 
+// WHY THE OWN LINK WAIT IS SHORT.
+// A browser that loaded the extension reaches the bridge on its own schedule, which is seconds, so the default sixty seconds is a minute of waiting to learn what five seconds learns.
+// The joined road keeps the long wait, because that extension may be asleep rather than absent.
+
+const OWN_LINK_WAIT_MS = 5000;
+
+// WHY THE VERSION IS READ BEFORE THE LINK IS WAITED FOR.
+// Chrome 137 removed --load-extension from the branded build, so an own-mode run on a current Chrome loads no extension at all and can only fail after the full link timeout.
+// A build that answers "Chrome/<major>" is a suspect when the link does not come: branded Chrome from 137 on is known to ignore the flag, while Chrome for Testing and Chromium still honour it, and only one of those differences is invisible in this payload.
+
+export function chromeIgnoresLoadExtension(product) {
+  const match = /^Chrome\/(\d+)\./.exec(String(product ?? '').trim());
+  return match ? Number(match[1]) >= 137 : false;
+}
+
+export function majorOf(product) {
+  const match = /^Chrome\/(\d+)\./.exec(String(product ?? '').trim());
+  return match ? Number(match[1]) : null;
+}
+
+// WHY THE ROAD SENTENCE DEPENDS ON THE MODE, AND WHY AN ABSENT HEADER IS NOT A ROAD.
+// Own mode opens a debugging port to launch its Chrome and loads the extension into it; joined mode touches no port at all.
+// A row set with no header is not a record of either road, and guessing one is the drift the sentence is supposed to prevent, so it says so instead of defaulting.
+
+export function roadFor({ mode } = {}) {
+  if (mode === 'own') {
+    return 'The extension in `extension/` was loaded into a real Chrome, it opened the loopback bridge itself, and the local MCP server answered over that bridge. A debugging port was open on that Chrome to launch it; every call below still travelled over the bridge.';
+  }
+  if (mode === 'joined') {
+    return 'The loopback bridge was already up on this machine with the extension linked to it, so the local MCP server joined that bridge and every call below travelled through the extension. No debugging port, no cloud relay.';
+  }
+  return 'The recorded rows carry no header, so the road this run took cannot be read from the jsonl.';
+}
+
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 // WHY THE EXTENSION ID IS READ FROM THE MANIFEST KEY.
@@ -88,7 +122,12 @@ export async function runExtensionProof({
   fs.mkdirSync(work, { recursive: true });
 
   const holder = await health(bridgePort);
-  const mode = holder ? 'joined' : 'own';
+
+  // WHY THE JOIN IS GATED ON A LINKED BRIDGE.
+  // A bridge server that is up with no extension behind it is a bridge this run cannot drive, and joining it meant waiting sixty seconds for a link that never arrives.
+  // Only a linked holder is joined; anything else is the server's own browser.
+
+  const mode = holder?.linked === true ? 'joined' : 'own';
   const portal = await serveCompany(company);
   const mcp = speakMcp({
     port: debugPort,
@@ -116,6 +155,23 @@ export async function runExtensionProof({
           '--headless=new'
         ]
       });
+
+      // WHY THE VERSION IS READ, AND WHY IT CANNOT REFUSE THE RUN ON ITS OWN.
+      // Branded Chrome 137 and newer ignore --load-extension, so own mode would sit through the whole link timeout on a browser that loaded no extension and then blame the extension for it.
+      // But /json/version answers "Chrome/<major>" for branded Chrome and for Chrome for Testing alike, and the two differ exactly here: one ignores the flag and the other honours it.
+      // So the version goes into the link-wait timeout instead: the link still has to arrive, and the wait is short so a dead extension is caught in seconds, while the failure names the flag limit as a suspect rather than as the verdict.
+
+      const version = await fetch(`http://127.0.0.1:${debugPort}/json/version`)
+        .then((response) => response.json())
+        .catch(() => null);
+      const link = await waitForLink(bridgePort, { timeoutMs: OWN_LINK_WAIT_MS })
+        .then((answer) => answer, () => null);
+      if (!link) {
+        const suspect = chromeIgnoresLoadExtension(version?.Browser)
+          ? ` The launched Chrome is major ${majorOf(version.Browser)}, and branded Chrome 137 and newer ignore --load-extension - Chrome for Testing and Chromium still honour it.`
+          : '';
+        throw new Error(`the extension did not reach the bridge on 127.0.0.1:${bridgePort} within ${OWN_LINK_WAIT_MS} ms; health said ${JSON.stringify(link ? { ok: true, linked: true } : null)}.${suspect} Own mode launches its own browser; link the extension in an everyday browser instead and run with that bridge already up.`);
+      }
     }
     const version = browser
       ? await fetch(`http://127.0.0.1:${debugPort}/json/version`).then((response) => response.json())
@@ -224,17 +280,18 @@ export async function runExtensionProof({
 // The JSONL is what the suite reads, one line per call, and the Markdown is what a person reads.
 // Neither is generated from the other, so one cannot quietly erase the other.
 
+// WHY THE ROAD AND THE CLOSING SENTENCE ARE REGENERATED FROM THE ROWS.
+// The markdown is what a person reads and the jsonl is what the suite reads, and neither is written from the other, so a sentence that lives in only one of them is a sentence nobody rechecked.
+// The closing line names the one thing the suite actually does: it re-hashes the fixture and compares, which is a check of the bytes, not a replay of the drive.
+
 export function recordMarkdown({ rows, browser, extensionId: id }) {
   const calls = rows.filter((row) => row.kind === 'call' || row.kind === 'download');
   const download = calls.find((row) => row.kind === 'download');
   const header = rows.find((row) => row.kind === 'header');
-  const road = header?.mode === 'own'
-    ? 'The extension in `extension/` was loaded into a real Chrome, it opened the loopback bridge itself, and the local MCP server answered over that bridge.'
-    : 'The loopback bridge was already up on this machine with the extension linked to it, so the local MCP server joined that bridge and every call below travelled through the extension.';
   return [
     '# Extension run: the extension drove the browser',
     '',
-    `${road} No debugging port, no cloud relay.`,
+    roadFor({ mode: header?.mode }),
     '',
     `Browser: ${browser}. Extension id: \`${id}\`. Bridge: 127.0.0.1:${header?.bridgePort ?? BRIDGE_PORT}. Tools the server advertised: ${header?.toolCount ?? 0}.`,
     '',
@@ -246,7 +303,7 @@ export function recordMarkdown({ rows, browser, extensionId: id }) {
     '| --- | --- | --- | --- |',
     `| \`${download?.file}\` | ${download?.bytes} | \`${download?.sha256}\` | \`${download?.sameAs}\` |`,
     '',
-    'The hashes in `extension-run.jsonl` are rechecked by `tests/extension-run.test.mjs`, so this record cannot drift away from what the code makes.',
+    '`tests/extension-run.test.mjs` re-hashes the fixture in the tree and compares it with the hash in `extension-run.jsonl`, so the record cannot claim bytes the fixture does not hold. It does not drive a browser again, so the calls themselves are proven by the run and not by the test.',
     ''
   ].join('\n');
 }

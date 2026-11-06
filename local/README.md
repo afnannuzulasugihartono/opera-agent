@@ -59,9 +59,9 @@ window cannot be driven and blocks this one from starting.
 
 Chrome refuses a debugging port on the Default profile, so the everyday window
 cannot be driven over CDP at all — the flag dies with an error and no port. The
-bridge is the road that remains: the extension polls this machine on loopback and
-carries raw CDP both ways, so the whole surface below runs on your real tabs with
-no flags, no queue and no cloud.
+bridge is the road that remains: the extension dials this machine's loopback
+bridge and carries raw CDP both ways, so the whole surface below runs on your
+real tabs with no flags, no queue and no cloud.
 
 The transport is one WebSocket on loopback (`local/bridge-ws.js`). The
 extension opens it, the server pushes a command the moment one exists, and the
@@ -98,8 +98,8 @@ Point a client at it:
 | variable | default | meaning |
 |---|---|---|
 | `OPERA_LOCAL_PORT` | `9333` | the debugging port to drive |
-| `OPERA_LOCAL_BROWSER` | first installed | which browser to launch if none is listening |
-| `OPERA_LOCAL_TRANSPORT` | unset (CDP) | `bridge` drives the everyday profile through the extension |
+| `OPERA_LOCAL_BROWSER` | first installed | which browser a session that opens one is aimed at |
+| `OPERA_LOCAL_TRANSPORT` | unset (auto) | unset picks the bridge when an extension is linked, CDP otherwise; `bridge` drives the everyday profile through the extension |
 | `OPERA_BRIDGE_PORT` | `9451` | the loopback port the extension dials into |
 
 ## Tools
@@ -127,7 +127,11 @@ Actions answer with where the page stands and the rows that changed; `ax_snapsho
 is the deliberate look at every row.
 
 `download` writes a file to the folder the caller names and proves it by the file on
-disk — a `.crdownload` is not a result. The last two tools are the statement job: a
+disk — a `.crdownload` is not a result, and two files landing at once is not a
+result either: the newest of an ambiguous pair is somebody else's download, so the
+answer names both and moves neither. Over the extension the browser's own folder is
+watched instead of an armed one, because `chrome.debugger` refuses browser-level
+commands there. The last two tools are the statement job: a
 card that names the file before the drive, and a delivery that verifies it and adds the
 client-month to a manifest. See [`docs/jobs/statements.md`](../docs/jobs/statements.md).
 

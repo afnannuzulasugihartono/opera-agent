@@ -213,12 +213,34 @@ export function filePrimitives(primitives, { cdp, sleep, fs, os, path, readState
       const target = dir ? path.resolve(String(dir)) : path.join(os.homedir(), 'Downloads', 'opera-agent');
       fs.mkdirSync(target, { recursive: true });
 
-      // WHY THE EXTENSION ROAD WATCHES THE BROWSER'S OWN FOLDER.
+      // WHY THE EXTENSION ROAD WATCHES THE FOLDERS CHROME MAY USE.
       // chrome.debugger refuses browser-level commands, so a drive over the extension cannot arm a download folder: "Browser.setDownloadBehavior" is not found on a page target and "Page.setDownloadBehavior" is refused as browser-level.
       // The file lands where Chrome puts it, and the driver moves it to the folder the caller named - or says it did not land.
+      // OneDrive can move the Downloads known folder and Chrome honours that move, so the watch covers the home folder and the redirected one next to it; a miss names both so a reader can see the whole list that was checked.
 
       const bridged = bridge === true;
-      const watched = bridged ? path.join(os.homedir(), 'Downloads') : target;
+      const folderCandidates = bridged
+        ? [path.join(os.homedir(), 'Downloads'), path.join(os.homedir(), 'OneDrive', 'Downloads')]
+        : [target];
+
+      // WHY THE CANDIDATES ARE DEDUPED BY REAL PATH.
+      // A moved Downloads folder and the one it points at can both answer to the same directory, and reading one download twice is exactly the ambiguity the refuse rule exists to catch.
+      // The real path is asked only when the drive can ask it; a file system without it keeps the literal name.
+
+      const seen = new Set();
+      const watched = [];
+      for (const dir of folderCandidates) {
+        let key = dir;
+        try {
+          key = typeof fs.realpathSync === 'function' ? fs.realpathSync(dir) : dir;
+        } catch {
+          key = dir;
+        }
+        if (seen.has(key)) continue;
+        seen.add(key);
+        watched.push(dir);
+      }
+      const watchedLabel = watched.join(' or ');
       const listDir = (dir) => {
         try {
           return fs.readdirSync(dir);
@@ -226,7 +248,11 @@ export function filePrimitives(primitives, { cdp, sleep, fs, os, path, readState
           return [];
         }
       };
-      const before = new Set(listDir(watched));
+
+      // WHY THE BEFORE-SET HOLDS WHOLE PATHS.
+      // Two watched folders can hold the same file name, so a name is not an identity: keeping paths means a download that lands beside a same-named file in the other folder is still new.
+
+      const before = new Set(watched.flatMap((dir) => listDir(dir).map((file) => path.join(dir, file))));
 
       let armedVia = 'browser';
       if (bridged) {
@@ -302,38 +328,53 @@ export function filePrimitives(primitives, { cdp, sleep, fs, os, path, readState
           };
         };
         for (;;) {
-          const fresh = listDir(watched).filter((file) => !before.has(file));
-          const finished = fresh.filter((file) => !file.endsWith('.crdownload') && !file.endsWith('.tmp'));
-          if (finished.length) {
-            const newest = finished
-              .map((file) => ({ file, at: fs.statSync(path.join(watched, file)).mtimeMs }))
-              .sort((a, b) => b.at - a.at)[0].file;
-            const full = path.join(watched, newest);
+          const fresh = watched.flatMap((dir) => listDir(dir)
+            .filter((file) => !before.has(path.join(dir, file)) && !file.endsWith('.crdownload') && !file.endsWith('.tmp'))
+            .map((file) => ({ file, full: path.join(dir, file), dir })));
+
+          // WHY MORE THAN ONE FINISHED CANDIDATE IS A REFUSAL.
+          // The watched folders hold every download the person makes, so a second file appearing mid-click is somebody else's download and the newest of an ambiguous pair is a coin toss.
+          // The answer names both with the folder each came from and moves neither, because a bookkeeper handed the wrong statement is worse than a driver that says it cannot tell.
+
+          if (fresh.length > 1) {
+            return {
+              downloaded: false,
+              why: `two files appeared in ${watchedLabel} during the click: ${fresh.map((entry) => `${entry.file} in ${entry.dir}`).join('; ')}. Download again while nothing else is downloading.`,
+              candidates: fresh.map((entry) => entry.full),
+              dir: target,
+              watched: watchedLabel,
+              ms: Date.now() - started,
+              armedVia,
+              clicked
+            };
+          }
+          if (fresh.length) {
+            const { file, full } = fresh[0];
             const size = fs.statSync(full).size;
             if (size > 0) {
-              if (!growing || growing.size !== size || growing.file !== newest) {
-                growing = { file: newest, size };
+              if (!growing || growing.size !== size || growing.file !== file) {
+                growing = { file, size };
                 stableAt = Date.now();
               } else if (Date.now() - stableAt >= settleMs) {
-                return handOver(newest, full, size);
+                return handOver(file, full, size);
               }
             }
           }
 
           if (Date.now() >= deadline) {
-            const partial = listDir(watched).find((file) => file.endsWith('.crdownload'));
+            const partial = watched.map((dir) => listDir(dir).find((file) => file.endsWith('.crdownload'))).find(Boolean);
             const after = await readState().catch(() => ({ url: pageBefore.url }));
             const navigated = after.url && after.url !== pageBefore.url;
             const why = partial
               ? `a download started but ${partial} was still being written after ${limit} ms; call again with a longer timeoutMs`
               : navigated
                 ? `the click navigated to ${after.url} instead of downloading; that page may render the file, so capture_page() it or use the page's own download control`
-                : `no file appeared in ${watched} within ${limit} ms; the clicked control may open a viewer or a menu, or Chrome may be showing a save dialog - dialog_state() says which`;
+                : `no file appeared in ${watchedLabel} within ${limit} ms; the clicked control may open a viewer or a menu, or Chrome may be showing a save dialog - dialog_state() says which`;
             return {
               downloaded: false,
               why,
               dir: target,
-              watched,
+              watched: watchedLabel,
               ms: Date.now() - started,
               armedVia,
               partial: partial ?? null,

@@ -364,7 +364,7 @@ export const TOOLS = Object.freeze([
   },
   {
     name: 'download',
-    description: 'Click the control that starts a file download and wait until the file is on disk, then return its path and byte count. Arms the folder before the click, so the file lands where the caller says instead of the default downloads folder, and resets the browser-wide behavior afterwards. Point it at a handle from resolve_row, a role and name, or an x and y. saveAs names the file once it has stopped growing, which is how a portal\'s statement.pdf becomes klien-bank-periode.pdf. The file itself is the proof: a download still writing, a click that opened a viewer instead, and a click that produced nothing each come back downloaded:false with the reason and the next move.',
+    description: 'Click the control that starts a file download and wait until the file is on disk, then return its path and byte count. Arms the folder before the click, so the file lands where the caller says instead of the default downloads folder, and resets the browser-wide behavior afterwards. Over the extension, where no folder can be armed, it watches the folders the browser may use and moves the file into dir. Point it at a handle from resolve_row, a role and name, or an x and y. saveAs names the file once it has stopped growing, which is how a portal\'s statement.pdf becomes klien-bank-periode.pdf. The file itself is the proof: a download still writing, a click that opened a viewer instead, and a click that produced nothing each come back downloaded:false with the reason and the next move - and so do two files landing at once, because the newest of an ambiguous pair is somebody else\'s download.',
     inputSchema: {
       type: 'object',
       properties: {
