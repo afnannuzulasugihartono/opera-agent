@@ -1,0 +1,228 @@
+<!-- @last-edited: 2026-11-06 UTC+7. -->
+<!-- @title: bukti - satu jalannya, empat berkas, dan hash yang sama persis. -->
+<!-- @state: static page with the run in plain steps, the four files with their sha256, and the portal the run read. -->
+<!-- @dependencies: site.css, bukti.css, i18n.js, reveal.js, wayfind.js, palette.js. -->
+
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#000000" />
+  <title data-i18n="meta.title">Bukti — Opera Agent</title>
+  <meta name="description" content="Bukti jalannya Opera Agent: peramban sungguhan membuka portal contoh, mengunduh CSV, lalu membangun ulang empat berkas yang bisa diunduh. sha256 keempatnya sama." />
+  <link rel="stylesheet" href="/site.css" />
+  <link rel="stylesheet" href="/bukti.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%230b0d10'/%3E%3Cpath d='M5.2 2.2v10.2l2.5-2.3 1.5 3.6 1.9-.8-1.6-3.6h3.1L5.2 2.2Z' fill='%233ecf8e'/%3E%3C/svg%3E" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Opera Agent" />
+  <meta property="og:title" content="Bukti — Opera Agent" />
+  <meta property="og:description" content="Satu jalannya, empat berkas, dan hash yang sama persis." />
+  <meta property="og:url" content="https://opera-agent.pages.dev/bukti" />
+  <meta property="og:locale" content="id_ID" />
+</head>
+<body>
+  <header>
+    <div class="wrap">
+      <nav>
+        <a class="brand" href="/beranda.html"><svg class="brandMark" viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="7"  /><path d="M8 5.6v12.8l3.1-2.9 1.9 4.5 2.4-1-2-4.5h3.9L8 5.6Z"  /></svg><span>Opera Agent</span></a>
+        <a href="/fitur.html" data-i18n="nav.features">Fitur</a>
+        <a href="/unduh.html" data-i18n="nav.download">Unduh</a>
+        <a href="/harga" data-i18n="nav.price">Harga</a>
+        <a href="/dukungan.html" data-i18n="nav.support">Dukungan</a>
+        <a href="/docs.html" data-i18n="nav.docs">Docs</a>
+        <span class="lang" data-lang-toggle></span>
+        <button class="navSearch" type="button" aria-label="Cari halaman Ctrl K" aria-keyshortcuts="Control+K Meta+K"><svg class="navSearchIcon" viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><circle cx="7" cy="7" r="4.5" fill="none" stroke="currentColor" stroke-width="1.5"></circle><path d="M10.6 10.6 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path></svg><kbd class="navSearchKey">Ctrl K</kbd></button>
+        <a class="navCta" href="/" data-i18n="nav.signin">Masuk</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section class="proofHero" data-reveal>
+      <p class="eyebrow" data-i18n="hero.eyebrow">Bukti</p>
+      <h1 data-i18n="hero.title">Satu jalannya, empat berkas, sama persis.</h1>
+      <p class="lede" data-i18n="hero.sub">Opera Agent menjalankan peramban sungguhan di portal contoh, mengunduh CSV-nya, lalu membangun ulang empat berkas yang ada di halaman studi kasus. Setiap berkas dicocokkan dengan berkas yang bisa Anda unduh: sha256-nya sama, byte per byte.</p>
+      <div class="row heroActions">
+        <a class="btn primary" href="/studi.html" data-i18n="cta.files">Lihat keempat berkasnya</a>
+        <a class="btn" href="https://github.com/afnannuzulasugihartono/opera-agent/blob/main/proof/run.md" data-i18n="cta.record">Buka catatannya</a>
+      </div>
+    </section>
+
+    <section class="proofBlock" data-reveal aria-labelledby="stepsTitle">
+      <div class="sectionHead">
+        <div>
+          <h2 id="stepsTitle" data-i18n="steps.title">Yang terjadi</h2>
+        </div>
+        <p data-i18n="steps.sub">Delapan langkah, satu jalannya. Tidak ada berkas yang disalin tangan dan tidak ada tombol yang ditekan manual.</p>
+      </div>
+      <ol class="proofSteps">
+        <li data-i18n="steps.one">Membuka portal contoh di peramban.</li>
+        <li data-i18n="steps.two">Membaca halaman dan menemukan tombol unduhnya.</li>
+        <li data-i18n="steps.three">Mengunduh CSV transaksi ke disk.</li>
+        <li data-i18n="steps.four">Menghitung ulang laporan keuangan dari baris CSV.</li>
+        <li data-i18n="steps.five">Menyusun slide strategi dari angka yang sudah diperiksa.</li>
+        <li data-i18n="steps.six">Menulis dua dokumen Word.</li>
+        <li data-i18n="steps.seven">Menangkap layar portal yang dibaca.</li>
+        <li data-i18n="steps.eight">Menutup tab dan menutup jalannya.</li>
+      </ol>
+    </section>
+
+    <section class="proofBlock" data-reveal aria-labelledby="filesTitle">
+      <div class="sectionHead">
+        <div>
+          <h2 id="filesTitle" data-i18n="files.title">Hash-nya sama.</h2>
+        </div>
+        <p data-i18n="files.sub">Keempat berkas di bawah dibangun ulang oleh jalannya, lalu dibandingkan dengan berkas di halaman studi kasus. Kalau satu byte berbeda, jalannya berhenti dan menulis kedua hash.</p>
+      </div>
+      <table class="proofTable">
+        <thead>
+          <tr>
+            <th scope="col" data-i18n="files.head.name">Berkas</th>
+            <th scope="col" class="num" data-i18n="files.head.size">Ukuran (byte)</th>
+            <th scope="col" data-i18n="files.head.hash">sha256</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>laporan-keuangan-2026-09.xlsx</td>
+            <td class="num">21066</td>
+            <td class="hash"><code>a4f12765b77329eb5ec37dae3ad4323ac1d1d6659cd6261bb689c2736c931922</code></td>
+          </tr>
+          <tr>
+            <td>rencana-strategis-2027.pptx</td>
+            <td class="num">32871</td>
+            <td class="hash"><code>6f3f42a4dd2465fa8e77bf33572ac3949b5097eaec1aaebaeda074ac4a71806e</code></td>
+          </tr>
+          <tr>
+            <td>riset-promo.docx</td>
+            <td class="num">23485</td>
+            <td class="hash"><code>1758824cd0cf0b15a6f9531cd13ff5d42de277776b8a0cd87b8d927184ba38e1</code></td>
+          </tr>
+          <tr>
+            <td>rencana-pemasaran-2027.docx</td>
+            <td class="num">18509</td>
+            <td class="hash"><code>104e43eac8e80e1860e1bc52c61414e81dcac43a1bea2f424537e4754517b8b6</code></td>
+          </tr>
+        </tbody>
+      </table>
+      <p class="footnote" data-i18n="files.note">Bandingkan dengan berkas yang Anda unduh: sha256sum berkas-anda harus sama persis dengan hash di tabel.</p>
+    </section>
+
+    <section class="proofBlock" data-reveal aria-labelledby="shotTitle">
+      <div class="sectionHead">
+        <div>
+          <h2 id="shotTitle" data-i18n="shot.title">Halaman yang dibaca jalannya.</h2>
+        </div>
+        <p data-i18n="shot.sub">Ini portal tiruan yang dibuka jalannya. Tombol unduh di halaman itu yang membuat CSV mendarat di disk.</p>
+      </div>
+      <figure class="proofShot">
+        <img src="/bukti/portal.jpg" width="1295" height="939" alt="Portal contoh Sinar Jaya: tabel transaksi September 2026 dan tombol Unduh CSV" loading="lazy" />
+        <figcaption data-i18n="shot.caption">Tangkapan layar dari tab yang dibaca jalannya.</figcaption>
+      </figure>
+    </section>
+
+    <section class="proofBand" data-reveal aria-labelledby="finalTitle">
+      <h2 id="finalTitle" data-i18n="final.title">Unduh, lalu bandingkan sendiri.</h2>
+      <p data-i18n="final.sub">Empat berkas yang sama ada di halaman studi kasus. Unduh salah satu, buka di Excel, PowerPoint, atau Word, lalu jalankan sha256sum untuk membandingkannya.</p>
+      <a class="btn primary" href="/studi.html" data-i18n="cta.files">Lihat keempat berkasnya</a>
+    </section>
+  </main>
+
+    <footer>
+    <div class="wrap footGrid">
+      <div class="footCol">
+        <span class="footBrand">Opera Agent</span>
+        <span class="footNote" data-i18n="footer.rights">© 2026 Opera Agent. Hak cipta dilindungi.</span>
+        <span class="doors"><a href="https://github.com/afnannuzulasugihartono/opera-agent" data-i18n="footer.source">Kode sumber</a></span>
+      </div>
+      <div class="footCol">
+        <h3 data-i18n="footer.product">Produk</h3>
+        <span class="doors">
+          <a href="./beranda.html" data-i18n="footer.home">Beranda</a>
+          <a href="./fitur.html" data-i18n="footer.features">Fitur</a>
+          <a href="./unduh.html" data-i18n="footer.download">Unduh</a>
+          <a href="./bukti.html" data-i18n="footer.bukti">Bukti</a>
+          <a href="./docs.html" data-i18n="footer.docs">Docs</a>
+        </span>
+      </div>
+      <div class="footCol">
+        <h3 data-i18n="footer.account">Akun</h3>
+        <span class="doors">
+          <a href="./index.html" data-i18n="footer.signin">Masuk</a>
+          <a href="./akun.html" data-i18n="footer.account">Akun</a>
+          <a href="./dashboard.html">Dashboard</a>
+        </span>
+      </div>
+      <div class="footCol">
+        <h3 data-i18n="footer.legal">Legal</h3>
+        <span class="doors">
+          <a href="./privasi.html" data-i18n="footer.privacy">Privasi</a>
+          <a href="./syarat.html" data-i18n="footer.terms">Syarat</a>
+          <a href="./dukungan.html" data-i18n="footer.support">Dukungan</a>
+        </span>
+      </div>
+    </div>
+  </footer>
+
+  <script type="application/json" id="i18n-dict">
+  {
+    "en": {
+      "footer.bukti": "Proof",
+      "footer.source": "Source code",
+      "footer.legal": "Legal",
+      "footer.docs": "Docs",
+      "footer.download": "Download",
+      "footer.product": "Product",
+      "nav.download": "Download",
+      "nav.signin": "Sign in",
+      "nav.features": "Features",
+      "nav.price": "Pricing",
+      "nav.docs": "Docs",
+      "nav.support": "Support",
+      "meta.title": "Proof — Opera Agent",
+      "hero.eyebrow": "Proof",
+      "hero.title": "One run, four files, exactly the same.",
+      "hero.sub": "Opera Agent drove a real browser at a mock company portal, downloaded its CSV, and rebuilt the four files on the case study page. Every file was compared with the file you can download: the same sha256, byte for byte.",
+      "cta.files": "See the four files",
+      "cta.record": "Open the record",
+      "steps.title": "What happened",
+      "steps.sub": "Eight steps, one run. No file was copied by hand and no button was pressed by a person.",
+      "steps.one": "Opening the mock portal in the browser.",
+      "steps.two": "Reading the page and finding its download button.",
+      "steps.three": "Downloading the transaction CSV to disk.",
+      "steps.four": "Recomputing the financial report from the CSV rows.",
+      "steps.five": "Building the strategy deck from figures that were already checked.",
+      "steps.six": "Writing the two Word documents.",
+      "steps.seven": "Capturing the portal it read.",
+      "steps.eight": "Closing the tab and ending the run.",
+      "files.title": "The hashes match.",
+      "files.sub": "The four files below were rebuilt by the run, then compared with the files on the case study page. If one byte differed, the run would stop and print both hashes.",
+      "files.head.name": "File",
+      "files.head.size": "Size (bytes)",
+      "files.head.hash": "sha256",
+      "files.note": "Compare it with the file you download: sha256sum of your file must be exactly the hash in this table.",
+      "shot.title": "The page the run read.",
+      "shot.sub": "This is the mock portal the run opened. Its download button is what put the CSV on disk.",
+      "shot.caption": "A screenshot of the tab the run read.",
+      "final.title": "Download it, then compare it yourself.",
+      "final.sub": "The same four files are on the case study page. Download one, open it in Excel, PowerPoint, or Word, then run sha256sum to compare.",
+      "footer.rights": "© 2026 Opera Agent. All rights reserved.",
+      "footer.home": "Home",
+      "footer.privacy": "Privacy",
+      "footer.terms": "Terms",
+      "footer.signin": "Sign in",
+      "footer.account": "Account",
+      "footer.features": "Features",
+      "footer.support": "Support"
+    }
+  }
+  </script>
+  <script src="./i18n.js"></script>
+
+  <script src="/wayfind.js"></script>
+  <script src="/palette.js"></script>
+
+  <script src="/reveal.js"></script>
+</body>
+</html>

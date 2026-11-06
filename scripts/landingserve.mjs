@@ -13,7 +13,7 @@ import { extname, resolve, sep } from 'node:path';
 
 const root = new URL('../landing/', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1').replace(/\//g, sep);
 const rootWithSep = root.endsWith(sep) ? root : root + sep;
-const types = { '.css': 'text/css', '.js': 'text/javascript', '.html': 'text/html; charset=utf-8', '.woff2': 'font/woff2', '.svg': 'image/svg+xml' };
+const types = { '.css': 'text/css', '.js': 'text/javascript', '.html': 'text/html; charset=utf-8', '.woff2': 'font/woff2', '.svg': 'image/svg+xml', '.jpg': 'image/jpeg' };
 const port = Number(process.argv[2] || 8777);
 
 // WHY THE PATH IS BUILT FROM A WHITELIST, NOT JOINED FROM THE REQUEST: joining user input into a filesystem path is the shape the traversal checks flag, whatever guard follows it.
@@ -22,10 +22,11 @@ const port = Number(process.argv[2] || 8777);
 const FILES = new Set([
   'beranda.html', 'index.html', 'akun.html', 'dashboard.html', 'unduh.html',
   'unduh-berkas.html', 'privasi.html', 'syarat.html', '404.html', 'fitur.html',
-  'dukungan.html', 'docs.html', 'harga.html', 'site.css', 'beranda.css',
-  'features.css', 'download.css', 'auth.css', 'app.css', 'dashboard.css',
+  'studi.html', 'bukti.html', 'dukungan.html', 'docs.html', 'harga.html', 'site.css', 'beranda.css',
+  'features.css', 'studi.css', 'bukti.css', 'download.css', 'auth.css', 'app.css', 'dashboard.css',
   'harga.css', 'docs.css', 'support.css', 'notfound.css', 'i18n.js', 'spotlight.js', 'docs.js', 'reveal.js',
-  'wayfind.js', 'palette.js', 'markdown.js', 'oauth/consent.html', 'fonts/instrument-sans-latin.woff2'
+  'wayfind.js', 'palette.js', 'markdown.js', 'oauth/consent.html', 'fonts/instrument-sans-latin.woff2',
+  'bukti/portal.jpg'
 ]);
 
 createServer(async (req, res) => {
@@ -38,7 +39,7 @@ createServer(async (req, res) => {
   }
   const path = decodeURIComponent(raw);
   const name = path === '/' ? 'beranda.html' : path.replace(/^\//, '');
-  if (!/^[A-Za-z0-9._-]+\/[A-Za-z0-9._-]+\.(html|woff2)$|^[A-Za-z0-9._-]+\.(html|css|js|svg|woff2)$/.test(name)) {
+  if (!/^[A-Za-z0-9._-]+\/[A-Za-z0-9._-]+\.(html|woff2|jpg|png|svg)$|^[A-Za-z0-9._-]+\.(html|css|js|svg|woff2)$/.test(name)) {
     res.writeHead(404);
     res.end();
     return;

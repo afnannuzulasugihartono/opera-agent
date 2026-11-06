@@ -36,7 +36,7 @@ test('the landing page itself stays network-free while auth may reach only Supab
 
   assert.deepEqual(
     vercel.headers.map((h) => h.source),
-    ['/(.*)', '/', '/index.html', '/beranda', '/beranda.html', '/akun', '/akun/:path*', '/akun.html', '/dashboard', '/dashboard/:path*', '/dashboard.html', '/oauth/consent', '/oauth/consent.html', '/robots.txt', '/sitemap.xml'],
+    ['/(.*)', '/', '/index.html', '/beranda', '/beranda.html', '/akun', '/akun/:path*', '/akun.html', '/dashboard', '/dashboard/:path*', '/dashboard.html', '/oauth/consent', '/oauth/consent.html', '/bukti', '/bukti.html', '/robots.txt', '/sitemap.xml'],
     'the catch-all stays first and the page entries follow'
   );
   const bySource = Object.fromEntries(vercel.headers.map((h) => [h.source, h.headers]));

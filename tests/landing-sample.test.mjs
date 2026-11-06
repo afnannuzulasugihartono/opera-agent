@@ -1,7 +1,7 @@
 // @last-edited: 2026-11-05 UTC+7.
 // @title: landing-sample - the four artifacts the site offers are the bytes a fresh run makes, not a stale copy.
 // @state: rebuilds the mock company's four artifacts into a temp folder and compares them byte for byte with landing/contoh/.
-// @dependencies: node:test, strict, node:fs, node:os, node:path, ../local/spreadsheets.js, ../local/decks.js, ../local/documents.js.
+// @dependencies: node:test, strict, node:crypto, node:fs, node:os, node:path, ../local/spreadsheets.js, ../local/decks.js, ../local/documents.js.
 
 // WHY THIS FILE EXISTS.
 // A download on the site is a promise that what the product makes is what a visitor gets.
@@ -9,6 +9,7 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -57,6 +58,19 @@ test('the artifacts the site offers are a fresh build of the mock company', () =
     }
   } finally {
     fs.rmSync(out, { recursive: true, force: true });
+  }
+});
+
+// WHY THE PROOF PAGE IS CHECKED AGAINST THE SHIPPED FILES.
+// The page prints the sha256 of each file and asks the reader to compare it with what they download.
+// A page that prints the digest of a file the site no longer ships is a claim nothing keeps, so the digests are read from the bytes in landing/contoh/.
+
+test('the proof page prints the digest of the file the site ships', () => {
+  const page = fs.readFileSync(path.join(root, 'landing', 'bukti.html'), 'utf8');
+  for (const name of ['laporan-keuangan-2026-09.xlsx', 'rencana-strategis-2027.pptx', 'riset-promo.docx', 'rencana-pemasaran-2027.docx']) {
+    const digest = crypto.createHash('sha256').update(fs.readFileSync(path.join(shipped, name))).digest('hex');
+    assert.ok(page.includes(digest), `${name} prints the sha256 of the file the site ships`);
+    assert.ok(page.includes(name), `${name} is named on the proof page`);
   }
 });
 
