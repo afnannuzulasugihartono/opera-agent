@@ -59,9 +59,9 @@ window cannot be driven and blocks this one from starting.
 
 Chrome refuses a debugging port on the Default profile, so the everyday window
 cannot be driven over CDP at all — the flag dies with an error and no port. The
-bridge is the road that remains: the extension polls this machine on loopback and
-carries raw CDP both ways, so the whole surface below runs on your real tabs with
-no flags, no queue and no cloud.
+bridge is the road that remains: the extension dials this machine's loopback
+bridge and carries raw CDP both ways, so the whole surface below runs on your
+real tabs with no flags, no queue and no cloud.
 
 The transport is one WebSocket on loopback (`local/bridge-ws.js`). The
 extension opens it, the server pushes a command the moment one exists, and the
@@ -99,7 +99,7 @@ Point a client at it:
 |---|---|---|
 | `OPERA_LOCAL_PORT` | `9333` | the debugging port to drive |
 | `OPERA_LOCAL_BROWSER` | first installed | which browser to launch if none is listening |
-| `OPERA_LOCAL_TRANSPORT` | unset (CDP) | `bridge` drives the everyday profile through the extension |
+| `OPERA_LOCAL_TRANSPORT` | unset (auto) | unset picks the bridge when an extension is linked, CDP otherwise; `bridge` drives the everyday profile through the extension |
 | `OPERA_BRIDGE_PORT` | `9451` | the loopback port the extension dials into |
 
 ## Tools

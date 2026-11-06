@@ -11,7 +11,7 @@ runs and where the browser already is.
 
 ## 1. Hosted MCP
 
-The server speaks MCP over HTTP and asks for an OAuth token before it answers.
+As of 2026-11-06, the server speaks MCP over HTTP and asks for an OAuth token before it answers.
 
 ```
 https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp
@@ -25,28 +25,41 @@ HTTP/1.1 401 Unauthorized
 WWW-Authenticate: Bearer resource_metadata="https://.../.well-known/oauth-protected-resource"
 ```
 
-The record of what the server answers without a token is
-[`proof/hosted-mcp.json`](../proof/hosted-mcp.json), taken by
-`node scripts/hosted-mcp-check.mjs`.
+The record of what it answered without a token is
+[`proof/hosted-mcp.json`](../proof/hosted-mcp.json) — a one-shot snapshot taken on
+2026-11-06 by `node scripts/hosted-mcp-check.mjs`, which also probes that the OAuth
+client below is still accepted by the authorization server.
 
-Add it to `opencode.json`:
+Add it to `opencode.json` (OpenCode V2 reads servers from `mcp.servers`, and its
+OAuth fields are snake_case):
 
 ```json
 {
+  "$schema": "https://opencode.ai/config.json",
   "mcp": {
-    "opera-agent": {
-      "type": "remote",
-      "url": "https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp",
-      "oauth": { "clientId": "bbc5eb76-f385-435b-8b13-8e339b45e633" },
-      "headers": {
-        "X-Opera-Device": "opera",
-        "X-Opera-Provider": "opencode",
-        "x-region": "ap-southeast-1"
+    "servers": {
+      "opera-agent": {
+        "type": "remote",
+        "url": "https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp",
+        "oauth": {
+          "client_id": "bbc5eb76-f385-435b-8b13-8e339b45e633",
+          "redirect_uri": "http://127.0.0.1:19876/mcp/oauth/callback"
+        },
+        "headers": {
+          "X-Opera-Device": "opera",
+          "X-Opera-Provider": "opencode",
+          "x-region": "ap-southeast-1"
+        }
       }
     }
   }
 }
 ```
+
+The client id is the `Opera Agent` OAuth client registered in this Supabase project.
+Its only accepted redirect is `http://127.0.0.1:19876/mcp/oauth/callback`, which is
+OpenCode's default callback — any other port is refused by the authorization server
+with `invalid redirect_uri`. Sign in once with `opencode mcp auth opera-agent`.
 
 Or add it from the terminal:
 
@@ -85,15 +98,17 @@ Point a client at it:
 |---|---|---|
 | `OPERA_LOCAL_PORT` | `9333` | the debugging port to drive |
 | `OPERA_LOCAL_BROWSER` | first installed | which browser to launch if none is listening |
-| `OPERA_LOCAL_TRANSPORT` | unset (CDP) | `bridge` drives the everyday profile through the extension |
+| `OPERA_LOCAL_TRANSPORT` | unset (auto) | unset picks the bridge when an extension is linked, CDP otherwise; `bridge`/`cdp` force one |
 | `OPERA_BRIDGE_PORT` | `9451` | the loopback port the extension dials into |
 
-What a caller gets wrong: the default transport is a debugging port, and Chrome
-refuses a debugging port on the Default profile. A client pointed at port 9333
-on the everyday Chrome opens a second browser on a fresh profile, signed into
-nothing. `browser_status` answers with the port the drive is really on, so read
-it first: `port: 9451` means the extension road, `port: 9333` means a debugging
-port.
+What a caller gets wrong: Chrome refuses a debugging port on the Default profile,
+so the everyday window cannot be driven over CDP at all. A client pointed at port
+9333 with nothing listening there is refused with `No browser is listening on port 9333.` — the server does not open a second
+browser. Start a browser with a debugging port the way
+[`local/README.md`](../local/README.md) shows, or link the extension and let the
+bridge carry the drive. `browser_status` answers with the port the drive is
+really on, so read it first: `port: 9451` means the extension road, `port: 9333`
+means a debugging port.
 
 The server advertises 54 tools. `guide()` returns them as tasks rather than a
 list, and the full list is in [`local/README.md`](../local/README.md).
@@ -131,8 +146,8 @@ node --test tests/extension-run.test.mjs
 The last recorded run carried seven calls over the bridge — `browser_status`,
 `open_url`, `read_page`, `find_elements`, `download`, `capture_page`,
 `close_tab` — and the CSV it pulled down hashed equal to the file the portal
-served. The test rechecks the hash, so the record cannot drift away from the
-code that makes it.
+served. `tests/extension-run.test.mjs` re-hashes that fixture and compares it
+with the hash in the record; it does not drive a browser again.
 
 ## Which road is this product on?
 
