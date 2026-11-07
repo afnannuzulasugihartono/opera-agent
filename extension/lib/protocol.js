@@ -58,7 +58,7 @@ export const METHOD_SPECS = Object.freeze({
   'tabs.close': { timeoutMs: 5000 },
   'tabs.navigate': { timeoutMs: 15000 },
   'tabs.reload': { timeoutMs: 15000 },
-  'page.read': { timeoutMs: 10000 },
+  'page.read': { timeoutMs: 30000 },
   'page.query': { timeoutMs: 8000 },
   'page.find': { timeoutMs: 8000 },
   'page.collect_links': { timeoutMs: 10000 },
@@ -265,7 +265,7 @@ export function validateCommand(command) {
   }
   if (command.method === 'page.capture') {
     const params = command.params || {};
-    const allowedKeys = new Set(['tabId', 'crop', 'quality', 'maxWidth', 'maxHeight', 'previousHash', 'fullPage']);
+    const allowedKeys = new Set(['tabId', 'crop', 'quality', 'maxWidth', 'maxHeight', 'previousHash', 'fullPage', 'tileOffset']);
     const unexpectedKey = Object.keys(params).find((key) => !allowedKeys.has(key));
     if (unexpectedKey) return { ok: false, error: `Capture params do not allow ${unexpectedKey}.` };
     if (params.crop != null) {
@@ -294,6 +294,9 @@ export function validateCommand(command) {
     }
     if (params.fullPage != null && typeof params.fullPage !== 'boolean') {
       return { ok: false, error: 'Capture fullPage must be a boolean.' };
+    }
+    if (params.tileOffset != null && (!Number.isInteger(Number(params.tileOffset)) || Number(params.tileOffset) < 0)) {
+      return { ok: false, error: 'Invalid capture tile offset.' };
     }
   }
   if (command.method === 'page.fill') {

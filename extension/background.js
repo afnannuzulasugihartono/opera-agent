@@ -19,7 +19,7 @@ import { log } from './lib/log.js';
 import { popupsSince } from './lib/popup-events.js';
 import { windowUpdateFor, windowUpdateCase } from './lib/window-restore.js';
 import { handleDebuggerDetach } from './lib/debugger-session.js';
-import { oversized, MAX_RESULT_BYTES } from './lib/serialize.js';
+import { oversized, fitWithinBudget, MAX_RESULT_BYTES } from './lib/serialize.js';
 import { mutateTabs, nowIso, getConfig } from './worker/utils.js';
 import { collectAxSummary } from './worker/capture.js';
 import { publicTab, requireTabId, resolveTabId, waitTabReady, contentCall } from './worker/tab-content.js';
@@ -202,16 +202,33 @@ export async function dispatch(method, params = {}, context = {}) {
       let result = await contentCall(tabId, method, { ...params, __semanticRuntimeEpoch: SEMANTIC_RUNTIME_EPOCH });
 
       if (result?.page && oversized(result)) {
-        const { elements, ...withoutElements } = result.page;
-        result = {
-          ...result,
-          page: {
-            ...withoutElements,
-            truncated: true,
-            truncationReason: `Element list omitted: the result exceeded the ${MAX_RESULT_BYTES}-byte ceiling. Re-read with a narrower offset, a smaller maxElements, or includeElements disabled.`,
-            omittedElementCount: Array.isArray(elements) ? elements.length : 0
-          }
-        };
+        if (typeof result.page.class === 'string' && Array.isArray(result.page.elements)) {
+          const pulled = result.page.elements;
+          const fitted = fitWithinBudget(pulled, MAX_RESULT_BYTES - 16 * 1024);
+          result = {
+            ...result,
+            page: {
+              ...result.page,
+              elements: fitted.elements,
+              truncated: true,
+              truncationReason: `Element list trimmed: the result exceeded the ${MAX_RESULT_BYTES}-byte ceiling. Re-read with a smaller limit.`,
+              omittedElementCount: pulled.length - fitted.elements.length,
+              nextOffset: Number(result.page.offset || 0) + fitted.elements.length,
+              hasMore: fitted.elements.length < Number(result.page.total || pulled.length)
+            }
+          };
+        } else {
+          const { elements, ...withoutElements } = result.page;
+          result = {
+            ...result,
+            page: {
+              ...withoutElements,
+              truncated: true,
+              truncationReason: `Element list omitted: the result exceeded the ${MAX_RESULT_BYTES}-byte ceiling. Re-read with a narrower offset, a smaller maxElements, or includeElements disabled.`,
+              omittedElementCount: Array.isArray(elements) ? elements.length : 0
+            }
+          };
+        }
       }
       if (result?.page?.viewport) {
         try { result.page.viewport.zoomFactor = await chrome.tabs.getZoom(tabId); } catch (error) { log.warn('TAB_ZOOM_PROBE_FAILED', error?.message || String(error)); }

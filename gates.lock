@@ -161,7 +161,7 @@ scripts/scope.mjs 2293857de17bf0077a368729555f3af5a13a6ff5
 scripts/scope-check.mjs d6359cc409244f0fdc13cc7ef496daddd5981910
 
 # --- the pins themselves: editing these is how a drift goes unnoticed ---
-tests/helpers/boundary-locks.mjs c0446e7659bfb72247f19c3e2b8f83ad5b7e2cb1
+tests/helpers/boundary-locks.mjs aff82b896116b5cf6859296657844e8d8b3f8f93
 tests/helpers/canonical-source-hash.mjs a4ebaa0d40122afce47a52cba39309d7dfdb1af1
 tests/helpers/comment-format.mjs bced9e4c9b7a58b56e3317067d5e6717dd2040bf
 tests/comment-format.test.mjs 0231619043033b07c22f725feee511d6ebb34bd4
@@ -173,7 +173,7 @@ tests/structure-gates.test.mjs 3ebf0d1b62858e67d7f6fb441461be85e7158a63
 tests/boundary-locks.test.mjs 3a9ae9e36aec03a4470ce2f9cf0971f66724ecf8
 
 # --- controls that decide what the product accepts at runtime ---
-extension/lib/protocol.js 344893e1cbb5b6a9309097af933e5fd2cbb897aa
+extension/lib/protocol.js 9ceb111b292bf58d63adc0cd802eb87d896d11ef
 lib/secret-pattern.js 06386015c5756f83c08ee06cc571b9ae897d850a
 supabase/functions/_shared/cors.js 1563203a5f18b359e2831e52839cfcb935086bf9
 
