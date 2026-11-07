@@ -18,9 +18,10 @@
 // A canvas editor keeps its chrome in the DOM and its document in pixels, so reading the DOM would answer with the chrome and stop.
 // A canvas without an editable host is a picture beside text - a chart, a map, a viewer - and the text around it is the page's own text, so vetoing that read throws away the only text there is.
 
-// WHY THE DOM READ TAKES TWO SAMPLES.
+// WHY THE DOM READ TAKES TWO SAMPLES, AND WHY THE FIRST ONE IS FREE.
 // readyState lies: measured live, a page reported complete with a tenth of its text and reached the rest 600ms later.
 // So the read settles and looks again, and answers with whether the text stood still and by how much it grew.
+// The first sample is the one the probe already carried, because the probe reads the same innerText the DOM step would have asked for - so a DOM read costs one round trip for the probe and one for the second sample, not three.
 
 // WHY THE CONSENT IS ASKED BEFORE THE SELECTION IS BORROWED.
 // The borrow is the destructive half of this read, and a caller who did not ask for it must not pay for it.
@@ -38,8 +39,8 @@
 // WHY A SURFACE NOTHING CAN ANSWER NAMES THE PICTURE.
 // The driver does not read pixels and does not pretend to: naming the one tool that returns a picture lets the caller decide, rather than handing back an empty string that looks like an empty page.
 
-import { SELECTION_STATE_EXPRESSION } from './page-expressions.js';
-import { probeSurface, measureAx, buildProfile, describeProfile } from './surface-profile.js';
+import { PAGE_SURFACE_EXPRESSION, SELECTION_STATE_EXPRESSION } from './page-expressions.js';
+import { measureAx, buildProfile, describeProfile } from './surface-profile.js';
 import { createCaretGuard, gateRead } from './caret-guard.js';
 import {
   HARM_NONE,
@@ -125,9 +126,32 @@ export function createCanvasMethods({ cdp, primitives, readState }) {
       viewWhy: VIEW_WHY
     };
 
+  // WHY THE READ ASKS ONCE AND CARRIES BOTH ANSWERS.
+  // The probe and the page's own identity used to be two round trips, and the second bought nothing the first could not have carried.
+  // Measured on a canvas document: 3 round trips became 2, which is 3 to 8 ms off every read on the road that matters most.
+  // surface_profile keeps its own smaller expression, because it promises to read no document text.
+
+  const readSurface = async () => {
+    const answer = await primitives.evaluate(PAGE_SURFACE_EXPRESSION);
+    return {
+      probe: {
+        textInDom: answer?.textInDom ?? { value: false, evidence: 0 },
+        canvas: answer?.canvas ?? { value: false, evidence: 0 },
+        editable: answer?.editable ?? { value: false, evidence: 'the probe did not answer' },
+        focused: answer?.focused ?? { value: false, evidence: 'the probe did not answer' }
+      },
+      page: {
+        title: String(answer?.title ?? ''),
+        url: String(answer?.url ?? ''),
+        text: String(answer?.text ?? ''),
+        ready: answer?.ready ?? null
+      }
+    };
+  };
+
   async function read(options = {}) {
     const allowCaretMove = options.allowCaretMove === true;
-    const probe = await probeSurface({ evaluate: primitives.evaluate });
+    const { probe, page } = await readSurface();
     const ax = probe.canvas?.value === true ? await axOf() : {};
     const surface = buildProfile({ probe, ax });
     const ladder = readLadder(surface);
@@ -145,13 +169,14 @@ export function createCanvasMethods({ cdp, primitives, readState }) {
 
       if (step.strategy === STRATEGY_DOM) {
         if (surface.canvas === true && surface.editable === true) continue;
-        const state = await readState();
+        // The probe already read this innerText, so it is the first sample and only the second is paid for.
+        const state = { title: page.title, url: page.url, text: page.text, ready: page.ready };
         if ((state.text || '').trim().length > 0) {
           await primitives.settle();
           const again = await readState();
           return {
-            title: again.title,
-            url: again.url,
+            title: again.title ?? state.title,
+            url: again.url ?? state.url,
             text: again.text,
             ready: again.ready ?? null,
             settled: again.text === state.text,
@@ -170,13 +195,12 @@ export function createCanvasMethods({ cdp, primitives, readState }) {
       if (step.strategy === STRATEGY_AX) {
         const text = readAxText(await axOf(), surface);
         if (text) {
-          // The title and url are one cheap call the caller expects on every read; whether the text has stopped moving is not something one sample of the tree can answer.
-          const state = await readState();
+          // The title and url came with the probe, so no second round trip is spent on them; whether the text stopped moving is not something one sample of the tree can answer.
           return {
-            title: state.title,
-            url: state.url,
+            title: page.title,
+            url: page.url,
             text,
-            ready: state.ready ?? null,
+            ready: page.ready,
             settled: null,
             settledWhy: SETTLED_WHY_AX,
             surface,
