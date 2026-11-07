@@ -8,10 +8,10 @@
   if (globalThis.OperaAgentPageMap) return;
 
   const PAGE_MAP_MAX_ELEMENTS = 20000;
-  const PAGE_MAP_MAX_BYTES = 384 * 1024;
   const PAGE_MAP_LIMIT = 200;
   const PAGE_MAP_LIMIT_MAX = 1000;
   const PAGE_MAP_SIDE_MIN = 24;
+  const ACTIONABLE_CLASSES = Object.freeze(['button', 'choice', 'input', 'select', 'link', 'media', 'iframe']);
 
   // The field a class adds on top of the projection's common ones; `role` is common, so a class never repeats it.
 
@@ -48,6 +48,7 @@
 
   const RULES = Object.freeze([
     Object.freeze({ class: 'button', tags: ['button'] }),
+    Object.freeze({ class: 'text', tags: ['summary'] }),
     Object.freeze({ class: 'button', roles: ['button'] }),
     Object.freeze({ class: 'button', tags: ['input'], inputTypes: ['submit', 'button', 'reset', 'image'] }),
     Object.freeze({ class: 'choice', tags: ['input'], inputTypes: ['checkbox', 'radio'] }),
@@ -97,6 +98,7 @@
     const type = String(descriptor.type || '').toLowerCase();
     const href = typeof descriptor.href === 'string' ? descriptor.href : '';
     const side = Math.max(Number(descriptor.width) || 0, Number(descriptor.height) || 0);
+    if (tag === 'input' && type === 'hidden') return '';
     const normalized = { tag, role, type, href, side };
     for (const rule of RULES) {
       if (matchesRule(rule, normalized)) return rule.class;
@@ -106,6 +108,10 @@
 
   function isMapClass(name) {
     return PAGE_MAP_CLASSES.includes(String(name || ''));
+  }
+
+  function isActionableClass(name) {
+    return ACTIONABLE_CLASSES.includes(String(name || ''));
   }
 
   function rectOf(raw) {
@@ -163,9 +169,9 @@
     PAGE_MAP_CLASSES,
     CLASS_FIELDS,
     PAGE_MAP_MAX_ELEMENTS,
-    PAGE_MAP_MAX_BYTES,
     classify,
     isMapClass,
+    isActionableClass,
     projectElement,
     paginate,
     unionBox,

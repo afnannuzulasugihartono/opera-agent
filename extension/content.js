@@ -925,7 +925,7 @@
       extras.type = type;
       extras.name = clean(el.getAttribute?.('name'), 120);
       extras.placeholder = clean(el.getAttribute?.('placeholder'), 200);
-      if (!entry.sensitive) extras.value = clean(el.isContentEditable ? el.textContent : el.value, 300);
+      if (!entry.sensitive && entry.visible) extras.value = clean(el.isContentEditable ? el.textContent : el.value, 300);
     } else if (kind === 'select') {
       extras.name = clean(el.getAttribute?.('name'), 120);
       extras.options = [...(el.options || [])].slice(0, 50).map((option) => normalizeObservableText(option.textContent, 60));
@@ -1074,7 +1074,7 @@
         depth: pageMapListDepth(entry.el),
         regionId: regionOf(entry.el),
         visible: entry.visible,
-        actionable: entry.visible && enabled && !sensitive && entry.style.pointerEvents !== 'none',
+        actionable: entry.visible && enabled && !sensitive && pageMap.isActionableClass(entry.kind) && entry.style.pointerEvents !== 'none',
         disabled: !enabled,
         logicalId: item.logicalId,
         stableKey: item.stableKey,
@@ -1173,7 +1173,16 @@
     const map = scanPageMap();
     if (!wanted) return { ok: true, page: map.skeleton };
     const pull = pageMap.paginate(map.groups.get(wanted) || [], args.offset, args.limit);
-    return { ok: true, page: { class: wanted, ...pull } };
+    return {
+      ok: true,
+      page: {
+        class: wanted,
+        ...pull,
+        scannedAt: map.skeleton.scannedAt,
+        mutationVersion: map.skeleton.mutationVersion,
+        ...(map.skeleton.truncated ? { truncated: true } : {})
+      }
+    };
   }
 
   function pageRead(args) {

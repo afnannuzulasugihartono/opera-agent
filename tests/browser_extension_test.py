@@ -2262,6 +2262,22 @@ async def run(port, profile):
         cid = STATE.push('tabs.close', {'tabId': map_tab})
         assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
 
+        cid = STATE.push('tabs.open', {'url': f'http://{HOST}:{port}/blank', 'active': False, 'wait': True})
+        empty_tab = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['tab']['id']
+        cid = STATE.push('page.read', {'tabId': empty_tab, 'view': 'map'}, benchmark='page.read.map.empty')
+        empty_map = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['page']
+        assert len(empty_map['classes']) == 17, 'an empty page still names all seventeen classes'
+        assert all(row['count'] == 0 for row in empty_map['classes']), 'an empty page counts nothing'
+        assert empty_map['totalElements'] == 0 and not empty_map['regions']
+        cid = STATE.push('page.read', {'tabId': empty_tab, 'view': 'map', 'class': 'link'})
+        empty_links = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['page']
+        assert empty_links['total'] == 0 and empty_links['hasMore'] is False and empty_links['nextOffset'] is None
+        cid = STATE.push('tabs.close', {'tabId': empty_tab})
+        assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+
+        cid = STATE.push('tabs.close', {'tabId': r4_tab_id})
+        assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+
         cid = STATE.push('tabs.open', {'url': f'http://{HOST}:{port}/pre8e-r3', 'active': False, 'wait': True})
         uv1_r3_tab = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['tab']['id']
         cid = STATE.push('page.query', {'tabId': uv1_r3_tab, 'selector': '#r3-change'})

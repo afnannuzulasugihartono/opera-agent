@@ -234,8 +234,9 @@ export async function dispatch(method, params = {}, context = {}) {
         try { result.page.viewport.zoomFactor = await chrome.tabs.getZoom(tabId); } catch (error) { log.warn('TAB_ZOOM_PROBE_FAILED', error?.message || String(error)); }
       }
 
-      const r9SemanticGap = hasRoleGap(result?.page?.elements);
-      const shouldCollectAx = result?.ok !== false && result?.page
+      const isMapPull = typeof result?.page?.class === 'string';
+      const r9SemanticGap = !isMapPull && hasRoleGap(result?.page?.elements);
+      const shouldCollectAx = !isMapPull && result?.ok !== false && result?.page
         && (Number(result.page.totalTextChars) <= AX_SUMMARY_TEXT_POVERTY_CHARS || r9SemanticGap);
       if (shouldCollectAx) {
         const summary = await collectAxSummary(tabId, context);

@@ -450,6 +450,7 @@ function executeMap(params: Record<string, unknown>, timeoutMs: number, deviceNa
   return runCommand("page.read", { ...params, view: "map" }, timeoutMs, deviceName, provider)
     .then((value) => {
       const result = value.result && typeof value.result === "object" ? value.result as Record<string, unknown> : {};
+      if (result.ok === false) return textResult({ ok: false, error: result.error ?? { code: "PAGE_MAP_FAILED", message: "The page map could not be read." } });
       const page = result.page && typeof result.page === "object" ? result.page as Record<string, unknown> : {};
       return textResult({ ...page, ok: true, tabId: result.tabId });
     })

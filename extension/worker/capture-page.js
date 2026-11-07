@@ -59,6 +59,7 @@ async function pickFrame(target, clip, options) {
     break;
   }
   if (!chosen) {
+    if (allowBlank && sawTooSmall) return null;
     if (sawTooLarge) throw codedError('SCREENSHOT_TOO_LARGE', `Screenshot could not be reduced below ${MAX_SCREENSHOT_BYTES} bytes.`, { tabId, maxBytes: MAX_SCREENSHOT_BYTES });
     if (sawTooSmall) throw codedError('SCREENSHOT_TOO_SMALL', 'Screenshot capture produced no usable image data; the page may not have rendered yet.', { tabId, minBytes: MIN_FRAME_BYTES });
     throw codedError('SCREENSHOT_TOO_LARGE', `Screenshot could not be reduced below ${MAX_SCREENSHOT_BYTES} bytes.`, { tabId, maxBytes: MAX_SCREENSHOT_BYTES });
@@ -82,6 +83,10 @@ async function captureTiles(target, content, stripHeight, tileOffset, context, t
     const frame = await pickFrame(target, { x: content.x, y: content.y + top, width: content.width, height }, {
       quality: 60, baseScale: 1, beyond: true, context, tabId, allowBlank: true
     });
+    if (!frame) {
+      index += 1;
+      continue;
+    }
     if (tiles.length && bytesSoFar + frame.bytes > TILE_SLICE_BYTES) break;
     const sha256 = await screenshotHash(frame.data);
     tiles.push({

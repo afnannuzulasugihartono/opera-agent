@@ -8,8 +8,8 @@ import assert from 'node:assert/strict';
 
 await import('../extension/lib/page-map.js');
 const {
-  PAGE_MAP_CLASSES, CLASS_FIELDS, PAGE_MAP_MAX_ELEMENTS, PAGE_MAP_MAX_BYTES,
-  classify, isMapClass, projectElement, paginate, summarizeClass
+  PAGE_MAP_CLASSES, CLASS_FIELDS, PAGE_MAP_MAX_ELEMENTS,
+  classify, isMapClass, isActionableClass, projectElement, paginate, summarizeClass
 } = globalThis.OperaAgentPageMap;
 
 test('the map knows exactly seventeen classes, in the order the rules run', () => {
@@ -22,7 +22,6 @@ test('the map knows exactly seventeen classes, in the order the rules run', () =
   assert.deepEqual(CLASS_FIELDS.link, ['href']);
   assert.deepEqual(CLASS_FIELDS.picture, ['src', 'alt']);
   assert.equal(PAGE_MAP_MAX_ELEMENTS, 20000);
-  assert.equal(PAGE_MAP_MAX_BYTES, 384 * 1024);
 });
 
 test('one element gets one class, and the first matching rule wins', () => {
@@ -103,4 +102,28 @@ test('a class summary counts its elements and boxes them', () => {
   ]);
   assert.deepEqual(summary, { class: 'link', count: 2, bbox: { x: 10, y: 20, width: 100, height: 50 } });
   assert.equal(summarizeClass('media', []).bbox, null);
+});
+
+test('a hidden field is not a field the map carries a value for', () => {
+  assert.equal(classify({ tag: 'input', type: 'hidden' }), '');
+});
+
+test('a summary is text, though the browser gives it a button role', () => {
+  assert.equal(classify({ tag: 'summary', role: 'button' }), 'text');
+  assert.equal(classify({ tag: 'button' }), 'button');
+  assert.equal(classify({ tag: 'div', role: 'button' }), 'button');
+});
+
+test('actionability belongs to the classes a person can act on', () => {
+  assert.equal(isActionableClass('button'), true);
+  assert.equal(isActionableClass('link'), true);
+  assert.equal(isActionableClass('input'), true);
+  assert.equal(isActionableClass('choice'), true);
+  assert.equal(isActionableClass('select'), true);
+  assert.equal(isActionableClass('media'), true);
+  assert.equal(isActionableClass('iframe'), true);
+  assert.equal(isActionableClass('text'), false);
+  assert.equal(isActionableClass('heading'), false);
+  assert.equal(isActionableClass('region'), false);
+  assert.equal(isActionableClass('picture'), false);
 });
