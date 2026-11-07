@@ -459,8 +459,24 @@ function executeMap(params: Record<string, unknown>, timeoutMs: number, deviceNa
 function screenshotResult(value: Record<string, unknown>) {
   const result = value.result && typeof value.result === "object" ? value.result as Record<string, unknown> : {};
   const screenshot = result.screenshot && typeof result.screenshot === "object" ? result.screenshot as Record<string, unknown> : {};
+  const tiles = Array.isArray(result.tiles) ? result.tiles as Array<Record<string, unknown>> : [];
   const data = typeof screenshot.data === "string" ? screenshot.data : "";
   const mimeType = typeof screenshot.mimeType === "string" ? screenshot.mimeType : "image/jpeg";
+
+  if (tiles.length) {
+    const { screenshot: dropped, ...withoutScreenshot } = result;
+    const shaped = { ...value, result: { ...withoutScreenshot, tiles: tiles.map(({ data: tileData, ...rest }) => rest) } };
+    const structuredContent = RAW_OUTPUT ? shaped : tidyForAi(shaped);
+    const content: Array<
+      { type: "text"; text: string } |
+      { type: "image"; data: string; mimeType: string }
+    > = [{ type: "text", text: JSON.stringify(structuredContent) }];
+    for (const tile of tiles) {
+      if (typeof tile.data === "string") content.push({ type: "image", data: tile.data, mimeType });
+    }
+    return { content, structuredContent };
+  }
+
   const metadataScreenshot = { ...screenshot };
   delete metadataScreenshot.data;
   const shaped = { ...value, result: { ...result, screenshot: metadataScreenshot } };

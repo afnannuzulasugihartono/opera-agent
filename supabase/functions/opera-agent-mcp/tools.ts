@@ -473,7 +473,7 @@ export function registerTools(server: McpServer, deps: ToolDeps) {
 
   server.registerTool("capture_page", {
     title: "Capture Opera page",
-    description: "Capture a bounded JPEG of an explicit Opera tab without activating it. Use adaptively for visual pages, canvas, low-confidence targets, state changes, or failed verification—not after every action. Pass the previous SHA-256 hash to suppress unchanged image data. The extension blocks incognito, user-private, password, OTP, payment, and other sensitive surfaces locally. Returns: ok, tabId and the image; the text carries the capture metadata and the hash to pass as previousHash next time.",
+    description: "Capture a bounded JPEG of an explicit Opera tab without activating it. Use adaptively for visual pages, canvas, low-confidence targets, state changes, or failed verification—not after every action. Pass the previous SHA-256 hash to suppress unchanged image data. With fullPage the whole scrollable document is captured, and a page too tall to read in one image comes back as tiles walked by tileOffset. The extension blocks incognito, user-private, password, OTP, payment, and other sensitive surfaces locally. Returns: ok, tabId and the image; the text carries the capture metadata and the hash to pass as previousHash next time, or tiles with documentHeight, tileCount, coveredHeight, hasMore and nextTileOffset when the page is delivered in slices.",
     inputSchema: {
       tabId: tabIdSchema,
       crop: z.object({
@@ -491,18 +491,20 @@ export function registerTools(server: McpServer, deps: ToolDeps) {
       maxHeight: z.number().int().min(240).max(1200).optional().describe("Maximum returned image height. Defaults to 900."),
       previousHash: z.string().regex(/^[a-f0-9]{64}$/i).optional().describe("SHA-256 from the prior capture; matching images return metadata without duplicate image bytes."),
       fullPage: z.boolean().optional().describe("Span the whole scrollable document past the viewport instead of the visible area. Exclusive with crop."),
+      tileOffset: z.number().int().nonnegative().optional().describe("Which slice of a full-page tile set to return; 0 is the first slice, and nextTileOffset names the next one."),
       timeoutMs: timeoutSchema
     },
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true }
-  }, ({ tabId, crop, quality, maxWidth, maxHeight, previousHash, fullPage, timeoutMs }: TargetTab & {
+  }, ({ tabId, crop, quality, maxWidth, maxHeight, previousHash, fullPage, tileOffset, timeoutMs }: TargetTab & {
     crop?: { x: number; y: number; width: number; height: number };
     quality?: number;
     maxWidth?: number;
     maxHeight?: number;
     previousHash?: string;
     fullPage?: boolean;
+    tileOffset?: number;
     timeoutMs?: number;
-  }) => executeScreenshot({ tabId, ...(crop ? { crop } : {}), ...(quality != null ? { quality } : {}), ...(maxWidth != null ? { maxWidth } : {}), ...(maxHeight != null ? { maxHeight } : {}), ...(previousHash ? { previousHash } : {}), ...(fullPage === true ? { fullPage: true } : {}) }, timeoutMs, deviceName, provider));
+  }) => executeScreenshot({ tabId, ...(crop ? { crop } : {}), ...(quality != null ? { quality } : {}), ...(maxWidth != null ? { maxWidth } : {}), ...(maxHeight != null ? { maxHeight } : {}), ...(previousHash ? { previousHash } : {}), ...(fullPage === true ? { fullPage: true } : {}), ...(tileOffset != null ? { tileOffset } : {}) }, timeoutMs ?? (fullPage === true ? 30000 : undefined), deviceName, provider));
 
   server.registerTool("read_page_map", {
     title: "Read Opera page map",

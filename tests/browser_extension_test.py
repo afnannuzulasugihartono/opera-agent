@@ -2256,8 +2256,8 @@ async def run(port, profile):
         assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
         cid = STATE.push('page.click', {'tabId': map_tab, 'ref': below['ref']})
         assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
-        cid = STATE.push('page.read', {'tabId': map_tab, 'offset': 0, 'limit': 300, 'includeElements': False})
-        assert 'map-clicked' in assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['page']['text']
+        cid = STATE.push('page.query', {'tabId': map_tab, 'selector': '#map-status'})
+        assert assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['item']['text'] == 'map-clicked'
 
         cid = STATE.push('tabs.close', {'tabId': map_tab})
         assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
@@ -2629,6 +2629,38 @@ async def run(port, profile):
         cropped = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['screenshot']
         assert cropped['sourceWidth'] == 320 and cropped['sourceHeight'] == 240
         cid = STATE.push('tabs.close', {'tabId': visual_tab_id})
+        assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+
+        cid = STATE.push('tabs.open', {'url': f'http://{HOST}:{port}/pre8e-map', 'active': False, 'wait': True})
+        tall_tab = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['tab']['id']
+
+        cid = STATE.push('page.capture', {'tabId': tall_tab, 'fullPage': True}, benchmark='page.capture.full')
+        full = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+        if 'tiles' in full:
+            assert full['tiles'], 'a full page that cannot be read in one image must come back as tiles'
+            assert full['tileCount'] >= 2
+            first_tile = full['tiles'][0]
+            assert first_tile['y'] == 0 and first_tile['data'].startswith('/9j/')
+            assert full['coveredHeight'] == full['tiles'][-1]['y'] + full['tiles'][-1]['height']
+            if full['hasMore']:
+                assert full['nextTileOffset'] == len(full['tiles'])
+                cid = STATE.push('page.capture', {'tabId': tall_tab, 'fullPage': True, 'tileOffset': full['nextTileOffset']})
+                second = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+                assert second['tiles'][0]['y'] > first_tile['y'], 'the next slice continues down the document'
+                assert second['tiles'][0]['index'] == full['nextTileOffset']
+            else:
+                assert full['coveredHeight'] >= full['documentHeight'] - 1, 'the tiles must cover the document'
+            cid = STATE.push('page.capture', {'tabId': tall_tab, 'fullPage': True})
+            warm = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+            cid = STATE.push('page.capture', {'tabId': tall_tab, 'fullPage': True, 'previousHash': warm['sha256']})
+            unchanged_full = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+            assert unchanged_full.get('unchanged') is True, 'a repeated full-page hash returns no image data'
+            assert 'data' not in unchanged_full['tiles'][0]
+            assert len(unchanged_full['tiles']) == len(warm['tiles'])
+        else:
+            assert full['screenshot']['width'] >= 320, 'a one-image answer must be readable'
+
+        cid = STATE.push('tabs.close', {'tabId': tall_tab})
         assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
 
         cid = STATE.push('tabs.open', {'url': f'http://{HOST}:{port}/blank', 'active': False, 'wait': True})
