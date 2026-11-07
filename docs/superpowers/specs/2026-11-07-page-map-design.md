@@ -23,7 +23,7 @@ Keputusan yang mengikat (hasil brainstorming 2026-11-07):
 
 ## Non-goals V1
 
-- Tidak mengganti `read_page` yang ada, tidak mengubah `find_elements`, `click_element`, `fill_element`, atau 21 primitive browser lainnya.
+- Tidak mengganti `read_page` yang ada, tidak mengubah `find_elements`, `click_element`, `fill_element`, atau 30 primitive browser lainnya.
 - Tidak menarik peta per region (sidebar, artikel, infobox). V1 menarik per kelas; elemen membawa `regionId` supaya model bisa mengelompokkan sendiri.
 - Tidak scroll-and-stitch. Gambar diambil lewat clip koordinat dokumen, jadi layar yang sedang dilihat pengguna tidak pernah digeser dan header lengket tidak terulang.
 - Tidak menyimpan atribut HTML mentah (`id`, `class`, `aria-*`, `data-*`) per elemen.
@@ -63,29 +63,25 @@ Satu elemen satu kelas. Kalau satu simpul cocok beberapa aturan, aturan yang leb
 
 ```json
 { "ok": true, "tabId": 1517046936,
-  "page": {
-    "documentId": "d8088417-6fb4-4da0-876e-59ee661bee42",
-    "url": "https://id.wikipedia.org/wiki/Bahasa_Indonesia",
-    "title": "Bahasa Indonesia - Wikipedia bahasa Indonesia",
-    "documentWidth": 1521, "documentHeight": 25147,
-    "viewport": { "width": 1536, "height": 776, "scrollX": 0, "scrollY": 0, "zoomFactor": 1 },
-    "scan": {
-      "scannedAt": "2026-11-07T15:04:11.902Z",
-      "mutationVersion": 185,
-      "totalElements": 4123,
-      "classes": [
-        { "class": "text", "count": 1587, "bbox": { "x": 0, "y": 0, "width": 1521, "height": 25147 } },
-        { "class": "link", "count": 2274, "bbox": { "x": 640, "y": 90, "width": 620, "height": 24800 } }
-      ],
-      "regions": [ { "regionId": "rg_main", "kind": "landmark", "role": "main", "label": "", "bbox": {}, "elementCount": 3901 } ],
-      "outline": [ { "level": 1, "text": "Bahasa Indonesia", "y": 97, "ref": "oa_..." } ],
-      "tables": [ { "ref": "oa_...", "rows": 12, "cols": 3, "headers": ["Provinsi", "Jumlah", "%"], "bbox": {} } ],
-      "images": [ { "ref": "oa_...", "alt": "Sampul ...", "width": 220, "height": 160, "bbox": {}, "caption": "..." } ]
-    }
-  } }
+  "documentId": "d8088417-6fb4-4da0-876e-59ee661bee42",
+  "url": "https://id.wikipedia.org/wiki/Bahasa_Indonesia",
+  "title": "Bahasa Indonesia - Wikipedia bahasa Indonesia",
+  "documentWidth": 1521, "documentHeight": 25147,
+  "viewport": { "width": 1536, "height": 776, "scrollX": 0, "scrollY": 0, "zoomFactor": 1 },
+  "scannedAt": "2026-11-07T15:04:11.902Z",
+  "mutationVersion": 185,
+  "totalElements": 4123,
+  "classes": [
+    { "class": "text", "count": 1587, "bbox": { "x": 0, "y": 0, "width": 1521, "height": 25147 } },
+    { "class": "link", "count": 2274, "bbox": { "x": 640, "y": 90, "width": 620, "height": 24800 } }
+  ],
+  "regions": [ { "regionId": "rg_main", "kind": "landmark", "role": "main", "label": "", "bbox": {}, "elementCount": 3901 } ],
+  "outline": [ { "level": 1, "text": "Bahasa Indonesia", "y": 97, "ref": "oa_..." } ],
+  "tables": [ { "ref": "oa_...", "rows": 12, "cols": 3, "headers": ["Provinsi", "Jumlah", "%"], "bbox": {} } ],
+  "images": [ { "ref": "oa_...", "alt": "Sampul ...", "width": 220, "height": 160, "bbox": {}, "caption": "..." } ] }
 ```
 
-`classes[]` adalah array; tiap butir menyebut jumlah dan kotak pembatas seluruh kelas itu, supaya model tahu di mana kelas itu berada tanpa menarik isinya.
+Kerangka tidak punya amplop: fakta halaman di atas, koleksi di bawah, semuanya satu tingkat. `classes[]` adalah array; tiap butir menyebut jumlah dan kotak pembatas seluruh kelas itu, supaya model tahu di mana kelas itu berada tanpa menarik isinya.
 
 ### Tarik satu kelas — `read_page_map { class: "link", offset: 0, limit: 200 }`
 
@@ -114,11 +110,13 @@ Satu elemen satu kelas. Kalau satu simpul cocok beberapa aturan, aturan yang leb
 
 Berlaku ke 34 tool hosted yang ada dan ke `read_page_map`:
 
-- Bentuk: `{ ok, ...fakta }`. Tidak ada amplop, tidak ada lapisan `result`.
+- Bentuk: `{ ok, ...fakta }`. Tidak ada amplop yang isinya satu payload (`result`, `data`, `output`), dan tidak ada lapisan yang menggandakan isi.
 - Setiap koleksi adalah array di bawah field bernama (`tabs`, `items`, `elements`, `classes`, `events`, `rows`, `skills`, `segments`). Tidak ada map yang isinya daftar.
-- Tidak ada field yang mengulang informasi field lain. `ok` disebut sekali.
+- Objek bersarang hanya boleh kalau ia mengelompokkan fakta dari satu hal (`viewport`, `rect`, `bbox`) — bukan daftar, bukan amplop.
+- Setiap fakta disebut sekali. `tabId` tidak boleh muncul dua kali di level berbeda.
 - Tidak ada field yang isinya `null` atau array kosong tanpa alasan; array kosong berarti "tidak ada", dan itu tidak dihapus.
 - **Nama field tidak berubah dan field yang sedang dipakai tidak dicabut.** `previousHash`, `sessionId`, `watcherId`, `ref`, `tabId`, dan semua field yang dibaca klien lain tetap. Yang dicabut hanya field yang benar-benar duplikat atau tidak pernah dibaca.
+- Pengecualian yang diketahui: `read_page` lama tetap punya objek `page` (nama field tidak boleh berubah). Isinya dirapikan — koleksinya jadi array, fakta yang kembar dengan level atas dicabut satu kali.
 - Audit 34 tool adalah bagian dari perubahan ini, bukan pekerjaan terpisah.
 
 ## Halaman penuh (screenshot)
@@ -168,7 +166,7 @@ Aliran data: MCP -> `page.read` dengan `view: "map"` -> content script -> peta -
 
 ## Target keberhasilan yang dapat diukur
 
-- Pada artikel `id.wikipedia.org/wiki/Bahasa_Indonesia`: kerangka melaporkan minimal 3 kelas dengan jumlah lebih dari 0, jumlah total elemen berada dalam ±10% dari pengukuran DOM statis yang sejenis (8.121 node DOM), dan `classes[]` memuat tepat 17 entri.
+- Pada artikel `id.wikipedia.org/wiki/Bahasa_Indonesia`: kerangka melaporkan minimal 3 kelas dengan jumlah lebih dari 0, `classes[]` memuat tepat 17 entri, dan `totalElements` sama dengan jumlah simpul yang cocok tabel klasifikasi pada DOM statis halaman itu (dihitung terpisah saat verifikasi, bukan jumlah semua node DOM yang 8.121).
 - Menarik `class: "link"` dengan `offset` dan `limit` berjalan sampai habis: jumlah yang diterima = `total` dari kerangka, tanpa duplikat dan tanpa lompatan (offset 0, 200, 400, ...).
 - `rect` pada elemen yang ada di bawah fold memakai koordinat dokumen: nilainya lebih besar dari tinggi viewport, dan `click_element` dengan `ref` dari peta tetap berhasil setelah halaman digeser.
 - `capture_page { fullPage: true }` pada artikel yang sama: hasilnya satu gambar, atau `tiles[]` yang jumlah `y` terakhir + tinggi strip minimal `documentHeight`.
