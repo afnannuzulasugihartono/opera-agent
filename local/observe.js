@@ -73,6 +73,16 @@ const PAGE_STATE_EXPRESSION = `(() => {
   return { url: location.href, title: document.title, textChars: body.length, focus };
 })()`;
 
+// WHY THE LOOK IS ONE EXPRESSION AND NOT TWO CALLS.
+// The rows and the state are read from the same page at the same moment, and an action's answer compares them with what it saw last time.
+// Two evaluations would let the page move between them, so the comparison would be between two different pages.
+
+const PAGE_LOOK_EXPRESSION = (limit) => `(() => {
+  const rows = ${snapshotExpression(limit)};
+  const state = ${PAGE_STATE_EXPRESSION};
+  return { rows, state };
+})()`;
+
 // WHY THE SCROLL'S VERDICT IS A FUNCTION AND NOT A TERNARY.
 // Four questions decide what a scroll has to say for itself, and they are not equally likely: a target that was never found, a page that cannot prove it reached the end, a page that plainly did not move, and the ordinary case where it did.
 // Written as one nested ternary inside the answer object, the ordinary case was the last line of a four-deep expression, so the reader reached it only after parsing the three failures first.
@@ -121,6 +131,25 @@ export function createObserveMethods({ cdp, primitives, capped, sleep = () => Pr
     });
     const state = result?.value ?? { url: '', title: '', textChars: 0, focus: null };
     return { ...state, url: maskCredentialUrl(state.url) };
+  };
+
+  // WHY THE ROWS AND THE STATE COME BACK IN ONE EVALUATION.
+  // An action's answer needs both, and each one used to be its own round trip: two waits for one look.
+  // The page can answer both in a single expression, so the look costs one round trip instead of two.
+
+  const pageLook = async ({ limit = 120 } = {}) => {
+    const { result } = await cdp.send('Runtime.evaluate', {
+      expression: PAGE_LOOK_EXPRESSION(capped(limit)),
+      returnByValue: true,
+      awaitPromise: false
+    });
+    const seen = result?.value ?? {};
+    const rows = Array.isArray(seen.rows) ? seen.rows : [];
+    const state = seen.state ?? { url: '', title: '', textChars: 0, focus: null };
+    return {
+      rows: rows.map(({ node, ...row }) => row),
+      state: { ...state, url: maskCredentialUrl(state.url) }
+    };
   };
 
   async function viewport() {
@@ -345,6 +374,7 @@ export function createObserveMethods({ cdp, primitives, capped, sleep = () => Pr
     readRows,
     readState,
     pageState,
+    pageLook,
     viewport,
     capture,
     captureSized,

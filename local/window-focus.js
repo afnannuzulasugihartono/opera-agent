@@ -16,7 +16,7 @@
 // A call that cannot focus a window on this machine says so in words.
 // Returning a bare false would leave the agent guessing between "the window is behind something" and "this platform is not supported here".
 
-import { execFile } from 'node:child_process';
+import { execFile, spawn } from 'node:child_process';
 import { promisify } from 'node:util';
 
 const run = promisify(execFile);
@@ -34,10 +34,7 @@ const lines = (text) => String(text ?? '')
 // The operating system's own documented way round that is a no-op ALT, which makes the calling process eligible to come forward; it presses nothing and types nothing.
 // With it, focus_window answered focused true while the typing app was still running.
 
-const WINDOWS_SCRIPT = (match) => `
-$ErrorActionPreference = 'Stop'
-Add-Type @"
-using System;
+const WINDOWS_CLASS = `using System;
 using System.Text;
 using System.Runtime.InteropServices;
 public class OperaWindow {
@@ -83,9 +80,127 @@ public class OperaWindow {
     GetWindowTextW(h, s, 512);
     return s.ToString();
   }
-}
+}`;
+
+// WHY THE CLASS IS ITS OWN PIECE.
+// The warm shell below compiles it once and keeps the shell, so the fast path and the one-shot path can never drift apart.
+
+const WINDOWS_SCRIPT = (match) => `
+$ErrorActionPreference = 'Stop'
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+Add-Type @"
+${WINDOWS_CLASS}
 "@
 [OperaWindow]::${match === null ? 'Read()' : `Focus('${match.replace(/'/g, "''")}')`}`;
+
+// WHY THE SHELL IS KEPT ALIVE INSTEAD OF STARTED AGAIN.
+// Measured on this machine: every read compiled this C# class into a fresh PowerShell, and the compile was the whole cost - 1,096 to 1,376 ms a read, paid on every input action whose page sat behind another window.
+// So one shell starts, compiles once, and then answers a line at a time: the same read, a few milliseconds.
+// The one-shot script above stays the fallback, because a shell that dies must not take the guard with it.
+
+const READER_END = '###opera-window-end###';
+const READER_TIMEOUT_MS = 4000;
+
+const WINDOWS_READER_SCRIPT = `
+$ErrorActionPreference = 'Stop'
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+Add-Type @"
+${WINDOWS_CLASS}
+"@
+$out = [Console]::Out
+while ($null -ne ($line = [Console]::In.ReadLine())) {
+  if ($line.Length -eq 0) { continue }
+  $verb = $line.Substring(0, 1)
+  $arg = $line.Substring(1)
+  $answer = if ($verb -eq 'F') { [OperaWindow]::Focus($arg) } else { [OperaWindow]::Read() }
+  $out.Write($answer)
+  $out.Write('${READER_END}')
+  $out.Flush()
+}`;
+
+let reader = null;
+
+// WHY THE READER IS ONE PROCESS AND NOT A POOL.
+// Two shells would each hold their own copy of the window list and could answer with different truths, and the guard's answer has to be the one the machine gives right now.
+
+// WHY EVERY SHELL IS KILLED WHEN THE DRIVER GOES.
+// The reader outlives the call that started it on purpose, so the process that owns it has to say goodbye to it.
+
+const shells = new Set();
+
+process.once('exit', () => {
+  for (const shell of shells) {
+    try { shell.kill(); } catch { }
+  }
+});
+
+function warmReader() {
+  if (reader) return reader;
+  const child = spawn('powershell', [
+    '-NoProfile',
+    '-NonInteractive',
+    '-EncodedCommand',
+    Buffer.from(WINDOWS_READER_SCRIPT, 'utf16le').toString('base64')
+  ], { stdio: ['pipe', 'pipe', 'ignore'], windowsHide: true });
+  shells.add(child);
+  const waiting = [];
+  let buffer = '';
+  child.stdout.setEncoding('utf8');
+  child.stdout.on('data', (chunk) => {
+    buffer += chunk;
+    for (;;) {
+      const at = buffer.indexOf(READER_END);
+      if (at === -1) break;
+      const part = buffer.slice(0, at);
+      buffer = buffer.slice(at + READER_END.length);
+      waiting.shift()?.(part);
+    }
+  });
+
+  // WHY A READER THAT STOPS ANSWERING IS DROPPED AND NOT WAITED FOR.
+  // A shell that dies mid-answer leaves a waiter behind, and the next answer would land on it.
+  // So a timeout takes the waiter out, kills the shell, and lets the next call start a fresh one.
+
+  const drop = () => {
+    if (reader?.child === child) reader = null;
+    shells.delete(child);
+    try { child.kill(); } catch { }
+  };
+  child.on('exit', () => {
+    shells.delete(child);
+    if (reader?.child === child) reader = null;
+  });
+  child.on('error', drop);
+  child.unref();
+  child.stdout.unref();
+  child.stdin.unref();
+  reader = {
+    child,
+    ask: (verb, arg = '') => new Promise((resolve, reject) => {
+      const waiter = (part) => { clearTimeout(timer); resolve(part); };
+      const timer = setTimeout(() => {
+        const at = waiting.indexOf(waiter);
+        if (at !== -1) waiting.splice(at, 1);
+        drop();
+        reject(new Error('the window reader did not answer'));
+      }, READER_TIMEOUT_MS);
+      waiting.push(waiter);
+      child.stdin.write(`${verb}${arg}\n`, (error) => {
+        if (!error) return;
+        clearTimeout(timer);
+        drop();
+        reject(error);
+      });
+    })
+  };
+  return reader;
+}
+
+// WHY THE READER STARTS WITH THE PROCESS AND NOT WITH THE FIRST READ.
+// The first read would otherwise pay the compile - about a second on this machine - and that read is the one an agent waits on when it sends its first keystroke.
+// So the shell starts in the background when this module loads, and the compile is done long before the first action needs an answer.
+
+if (process.platform === 'win32') warmReader();
 
 const APPLE_READ = 'tell application "System Events" to get name of every process whose frontmost is true';
 const APPLE_FOCUS = (match) => [
@@ -124,9 +239,26 @@ const readWindows = (all) => {
   };
 };
 
+// WHY THE WARM READER IS ASKED FIRST AND THE ONE-SHOT IS THE FALLBACK.
+// The warm shell answers in milliseconds because it compiled the class once; the one-shot answers in about a second because it compiles every time.
+// A shell that cannot start must not take the guard with it, so the one-shot stays.
+
+async function windowsAsk(verb, match, run_) {
+  if (run_ === run) {
+    const warm = await warmReader().ask(verb, match ?? '').catch(() => null);
+    if (warm !== null) return warm;
+  }
+  const read = await run_('powershell', [
+    '-NoProfile',
+    '-NonInteractive',
+    '-Command',
+    WINDOWS_SCRIPT(verb === 'F' ? match : null)
+  ]);
+  return read.stdout;
+}
+
 async function windows(run_) {
-  const read = await run_('powershell', ['-NoProfile', '-NonInteractive', '-Command', WINDOWS_SCRIPT(null)]);
-  return readWindows(lines(read.stdout));
+  return readWindows(lines(await windowsAsk('R', '', run_)));
 }
 
 async function apple(match, run_) {
@@ -178,15 +310,15 @@ export async function focusWindow(match = '', { platform = process.platform, exe
     };
   }
   try {
-    const out = platform === 'win32'
-      ? await exec('powershell', ['-NoProfile', '-NonInteractive', '-Command', WINDOWS_SCRIPT(wanted)])
+    const text = platform === 'win32'
+      ? await windowsAsk('F', wanted, exec)
       : platform === 'darwin'
-        ? await exec('osascript', ['-e', APPLE_FOCUS(wanted)])
+        ? (await exec('osascript', ['-e', APPLE_FOCUS(wanted)])).stdout
         : platform === 'linux'
-          ? await exec('xdotool', ['search', '--name', wanted, 'windowactivate', '--sync'])
+          ? (await exec('xdotool', ['search', '--name', wanted, 'windowactivate', '--sync'])).stdout
           : null;
-    if (out === null) return unsupported(platform, `window focus is not implemented on ${platform}`);
-    const all = lines(out.stdout);
+    if (text === null) return unsupported(platform, `window focus is not implemented on ${platform}`);
+    const all = lines(text);
     const brought = all.filter((line) => line.startsWith('BROUGHT ')).map((line) => line.slice('BROUGHT '.length));
     const title = brought[brought.length - 1] ?? '';
     const after = all.length ? readWindows(all) : await windowState({ platform, exec });

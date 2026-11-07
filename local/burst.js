@@ -238,7 +238,7 @@ function refAt(step, results) {
   if (step.refFromStep === undefined) return null;
   const found = results[step.refFromStep];
   if (!found) throw new Error(`refFromStep ${step.refFromStep} has no completed step behind it`);
-  return found.result;
+  return found;
 }
 
 async function runStep(driver, step, results, remaining) {
@@ -343,9 +343,11 @@ export async function runLocalBurst({ driver, steps, timeoutMs = BURST_MAX_TIMEO
       return failure(index, step, new Error(`browser_burst ran out of its ${timeoutMs} ms budget before step ${index}`), true);
     }
     const stepStarted = clock();
+    // WHY THE STEP'S OWN ANSWER IS NOT BOXED IN ANOTHER BOX.
+    // The step already says what it did - the row it found, the key it sent - and a `result` wrapper only makes the reader open one more door to find it.
     try {
       const result = await runStep(driver, step, results, remaining);
-      results.push({ index, action: step.action, ok: true, timingMs: Math.max(0, clock() - stepStarted), result });
+      results.push({ ...(result && typeof result === 'object' ? result : { value: result }), index, action: step.action, ok: true, timingMs: Math.max(0, clock() - stepStarted) });
     } catch (error) {
       return failure(index, step, error);
     }
@@ -354,7 +356,7 @@ export async function runLocalBurst({ driver, steps, timeoutMs = BURST_MAX_TIMEO
   // WHY A BURST THAT SETTLED TELLS THE LOOK.
   // A wait step ends on a settled page, and a chord-only stream returns a verdict that it watched the page go quiet.
   // The look after the burst would settle the same page again, which is one round trip billed twice, so the burst passes the verdict it already has.
-  const settledStep = results.some((entry) => entry.action === 'wait' || entry.action === 'wait_for_row' || (entry.action === 'stream_keys' && entry.result?.settled === true));
+  const settledStep = results.some((entry) => entry.action === 'wait' || entry.action === 'wait_for_row' || (entry.action === 'stream_keys' && entry.settled === true));
 
   return { ok: true, completedSteps: results.length, results, timingMs: Math.max(0, clock() - started), ...(settledStep ? { settled: true } : {}) };
 }

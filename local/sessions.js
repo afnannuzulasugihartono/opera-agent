@@ -89,6 +89,7 @@ export function asDriver(session) {
     keys: (events) => session.keys(events),
     snapshot: (limit) => session.snapshot(limit === undefined ? {} : { limit }),
     pageState: () => session.pageState(),
+    pageLook: (options) => session.pageLook?.(options ?? {}) ?? null,
     caretLine: () => session.caretLine(),
     windowState: () => session.windowState(),
     focusWindow: (match) => session.focusWindow(match),
