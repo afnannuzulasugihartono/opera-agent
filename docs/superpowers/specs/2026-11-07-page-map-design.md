@@ -135,10 +135,15 @@ Mode tile memotong dokumen menjadi strip pada koordinat dokumen (tanpa scroll), 
   "page": { "title": "...", "url": "..." },
   "tiles": [ { "index": 0, "sha256": "...", "width": 1521, "height": 776, "bytes": 183421, "y": 0 },
              { "index": 1, "sha256": "...", "width": 1521, "height": 776, "bytes": 191002, "y": 776 } ],
-  "documentHeight": 25147, "tileCount": 33 }
+  "documentHeight": 25147, "tileCount": 33, "coveredHeight": 1552,
+  "hasMore": true, "nextTileOffset": 2 }
 ```
 
-Setiap tile menjadi satu blok gambar di `content[]`. `previousHash` tetap berlaku: pada mode tile, hash yang dibandingkan adalah hash gabungan seluruh tile.
+Setiap tile menjadi satu blok gambar di `content[]`. `previousHash` tetap berlaku: pada mode tile, hash yang dibandingkan adalah hash gabungan tile-tile pada irisan itu.
+
+**Tile dikirim per irisan, bukan semua sekali.** Hasil perintah perangkat dibatasi 512 KiB (`extension/lib/serialize.js`, `MAX_RESULT_BYTES`), dan 33 tile halaman Wikipedia sekitar 5 MB — lebih besar dari yang boleh melewati kabel. Jadi perangkat mengembalikan irisan tile yang muat di anggaran byte (biasanya 2-4 tile), dan `capture_page` menerima satu parameter baru: `tileOffset` (bilangan bulat >= 0, bawaan 0). Panggilan pertama mengambil irisan pertama; panggilan berikutnya memakai `tileOffset` untuk mengambil sisanya. `tileCount` adalah jumlah tile yang dibutuhkan seluruh dokumen, `coveredHeight` adalah tinggi yang sudah tercakup, dan `hasMore`/`nextTileOffset` memberi tahu jalan sisanya.
+
+Dengan begitu satu halaman penuh tetap satu perjalanan per potongan, dan peta JSON tetap sumber kebenaran untuk bagian yang belum dipotret.
 
 ## Arsitektur
 
@@ -154,7 +159,7 @@ Aliran data: MCP -> `page.read` dengan `view: "map"` -> content script -> peta -
 
 - `page.read` menerima parameter baru `class`, `offset`, `limit`; `view: "map"` memilih mode peta. `validateCommand` tidak punya allowlist parameter untuk `page.read`, jadi tidak ada primitive baru dan jumlah primitive tetap **31**.
 - Batas waktu perangkat untuk `page.read` dinaikkan 10.000 -> 30.000 ms, karena pemindaian halaman berat bisa melewati 10 detik di perangkat lambat. Sisi MCP mengirim `timeoutMs` 30.000 untuk mode peta.
-- `page.capture` tidak berubah parameternya; tile adalah fallback internal, bukan parameter baru.
+- `page.capture` gains exactly one parameter, `tileOffset` (integer >= 0, default 0), because the tile fallback must be walked in slices: the device result is bounded at 512 KiB (`MAX_RESULT_BYTES`), and a full-page tile set is several megabytes. `page.capture`'s allowlist in `validateCommand` gains the same key.
 - Kontrak MCP hosted berubah dari 34 menjadi 35 tool. Yang harus dipin ulang, dengan alasan tertulis: `tests/fixtures/mcp-contract-v1.json` (`toolCount`, `tools[]`), peta digest beku di `tests/mcp-surface.test.mjs`, baris "Cloud MCP surface" di `README.md`, pin `index.ts` dan `tools.ts` di `tests/helpers/boundary-locks.mjs`, dan `gates.lock` untuk `extension/lib/protocol.js`.
 
 ## Batas dan performa
