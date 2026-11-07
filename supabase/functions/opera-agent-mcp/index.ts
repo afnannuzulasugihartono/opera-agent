@@ -14,6 +14,7 @@ import { CORS_DEFAULT_ORIGINS, resolveAllowedOrigin } from "../_shared/cors.js";
 import { CommandFailure, sealVmProgram } from "../_shared/seal-vm-program.js";
 import { compileAdhocGraph } from "../_shared/adhoc-compile.js";
 import { registerTools } from "./tools.ts";
+import { tidyForAi } from "./tidy.ts";
 
 // WHY THE DEPS ARE TYPED FROM THE FUNCTIONS THEMSELVES.
 // A hand-written type beside a function is a second version of that function, and the two drift.
@@ -199,8 +200,14 @@ function errorMessage(error: unknown) {
   return error instanceof Error ? error.message.slice(0, 1000) : String(error || "Unknown error").slice(0, 1000);
 }
 
+// OPERA_AGENT_MCP_RAW=1 hands back the transport envelope untouched, for a person reading one run end to end.
+
+const RAW_OUTPUT = (Deno.env.get("OPERA_AGENT_MCP_RAW") || "") === "1";
+
 function textResult(value: unknown) {
-  const structuredContent = value && typeof value === "object" ? value as Record<string, unknown> : { value };
+  const structuredContent = RAW_OUTPUT
+    ? (value && typeof value === "object" ? value as Record<string, unknown> : { value })
+    : tidyForAi(value);
   return {
     content: [{ type: "text" as const, text: JSON.stringify(structuredContent) }],
     structuredContent
@@ -443,7 +450,8 @@ function screenshotResult(value: Record<string, unknown>) {
   const mimeType = typeof screenshot.mimeType === "string" ? screenshot.mimeType : "image/jpeg";
   const metadataScreenshot = { ...screenshot };
   delete metadataScreenshot.data;
-  const structuredContent = { ...value, result: { ...result, screenshot: metadataScreenshot } };
+  const shaped = { ...value, result: { ...result, screenshot: metadataScreenshot } };
+  const structuredContent = RAW_OUTPUT ? shaped : tidyForAi(shaped);
   const content: Array<
     { type: "text"; text: string } |
     { type: "image"; data: string; mimeType: string }

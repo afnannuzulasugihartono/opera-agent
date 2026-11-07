@@ -73,6 +73,31 @@ missing. A device that is offline is a device that answers nothing. The server
 adds 34 tools to the browser primitives, and every one of them acts on the
 paired device's browser, not on the machine the agent runs on.
 
+### What a call answers
+
+A hosted call answers with the answer, not with the transport. The envelope the
+command rides in — `commandId`, `status`, `result`, `timing` — is opened, so the
+tool's own fields sit at the top of the object:
+
+```json
+{ "ok": true, "tabs": [{ "id": 12, "title": "Example", "url": "https://example.com/", "active": false }] }
+```
+
+The rules are the same for every tool:
+
+- `ok` is said once, at the top.
+- `commandId`, `runId` and `timing` are gone: no tool takes them, so no caller can spend them.
+- `status: "completed"` is gone: a call that failed says `ok: false` and carries `error`.
+- A tab keeps its page facts and loses its window chrome: `muted`, `pinned`, `audible` and `windowId` are window facts.
+- `bridge` keeps only `lastError`, and is absent when the bridge has nothing to report.
+
+`OPERA_AGENT_MCP_RAW=1` on the function turns the tidying off and hands back the
+raw envelope, which is what a person reads when one run has to be followed end to end.
+
+The other half of the surface is the input. Every tool carries a title and a
+`Returns:` sentence, and every field of every input says what it is, what it
+defaults to, and what it changes.
+
 ## 2. Local stdio MCP
 
 The server speaks MCP over stdio and drives a browser on this machine.

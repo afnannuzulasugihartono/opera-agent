@@ -24,8 +24,8 @@ export const PUBLIC_SURFACE_LOCKS = Object.freeze([
   ['../extension/content.js', '4ce134a49026c74b559cee36afd7d15c6f68fce8'],
   ['../extension/background.js', 'da44f1ed773c985cb6ad74c62d5e732d2fe2afee'],
   ['../extension/manifest.json', 'edc35efcd7e1476ad5f4f8898988e48bce6cce8f'],
-  ['../supabase/functions/opera-agent-mcp/index.ts', 'b66ebb0f6c5f3f692fa6b6e5adad01a7f0e2c6bf'],
-  ['../supabase/functions/opera-agent-mcp/tools.ts', '3e6c05dc9a610752b481951303f998e045c55baf'],
+  ['../supabase/functions/opera-agent-mcp/index.ts', '5ef692193f4293751097d974f418cbf590be3938'],
+  ['../supabase/functions/opera-agent-mcp/tools.ts', 'ab4b04c73c2802dc2a9e2d96dc7f7ee6fdf557a5'],
 ]);
 
 export const OBSERVATION_STACK_LOCKS = Object.freeze([
