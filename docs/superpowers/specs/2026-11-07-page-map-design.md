@@ -45,7 +45,7 @@ Satu elemen satu kelas. Kalau satu simpul cocok beberapa aturan, aturan yang leb
 | `link` | `a[href]`, `area[href]` | `href` |
 | `media` | `video`, `audio` | `src`, `paused`, `currentTime`, `duration` |
 | `iframe` | `iframe`, `frame`, `object`, `embed` | `src`, `title` |
-| `picture` | `img`, `picture`, `canvas`, `svg` dengan sisi ter-render ≥ 24 px | `src`, `alt`, `width`, `height` |
+| `picture` | `img`, `picture`, `canvas`, `svg` dengan sisi ter-render ≥ 24 px | `src`, `alt` |
 | `icon` | `svg`, `img`, `[role=img]` dengan sisi ter-render < 24 px | `src`, `alt` |
 | `table` | `table`, `[role=table\|grid]` | `rows`, `cols`, `headers[]` |
 | `list` | `ul`, `ol`, `[role=list]` | `itemCount` |
@@ -78,8 +78,10 @@ Satu elemen satu kelas. Kalau satu simpul cocok beberapa aturan, aturan yang leb
   "regions": [ { "regionId": "rg_main", "kind": "landmark", "role": "main", "label": "", "bbox": {}, "elementCount": 3901 } ],
   "outline": [ { "level": 1, "text": "Bahasa Indonesia", "y": 97, "ref": "oa_..." } ],
   "tables": [ { "ref": "oa_...", "rows": 12, "cols": 3, "headers": ["Provinsi", "Jumlah", "%"], "bbox": {} } ],
-  "images": [ { "ref": "oa_...", "alt": "Sampul ...", "width": 220, "height": 160, "bbox": {}, "caption": "..." } ] }
+  "images": [ { "ref": "oa_...", "alt": "Sampul ...", "bbox": {}, "caption": "..." } ] }
 ```
+
+Ukuran gambar ada di `bbox`, jadi tidak diulang sebagai `width` dan `height`.
 
 Kerangka tidak punya amplop: fakta halaman di atas, koleksi di bawah, semuanya satu tingkat. `classes[]` adalah array; tiap butir menyebut jumlah dan kotak pembatas seluruh kelas itu, supaya model tahu di mana kelas itu berada tanpa menarik isinya.
 
