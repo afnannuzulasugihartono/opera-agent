@@ -244,6 +244,7 @@ AX_OBSERVATION_PAGE = (ROOT / 'tests' / 'fixtures' / 'usability-ax-observation.h
 ACTION_PIPELINE_PAGE = (ROOT / 'tests' / 'fixtures' / 'usability-action-pipeline.html').read_text(encoding='utf-8')
 RETRY_POPUP_PAGE = (ROOT / 'tests' / 'fixtures' / 'usability-retry-popup.html').read_text(encoding='utf-8')
 INTERACTION_CONTROLS_PAGE = (ROOT / 'tests' / 'fixtures' / 'usability-interaction-controls.html').read_text(encoding='utf-8')
+PAGE_MAP_PAGE = (ROOT / 'tests' / 'fixtures' / 'usability-page-map.html').read_text(encoding='utf-8')
 
 # WHY THE PORTAL IS A FIXTURE AND THE STATEMENT IS REAL BYTES.
 # The device path is the one that turns a service into a product, and it had only ever been proved against a fake browser.
@@ -601,8 +602,10 @@ class Handler(BaseHTTPRequestHandler):
                 pass
             return
 
-        if self.path.startswith('/page') or self.path.startswith('/visual') or self.path.startswith('/blank') or self.path.startswith('/iframe') or self.path.startswith('/pre8e-r0') or self.path.startswith('/pre8e-r1') or self.path.startswith('/pre8e-r2') or self.path.startswith('/pre8e-r3') or self.path.startswith('/pre8e-r4') or self.path.startswith('/pre8e-r5') or self.path.startswith('/pre8e-uv') or self.path.startswith('/pre8e-ur') or self.path.startswith('/pre8e-ui-identity') or self.path.startswith('/pre8e-r9') or self.path.startswith('/pre8e-ax'):
-            if self.path.startswith('/pre8e-uv'):
+        if self.path.startswith('/page') or self.path.startswith('/visual') or self.path.startswith('/blank') or self.path.startswith('/iframe') or self.path.startswith('/pre8e-r0') or self.path.startswith('/pre8e-r1') or self.path.startswith('/pre8e-r2') or self.path.startswith('/pre8e-r3') or self.path.startswith('/pre8e-r4') or self.path.startswith('/pre8e-r5') or self.path.startswith('/pre8e-uv') or self.path.startswith('/pre8e-ur') or self.path.startswith('/pre8e-ui-identity') or self.path.startswith('/pre8e-r9') or self.path.startswith('/pre8e-ax') or self.path.startswith('/pre8e-map'):
+            if self.path.startswith('/pre8e-map'):
+                document = PAGE_MAP_PAGE
+            elif self.path.startswith('/pre8e-uv'):
                 document = ACTION_PIPELINE_PAGE
             elif self.path.startswith('/pre8e-ur'):
                 document = RETRY_POPUP_PAGE
@@ -2217,7 +2220,46 @@ async def run(port, profile):
         }
         print(json.dumps({'r4CompactAcceptance': r4_acceptance}, indent=2))
 
-        cid = STATE.push('tabs.close', {'tabId': r4_tab_id})
+        cid = STATE.push('tabs.open', {'url': f'http://{HOST}:{port}/pre8e-map', 'active': False, 'wait': True})
+        map_tab = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['tab']['id']
+
+        cid = STATE.push('page.read', {'tabId': map_tab, 'view': 'map'}, benchmark='page.read.map.skeleton')
+        skeleton = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['page']
+        assert len(skeleton['classes']) == 17, 'the skeleton must name all seventeen classes'
+        assert skeleton['totalElements'] > 20, 'the map must see the fixture elements'
+        assert skeleton['documentHeight'] > skeleton['viewport']['height'], 'the fixture must scroll'
+        link_row = next(row for row in skeleton['classes'] if row['class'] == 'link')
+        assert link_row['count'] >= 3, 'the nav and footer links must be counted'
+        assert any(row['class'] == 'text' and row['count'] >= 5 for row in skeleton['classes'])
+        assert skeleton['outline'] and skeleton['outline'][0]['level'] == 1
+        assert skeleton['tables'] and skeleton['tables'][0]['rows'] >= 3
+        assert skeleton['regions'], 'the header/nav/main/footer must be regions'
+
+        cid = STATE.push('page.read', {'tabId': map_tab, 'view': 'map', 'class': 'link', 'offset': 0, 'limit': 2}, benchmark='page.read.map.link')
+        first = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['page']
+        assert first['total'] == link_row['count'] and first['hasMore'] is True
+        assert first['nextOffset'] == 2 and len(first['elements']) == 2
+        seen = [item['ref'] for item in first['elements']]
+        offset = first['nextOffset']
+        while offset is not None:
+            cid = STATE.push('page.read', {'tabId': map_tab, 'view': 'map', 'class': 'link', 'offset': offset, 'limit': 2})
+            chunk = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['page']
+            seen.extend(item['ref'] for item in chunk['elements'])
+            offset = chunk['nextOffset']
+        assert len(seen) == link_row['count'] and len(set(seen)) == len(seen), 'every link exactly once'
+
+        cid = STATE.push('page.read', {'tabId': map_tab, 'view': 'map', 'class': 'link', 'limit': 1000})
+        all_links = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['page']['elements']
+        below = next(item for item in all_links if item['rect']['y'] > skeleton['viewport']['height'])
+        assert below, 'a link below the fold must carry a document y past the viewport'
+        cid = STATE.push('page.scroll', {'tabId': map_tab, 'y': below['rect']['y'], 'absolute': True})
+        assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+        cid = STATE.push('page.click', {'tabId': map_tab, 'ref': below['ref']})
+        assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+        cid = STATE.push('page.read', {'tabId': map_tab, 'offset': 0, 'limit': 300, 'includeElements': False})
+        assert 'map-clicked' in assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['page']['text']
+
+        cid = STATE.push('tabs.close', {'tabId': map_tab})
         assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
 
         cid = STATE.push('tabs.open', {'url': f'http://{HOST}:{port}/pre8e-r3', 'active': False, 'wait': True})
