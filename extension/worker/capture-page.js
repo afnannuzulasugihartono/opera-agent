@@ -117,8 +117,6 @@ function imageResult(clip, chosen, capturedAt) {
     encodedBytes: chosen.bytes,
     width: Math.max(1, Math.round(clip.width * chosen.scale)),
     height: Math.max(1, Math.round(clip.height * chosen.scale)),
-    sourceWidth: clip.width,
-    sourceHeight: clip.height,
     crop: { x: clip.x, y: clip.y, width: clip.width, height: clip.height },
     quality: chosen.quality,
     blankChecked: chosen.blankChecked,

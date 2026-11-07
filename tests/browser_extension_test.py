@@ -2627,7 +2627,7 @@ async def run(port, profile):
 
         cid = STATE.push('page.capture', {'tabId': visual_tab_id, 'crop': {'x': 0, 'y': 0, 'width': 320, 'height': 240}})
         cropped = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['screenshot']
-        assert cropped['sourceWidth'] == 320 and cropped['sourceHeight'] == 240
+        assert cropped['crop']['width'] == 320 and cropped['crop']['height'] == 240
         cid = STATE.push('tabs.close', {'tabId': visual_tab_id})
         assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
 
