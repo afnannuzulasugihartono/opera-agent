@@ -180,7 +180,7 @@ type ExecutionMode = "background" | "foreground";
 
 export function registerTools(server: McpServer, deps: ToolDeps) {
   const {
-    execute, executeScreenshot, runWorkflow, runAdhoc, rpc, textResult, toolError,
+    execute, executeScreenshot, executeMap, runWorkflow, runAdhoc, rpc, textResult, toolError,
     callVmHost, vmRunResult, rpcErrorParts, db, deviceName, provider, caller
   } = deps;
 
@@ -503,6 +503,23 @@ export function registerTools(server: McpServer, deps: ToolDeps) {
     fullPage?: boolean;
     timeoutMs?: number;
   }) => executeScreenshot({ tabId, ...(crop ? { crop } : {}), ...(quality != null ? { quality } : {}), ...(maxWidth != null ? { maxWidth } : {}), ...(maxHeight != null ? { maxHeight } : {}), ...(previousHash ? { previousHash } : {}), ...(fullPage === true ? { fullPage: true } : {}) }, timeoutMs, deviceName, provider));
+
+  server.registerTool("read_page_map", {
+    title: "Read Opera page map",
+    description: "Map the whole page, not one viewport: every meaningful element grouped into seventeen classes with document coordinates and a ref that stays valid after scrolling. Without class it answers the skeleton (document size, per-class counts and boxes, regions, headings, tables, images); with class it answers that class, paged by offset and limit. Returns: ok, tabId, the page facts, and classes/regions/outline/tables/images for the skeleton or elements with offset, limit, total, hasMore and nextOffset for one class.",
+    inputSchema: {
+      tabId: tabIdSchema,
+      class: z.enum(["button", "choice", "input", "select", "heading", "link", "media", "iframe", "picture", "icon", "table", "list", "form", "region", "separator", "status", "text"]).optional()
+        .describe("One of the seventeen classes to pull; omit it to get the skeleton."),
+      offset: z.number().int().nonnegative().optional()
+        .describe("How many elements of the class to skip; defaults to 0."),
+      limit: z.number().int().min(1).max(1000).optional()
+        .describe("How many elements to return; defaults to 200 and never more than 1000."),
+      timeoutMs: timeoutSchema
+    },
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true }
+  }, ({ tabId, class: className, offset, limit, timeoutMs }: TargetTab & { class?: string; offset?: number; limit?: number; timeoutMs?: number }) =>
+    executeMap({ tabId, ...(className ? { class: className } : {}), ...(offset != null ? { offset } : {}), ...(limit != null ? { limit } : {}) }, timeoutMs ?? 30000, deviceName, provider));
 
   server.registerTool("find_elements", {
     title: "Find page elements",

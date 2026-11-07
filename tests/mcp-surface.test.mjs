@@ -80,6 +80,7 @@ const FROZEN_TOOL_SCHEMAS = Object.freeze({
   navigate_tab: 'e48d509464c7d5ab',
   close_tab: '7e963cf5ec747863',
   read_page: '86d6b7503733127d',
+  read_page_map: '8cb9f1f0931fb118',
   capture_page: '09ac59c2b354bc4e',
   find_elements: 'f6eb0d7b9da2c372',
   click_element: 'e4293043033ea470',
@@ -208,7 +209,7 @@ test('MCP exposes focused browser tools and no generic command escape hatch', ()
   const tools = [...source.matchAll(/server\.registerTool\("([a-z_]+)"/g)].map((match) => match[1]);
   assert.deepEqual(tools, [
     'browser_status', 'run_browser_burst', 'run_workflow', 'run_program', 'run_adhoc', 'skill_save', 'skill_recall', 'start_watch', 'wait_events', 'stop_watch', 'list_tabs', 'open_url', 'activate_tab', 'navigate_tab', 'close_tab',
-    'read_page', 'capture_page', 'find_elements', 'click_element', 'fill_element', 'press_key', 'stream_keys', 'scroll_page',
+    'read_page', 'capture_page', 'read_page_map', 'find_elements', 'click_element', 'fill_element', 'press_key', 'stream_keys', 'scroll_page',
     'pointer',
     'media_state', 'media_play', 'media_pause', 'media_seek',
     'media_stream_start', 'media_stream_stop', 'media_listen_read',
@@ -224,10 +225,10 @@ test('R4 keeps the protocol inventory frozen at 31 allowlisted primitives for re
   assert.deepEqual([...ALLOWED_METHODS].sort(), FROZEN_METHODS);
 });
 
-test('R11 removes the sense-act loop tools, so the public MCP tool inventory is 34 tools', async () => {
+test('R11 removes the sense-act loop tools, so the public MCP tool inventory is 35 tools', async () => {
   const registered = [...source.matchAll(/server\.registerTool\("([a-z_]+)"/g)].map((match) => match[1]);
-  assert.equal(registered.length, 34);
-  assert.deepEqual([...registered].sort(), [...FROZEN_MCP_TOOLS, 'start_watch', 'stop_watch', 'wait_events', 'statement_deliver', 'statement_manifest', 'invoice_create'].sort());
+  assert.equal(registered.length, 35);
+  assert.deepEqual([...registered].sort(), [...FROZEN_MCP_TOOLS, 'start_watch', 'stop_watch', 'wait_events', 'statement_deliver', 'statement_manifest', 'invoice_create', 'read_page_map'].sort());
 });
 
 test('R4 keeps the read_page input schema frozen with no view parameter', async () => {
@@ -244,11 +245,20 @@ test('R4 keeps the read_page input schema frozen with no view parameter', async 
   assert.doesNotMatch(schema, /view:/);
 });
 
+test('the map tool takes a class and a page, and never an envelope', () => {
+  const block = toolBlock('read_page_map');
+  const body = objectBody(block.slice(block.indexOf('inputSchema:')), 'inputSchema:');
+  const names = propertiesOf(body).map((property) => property.name).sort();
+  assert.deepEqual(names, ['class', 'limit', 'offset', 'tabId', 'timeoutMs']);
+  assert.match(source, /executeMap\(\{ tabId/);
+  assert.match(source, /runCommand\("page\.read", \{ \.\.\.params, view: "map" \}/);
+});
+
 test('the tool count and names match the contract', () => {
   const registered = [...source.matchAll(/server\.registerTool\("([a-z_]+)"/g)].map((m) => m[1]);
-  assert.equal(registered.length, 34);
+  assert.equal(registered.length, 35);
   assert.deepEqual(registered, contract.tools);
-  assert.equal(contract.toolCount, 34);
+  assert.equal(contract.toolCount, 35);
 });
 
 test('no generic escape hatch was introduced', () => {
@@ -348,7 +358,7 @@ const READABLE_INPUTS_MOVED = Object.freeze({
 
 test('the frozen schema map matches the live file, and records the changes it has approved', () => {
   const blocks = toolBlocks();
-  assert.equal(blocks.length, 34, 'the public tool count changes only by reviewed decision (loop tools removed)');
+  assert.equal(blocks.length, 35, 'the public tool count changes only by reviewed decision (loop tools removed)');
   const actual = {};
   for (const block of blocks) actual[block.name] = schemaDigest(block.schema);
 
@@ -715,7 +725,7 @@ test('the whole-file digest fixture is re-frozen to the live file', () => {
 
 test('every tool has a title and says what it returns', () => {
   const starts = [...source.matchAll(/server\.registerTool\("([a-z_]+)"/g)];
-  assert.equal(starts.length, 34, 'the tool count changes only by reviewed decision');
+  assert.equal(starts.length, 35, 'the tool count changes only by reviewed decision');
 
   starts.forEach((match, index) => {
     const end = index + 1 < starts.length ? starts[index + 1].index : source.length;

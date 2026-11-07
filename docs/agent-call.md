@@ -70,7 +70,7 @@ claude mcp add --transport http opera-agent https://nenmkmtvjremqphfqnfw.supabas
 What a caller gets wrong: the device header names which of your devices does
 the work, and the server uses the first paired device when the header is
 missing. A device that is offline is a device that answers nothing. The server
-adds 34 tools to the browser primitives, and every one of them acts on the
+adds 35 tools to the browser primitives, and every one of them acts on the
 paired device's browser, not on the machine the agent runs on.
 
 ### What a call answers

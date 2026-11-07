@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "protocolVersion": 1,
-  "toolCount": 34,
-  "sourceSha256": "777e65b5b59f93d466e8aaab728d5dc15e29b1fb6d1a31cea69608e1e63ff18b",
+  "toolCount": 35,
+  "sourceSha256": "b7f4d84d00ca514a1b05ced2856951b378325abad56a3edf7d047a0aef73c48e",
   "tools": [
     "browser_status",
     "run_browser_burst",
@@ -21,6 +21,7 @@
     "close_tab",
     "read_page",
     "capture_page",
+    "read_page_map",
     "find_elements",
     "click_element",
     "fill_element",

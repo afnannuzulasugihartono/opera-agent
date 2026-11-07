@@ -23,6 +23,7 @@ import { tidyForAi } from "./tidy.ts";
 export type ToolDeps = {
   execute: typeof execute;
   executeScreenshot: typeof executeScreenshot;
+  executeMap: typeof executeMap;
   runWorkflow: typeof runWorkflow;
   runAdhoc: typeof runAdhoc;
   rpc: typeof rpc;
@@ -443,6 +444,18 @@ function executeScreenshot(params: Record<string, unknown>, timeoutMs?: number, 
   return runCommand("page.capture", params, timeoutMs, deviceName, provider).then(screenshotResult).catch(toolError);
 }
 
+// The map rides page.read, and its answer is the page's own fields: a wrapper would be a second name for the same facts.
+
+function executeMap(params: Record<string, unknown>, timeoutMs: number, deviceName: string = DEVICE_NAME, provider = "") {
+  return runCommand("page.read", { ...params, view: "map" }, timeoutMs, deviceName, provider)
+    .then((value) => {
+      const result = value.result && typeof value.result === "object" ? value.result as Record<string, unknown> : {};
+      const page = result.page && typeof result.page === "object" ? result.page as Record<string, unknown> : {};
+      return textResult({ ...page, ok: true, tabId: result.tabId });
+    })
+    .catch(toolError);
+}
+
 function screenshotResult(value: Record<string, unknown>) {
   const result = value.result && typeof value.result === "object" ? value.result as Record<string, unknown> : {};
   const screenshot = result.screenshot && typeof result.screenshot === "object" ? result.screenshot as Record<string, unknown> : {};
@@ -847,6 +860,7 @@ function createServer(deviceName: string = DEVICE_NAME, provider = "", caller: V
   registerTools(server, {
     execute,
     executeScreenshot,
+    executeMap,
     runWorkflow,
     runAdhoc,
     rpc,
