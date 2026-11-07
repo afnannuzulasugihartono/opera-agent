@@ -422,7 +422,40 @@ test('createObserveMethods exposes the reads of the page', () => {
   });
 
   assert.deepEqual(Object.keys(methods).sort(),
-    ['capture', 'captureSized', 'computed', 'menuTree', 'openMenu', 'pageState', 'readRows', 'readState', 'resolveRow', 'scroll', 'snapshot', 'viewport']);
+    ['capture', 'captureSized', 'computed', 'menuTree', 'openMenu', 'pageLook', 'pageState', 'readRows', 'readState', 'resolveRow', 'scroll', 'snapshot', 'viewport']);
+});
+
+// WHY THE LOOK ASKS ONCE AND ANSWERS BOTH.
+// An action's answer needs the rows and the page state, and each one used to be its own evaluation - two waits for one look.
+// The look asks once and returns both, so the page cannot move between the two halves.
+
+test('the page look answers the rows and the state in one evaluation', async () => {
+  const sends = [];
+  const methods = createObserveMethods({
+    cdp: {
+      send: async (method) => {
+        sends.push(method);
+        return {
+          result: {
+            value: {
+              rows: [{ role: 'row', name: 'Row 1', x: 1, y: 2, node: 0 }],
+              state: { url: 'https://contoh.co.id/x', title: 'X', textChars: 4, focus: null }
+            }
+          }
+        };
+      }
+    },
+    primitives: {},
+    capped: (limit) => limit
+  });
+
+  const look = await methods.pageLook();
+
+  assert.equal(sends.length, 1, 'one evaluation answers both halves');
+  assert.equal(look.rows[0].name, 'Row 1');
+  assert.equal(look.rows[0].node, undefined, 'the node handle stays in the page');
+  assert.equal(look.state.title, 'X');
+  assert.equal(look.state.textChars, 4);
 });
 
 // WHY THE PAGE READ MASKS A CREDENTIAL IN THE ADDRESS.

@@ -106,6 +106,20 @@ test('a ref carries the handle from resolve into the click, never a guessed poin
   assert.deepEqual(driver.calls, [['resolve', 'menuitem', 'Insert'], ['click', null, null, 'opera-7']]);
 });
 
+// WHY A STEP'S ANSWER IS NOT BOXED IN ANOTHER BOX.
+// The step already says what it did - the row it found, the key it sent - and a `result` wrapper only makes the reader open one more door to find it.
+
+test('a step carries its own answer, with no second box around it', async () => {
+  const driver = fakeDriver();
+  const normalized = normalizeBurst({ steps: [{ action: 'resolve', role: 'menuitem', name: 'Insert' }] });
+
+  const out = await runLocalBurst({ driver, steps: normalized.steps, timeoutMs: normalized.timeoutMs });
+
+  assert.equal(out.results[0].handle, 'opera-7', 'the row the step found is right there');
+  assert.equal(out.results[0].action, 'resolve');
+  assert.equal(out.results[0].result, undefined, 'and there is no wrapper to open');
+});
+
 // WHY A BURST REPORTS THE SETTLE IT ALREADY PAID.
 // A wait step looks at the page until it stops moving, so a burst that holds one ends on a settled page.
 // Without the verdict the caller settles again before looking, which is one round trip billed twice; a burst of reads has no reason to say it.

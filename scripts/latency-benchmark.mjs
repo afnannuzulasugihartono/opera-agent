@@ -33,6 +33,12 @@ const PORT = 9466;
 const runsArg = process.argv.find((value) => value.startsWith('--runs='));
 const RUNS = Math.max(5, Math.min(200, Number(runsArg?.split('=')[1]) || 30));
 
+// WHY THE TAB ID IS NOT THE SAME IN EVERY RUN.
+// The claim on a tab lives in the bridge, which outlives this script, so two runs in a row would find the first run's claim still on the tab and refuse to measure anything.
+// The id carries the run, so a run never meets the claim of the run before it.
+
+const TAB = `bench-${process.pid}-${Date.now().toString(36)}`;
+
 // The fixture: a field to type into, a button to press, and a hundred rows to find.
 // The field and the button are pinned to the top, so a scroll during one measurement cannot make the next one click off the page.
 
@@ -107,18 +113,18 @@ try {
   session = await openSession({ port: PORT, tabUrl: url, launch: false, viaBridge: false });
   const driver = asDriver(session);
 
-  const mcpDriver = { ...driver, tabs: async () => [{ id: 't1', url, title: 'Latency fixture' }] };
+  const mcpDriver = { ...driver, tabs: async () => [{ id: TAB, url, title: 'Latency fixture' }] };
   const server = createMcpServer({
     driver: mcpDriver,
     port: PORT,
-    resolveTab: async () => ['t1'],
+    resolveTab: async () => [TAB],
     open: async () => mcpDriver,
     close: async () => ({ closed: true })
   });
   const call = async (name, args = {}) => {
     const res = await server.handle({
       jsonrpc: '2.0', id: 1, method: 'tools/call',
-      params: { name, arguments: { tabId: 't1', ...args } }
+      params: { name, arguments: { tabId: TAB, ...args } }
     });
     if (!res.result) throw new Error(`${name}: ${JSON.stringify(res.error)}`);
     return JSON.parse(res.result.content[0].text);

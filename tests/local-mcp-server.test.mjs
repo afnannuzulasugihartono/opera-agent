@@ -407,7 +407,7 @@ test('an input action brings the window forward and says so', async () => {
 
   assert.ok(c.driver.calls.some(([name]) => name === 'ensureFront'), 'the click asked about the window first');
   const out = JSON.parse(res.result.content[0].text);
-  assert.equal(out.window.window, 'the page hears input', 'and the answer says what it found');
+  assert.equal(out.window, 'the page hears input', 'and the answer says what it found');
 });
 
 // WHY A DEAF PAGE IS A FAILURE AND NOT AN ANSWER.
@@ -1097,6 +1097,8 @@ test('a burst runs dependent steps in one call and looks at the page once', asyn
 
   assert.equal(out.action.ok, true);
   assert.equal(out.action.completedSteps, 3);
+  assert.equal(out.action.results[0].handle, 'opera-9', 'the step carries its own answer');
+  assert.equal(out.action.results[0].result, undefined, 'with no second box around it');
   assert.deepEqual(c.driver.calls.filter(([name]) => name === 'click'), [['click', null, null, 'opera-9']]);
   assert.equal(c.driver.calls.filter(([name]) => name === 'settle').length, 1, 'the burst settles once');
   assert.equal(snapshots, 1, 'the burst looks once');

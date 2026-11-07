@@ -185,10 +185,13 @@ const settleForLook = async (driver) => {
 
 const afterAction = async (driver, action, limit) => {
   if (!action?.settled) await settleForLook(driver);
-  const seen = await driver.snapshot(limit ?? AUTO_PAGE_LIMIT);
-  const state = typeof driver.pageState === 'function'
-    ? await driver.pageState().catch(() => null)
+  const look = typeof driver.pageLook === 'function'
+    ? await driver.pageLook({ limit: limit ?? AUTO_PAGE_LIMIT }).catch(() => null)
     : null;
+  const seen = look?.rows ?? await driver.snapshot(limit ?? AUTO_PAGE_LIMIT);
+  const state = look?.state ?? (typeof driver.pageState === 'function'
+    ? await driver.pageState().catch(() => null)
+    : null);
   const prev = lastAuto.get(driver) ?? null;
   const prevState = lastPage.get(driver) ?? null;
   lastAuto.set(driver, seen);
@@ -201,7 +204,7 @@ const afterAction = async (driver, action, limit) => {
   return asText({
     action,
     ...(tab ? { tab } : {}),
-    window: windowSaid.get(driver) ?? null,
+    window: windowSaid.get(driver)?.window ?? null,
     page: {
       url: state?.url ?? null,
       title: state?.title ?? null,
