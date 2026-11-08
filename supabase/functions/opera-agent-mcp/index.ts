@@ -14,6 +14,7 @@ import { CORS_DEFAULT_ORIGINS, resolveAllowedOrigin } from "../_shared/cors.js";
 import { CommandFailure, sealVmProgram } from "../_shared/seal-vm-program.js";
 import { compileAdhocGraph } from "../_shared/adhoc-compile.js";
 import { registerTools } from "./tools.ts";
+import { tidyForAi } from "./tidy.ts";
 
 // WHY THE DEPS ARE TYPED FROM THE FUNCTIONS THEMSELVES.
 // A hand-written type beside a function is a second version of that function, and the two drift.
@@ -22,6 +23,7 @@ import { registerTools } from "./tools.ts";
 export type ToolDeps = {
   execute: typeof execute;
   executeScreenshot: typeof executeScreenshot;
+  executeMap: typeof executeMap;
   runWorkflow: typeof runWorkflow;
   runAdhoc: typeof runAdhoc;
   rpc: typeof rpc;
@@ -199,8 +201,14 @@ function errorMessage(error: unknown) {
   return error instanceof Error ? error.message.slice(0, 1000) : String(error || "Unknown error").slice(0, 1000);
 }
 
+// OPERA_AGENT_MCP_RAW=1 hands back the transport envelope untouched, for a person reading one run end to end.
+
+const RAW_OUTPUT = (Deno.env.get("OPERA_AGENT_MCP_RAW") || "") === "1";
+
 function textResult(value: unknown) {
-  const structuredContent = value && typeof value === "object" ? value as Record<string, unknown> : { value };
+  const structuredContent = RAW_OUTPUT
+    ? (value && typeof value === "object" ? value as Record<string, unknown> : { value })
+    : tidyForAi(value);
   return {
     content: [{ type: "text" as const, text: JSON.stringify(structuredContent) }],
     structuredContent
@@ -436,14 +444,44 @@ function executeScreenshot(params: Record<string, unknown>, timeoutMs?: number, 
   return runCommand("page.capture", params, timeoutMs, deviceName, provider).then(screenshotResult).catch(toolError);
 }
 
+// The map rides page.read, and its answer is the page's own fields: a wrapper would be a second name for the same facts.
+
+function executeMap(params: Record<string, unknown>, timeoutMs: number, deviceName: string = DEVICE_NAME, provider = "") {
+  return runCommand("page.read", { ...params, view: "map" }, timeoutMs, deviceName, provider)
+    .then((value) => {
+      const result = value.result && typeof value.result === "object" ? value.result as Record<string, unknown> : {};
+      if (result.ok === false) return textResult({ ok: false, error: result.error ?? { code: "PAGE_MAP_FAILED", message: "The page map could not be read." } });
+      const page = result.page && typeof result.page === "object" ? result.page as Record<string, unknown> : {};
+      return textResult({ ...page, ok: true, tabId: result.tabId });
+    })
+    .catch(toolError);
+}
+
 function screenshotResult(value: Record<string, unknown>) {
   const result = value.result && typeof value.result === "object" ? value.result as Record<string, unknown> : {};
   const screenshot = result.screenshot && typeof result.screenshot === "object" ? result.screenshot as Record<string, unknown> : {};
+  const tiles = Array.isArray(result.tiles) ? result.tiles as Array<Record<string, unknown>> : [];
   const data = typeof screenshot.data === "string" ? screenshot.data : "";
   const mimeType = typeof screenshot.mimeType === "string" ? screenshot.mimeType : "image/jpeg";
+
+  if (tiles.length) {
+    const { screenshot: dropped, ...withoutScreenshot } = result;
+    const shaped = { ...value, result: { ...withoutScreenshot, tiles: tiles.map(({ data: tileData, ...rest }) => rest) } };
+    const structuredContent = RAW_OUTPUT ? shaped : tidyForAi(shaped);
+    const content: Array<
+      { type: "text"; text: string } |
+      { type: "image"; data: string; mimeType: string }
+    > = [{ type: "text", text: JSON.stringify(structuredContent) }];
+    for (const tile of tiles) {
+      if (typeof tile.data === "string") content.push({ type: "image", data: tile.data, mimeType });
+    }
+    return { content, structuredContent };
+  }
+
   const metadataScreenshot = { ...screenshot };
   delete metadataScreenshot.data;
-  const structuredContent = { ...value, result: { ...result, screenshot: metadataScreenshot } };
+  const shaped = { ...value, result: { ...result, screenshot: metadataScreenshot } };
+  const structuredContent = RAW_OUTPUT ? shaped : tidyForAi(shaped);
   const content: Array<
     { type: "text"; text: string } |
     { type: "image"; data: string; mimeType: string }
@@ -839,6 +877,7 @@ function createServer(deviceName: string = DEVICE_NAME, provider = "", caller: V
   registerTools(server, {
     execute,
     executeScreenshot,
+    executeMap,
     runWorkflow,
     runAdhoc,
     rpc,

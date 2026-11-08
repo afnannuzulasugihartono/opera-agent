@@ -557,19 +557,20 @@ test('MCP v1 tool names and input schemas remain locked', () => {
   assert.deepEqual(tools, contract.tools);
 });
 
-test('legacy and enriched page.read results both survive the unchanged MCP envelope', () => {
-  const envelope = (result) => JSON.parse(JSON.stringify({ ok: true, commandId: 'command', status: 'completed', result }));
-  const legacy = envelope({ page: { title: 'Legacy', elements: [{ ref: 'oa_old' }] } });
-  const enriched = envelope({ page: {
+test('legacy and enriched page.read results both survive the flat MCP shape', () => {
+  const flat = (result) => JSON.parse(JSON.stringify({ ok: true, ...result }));
+  const legacy = flat({ page: { title: 'Legacy', elements: [{ ref: 'oa_old' }] } });
+  const enriched = flat({ page: {
     title: 'Candidate', elements: [{ ref: 'oa_new', logicalId: 'se_new' }],
     semanticState: { observationRevision: 2 }, semanticDelta: { classification: 'UPDATE' },
     semanticViews: { schemaVersion: 1, regions: [] },
   } });
-  assert.equal(legacy.result.page.semanticState, undefined);
-  assert.equal(enriched.result.page.elements[0].logicalId, 'se_new');
-  assert.equal(enriched.result.page.semanticDelta.classification, 'UPDATE');
+  assert.equal(legacy.page.semanticState, undefined);
+  assert.equal(enriched.page.elements[0].logicalId, 'se_new');
+  assert.equal(enriched.page.semanticDelta.classification, 'UPDATE');
   assert.match(mcpSource, /result: completed\.result/);
-  assert.match(mcpSource, /structuredContent = value && typeof value === "object" \? value/);
+  assert.match(mcpSource, /structuredContent = RAW_OUTPUT/);
+  assert.match(mcpSource, /: tidyForAi\(value\)/);
 });
 
 test('deterministic mutation fuzz preserves bounds, uniqueness, resets, and proof safety', () => {

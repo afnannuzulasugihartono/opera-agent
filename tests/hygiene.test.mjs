@@ -218,7 +218,7 @@ test('a read is serialized once, not once per size check', () => {
   assert.equal((block.match(/JSON\.stringify\(/g) || []).length, 1, 'exactly one stringify in the result-sizing path');
   assert.match(background, /function serializeResult\(value\)/);
   assert.match(background, /if \(serializedResult\.value === value\) return serializedResult\.text;/);
-  assert.match(block, /function oversized\(value\) \{\s*return serializeResult\(value\)\.length > MAX_RESULT_BYTES;/);
+  assert.match(block, /function oversized\(value\) \{\s*return serializeResult\(value\)\.length > RESULT_BUDGET_BYTES;/);
   const bounded = block.slice(block.indexOf('function boundedResult'), block.indexOf('function oversized'));
   assert.match(bounded, /const text = serializeResult\(value\)/);
 

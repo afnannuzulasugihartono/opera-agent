@@ -114,7 +114,7 @@ test('the dashboard says whether the extension is installed in this browser', ()
 test('the content script leaves the marker the dashboard reads', () => {
   const content = fs.readFileSync(new URL('extension/content.js', root), 'utf8');
 
-  assert.match(content, /documentElement\.dataset\.operaAgent\s*=/, 'the marker is written on documentElement');
+  assert.match(content, /documentElement\.setAttribute\('data-opera-agent', 'installed'\)/, 'the marker is written on documentElement as an attribute, so a non-HTML document does not throw');
 
   assert.match(read('dashboard.html'), /documentElement\.dataset\.operaAgent/, 'the page reads it from the DOM, not from a global');
 });

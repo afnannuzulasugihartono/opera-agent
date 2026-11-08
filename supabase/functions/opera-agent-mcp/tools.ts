@@ -31,92 +31,134 @@ const timeoutSchema = z.number().int().min(500).max(30000).optional()
   .describe("Maximum wait in milliseconds.");
 const burstTimeoutSchema = z.number().int().min(500).max(12000).optional()
   .describe("Maximum total burst duration in milliseconds; defaults to and cannot exceed 12000.");
+const commandOutputSchema = z.object({ ok: z.boolean() }).catchall(z.unknown());
+const httpUrlSchema = z.url().refine((value) => /^https?:/i.test(value), "Only HTTP/HTTPS URLs are allowed.");
 const workflowNameSchema = z.string().min(1).max(200).regex(/^[a-z0-9_.-]+$/)
   .describe("Registered workflow name, e.g. youtube.skip_ads.");
 const lowercaseLetters = "abcdefghijklmnopqrstuvwxyz".split("");
 const uppercaseLetters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
 const digits = "0123456789".split("");
-const navigationKeySchema = z.enum(["Enter", "Tab", "Escape", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Home", "End", "PageUp", "PageDown", "Space", "Backspace", "Delete", "Comma", "Period", "Slash", ...lowercaseLetters, ...uppercaseLetters, ...digits]);
+const navigationKeySchema = z.enum(["Enter", "Tab", "Escape", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Home", "End", "PageUp", "PageDown", "Space", "Backspace", "Delete", "Comma", "Period", "Slash", ...lowercaseLetters, ...uppercaseLetters, ...digits])
+  .describe("Key to press, e.g. Enter, Tab, ArrowLeft, or one printable character.");
 const modifierSchema = z.enum(["alt", "control", "ctrl", "shift", "meta", "cmd", "command", "option", "super", "win"]);
 const burstStepSchema = z.discriminatedUnion("action", [
   z.object({
     action: z.literal("read"),
     tabId: tabIdSchema.optional(),
-    offset: z.number().int().nonnegative().optional(),
-    limit: z.number().int().min(300).max(12000).optional(),
-    includeElements: z.boolean().optional(),
+    offset: z.number().int().nonnegative().optional()
+      .describe("Where in the text to start reading, in characters."),
+    limit: z.number().int().min(300).max(12000).optional()
+      .describe("How much text to read, in characters; defaults to 6000."),
+    includeElements: z.boolean().optional()
+      .describe("Return the interactive elements with their refs; defaults to true."),
     maxElements: z.number().int().min(1).max(300).optional()
+      .describe("Maximum elements to return; defaults to 120.")
   }).strict(),
   z.object({
     action: z.literal("find"),
     tabId: tabIdSchema.optional(),
-    text: z.string().max(300).optional(),
-    role: z.string().max(80).optional(),
-    tag: z.string().max(80).optional(),
-    exact: z.boolean().optional(),
+    text: z.string().max(300).optional()
+      .describe("Text to match against the element's visible or accessible name."),
+    role: z.string().max(80).optional()
+      .describe("ARIA role to match, e.g. button, link, textbox."),
+    tag: z.string().max(80).optional()
+      .describe("HTML tag to match, e.g. button, a, input."),
+    exact: z.boolean().optional()
+      .describe("Match the whole name instead of a part of it; defaults to false."),
     limit: z.number().int().min(1).max(100).optional()
+      .describe("Maximum elements to return; defaults to 30.")
   }).strict(),
   z.object({
     action: z.literal("click"),
     tabId: tabIdSchema.optional(),
-    ref: z.string().min(1).max(300).optional(),
+    ref: z.string().min(1).max(300).optional()
+      .describe("Element ref to click, from this burst or from find_elements."),
     refFromStep: z.number().int().nonnegative().optional()
       .describe("Take the ref from the items of an earlier burst step in the same burst (0-based step index). Keeps find+click atomic for dynamic UIs."),
     refIndex: z.number().int().nonnegative().optional()
+      .describe("Which item of that earlier step to take; defaults to the first.")
   }).strict().refine((step) => !!step.ref || step.refFromStep !== undefined, "Burst click requires ref or refFromStep."),
   z.object({
     action: z.literal("fill"),
     tabId: tabIdSchema.optional(),
-    ref: z.string().min(1).max(300).optional(),
-    refFromStep: z.number().int().nonnegative().optional(),
-    refIndex: z.number().int().nonnegative().optional(),
+    ref: z.string().min(1).max(300).optional()
+      .describe("Element ref of the field to fill, from this burst or from find_elements."),
+    refFromStep: z.number().int().nonnegative().optional()
+      .describe("Take the ref from the items of an earlier burst step in the same burst (0-based step index)."),
+    refIndex: z.number().int().nonnegative().optional()
+      .describe("Which item of that earlier step to take; defaults to the first."),
     value: z.string().max(20000)
+      .describe("Text to put in the field; it replaces the field's current value.")
   }).strict().refine((step) => !!step.ref || step.refFromStep !== undefined, "Burst fill requires ref or refFromStep."),
   z.object({
     action: z.literal("key"),
     tabId: tabIdSchema.optional(),
-    key: navigationKeySchema.optional(),
-    modifiers: z.array(modifierSchema).max(4).optional(),
+    key: navigationKeySchema.optional()
+      .describe("Key to press in this step, e.g. Enter or ArrowLeft."),
+    modifiers: z.array(modifierSchema).max(4).optional()
+      .describe("Modifiers held for the key, e.g. [\"control\"]."),
     text: z.string().min(1).max(20000).optional()
+      .describe("Text to type into the focused surface. Cannot be combined with key or modifiers.")
   }).strict(),
   z.object({
     action: z.literal("scroll"),
     tabId: tabIdSchema.optional(),
-    x: z.number().min(-1000000).max(1000000).optional(),
-    y: z.number().min(-1000000).max(1000000),
-    absolute: z.boolean().optional(),
+    x: z.number().min(-1000000).max(1000000).optional()
+      .describe("Horizontal scroll in pixels; negative scrolls left, defaults to 0."),
+    y: z.number().min(-1000000).max(1000000)
+      .describe("Vertical scroll in pixels; negative scrolls up."),
+    absolute: z.boolean().optional()
+      .describe("Treat x and y as a document position instead of a relative amount; defaults to false."),
     smooth: z.boolean().optional()
+      .describe("Scroll smoothly instead of jumping; defaults to false.")
   }).strict(),
   z.object({
     action: z.literal("hover"),
     tabId: tabIdSchema.optional(),
-    ref: z.string().max(200).optional(),
-    refFromStep: z.number().int().nonnegative().max(7).optional(),
-    refIndex: z.number().int().nonnegative().max(30).optional(),
+    ref: z.string().max(200).optional()
+      .describe("Element ref to hover, from this burst or from find_elements."),
+    refFromStep: z.number().int().nonnegative().max(7).optional()
+      .describe("Take the ref from the items of an earlier burst step in the same burst (0-based step index)."),
+    refIndex: z.number().int().nonnegative().max(30).optional()
+      .describe("Which item of that earlier step to take; defaults to the first."),
     text: z.string().max(300).optional()
       .describe("Optional submenu name to wait for after the hover, e.g. \"Page numbers\"."),
     timeoutMs: z.number().int().min(50).max(8000).optional()
+      .describe("How long to wait for the submenu; defaults to 1500.")
   }).strict(),
   z.object({
     action: z.literal("wait"),
     tabId: tabIdSchema.optional(),
-    ref: z.string().min(1).max(300).optional(),
-    selector: z.string().min(1).max(500).optional(),
-    text: z.string().min(1).max(300).optional(),
-    visibleOnly: z.boolean().optional(),
-    timeoutMs: z.number().int().min(50).max(8000).optional(),
+    ref: z.string().min(1).max(300).optional()
+      .describe("Element ref to wait for."),
+    selector: z.string().min(1).max(500).optional()
+      .describe("CSS selector to wait for."),
+    text: z.string().min(1).max(300).optional()
+      .describe("Text to wait for on the page."),
+    visibleOnly: z.boolean().optional()
+      .describe("Wait only for a visible element; defaults to true."),
+    timeoutMs: z.number().int().min(50).max(8000).optional()
+      .describe("How long to wait; defaults to 5000."),
     intervalMs: z.number().int().min(25).max(1000).optional()
+      .describe("How often to look; defaults to 75.")
   }).strict().refine((step) => !!(step.ref || step.selector || step.text), "Wait requires ref, selector, or text."),
   z.object({
     action: z.literal("pointer"),
     tabId: tabIdSchema.optional(),
-    pointerAction: z.enum(["move", "click", "drag", "wheel"]),
-    x: z.number().nonnegative(),
-    y: z.number().nonnegative(),
-    endX: z.number().nonnegative().optional(),
-    endY: z.number().nonnegative().optional(),
-    deltaX: z.number().min(-1200).max(1200).optional(),
+    pointerAction: z.enum(["move", "click", "drag", "wheel"])
+      .describe("Which pointer job: a coordinate move, click, drag or wheel."),
+    x: z.number().nonnegative()
+      .describe("Viewport x of the pointer."),
+    y: z.number().nonnegative()
+      .describe("Viewport y of the pointer."),
+    endX: z.number().nonnegative().optional()
+      .describe("Viewport x to drag to; a drag requires it."),
+    endY: z.number().nonnegative().optional()
+      .describe("Viewport y to drag to; a drag requires it."),
+    deltaX: z.number().min(-1200).max(1200).optional()
+      .describe("Wheel delta on the x axis; defaults to 0."),
     deltaY: z.number().min(-1200).max(1200).optional()
+      .describe("Wheel delta on the y axis; a wheel requires it.")
   }).strict().superRefine((step, ctx) => {
     if (step.pointerAction === "drag" && (step.endX == null || step.endY == null)) {
       ctx.addIssue({ code: "custom", message: "Drag requires endX and endY." });
@@ -128,7 +170,7 @@ const burstStepSchema = z.discriminatedUnion("action", [
   z.object({
     action: z.literal("navigate"),
     tabId: tabIdSchema.optional(),
-    url: z.url().refine((value) => /^https?:/i.test(value), "Only HTTP/HTTPS URLs are allowed.").describe("HTTP/HTTPS URL to navigate to. A navigation replaces the document: refs minted before it cannot be used after it.")
+    url: httpUrlSchema.describe("HTTP/HTTPS URL to navigate to. A navigation replaces the document: refs minted before it cannot be used after it.")
   }).strict()
 ]);
 
@@ -138,33 +180,28 @@ type ExecutionMode = "background" | "foreground";
 
 export function registerTools(server: McpServer, deps: ToolDeps) {
   const {
-    execute, executeScreenshot, runWorkflow, runAdhoc, rpc, textResult, toolError,
+    execute, executeScreenshot, executeMap, runWorkflow, runAdhoc, rpc, textResult, toolError,
     callVmHost, vmRunResult, rpcErrorParts, db, deviceName, provider, caller
   } = deps;
 
   server.registerTool("browser_status", {
     title: "Check Opera Agent",
-    description: "Check whether the user's local Opera Agent extension is online and list its capabilities. Call this first for browser-control requests.",
+    description: "Check whether the user's local Opera Agent extension is online and list its capabilities. Call this first for browser-control requests. Returns: ok, paired, product, version, deviceName, capabilities, protocolVersion and time, plus bridge.lastError when the bridge has failed, and the worker's own faults as errors with errorCount (errorsTruncated and omittedErrors when the list did not fit).",
     inputSchema: { timeoutMs: timeoutSchema },
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false }
   }, ({ timeoutMs }: { timeoutMs?: number }) => execute("browser.ping", {}, timeoutMs, deviceName, provider));
 
   server.registerTool("run_browser_burst", {
     title: "Run fast Opera action burst",
-    description: "Run 1-8 dependent page actions sequentially. Each step may name its own tab and defaults to the burst tab. Defaults to background execution, and coordinate steps draw a visible cursor marker. Foreground mode displays pointer steps and requires a tab the user already allowed to be activated. A step that consumes another step's ref must run on the tab that minted it, and no ref survives a navigate step on that tab. It stops at the first failure, has a 12-second total limit, and cannot open, close, loop, branch, or execute JavaScript.",
+    description: "Run 1-8 dependent page actions sequentially. Each step may name its own tab and defaults to the burst tab. Defaults to background execution, and coordinate steps draw a visible cursor marker. Foreground mode displays pointer steps and requires a tab the user already allowed to be activated. A step that consumes another step's ref must run on the tab that minted it, and no ref survives a navigate step on that tab. It stops at the first failure, has a 12-second total limit, and cannot open, close, loop, branch, or execute JavaScript. Returns: ok, tabId, executionMode, completedSteps and the results, one entry per step with its action, its outcome and the evidence it produced.",
     inputSchema: {
       tabId: tabIdSchema,
-      steps: z.array(burstStepSchema).min(1).max(8),
+      steps: z.array(burstStepSchema).min(1).max(8)
+        .describe("The steps to run, in order. Each step is one action and may name its own tab; the first step runs on the burst tab."),
       executionMode: executionModeSchema,
       timeoutMs: burstTimeoutSchema
     },
-    outputSchema: {
-      ok: z.boolean(),
-      commandId: z.string(),
-      status: z.string(),
-      result: z.record(z.string(), z.unknown()),
-      timing: z.record(z.string(), z.unknown())
-    },
+    outputSchema: commandOutputSchema,
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true }
   }, ({ tabId, steps, executionMode, timeoutMs }: TargetTab & { steps: Array<Record<string, unknown>>; executionMode?: ExecutionMode; timeoutMs?: number }) => {
     const params = executionMode === "foreground" ? { tabId, steps, executionMode } : { tabId, steps };
@@ -173,7 +210,7 @@ export function registerTools(server: McpServer, deps: ToolDeps) {
 
   server.registerTool("run_workflow", {
     title: "Run Opera Agent workflow",
-    description: "Run a versioned site workflow (for example youtube.skip_ads) end to end on the paired Opera device: ad detection, retrying skip clicks against freshly re-queried controls, and ad-state verification all happen inside one run. Use this for known repeated intents instead of hand-driving each click and risking stale element references.",
+    description: "Run a versioned site workflow (for example youtube.skip_ads) end to end on the paired Opera device: ad detection, retrying skip clicks against freshly re-queried controls, and ad-state verification all happen inside one run. Use this for known repeated intents instead of hand-driving each click and risking stale element references. Returns: ok, workflow, status and the workflow result, with error carrying the failure when the run did not complete.",
     inputSchema: {
       name: workflowNameSchema,
       input: z.record(z.string(), z.unknown()).optional()
@@ -187,7 +224,7 @@ export function registerTools(server: McpServer, deps: ToolDeps) {
 
   server.registerTool("run_program", {
     title: "Run Opera Agent program",
-    description: "Run a gate-approved OA_REACTIVE_VM_V1 read-only program end to end on the paired Opera device without the model in the loop: the VM host enqueues it, the device executes read/verify commands, and verification evidence returns in status/result. Use this for ad-hoc multi-step read intents instead of hand-driving each find. Write actions are refused here; they run as registered workflows via run_workflow.",
+    description: "Run a gate-approved OA_REACTIVE_VM_V1 read-only program end to end on the paired Opera device without the model in the loop: the VM host enqueues it, the device executes read/verify commands, and verification evidence comes back with the run. Use this for ad-hoc multi-step read intents instead of hand-driving each find. Write actions are refused here; they run as registered workflows via run_workflow. Returns: ok, the run status, and the program result with its verification evidence.",
     inputSchema: {
       program: z.object({}).passthrough()
         .describe("A compileGoalPlan-approved program object (schemaVersion OA_REACTIVE_VM_V1) with children (never steps) and read-only methods. The tool fills full budgets, sets tenantId to the caller, and seals programDigest before enqueue; anything unsealable is refused."),
@@ -199,7 +236,7 @@ export function registerTools(server: McpServer, deps: ToolDeps) {
 
   server.registerTool("run_adhoc", {
     title: "Run one-off Opera write task",
-    description: "Run a one-off write task (find, fill, ordinary clicks, verify) as a temporary workflow on the paired Opera device: the definition is compiled, registered under adhoc.*, executed, then deleted. Consequential actions need confirm:true in the graph.",
+    description: "Run a one-off write task (find, fill, ordinary clicks, verify) as a temporary workflow on the paired Opera device: the definition is compiled, registered under adhoc.*, executed, then deleted. Consequential actions need confirm:true in the graph. Returns: ok, workflow, status and result, error when it failed, and deleted telling whether the temporary workflow was removed.",
     inputSchema: {
       graph: z.object({}).passthrough()
         .describe("Ad-hoc task graph: an object with a nodes array of command/if/repeat/foreach/set/wait/fail nodes using only allowlisted read methods plus page.click/page.fill/page.key/page.focus. Every page.click/page.fill needs a declaredLabel, and consequential labels need confirm:true. A compile refusal returns the compiler code and registers nothing."),
@@ -215,7 +252,7 @@ export function registerTools(server: McpServer, deps: ToolDeps) {
 
   server.registerTool("skill_save", {
     title: "Save skill lesson",
-    description: "Save a task lesson to the shared skill memory, which is generic experience shared across accounts rather than per-device state.",
+    description: "Save a task lesson to the shared skill memory, which is generic experience shared across accounts rather than per-device state. Returns: ok and the id of the saved lesson.",
     inputSchema: {
       task: z.string().min(1).max(500)
         .describe("What the task was, e.g. \"open transcript panel\"."),
@@ -240,7 +277,7 @@ export function registerTools(server: McpServer, deps: ToolDeps) {
 
   server.registerTool("skill_recall", {
     title: "Recall skill lessons",
-    description: "Recall matching lessons from the shared skill memory, which is generic experience shared across accounts rather than per-device state.",
+    description: "Recall matching lessons from the shared skill memory, which is generic experience shared across accounts rather than per-device state. Returns: ok and the matching lessons, each with its task, site, lesson and pitfalls.",
     inputSchema: {
       query: z.string().min(1)
         .describe("Free-text query matched literally against saved tasks and lessons."),
@@ -263,50 +300,64 @@ export function registerTools(server: McpServer, deps: ToolDeps) {
 
   server.registerTool("start_watch", {
     title: "Start live watch",
-    description: "Arm a device-local trigger on an Opera tab: when the trigger condition becomes true (already-true-at-arm fires immediately), the device executes the action locally and an event appears in wait_events — no model round trip in between. Prefer this over polling with repeated find/read calls on fast-changing pages (ad overlays, countdowns, dynamic lists). Trigger kinds: selectorPresence, selectorGone, textMatch, urlChange, navigation, adState, mediaTime. Action types: report (default), click, burst, workflow, confirm.",
+    description: "Arm a device-local trigger on an Opera tab: when the trigger condition becomes true (already-true-at-arm fires immediately), the device executes the action locally and an event appears in wait_events — no model round trip in between. Prefer this over polling with repeated find/read calls on fast-changing pages (ad overlays, countdowns, dynamic lists). Trigger kinds: selectorPresence, selectorGone, textMatch, urlChange, navigation, adState, mediaTime. Action types: report (default), click, burst, workflow, confirm. Returns: ok, watcherId, tabId, armed, and warning when the trigger could not be armed.",
     inputSchema: {
       tabId: tabIdSchema,
       rule: z.object({
-        ruleId: z.string().regex(/^[A-Za-z0-9_-]{1,64}$/).optional(),
+        ruleId: z.string().regex(/^[A-Za-z0-9_-]{1,64}$/).optional()
+          .describe("Your own name for the watcher. It comes back as watcherId and is what stop_watch takes."),
         trigger: z.object({
-          kind: z.enum(['selectorPresence', 'selectorGone', 'textMatch', 'urlChange', 'navigation', 'adState', 'mediaTime']),
-          selector: z.string().min(1).max(500).optional(),
-          adSelectors: z.array(z.string().min(1).max(500)).max(8).optional(),
-          text: z.string().min(1).max(500).optional(),
-          mode: z.enum(['contains', 'exact']).optional(),
-          state: z.enum(['on', 'off', 'any']).optional(),
-          atSeconds: z.number().min(0).max(86400).optional(),
+          kind: z.enum(['selectorPresence', 'selectorGone', 'textMatch', 'urlChange', 'navigation', 'adState', 'mediaTime'])
+            .describe("What to watch for: an element that appears or goes, text that appears, a url change, a navigation, an ad state, or a media position."),
+          selector: z.string().min(1).max(500).optional()
+            .describe("CSS selector the trigger watches. Required by selectorPresence and selectorGone."),
+          adSelectors: z.array(z.string().min(1).max(500)).max(8).optional()
+            .describe("Ad selectors watched together; the adState trigger fires when one of them is on the page."),
+          text: z.string().min(1).max(500).optional()
+            .describe("Text the trigger watches. Required by textMatch."),
+          mode: z.enum(['contains', 'exact']).optional()
+            .describe("How textMatch compares the text: contains or exact. Defaults to contains."),
+          state: z.enum(['on', 'off', 'any']).optional()
+            .describe("Which ad state the adState trigger waits for: on, off or any. Defaults to any."),
+          atSeconds: z.number().min(0).max(86400).optional()
+            .describe("Media position in seconds the mediaTime trigger fires at."),
           withinSeconds: z.number().min(0).max(60).optional()
+            .describe("How long after the page loads the trigger may still fire.")
         }),
         action: z.object({
-          type: z.enum(['report', 'click', 'burst', 'workflow', 'confirm']).default('report'),
-          selector: z.string().max(500).optional(),
-          trusted: z.boolean().optional(),
-          steps: z.array(z.record(z.string(), z.unknown())).max(8).optional(),
-          workflowName: z.string().max(100).optional(),
-          params: z.record(z.string(), z.unknown()).optional(),
+          type: z.enum(['report', 'click', 'burst', 'workflow', 'confirm']).default('report')
+            .describe("What happens when the trigger fires: report it, click, run a burst, run a workflow, or ask the user to confirm."),
+          selector: z.string().max(500).optional()
+            .describe("CSS selector of the element to act on."),
+          trusted: z.boolean().optional()
+            .describe("Send the action as real browser input instead of a script call."),
+          steps: z.array(z.record(z.string(), z.unknown())).max(8).optional()
+            .describe("Burst steps to run when the trigger fires."),
+          workflowName: z.string().max(100).optional()
+            .describe("Workflow to run when the trigger fires."),
+          params: z.record(z.string(), z.unknown()).optional()
+            .describe("Input for the workflow."),
           message: z.string().max(500).optional()
+            .describe("Text to report when the trigger fires.")
         }),
-        mode: z.enum(['once', 'repeat']).optional(),
-        maxEvents: z.number().int().min(1).max(100).optional(),
-        deadlineMs: z.number().int().min(1000).max(600000).optional(),
+        mode: z.enum(['once', 'repeat']).optional()
+          .describe("Fire once or repeat. Defaults to once."),
+        maxEvents: z.number().int().min(1).max(100).optional()
+          .describe("Stop the watcher after this many firings."),
+        deadlineMs: z.number().int().min(1000).max(600000).optional()
+          .describe("Stop the watcher after this many milliseconds. Defaults to 60000."),
         debounceMs: z.number().int().min(0).max(60000).optional()
+          .describe("Wait this long after a firing before the watcher may fire again.")
       }),
       timeoutMs: timeoutSchema
     },
-    outputSchema: {
-      ok: z.boolean(),
-      commandId: z.string(),
-      status: z.string(),
-      result: z.record(z.string(), z.unknown()),
-      timing: z.record(z.string(), z.unknown())
-    },
+    outputSchema: commandOutputSchema,
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true }
   }, ({ tabId, rule, timeoutMs }: TargetTab & { rule: Record<string, unknown>; timeoutMs?: number }) => execute("watch.start", { tabId, rule }, timeoutMs, deviceName, provider));
 
   server.registerTool("wait_events", {
     title: "Wait for watch events",
-    description: "Long-poll for device-local watch events (from start_watch). Returns immediately when one or more events arrive; returns an empty list after the wait window. Pass the returned cursor on the next call to receive only newer events. Events carry the fired rule, the page URL/adState/mediaTime, and the local action result (click/burst/workflow outcome).",
+    description: "Long-poll for device-local watch events (from start_watch). Returns immediately when one or more events arrive; returns an empty list after the wait window. Pass the returned cursor on the next call to receive only newer events. Events carry the fired rule, the page URL/adState/mediaTime, and the local action result (click/burst/workflow outcome). Returns: ok, the events that fired, the cursor to pass on the next call, and the count.",
     inputSchema: {
       watcherId: z.string().regex(/^[A-Za-z0-9_-]{1,64}$/).optional().describe("Only events from this watcher."),
       cursor: z.number().int().min(0).optional().describe("Pass the cursor from the previous wait_events result."),
@@ -344,19 +395,15 @@ export function registerTools(server: McpServer, deps: ToolDeps) {
 
   server.registerTool("stop_watch", {
     title: "Stop live watch",
-    description: "Disarm one watcher by id (stop_watch) or every active watcher (stopAll). Watchers also self-retire at their deadline/maxEvents, when their tab closes, or via the popup kill switch.",
+    description: "Disarm one watcher by id (stop_watch) or every active watcher (stopAll). Watchers also self-retire at their deadline/maxEvents, when their tab closes, or via the popup kill switch. Returns: ok and how many watchers were removed.",
     inputSchema: {
-      watcherId: z.string().regex(/^[A-Za-z0-9_-]{1,64}$/).optional(),
-      stopAll: z.boolean().optional(),
+      watcherId: z.string().regex(/^[A-Za-z0-9_-]{1,64}$/).optional()
+        .describe("Watcher to stop, as start_watch returned it."),
+      stopAll: z.boolean().optional()
+        .describe("Stop every watcher on the device instead of one."),
       timeoutMs: timeoutSchema
     },
-    outputSchema: {
-      ok: z.boolean(),
-      commandId: z.string(),
-      status: z.string(),
-      result: z.record(z.string(), z.unknown()),
-      timing: z.record(z.string(), z.unknown())
-    },
+    outputSchema: commandOutputSchema,
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false }
   }, ({ watcherId, stopAll, timeoutMs }: { watcherId?: string; stopAll?: boolean; timeoutMs?: number }) =>
     stopAll
@@ -364,16 +411,17 @@ export function registerTools(server: McpServer, deps: ToolDeps) {
       : execute("watch.stop", { watcherId }, timeoutMs, deviceName, provider));
 
   server.registerTool("list_tabs", {
-    description: "List open Opera tabs, including tab IDs, titles, URLs, and active state.",
+    title: "List open Opera tabs",
+    description: "List the open Opera tabs. Returns: ok and the tabs, each with id, title, url, active and its load status.",
     inputSchema: { currentWindow: z.boolean().optional().describe("Only return tabs in the current Opera window.") },
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false }
   }, ({ currentWindow }: { currentWindow?: boolean }) => execute("tabs.list", { currentWindow: currentWindow ?? false }, undefined, deviceName, provider));
 
   server.registerTool("open_url", {
     title: "Open URL in Opera",
-    description: "Open an HTTP or HTTPS URL in a new background Opera tab and return its tab ID. Set active true only when the user explicitly asks to see the new tab or permits foreground interaction.",
+    description: "Open an HTTP or HTTPS URL in a new background Opera tab. Set active true only when the user explicitly asks to see the new tab or permits foreground interaction. Returns: ok and the new tab, with its id, title, url and active flag.",
     inputSchema: {
-      url: z.url().refine((value) => /^https?:/i.test(value), "Only HTTP/HTTPS URLs are allowed."),
+      url: httpUrlSchema.describe("HTTP/HTTPS URL to open in a new tab."),
       active: z.boolean().optional().describe("Make the new tab active. Defaults to false; use true only with explicit user permission."),
       timeoutMs: timeoutSchema
     },
@@ -382,17 +430,17 @@ export function registerTools(server: McpServer, deps: ToolDeps) {
 
   server.registerTool("activate_tab", {
     title: "Activate Opera tab",
-    description: "Explicitly activate an Opera tab and focus its window. Use only when the user asks to see that tab or permits foreground interaction; never use as automatic recovery.",
-    inputSchema: { tabId: z.number().int().nonnegative() },
+    description: "Explicitly activate an Opera tab and focus its window. Use only when the user asks to see that tab or permits foreground interaction; never use as automatic recovery. Returns: ok and the activated tab, with reused telling whether it was already active and windowUpdate telling what the window did.",
+    inputSchema: { tabId: tabIdSchema },
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false }
   }, ({ tabId }: { tabId: number }) => execute("tabs.activate", { tabId, focusWindow: true }, undefined, deviceName, provider));
 
   server.registerTool("navigate_tab", {
     title: "Navigate Opera tab",
-    description: "Navigate an explicit Opera target tab to an HTTP/HTTPS URL without activating it, then wait for it to load.",
+    description: "Navigate an explicit Opera target tab to an HTTP/HTTPS URL without activating it, then wait for it to load. Returns: ok and the tab after loading, with reused telling whether the page was already there.",
     inputSchema: {
       tabId: tabIdSchema,
-      url: z.url().refine((value) => /^https?:/i.test(value), "Only HTTP/HTTPS URLs are allowed."),
+      url: httpUrlSchema.describe("HTTP/HTTPS URL to navigate to. A navigation replaces the document: refs minted before it cannot be used after it."),
       timeoutMs: timeoutSchema
     },
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true }
@@ -400,20 +448,24 @@ export function registerTools(server: McpServer, deps: ToolDeps) {
 
   server.registerTool("close_tab", {
     title: "Close Opera tab",
-    description: "Close one Opera tab by ID. Use only when the user asks to close it.",
-    inputSchema: { tabId: z.number().int().nonnegative() },
+    description: "Close one Opera tab by ID. Use only when the user asks to close it. Returns: ok and the tab id that was closed.",
+    inputSchema: { tabId: tabIdSchema },
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false, openWorldHint: false }
   }, ({ tabId }: { tabId: number }) => execute("tabs.close", { tabId }, undefined, deviceName, provider));
 
   server.registerTool("read_page", {
     title: "Read Opera page",
-    description: "Read a compact task-facing page observation with reusable refs, stable keys, relevant change evidence, screen rectangles, true viewport presence, document identity, viewport geometry, and zoom. Icon-only controls carry a computed accessibleName that find_elements matches; text-poor canvas-class pages also include a read-only axSummary accessibility snapshot (role/name facts only, not clickable refs). Use pagination for long pages.",
+    description: "Read a compact task-facing page observation with reusable refs, stable keys, relevant change evidence, screen rectangles, true viewport presence, document identity, viewport geometry, and zoom. Icon-only controls carry a computed accessibleName that find_elements matches; text-poor canvas-class pages also include a read-only axSummary accessibility snapshot (role/name facts only, not clickable refs). Use pagination for long pages. Returns: ok, tabId, and the page observation: url, title, text, the elements with their refs, and the viewport facts.",
     inputSchema: {
       tabId: tabIdSchema,
-      offset: z.number().int().nonnegative().optional(),
-      limit: z.number().int().min(300).max(12000).optional(),
-      includeElements: z.boolean().optional(),
+      offset: z.number().int().nonnegative().optional()
+        .describe("Where in the text to start reading, in characters. Use it to page through a long page."),
+      limit: z.number().int().min(300).max(12000).optional()
+        .describe("How much text to read, in characters; defaults to 6000."),
+      includeElements: z.boolean().optional()
+        .describe("Return the interactive elements with their refs; defaults to true."),
       maxElements: z.number().int().min(1).max(300).optional()
+        .describe("Maximum elements to return; defaults to 120.")
     },
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true }
   }, (args: TargetTab & { offset?: number; limit?: number; includeElements?: boolean; maxElements?: number }) =>
@@ -421,64 +473,104 @@ export function registerTools(server: McpServer, deps: ToolDeps) {
 
   server.registerTool("capture_page", {
     title: "Capture Opera page",
-    description: "Capture a bounded JPEG of an explicit Opera tab without activating it. Use adaptively for visual pages, canvas, low-confidence targets, state changes, or failed verification—not after every action. Pass the previous SHA-256 hash to suppress unchanged image data. The extension blocks incognito, user-private, password, OTP, payment, and other sensitive surfaces locally.",
+    description: "Capture a bounded JPEG of an explicit Opera tab without activating it. Use adaptively for visual pages, canvas, low-confidence targets, state changes, or failed verification—not after every action. Pass the previous SHA-256 hash to suppress unchanged image data. With fullPage the whole scrollable document is captured, and a page too tall to read in one image comes back as tiles walked by tileOffset. The extension blocks incognito, user-private, password, OTP, payment, and other sensitive surfaces locally. Returns: ok, tabId and the image; the text carries the capture metadata and the hash to pass as previousHash next time, or tiles with documentHeight, tileCount, coveredHeight, hasMore and nextTileOffset when the page is delivered in slices.",
     inputSchema: {
       tabId: tabIdSchema,
       crop: z.object({
-        x: z.number().nonnegative(),
-        y: z.number().nonnegative(),
-        width: z.number().positive(),
+        x: z.number().nonnegative()
+          .describe("Viewport x of the crop's left edge."),
+        y: z.number().nonnegative()
+          .describe("Viewport y of the crop's top edge."),
+        width: z.number().positive()
+          .describe("Crop width in pixels."),
         height: z.number().positive()
+          .describe("Crop height in pixels.")
       }).strict().optional().describe("Optional viewport-relative crop rectangle; it must remain fully inside the visible viewport."),
       quality: z.number().int().min(40).max(80).optional().describe("JPEG quality. Defaults to 60 and may be reduced locally to satisfy the byte limit."),
       maxWidth: z.number().int().min(320).max(1600).optional().describe("Maximum returned image width. Defaults to 1280."),
       maxHeight: z.number().int().min(240).max(1200).optional().describe("Maximum returned image height. Defaults to 900."),
       previousHash: z.string().regex(/^[a-f0-9]{64}$/i).optional().describe("SHA-256 from the prior capture; matching images return metadata without duplicate image bytes."),
       fullPage: z.boolean().optional().describe("Span the whole scrollable document past the viewport instead of the visible area. Exclusive with crop."),
+      tileOffset: z.number().int().nonnegative().optional().describe("Which slice of a full-page tile set to return; 0 is the first slice, and nextTileOffset names the next one."),
       timeoutMs: timeoutSchema
     },
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true }
-  }, ({ tabId, crop, quality, maxWidth, maxHeight, previousHash, fullPage, timeoutMs }: TargetTab & {
+  }, ({ tabId, crop, quality, maxWidth, maxHeight, previousHash, fullPage, tileOffset, timeoutMs }: TargetTab & {
     crop?: { x: number; y: number; width: number; height: number };
     quality?: number;
     maxWidth?: number;
     maxHeight?: number;
     previousHash?: string;
     fullPage?: boolean;
+    tileOffset?: number;
     timeoutMs?: number;
-  }) => executeScreenshot({ tabId, ...(crop ? { crop } : {}), ...(quality != null ? { quality } : {}), ...(maxWidth != null ? { maxWidth } : {}), ...(maxHeight != null ? { maxHeight } : {}), ...(previousHash ? { previousHash } : {}), ...(fullPage === true ? { fullPage: true } : {}) }, timeoutMs, deviceName, provider));
+  }) => executeScreenshot({ tabId, ...(crop ? { crop } : {}), ...(quality != null ? { quality } : {}), ...(maxWidth != null ? { maxWidth } : {}), ...(maxHeight != null ? { maxHeight } : {}), ...(previousHash ? { previousHash } : {}), ...(fullPage === true ? { fullPage: true } : {}), ...(tileOffset != null ? { tileOffset } : {}) }, timeoutMs ?? (fullPage === true ? 30000 : undefined), deviceName, provider));
+
+  server.registerTool("read_page_map", {
+    title: "Read Opera page map",
+    description: "Map the whole page, not one viewport: every meaningful element grouped into seventeen classes with document coordinates and a ref that stays valid after scrolling. Without class it answers the skeleton (document size, per-class counts and boxes, regions, headings, tables, images); with class it answers that class, paged by offset and limit. Returns: ok, tabId, the page facts, and classes/regions/outline/tables/images for the skeleton or elements with offset, limit, total, hasMore and nextOffset for one class.",
+    inputSchema: {
+      tabId: tabIdSchema,
+      class: z.enum(["button", "choice", "input", "select", "heading", "link", "media", "iframe", "picture", "icon", "table", "list", "form", "region", "separator", "status", "text"]).optional()
+        .describe("One of the seventeen classes to pull; omit it to get the skeleton."),
+      offset: z.number().int().nonnegative().optional()
+        .describe("How many elements of the class to skip; defaults to 0."),
+      limit: z.number().int().min(1).max(1000).optional()
+        .describe("How many elements to return; defaults to 200 and never more than 1000."),
+      timeoutMs: timeoutSchema
+    },
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true }
+  }, ({ tabId, class: className, offset, limit, timeoutMs }: TargetTab & { class?: string; offset?: number; limit?: number; timeoutMs?: number }) =>
+    executeMap({ tabId, ...(className ? { class: className } : {}), ...(offset != null ? { offset } : {}), ...(limit != null ? { limit } : {}) }, timeoutMs ?? 30000, deviceName, provider));
 
   server.registerTool("find_elements", {
     title: "Find page elements",
-    description: "Find visible interactive elements by human-readable text, ARIA role, or HTML tag. Returns refs for click_element/fill_element and rectangles for pointer tools.",
+    description: "Find visible interactive elements by human-readable text, ARIA role, or HTML tag. Returns: ok, tabId, and the matching elements as items, each with a ref for click_element/fill_element, its role and name, and its rectangle for the pointer tools.",
     inputSchema: {
       tabId: tabIdSchema,
-      text: z.string().max(300).optional(),
-      role: z.string().max(80).optional(),
-      tag: z.string().max(80).optional(),
-      exact: z.boolean().optional(),
+      text: z.string().max(300).optional()
+        .describe("Text to match against the element's visible or accessible name."),
+      role: z.string().max(80).optional()
+        .describe("ARIA role to match, e.g. button, link, textbox."),
+      tag: z.string().max(80).optional()
+        .describe("HTML tag to match, e.g. button, a, input."),
+      exact: z.boolean().optional()
+        .describe("Match the whole name instead of a part of it; defaults to false."),
       limit: z.number().int().min(1).max(100).optional()
+        .describe("Maximum elements to return; defaults to 30.")
     },
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true }
   }, (args: TargetTab & { text?: string; role?: string; tag?: string; exact?: boolean; limit?: number }) => execute("page.find", args, undefined, deviceName, provider));
 
   server.registerTool("click_element", {
     title: "Click page element",
-    description: "Click an element ref on an explicit target tab using trusted browser input. Background execution is the default and does not activate the tab.",
-    inputSchema: { tabId: tabIdSchema, ref: z.string().min(1).max(300), executionMode: executionModeSchema },
+    description: "Click an element ref on an explicit target tab using trusted browser input. Background execution is the default and does not activate the tab. Returns: ok, tabId, and what the click settled: the page state, plus openedTabs when the click opened a tab.",
+    inputSchema: {
+      tabId: tabIdSchema,
+      ref: z.string().min(1).max(300)
+        .describe("Element ref to click, from find_elements or read_page."),
+      executionMode: executionModeSchema
+    },
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true }
   }, ({ tabId, ref, executionMode }: TargetTab & { ref: string; executionMode?: ExecutionMode }) => execute("page.click", { tabId, ref, trusted: true, executionMode: executionMode ?? "background" }, undefined, deviceName, provider));
 
   server.registerTool("fill_element", {
     title: "Fill page field",
-    description: "Fill a non-sensitive editable element by ref. The extension blocks passwords, OTPs, payment fields, and file uploads.",
-    inputSchema: { tabId: tabIdSchema, ref: z.string().min(1).max(300), value: z.string().max(20000), executionMode: executionModeSchema },
+    description: "Fill a non-sensitive editable element by ref. The extension blocks passwords, OTPs, payment fields, and file uploads. Returns: ok, tabId, and what the fill settled: the value now in the field and the page state.",
+    inputSchema: {
+      tabId: tabIdSchema,
+      ref: z.string().min(1).max(300)
+        .describe("Element ref of the field to fill, from find_elements or read_page."),
+      value: z.string().max(20000)
+        .describe("Text to put in the field; it replaces the field's current value."),
+      executionMode: executionModeSchema
+    },
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: true }
   }, ({ tabId, ref, value, executionMode }: TargetTab & { ref: string; value: string; executionMode?: ExecutionMode }) => execute("page.fill", { tabId, ref, value, trusted: true, executionMode: executionMode ?? "background" }, undefined, deviceName, provider));
 
   server.registerTool("press_key", {
     title: "Press a key chord or type text",
-    description: "Send trusted keyboard input to the focused element. Either an allowlisted key with optional modifiers (Ctrl+A selects all, Ctrl+V pastes, Shift+Enter inserts a line break in an editor, Ctrl+Shift+Z redoes), or a text string of up to 20000 characters to type into the currently focused surface, which is how you fill a rich or canvas editor. Pass exactly one of key or text. Keyboard input is refused on password, OTP, and payment fields.",
+    description: "Send trusted keyboard input to the focused element. Either an allowlisted key with optional modifiers (Ctrl+A selects all, Ctrl+V pastes, Shift+Enter inserts a line break in an editor, Ctrl+Shift+Z redoes), or a text string of up to 20000 characters to type into the currently focused surface, which is how you fill a rich or canvas editor. Pass exactly one of key or text. Keyboard input is refused on password, OTP, and payment fields. Returns: ok, tabId, and what the keypress settled: the focused surface and the page state.",
     inputSchema: {
       tabId: tabIdSchema,
       key: navigationKeySchema.optional(),
@@ -493,13 +585,16 @@ export function registerTools(server: McpServer, deps: ToolDeps) {
 
   server.registerTool("stream_keys", {
     title: "Stream a key sequence in one command",
-    description: "Send up to 100 key chords and text fragments as one command instead of one call each: menu walks, grid sizing, and multi-chord shortcuts that would cost a round trip per key otherwise. Events run back-to-back on the device in order, with an optional pause after any event for menus that need a beat to open. Each event carries exactly one of key or text, like press_key. Keyboard input is refused on password, OTP, and payment fields.",
+    description: "Send up to 100 key chords and text fragments as one command instead of one call each: menu walks, grid sizing, and multi-chord shortcuts that would cost a round trip per key otherwise. Events run back-to-back on the device in order, with an optional pause after any event for menus that need a beat to open. Each event carries exactly one of key or text, like press_key. Keyboard input is refused on password, OTP, and payment fields. Returns: ok, tabId, and the page state after the last event.",
     inputSchema: {
       tabId: tabIdSchema,
       events: z.array(z.object({
-        key: navigationKeySchema.optional(),
-        modifiers: z.array(modifierSchema).max(4).optional(),
-        text: z.string().min(1).max(20000).optional(),
+        key: navigationKeySchema.optional()
+          .describe("Key to press in this event, e.g. Enter or ArrowLeft."),
+        modifiers: z.array(modifierSchema).max(4).optional()
+          .describe("Modifiers held for the key, e.g. [\"control\"]."),
+        text: z.string().min(1).max(20000).optional()
+          .describe("Text to type in this event. Cannot be combined with key or modifiers."),
         gapMs: z.number().int().min(0).max(2000).optional()
           .describe("Pause after this event, for menus and popups that need a beat to open.")
       }).strict()).min(1).max(100),
@@ -510,13 +605,17 @@ export function registerTools(server: McpServer, deps: ToolDeps) {
 
   server.registerTool("scroll_page", {
     title: "Scroll page",
-    description: "Scroll an explicit target page by a relative horizontal/vertical amount, or to an absolute document position, without activating its tab. Returns before/after document scroll metrics, movement, DOM-change, settling, and boundary status.",
+    description: "Scroll an explicit target page by a relative horizontal/vertical amount, or to an absolute document position, without activating its tab. Returns: ok, tabId, and the scroll outcome: the before and after document metrics, what moved, the DOM change, whether the page settled, and whether the edge was reached.",
     inputSchema: {
       tabId: tabIdSchema,
-      x: z.number().min(-1000000).max(1000000).optional(),
-      y: z.number().min(-1000000).max(1000000),
-      absolute: z.boolean().optional(),
-      smooth: z.boolean().optional(),
+      x: z.number().min(-1000000).max(1000000).optional()
+        .describe("Horizontal scroll in pixels; negative scrolls left, defaults to 0."),
+      y: z.number().min(-1000000).max(1000000)
+        .describe("Vertical scroll in pixels; negative scrolls up."),
+      absolute: z.boolean().optional()
+        .describe("Treat x and y as a document position instead of a relative amount; defaults to false."),
+      smooth: z.boolean().optional()
+        .describe("Scroll smoothly instead of jumping; defaults to false."),
       executionMode: executionModeSchema
     },
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true }
@@ -524,17 +623,23 @@ export function registerTools(server: McpServer, deps: ToolDeps) {
 
   server.registerTool("pointer", {
     title: "Pointer input",
-    description: "One pointer for every pointer job: move, click, drag, and wheel by viewport coordinates, or hover by element ref. A visible cursor marker is drawn in both modes so an owner can follow the run; background mode does not activate the tab. A hover settles on the ref and reports what it revealed, which is how a menu entry that owns a submenu is opened. Coordinate actions need x and y (a drag also needs endX and endY, a wheel needs deltaY); a hover needs a ref from find_elements instead. Prefer click_element for plain clicks and verify page state.",
+    description: "One pointer for every pointer job: move, click, drag, and wheel by viewport coordinates, or hover by element ref. A visible cursor marker is drawn in both modes so an owner can follow the run; background mode does not activate the tab. A hover settles on the ref and reports what it revealed, which is how a menu entry that owns a submenu is opened. Coordinate actions need x and y (a drag also needs endX and endY, a wheel needs deltaY); a hover needs a ref from find_elements instead. Prefer click_element for plain clicks and verify page state. Returns: ok, tabId, and what the pointer settled: the page state, and for a hover the submenu it revealed.",
     inputSchema: {
       tabId: tabIdSchema,
       pointerAction: z.enum(["move", "click", "drag", "wheel", "hover"])
         .describe("Which pointer job: a coordinate move, click, drag, or wheel, or a ref hover that settles."),
-      x: z.number().nonnegative().optional(),
-      y: z.number().nonnegative().optional(),
-      endX: z.number().nonnegative().optional(),
-      endY: z.number().nonnegative().optional(),
-      deltaX: z.number().min(-1200).max(1200).optional(),
-      deltaY: z.number().min(-1200).max(1200).optional(),
+      x: z.number().nonnegative().optional()
+        .describe("Viewport x of the pointer. Required for move, click, drag and wheel."),
+      y: z.number().nonnegative().optional()
+        .describe("Viewport y of the pointer. Required for move, click, drag and wheel."),
+      endX: z.number().nonnegative().optional()
+        .describe("Viewport x to drag to. Required for a drag."),
+      endY: z.number().nonnegative().optional()
+        .describe("Viewport y to drag to. Required for a drag."),
+      deltaX: z.number().min(-1200).max(1200).optional()
+        .describe("Wheel delta on the x axis. Defaults to 0."),
+      deltaY: z.number().min(-1200).max(1200).optional()
+        .describe("Wheel delta on the y axis. Required for a wheel."),
       ref: z.string().min(1).max(300).optional()
         .describe("Element ref from find_elements. Required for a hover, ignored by coordinate actions."),
       text: z.string().min(1).max(300).optional()
@@ -562,7 +667,7 @@ export function registerTools(server: McpServer, deps: ToolDeps) {
 
   server.registerTool("media_state", {
     title: "Read media playback state",
-    description: "Report the page audio/video elements: presence and count, paused/ended, currentTime, duration, mute and volume. Read-only. Verify playback from this state, never from the wall clock.",
+    description: "Report the page audio/video elements. Read-only: verify playback from this state, never from the wall clock. Returns: ok, tabId, and the media state: presence and count, paused or ended, currentTime, duration, mute and volume.",
     inputSchema: {
       tabId: tabIdSchema,
       index: z.number().int().min(0).optional().describe("Which media element on the page, defaulting to the first."),
@@ -573,7 +678,7 @@ export function registerTools(server: McpServer, deps: ToolDeps) {
 
   server.registerTool("media_play", {
     title: "Start media playback",
-    description: "Start playing the page media element, then report its state. If the browser blocks playback for lack of a user gesture, click the player's Play control with page.click instead.",
+    description: "Start playing the page media element, then report its state. If the browser blocks playback for lack of a user gesture, click the player's Play control with page.click instead. Returns: ok, tabId, and the media state after the change.",
     inputSchema: {
       tabId: tabIdSchema,
       index: z.number().int().min(0).optional().describe("Which media element on the page, defaulting to the first."),
@@ -585,7 +690,7 @@ export function registerTools(server: McpServer, deps: ToolDeps) {
 
   server.registerTool("media_pause", {
     title: "Pause media playback",
-    description: "Pause the page media element, then report its state.",
+    description: "Pause the page media element, then report its state. Returns: ok, tabId, and the media state after the change.",
     inputSchema: {
       tabId: tabIdSchema,
       index: z.number().int().min(0).optional().describe("Which media element on the page, defaulting to the first."),
@@ -597,7 +702,7 @@ export function registerTools(server: McpServer, deps: ToolDeps) {
 
   server.registerTool("media_seek", {
     title: "Seek media playback",
-    description: "Jump the page media element to a position in seconds, then report its state. Out-of-range positions clamp to the media duration.",
+    description: "Jump the page media element to a position in seconds, then report its state. Out-of-range positions clamp to the media duration. Returns: ok, tabId, and the media state after the seek.",
     inputSchema: {
       tabId: tabIdSchema,
       index: z.number().int().min(0).optional().describe("Which media element on the page, defaulting to the first."),
@@ -610,7 +715,7 @@ export function registerTools(server: McpServer, deps: ToolDeps) {
 
   server.registerTool("media_stream_start", {
     title: "Start listening to tab audio",
-    description: "Start a listening session on a tab: the page media element is tapped and its audio transcribed in windows. Refused on incognito and private tabs. Returns a sessionId; read the transcript with media_listen_read and end with media_stream_stop.",
+    description: "Start a listening session on a tab: the page media element is tapped and its audio transcribed in windows. Refused on incognito and private tabs. Read the transcript with media_listen_read and end with media_stream_stop. Returns: ok and the listening session id.",
     inputSchema: {
       tabId: tabIdSchema,
       index: z.number().int().min(0).optional().describe("Which media element on the page, defaulting to the first."),
@@ -621,7 +726,7 @@ export function registerTools(server: McpServer, deps: ToolDeps) {
 
   server.registerTool("media_stream_stop", {
     title: "Stop the listening session",
-    description: "End the live listening session: the recorder stops, the tail window is transcribed, and no further audio is captured.",
+    description: "End the live listening session: the recorder stops, the tail window is transcribed, and no further audio is captured. Returns: ok and whether the session was stopped.",
     inputSchema: {
       timeoutMs: timeoutSchema
     },
@@ -630,7 +735,7 @@ export function registerTools(server: McpServer, deps: ToolDeps) {
 
   server.registerTool("media_listen_read", {
     title: "Read listening transcript",
-    description: "Read transcript segments from a listening session, newest windows first after the given cursor. Without a sessionId, reads the device's most recent session. Transcript text travels only in this tool result, never on the dashboard.",
+    description: "Read transcript segments from a listening session, newest windows first after the given cursor. Without a sessionId, reads the device's most recent session. Transcript text travels only in this tool result, never on the dashboard. Returns: ok, sessionId, and the transcript segments after the cursor.",
     inputSchema: {
       sessionId: z.string().regex(/^[0-9a-f-]{36}$/i).optional().describe("Listening session id from media_stream_start."),
       cursor: z.number().int().min(0).optional().describe("Return segments after this sequence number; defaults to 0."),
@@ -668,7 +773,7 @@ export function registerTools(server: McpServer, deps: ToolDeps) {
   // The proof is what makes the sale defensible, so it travels with the answer instead of being assembled from three other calls.
   server.registerTool("statement_deliver", {
     title: "Deliver a client statement",
-    description: "Download one client's statement for one month to the user's own disk, under a name you choose, and return the proof: bytes, the kind of file read from its own bytes, the page count, and the closing balance with the page named as its source. The file lands in the user's download folder; nothing is uploaded. A second delivery of the same client-month is refused, because a second line would bill the same month twice.",
+    description: "Download one client's statement for one month to the user's own disk, under a name you choose. The file lands in the user's download folder; nothing is uploaded. A second delivery of the same client-month is refused, because a second line would bill the same month twice. Returns: ok, tabId, and the delivery proof: bytes, the kind of file read from its own bytes, the page count, and the closing balance with the page named as its source.",
     inputSchema: {
       client: z.string().min(1).max(200).describe("The client, as the person says it."),
       portal: z.string().min(1).max(200).describe("The bank or vendor the statement comes from."),
@@ -688,7 +793,7 @@ export function registerTools(server: McpServer, deps: ToolDeps) {
 
   server.registerTool("statement_manifest", {
     title: "Read the statement manifest",
-    description: "Read the manifest the device keeps: one line per delivered client-month, with the file, its bytes, its kind, its page count and the closing balance with its source. The manifest lives on the user's own machine, beside the files it describes.",
+    description: "Read the manifest the device keeps: one line per delivered client-month, with the file, its bytes, its kind, its page count and the closing balance with its source. The manifest lives on the user's own machine, beside the files it describes. Returns: ok, the rows, one per delivered client-month, and the clients and periods they cover.",
     inputSchema: {
       timeoutMs: timeoutSchema
     },
@@ -697,7 +802,7 @@ export function registerTools(server: McpServer, deps: ToolDeps) {
 
   server.registerTool("invoice_create", {
     title: "Bill a customer for delivered client-months",
-    description: "Turn delivered client-months into an invoice for one customer and one billing month. Pass the manifest rows this invoice charges for, or the client and period of each delivery; the amount is computed from the price list, never from a number in the call, and a month that was not delivered cannot be on the invoice. Pass plan to bill a plan month instead of per delivery: one plan line and a line only for each client-month above the cap. Returns the invoice and the link the customer opens to pay it. Read statement_manifest first: its rows are the proof the invoice is checked against.",
+    description: "Turn delivered client-months into an invoice for one customer and one billing month. Pass the manifest rows this invoice charges for, or the client and period of each delivery; the amount is computed from the price list, never from a number in the call, and a month that was not delivered cannot be on the invoice. Pass plan to bill a plan month instead of per delivery: one plan line and a line only for each client-month above the cap. Read statement_manifest first: its rows are the proof the invoice is checked against. Returns: ok, the invoice, and the link the customer opens to pay it.",
     inputSchema: {
       customer: z.string().min(1).max(200).describe("The customer being billed, as the operator names them."),
       period: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/).describe("The billing month, YYYY-MM."),

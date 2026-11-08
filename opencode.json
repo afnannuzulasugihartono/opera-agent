@@ -1,4 +1,51 @@
 {
   "$schema": "https://opencode.ai/config.json",
-  "model": "opencode/big-pickle"
+  "model": "opencode/big-pickle",
+  "mcp": {
+    "servers": {
+      "serena": {
+        "type": "local",
+        "command": [
+          "serena",
+          "start-mcp-server",
+          "--context",
+          "ide",
+          "--project",
+          ".",
+          "--agent-interface",
+          "tools",
+          "--open-web-dashboard",
+          "false"
+        ],
+        "cwd": ".",
+        "timeout": {
+          "startup": 180000,
+          "catalog": 60000,
+          "execution": 600000
+        }
+      },
+      "supabase": {
+        "type": "local",
+        "command": [
+          "cmd",
+          "/c",
+          "npx",
+          "-y",
+          "@supabase/mcp-server-supabase@latest",
+          "--features=database",
+          "--project-ref=nenmkmtvjremqphfqnfw"
+        ],
+        "timeout": 60000
+      },
+      "cloudflare": {
+        "type": "remote",
+        "url": "https://mcp.cloudflare.com/mcp",
+        "oauth": {}
+      }
+    }
+  },
+  "plugins": [
+    "{env:USERPROFILE}/.config/opencode/plugins.project/workflow",
+    "{env:USERPROFILE}/.config/opencode/plugins.project/opera-agent"
+  ]
 }

@@ -19,7 +19,7 @@ import { log } from './lib/log.js';
 import { popupsSince } from './lib/popup-events.js';
 import { windowUpdateFor, windowUpdateCase } from './lib/window-restore.js';
 import { handleDebuggerDetach } from './lib/debugger-session.js';
-import { oversized, MAX_RESULT_BYTES } from './lib/serialize.js';
+import { oversized, fitWithinBudget, RESULT_BUDGET_BYTES } from './lib/serialize.js';
 import { mutateTabs, nowIso, getConfig } from './worker/utils.js';
 import { collectAxSummary } from './worker/capture.js';
 import { publicTab, requireTabId, resolveTabId, waitTabReady, contentCall } from './worker/tab-content.js';
@@ -51,6 +51,9 @@ import {
 import './worker/execute-pull.js';
 import { bridgeLinkState, ensureBridgeLink } from './worker/bridge-link.js';
 import { statementDownload, statementManifest } from './worker/statement.js';
+import { captureWorkerErrors } from './lib/error-capture.js';
+
+captureWorkerErrors({ target: typeof self === 'undefined' ? null : self, log });
 
 chrome.debugger.onDetach.addListener(handleDebuggerDetach);
 
@@ -63,6 +66,8 @@ export async function dispatch(method, params = {}, context = {}) {
   switch (method) {
     case 'browser.ping': {
       const cfg = await getConfig();
+      const faults = log.errors();
+      const fitted = fitWithinBudget(faults, RESULT_BUDGET_BYTES - 16 * 1024);
       return {
         ok: true,
         product: 'Opera Agent',
@@ -72,6 +77,9 @@ export async function dispatch(method, params = {}, context = {}) {
         paired: cfg.paired,
         bridge: bridgeLinkState(),
         capabilities: Object.keys(METHOD_SPECS),
+        errors: fitted.elements,
+        errorCount: log.errorCount(),
+        ...(fitted.truncated ? { errorsTruncated: true, omittedErrors: faults.length - fitted.elements.length } : {}),
         time: nowIso()
       };
     }
@@ -202,23 +210,41 @@ export async function dispatch(method, params = {}, context = {}) {
       let result = await contentCall(tabId, method, { ...params, __semanticRuntimeEpoch: SEMANTIC_RUNTIME_EPOCH });
 
       if (result?.page && oversized(result)) {
-        const { elements, ...withoutElements } = result.page;
-        result = {
-          ...result,
-          page: {
-            ...withoutElements,
-            truncated: true,
-            truncationReason: `Element list omitted: the result exceeded the ${MAX_RESULT_BYTES}-byte ceiling. Re-read with a narrower offset, a smaller maxElements, or includeElements disabled.`,
-            omittedElementCount: Array.isArray(elements) ? elements.length : 0
-          }
-        };
+        if (typeof result.page.class === 'string' && Array.isArray(result.page.elements)) {
+          const pulled = result.page.elements;
+          const fitted = fitWithinBudget(pulled, RESULT_BUDGET_BYTES);
+          result = {
+            ...result,
+            page: {
+              ...result.page,
+              elements: fitted.elements,
+              truncated: true,
+              truncationReason: `Element list trimmed: the result exceeded the ${RESULT_BUDGET_BYTES}-byte budget. Re-read with a smaller limit.`,
+              omittedElementCount: pulled.length - fitted.elements.length,
+              nextOffset: Number(result.page.offset || 0) + fitted.elements.length,
+              hasMore: fitted.elements.length < Number(result.page.total || pulled.length)
+            }
+          };
+        } else {
+          const { elements, ...withoutElements } = result.page;
+          result = {
+            ...result,
+            page: {
+              ...withoutElements,
+              truncated: true,
+              truncationReason: `Element list omitted: the result exceeded the ${RESULT_BUDGET_BYTES}-byte budget. Re-read with a narrower offset, a smaller maxElements, or includeElements disabled.`,
+              omittedElementCount: Array.isArray(elements) ? elements.length : 0
+            }
+          };
+        }
       }
       if (result?.page?.viewport) {
-        try { result.page.viewport.zoomFactor = await chrome.tabs.getZoom(tabId); } catch (error) { log.warn('TAB_ZOOM_PROBE_FAILED', error?.message || String(error)); }
+        try { result.page.viewport.zoomFactor = await chrome.tabs.getZoom(tabId); } catch (error) { log.error('TAB_ZOOM_PROBE_FAILED', error?.message || String(error)); }
       }
 
-      const r9SemanticGap = hasRoleGap(result?.page?.elements);
-      const shouldCollectAx = result?.ok !== false && result?.page
+      const isMapPull = typeof result?.page?.class === 'string';
+      const r9SemanticGap = !isMapPull && hasRoleGap(result?.page?.elements);
+      const shouldCollectAx = !isMapPull && result?.ok !== false && result?.page
         && (Number(result.page.totalTextChars) <= AX_SUMMARY_TEXT_POVERTY_CHARS || r9SemanticGap);
       if (shouldCollectAx) {
         const summary = await collectAxSummary(tabId, context);
@@ -242,7 +268,7 @@ export async function dispatch(method, params = {}, context = {}) {
             lastInputMs: result.page.userInput?.lastInputMs ?? null
           };
         } catch (error) {
-          log.warn('USER_STATE_PROBE_FAILED', error?.message || String(error));
+          log.error('USER_STATE_PROBE_FAILED', error?.message || String(error));
         }
       }
       return { ...result, tabId };

@@ -1,6 +1,6 @@
-// @last-edited: 2026-10-21 UTC+7.
+// @last-edited: 2026-11-08 UTC+7.
 // @title: content — the content script: the page half of every browser primitive.
-// @state: marks documentElement so a page can detect the extension, even when the document is not ready yet; page.action_state reports expired, detached or unresolvable for a ref that cannot act.
+// @state: marks documentElement so a page can detect the extension, even when the document is not ready yet; page.action_state reports expired, detached or unresolvable for a ref that cannot act; view=map scans every meaningful element into seventeen classes with document coordinates, cached until the page mutates.
 // @dependencies: none.
 
 // WHY the page helpers degrade rather than throw.
@@ -17,9 +17,9 @@
   function markInstalled() {
 
     if (!document.documentElement) return;
-    document.documentElement.dataset.operaAgent = 'installed';
+    document.documentElement.setAttribute('data-opera-agent', 'installed');
     const browser = globalThis.OperaAgentBrowserId?.browserName || '';
-    if (browser) document.documentElement.dataset.operaAgentBrowser = browser;
+    if (browser) document.documentElement.setAttribute('data-opera-agent-browser', browser);
   }
 
   markInstalled();
@@ -28,6 +28,7 @@
 
   const roleRuntime = globalThis.OperaAgentRoleReconcile || {};
   const hoverRuntime = globalThis.OperaAgentHoverSettle;
+  const pageMap = globalThis.OperaAgentPageMap;
   const semanticRuntime = typeof roleRuntime.implicitRole === 'function'
     && hoverRuntime
     && typeof hoverRuntime.plan === 'function';
@@ -63,6 +64,8 @@
   let semanticRuntimeEpoch = null;
   let disposed = false;
   let mutationVersion = 0;
+  let pageMapCache = null;
+  let pageMapIdentity = null;
 
   const mutationObserver = new MutationObserver(() => {
     mutationVersion += 1;
@@ -718,6 +721,8 @@
     refs = new WeakMap();
     reverseRefs = new Map();
     actionRefDescriptors = new Map();
+    pageMapCache = null;
+    pageMapIdentity = null;
   }
 
   function syncSemanticScope(args) {
@@ -864,8 +869,325 @@
     return false;
   }
 
+  const PAGE_MAP_SHADOW_LIMIT = 120;
+  const PAGE_MAP_TEXT_FREE = new Set(['region', 'form', 'table', 'list']);
+  const PAGE_MAP_SENSITIVE_SURFACE = 'input,textarea,select,button,[contenteditable="true"],[contenteditable=""]';
+
+  // A container's own text repeats the text of everything inside it, so the map carries text where it says something new.
+
+  function pageMapLabel(el) {
+    return clean(el.getAttribute?.('aria-label'), 300)
+      || clean(el.getAttribute?.('title'), 300)
+      || clean(el.getAttribute?.('alt'), 300);
+  }
+
+  function pageMapEngine() {
+    if (!pageMapIdentity && pageMap) {
+      pageMapIdentity = globalThis.OperaAgentSemanticIdentity.createIdentityEngine({
+        documentId,
+        maxEntities: pageMap.PAGE_MAP_MAX_ELEMENTS,
+        maxCacheBytes: 8 * 1024 * 1024
+      });
+    }
+    return pageMapIdentity;
+  }
+
+  function pageMapListDepth(el) {
+    let depth = 0;
+    for (let node = el.parentElement; node; node = node.parentElement) {
+      if (node.tagName === 'UL' || node.tagName === 'OL') depth += 1;
+    }
+    return depth;
+  }
+
+  function pageMapCellPosition(el) {
+    if (!(el instanceof HTMLTableCellElement)) return {};
+    const row = el.parentElement;
+    const table = el.closest('table');
+    if (!row || !table) return {};
+    const rowIndex = [...table.rows].indexOf(row);
+    const colIndex = [...row.cells].indexOf(el);
+    return { ...(rowIndex >= 0 ? { row: rowIndex } : {}), ...(colIndex >= 0 ? { col: colIndex } : {}) };
+  }
+
+  function pageMapSensitive(el) {
+    return el.matches?.(PAGE_MAP_SENSITIVE_SURFACE) ? !!sensitiveDescriptor(el) : false;
+  }
+
+  function pageMapExtras(el, entry) {
+    const { tag, role, type, kind } = entry;
+    const extras = {};
+    if (kind === 'choice') {
+      extras.checked = !!el.checked;
+      extras.name = clean(el.getAttribute?.('name'), 120);
+      extras.type = type;
+    } else if (kind === 'input') {
+      extras.type = type;
+      extras.name = clean(el.getAttribute?.('name'), 120);
+      extras.placeholder = clean(el.getAttribute?.('placeholder'), 200);
+      if (!entry.sensitive && entry.visible) extras.value = clean(el.isContentEditable ? el.textContent : el.value, 300);
+    } else if (kind === 'select') {
+      extras.name = clean(el.getAttribute?.('name'), 120);
+      extras.options = [...(el.options || [])].slice(0, 50).map((option) => normalizeObservableText(option.textContent, 60));
+    } else if (kind === 'heading') {
+      extras.level = Number(el.getAttribute?.('aria-level')) || Number(tag.slice(1)) || 2;
+    } else if (kind === 'link') {
+      extras.href = entry.href;
+    } else if (kind === 'media') {
+      extras.src = clean(el.currentSrc || el.src, 1200);
+      extras.paused = !!el.paused;
+      extras.currentTime = Number(el.currentTime) || 0;
+      extras.duration = Number(el.duration) || 0;
+    } else if (kind === 'iframe') {
+      extras.src = clean(el.src, 1200);
+      extras.title = clean(el.getAttribute?.('title'), 200);
+    } else if (kind === 'picture' || kind === 'icon') {
+      extras.src = clean(el.currentSrc || el.src, 1200);
+      extras.alt = clean(el.getAttribute?.('alt'), 200);
+    } else if (kind === 'table') {
+      const rows = [...(el.rows || [])];
+      extras.rows = rows.length;
+      extras.cols = rows.length ? Math.max(...rows.map((row) => row.cells.length)) : 0;
+      extras.headers = rows.length ? [...rows[0].cells].slice(0, 12).map((cell) => normalizeObservableText(cell.textContent, 80)) : [];
+    } else if (kind === 'list') {
+      extras.itemCount = [...el.children].filter((child) => child.tagName === 'LI').length;
+    } else if (kind === 'form') {
+      extras.fieldCount = el.querySelectorAll('input,select,textarea,button').length;
+    } else if (kind === 'region') {
+      extras.kind = tag === 'dialog' || role === 'dialog' ? 'dialog' : 'landmark';
+    } else if (kind === 'status') {
+      extras.value = clean(el.value ?? el.textContent, 200);
+    } else if (kind === 'text') {
+      extras.for = clean(el.getAttribute?.('for'), 120);
+      Object.assign(extras, pageMapCellPosition(el));
+    }
+    return extras;
+  }
+
+  function pageMapCollect(el, collected) {
+    const tag = String(el.tagName || '').toLowerCase();
+    if (!tag) return;
+    const type = clean(el.getAttribute?.('type'), 80).toLowerCase();
+    const href = el instanceof HTMLAnchorElement || el instanceof HTMLAreaElement ? clean(el.href, 1200) : '';
+    const role = clean(el.getAttribute?.('role'), 80)
+      || implicitRole({ tag, type, href, contenteditable: el.isContentEditable === true });
+    const rect = el.getBoundingClientRect();
+    const kind = pageMap.classify({ tag, role, type, href, width: rect.width, height: rect.height });
+    if (!kind) return;
+    const text = PAGE_MAP_TEXT_FREE.has(kind) ? '' : normalizeObservableText(el.textContent || '', 300);
+    if (kind === 'text' && !text) return;
+    const style = getComputedStyle(el);
+    const visible = el.isConnected
+      && style.display !== 'none' && style.visibility !== 'hidden' && Number(style.opacity) !== 0
+      && rect.width > 0 && rect.height > 0;
+    collected.push({ el, kind, tag, role, type, href, rect, text, style, visible, label: pageMapLabel(el) });
+  }
+
+  function scanPageMap() {
+    if (pageMapCache && pageMapCache.mutationVersion === mutationVersion) return pageMapCache;
+    const scannedAt = new Date().toISOString();
+    const collected = [];
+    let truncated = false;
+    let shadowRoots = 0;
+
+    const visit = (root) => {
+      const walker = document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT);
+      for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+        if (collected.length >= pageMap.PAGE_MAP_MAX_ELEMENTS) { truncated = true; return; }
+        pageMapCollect(node, collected);
+        if (node.shadowRoot && shadowRoots < PAGE_MAP_SHADOW_LIMIT) {
+          shadowRoots += 1;
+          visit(node.shadowRoot);
+        }
+      }
+    };
+
+    if (document.body) visit(document.body);
+
+    const regionIds = new Map();
+    const regionOrdinals = new Map();
+    const entryByElement = new Map(collected.map((entry) => [entry.el, entry]));
+    for (const entry of collected) {
+      if (entry.kind !== 'region') continue;
+      const key = [entry.tag, entry.role, entry.label].join('|');
+      const ordinal = regionOrdinals.get(key) || 0;
+      regionOrdinals.set(key, ordinal + 1);
+      regionIds.set(entry.el, `rg_${stableHash(ordinal ? `${key}|${ordinal}` : key)}`);
+    }
+    const regionOf = (el) => {
+      const own = regionIds.get(el);
+      if (own) return own;
+      for (let node = el.parentElement; node; node = node.parentElement) {
+        const id = regionIds.get(node);
+        if (id) return id;
+      }
+      return 'rg_document';
+    };
+
+    const items = collected.map((entry) => {
+      const identity = stableElementIdentity(entry.el);
+      const rect = entry.rect;
+      const x = rect.left + scrollX;
+      const y = rect.top + scrollY;
+      return {
+        ref: getRef(entry.el),
+        stableKey: identity.stableKey,
+        stableKeySource: identity.stableKeySource,
+        tag: entry.tag,
+        role: entry.role,
+        label: entry.label,
+        text: entry.text,
+        type: entry.type,
+        checked: 'checked' in entry.el ? !!entry.el.checked : undefined,
+        selected: 'selected' in entry.el ? !!entry.el.selected : undefined,
+        disabled: 'disabled' in entry.el ? !!entry.el.disabled : undefined,
+        ariaPressed: entry.el.getAttribute?.('aria-pressed') ?? null,
+        ariaChecked: entry.el.getAttribute?.('aria-checked') ?? null,
+        ariaExpanded: entry.el.getAttribute?.('aria-expanded') ?? null,
+        ariaSelected: entry.el.getAttribute?.('aria-selected') ?? null,
+        rect: { x, y, width: rect.width, height: rect.height },
+        inViewport: rect.bottom > 0 && rect.right > 0 && rect.left < innerWidth && rect.top < innerHeight
+      };
+    });
+    pageMapEngine()?.observe(items);
+
+    const groups = new Map(pageMap.PAGE_MAP_CLASSES.map((name) => [name, []]));
+    const elements = [];
+    collected.forEach((entry, index) => {
+      const item = items[index];
+      const sensitive = pageMapSensitive(entry.el);
+      const ariaDisabled = clean(entry.el.getAttribute?.('aria-disabled'), 20).toLowerCase() === 'true';
+      const enabled = !('disabled' in entry.el && entry.el.disabled)
+        && !('readOnly' in entry.el && entry.el.readOnly) && !ariaDisabled;
+      const raw = {
+        class: entry.kind,
+        ref: item.ref,
+        tag: entry.tag,
+        role: entry.role,
+        text: entry.text,
+        label: entry.label,
+        x: item.rect.x,
+        y: item.rect.y,
+        width: item.rect.width,
+        height: item.rect.height,
+        order: index,
+        depth: pageMapListDepth(entry.el),
+        regionId: regionOf(entry.el),
+        visible: entry.visible,
+        actionable: entry.visible && enabled && !sensitive && pageMap.isActionableClass(entry.kind) && entry.style.pointerEvents !== 'none',
+        disabled: !enabled,
+        logicalId: item.logicalId,
+        stableKey: item.stableKey,
+        ...pageMapExtras(entry.el, { ...entry, sensitive })
+      };
+      const element = pageMap.projectElement(raw);
+      elements.push(element);
+      groups.get(entry.kind).push(element);
+    });
+
+    const regionCounts = new Map();
+    for (const element of elements) regionCounts.set(element.regionId, (regionCounts.get(element.regionId) || 0) + 1);
+    const regions = [];
+    for (const [el, regionId] of regionIds) {
+      const entry = entryByElement.get(el);
+      if (!entry) continue;
+      regions.push({
+        regionId,
+        kind: entry.tag === 'dialog' || entry.role === 'dialog' ? 'dialog' : 'landmark',
+        role: entry.role || entry.tag,
+        ...(entry.label ? { label: entry.label } : {}),
+        bbox: {
+          x: entry.rect.left + scrollX,
+          y: entry.rect.top + scrollY,
+          width: entry.rect.width,
+          height: entry.rect.height
+        },
+        elementCount: regionCounts.get(regionId) || 0
+      });
+    }
+
+    const outline = [];
+    const tables = [];
+    const images = [];
+    collected.forEach((entry, index) => {
+      const item = items[index];
+      if (entry.kind === 'heading') {
+        outline.push({
+          level: Number(entry.el.getAttribute?.('aria-level')) || Number(entry.tag.slice(1)) || 2,
+          text: entry.text,
+          y: Math.round(item.rect.y),
+          ref: item.ref
+        });
+      }
+      if (entry.kind === 'table') {
+        const rows = [...(entry.el.rows || [])];
+        tables.push({
+          ref: item.ref,
+          rows: rows.length,
+          cols: rows.length ? Math.max(...rows.map((row) => row.cells.length)) : 0,
+          headers: rows.length ? [...rows[0].cells].slice(0, 12).map((cell) => normalizeObservableText(cell.textContent, 80)) : [],
+          bbox: { x: item.rect.x, y: item.rect.y, width: item.rect.width, height: item.rect.height }
+        });
+      }
+      if (entry.kind === 'picture') {
+        const caption = entry.el.closest?.('figure')?.querySelector?.('figcaption');
+        images.push({
+          ref: item.ref,
+          alt: clean(entry.el.getAttribute?.('alt'), 200),
+          bbox: { x: item.rect.x, y: item.rect.y, width: item.rect.width, height: item.rect.height },
+          ...(caption ? { caption: normalizeObservableText(caption.textContent, 200) } : {})
+        });
+      }
+    });
+
+    const classes = pageMap.PAGE_MAP_CLASSES.map((name) => {
+      const summary = pageMap.summarizeClass(name, groups.get(name));
+      return summary.bbox ? summary : { class: name, count: summary.count };
+    });
+    const state = viewportState();
+    const skeleton = {
+      documentId,
+      url: location.href,
+      title: document.title,
+      documentWidth: state.documentWidth,
+      documentHeight: state.documentHeight,
+      viewport: { width: state.width, height: state.height, scrollX: state.scrollX, scrollY: state.scrollY, zoomFactor: 1 },
+      scannedAt,
+      mutationVersion,
+      totalElements: elements.length,
+      ...(truncated ? { truncated: true } : {}),
+      classes,
+      regions,
+      outline,
+      tables,
+      images
+    };
+    pageMapCache = { mutationVersion, skeleton, groups };
+    return pageMapCache;
+  }
+
+  function pageMapRead(args) {
+    if (!pageMap) return { ok: false, error: 'The page map runtime is unavailable on this page.' };
+    const wanted = args.class == null ? '' : String(args.class);
+    if (wanted && !pageMap.isMapClass(wanted)) throw new Error(`Unknown page map class: ${wanted}`);
+    const map = scanPageMap();
+    if (!wanted) return { ok: true, page: map.skeleton };
+    const pull = pageMap.paginate(map.groups.get(wanted) || [], args.offset, args.limit);
+    return {
+      ok: true,
+      page: {
+        class: wanted,
+        ...pull,
+        scannedAt: map.skeleton.scannedAt,
+        mutationVersion: map.skeleton.mutationVersion,
+        ...(map.skeleton.truncated ? { truncated: true } : {})
+      }
+    };
+  }
+
   function pageRead(args) {
     syncSemanticScope(args);
+    if (args.view === 'map') return pageMapRead(args);
     const fullText = normalizeText(document.body?.innerText || document.documentElement?.innerText || '');
     const offset = clamp(args.offset, 0, Math.max(0, fullText.length), 0);
     const limit = clamp(args.limit ?? args.maxText, 300, MAX_TEXT_CHUNK, 6000);

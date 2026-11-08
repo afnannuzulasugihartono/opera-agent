@@ -118,3 +118,12 @@ test('safeUrl accepts only http/https', () => {
   assert.equal(safeUrl('file:///tmp/x'), null);
   assert.match(safeUrl('https://example.com/a'), /^https:\/\/example\.com/);
 });
+
+test('a page read is given the time a whole-document scan needs', () => {
+  assert.equal(METHOD_SPECS['page.read'].timeoutMs, 30000);
+});
+
+test('a full-page capture can be walked tile by tile', () => {
+  assert.equal(validateCommand({ id: 'abcdefgh', method: 'page.capture', params: { tabId: 1, fullPage: true, tileOffset: 2 } }).ok, true);
+  assert.equal(validateCommand({ id: 'abcdefgh', method: 'page.capture', params: { tabId: 1, tileOffset: -1 } }).ok, false);
+});

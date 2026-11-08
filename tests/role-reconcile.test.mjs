@@ -185,7 +185,7 @@ test('R9: an oversized read degrades instead of failing the whole call', async (
   assert.match(block, /omittedElementCount/);
   assert.match(block, /includeElements disabled/);
 
-  assert.match(background, /Result exceeds \$\{MAX_RESULT_BYTES\} bytes/);
+  assert.match(background, /Result exceeds \$\{RESULT_BUDGET_BYTES\} bytes/);
 });
 
 test('serialize derives roles from markup instead of only the role attribute', async () => {

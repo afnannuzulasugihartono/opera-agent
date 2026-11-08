@@ -1,6 +1,6 @@
-// @last-edited: 2026-10-04 18:25 UTC+7.
+// @last-edited: 2026-11-08 UTC+7.
 // @title: agent-log — the no-export logger that classic scripts and the worker share.
-// @state: level-aware console sink published on globalThis; deliberately has no export so manifest content_scripts can load it as a classic script.
+// @state: level-aware console sink published on globalThis, with a bounded fault list beside its ring; deliberately has no export so manifest content_scripts can load it as a classic script.
 // @dependencies: none.
 
 // Ring buffer of the last 200 log entries, published on globalThis as OperaAgentLog for the popup's log view.
@@ -24,10 +24,29 @@
 
   if (globalThis.OperaAgentLog) return;
   const MAX_ENTRIES = 200;
+  const MAX_FAULTS = 20;
   const LEVELS = { debug: 10, warn: 30, error: 50 };
   const VALID = new Set(['debug', 'warn', 'error']);
   let threshold = LEVELS.warn;
   let buffer = [];
+  let faults = [];
+  let faultTotal = 0;
+
+  // A fault keeps one row per distinct code and message, so a repeating error counts instead of filling the list.
+
+  function recordFault(entry) {
+    faultTotal += 1;
+    const key = entry.code + '|' + entry.message;
+    const found = faults.find((row) => row.code + '|' + row.message === key);
+    if (found) {
+      found.count += 1;
+      found.lastAt = entry.t;
+      return;
+    }
+    faults.unshift({ code: entry.code, message: entry.message, count: 1, firstAt: entry.t, lastAt: entry.t });
+    if (faults.length > MAX_FAULTS) faults = faults.slice(0, MAX_FAULTS);
+  }
+
   function shape(code, message) {
     return {
       code: String(code || 'LOG').slice(0, 100),
@@ -45,6 +64,7 @@
     };
     buffer.push(entry);
     if (buffer.length > MAX_ENTRIES) buffer = buffer.slice(buffer.length - MAX_ENTRIES);
+    if (level === 'error') recordFault(entry);
     if (LEVELS[level] >= threshold) {
       const text = `[opera-agent:${level}] ${entry.code} ${entry.message}`;
       if (level === 'error') console.error(text);
@@ -64,6 +84,9 @@
     warn: (code, message, fields) => emit('warn', code, message, fields),
     error: (code, message, fields) => emit('error', code, message, fields),
     entries() { return buffer.slice(); },
-    clear() { buffer = []; }
+    clear() { buffer = []; },
+    errors() { return faults.map((row) => ({ ...row })); },
+    clearErrors() { faults = []; },
+    errorCount() { return faultTotal; }
   };
 })();

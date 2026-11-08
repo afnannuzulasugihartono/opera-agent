@@ -27,6 +27,7 @@
       ],
       "js": [
         "lib/agent-log.js",
+        "lib/page-map.js",
         "semantic-identity.js",
         "semantic-views.js",
         "role-reconcile.js",

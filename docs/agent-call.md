@@ -70,8 +70,73 @@ claude mcp add --transport http opera-agent https://nenmkmtvjremqphfqnfw.supabas
 What a caller gets wrong: the device header names which of your devices does
 the work, and the server uses the first paired device when the header is
 missing. A device that is offline is a device that answers nothing. The server
-adds 34 tools to the browser primitives, and every one of them acts on the
+adds 35 tools to the browser primitives, and every one of them acts on the
 paired device's browser, not on the machine the agent runs on.
+
+### What a call answers
+
+A hosted call answers with the answer, not with the transport. The envelope the
+command rides in — `commandId`, `status`, `result`, `timing` — is opened, so the
+tool's own fields sit at the top of the object:
+
+```json
+{ "ok": true, "tabs": [{ "id": 12, "title": "Example", "url": "https://example.com/", "active": false }] }
+```
+
+The rules are the same for every tool:
+
+- `ok` is said once, at the top.
+- `commandId`, `runId` and `timing` are gone: no tool takes them, so no caller can spend them.
+- `status: "completed"` is gone: a call that failed says `ok: false` and carries `error`.
+- A tab keeps its page facts and loses its window chrome: `muted`, `pinned`, `audible` and `windowId` are window facts.
+- `bridge` keeps only `lastError`, and is absent when the bridge has nothing to report.
+
+`OPERA_AGENT_MCP_RAW=1` on the function turns the tidying off and hands back the
+raw envelope, which is what a person reads when one run has to be followed end to end.
+
+The other half of the surface is the input. Every tool carries a title and a
+`Returns:` sentence, and every field of every input says what it is, what it
+defaults to, and what it changes.
+
+### The whole page, not one window
+
+`read_page` reads one viewport at a time. `read_page_map` reads the document:
+every meaningful element, named by one of seventeen classes, with a rectangle
+in **document coordinates** — so a map taken before a scroll still names the
+right place after it, while `ref` stays the key that clicks.
+
+Call it once with no `class` and it answers the skeleton: the document size,
+one row per class with a count and a box, the regions, the headings, the tables
+and the images. Call it again with one `class`, `offset` and `limit` (default
+200, maximum 1000) and it answers that class. `hasMore` and `nextOffset` name
+the next pull; when a pull would cross the device's 512 KiB ceiling it keeps
+its head, sets `truncated: true`, and `nextOffset` still points at the first
+element it did not send.
+
+```json
+{ "ok": true, "tabId": 12, "class": "link", "offset": 0, "limit": 200,
+  "total": 2274, "hasMore": true, "nextOffset": 200, "elements": [ ... ] }
+```
+
+`capture_page { "fullPage": true }` takes the whole document as one image. When
+that image would be unreadable — under 320 px wide, or scaled below 0.2 — or
+when the capture fails, the page comes back as `tiles` instead: strips one
+viewport tall at scale 1, cut on document coordinates without scrolling the
+page the person is watching. Each tile is one image block; the set is walked
+with `tileOffset`, and `tileCount`, `coveredHeight` and `nextTileOffset` say how
+much of the document a slice covers.
+
+### When the worker itself fails
+
+The extension's service worker catches its own faults: errors it does not
+catch, promise rejections nobody handled, and named API failures like an
+accessibility probe or a page-content ping that broke. They are not lost to
+`chrome://extensions` any more. `browser_status` answers with them as `errors`
+— one row per distinct fault, carrying `code`, `message`, `count`, `firstAt`
+and `lastAt` — and `errorCount`, the total seen since the worker started, which
+does not shrink when the list is cleared. Twenty distinct faults are kept;
+if the answer would not fit, the oldest rows are dropped and the answer says
+`errorsTruncated` with `omittedErrors`.
 
 ## 2. Local stdio MCP
 

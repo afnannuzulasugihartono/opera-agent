@@ -141,7 +141,7 @@ test('background.js attaches a poverty-triggered, fail-open CDP axSummary (Layer
 
   assert.match(background, /totalTextChars/);
 
-  assert.match(background, /catch \(error\) \{\s*log\.debug\('AX_SUMMARY_COLLECTION_FAILED',[\s\S]*?return null;/);
+  assert.match(background, /catch \(error\) \{\s*log\.error\('AX_SUMMARY_COLLECTION_FAILED',[\s\S]*?return null;/);
 });
 
 test('MCP guidance documents the accessibility surface without new tools', () => {
@@ -150,5 +150,5 @@ test('MCP guidance documents the accessibility surface without new tools', () =>
   assert.doesNotMatch(mcp, /registerTool\("(?:read_ax|ax_summary|accessibility)/);
 
   const tools = [...mcp.matchAll(/server\.registerTool\("([a-z_]+)"/g)].map((m) => m[1]);
-  assert.equal(tools.length, 34);
+  assert.equal(tools.length, 35);
 });

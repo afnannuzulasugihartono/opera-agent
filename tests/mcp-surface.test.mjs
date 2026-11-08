@@ -1,6 +1,6 @@
-// @last-edited: 2026-10-21 UTC+7.
+// @last-edited: 2026-11-07 UTC+7.
 // @title: mcp-surface.test — the MCP surface the cloud advertises is the one the tools register.
-// @state: the tool names, their count, the consent page, and the digest of the source that holds them.
+// @state: the tool names, their count, their titles, what each one returns, their documented inputs, the consent page, and the digest of the source that holds them.
 // @dependencies: node:test, strict, node:fs, promises, node:crypto, canonical-source-hash, protocol.
 
 import test from 'node:test';
@@ -65,29 +65,30 @@ const FROZEN_READ_PAGE_PROPERTIES = [
 
 const FROZEN_TOOL_SCHEMAS = Object.freeze({
   browser_status: 'cbc26bda16868a68',
-  run_browser_burst: 'd948c904d171e8d3',
+  run_browser_burst: 'ddfc9835ac4f4e9a',
   run_workflow: '09ce624d89ed95ba',
   run_program: '4220be7d53db3ab1',
   run_adhoc: '14bb44a13751b230',
   skill_save: '12779fcd8c0787db',
   skill_recall: '778eae1cc693e9a3',
-  start_watch: '6080c4ec1568b132',
+  start_watch: '54e2f66cb2b202e6',
   wait_events: '5edbf05fabbb14c8',
-  stop_watch: '5133e82aa7a83fb1',
+  stop_watch: '1afb5c0e3ace0e78',
   list_tabs: '0ded59ff6c5f1b0c',
-  open_url: '9b68095958a8242f',
-  activate_tab: '39a762c1732bee92',
-  navigate_tab: '4947602daae152c1',
-  close_tab: '7fba21a3f036f380',
-  read_page: '7724641fbfc8270a',
-  capture_page: '288795a580c4c54a',
-  find_elements: '5ee494a2286bfe19',
-  click_element: '524bbdcd910efb97',
-  fill_element: '299f17ba1498cd96',
+  open_url: '82c1021da3a1dc02',
+  activate_tab: '6b33a62b8f071dd0',
+  navigate_tab: 'e48d509464c7d5ab',
+  close_tab: '7e963cf5ec747863',
+  read_page: '86d6b7503733127d',
+  read_page_map: '8cb9f1f0931fb118',
+  capture_page: '3e263f2f10804cc6',
+  find_elements: 'f6eb0d7b9da2c372',
+  click_element: 'e4293043033ea470',
+  fill_element: '0e866354339eec8b',
   press_key: 'e4b0dcdca29f6450',
-  stream_keys: '9487610ec1707601',
-  scroll_page: '49c584144a526142',
-  pointer: 'a07a0e1b5843bfb4',
+  stream_keys: 'b7a9ea7790c77159',
+  scroll_page: '11fa6036c82606fd',
+  pointer: '836f2c29cfa5b6f4',
   media_state: 'dd36328bc7f5eaad',
   media_play: 'be8f1ff4460c156e',
   media_pause: '733cd49a0e0bea0a',
@@ -208,7 +209,7 @@ test('MCP exposes focused browser tools and no generic command escape hatch', ()
   const tools = [...source.matchAll(/server\.registerTool\("([a-z_]+)"/g)].map((match) => match[1]);
   assert.deepEqual(tools, [
     'browser_status', 'run_browser_burst', 'run_workflow', 'run_program', 'run_adhoc', 'skill_save', 'skill_recall', 'start_watch', 'wait_events', 'stop_watch', 'list_tabs', 'open_url', 'activate_tab', 'navigate_tab', 'close_tab',
-    'read_page', 'capture_page', 'find_elements', 'click_element', 'fill_element', 'press_key', 'stream_keys', 'scroll_page',
+    'read_page', 'capture_page', 'read_page_map', 'find_elements', 'click_element', 'fill_element', 'press_key', 'stream_keys', 'scroll_page',
     'pointer',
     'media_state', 'media_play', 'media_pause', 'media_seek',
     'media_stream_start', 'media_stream_stop', 'media_listen_read',
@@ -224,10 +225,10 @@ test('R4 keeps the protocol inventory frozen at 31 allowlisted primitives for re
   assert.deepEqual([...ALLOWED_METHODS].sort(), FROZEN_METHODS);
 });
 
-test('R11 removes the sense-act loop tools, so the public MCP tool inventory is 34 tools', async () => {
+test('R11 removes the sense-act loop tools, so the public MCP tool inventory is 35 tools', async () => {
   const registered = [...source.matchAll(/server\.registerTool\("([a-z_]+)"/g)].map((match) => match[1]);
-  assert.equal(registered.length, 34);
-  assert.deepEqual([...registered].sort(), [...FROZEN_MCP_TOOLS, 'start_watch', 'stop_watch', 'wait_events', 'statement_deliver', 'statement_manifest', 'invoice_create'].sort());
+  assert.equal(registered.length, 35);
+  assert.deepEqual([...registered].sort(), [...FROZEN_MCP_TOOLS, 'start_watch', 'stop_watch', 'wait_events', 'statement_deliver', 'statement_manifest', 'invoice_create', 'read_page_map'].sort());
 });
 
 test('R4 keeps the read_page input schema frozen with no view parameter', async () => {
@@ -244,11 +245,24 @@ test('R4 keeps the read_page input schema frozen with no view parameter', async 
   assert.doesNotMatch(schema, /view:/);
 });
 
+test('the map tool takes a class and a page, and never an envelope', () => {
+  const block = toolBlock('read_page_map');
+  const body = objectBody(block.slice(block.indexOf('inputSchema:')), 'inputSchema:');
+  const names = propertiesOf(body).map((property) => property.name).sort();
+  assert.deepEqual(names, ['class', 'limit', 'offset', 'tabId', 'timeoutMs']);
+  assert.match(source, /executeMap\(\{ tabId/);
+  assert.match(source, /runCommand\("page\.read", \{ \.\.\.params, view: "map" \}/);
+});
+
+test('the status tool names the worker faults it answers', () => {
+  assert.match(source, /registerTool\("browser_status", \{[\s\S]{0,900}?errorCount/, 'the description says what the fault fields are');
+});
+
 test('the tool count and names match the contract', () => {
   const registered = [...source.matchAll(/server\.registerTool\("([a-z_]+)"/g)].map((m) => m[1]);
-  assert.equal(registered.length, 34);
+  assert.equal(registered.length, 35);
   assert.deepEqual(registered, contract.tools);
-  assert.equal(contract.toolCount, 34);
+  assert.equal(contract.toolCount, 35);
 });
 
 test('no generic escape hatch was introduced', () => {
@@ -325,15 +339,43 @@ test('the OAuth client name resolves the provider when headers cannot', () => {
   assert.match(sql, /revoke execute on function public\.opera_client_name\(uuid\) from public, anon/);
 });
 
-// The one authorized change since the map was frozen is the plan door on invoice_create: the frozen map records the change and the digest it moved from, so a reader can tell a reviewed change from a drift.
+// The readable-input change moved fifteen schemas: every inline field now carries its own description, the three tools that declared the transport envelope now declare the flat one, and the four tab and url fields now share one schema instead of repeating their own.
+// The map records the digest each one moved from, so a reader can tell a reviewed change from a drift.
 
-test('the frozen schema map matches the live file, and records the one authorized change', () => {
+const READABLE_INPUTS_MOVED = Object.freeze({
+  run_browser_burst: 'd948c904d171e8d3',
+  start_watch: '6080c4ec1568b132',
+  stop_watch: '5133e82aa7a83fb1',
+  read_page: '7724641fbfc8270a',
+  capture_page: '288795a580c4c54a',
+  find_elements: '5ee494a2286bfe19',
+  click_element: '524bbdcd910efb97',
+  fill_element: '299f17ba1498cd96',
+  stream_keys: '9487610ec1707601',
+  scroll_page: '49c584144a526142',
+  pointer: 'a07a0e1b5843bfb4',
+  open_url: '9b68095958a8242f',
+  activate_tab: '39a762c1732bee92',
+  navigate_tab: '4947602daae152c1',
+  close_tab: '7fba21a3f036f380'
+});
+
+test('the frozen schema map matches the live file, and records the changes it has approved', () => {
   const blocks = toolBlocks();
-  assert.equal(blocks.length, 34, 'the public tool count changes only by reviewed decision (loop tools removed)');
+  assert.equal(blocks.length, 35, 'the public tool count changes only by reviewed decision (loop tools removed)');
   const actual = {};
   for (const block of blocks) actual[block.name] = schemaDigest(block.schema);
 
   assert.deepEqual(actual, FROZEN_TOOL_SCHEMAS);
+
+  for (const [name, digest] of Object.entries(READABLE_INPUTS_MOVED)) {
+    assert.notEqual(FROZEN_TOOL_SCHEMAS[name], digest, name + ' must have moved from the digest the map recorded');
+  }
+  assert.deepEqual(
+    Object.keys(FROZEN_TOOL_SCHEMAS).filter((name) => FROZEN_TOOL_SCHEMAS[name] === READABLE_INPUTS_MOVED[name]),
+    [],
+    'a recorded move must actually have moved'
+  );
 
   assert.notEqual(FROZEN_TOOL_SCHEMAS[R9B_CHANGED_TOOL], PRE_R9B_PRESS_KEY_DIGEST);
   assert.ok(FROZEN_TOOL_SCHEMAS[R9E_CHANGED_TOOL]);
@@ -685,3 +727,122 @@ test('the whole-file digest fixture is re-frozen to the live file', () => {
   assert.equal(sha256ContractSource(source), contract.sourceSha256);
 });
 
+test('every tool has a title and says what it returns', () => {
+  const starts = [...source.matchAll(/server\.registerTool\("([a-z_]+)"/g)];
+  assert.equal(starts.length, 35, 'the tool count changes only by reviewed decision');
+
+  starts.forEach((match, index) => {
+    const end = index + 1 < starts.length ? starts[index + 1].index : source.length;
+    const head = source.slice(match.index, end);
+    assert.match(head, /\n\s*title: "[^"]+"/, match[1] + ' must carry a title');
+    assert.match(head, /description: "[^"]*Returns: /, match[1] + ' must say what it returns');
+  });
+});
+
+test('no output schema declares the transport envelope', () => {
+  for (const block of toolBlocks()) {
+    const at = block.schema.indexOf('outputSchema:');
+    if (at < 0) continue;
+    const declared = block.schema.slice(at, block.schema.indexOf('annotations:', at));
+    for (const key of ['commandId', 'status', 'result', 'timing']) {
+      assert.doesNotMatch(declared, new RegExp('\\b' + key + ':'), block.name + ' must not declare ' + key);
+    }
+  }
+});
+
+const SHARED_INPUT_SCHEMAS = Object.freeze([
+  'tabIdSchema', 'timeoutSchema', 'burstTimeoutSchema', 'executionModeSchema',
+  'navigationKeySchema', 'modifierSchema', 'workflowNameSchema', 'burstStepSchema'
+]);
+
+function objectBody(text, marker) {
+  const at = text.indexOf(marker);
+  if (at < 0) return null;
+  const open = text.indexOf('{', at + marker.length - 1);
+  if (open < 0) return null;
+  let depth = 0;
+  let quote = null;
+  for (let i = open; i < text.length; i += 1) {
+    const c = text[i];
+    if (quote) {
+      if (c === '\\') { i += 1; continue; }
+      if (c === quote) quote = null;
+      continue;
+    }
+    if (c === '"' || c === "'") { quote = c; continue; }
+    if (c === '{' || c === '[' || c === '(') depth += 1;
+    else if (c === '}' || c === ']' || c === ')') {
+      depth -= 1;
+      if (depth === 0) return text.slice(open + 1, i);
+    }
+  }
+  return null;
+}
+
+function propertiesOf(body) {
+  const properties = [];
+  let depth = 0;
+  let quote = null;
+  let name = null;
+  let valueStart = 0;
+  for (let i = 0; i < body.length; i += 1) {
+    const c = body[i];
+    if (quote) {
+      if (c === '\\') { i += 1; continue; }
+      if (c === quote) quote = null;
+      continue;
+    }
+    if (c === '"' || c === "'") { quote = c; continue; }
+    if (c === '{' || c === '[' || c === '(') { depth += 1; continue; }
+    if (c === '}' || c === ']' || c === ')') { depth -= 1; continue; }
+    if (c === ':' && depth === 0 && name === null) {
+      name = body.slice(0, i).match(/([A-Za-z_][A-Za-z0-9_]*)\s*$/)?.[1] ?? null;
+      valueStart = i + 1;
+      continue;
+    }
+    if (c === ',' && depth === 0 && name !== null) {
+      properties.push({ name, value: body.slice(valueStart, i).trim() });
+      name = null;
+      valueStart = i + 1;
+    }
+  }
+  if (name !== null) properties.push({ name, value: body.slice(valueStart).trim() });
+  return properties;
+}
+
+function sharedDescribesItself(name) {
+  const at = source.indexOf('const ' + name + ' =');
+  if (at < 0) return false;
+  const end = source.indexOf('\nconst ', at);
+  return /\.describe\(/.test(source.slice(at, end < 0 ? at + 400 : end));
+}
+
+function undocumentedFields(body, path, problems) {
+  for (const property of propertiesOf(body)) {
+    const value = property.value;
+    const shared = value.split(/[\s.(]/)[0];
+    if (SHARED_INPUT_SCHEMAS.includes(shared)) {
+      if (!sharedDescribesItself(shared) && !/\.describe\(/.test(value)) {
+        problems.push(path + '.' + property.name + ' uses ' + shared + ' and says nothing about itself');
+      }
+      continue;
+    }
+    const nested = objectBody(value, 'z.object({');
+    if (nested !== null) {
+      undocumentedFields(nested, path + '.' + property.name, problems);
+      continue;
+    }
+    if (!/\.describe\(/.test(value)) problems.push(path + '.' + property.name + ' must carry a description');
+  }
+}
+
+test('every input field says what it is', () => {
+  const problems = [];
+  for (const block of toolBlocks()) {
+    const at = block.schema.indexOf('inputSchema:');
+    const body = objectBody(block.schema.slice(at), 'inputSchema:');
+    if (body === null) continue;
+    undocumentedFields(body, block.name, problems);
+  }
+  assert.deepEqual(problems, [], problems.join('\n'));
+});
