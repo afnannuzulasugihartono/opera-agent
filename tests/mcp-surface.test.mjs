@@ -262,6 +262,8 @@ test('the status tool names the worker faults it answers', () => {
 test('the status tool says whether the extension is there at all', () => {
   assert.match(source, /registerTool\("browser_status", \{[\s\S]{0,900}?extensionPresent/, 'the description says how to tell an installed extension from an absent one');
   assert.match(source, /deviceStatus/, 'and the device state is named');
+  assert.match(source, /latestExtensionVersion/, 'and the newest published version is named, so an extension Chrome has not installed yet is visible');
+  assert.match(source, /extensionUpdatePending/, 'and the gap is stated as a fact');
 });
 
 test('the tool count and names match the contract', () => {

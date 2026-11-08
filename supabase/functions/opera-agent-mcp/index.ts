@@ -448,7 +448,7 @@ function execute(method: string, params: Record<string, unknown>, timeoutMs?: nu
 const DEVICE_ONLINE_WINDOW_MS = 120000;
 
 async function devicePresence(userId: string | null) {
-  if (!userId) return { extensionPresent: false, deviceStatus: "unknown", deviceLastSeenAt: null, deviceExtensionVersion: null };
+  if (!userId) return { extensionPresent: false, deviceStatus: "unknown", deviceLastSeenAt: null, deviceExtensionVersion: null, latestExtensionVersion: null, extensionUpdatePending: false };
   try {
     const supabase = await db();
     const { data } = await supabase
@@ -459,17 +459,45 @@ async function devicePresence(userId: string | null) {
       .order("last_seen_at", { ascending: false })
       .limit(1)
       .maybeSingle();
-    if (!data) return { extensionPresent: false, deviceStatus: "never", deviceLastSeenAt: null, deviceExtensionVersion: null };
-    const seen = data.last_seen_at ? Date.parse(String(data.last_seen_at)) : 0;
-    const online = seen > 0 && Date.now() - seen < DEVICE_ONLINE_WINDOW_MS;
+    const latest = await latestPublishedVersion();
+    const installed = data?.extension_version ?? null;
     return {
-      extensionPresent: true,
-      deviceStatus: online ? "online" : "offline",
-      deviceLastSeenAt: data.last_seen_at ?? null,
-      deviceExtensionVersion: data.extension_version ?? null
+      extensionPresent: !!data,
+      deviceStatus: data ? deviceStatusOf(data) : "never",
+      deviceLastSeenAt: data?.last_seen_at ?? null,
+      deviceExtensionVersion: installed,
+      latestExtensionVersion: latest,
+      extensionUpdatePending: !!installed && !!latest && installed !== latest
     };
   } catch {
-    return { extensionPresent: false, deviceStatus: "unknown", deviceLastSeenAt: null, deviceExtensionVersion: null };
+    return { extensionPresent: false, deviceStatus: "unknown", deviceLastSeenAt: null, deviceExtensionVersion: null, latestExtensionVersion: null, extensionUpdatePending: false };
+  }
+}
+
+const DEVICE_ONLINE_WINDOW_MS = 120000;
+
+function deviceStatusOf(device: { last_seen_at?: unknown; status?: unknown }) {
+  const seen = device.last_seen_at ? Date.parse(String(device.last_seen_at)) : 0;
+  return seen > 0 && Date.now() - seen < DEVICE_ONLINE_WINDOW_MS ? "online" : "offline";
+}
+
+// WHY THE STATUS NAMES THE VERSION GAP.
+// A published extension that Chrome has not installed yet is invisible from the inside: the device reports the version it runs, and only the server knows what was published.
+// Without this the operator sees an old extension behaving oddly and has no way to know why.
+
+async function latestPublishedVersion() {
+  try {
+    const supabase = await db();
+    const { data } = await supabase
+      .from("opera_releases")
+      .select("version")
+      .eq("active", true)
+      .order("version", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    return data?.version ? String(data.version) : null;
+  } catch {
+    return null;
   }
 }
 
