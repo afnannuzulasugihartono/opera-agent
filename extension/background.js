@@ -66,6 +66,8 @@ export async function dispatch(method, params = {}, context = {}) {
   switch (method) {
     case 'browser.ping': {
       const cfg = await getConfig();
+      const faults = log.errors();
+      const fitted = fitWithinBudget(faults, RESULT_BUDGET_BYTES - 16 * 1024);
       return {
         ok: true,
         product: 'Opera Agent',
@@ -75,6 +77,9 @@ export async function dispatch(method, params = {}, context = {}) {
         paired: cfg.paired,
         bridge: bridgeLinkState(),
         capabilities: Object.keys(METHOD_SPECS),
+        errors: fitted.elements,
+        errorCount: log.errorCount(),
+        ...(fitted.truncated ? { errorsTruncated: true, omittedErrors: faults.length - fitted.elements.length } : {}),
         time: nowIso()
       };
     }

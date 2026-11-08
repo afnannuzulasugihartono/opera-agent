@@ -254,6 +254,10 @@ test('the map tool takes a class and a page, and never an envelope', () => {
   assert.match(source, /runCommand\("page\.read", \{ \.\.\.params, view: "map" \}/);
 });
 
+test('the status tool names the worker faults it answers', () => {
+  assert.match(source, /registerTool\("browser_status", \{[\s\S]{0,900}?errorCount/, 'the description says what the fault fields are');
+});
+
 test('the tool count and names match the contract', () => {
   const registered = [...source.matchAll(/server\.registerTool\("([a-z_]+)"/g)].map((m) => m[1]);
   assert.equal(registered.length, 35);

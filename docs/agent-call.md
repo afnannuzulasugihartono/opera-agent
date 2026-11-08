@@ -126,6 +126,18 @@ page the person is watching. Each tile is one image block; the set is walked
 with `tileOffset`, and `tileCount`, `coveredHeight` and `nextTileOffset` say how
 much of the document a slice covers.
 
+### When the worker itself fails
+
+The extension's service worker catches its own faults: errors it does not
+catch, promise rejections nobody handled, and named API failures like an
+accessibility probe or a page-content ping that broke. They are not lost to
+`chrome://extensions` any more. `browser_status` answers with them as `errors`
+— one row per distinct fault, carrying `code`, `message`, `count`, `firstAt`
+and `lastAt` — and `errorCount`, the total seen since the worker started, which
+does not shrink when the list is cleared. Twenty distinct faults are kept;
+if the answer would not fit, the oldest rows are dropped and the answer says
+`errorsTruncated` with `omittedErrors`.
+
 ## 2. Local stdio MCP
 
 The server speaks MCP over stdio and drives a browser on this machine.

@@ -102,3 +102,10 @@ test('the guide teaches the whole-page read and the full-page capture', () => {
   assert.match(guide, /tileOffset/, 'the tile walk is described');
   assert.match(guide, /document coordinates/, 'the rect is stated as document coordinates');
 });
+
+test('the guide says where the worker faults are read', () => {
+  const guide = read('docs/agent-call.md');
+  assert.match(guide, /browser_status/, 'the tool that answers the faults is named');
+  assert.match(guide, /errorCount/, 'the running total is named');
+  assert.match(guide, /worker/, 'and the guide says whose faults they are');
+});
