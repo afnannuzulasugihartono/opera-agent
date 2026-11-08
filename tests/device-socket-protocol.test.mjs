@@ -126,3 +126,7 @@ test('a runtime without compression still sends text, never throws', async () =>
     globalThis.CompressionStream = real;
   }
 });
+
+test('the device carries a four-megabyte frame', () => {
+  assert.equal(FRAME_MAX_BYTES, 4 * 1024 * 1024);
+});

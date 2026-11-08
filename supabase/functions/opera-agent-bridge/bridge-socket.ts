@@ -29,7 +29,7 @@ const VERIFY_TIMEOUT_MS = 30000;
 // A transport cap below that refuses legal results — observed live as "Frame too large" killing a page.read the product explicitly allows, which stranded the command as claimed forever with no recovery.
 // Stated here rather than imported because the edge bundle cannot reach outside its own directory; a test asserts the relation still holds.
 
-export const MAX_FRAME_BYTES = 1024 * 1024;
+export const MAX_FRAME_BYTES = 4 * 1024 * 1024;
 
 // WHY the decompressed cap is separate from the frame cap.
 // A 40-byte gzip bomb expands to gigabytes, so bounding the wire bytes bounds nothing.

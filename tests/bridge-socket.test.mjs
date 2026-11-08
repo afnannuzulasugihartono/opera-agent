@@ -339,3 +339,8 @@ test('a verify that never answers is still bounded instead of holding the socket
     closeTestSocket(server);
   }
 });
+
+test('the bridge accepts the frame the device now sends', () => {
+  assert.equal(MAX_FRAME_BYTES, 4 * 1024 * 1024);
+  assert.ok(MAX_DECOMPRESSED_BYTES >= MAX_FRAME_BYTES * 2, 'decompression still has twice the room');
+});

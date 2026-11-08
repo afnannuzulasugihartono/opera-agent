@@ -21,7 +21,7 @@
 // WHY the relation is locked in a test instead of importing the constant.
 // The bridge cannot import this file and this file must stay dependency-free, so both caps are stated twice and a test asserts they still cover the bound.
 
-export const FRAME_MAX_BYTES = 1024 * 1024;
+export const FRAME_MAX_BYTES = 4 * 1024 * 1024;
 
 export const DEVICE_PROTOCOL_VERSION = 2;
 
