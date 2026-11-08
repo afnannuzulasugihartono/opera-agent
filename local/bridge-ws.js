@@ -12,7 +12,7 @@ import { randomUUID } from 'node:crypto';
 import { createServer } from 'node:http';
 import { EventEmitter } from 'node:events';
 
-import { parseFrame } from '../extension/lib/socket-protocol.js';
+import { parseFrame } from './lib/socket-protocol.js';
 import { BridgeSocket, acceptKey, encodeText, isOriginAllowed, isWebSocketUpgrade } from './ws-server.js';
 import { createLeaseTable } from './leases.js';
 
