@@ -74,11 +74,13 @@ async function captureTiles(target, content, stripHeight, tileOffset, context, t
   const strip = Math.max(1, Math.floor(Number(stripHeight) || 1));
   const total = Math.max(1, Math.ceil(content.height / strip));
   const start = Math.max(0, Math.min(Math.trunc(Number(tileOffset) || 0), total));
+  const startedAt = Date.now();
+  const budgetMs = Math.max(2000, (Number(context?.deadline) || startedAt + 60000) - startedAt);
   const tiles = [];
   let bytesSoFar = 0;
   let index = start;
   while (index < total) {
-    if (context?.deadline && Date.now() >= context.deadline - 1500) break;
+    if (Date.now() - startedAt > budgetMs * 0.6) break;
     const top = index * strip;
     const height = Math.min(strip, content.height - top);
     if (!(height > 0)) break;
