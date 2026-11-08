@@ -11,6 +11,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { createHash } from 'node:crypto';
+import { siteHeaders } from './helpers/site-headers.mjs';
 
 const root = new URL('..', import.meta.url);
 const read = (name) => fs.readFileSync(new URL(`landing/${name}`, root), 'utf8');
@@ -89,13 +90,13 @@ test('the merged detection marks the matching card and phones nowhere', () => {
 
 test('the merged script is named by a hash on both hosts', () => {
 
-  const vercel = JSON.parse(read('vercel.json'));
-  const csp = vercel.headers.find((h) => h.source === '/(.*)').headers
+  const site = siteHeaders();
+  const csp = site.headers.find((h) => h.source === '/unduh-berkas.html').headers
     .find((h) => h.key === 'Content-Security-Policy').value;
   const headers = read('_headers');
   const body = /<script type="module">([\s\S]*?)<\/script>/.exec(berkas)[1];
   const hash = "'sha256-" + createHash('sha256').update(body, 'utf8').digest('base64') + "'";
-  assert.ok(csp.includes(hash), 'vercel names the unduh-berkas.html script');
+  assert.ok(csp.includes(hash), 'the site names the unduh-berkas.html script');
   for (const path of ['/unduh-berkas.html', '/unduh-berkas']) {
     const block = headers.split('\n\n').find((b) => b.startsWith(`${path}\n`));
     assert.ok(block && block.includes(hash), `_headers names it for ${path}`);

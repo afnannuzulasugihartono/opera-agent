@@ -94,7 +94,7 @@ async function run(page, shape = {}) {
     URLSearchParams, encodeURIComponent, setTimeout,
     setInterval: (fn, ms) => { timers.push({ fn, ms }); return timers.length; },
     clearInterval: () => {},
-    location: { search, hash: '', pathname: `/${page}`, href: `https://opera-agent.vercel.app/${page}`, replace() {}, assign(url) { context.assigned = url; } },
+    location: { search, hash: '', pathname: `/${page}`, href: `https://opera-agent.pages.dev/${page}`, replace() {}, assign(url) { context.assigned = url; } },
     localStorage: {
       getItem: (key) => store[key] ?? null,
       setItem: (key, value) => { store[key] = String(value); },

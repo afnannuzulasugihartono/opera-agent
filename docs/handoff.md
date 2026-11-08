@@ -73,13 +73,13 @@ What is true now, and what to do next. Cap 150 lines. Spent detail: git history.
   build if a site name or a `.kix-` selector returns.
 - **The plan path exists; the model call does not.** The model composes a plan once and the
   device runs it locally; [`goal-plan.js`](../extension/lib/goal-plan.js) shares the allowlist.
-- **Cloudflare Pages at `opera-agent.pages.dev` serves the site; Vercel is the backup**, and
-  `vercel.app` stays in CORS. Every `style-src` allows `'self'`, and the features page counts
+- **Cloudflare Pages at `opera-agent.pages.dev` is the only host that serves the site**, and
+  the Vercel deploy path is gone: no `vercel.json`, no `vercel.app` in CORS, no Vercel check on a pull request. Every `style-src` allows `'self'`, and the features page counts
   35 tools, 31 primitives and six permissions, against the code.
 - **A deploy is a dispatch, not a push.** [`deploy-site.yml`](../.github/workflows/deploy-site.yml)
   publishes `landing/` with `wrangler pages deploy` after the unit and syntax gates; a push
-  that does not deploy leaves CI green and the old build live. The Vercel CLI cannot deploy.
-- `landing/_headers` restates the `vercel.json` policy per path, with HSTS, a locked-down
+  that does not deploy leaves CI green and the old build live.
+- `landing/_headers` carries the policy per path, with HSTS, a locked-down
   Permissions-Policy, same-origin COOP and CORP, and `X-Frame-Options: DENY`.
 
 ## Measured, not assumed

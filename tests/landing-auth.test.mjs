@@ -9,11 +9,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import { siteHeaders } from './helpers/site-headers.mjs';
 
 const root = new URL('..', import.meta.url);
 const html = fs.readFileSync(new URL('landing/index.html', root), 'utf8');
 const authCss = fs.readFileSync(new URL('landing/auth.css', root), 'utf8');
-const vercel = JSON.parse(fs.readFileSync(new URL('landing/vercel.json', root), 'utf8'));
+const site = siteHeaders();
 
 const AUTH_HOST = 'https://nenmkmtvjremqphfqnfw.supabase.co/auth/v1';
 
@@ -34,19 +35,15 @@ test('the auth page takes no password, only a magic link', () => {
 
 test('the landing page itself stays network-free while auth may reach only Supabase', () => {
 
-  assert.deepEqual(
-    vercel.headers.map((h) => h.source),
-    ['/(.*)', '/', '/index.html', '/beranda', '/beranda.html', '/akun', '/akun/:path*', '/akun.html', '/dashboard', '/dashboard/:path*', '/dashboard.html', '/oauth/consent', '/oauth/consent.html', '/bukti', '/bukti.html', '/robots.txt', '/sitemap.xml'],
-    'the catch-all stays first and the page entries follow'
-  );
-  const bySource = Object.fromEntries(vercel.headers.map((h) => [h.source, h.headers]));
-  const rootCsp = bySource['/(.*)'].find((h) => h.key === 'Content-Security-Policy').value;
-  assert.match(rootCsp, /connect-src 'none'/, 'the marketing page still connects nowhere');
+  const byPath = Object.fromEntries(site.headers.map((h) => [h.source, h.headers]));
+  assert.ok(byPath['/beranda'], 'the marketing home carries a policy of its own');
+  const marketingCsp = byPath['/beranda'].find((h) => h.key === 'Content-Security-Policy').value;
+  assert.match(marketingCsp, /connect-src 'none'/, 'the marketing page still connects nowhere');
 
   const authSources = ['/', '/index.html', '/oauth/consent', '/oauth/consent.html'];
   for (const source of authSources) {
-    const entry = bySource[source];
-    assert.ok(entry, `vercel.json must define a header entry for ${source}`);
+    const entry = byPath[source];
+    assert.ok(entry, `_headers must define a header entry for ${source}`);
     const csp = entry.find((h) => h.key === 'Content-Security-Policy').value;
     assert.match(csp, /connect-src https:\/\/\*\.supabase\.co/, `${source} may reach only Supabase`);
     assert.doesNotMatch(csp, /connect-src[^;]*https?:\/\/(?!\*\.supabase\.co)/, 'no second origin rides along');

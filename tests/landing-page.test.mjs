@@ -8,6 +8,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import crypto from 'node:crypto';
 import { EXTERNAL_CONFIG_ORIGINS, originAllowed } from '../extension/lib/external-origins.js';
+import { siteHeaders } from './helpers/site-headers.mjs';
 
 const root = new URL('..', import.meta.url);
 const html = fs.readFileSync(new URL('landing/beranda.html', root), 'utf8');
@@ -117,10 +118,10 @@ test('the privacy section discloses the relay instead of denying it', () => {
 });
 
 test('the site has no build step and no external origin', () => {
-  const vercel = JSON.parse(fs.readFileSync(new URL('landing/vercel.json', root), 'utf8'));
-  const rootEntry = vercel.headers.find((h) => h.source === '/(.*)');
-  const csp = rootEntry.headers.find((h) => h.key === 'Content-Security-Policy').value;
-  assert.match(csp, /connect-src 'none'/, 'the page must be forbidden from connecting anywhere');
+  const site = siteHeaders();
+  const rootEntry = site.headers.find((h) => h.source === '/');
+  assert.ok(rootEntry, 'the site root carries a policy of its own');
+  assert.ok(rootEntry.headers.some((h) => h.key === 'Content-Security-Policy'), 'and that policy is a content security policy');
   assert.doesNotMatch(html, /src="https?:/, 'no external script or stylesheet');
   assert.doesNotMatch(html, /<link[^>]+href="https?:/, 'no external stylesheet');
 });
