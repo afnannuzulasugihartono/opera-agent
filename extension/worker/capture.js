@@ -152,7 +152,7 @@ export async function collectAxSummary(tabId, context) {
       return summary.items.length > 0 ? summary : null;
     });
   } catch (error) {
-    log.debug('AX_SUMMARY_COLLECTION_FAILED', error?.message || String(error));
+    log.error('AX_SUMMARY_COLLECTION_FAILED', error?.message || String(error));
     return null;
   }
 }

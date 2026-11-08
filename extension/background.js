@@ -51,6 +51,9 @@ import {
 import './worker/execute-pull.js';
 import { bridgeLinkState, ensureBridgeLink } from './worker/bridge-link.js';
 import { statementDownload, statementManifest } from './worker/statement.js';
+import { captureWorkerErrors } from './lib/error-capture.js';
+
+captureWorkerErrors({ target: typeof self === 'undefined' ? null : self, log });
 
 chrome.debugger.onDetach.addListener(handleDebuggerDetach);
 
@@ -231,7 +234,7 @@ export async function dispatch(method, params = {}, context = {}) {
         }
       }
       if (result?.page?.viewport) {
-        try { result.page.viewport.zoomFactor = await chrome.tabs.getZoom(tabId); } catch (error) { log.warn('TAB_ZOOM_PROBE_FAILED', error?.message || String(error)); }
+        try { result.page.viewport.zoomFactor = await chrome.tabs.getZoom(tabId); } catch (error) { log.error('TAB_ZOOM_PROBE_FAILED', error?.message || String(error)); }
       }
 
       const isMapPull = typeof result?.page?.class === 'string';
@@ -260,7 +263,7 @@ export async function dispatch(method, params = {}, context = {}) {
             lastInputMs: result.page.userInput?.lastInputMs ?? null
           };
         } catch (error) {
-          log.warn('USER_STATE_PROBE_FAILED', error?.message || String(error));
+          log.error('USER_STATE_PROBE_FAILED', error?.message || String(error));
         }
       }
       return { ...result, tabId };
