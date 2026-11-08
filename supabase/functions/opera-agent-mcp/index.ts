@@ -258,8 +258,6 @@ function toolError(error: unknown) {
 // The function invoked, its arguments and its return shape are identical either way; only the road changes, and a direct call that fails falls back to the gateway rather than failing the command.
 
 let directDb: { sql: (...args: unknown[]) => Promise<unknown[]> } | null = null;
-let directDbPromise: Promise<void> | null = null;
-let directDbRetryAfter = 0;
 let directFailReason = "";
 
 async function rpcViaDirect(name: string, args: Record<string, unknown>) {
@@ -300,10 +298,6 @@ async function rpcViaPostgrest(name: string, args: Record<string, unknown>) {
 }
 
 async function rpc(name: string, args: Record<string, unknown>) {
-  if (!directDb) {
-    const pending = ensureDirectDb();
-    if (pending) await Promise.race([pending, new Promise((resolve) => setTimeout(resolve, 1500))]);
-  }
   if (directDb) {
     try {
       return await rpcViaDirect(name, args);
@@ -313,24 +307,6 @@ async function rpc(name: string, args: Record<string, unknown>) {
     }
   }
   return rpcViaPostgrest(name, args);
-}
-
-// WHY THE DIRECT CONNECTION IS OPENED ON THE HTTP ROAD TOO.
-// It used to be opened only for the WebSocket road, so every ordinary call went through PostgREST: the wait rode one long statement (killed by the API's statement timeout) and the answer rode an HTTP response with a size of its own.
-// The connection is opened in the background and given one and a half seconds to become useful, so a cold call costs nothing extra and the next ones do not need the hop at all.
-
-function ensureDirectDb(): Promise<void> | null {
-  if (directDb) return null;
-  if (directDbPromise) return directDbPromise;
-  if (Date.now() < directDbRetryAfter) return null;
-  directDbPromise = connectDirectDb()
-    .catch((error) => {
-      directDb = null;
-      directFailReason = String(error?.message ?? error).slice(0, 200);
-      directDbRetryAfter = Date.now() + 60000;
-    })
-    .finally(() => { directDbPromise = null; });
-  return directDbPromise;
 }
 
 type ProgressEmitter = {
@@ -413,8 +389,10 @@ async function runCommand(method: string, params: Record<string, unknown> = {}, 
   const [, completed] = await Promise.all([
     forwardCommandProgress(queued.commandId, boundedTimeout, progress)
       .then((result) => { progressMs = edgeClock() - progressStartedAt; return result; }),
-    awaitInSlices(awaitFunction, queued.commandId, boundedTimeout)
-      .then((result) => { awaitMs = edgeClock() - progressStartedAt; return result; })
+    rpc(awaitFunction, {
+      p_command_id: queued.commandId,
+      p_timeout_ms: Math.min(32000, boundedTimeout + 2000)
+    }).then((result) => { awaitMs = edgeClock() - progressStartedAt; return result; })
   ]);
   const finishedAt = edgeClock();
 
@@ -467,25 +445,6 @@ function executeScreenshot(params: Record<string, unknown>, timeoutMs?: number, 
 }
 
 // The map rides page.read, and its answer is the page's own fields: a wrapper would be a second name for the same facts.
-
-// WHY THE WAIT IS ASKED FOR IN SLICES.
-// One long statement waits for the command inside the database, where it dies at the API's statement timeout - and that death is what the caller used to see as AWAIT_OUTCOME_UNKNOWN, with the answer already sitting in the row.
-// Short statements cannot die that way: each asks for a slice of the wait, and a timeout inside one means "not yet", not "failed".
-
-async function awaitInSlices(name: string, commandId: string, budgetMs: number) {
-  const deadline = Date.now() + budgetMs;
-  let last: Record<string, unknown> | null = null;
-  while (Date.now() < deadline) {
-    const slice = Math.min(2000, Math.max(200, deadline - Date.now()));
-    const result = await rpc(name, { p_command_id: commandId, p_timeout_ms: slice }) as Record<string, unknown> | null;
-    if (result?.ok) return result;
-    last = result;
-    const code = result?.error && typeof result.error === "object" ? (result.error as { code?: unknown }).code : undefined;
-    if (code && code !== "AWAIT_TIMEOUT") return result;
-    await new Promise((resolve) => setTimeout(resolve, 100));
-  }
-  return last ?? { ok: false, error: { code: "AWAIT_TIMEOUT", message: "Timed out waiting for command result." } };
-}
 
 function executeMap(params: Record<string, unknown>, timeoutMs: number, deviceName: string = DEVICE_NAME, provider = "") {
   return runCommand("page.read", { ...params, view: "map" }, timeoutMs, deviceName, provider)
@@ -872,7 +831,7 @@ function serveMcpSocket(req: Request) {
           : null;
         authed = { deviceName, provider, caller };
         try {
-          await ensureDirectDb();
+          await connectDirectDb();
         } catch {
           directDb = null;
         }
