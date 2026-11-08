@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "protocolVersion": 1,
   "toolCount": 35,
-  "sourceSha256": "70b80c25a25dd75d366ad4966196c5e636f6c39164d4ed752adcd2346fd857d4",
+  "sourceSha256": "08d254a9155a8ee0fc1333b50a632bbe6deeed62de85571438644632ff80c572",
   "tools": [
     "browser_status",
     "run_browser_burst",
