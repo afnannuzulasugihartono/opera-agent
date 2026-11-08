@@ -413,10 +413,8 @@ async function runCommand(method: string, params: Record<string, unknown> = {}, 
   const [, completed] = await Promise.all([
     forwardCommandProgress(queued.commandId, boundedTimeout, progress)
       .then((result) => { progressMs = edgeClock() - progressStartedAt; return result; }),
-    rpc(awaitFunction, {
-      p_command_id: queued.commandId,
-      p_timeout_ms: Math.min(32000, boundedTimeout + 2000)
-    }).then((result) => { awaitMs = edgeClock() - progressStartedAt; return result; })
+    awaitInSlices(awaitFunction, queued.commandId, boundedTimeout)
+      .then((result) => { awaitMs = edgeClock() - progressStartedAt; return result; })
   ]);
   const finishedAt = edgeClock();
 
@@ -469,6 +467,25 @@ function executeScreenshot(params: Record<string, unknown>, timeoutMs?: number, 
 }
 
 // The map rides page.read, and its answer is the page's own fields: a wrapper would be a second name for the same facts.
+
+// WHY THE WAIT IS ASKED FOR IN SLICES.
+// One long statement waits for the command inside the database, where it dies at the API's statement timeout - and that death is what the caller used to see as AWAIT_OUTCOME_UNKNOWN, with the answer already sitting in the row.
+// Short statements cannot die that way: each asks for a slice of the wait, and a timeout inside one means "not yet", not "failed".
+
+async function awaitInSlices(name: string, commandId: string, budgetMs: number) {
+  const deadline = Date.now() + budgetMs;
+  let last: Record<string, unknown> | null = null;
+  while (Date.now() < deadline) {
+    const slice = Math.min(2000, Math.max(200, deadline - Date.now()));
+    const result = await rpc(name, { p_command_id: commandId, p_timeout_ms: slice }) as Record<string, unknown> | null;
+    if (result?.ok) return result;
+    last = result;
+    const code = result?.error && typeof result.error === "object" ? (result.error as { code?: unknown }).code : undefined;
+    if (code && code !== "AWAIT_TIMEOUT") return result;
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
+  return last ?? { ok: false, error: { code: "AWAIT_TIMEOUT", message: "Timed out waiting for command result." } };
+}
 
 function executeMap(params: Record<string, unknown>, timeoutMs: number, deviceName: string = DEVICE_NAME, provider = "") {
   return runCommand("page.read", { ...params, view: "map" }, timeoutMs, deviceName, provider)
