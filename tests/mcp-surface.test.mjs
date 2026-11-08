@@ -12,17 +12,18 @@ import { createHash } from 'node:crypto';
 import { sha256ContractSource } from './helpers/canonical-source-hash.mjs';
 import { ALLOWED_METHODS, PRODUCT_VERSION } from '../extension/lib/protocol.js';
 import { mcpSurfaceSource } from './helpers/mcp-surface-source.mjs';
+import { siteHeaders } from './helpers/site-headers.mjs';
 
 const configUrl = new URL('../supabase/functions/opera-agent-mcp/deno.json', import.meta.url);
 const authUrl = new URL('../supabase/functions/opera-agent-mcp/../opera-agent-auth/index.ts', import.meta.url);
 const consentUrl = new URL('../landing/oauth/consent.html', import.meta.url);
 const supabaseConfigUrl = new URL('../supabase/config.toml', import.meta.url);
-const siteVercelConfigUrl = new URL('../landing/vercel.json', import.meta.url);
+
 const source = await mcpSurfaceSource();
 const config = JSON.parse(await readFile(configUrl, 'utf8'));
 const authSource = await readFile(authUrl, 'utf8');
 const consentSource = await readFile(consentUrl, 'utf8');
-const siteVercelConfig = JSON.parse(await readFile(siteVercelConfigUrl, 'utf8'));
+const siteVercelConfig = siteHeaders();
 const supabaseConfig = await readFile(supabaseConfigUrl, 'utf8');
 const contract = JSON.parse(
   fs.readFileSync(new URL('./fixtures/mcp-contract-v1.json', import.meta.url), 'utf8')

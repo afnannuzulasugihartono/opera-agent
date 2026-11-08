@@ -12,6 +12,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { createHash } from 'node:crypto';
 import { mcpSurfaceSourceSync } from './helpers/mcp-surface-source.mjs';
+import { siteHeaders } from './helpers/site-headers.mjs';
 
 const root = new URL('..', import.meta.url);
 const read = (name) => fs.readFileSync(new URL(`landing/${name}`, root), 'utf8');
@@ -106,13 +107,13 @@ test('the CRX section is framed enterprise-only, with the button untouched', () 
 test('the hub needs no script hash, and the shared policy still names the merged script', () => {
 
   assert.doesNotMatch(hub, /<script type="module">/, 'the hub carries no inline module to name');
-  const vercel = JSON.parse(read('vercel.json'));
-  const csp = vercel.headers.find((h) => h.source === '/(.*)').headers
+  const site = siteHeaders();
+  const csp = site.headers.find((h) => h.source === '/unduh-berkas.html').headers
     .find((h) => h.key === 'Content-Security-Policy').value;
   const headers = read('_headers');
   const body = /<script type="module">([\s\S]*?)<\/script>/.exec(berkas)[1];
   const hash = "'sha256-" + createHash('sha256').update(body, 'utf8').digest('base64') + "'";
-  assert.ok(csp.includes(hash), 'vercel still names the unduh-berkas.html script');
+  assert.ok(csp.includes(hash), 'the site still names the unduh-berkas.html script');
   for (const path of ['/unduh-berkas.html', '/unduh-berkas']) {
     const block = headers.split('\n\n').find((b) => b.startsWith(`${path}\n`));
     assert.ok(block && block.includes(hash), `_headers still names it for ${path}`);

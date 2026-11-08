@@ -1,16 +1,15 @@
-// @last-edited: 2026-10-21 UTC+7.
+// @last-edited: 2026-11-08 UTC+7.
 // @title: cors — the one resolver every edge function asks which origin it may answer.
 // @state: the allowlist of extension ids and site origins, and the fail-closed answer for anything else.
 // @dependencies: none.
 
 // WHY both extension ids: the CRX signing key produced a new one, so an install that has not been replaced yet still presents the old id and would be refused if only the new one were listed.
-// WHY both site origins: the Cloudflare host is the product's front door and the Vercel one stays while installs in the wild still point at it, so neither origin is refused mid-migration.
+// WHY one site origin: Cloudflare Pages is the only host that serves the site, so its address is the only one a page may come from.
 
 const FALLBACK_ORIGINS = Object.freeze([
   'chrome-extension://ofgemipoobcnbjkfanmofjbdonjapmgl',
   'chrome-extension://ohbbpamcljckmjhcpkcmefdobkoeaick',
   'https://opera-agent.pages.dev',
-  'https://opera-agent.vercel.app'
 ]);
 
 export const CORS_DEFAULT_ORIGINS = FALLBACK_ORIGINS;

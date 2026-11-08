@@ -13,13 +13,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import { siteHeaders } from './helpers/site-headers.mjs';
 
 const root = new URL('..', import.meta.url);
 const read = (name) => fs.readFileSync(new URL(`landing/${name}`, root), 'utf8');
 const css = read('dashboard.css');
 const app = read('app.css');
-const vercel = JSON.parse(fs.readFileSync(new URL('landing/vercel.json', root), 'utf8'));
-const bySource = Object.fromEntries(vercel.headers.map((h) => [h.source, h.headers]));
+const site = siteHeaders();
+const byPath = Object.fromEntries(site.headers.map((h) => [h.source, h.headers]));
 
 test('the dashboard reads through scoped RPCs, never raw tables', () => {
   const html = read('dashboard.html');
@@ -212,9 +213,9 @@ test('the dashboard shares the site navigation and footer', () => {
 });
 
 test('the dashboard may reach only Supabase like the auth page', () => {
-  for (const source of ['/dashboard', '/dashboard/:path*', '/dashboard.html']) {
-    const entry = bySource[source];
-    assert.ok(entry, `vercel.json must define a header entry for ${source}`);
+  for (const source of ['/dashboard', '/dashboard.html']) {
+    const entry = byPath[source];
+    assert.ok(entry, `_headers must define a header entry for ${source}`);
     const csp = entry.find((h) => h.key === 'Content-Security-Policy').value;
     assert.match(csp, /connect-src https:\/\/\*\.supabase\.co/, `${source} may reach only Supabase`);
   }

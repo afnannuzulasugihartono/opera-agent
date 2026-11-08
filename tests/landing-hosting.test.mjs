@@ -1,57 +1,31 @@
-// @last-edited: 2026-10-26 UTC+7.
-// @title: landing-hosting — how both hosts are configured, and why each line is there.
-// @state: the site is served by both hosts, so both configs must say the same thing, and every page must be allowed to load what it names.
+// @last-edited: 2026-11-08 UTC+7.
+// @title: landing-hosting — how the site is configured for Cloudflare Pages, and why each line is there.
+// @state: Cloudflare Pages serves the site, so _headers is the one policy every path must carry, and every page must be allowed to load what it names.
 // @dependencies: node:test, node:assert, node:fs.
 
-// The site is served by Cloudflare Pages as well as Vercel, and the two configure headers in different files: vercel.json on one, _headers on the other.
-// Nothing makes them agree, so this lock does.
-// Without it the day someone adds a CSP for a new page on one host, that page silently loses its policy on the other.
+// The site is served by Cloudflare Pages, which configures headers with landing/_headers, one block per path.
+// Nothing makes two blocks agree, so this lock does.
+// Without it the day someone adds a CSP for a new page, that page silently loses its policy.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { createHash } from 'node:crypto';
+import { siteRules } from './helpers/site-headers.mjs';
 
 const root = new URL('..', import.meta.url);
 const read = (name) => fs.readFileSync(new URL(name, root), 'utf8');
-const vercel = JSON.parse(read('landing/vercel.json'));
 const headers = read('landing/_headers');
 
-function parse(text) {
-  const rules = [];
-  let current = null;
-  for (const line of text.split('\n')) {
-    if (!line.trim() || line.startsWith('#')) continue;
-    if (!/^\s/.test(line)) {
-      current = { paths: line.split(',').map((p) => p.trim()), headers: {} };
-      rules.push(current);
-      continue;
-    }
-    const at = line.indexOf(':');
-    current.headers[line.slice(0, at).trim()] = line.slice(at + 1).trim();
-  }
-  return rules;
-}
+const rules = siteRules();
 
-const rules = parse(headers);
-const bySource = Object.fromEntries(vercel.headers.map((h) => [h.source, h.headers]));
-
-test('every _headers rule restates a vercel.json entry verbatim', () => {
+test('the file has rules, and every one of them carries a policy', () => {
 
   assert.ok(rules.length > 0, 'the file has rules');
   for (const rule of rules) {
-    const marker = headers.match(new RegExp(`^${escapeRe(rule.paths.join(', '))}\\n# from vercel\\.json (\\S+)`, 'm'));
-    assert.ok(marker, `every rule block names its vercel.json source: ${rule.paths.join(', ')}`);
-    const source = marker[1];
-    const original = bySource[source];
-    assert.ok(original, `vercel.json has an entry for ${source}`);
-    for (const [key, value] of Object.entries(rule.headers)) {
-
-      if (key === 'Content-Type' || key === 'Vercel-CDN-Cache-Control') continue;
-      const match = original.find((h) => h.key === key);
-      assert.ok(match, `${rule.paths[0]} sets ${key}, which ${source} also sets`);
-      assert.equal(value, match.value, `${rule.paths[0]} sends the same ${key} as ${source}`);
-    }
+    assert.ok(rule.headers['Cache-Control'], `${rule.paths[0]} says what the edge may hold`);
+    const isPage = rule.paths.some((path) => path.endsWith('.html') || !path.includes('.'));
+    if (isPage) assert.ok(rule.headers['Content-Security-Policy'], `${rule.paths[0]} carries a policy`);
   }
 });
 
@@ -175,25 +149,16 @@ test('the site hosts no archive, because the endpoint serves the newest one', ()
     assert.doesNotMatch(rule.paths.join(' '), /\.(zip|crx)$/,
       `no _headers rule names a versioned archive: ${rule.paths.join(', ')}`);
   }
-  for (const header of vercel.headers) {
-    assert.doesNotMatch(header.source, /\.(zip|crx)$/,
-      `vercel.json names no versioned archive: ${header.source}`);
-  }
 });
 
-test('both hosts upload the same file set, so no page exists on only one of them', () => {
+test('the upload carries the site and none of the repository own files', () => {
 
-  const read = (name) => fs.readFileSync(new URL(`landing/${name}`, root), 'utf8')
+  const assetsIgnore = fs.readFileSync(new URL('landing/.assetsignore', root), 'utf8')
     .split('\n')
     .map((line) => line.trim())
     .filter((line) => line && !line.startsWith('#'));
-  const vercelIgnore = read('.vercelignore');
-  const assetsIgnore = read('.assetsignore');
-  for (const entry of vercelIgnore) {
-    assert.ok(assetsIgnore.includes(entry), `.assetsignore must also exclude ${entry}`);
-  }
 
-  for (const entry of ['.gitignore', '.vercelignore', 'vercel.json', '.assetsignore']) {
+  for (const entry of ['.gitignore', '.assetsignore', 'AGENTS.md']) {
     assert.ok(assetsIgnore.includes(entry), `.assetsignore must exclude ${entry}`);
   }
 
@@ -204,44 +169,21 @@ test('both hosts upload the same file set, so no page exists on only one of them
   }
 });
 
-function escapeRe(text) {
-  return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-
-test('a push does not deploy, because every push spent the daily budget', () => {
-
-  assert.equal(vercel.git?.deploymentEnabled, false, 'git auto-deployment is off');
-});
-
-test('the static-hosting pins survive that change', () => {
-
-  assert.equal(vercel.framework, null, 'no framework may be detected');
-  assert.equal(vercel.buildCommand, null, 'there is no build step to run');
-  assert.equal(vercel.outputDirectory, '.', 'the served directory is the site itself');
-  assert.equal(vercel.cleanUrls, true, 'and extensionless URLs are the canonical ones');
-});
-
 test('the deploy invocation is written down where it will be found', () => {
 
   const handoff = read('docs/handoff.md');
   assert.match(handoff, /wrangler pages deploy|Cloudflare Pages/i, 'the host that serves the site is named');
   assert.match(handoff, /publish-crx\.yml|deploy-site\.yml/, 'and the workflow that publishes it');
-  assert.match(handoff, /CLI cannot deploy/i, 'and says plainly that the Vercel CLI is not the way');
+
   assert.match(read('docs/security.md'), /wrangler pages deploy|deploy-site\.yml/, 'the invocation sits with the operator manual');
 });
 
 test('the edge is told not to hold a page, because Cache-Control alone does not', () => {
 
-  for (const entry of vercel.headers) {
-    const cdn = entry.headers.find((h) => h.key === 'Vercel-CDN-Cache-Control');
-    assert.ok(cdn, `${entry.source} tells the edge what to do`);
-
-    assert.equal(cdn.value, 'no-store', `${entry.source} releases rather than holds`);
+  for (const rule of rules) {
+    assert.equal(rule.headers['Cache-Control'], 'no-store',
+      `${rule.paths[0]} releases rather than holds`);
   }
-  const headers = read('landing/_headers');
-  const rules = headers.split('\n').filter((l) => /^ {2}Vercel-CDN-Cache-Control:/.test(l));
-  const blocks = headers.split(/\n\n/).filter((b) => /^ {2}Cache-Control:/m.test(b));
-  assert.equal(rules.length, blocks.length, 'the other host is told the same thing on every rule');
 });
 
 test('the site is reachable at the path GoTrue asks for, from the site root directory', () => {
@@ -249,8 +191,8 @@ test('the site is reachable at the path GoTrue asks for, from the site root dire
   assert.match(read('supabase/config.toml'), /site_url = "https:\/\/opera-agent\.pages\.dev"/);
   assert.match(read('supabase/config.toml'), /authorization_path = "\/oauth\/consent"/);
   assert.ok(fs.existsSync(new URL('landing/oauth/consent.html', root)), 'the page is at that path');
-  const sources = vercel.headers.map((h) => h.source);
+  const covered = new Set(rules.flatMap((rule) => rule.paths));
   for (const source of ['/oauth/consent', '/oauth/consent.html']) {
-    assert.ok(sources.includes(source), `${source} carries its own policy`);
+    assert.ok(covered.has(source), `${source} carries its own policy`);
   }
 });

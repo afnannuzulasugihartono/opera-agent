@@ -1,17 +1,15 @@
 # @last-edited: 2026-10-21 UTC+7.
 # @title: _headers Ã¢â‚¬â€ the CSP and cache policy every path of the site answers with.
-# @state: restates vercel.json per path; tests/landing-hosting.test.mjs fails on drift.
+# @state: the policy per path; tests/landing-hosting.test.mjs reads every rule against the code.
 # @dependencies: none.
 
-# WHY this file exists: the site is served by Cloudflare Pages as well as Vercel, and Pages configures headers with this file instead of vercel.json.
+# WHY this file exists: Cloudflare Pages configures headers with this file, one block per path.
 # One path per block: a comma-joined path line matches nothing on Cloudflare, so every rule silently went unapplied and the edge served its defaults instead of this policy.
 # Measured live: no CSP and the wrong referrer policy on every page until this shape.
 # tests/landing-hosting.test.mjs fails on any drift.
 
 /
-# from vercel.json /
   Cache-Control: no-store
-  Vercel-CDN-Cache-Control: no-store
   Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-P6qQDe8Bs6opUA3vteF/bwZOUnmH+nkF7hV/PvKhvzk='; connect-src https://*.supabase.co; style-src 'self' 'unsafe-inline'; img-src data:; font-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
   Referrer-Policy: no-referrer
   X-Content-Type-Options: nosniff
@@ -22,9 +20,7 @@
   X-Frame-Options: DENY
 
 /index.html
-# from vercel.json /index.html
   Cache-Control: no-store
-  Vercel-CDN-Cache-Control: no-store
   Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-P6qQDe8Bs6opUA3vteF/bwZOUnmH+nkF7hV/PvKhvzk='; connect-src https://*.supabase.co; style-src 'self' 'unsafe-inline'; img-src data:; font-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
   Referrer-Policy: no-referrer
   X-Content-Type-Options: nosniff
@@ -35,9 +31,7 @@
   X-Frame-Options: DENY
 
 /beranda
-# from vercel.json /beranda
   Cache-Control: no-store
-  Vercel-CDN-Cache-Control: no-store
   Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-4jv7n8YxuoDJG7gc/rwPz0vSQnxEKlMcDrwHYwUPLPA='; connect-src 'none'; style-src 'self' 'unsafe-inline'; img-src data:; font-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
   Referrer-Policy: no-referrer
   X-Content-Type-Options: nosniff
@@ -48,9 +42,7 @@
   X-Frame-Options: DENY
 
 /beranda.html
-# from vercel.json /beranda.html
   Cache-Control: no-store
-  Vercel-CDN-Cache-Control: no-store
   Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-4jv7n8YxuoDJG7gc/rwPz0vSQnxEKlMcDrwHYwUPLPA='; connect-src 'none'; style-src 'self' 'unsafe-inline'; img-src data:; font-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
   Referrer-Policy: no-referrer
   X-Content-Type-Options: nosniff
@@ -61,9 +53,7 @@
   X-Frame-Options: DENY
 
 /privasi.html
-# from vercel.json /(.*)
   Cache-Control: no-store
-  Vercel-CDN-Cache-Control: no-store
   Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-fazsXaeghFR6veNLQNxT3Wp/S1Tzz4I6pN9HuLhjvaQ=' 'sha256-1RBSiNv8Q8DEA/N65izj9lV9DVO5diN44zxidE8gRHc=' 'sha256-P4Dg7DTSUOLZaPFt9jgYbJ1cN1KfSWqDRYaDvVbvV8w='; connect-src 'none'; style-src 'self' 'unsafe-inline'; img-src data:; font-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
   Referrer-Policy: no-referrer
   X-Content-Type-Options: nosniff
@@ -74,9 +64,8 @@
   X-Frame-Options: DENY
 
 /privasi
-# from vercel.json /(.*) Ã¢â‚¬â€ the extensionless address serves the same file
+# Ã¢â‚¬â€ the extensionless address serves the same file
   Cache-Control: no-store
-  Vercel-CDN-Cache-Control: no-store
   Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-fazsXaeghFR6veNLQNxT3Wp/S1Tzz4I6pN9HuLhjvaQ=' 'sha256-1RBSiNv8Q8DEA/N65izj9lV9DVO5diN44zxidE8gRHc=' 'sha256-P4Dg7DTSUOLZaPFt9jgYbJ1cN1KfSWqDRYaDvVbvV8w='; connect-src 'none'; style-src 'self' 'unsafe-inline'; img-src data:; font-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
   Referrer-Policy: no-referrer
   X-Content-Type-Options: nosniff
@@ -87,9 +76,7 @@
   X-Frame-Options: DENY
 
 /syarat.html
-# from vercel.json /(.*)
   Cache-Control: no-store
-  Vercel-CDN-Cache-Control: no-store
   Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-fazsXaeghFR6veNLQNxT3Wp/S1Tzz4I6pN9HuLhjvaQ=' 'sha256-1RBSiNv8Q8DEA/N65izj9lV9DVO5diN44zxidE8gRHc=' 'sha256-P4Dg7DTSUOLZaPFt9jgYbJ1cN1KfSWqDRYaDvVbvV8w='; connect-src 'none'; style-src 'self' 'unsafe-inline'; img-src data:; font-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
   Referrer-Policy: no-referrer
   X-Content-Type-Options: nosniff
@@ -100,9 +87,8 @@
   X-Frame-Options: DENY
 
 /syarat
-# from vercel.json /(.*) Ã¢â‚¬â€ the extensionless address serves the same file
+# Ã¢â‚¬â€ the extensionless address serves the same file
   Cache-Control: no-store
-  Vercel-CDN-Cache-Control: no-store
   Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-fazsXaeghFR6veNLQNxT3Wp/S1Tzz4I6pN9HuLhjvaQ=' 'sha256-1RBSiNv8Q8DEA/N65izj9lV9DVO5diN44zxidE8gRHc=' 'sha256-P4Dg7DTSUOLZaPFt9jgYbJ1cN1KfSWqDRYaDvVbvV8w='; connect-src 'none'; style-src 'self' 'unsafe-inline'; img-src data:; font-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
   Referrer-Policy: no-referrer
   X-Content-Type-Options: nosniff
@@ -113,9 +99,7 @@
   X-Frame-Options: DENY
 
 /harga.html
-# from vercel.json /(.*)
   Cache-Control: no-store
-  Vercel-CDN-Cache-Control: no-store
   Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-fazsXaeghFR6veNLQNxT3Wp/S1Tzz4I6pN9HuLhjvaQ=' 'sha256-1RBSiNv8Q8DEA/N65izj9lV9DVO5diN44zxidE8gRHc=' 'sha256-P4Dg7DTSUOLZaPFt9jgYbJ1cN1KfSWqDRYaDvVbvV8w='; connect-src 'none'; style-src 'self' 'unsafe-inline'; img-src data:; font-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
   Referrer-Policy: no-referrer
   X-Content-Type-Options: nosniff
@@ -126,9 +110,8 @@
   X-Frame-Options: DENY
 
 /harga
-# from vercel.json /(.*) Ã¢â‚¬â€ the extensionless address serves the same file
+# Ã¢â‚¬â€ the extensionless address serves the same file
   Cache-Control: no-store
-  Vercel-CDN-Cache-Control: no-store
   Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-fazsXaeghFR6veNLQNxT3Wp/S1Tzz4I6pN9HuLhjvaQ=' 'sha256-1RBSiNv8Q8DEA/N65izj9lV9DVO5diN44zxidE8gRHc=' 'sha256-P4Dg7DTSUOLZaPFt9jgYbJ1cN1KfSWqDRYaDvVbvV8w='; connect-src 'none'; style-src 'self' 'unsafe-inline'; img-src data:; font-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
   Referrer-Policy: no-referrer
   X-Content-Type-Options: nosniff
@@ -139,9 +122,8 @@
   X-Frame-Options: DENY
 
 /docs
-# from vercel.json /(.*) Ã¢â‚¬â€ the extensionless address serves the same file
+# Ã¢â‚¬â€ the extensionless address serves the same file
   Cache-Control: no-store
-  Vercel-CDN-Cache-Control: no-store
   Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-fazsXaeghFR6veNLQNxT3Wp/S1Tzz4I6pN9HuLhjvaQ=' 'sha256-1RBSiNv8Q8DEA/N65izj9lV9DVO5diN44zxidE8gRHc=' 'sha256-P4Dg7DTSUOLZaPFt9jgYbJ1cN1KfSWqDRYaDvVbvV8w='; connect-src 'none'; style-src 'self' 'unsafe-inline'; img-src data:; font-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
   Referrer-Policy: no-referrer
   X-Content-Type-Options: nosniff
@@ -152,9 +134,7 @@
   X-Frame-Options: DENY
 
 /docs.html
-# from vercel.json /(.*)
   Cache-Control: no-store
-  Vercel-CDN-Cache-Control: no-store
   Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-fazsXaeghFR6veNLQNxT3Wp/S1Tzz4I6pN9HuLhjvaQ=' 'sha256-1RBSiNv8Q8DEA/N65izj9lV9DVO5diN44zxidE8gRHc=' 'sha256-P4Dg7DTSUOLZaPFt9jgYbJ1cN1KfSWqDRYaDvVbvV8w='; connect-src 'none'; style-src 'self' 'unsafe-inline'; img-src data:; font-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
   Referrer-Policy: no-referrer
   X-Content-Type-Options: nosniff
@@ -165,9 +145,7 @@
   X-Frame-Options: DENY
 
 /unduh.html
-# from vercel.json /(.*)
   Cache-Control: no-store
-  Vercel-CDN-Cache-Control: no-store
   Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-fazsXaeghFR6veNLQNxT3Wp/S1Tzz4I6pN9HuLhjvaQ=' 'sha256-1RBSiNv8Q8DEA/N65izj9lV9DVO5diN44zxidE8gRHc=' 'sha256-P4Dg7DTSUOLZaPFt9jgYbJ1cN1KfSWqDRYaDvVbvV8w='; connect-src 'none'; style-src 'self' 'unsafe-inline'; img-src data:; font-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
   Referrer-Policy: no-referrer
   X-Content-Type-Options: nosniff
@@ -178,9 +156,7 @@
   X-Frame-Options: DENY
 
 /unduh-berkas
-# from vercel.json /(.*)
   Cache-Control: no-store
-  Vercel-CDN-Cache-Control: no-store
   Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-fazsXaeghFR6veNLQNxT3Wp/S1Tzz4I6pN9HuLhjvaQ=' 'sha256-1RBSiNv8Q8DEA/N65izj9lV9DVO5diN44zxidE8gRHc=' 'sha256-P4Dg7DTSUOLZaPFt9jgYbJ1cN1KfSWqDRYaDvVbvV8w='; connect-src 'none'; style-src 'self' 'unsafe-inline'; img-src data:; font-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
   Referrer-Policy: no-referrer
   X-Content-Type-Options: nosniff
@@ -191,9 +167,7 @@
   X-Frame-Options: DENY
 
 /unduh-berkas.html
-# from vercel.json /(.*)
   Cache-Control: no-store
-  Vercel-CDN-Cache-Control: no-store
   Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-fazsXaeghFR6veNLQNxT3Wp/S1Tzz4I6pN9HuLhjvaQ=' 'sha256-1RBSiNv8Q8DEA/N65izj9lV9DVO5diN44zxidE8gRHc=' 'sha256-P4Dg7DTSUOLZaPFt9jgYbJ1cN1KfSWqDRYaDvVbvV8w='; connect-src 'none'; style-src 'self' 'unsafe-inline'; img-src data:; font-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
   Referrer-Policy: no-referrer
   X-Content-Type-Options: nosniff
@@ -204,9 +178,8 @@
   X-Frame-Options: DENY
 
 /unduh
-# from vercel.json /(.*) Ã¢â‚¬â€ the extensionless address serves the same file
+# Ã¢â‚¬â€ the extensionless address serves the same file
   Cache-Control: no-store
-  Vercel-CDN-Cache-Control: no-store
   Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-fazsXaeghFR6veNLQNxT3Wp/S1Tzz4I6pN9HuLhjvaQ=' 'sha256-1RBSiNv8Q8DEA/N65izj9lV9DVO5diN44zxidE8gRHc=' 'sha256-P4Dg7DTSUOLZaPFt9jgYbJ1cN1KfSWqDRYaDvVbvV8w='; connect-src 'none'; style-src 'self' 'unsafe-inline'; img-src data:; font-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
   Referrer-Policy: no-referrer
   X-Content-Type-Options: nosniff
@@ -217,9 +190,7 @@
   X-Frame-Options: DENY
 
 /fitur
-# from vercel.json /(.*)
   Cache-Control: no-store
-  Vercel-CDN-Cache-Control: no-store
   Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-fazsXaeghFR6veNLQNxT3Wp/S1Tzz4I6pN9HuLhjvaQ=' 'sha256-1RBSiNv8Q8DEA/N65izj9lV9DVO5diN44zxidE8gRHc=' 'sha256-P4Dg7DTSUOLZaPFt9jgYbJ1cN1KfSWqDRYaDvVbvV8w='; connect-src 'none'; style-src 'self' 'unsafe-inline'; img-src data:; font-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
   Referrer-Policy: no-referrer
   X-Content-Type-Options: nosniff
@@ -230,9 +201,7 @@
   X-Frame-Options: DENY
 
 /fitur.html
-# from vercel.json /(.*)
   Cache-Control: no-store
-  Vercel-CDN-Cache-Control: no-store
   Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-fazsXaeghFR6veNLQNxT3Wp/S1Tzz4I6pN9HuLhjvaQ=' 'sha256-1RBSiNv8Q8DEA/N65izj9lV9DVO5diN44zxidE8gRHc=' 'sha256-P4Dg7DTSUOLZaPFt9jgYbJ1cN1KfSWqDRYaDvVbvV8w='; connect-src 'none'; style-src 'self' 'unsafe-inline'; img-src data:; font-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
   Referrer-Policy: no-referrer
   X-Content-Type-Options: nosniff
@@ -243,9 +212,7 @@
   X-Frame-Options: DENY
 
 /studi
-# from vercel.json /(.*)
   Cache-Control: no-store
-  Vercel-CDN-Cache-Control: no-store
   Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-fazsXaeghFR6veNLQNxT3Wp/S1Tzz4I6pN9HuLhjvaQ=' 'sha256-1RBSiNv8Q8DEA/N65izj9lV9DVO5diN44zxidE8gRHc=' 'sha256-P4Dg7DTSUOLZaPFt9jgYbJ1cN1KfSWqDRYaDvVbvV8w='; connect-src 'none'; style-src 'self' 'unsafe-inline'; img-src data:; font-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
   Referrer-Policy: no-referrer
   X-Content-Type-Options: nosniff
@@ -256,9 +223,7 @@
   X-Frame-Options: DENY
 
 /studi.html
-# from vercel.json /(.*)
   Cache-Control: no-store
-  Vercel-CDN-Cache-Control: no-store
   Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-fazsXaeghFR6veNLQNxT3Wp/S1Tzz4I6pN9HuLhjvaQ=' 'sha256-1RBSiNv8Q8DEA/N65izj9lV9DVO5diN44zxidE8gRHc=' 'sha256-P4Dg7DTSUOLZaPFt9jgYbJ1cN1KfSWqDRYaDvVbvV8w='; connect-src 'none'; style-src 'self' 'unsafe-inline'; img-src data:; font-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
   Referrer-Policy: no-referrer
   X-Content-Type-Options: nosniff
@@ -269,9 +234,7 @@
   X-Frame-Options: DENY
 
 /dukungan
-# from vercel.json /(.*)
   Cache-Control: no-store
-  Vercel-CDN-Cache-Control: no-store
   Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-fazsXaeghFR6veNLQNxT3Wp/S1Tzz4I6pN9HuLhjvaQ=' 'sha256-1RBSiNv8Q8DEA/N65izj9lV9DVO5diN44zxidE8gRHc=' 'sha256-P4Dg7DTSUOLZaPFt9jgYbJ1cN1KfSWqDRYaDvVbvV8w='; connect-src 'none'; style-src 'self' 'unsafe-inline'; img-src data:; font-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
   Referrer-Policy: no-referrer
   X-Content-Type-Options: nosniff
@@ -282,9 +245,7 @@
   X-Frame-Options: DENY
 
 /dukungan.html
-# from vercel.json /(.*)
   Cache-Control: no-store
-  Vercel-CDN-Cache-Control: no-store
   Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-fazsXaeghFR6veNLQNxT3Wp/S1Tzz4I6pN9HuLhjvaQ=' 'sha256-1RBSiNv8Q8DEA/N65izj9lV9DVO5diN44zxidE8gRHc=' 'sha256-P4Dg7DTSUOLZaPFt9jgYbJ1cN1KfSWqDRYaDvVbvV8w='; connect-src 'none'; style-src 'self' 'unsafe-inline'; img-src data:; font-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
   Referrer-Policy: no-referrer
   X-Content-Type-Options: nosniff
@@ -295,9 +256,7 @@
   X-Frame-Options: DENY
 
 /404.html
-# from vercel.json /(.*)
   Cache-Control: no-store
-  Vercel-CDN-Cache-Control: no-store
   Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-fazsXaeghFR6veNLQNxT3Wp/S1Tzz4I6pN9HuLhjvaQ=' 'sha256-1RBSiNv8Q8DEA/N65izj9lV9DVO5diN44zxidE8gRHc=' 'sha256-P4Dg7DTSUOLZaPFt9jgYbJ1cN1KfSWqDRYaDvVbvV8w='; connect-src 'none'; style-src 'self' 'unsafe-inline'; img-src data:; font-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
   Referrer-Policy: no-referrer
   X-Content-Type-Options: nosniff
@@ -308,9 +267,7 @@
   X-Frame-Options: DENY
 
 /akun
-# from vercel.json /akun
   Cache-Control: no-store
-  Vercel-CDN-Cache-Control: no-store
   Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-/kEE0nbbhSPKezq2FYSoFPrfYc9VQK8+RGZMTU31sFc='; connect-src https://*.supabase.co; style-src 'self' 'unsafe-inline'; img-src data:; font-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
   Referrer-Policy: no-referrer
   X-Content-Type-Options: nosniff
@@ -321,9 +278,7 @@
   X-Frame-Options: DENY
 
 /akun.html
-# from vercel.json /akun.html
   Cache-Control: no-store
-  Vercel-CDN-Cache-Control: no-store
   Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-/kEE0nbbhSPKezq2FYSoFPrfYc9VQK8+RGZMTU31sFc='; connect-src https://*.supabase.co; style-src 'self' 'unsafe-inline'; img-src data:; font-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
   Referrer-Policy: no-referrer
   X-Content-Type-Options: nosniff
@@ -334,9 +289,7 @@
   X-Frame-Options: DENY
 
 /dashboard
-# from vercel.json /dashboard
   Cache-Control: no-store
-  Vercel-CDN-Cache-Control: no-store
   Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-klyE69lI4KYlkxr7ewygcUyrt0NRsL0PX+o2ja/7niM='; connect-src https://*.supabase.co; style-src 'self' 'unsafe-inline'; img-src data:; font-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
   Referrer-Policy: no-referrer
   X-Content-Type-Options: nosniff
@@ -347,9 +300,7 @@
   X-Frame-Options: DENY
 
 /dashboard.html
-# from vercel.json /dashboard.html
   Cache-Control: no-store
-  Vercel-CDN-Cache-Control: no-store
   Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-klyE69lI4KYlkxr7ewygcUyrt0NRsL0PX+o2ja/7niM='; connect-src https://*.supabase.co; style-src 'self' 'unsafe-inline'; img-src data:; font-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
   Referrer-Policy: no-referrer
   X-Content-Type-Options: nosniff
@@ -360,10 +311,9 @@
   X-Frame-Options: DENY
 
 /oauth/consent
-# from vercel.json /oauth/consent Ã¢â‚¬â€ the consent page reaches the same single origin
+# Ã¢â‚¬â€ the consent page reaches the same single origin
   Cache-Control: no-store
-  Vercel-CDN-Cache-Control: no-store
-  Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-ZTYE82beAxp0QVGecx00ifCspvRobzcN3TPEJUGqcbI='; connect-src https://*.supabase.co; style-src 'self' 'unsafe-inline'; img-src data:; font-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
+  Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-qXDFNMCsYmcsKHs5fyYOfsIbOXOCxuxYYQ27e437vcs='; connect-src https://*.supabase.co; style-src 'self' 'unsafe-inline'; img-src data:; font-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
   Referrer-Policy: no-referrer
   X-Content-Type-Options: nosniff
   Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
@@ -373,10 +323,9 @@
   X-Frame-Options: DENY
 
 /oauth/consent.html
-# from vercel.json /oauth/consent.html Ã¢â‚¬â€ the consent page reaches the same single origin
+# Ã¢â‚¬â€ the consent page reaches the same single origin
   Cache-Control: no-store
-  Vercel-CDN-Cache-Control: no-store
-  Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-ZTYE82beAxp0QVGecx00ifCspvRobzcN3TPEJUGqcbI='; connect-src https://*.supabase.co; style-src 'self' 'unsafe-inline'; img-src data:; font-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
+  Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-qXDFNMCsYmcsKHs5fyYOfsIbOXOCxuxYYQ27e437vcs='; connect-src https://*.supabase.co; style-src 'self' 'unsafe-inline'; img-src data:; font-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
   Referrer-Policy: no-referrer
   X-Content-Type-Options: nosniff
   Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
@@ -386,9 +335,8 @@
   X-Frame-Options: DENY
 
 /bukti
-# from vercel.json /bukti — the proof page serves one image of its own
+# the proof page serves one image of its own
   Cache-Control: no-store
-  Vercel-CDN-Cache-Control: no-store
   Content-Security-Policy: default-src 'none'; script-src 'self'; connect-src https://*.supabase.co; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
   Referrer-Policy: no-referrer
   X-Content-Type-Options: nosniff
@@ -399,9 +347,8 @@
   X-Frame-Options: DENY
 
 /bukti.html
-# from vercel.json /bukti.html — the proof page serves one image of its own
+# the proof page serves one image of its own
   Cache-Control: no-store
-  Vercel-CDN-Cache-Control: no-store
   Content-Security-Policy: default-src 'none'; script-src 'self'; connect-src https://*.supabase.co; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
   Referrer-Policy: no-referrer
   X-Content-Type-Options: nosniff
@@ -412,9 +359,7 @@
   X-Frame-Options: DENY
 
 /robots.txt
-# from vercel.json /robots.txt
   Cache-Control: no-store
-  Vercel-CDN-Cache-Control: no-store
   Content-Type: text/plain; charset=utf-8
   X-Content-Type-Options: nosniff
   Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
@@ -424,9 +369,7 @@
   X-Frame-Options: DENY
 
 /sitemap.xml
-# from vercel.json /sitemap.xml
   Cache-Control: no-store
-  Vercel-CDN-Cache-Control: no-store
   Content-Type: application/xml; charset=utf-8
   X-Content-Type-Options: nosniff
   Strict-Transport-Security: max-age=63072000; includeSubDomains; preload

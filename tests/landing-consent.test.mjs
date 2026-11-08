@@ -15,6 +15,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
+import { siteHeaders } from './helpers/site-headers.mjs';
 
 const root = new URL('..', import.meta.url);
 const read = (name) => fs.readFileSync(new URL(name, root), 'utf8');
@@ -74,9 +75,9 @@ test('the consent page is served at the path GoTrue actually asks for', () => {
   const config = read('supabase/config.toml');
   assert.match(config, /authorization_path = "\/oauth\/consent"/, 'the path GoTrue uses');
   assert.ok(fs.existsSync(new URL('landing/oauth/consent.html', root)), 'the page is at that path on disk');
-  const vercel = JSON.parse(read('landing/vercel.json'));
-  const sources = vercel.headers.map((h) => h.source);
-  assert.ok(sources.includes('/oauth/consent'), 'and the CSP covers it on Vercel');
+  const site = siteHeaders();
+  const sources = site.headers.map((h) => h.source);
+  assert.ok(sources.includes('/oauth/consent'), 'and the CSP covers it on the site');
   assert.doesNotMatch(sources.join(' '), /^\/consent$/m, 'no stale entry for the path nothing requested');
   const headers = read('landing/_headers');
   assert.match(headers, /^\/oauth\/consent$/m, 'and on Cloudflare, one path per block');
