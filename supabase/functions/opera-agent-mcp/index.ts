@@ -258,6 +258,8 @@ function toolError(error: unknown) {
 // The function invoked, its arguments and its return shape are identical either way; only the road changes, and a direct call that fails falls back to the gateway rather than failing the command.
 
 let directDb: { sql: (...args: unknown[]) => Promise<unknown[]> } | null = null;
+let directDbPromise: Promise<void> | null = null;
+let directDbRetryAfter = 0;
 let directFailReason = "";
 
 async function rpcViaDirect(name: string, args: Record<string, unknown>) {
@@ -298,6 +300,10 @@ async function rpcViaPostgrest(name: string, args: Record<string, unknown>) {
 }
 
 async function rpc(name: string, args: Record<string, unknown>) {
+  if (!directDb) {
+    const pending = ensureDirectDb();
+    if (pending) await Promise.race([pending, new Promise((resolve) => setTimeout(resolve, 1500))]);
+  }
   if (directDb) {
     try {
       return await rpcViaDirect(name, args);
@@ -307,6 +313,24 @@ async function rpc(name: string, args: Record<string, unknown>) {
     }
   }
   return rpcViaPostgrest(name, args);
+}
+
+// WHY THE DIRECT CONNECTION IS OPENED ON THE HTTP ROAD TOO.
+// It used to be opened only for the WebSocket road, so every ordinary call went through PostgREST: the wait rode one long statement (killed by the API's statement timeout) and the answer rode an HTTP response with a size of its own.
+// The connection is opened in the background and given one and a half seconds to become useful, so a cold call costs nothing extra and the next ones do not need the hop at all.
+
+function ensureDirectDb(): Promise<void> | null {
+  if (directDb) return null;
+  if (directDbPromise) return directDbPromise;
+  if (Date.now() < directDbRetryAfter) return null;
+  directDbPromise = connectDirectDb()
+    .catch((error) => {
+      directDb = null;
+      directFailReason = String(error?.message ?? error).slice(0, 200);
+      directDbRetryAfter = Date.now() + 60000;
+    })
+    .finally(() => { directDbPromise = null; });
+  return directDbPromise;
 }
 
 type ProgressEmitter = {
@@ -831,7 +855,7 @@ function serveMcpSocket(req: Request) {
           : null;
         authed = { deviceName, provider, caller };
         try {
-          await connectDirectDb();
+          await ensureDirectDb();
         } catch {
           directDb = null;
         }
