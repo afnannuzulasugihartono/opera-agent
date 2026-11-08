@@ -186,7 +186,7 @@ export function registerTools(server: McpServer, deps: ToolDeps) {
 
   server.registerTool("browser_status", {
     title: "Check Opera Agent",
-    description: "Check whether the user's local Opera Agent extension is online and list its capabilities. Call this first for browser-control requests. Returns: ok, paired, product, version, deviceName, capabilities, protocolVersion and time, plus bridge.lastError when the bridge has failed, the worker's own faults as errors with errorCount (errorsTruncated and omittedErrors when the list did not fit), and extensionPresent with deviceStatus (online, offline or never) and deviceLastSeenAt, so an extension that was never installed is told from one whose device is asleep.",
+    description: "Check whether the user's local Opera Agent extension is online and list its capabilities. Call this first for browser-control requests. Returns: ok, paired, product, version, deviceName, capabilities, protocolVersion and time, plus bridge.lastError when the bridge has failed, the worker's own faults as errors with errorCount (errorsTruncated and omittedErrors when the list did not fit), and extensionPresent with deviceStatus (online, offline or never), deviceLastSeenAt, deviceExtensionVersion, latestExtensionVersion and extensionUpdatePending, so an extension that was never installed is told from one whose device is asleep, and one Chrome has not updated yet is named.",
     inputSchema: { timeoutMs: timeoutSchema },
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false }
   }, ({ timeoutMs }: { timeoutMs?: number }) => executeStatus("browser.ping", {}, timeoutMs, deviceName, provider, caller?.userId ?? null));
