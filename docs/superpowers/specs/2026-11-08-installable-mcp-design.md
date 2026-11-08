@@ -18,7 +18,7 @@ Target: `npm i -g opera-agent-mcp` → `opera-agent-mcp cloud` atau `opera-agent
 
 - **Satu paket, mode sebagai argumen.** `opera-agent-mcp cloud` dan `opera-agent-mcp local` ✓.
 - **Paket membawa seluruh kode local** ✓; extension tetap terpisah (CRX yang dipasang di browser) ✓ — Chrome tidak bisa memasang extension dari npm ✗.
-- **Mode local talking lewat loopback bridge saja.** Jalan debug-port/CDP dihapus ✓: kecepatannya sama (localhost) ✓, tidak bisa lewat profil asli ✗ (Chrome menolak debug-port di profil Default ✓), dan satu browser dengan satu antrean lebih mudah dijaga ✓.
+- **Mode local talking lewat loopback bridge saja.** Jalan debug-port/CDP dihapus ✓: kecepatannya sama (localhost) ✓, tidak bisa lewat profil asli ✗ (Chrome menolak debug-port di profil Default ✓), dan satu browser dengan satu antrean lebih mudah dijaga ✓. Karena itu **drive lokal selalu melewati bridge** ✓✓ — titik di mana kuotanya ditegakkan ✓ (lihat spec paket ✓).
 - **Mode cloud = proksi stdio ke MCP hosted** ✓, dengan login OAuth lewat browser ✓ (token statis dari env tetap berlaku untuk mesin ✓).
 - **Tanpa dependensi baru** ✓ (repo ini bebas dependensi di surface extension ✓ dan paket local sudah begitu ✓).
 

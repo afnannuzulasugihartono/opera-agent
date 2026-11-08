@@ -58,6 +58,17 @@ Perubahan paket terjadi lewat invoice yang sudah ada ✓ (`invoice_create` sudah
 
 Bridge tidak pernah menolak karena tagihan ✓ — ia menolak karena kuota ✓.
 
+## Gerbang di bridge lokal (drive lokal)
+
+Drive lokal **tidak pernah menyentuh cloud bridge** ✓: perintahnya lewat bridge loopback ✓ (`local/bridge-ws.js` ✓). Jadi meter untuk mode lokal harus duduk di bridge loopback itu ✓ — dan itu harus tahu paket akunnya ✓.
+
+1. **Sesi.** Device mengirim `hello` yang memuat token perangkatnya ✓. Bridge loopback memverifikasi token itu ke cloud ✓ **sekali per sesi** ✓ (satu lintasan ✓, bukan per perintah ✓✓) dan meminta **alokasi kuota** untuk sesi tersebut ✓✓. Cloud membalas paket, kuota sesi, dan kuota harian yang tersisa ✓.
+2. **Kuota.** Bridge loopback menghitung sendiri ✓ dan menolak perintah yang melewati alokasi sesi ✓ dengan `PLAN_LIMIT_REACHED` ✓ yang menyebut paket ✓✓.
+3. **Pelaporan.** Pemakaian sesi dikembalikan ke cloud ✓ (satu laporan ✓ saat sesi berakhir ✓✓), sehingga kuota harian **berbagi satu akun** dengan surface hosted ✓✓ — drive lokal tidak bisa menjadi jalan绕过 ✗✗.
+4. **Cloud mati = mode lokal berhenti** ✓, dengan pesan yang menyebut meter yang tidak bisa dihubungi ✓✓. Mode lokal memang bermeter ✓, jadi ia butuh cloud ✓ — yang ia butuhkan hanyalah **satu** panggilan per sesi ✓✓, bukan satu per perintah ✓.
+
+Perbedaannya dengan hosted: drive lokal tetap milidetik ✓✓ (perintahnya tidak lewat cloud ✓), cloud hanya乐观 seenonce ✓.
+
 ## Gerbang di MCP hosted
 
 - `browser_status` menjawab paket dan kuota yang tersisa ✓ (`plan`, `planQuota`, `planUsed` ✓) — jadi agent tahu batasnya sebelum menabrak ✓✓.
@@ -67,7 +78,7 @@ Bridge tidak pernah menolak karena tagihan ✓ — ia menolak karena kuota ✓.
 ## Yang terlihat di klien
 
 - `opera-agent-mcp doctor` mencetak paket aktif ✓, kuota harian ✓, sisa hari ini ✓, dan tautan pembelian ✓.
-- Mode lokal memakai bridge yang sama ✓ → batas paket berlaku di sana juga ✓✓ (tanpa satu pun pemeriksaan di kode klien ✗✓).
+- Mode lokal memakai **bridge loopback** ✓, dan bridge itu memverifikasi paket ke cloud saat sesi dimulai ✓✓ — jadi batas paket berlaku di mode lokal juga ✓✓, tanpa satu pun pemeriksaan di dalam kode klien ✗✓.
 - Extension tidak berubah ✗ — ia sudah speaking ke bridge ✓ (tapi安定arto tetap).
 
 ## Uji
