@@ -1162,7 +1162,7 @@
       tables,
       images
     };
-    pageMapCache = { mutationVersion, skeleton, groups };
+    pageMapCache = { mutationVersion, skeleton, groups, elements };
     return pageMapCache;
   }
 
@@ -1171,13 +1171,30 @@
     const wanted = args.class == null ? '' : String(args.class);
     if (wanted && !pageMap.isMapClass(wanted)) throw new Error(`Unknown page map class: ${wanted}`);
     const map = scanPageMap();
+    if (args.all === true) {
+      const pull = pageMap.paginate(map.elements, args.offset, args.limit);
+      return {
+        ok: true,
+        page: {
+          all: true,
+          ...pull,
+          totalElements: map.elements.length,
+          classes: map.skeleton.classes,
+          scannedAt: map.skeleton.scannedAt,
+          mutationVersion: map.skeleton.mutationVersion,
+          ...(map.skeleton.truncated ? { truncated: true } : {})
+        }
+      };
+    }
     if (!wanted) return { ok: true, page: map.skeleton };
-    const pull = pageMap.paginate(map.groups.get(wanted) || [], args.offset, args.limit);
+    const source = args.all === true ? map.elements : (map.groups.get(wanted) || []);
+    const pull = pageMap.paginate(source, args.offset, args.limit);
     return {
       ok: true,
       page: {
-        class: wanted,
+        ...(args.all === true ? { all: true, classes: map.skeleton.classes } : { class: wanted }),
         ...pull,
+        totalElements: map.elements.length,
         scannedAt: map.skeleton.scannedAt,
         mutationVersion: map.skeleton.mutationVersion,
         ...(map.skeleton.truncated ? { truncated: true } : {})
