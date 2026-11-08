@@ -6,14 +6,14 @@
   "version-and-name": 48,
   "name": 24,
   "content": 20,
-  "ledger-names-the-file": 1,
+  "ledger-names-the-file": 2,
   "no-ledger-row": 2,
   "part-of-combined": 13,
   "applied-outside-ledger": 2,
   "applied-then-recorded": 2
  },
- "treeFiles": 112,
- "resolved": 108,
+ "treeFiles": 113,
+ "resolved": 109,
  "unapplied": 2,
  "map": [
   {
@@ -686,6 +686,12 @@
    "file": "20261104150000_opera_qris_detect_cron_fix.sql",
    "remote": "20261104103611",
    "evidence": "version-and-name",
+   "cover": 1
+  },
+  {
+   "file": "20261108090000_opera_await_statement_timeout.sql",
+   "remote": "20261108090000_opera_await_statement_timeout",
+   "evidence": "ledger-names-the-file",
    "cover": 1
   }
  ]
