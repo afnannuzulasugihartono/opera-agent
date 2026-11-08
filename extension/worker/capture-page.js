@@ -78,6 +78,7 @@ async function captureTiles(target, content, stripHeight, tileOffset, context, t
   let bytesSoFar = 0;
   let index = start;
   while (index < total) {
+    if (context?.deadline && Date.now() >= context.deadline - 1500) break;
     const top = index * strip;
     const height = Math.min(strip, content.height - top);
     if (!(height > 0)) break;
