@@ -180,7 +180,7 @@ type ExecutionMode = "background" | "foreground";
 
 export function registerTools(server: McpServer, deps: ToolDeps) {
   const {
-    execute, executeScreenshot, executeMap, runWorkflow, runAdhoc, rpc, textResult, toolError,
+    execute, executeScreenshot, executeMap, executeStatus, runWorkflow, runAdhoc, rpc, textResult, toolError,
     callVmHost, vmRunResult, rpcErrorParts, db, deviceName, provider, caller
   } = deps;
 

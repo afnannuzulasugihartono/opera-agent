@@ -24,6 +24,7 @@ export type ToolDeps = {
   execute: typeof execute;
   executeScreenshot: typeof executeScreenshot;
   executeMap: typeof executeMap;
+  executeStatus: typeof executeStatus;
   runWorkflow: typeof runWorkflow;
   runAdhoc: typeof runAdhoc;
   rpc: typeof rpc;
@@ -922,6 +923,7 @@ function createServer(deviceName: string = DEVICE_NAME, provider = "", caller: V
     execute,
     executeScreenshot,
     executeMap,
+    executeStatus,
     runWorkflow,
     runAdhoc,
     rpc,
