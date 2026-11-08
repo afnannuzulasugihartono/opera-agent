@@ -440,6 +440,50 @@ function execute(method: string, params: Record<string, unknown>, timeoutMs?: nu
   return runCommand(method, params, timeoutMs, deviceName, provider).then(textResult).catch(toolError);
 }
 
+// WHY THE STATUS ANSWERS WHETHER THE EXTENSION IS THERE AT ALL.
+// A paired device and an installed extension are different facts: the pairing is remembered in the database, the install only the browser knows, and a caller that cannot tell them apart reads "paired" as "installed".
+// The device row says whether any extension has ever registered for this account, and whether it is alive now.
+
+const DEVICE_ONLINE_WINDOW_MS = 120000;
+
+async function devicePresence(userId: string | null) {
+  if (!userId) return { extensionPresent: false, deviceStatus: "unknown", deviceLastSeenAt: null, deviceExtensionVersion: null };
+  try {
+    const supabase = await db();
+    const { data } = await supabase
+      .from("opera_devices")
+      .select("status, last_seen_at, extension_version")
+      .eq("user_id", userId)
+      .neq("status", "disabled")
+      .order("last_seen_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (!data) return { extensionPresent: false, deviceStatus: "never", deviceLastSeenAt: null, deviceExtensionVersion: null };
+    const seen = data.last_seen_at ? Date.parse(String(data.last_seen_at)) : 0;
+    const online = seen > 0 && Date.now() - seen < DEVICE_ONLINE_WINDOW_MS;
+    return {
+      extensionPresent: true,
+      deviceStatus: online ? "online" : "offline",
+      deviceLastSeenAt: data.last_seen_at ?? null,
+      deviceExtensionVersion: data.extension_version ?? null
+    };
+  } catch {
+    return { extensionPresent: false, deviceStatus: "unknown", deviceLastSeenAt: null, deviceExtensionVersion: null };
+  }
+}
+
+async function executeStatus(method: string, params: Record<string, unknown>, timeoutMs: number | undefined, deviceName: string, provider: string, userId: string | null) {
+  const answer = await execute(method, params, timeoutMs, deviceName, provider);
+  if (answer.isError) return answer;
+  const presence = await devicePresence(userId);
+  const merged = { ...(answer.structuredContent ?? {}), ...presence };
+  return {
+    ...answer,
+    structuredContent: merged,
+    content: (answer.content ?? []).map((part) => part.type === "text" ? { ...part, text: JSON.stringify(merged) } : part)
+  };
+}
+
 function executeScreenshot(params: Record<string, unknown>, timeoutMs?: number, deviceName: string = DEVICE_NAME, provider = "") {
   return runCommand("page.capture", params, timeoutMs, deviceName, provider).then(screenshotResult).catch(toolError);
 }

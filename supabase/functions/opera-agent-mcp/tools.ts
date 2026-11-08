@@ -186,10 +186,10 @@ export function registerTools(server: McpServer, deps: ToolDeps) {
 
   server.registerTool("browser_status", {
     title: "Check Opera Agent",
-    description: "Check whether the user's local Opera Agent extension is online and list its capabilities. Call this first for browser-control requests. Returns: ok, paired, product, version, deviceName, capabilities, protocolVersion and time, plus bridge.lastError when the bridge has failed, and the worker's own faults as errors with errorCount (errorsTruncated and omittedErrors when the list did not fit).",
+    description: "Check whether the user's local Opera Agent extension is online and list its capabilities. Call this first for browser-control requests. Returns: ok, paired, product, version, deviceName, capabilities, protocolVersion and time, plus bridge.lastError when the bridge has failed, the worker's own faults as errors with errorCount (errorsTruncated and omittedErrors when the list did not fit), and extensionPresent with deviceStatus (online, offline or never) and deviceLastSeenAt, so an extension that was never installed is told from one whose device is asleep.",
     inputSchema: { timeoutMs: timeoutSchema },
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false }
-  }, ({ timeoutMs }: { timeoutMs?: number }) => execute("browser.ping", {}, timeoutMs, deviceName, provider));
+  }, ({ timeoutMs }: { timeoutMs?: number }) => executeStatus("browser.ping", {}, timeoutMs, deviceName, provider, caller?.userId ?? null));
 
   server.registerTool("run_browser_burst", {
     title: "Run fast Opera action burst",
@@ -513,6 +513,8 @@ export function registerTools(server: McpServer, deps: ToolDeps) {
       tabId: tabIdSchema,
       class: z.enum(["button", "choice", "input", "select", "heading", "link", "media", "iframe", "picture", "icon", "table", "list", "form", "region", "separator", "status", "text"]).optional()
         .describe("One of the seventeen classes to pull; omit it to get the skeleton."),
+      all: z.boolean().optional()
+        .describe("One call that answers every class at once: the whole document's elements with the class each one belongs to, so nothing has to be pulled class by class. The answer is trimmed to the device's ceiling and says so."),
       offset: z.number().int().nonnegative().optional()
         .describe("How many elements of the class to skip; defaults to 0."),
       limit: z.number().int().min(1).max(1000).optional()
@@ -520,8 +522,8 @@ export function registerTools(server: McpServer, deps: ToolDeps) {
       timeoutMs: timeoutSchema
     },
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true }
-  }, ({ tabId, class: className, offset, limit, timeoutMs }: TargetTab & { class?: string; offset?: number; limit?: number; timeoutMs?: number }) =>
-    executeMap({ tabId, ...(className ? { class: className } : {}), ...(offset != null ? { offset } : {}), ...(limit != null ? { limit } : {}) }, timeoutMs ?? 30000, deviceName, provider));
+  }, ({ tabId, class: className, all, offset, limit, timeoutMs }: TargetTab & { class?: string; all?: boolean; offset?: number; limit?: number; timeoutMs?: number }) =>
+    executeMap({ tabId, ...(className ? { class: className } : {}), ...(all === true ? { all: true } : {}), ...(offset != null ? { offset } : {}), ...(limit != null ? { limit } : {}) }, timeoutMs ?? 30000, deviceName, provider));
 
   server.registerTool("find_elements", {
     title: "Find page elements",

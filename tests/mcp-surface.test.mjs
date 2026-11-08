@@ -65,7 +65,7 @@ const FROZEN_READ_PAGE_PROPERTIES = [
 ];
 
 const FROZEN_TOOL_SCHEMAS = Object.freeze({
-  browser_status: 'cbc26bda16868a68',
+  browser_status: 'fac82d0ca487721a',
   run_browser_burst: 'ddfc9835ac4f4e9a',
   run_workflow: '09ce624d89ed95ba',
   run_program: '4220be7d53db3ab1',
@@ -81,7 +81,7 @@ const FROZEN_TOOL_SCHEMAS = Object.freeze({
   navigate_tab: 'e48d509464c7d5ab',
   close_tab: '7e963cf5ec747863',
   read_page: '86d6b7503733127d',
-  read_page_map: '8cb9f1f0931fb118',
+  read_page_map: '7bafd2cbe2639a35',
   capture_page: '3e263f2f10804cc6',
   find_elements: 'f6eb0d7b9da2c372',
   click_element: 'e4293043033ea470',
@@ -250,13 +250,18 @@ test('the map tool takes a class and a page, and never an envelope', () => {
   const block = toolBlock('read_page_map');
   const body = objectBody(block.slice(block.indexOf('inputSchema:')), 'inputSchema:');
   const names = propertiesOf(body).map((property) => property.name).sort();
-  assert.deepEqual(names, ['class', 'limit', 'offset', 'tabId', 'timeoutMs']);
+  assert.deepEqual(names, ['all', 'class', 'limit', 'offset', 'tabId', 'timeoutMs']);
   assert.match(source, /executeMap\(\{ tabId/);
   assert.match(source, /runCommand\("page\.read", \{ \.\.\.params, view: "map" \}/);
 });
 
 test('the status tool names the worker faults it answers', () => {
   assert.match(source, /registerTool\("browser_status", \{[\s\S]{0,900}?errorCount/, 'the description says what the fault fields are');
+});
+
+test('the status tool says whether the extension is there at all', () => {
+  assert.match(source, /registerTool\("browser_status", \{[\s\S]{0,900}?extensionPresent/, 'the description says how to tell an installed extension from an absent one');
+  assert.match(source, /deviceStatus/, 'and the device state is named');
 });
 
 test('the tool count and names match the contract', () => {

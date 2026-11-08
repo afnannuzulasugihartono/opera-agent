@@ -210,9 +210,11 @@ export async function dispatch(method, params = {}, context = {}) {
       let result = await contentCall(tabId, method, { ...params, __semanticRuntimeEpoch: SEMANTIC_RUNTIME_EPOCH });
 
       if (result?.page && oversized(result)) {
-        if (typeof result.page.class === 'string' && Array.isArray(result.page.elements)) {
+        const isMapPull = (typeof result.page.class === 'string' || result.page.all === true) && Array.isArray(result.page.elements);
+        if (isMapPull) {
           const pulled = result.page.elements;
           const fitted = fitWithinBudget(pulled, RESULT_BUDGET_BYTES);
+          const total = Number(result.page.total ?? result.page.totalElements ?? pulled.length);
           result = {
             ...result,
             page: {
@@ -222,7 +224,7 @@ export async function dispatch(method, params = {}, context = {}) {
               truncationReason: `Element list trimmed: the result exceeded the ${RESULT_BUDGET_BYTES}-byte budget. Re-read with a smaller limit.`,
               omittedElementCount: pulled.length - fitted.elements.length,
               nextOffset: Number(result.page.offset || 0) + fitted.elements.length,
-              hasMore: fitted.elements.length < Number(result.page.total || pulled.length)
+              hasMore: fitted.elements.length < total
             }
           };
         } else {

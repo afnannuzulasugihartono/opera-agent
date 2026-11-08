@@ -2260,6 +2260,15 @@ async def run(port, profile):
             offset = chunk['nextOffset']
         assert len(seen) == link_row['count'] and len(set(seen)) == len(seen), 'every link exactly once'
 
+        cid = STATE.push('page.read', {'tabId': map_tab, 'view': 'map', 'all': True, 'limit': 1000})
+        everything = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['page']
+        assert everything.get('all') is True, 'one call must be able to answer every class'
+        assert everything['totalElements'] == skeleton['totalElements'], 'and it sees the same document the skeleton saw'
+        assert len(everything['elements']) == min(1000, everything['totalElements'])
+        classes_seen = {item['class'] for item in everything['elements']}
+        assert len(classes_seen) >= 5, f'one call must reach several classes at once, saw {sorted(classes_seen)}'
+        assert all('class' in item and 'rect' in item for item in everything['elements']), 'and every element says which class it belongs to'
+
         cid = STATE.push('page.read', {'tabId': map_tab, 'view': 'map', 'class': 'link', 'limit': 1000})
         all_links = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['page']['elements']
         below = next(item for item in all_links if item['rect']['y'] > skeleton['viewport']['height'])
