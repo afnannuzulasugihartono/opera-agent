@@ -9,7 +9,7 @@
 // WHY one file: the service worker, the MCP server, and the Node tests must agree on exactly which primitives exist.
 // A second copy of the list would eventually disagree.
 
-export const PRODUCT_VERSION = '1.6.28';
+export const PRODUCT_VERSION = '1.6.29';
 export const PROTOCOL_VERSION = 1;
 
 import { resolveKeyInput } from './keyboard.js';
@@ -64,7 +64,7 @@ export const METHOD_SPECS = Object.freeze({
   'page.collect_links': { timeoutMs: 10000 },
   'page.click': { timeoutMs: 8000 },
   'page.pointer': { timeoutMs: 8000 },
-  'page.capture': { timeoutMs: 10000 },
+  'page.capture': { timeoutMs: 30000 },
   'page.fill': { timeoutMs: 8000 },
   'page.focus': { timeoutMs: 5000 },
   'page.scroll': { timeoutMs: 5000 },

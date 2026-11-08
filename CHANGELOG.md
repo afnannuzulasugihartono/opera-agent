@@ -8,6 +8,7 @@ What each release contained, and why. The notes live in
 
 | Release | Date | Notes |
 | --- | --- | --- |
+| 1.6.29 | 2026-11-08 | [a full-page capture that survives the whole document](docs/releases/1.6.29.md) |
 | 1.6.28 | 2026-11-08 | [the whole page in one answer, and a worker that says what broke](docs/releases/1.6.28.md) |
 | 1.6.27 | 2026-10-15 | [the local loop tells the truth about itself](docs/releases/1.6.27.md) |
 | 1.6.24 | 2026-10-11 | [notes](docs/releases/1.6.24.md) |
