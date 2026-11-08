@@ -127,7 +127,7 @@
     for (const field of COMMON_FIELDS) projected[field] = raw[field];
     for (const field of CLASS_FIELDS[raw.class] || []) projected[field] = raw[field];
     return Object.fromEntries(
-      Object.entries(projected).filter(([, value]) => value !== undefined && value !== null && value !== '')
+      Object.entries(projected).filter(([, value]) => value != null && value !== '')
     );
   }
 
