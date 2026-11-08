@@ -445,8 +445,6 @@ function execute(method: string, params: Record<string, unknown>, timeoutMs?: nu
 // A paired device and an installed extension are different facts: the pairing is remembered in the database, the install only the browser knows, and a caller that cannot tell them apart reads "paired" as "installed".
 // The device row says whether any extension has ever registered for this account, and whether it is alive now.
 
-const DEVICE_ONLINE_WINDOW_MS = 120000;
-
 async function devicePresence(userId: string | null) {
   if (!userId) return { extensionPresent: false, deviceStatus: "unknown", deviceLastSeenAt: null, deviceExtensionVersion: null, latestExtensionVersion: null, extensionUpdatePending: false };
   try {
