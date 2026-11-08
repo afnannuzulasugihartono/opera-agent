@@ -98,7 +98,7 @@ Kerangka tidak punya amplop: fakta halaman di atas, koleksi di bawah, semuanya s
     "rect": { "x": 660, "y": 98, "width": 137, "height": 14, "centerX": 728, "centerY": 105 },
     "order": 412, "depth": 3, "regionId": "rg_document",
     "visible": true, "actionable": true, "disabled": false,
-    "logicalId": "se_ea2a_3a071b9d97_3p", "stableKey": "oa_5ff7df21160ac80b"
+    "logicalId": "se_ea2a_3a071b9d97_3p", "stableKey": "oa_..."
   } ] }
 ```
 
