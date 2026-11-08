@@ -146,6 +146,37 @@ test('a client with no network does not dial, and dials as soon as the network r
   assert.equal(sockets.length, 1, 'the first dial happens as soon as the network is back');
 });
 
+test('a client that believes the network is down still dials eventually', () => {
+  let online = false;
+  const { client, sockets, timers } = harness({ isOnline: () => online });
+
+  client.start();
+  assert.equal(sockets.length, 0, 'no handshake is attempted while the browser says it is offline');
+  for (let attempt = 0; attempt < 11; attempt += 1) {
+    const retry = timers[timers.length - 1];
+    assert.ok(retry, 'the client keeps a retry waiting');
+    retry.fn();
+  }
+  assert.equal(sockets.length, 0, 'a browser that says it is offline is not dialled for a minute');
+
+  online = true;
+  const retry = timers[timers.length - 1];
+  retry.fn();
+  assert.equal(sockets.length, 1, 'and once it says it is online, the client dials');
+});
+
+test('a browser that says it is offline forever is still dialled after a minute', () => {
+  let online = false;
+  const { client, sockets, timers } = harness({ isOnline: () => online });
+
+  client.start();
+  for (let attempt = 0; attempt < 13; attempt += 1) {
+    const retry = timers[timers.length - 1];
+    retry.fn();
+  }
+  assert.equal(sockets.length, 1, 'a false offline reading cannot brick the device');
+});
+
 test('a dropped connection reconnects on a backoff that grows and is capped', () => {
   const { client, sockets, timers } = harness();
   client.start();

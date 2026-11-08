@@ -54,6 +54,7 @@ import {
 const BASE_RETRY_MS = 500;
 const MAX_RETRY_MS = 30000;
 const OFFLINE_RETRY_MS = 5000;
+const OFFLINE_ATTEMPTS = 12;
 
 // WHY THE BACKOFF IS RESET WHEN A SOCKET OPENS, AND NOT ONLY ON THE HANDSHAKE.
 // Measured on a flaky connection: the wait doubled 500ms, 1s, 2s, 4s... to the 30s cap and only reset on a full handshake, so a network that came back cost up to thirty seconds to notice.
@@ -190,6 +191,7 @@ export function createSocketClient({
   let connectedAt = 0;
   const takeQueue = [];
   let draining = false;
+  let offlineAttempts = 0;
 
   const heard = () => {
     lastHeardAt = now();
@@ -284,11 +286,13 @@ export function createSocketClient({
   function connect() {
     if (closedByUs) return;
     const gen = generation;
-    if (!isOnline()) {
+    if (!isOnline() && offlineAttempts < OFFLINE_ATTEMPTS) {
+      offlineAttempts += 1;
       retryMs = BASE_RETRY_MS;
       setTimer(() => { if (gen === generation) connect(); }, OFFLINE_RETRY_MS);
       return;
     }
+    offlineAttempts = 0;
     if (socket && (socket.readyState === 0 || socket.readyState === 1)) return;
 
     onState({ status: 'connecting' });
