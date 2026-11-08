@@ -122,12 +122,14 @@
     return { x, y, width, height, centerX: x + width / 2, centerY: y + height / 2 };
   }
 
+  const EMPTY_VALUES = [undefined, null, ''];
+
   function projectElement(raw = {}) {
     const projected = { rect: rectOf(raw) };
     for (const field of COMMON_FIELDS) projected[field] = raw[field];
     for (const field of CLASS_FIELDS[raw.class] || []) projected[field] = raw[field];
     return Object.fromEntries(
-      Object.entries(projected).filter(([, value]) => value != null && value !== '')
+      Object.entries(projected).filter(([, value]) => !EMPTY_VALUES.includes(value))
     );
   }
 
