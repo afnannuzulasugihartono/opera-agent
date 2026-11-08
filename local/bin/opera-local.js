@@ -33,17 +33,16 @@ const here = dirname(fileURLToPath(import.meta.url));
 const pkg = createRequire(join(here, '..', 'package.json'))('./package.json');
 
 const PORT = Number(process.env.OPERA_LOCAL_PORT || 9333);
-const BROWSER = process.env.OPERA_LOCAL_BROWSER || undefined;
 
 // WHY THE LINK IS ASKED PER CALL.
 // One `BRIDGED` constant decided the pipe at startup and then decided it for good: an extension that was asleep at that moment lost the run to a debugging port, which opens a profile nobody is logged into.
 // Asking each time costs one field read and means a worker that wakes up late is simply used.
 
 async function bridged() {
-  return process.env.OPERA_LOCAL_TRANSPORT !== 'cdp' && await bridgeReachable();
+  return bridgeReachable();
 }
 
-const store = createSessionStore({ openSession, port: PORT, browserId: BROWSER, viaBridge: null });
+const store = createSessionStore({ openSession, port: PORT, viaBridge: null });
 const open = (options) => store.open(options);
 const attach = () => store.attach();
 
