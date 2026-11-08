@@ -131,6 +131,21 @@ test('a command that throws still produces a completion, so the bridge is never 
   assert.match(done.error.message, /boom/);
 });
 
+test('a client with no network does not dial, and dials as soon as the network returns', () => {
+  let online = false;
+  const { client, sockets, timers } = harness({ isOnline: () => online });
+
+  client.start();
+  assert.equal(sockets.length, 0, 'no handshake is attempted while the browser is offline');
+
+  const retry = timers[timers.length - 1];
+  assert.ok(retry && retry.ms <= 10000, 'the client looks again shortly, without dialing');
+
+  online = true;
+  retry.fn();
+  assert.equal(sockets.length, 1, 'the first dial happens as soon as the network is back');
+});
+
 test('a dropped connection reconnects on a backoff that grows and is capped', () => {
   const { client, sockets, timers } = harness();
   client.start();

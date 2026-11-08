@@ -17,9 +17,9 @@
   function markInstalled() {
 
     if (!document.documentElement) return;
-    document.documentElement.dataset.operaAgent = 'installed';
+    document.documentElement.setAttribute('data-opera-agent', 'installed');
     const browser = globalThis.OperaAgentBrowserId?.browserName || '';
-    if (browser) document.documentElement.dataset.operaAgentBrowser = browser;
+    if (browser) document.documentElement.setAttribute('data-opera-agent-browser', browser);
   }
 
   markInstalled();

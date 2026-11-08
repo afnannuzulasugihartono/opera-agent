@@ -53,6 +53,7 @@ import {
 
 const BASE_RETRY_MS = 500;
 const MAX_RETRY_MS = 30000;
+const OFFLINE_RETRY_MS = 5000;
 
 // WHY THE BACKOFF IS RESET WHEN A SOCKET OPENS, AND NOT ONLY ON THE HANDSHAKE.
 // Measured on a flaky connection: the wait doubled 500ms, 1s, 2s, 4s... to the 30s cap and only reset on a full handshake, so a network that came back cost up to thirty seconds to notice.
@@ -177,6 +178,7 @@ export function createSocketClient({
   WebSocketImpl = globalThis.WebSocket,
   now = () => Date.now(),
   setTimer = (fn, ms) => setTimeout(fn, ms),
+  isOnline = () => globalThis.navigator?.onLine !== false,
   setWatchTimer = setTimer
 } = {}) {
   let socket = null;
@@ -282,6 +284,11 @@ export function createSocketClient({
   function connect() {
     if (closedByUs) return;
     const gen = generation;
+    if (!isOnline()) {
+      retryMs = BASE_RETRY_MS;
+      setTimer(() => { if (gen === generation) connect(); }, OFFLINE_RETRY_MS);
+      return;
+    }
     if (socket && (socket.readyState === 0 || socket.readyState === 1)) return;
 
     onState({ status: 'connecting' });

@@ -602,6 +602,18 @@ class Handler(BaseHTTPRequestHandler):
                 pass
             return
 
+        if self.path.startswith('/pre8e-xml'):
+            payload = b'<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom"><title>Opera Agent XML Feed</title><entry><title>first</title></entry></feed>'
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/xml; charset=utf-8')
+            self.send_header('Content-Length', str(len(payload)))
+            self.end_headers()
+            try:
+                self.wfile.write(payload)
+            except (BrokenPipeError, ConnectionError, OSError):
+                pass
+            return
+
         if self.path.startswith('/page') or self.path.startswith('/visual') or self.path.startswith('/blank') or self.path.startswith('/iframe') or self.path.startswith('/pre8e-r0') or self.path.startswith('/pre8e-r1') or self.path.startswith('/pre8e-r2') or self.path.startswith('/pre8e-r3') or self.path.startswith('/pre8e-r4') or self.path.startswith('/pre8e-r5') or self.path.startswith('/pre8e-uv') or self.path.startswith('/pre8e-ur') or self.path.startswith('/pre8e-ui-identity') or self.path.startswith('/pre8e-r9') or self.path.startswith('/pre8e-ax') or self.path.startswith('/pre8e-map'):
             if self.path.startswith('/pre8e-map'):
                 document = PAGE_MAP_PAGE
@@ -2273,6 +2285,14 @@ async def run(port, profile):
         empty_links = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['page']
         assert empty_links['total'] == 0 and empty_links['hasMore'] is False and empty_links['nextOffset'] is None
         cid = STATE.push('tabs.close', {'tabId': empty_tab})
+        assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+
+        cid = STATE.push('tabs.open', {'url': f'http://{HOST}:{port}/pre8e-xml', 'active': False, 'wait': True})
+        xml_tab = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['tab']['id']
+        cid = STATE.push('page.read', {'tabId': xml_tab, 'includeElements': False})
+        xml_read = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))['page']
+        assert 'Opera Agent XML Feed' in xml_read['text'], 'the content script survives a document whose root has no dataset'
+        cid = STATE.push('tabs.close', {'tabId': xml_tab})
         assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
 
         cid = STATE.push('tabs.close', {'tabId': r4_tab_id})
