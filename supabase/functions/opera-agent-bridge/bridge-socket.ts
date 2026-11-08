@@ -25,7 +25,7 @@ const HANDSHAKE_TIMEOUT_MS = 8000;
 const VERIFY_TIMEOUT_MS = 30000;
 
 // WHY the cap is a megabyte.
-// Results up to MAX_RESULT_BYTES (512 KiB, owned by extension/lib/serialize.js) are legal product output, and a completion carries one.
+// Results up to RESULT_BUDGET_BYTES (owned by extension/lib/serialize.js) are legal product output, and a completion carries one.
 // A transport cap below that refuses legal results — observed live as "Frame too large" killing a page.read the product explicitly allows, which stranded the command as claimed forever with no recovery.
 // Stated here rather than imported because the edge bundle cannot reach outside its own directory; a test asserts the relation still holds.
 

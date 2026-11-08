@@ -4,6 +4,7 @@
 // @dependencies: utils, tab-content, private-tabs, capture, protocol.
 
 import { clamp } from '../lib/protocol.js';
+import { RESULT_BUDGET_BYTES } from '../lib/serialize.js';
 import { nowIso } from './utils.js';
 import { contentCall, HTTP_URL_RE } from './tab-content.js';
 import { isPrivateTab } from './private-tabs.js';
@@ -19,7 +20,7 @@ import {
 } from './capture.js';
 
 const MAX_SCREENSHOT_BYTES = 220 * 1024;
-const TILE_SLICE_BYTES = 320 * 1024;
+const TILE_SLICE_BYTES = RESULT_BUDGET_BYTES - 256 * 1024;
 const READABLE_SCALE_MIN = 0.2;
 const READABLE_WIDTH_MIN = 320;
 const MIN_FRAME_BYTES = 512;

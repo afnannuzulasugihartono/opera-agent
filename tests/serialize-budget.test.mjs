@@ -5,7 +5,8 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { fitWithinBudget } from '../extension/lib/serialize.js';
+import { RESULT_BUDGET_BYTES, boundedResult, oversized, fitWithinBudget } from '../extension/lib/serialize.js';
+import { FRAME_MAX_BYTES } from '../extension/lib/socket-protocol.js';
 
 test('a list that fits is returned whole and untrimmed', () => {
   const list = [{ ref: 'a' }, { ref: 'b' }];
@@ -23,4 +24,18 @@ test('a list that does not fit keeps its head and says it was cut', () => {
 
 test('an empty list is not a truncation', () => {
   assert.deepEqual(fitWithinBudget([], 1024), { elements: [], truncated: false });
+});
+
+test('the result budget is the frame budget, less one envelope', () => {
+  assert.equal(RESULT_BUDGET_BYTES, FRAME_MAX_BYTES - 256 * 1024);
+  assert.equal(RESULT_BUDGET_BYTES, 3.75 * 1024 * 1024);
+});
+
+test('a three-megabyte result rides, and one over the budget is refused with the new number', () => {
+  const big = { text: 'x'.repeat(3 * 1024 * 1024) };
+  assert.equal(oversized(big), false);
+  assert.doesNotThrow(() => boundedResult(big));
+  const over = { text: 'x'.repeat(RESULT_BUDGET_BYTES + 1024) };
+  assert.equal(oversized(over), true);
+  assert.throws(() => boundedResult(over), new RegExp(`${RESULT_BUDGET_BYTES} bytes`));
 });

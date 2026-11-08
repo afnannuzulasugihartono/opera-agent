@@ -14,7 +14,7 @@
 // Every decision here is a function over a string, which means a malformed frame, a missing handshake, or a completion for an unknown command is refused rather than trusted.
 
 // WHY the cap is a megabyte.
-// Results up to MAX_RESULT_BYTES (512 KiB, owned by lib/serialize.js) are legal product output: boundedResult throws only above it, and page.read degrades gracefully instead.
+// Results up to RESULT_BUDGET_BYTES (owned by lib/serialize.js, derived from FRAME_MAX_BYTES) are legal product output: boundedResult throws only above it, and page.read degrades gracefully instead.
 // A transport cap below that refuses legal results — observed live as "Frame too large" killing a page.read the product explicitly allows.
 // The cap exists to bound a single message against a misbehaving peer, not to second-guess the product bound, so it sits at twice the largest legal completion plus envelope headroom.
 

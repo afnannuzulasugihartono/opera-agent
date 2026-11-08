@@ -26,7 +26,7 @@ import {
   normalizeCommand,
   parseFrame
 } from '../extension/lib/socket-protocol.js';
-import { MAX_RESULT_BYTES } from '../extension/lib/serialize.js';
+import { RESULT_BUDGET_BYTES, RESULT_ENVELOPE_BYTES } from '../extension/lib/serialize.js';
 
 test('the handshake carries the token and the device name the bridge verifies', () => {
   const frame = JSON.parse(handshakeFrame('secret-token', 'opera'));
@@ -90,7 +90,7 @@ test('only an unauthorized handshake is fatal, because a timeout is answered by 
 // The device parses what the bridge sends, and the bridge answers within the same bound, so the device cap carries the same proof as the bridge side: a lawful completion near the product bound must parse.
 
 test('a frame near the product bound parses on the device side too', () => {
-  assert.ok(FRAME_MAX_BYTES >= MAX_RESULT_BYTES * 1.5);
+  assert.ok(FRAME_MAX_BYTES >= RESULT_BUDGET_BYTES + RESULT_ENVELOPE_BYTES);
   const frame = JSON.stringify({
     type: 'command',
     command: { id: 'cmd-big', method: 'page.read', params: { blob: 'y'.repeat(400 * 1024) } }

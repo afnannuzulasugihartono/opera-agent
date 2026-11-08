@@ -27,7 +27,7 @@ import {
   serveDeviceSocket
 } from '../supabase/functions/opera-agent-bridge/bridge-socket.ts';
 import { FRAME_MAX_BYTES, handshakeFrame } from '../extension/lib/socket-protocol.js';
-import { MAX_RESULT_BYTES } from '../extension/lib/serialize.js';
+import { RESULT_BUDGET_BYTES, RESULT_ENVELOPE_BYTES } from '../extension/lib/serialize.js';
 
 const upgradeRequest = (headers = {}) => new Request('https://bridge.example/', {
   method: 'GET',
@@ -75,15 +75,15 @@ test('a keepalive tick with no answer since the last one closes the socket', () 
 });
 
 // WHY the transport cap is locked against the product bound.
-// Results up to MAX_RESULT_BYTES are legal output, and a completion carries one, so any frame cap below that refuses legal results.
+// Results up to RESULT_BUDGET_BYTES are legal output, and a completion carries one, so any frame cap below that refuses legal results.
 // Observed live: a 64 KiB cap answered a lawful page.read with "Frame too large" and stranded the command as claimed forever.
 // Both caps are stated twice because neither side can import the other, which is exactly why the relation is asserted rather than trusted.
 
-test('both frame caps fit the largest legal completion with room to spare', () => {
-  assert.ok(MAX_FRAME_BYTES >= MAX_RESULT_BYTES * 1.5,
-    `the bridge cap (${MAX_FRAME_BYTES}) no longer fits a legal result (${MAX_RESULT_BYTES})`);
-  assert.ok(FRAME_MAX_BYTES >= MAX_RESULT_BYTES * 1.5,
-    `the device cap (${FRAME_MAX_BYTES}) no longer fits a legal result (${MAX_RESULT_BYTES})`);
+test('both frame caps fit the largest legal completion plus its envelope', () => {
+  assert.ok(MAX_FRAME_BYTES >= RESULT_BUDGET_BYTES + RESULT_ENVELOPE_BYTES,
+    `the bridge cap (${MAX_FRAME_BYTES}) no longer fits a legal result (${RESULT_BUDGET_BYTES}) plus its envelope`);
+  assert.ok(FRAME_MAX_BYTES >= RESULT_BUDGET_BYTES + RESULT_ENVELOPE_BYTES,
+    `the device cap (${FRAME_MAX_BYTES}) no longer fits a legal result (${RESULT_BUDGET_BYTES}) plus its envelope`);
 });
 
 test('a completion near the product bound parses instead of being refused', async () => {
@@ -200,7 +200,7 @@ test('a gzip frame with the wrong version is refused, not misparsed', async () =
 });
 
 test('a gzip bomb is refused before it can exhaust memory', async () => {
-  assert.ok(MAX_DECOMPRESSED_BYTES >= MAX_RESULT_BYTES * 2,
+  assert.ok(MAX_DECOMPRESSED_BYTES >= RESULT_BUDGET_BYTES * 2,
     'the decompressed cap must clear the largest legal result with room');
   const frame = await gzipFrame({ type: 'complete', commandId: 'c9', ok: true, result: { blob: 'y'.repeat(100) } });
   const parsed = await parseDeviceFrame(frame, MAX_FRAME_BYTES, 10);

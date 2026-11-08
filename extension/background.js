@@ -19,7 +19,7 @@ import { log } from './lib/log.js';
 import { popupsSince } from './lib/popup-events.js';
 import { windowUpdateFor, windowUpdateCase } from './lib/window-restore.js';
 import { handleDebuggerDetach } from './lib/debugger-session.js';
-import { oversized, fitWithinBudget, MAX_RESULT_BYTES } from './lib/serialize.js';
+import { oversized, fitWithinBudget, RESULT_BUDGET_BYTES } from './lib/serialize.js';
 import { mutateTabs, nowIso, getConfig } from './worker/utils.js';
 import { collectAxSummary } from './worker/capture.js';
 import { publicTab, requireTabId, resolveTabId, waitTabReady, contentCall } from './worker/tab-content.js';
@@ -204,14 +204,14 @@ export async function dispatch(method, params = {}, context = {}) {
       if (result?.page && oversized(result)) {
         if (typeof result.page.class === 'string' && Array.isArray(result.page.elements)) {
           const pulled = result.page.elements;
-          const fitted = fitWithinBudget(pulled, MAX_RESULT_BYTES - 16 * 1024);
+          const fitted = fitWithinBudget(pulled, RESULT_BUDGET_BYTES);
           result = {
             ...result,
             page: {
               ...result.page,
               elements: fitted.elements,
               truncated: true,
-              truncationReason: `Element list trimmed: the result exceeded the ${MAX_RESULT_BYTES}-byte ceiling. Re-read with a smaller limit.`,
+              truncationReason: `Element list trimmed: the result exceeded the ${RESULT_BUDGET_BYTES}-byte budget. Re-read with a smaller limit.`,
               omittedElementCount: pulled.length - fitted.elements.length,
               nextOffset: Number(result.page.offset || 0) + fitted.elements.length,
               hasMore: fitted.elements.length < Number(result.page.total || pulled.length)
@@ -224,7 +224,7 @@ export async function dispatch(method, params = {}, context = {}) {
             page: {
               ...withoutElements,
               truncated: true,
-              truncationReason: `Element list omitted: the result exceeded the ${MAX_RESULT_BYTES}-byte ceiling. Re-read with a narrower offset, a smaller maxElements, or includeElements disabled.`,
+              truncationReason: `Element list omitted: the result exceeded the ${RESULT_BUDGET_BYTES}-byte budget. Re-read with a narrower offset, a smaller maxElements, or includeElements disabled.`,
               omittedElementCount: Array.isArray(elements) ? elements.length : 0
             }
           };
