@@ -11,28 +11,13 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { createHash } from 'node:crypto';
+import { siteRules } from './helpers/site-headers.mjs';
 
 const root = new URL('..', import.meta.url);
 const read = (name) => fs.readFileSync(new URL(name, root), 'utf8');
 const headers = read('landing/_headers');
 
-function parse(text) {
-  const rules = [];
-  let current = null;
-  for (const line of text.split('\n')) {
-    if (!line.trim() || line.startsWith('#')) continue;
-    if (!/^\s/.test(line)) {
-      current = { paths: line.split(',').map((p) => p.trim()), headers: {} };
-      rules.push(current);
-      continue;
-    }
-    const at = line.indexOf(':');
-    current.headers[line.slice(0, at).trim()] = line.slice(at + 1).trim();
-  }
-  return rules;
-}
-
-const rules = parse(headers);
+const rules = siteRules();
 
 test('the file has rules, and every one of them carries a policy', () => {
 
