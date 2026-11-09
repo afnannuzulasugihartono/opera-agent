@@ -283,8 +283,8 @@
     </div>
   </main>
 
-    <footer>
-    <div class="wrap footGrid">
+        <footer>
+    <div class="wrap footGrid simplified">
       <div class="footCol">
         <span class="footBrand">Opera Agent</span>
         <span class="footNote" data-i18n="footer.copy">© 2026 Opera Agent. Hak cipta dilindungi.</span>
@@ -294,18 +294,12 @@
         <h3 data-i18n="footer.product">Produk</h3>
         <span class="doors">
           <a href="./beranda.html" data-i18n="footer.home">Beranda</a>
-          <a href="./fitur.html" data-i18n="nav.features">Fitur</a>
-          <a href="./unduh.html" data-i18n="nav.download">Unduh</a>
+          <a href="./fitur.html" data-i18n="footer.features">Fitur</a>
+          <a href="./unduh.html" data-i18n="footer.download">Unduh</a>
           <a href="./bukti.html" data-i18n="footer.bukti">Bukti</a>
-          <a href="./docs.html" data-i18n="nav.docs">Docs</a>
-        </span>
-      </div>
-      <div class="footCol">
-        <h3 data-i18n="footer.account">Akun</h3>
-        <span class="doors">
-          <a href="./index.html" data-i18n="nav.signin">Masuk</a>
-          <a href="./akun.html" data-i18n="footer.accountLink">Akun</a>
-          <a href="./dashboard.html" data-i18n="footer.dashboard">Dashboard</a>
+          <a href="./docs.html" data-i18n="footer.docs">Docs</a>
+          <a href="./akun.html" data-i18n="footer.account">Akun</a>
+          <a href="./dashboard.html">Dashboard</a>
         </span>
       </div>
       <div class="footCol">
@@ -313,135 +307,135 @@
         <span class="doors">
           <a href="./privasi.html" data-i18n="footer.privacy">Privasi</a>
           <a href="./syarat.html" data-i18n="footer.terms">Syarat</a>
-          <a href="./dukungan.html" data-i18n="nav.support">Dukungan</a>
+          <a href="./dukungan.html" data-i18n="footer.support">Dukungan</a>
         </span>
       </div>
     </div>
   </footer>
 
-  <script type="application/json" id="i18n-dict">
-  {
-    "en": {
-      "nav.features": "Features",
-      "nav.download": "Download",
-      "nav.price": "Pricing",
-      "nav.support": "Support",
-      "nav.docs": "Docs",
-      "nav.signin": "Sign in",
-      "nav.search": "Search pages Ctrl K",
-      "footer.copy": "© 2026 Opera Agent. All rights reserved.",
-      "footer.source": "Source code",
-      "footer.product": "Product",
-      "footer.home": "Home",
-      "footer.bukti": "Proof",
-      "footer.account": "Account",
-      "footer.accountLink": "Account",
-      "footer.dashboard": "Dashboard",
-      "footer.legal": "Legal",
-      "footer.privacy": "Privacy",
-      "footer.terms": "Terms",
-      "rail.title": "Opera Agent",
-      "rail.customer": "Customers",
-      "rail.operator": "Operator",
-      "rail.tablesLink": "Tables",
-      "rail.listen": "Listen",
-      "rail.pairing": "Pairing",
-      "rail.account": "Account",
-      "rail.balance": "Balance",
-      "rail.action": "Action",
-      "rail.history": "History",
-      "rail.overview": "Overview",
-      "rail.tables": "Data tables",
-      "rail.collapseHide": "Hide navigation",
-      "rail.sections": "Dashboard sections",
-      "home.title": "Overview",
-      "home.installExtension": "Install the extension",
-      "home.manageAccount": "Manage account",
-      "home.pairCount": "Paired devices",
-      "home.onlineNow": "Online now",
-      "home.commandsDone": "Commands finished",
-      "plan.label": "Your plan",
-      "plan.remaining": "commands left today",
-      "plan.of": "of",
-      "plan.usedToday": "commands used today",
-      "plan.session": "/ session",
-      "plan.usageLabel": "Quota used today",
-      "plan.cta": "Manage plan",
-      "plan.upgrade": "See plans",
-      "plan.exhausted": "Plan exhausted — resets tomorrow 00:00 UTC.",
-      "plan.error": "Couldn't read the plan status.",
-      "plan.retry": "Retry",
-      "device.title": "Devices",
-      "device.meta": "Devices paired to this account, with their last ten commands.",
-      "history.title": "History",
-      "history.meta": "The latest commands on every device, newest first. Method and status only — never the command contents.",
-      "history.filterGroup": "Filter by status",
-      "history.filterAll": "All",
-      "history.filterCompleted": "Completed",
-      "history.filterFailed": "Failed",
-      "history.filterPending": "Queued",
-      "history.searchPlaceholder": "Search method or device…",
-      "history.searchAria": "Search history",
-      "history.colTime": "Time",
-      "history.colStatus": "Status",
-      "history.colMethod": "Method",
-      "history.colDevice": "Device",
-      "history.colDuration": "Duration",
-      "history.emptyTitle": "No command history yet.",
-      "history.emptyBody": "Run your first job from the <a href=\"#aksi\">Action tab</a>.",
-      "history.noMatchTitle": "No command matches that.",
-      "history.noMatchBody": "Loosen the status filter or the keyword.",
-      "history.reset": "Clear filters",
-      "tabel.title": "Tables",
-      "tabel.meta": "Project data, read-only: rows filtered server-side, secret columns masked before they leave.",
-      "tabel.searchPlaceholder": "Search this table…",
-      "tabel.searchAria": "Search rows in this table",
-      "tabel.csv": "Export CSV",
-      "tabel.csvTitle": "Download up to 5,000 rows matching the current filter",
-      "tabel.emptyTitle": "This table is empty.",
-      "tabel.emptyBody": "No row matches this account and this filter.",
-      "tabel.prev": "‹ Previous",
-      "tabel.next": "Next ›",
-      "dengar.title": "Listening sessions",
-      "dengar.meta": "Audio sessions to this account: metadata only, never the spoken words. Transcripts live in the model's tool results alone.",
-      "saldo.title": "Balance",
-      "saldo.meta": "Prepaid balance for finished jobs: top up via QRIS, charged when one job completes, refunded in full on failure. Numbers here are read from the server every time this page opens.",
-      "saldo.balance": "Balance",
-      "saldo.available": "Available now",
-      "saldo.topUp": "Top up",
-      "saldo.refresh": "Reload",
-      "saldo.pricesMeta": "Price list — read from the server every time this page opens, like the balance. Charged only when one job completes.",
-      "saldo.colJob": "Job",
-      "saldo.colPrice": "Price",
-      "saldo.colKind": "Kind",
-      "saldo.colAmount": "Amount",
-      "saldo.colNote": "Note",
-      "saldo.kindDeposit": "Top up",
-      "saldo.kindSettle": "Job finished",
-      "saldo.kindRefund": "Refund",
-      "saldo.kindAdjust": "Adjustment",
-      "saldo.priceDeposit": "Top up balance (QRIS)",
-      "saldo.priceSimple": "Simple job — on completion",
-      "saldo.priceReport": "Report — on completion",
-      "saldo.priceBatchItem": "Per item in a batch — on completion",
-      "saldo.priceEmptyTitle": "Can't load the price list.",
-      "saldo.priceEmptyBody": "Try the reload button.",
-      "saldo.walletEmptyTitle": "No balance movements yet.",
-      "saldo.walletEmptyBody": "Top up first, then run one job from the <a href=\"#aksi\">Action tab</a>.",
-      "pairing.title": "Manual pairing",
-      "pairing.meta": "A one-time code, valid for 10 minutes, bound to this account. Paste it into the extension popup on the device you want to connect.",
-      "pairing.nameLabel": "Device name",
-      "pairing.button": "Create pairing code",
-      "pairing.copy": "Copy code",
-      "aksi.title": "Run an action",
-      "aksi.meta": "The command goes to your own device. Devices refuse pages showing passwords, one-time codes, or payments.",
-      "aksi.methodLabel": "Primitive",
-      "aksi.run": "Run",
-      "akun.title": "This account",
-      "akun.installElsewhere": "Install on another device"
-    }
+  <script type="application/json" id="i18n-dict">{
+  "en": {
+    "nav.features": "Features",
+    "nav.download": "Download",
+    "nav.price": "Pricing",
+    "nav.support": "Support",
+    "nav.docs": "Docs",
+    "nav.signin": "Sign in",
+    "nav.search": "Search pages Ctrl K",
+    "footer.copy": "© 2026 Opera Agent. All rights reserved.",
+    "footer.source": "Source code",
+    "footer.product": "Product",
+    "footer.home": "Home",
+    "footer.bukti": "Proof",
+    "footer.account": "Account",
+    "footer.legal": "Legal",
+    "footer.privacy": "Privacy",
+    "footer.terms": "Terms",
+    "rail.title": "Opera Agent",
+    "rail.customer": "Customers",
+    "rail.operator": "Operator",
+    "rail.tablesLink": "Tables",
+    "rail.listen": "Listen",
+    "rail.pairing": "Pairing",
+    "rail.account": "Account",
+    "rail.balance": "Balance",
+    "rail.action": "Action",
+    "rail.history": "History",
+    "rail.overview": "Overview",
+    "rail.tables": "Data tables",
+    "rail.collapseHide": "Hide navigation",
+    "rail.sections": "Dashboard sections",
+    "home.title": "Overview",
+    "home.installExtension": "Install the extension",
+    "home.manageAccount": "Manage account",
+    "home.pairCount": "Paired devices",
+    "home.onlineNow": "Online now",
+    "home.commandsDone": "Commands finished",
+    "plan.label": "Your plan",
+    "plan.remaining": "commands left today",
+    "plan.of": "of",
+    "plan.usedToday": "commands used today",
+    "plan.session": "/ session",
+    "plan.usageLabel": "Quota used today",
+    "plan.cta": "Manage plan",
+    "plan.upgrade": "See plans",
+    "plan.exhausted": "Plan exhausted — resets tomorrow 00:00 UTC.",
+    "plan.error": "Couldn't read the plan status.",
+    "plan.retry": "Retry",
+    "device.title": "Devices",
+    "device.meta": "Devices paired to this account, with their last ten commands.",
+    "history.title": "History",
+    "history.meta": "The latest commands on every device, newest first. Method and status only — never the command contents.",
+    "history.filterGroup": "Filter by status",
+    "history.filterAll": "All",
+    "history.filterCompleted": "Completed",
+    "history.filterFailed": "Failed",
+    "history.filterPending": "Queued",
+    "history.searchPlaceholder": "Search method or device…",
+    "history.searchAria": "Search history",
+    "history.colTime": "Time",
+    "history.colStatus": "Status",
+    "history.colMethod": "Method",
+    "history.colDevice": "Device",
+    "history.colDuration": "Duration",
+    "history.emptyTitle": "No command history yet.",
+    "history.emptyBody": "Run your first job from the <a href=\"#aksi\">Action tab</a>.",
+    "history.noMatchTitle": "No command matches that.",
+    "history.noMatchBody": "Loosen the status filter or the keyword.",
+    "history.reset": "Clear filters",
+    "tabel.title": "Tables",
+    "tabel.meta": "Project data, read-only: rows filtered server-side, secret columns masked before they leave.",
+    "tabel.searchPlaceholder": "Search this table…",
+    "tabel.searchAria": "Search rows in this table",
+    "tabel.csv": "Export CSV",
+    "tabel.csvTitle": "Download up to 5,000 rows matching the current filter",
+    "tabel.emptyTitle": "This table is empty.",
+    "tabel.emptyBody": "No row matches this account and this filter.",
+    "tabel.prev": "‹ Previous",
+    "tabel.next": "Next ›",
+    "dengar.title": "Listening sessions",
+    "dengar.meta": "Audio sessions to this account: metadata only, never the spoken words. Transcripts live in the model's tool results alone.",
+    "saldo.title": "Balance",
+    "saldo.meta": "Prepaid balance for finished jobs: top up via QRIS, charged when one job completes, refunded in full on failure. Numbers here are read from the server every time this page opens.",
+    "saldo.balance": "Balance",
+    "saldo.available": "Available now",
+    "saldo.topUp": "Top up",
+    "saldo.refresh": "Reload",
+    "saldo.pricesMeta": "Price list — read from the server every time this page opens, like the balance. Charged only when one job completes.",
+    "saldo.colJob": "Job",
+    "saldo.colPrice": "Price",
+    "saldo.colKind": "Kind",
+    "saldo.colAmount": "Amount",
+    "saldo.colNote": "Note",
+    "saldo.kindDeposit": "Top up",
+    "saldo.kindSettle": "Job finished",
+    "saldo.kindRefund": "Refund",
+    "saldo.kindAdjust": "Adjustment",
+    "saldo.priceDeposit": "Top up balance (QRIS)",
+    "saldo.priceSimple": "Simple job — on completion",
+    "saldo.priceReport": "Report — on completion",
+    "saldo.priceBatchItem": "Per item in a batch — on completion",
+    "saldo.priceEmptyTitle": "Can't load the price list.",
+    "saldo.priceEmptyBody": "Try the reload button.",
+    "saldo.walletEmptyTitle": "No balance movements yet.",
+    "saldo.walletEmptyBody": "Top up first, then run one job from the <a href=\"#aksi\">Action tab</a>.",
+    "pairing.title": "Manual pairing",
+    "pairing.meta": "A one-time code, valid for 10 minutes, bound to this account. Paste it into the extension popup on the device you want to connect.",
+    "pairing.nameLabel": "Device name",
+    "pairing.button": "Create pairing code",
+    "pairing.copy": "Copy code",
+    "aksi.title": "Run an action",
+    "aksi.meta": "The command goes to your own device. Devices refuse pages showing passwords, one-time codes, or payments.",
+    "aksi.methodLabel": "Primitive",
+    "aksi.run": "Run",
+    "akun.title": "This account",
+    "akun.installElsewhere": "Install on another device",
+    "footer.docs": "Docs",
+    "footer.download": "Download",
+    "footer.features": "Features",
+    "footer.support": "Support"
   }
-  </script>
+}</script>
 
   <script src="./i18n.js"></script>
 

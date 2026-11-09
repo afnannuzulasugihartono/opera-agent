@@ -165,8 +165,8 @@
     </section>
   </main>
 
-    <footer>
-    <div class="wrap footGrid">
+        <footer>
+    <div class="wrap footGrid simplified">
       <div class="footCol">
         <span class="footBrand">Opera Agent</span>
         <span class="footNote" data-i18n="footer.rights">© 2026 Opera Agent. Hak cipta dilindungi.</span>
@@ -180,12 +180,6 @@
           <a href="./unduh.html" data-i18n="footer.download">Unduh</a>
           <a href="./bukti.html" data-i18n="footer.bukti">Bukti</a>
           <a href="./docs.html" data-i18n="footer.docs">Docs</a>
-        </span>
-      </div>
-      <div class="footCol">
-        <h3 data-i18n="footer.account">Akun</h3>
-        <span class="doors">
-          <a href="./index.html" data-i18n="footer.signin">Masuk</a>
           <a href="./akun.html" data-i18n="footer.account">Akun</a>
           <a href="./dashboard.html">Dashboard</a>
         </span>
@@ -201,68 +195,65 @@
     </div>
   </footer>
 
-  <script type="application/json" id="i18n-dict">
-  {
-    "en": {
-      "footer.bukti": "Proof",
-      "footer.source": "Source code",
-      "footer.legal": "Legal",
-      "footer.docs": "Docs",
-      "footer.download": "Download",
-      "footer.product": "Product",
-      "nav.download": "Download",
-      "nav.signin": "Sign in",
-      "nav.features": "Features",
-      "nav.price": "Pricing",
-      "nav.docs": "Docs",
-      "nav.support": "Support",
-      "meta.title": "Proof — Opera Agent",
-      "hero.eyebrow": "Proof",
-      "hero.title": "Four files, exactly the same.",
-      "hero.sub": "Opera Agent drove a real browser at a mock company portal, downloaded its CSV, and rebuilt the four files on the case study page. Every file was compared with the file you can download: the same sha256, byte for byte.",
-      "cta.files": "See the four files",
-      "cta.record": "Open the record",
-      "steps.title": "What happened",
-      "steps.sub": "Eight steps, one run. No file was copied by hand and no button was pressed by a person.",
-      "steps.one": "Opening the mock portal in the browser.",
-      "steps.two": "Reading the page and finding its download button.",
-      "steps.three": "Pressing the download button; the transaction CSV lands on disk.",
-      "steps.four": "Recomputing the financial report from the CSV rows.",
-      "steps.five": "Building the strategy deck from figures that were already checked.",
-      "steps.six": "Writing the two Word documents.",
-      "steps.seven": "Capturing the portal it read.",
-      "steps.eight": "Closing the tab and ending the run.",
-      "files.title": "The hashes match.",
-      "files.sub": "The four files below were rebuilt by the run, then compared with the files on the case study page. If one byte differed, the run would stop and print both hashes.",
-      "files.head.name": "File",
-      "files.head.size": "Size (bytes)",
-      "files.head.hash": "sha256",
-      "files.note": "Compare it with the file you download: sha256sum of your file must be exactly the hash in this table.",
-      "road.title": "The road through the extension.",
-      "road.sub": "The run above used a separate browser. What you use every day runs through the Opera Agent extension: the extension dials the local server on its own and drives the browser you already have open. That road was run too, and it is written down.",
-      "road.one": "The extension dials the local server on this machine on its own, so the browser in use needs no debugging port.",
-      "road.two": "The server opens the mock portal in a tab of the browser in use.",
-      "road.three": "The page is read, its \"Unduh CSV\" button is found, and the button is pressed.",
-      "road.four": "The CSV lands in the browser download folder, then moves to the work folder.",
-      "road.five": "The tab closes and the run ends.",
-      "road.note": "That file is byte for byte the same CSV that fed the four files above. Compare the sha256: the same, byte for byte.",
-      "road.cta": "Open the record of that run",
-      "shot.title": "The page the run read.",
-      "shot.sub": "This is the mock portal the run opened. Its download button is what put the CSV on disk.",
-      "shot.caption": "A screenshot of the tab the run read.",
-      "final.title": "Download it, then compare it yourself.",
-      "final.sub": "The same four files are on the case study page. Download one, open it in Excel, PowerPoint, or Word, then run sha256sum to compare.",
-      "footer.rights": "© 2026 Opera Agent. All rights reserved.",
-      "footer.home": "Home",
-      "footer.privacy": "Privacy",
-      "footer.terms": "Terms",
-      "footer.signin": "Sign in",
-      "footer.account": "Account",
-      "footer.features": "Features",
-      "footer.support": "Support"
-    }
+  <script type="application/json" id="i18n-dict">{
+  "en": {
+    "footer.bukti": "Proof",
+    "footer.source": "Source code",
+    "footer.legal": "Legal",
+    "footer.docs": "Docs",
+    "footer.download": "Download",
+    "footer.product": "Product",
+    "nav.download": "Download",
+    "nav.signin": "Sign in",
+    "nav.features": "Features",
+    "nav.price": "Pricing",
+    "nav.docs": "Docs",
+    "nav.support": "Support",
+    "meta.title": "Proof — Opera Agent",
+    "hero.eyebrow": "Proof",
+    "hero.title": "Four files, exactly the same.",
+    "hero.sub": "Opera Agent drove a real browser at a mock company portal, downloaded its CSV, and rebuilt the four files on the case study page. Every file was compared with the file you can download: the same sha256, byte for byte.",
+    "cta.files": "See the four files",
+    "cta.record": "Open the record",
+    "steps.title": "What happened",
+    "steps.sub": "Eight steps, one run. No file was copied by hand and no button was pressed by a person.",
+    "steps.one": "Opening the mock portal in the browser.",
+    "steps.two": "Reading the page and finding its download button.",
+    "steps.three": "Pressing the download button; the transaction CSV lands on disk.",
+    "steps.four": "Recomputing the financial report from the CSV rows.",
+    "steps.five": "Building the strategy deck from figures that were already checked.",
+    "steps.six": "Writing the two Word documents.",
+    "steps.seven": "Capturing the portal it read.",
+    "steps.eight": "Closing the tab and ending the run.",
+    "files.title": "The hashes match.",
+    "files.sub": "The four files below were rebuilt by the run, then compared with the files on the case study page. If one byte differed, the run would stop and print both hashes.",
+    "files.head.name": "File",
+    "files.head.size": "Size (bytes)",
+    "files.head.hash": "sha256",
+    "files.note": "Compare it with the file you download: sha256sum of your file must be exactly the hash in this table.",
+    "road.title": "The road through the extension.",
+    "road.sub": "The run above used a separate browser. What you use every day runs through the Opera Agent extension: the extension dials the local server on its own and drives the browser you already have open. That road was run too, and it is written down.",
+    "road.one": "The extension dials the local server on this machine on its own, so the browser in use needs no debugging port.",
+    "road.two": "The server opens the mock portal in a tab of the browser in use.",
+    "road.three": "The page is read, its \"Unduh CSV\" button is found, and the button is pressed.",
+    "road.four": "The CSV lands in the browser download folder, then moves to the work folder.",
+    "road.five": "The tab closes and the run ends.",
+    "road.note": "That file is byte for byte the same CSV that fed the four files above. Compare the sha256: the same, byte for byte.",
+    "road.cta": "Open the record of that run",
+    "shot.title": "The page the run read.",
+    "shot.sub": "This is the mock portal the run opened. Its download button is what put the CSV on disk.",
+    "shot.caption": "A screenshot of the tab the run read.",
+    "final.title": "Download it, then compare it yourself.",
+    "final.sub": "The same four files are on the case study page. Download one, open it in Excel, PowerPoint, or Word, then run sha256sum to compare.",
+    "footer.rights": "© 2026 Opera Agent. All rights reserved.",
+    "footer.home": "Home",
+    "footer.privacy": "Privacy",
+    "footer.terms": "Terms",
+    "footer.features": "Features",
+    "footer.support": "Support",
+    "footer.account": "Account"
   }
-  </script>
+}</script>
   <script src="./i18n.js"></script>
 
   <script src="/wayfind.js"></script>

@@ -41,9 +41,6 @@
   <main class="wrap prose supportMain">
     <header class="supportHero" data-reveal>
       <h1 data-i18n="page.title">Dukungan</h1>
-      <p class="updated" data-i18n="page.sub">Tempat bertanya dan melapor.</p>
-      <p data-i18n="intro">Ini produk yang dioperasikan sendiri, jadi dukungan paling efektif adalah langkah
-    konkret di bawah.</p>
       <p class="supportHint" data-i18n-html="hint">Tidak ada di daftar? <kbd>Ctrl</kbd> <kbd>K</kbd> mencari semua halaman.</p>
     </header>
 
@@ -95,8 +92,8 @@
     </div>
   </main>
 
-    <footer>
-    <div class="wrap footGrid">
+        <footer>
+    <div class="wrap footGrid simplified">
       <div class="footCol">
         <span class="footBrand">Opera Agent</span>
         <span class="footNote" data-i18n="footer.rights">© 2026 Opera Agent. Hak cipta dilindungi.</span>
@@ -110,12 +107,6 @@
           <a href="./unduh.html" data-i18n="footer.download">Unduh</a>
           <a href="./bukti.html" data-i18n="footer.bukti">Bukti</a>
           <a href="./docs.html" data-i18n="footer.docs">Docs</a>
-        </span>
-      </div>
-      <div class="footCol">
-        <h3 data-i18n="footer.account">Akun</h3>
-        <span class="doors">
-          <a href="./index.html" data-i18n="footer.signin">Masuk</a>
           <a href="./akun.html" data-i18n="footer.account">Akun</a>
           <a href="./dashboard.html">Dashboard</a>
         </span>
@@ -130,54 +121,49 @@
       </div>
     </div>
   </footer>
-  <script type="application/json" id="i18n-dict">
-  {
-    "en": {
-      "footer.bukti": "Proof",
-      "footer.source": "Source code",
-      "footer.legal": "Legal",
-      "footer.docs": "Docs",
-      "footer.download": "Download",
-      "footer.product": "Product",
-      "nav.download": "Download",
-      "nav.signin": "Sign in",
-      "nav.features": "Features",
-      "nav.price": "Pricing",
-      "nav.docs": "Docs",
-      "nav.support": "Support",
-      "meta.title": "Support — Opera Agent",
-      "page.title": "Support",
-      "page.sub": "Where you can ask for help, and where you can report.",
-      "intro": "This is a self-operated product, so the most effective support is the concrete steps below.",
-      "hint": "Missing something? <kbd>Ctrl</kbd> <kbd>K</kbd> searches every page.",
-      "nodev.title": "Device missing from the dashboard",
-      "noext.title": "Extension not installed",
-      "mcp.title": "Connecting an AI harness (OpenCode, Kilo, ChatGPT, Claude)",
-      "mcp.pointer": "The MCP server, the device header, and the OpenCode, Kilo, and Claude configs live on the <a href=\"./docs.html\">Docs</a> page.",
-      "session.title": "Your session keeps expiring",
-      "privacy.title": "Privacy and data",
-      "contact.title": "No answer here?",
-      "contact.body": "Three doors so your question reaches someone who can answer it.",
-      "contact.emailKind": "Email",
-      "contact.issueKind": "Public issue",
-      "contact.securityKind": "Security",
-      "contact.issue": "Open a new issue",
-      "contact.security": "Report it privately",
-      "nodev.body": "Open the <a href=\"./dashboard.html\">Dashboard</a> and check each device's status. If it is offline, re-pair with a fresh code there. Never leave an unknown device paired; revoke any you do not know.",
-      "noext.body": "Follow <a href=\"./unduh.html\">Download</a>. If the automatic install button is blocked, use the raw archive and enable developer mode, then tick your browser and press <strong>Install</strong>. Check <em>chrome://extensions</em> and <em>chrome://policy</em>.",
-      "session.body": "Access tokens expire after about an hour. They are usually refreshed automatically through the stored refresh token; if the refresh fails too, you are sent back to <a href=\"./index.html\">Sign in</a>. That is deliberate, not a lost account. Command history stays.",
-      "privacy.body": "Questions about data control: every self-serve control lives on the <a href=\"./akun.html\">Account</a> and <a href=\"./privasi.html\">Privacy</a> pages. Never file security findings as public issues; report them privately through the Security tab on the repository.",
-      "footer.rights": "© 2026 Opera Agent. All rights reserved.",
-      "footer.home": "Home",
-      "footer.privacy": "Privacy",
-      "footer.terms": "Terms",
-      "footer.signin": "Sign in",
-      "footer.account": "Account",
-      "footer.features": "Features",
-      "footer.support": "Support"
-    }
+  <script type="application/json" id="i18n-dict">{
+  "en": {
+    "footer.bukti": "Proof",
+    "footer.source": "Source code",
+    "footer.legal": "Legal",
+    "footer.docs": "Docs",
+    "footer.download": "Download",
+    "footer.product": "Product",
+    "nav.download": "Download",
+    "nav.signin": "Sign in",
+    "nav.features": "Features",
+    "nav.price": "Pricing",
+    "nav.docs": "Docs",
+    "nav.support": "Support",
+    "meta.title": "Support — Opera Agent",
+    "page.title": "Support",
+    "hint": "Missing something? <kbd>Ctrl</kbd> <kbd>K</kbd> searches every page.",
+    "nodev.title": "Device missing from the dashboard",
+    "noext.title": "Extension not installed",
+    "mcp.title": "Connecting an AI harness (OpenCode, Kilo, ChatGPT, Claude)",
+    "mcp.pointer": "The MCP server, the device header, and the OpenCode, Kilo, and Claude configs live on the <a href=\"./docs.html\">Docs</a> page.",
+    "session.title": "Your session keeps expiring",
+    "privacy.title": "Privacy and data",
+    "contact.title": "No answer here?",
+    "contact.body": "Three doors so your question reaches someone who can answer it.",
+    "contact.emailKind": "Email",
+    "contact.issueKind": "Public issue",
+    "contact.securityKind": "Security",
+    "contact.issue": "Open a new issue",
+    "contact.security": "Report it privately",
+    "nodev.body": "Open the <a href=\"./dashboard.html\">Dashboard</a> and check each device's status. If it is offline, re-pair with a fresh code there. Never leave an unknown device paired; revoke any you do not know.",
+    "noext.body": "Follow <a href=\"./unduh.html\">Download</a>. If the automatic install button is blocked, use the raw archive and enable developer mode, then tick your browser and press <strong>Install</strong>. Check <em>chrome://extensions</em> and <em>chrome://policy</em>.",
+    "session.body": "Access tokens expire after about an hour. They are usually refreshed automatically through the stored refresh token; if the refresh fails too, you are sent back to <a href=\"./index.html\">Sign in</a>. That is deliberate, not a lost account. Command history stays.",
+    "privacy.body": "Questions about data control: every self-serve control lives on the <a href=\"./akun.html\">Account</a> and <a href=\"./privasi.html\">Privacy</a> pages. Never file security findings as public issues; report them privately through the Security tab on the repository.",
+    "footer.rights": "© 2026 Opera Agent. All rights reserved.",
+    "footer.home": "Home",
+    "footer.privacy": "Privacy",
+    "footer.terms": "Terms",
+    "footer.features": "Features",
+    "footer.support": "Support",
+    "footer.account": "Account"
   }
-  </script>
+}</script>
   <script src="./i18n.js"></script>
 
   <script src="/wayfind.js"></script>
