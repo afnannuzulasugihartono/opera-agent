@@ -19,11 +19,11 @@
 }
 
 .hero-text h1 {
-  max-width: 20ch;
+  max-width: 12ch;
   margin: 0 0 18px;
   text-align: left;
-  font-size: clamp(40px, 6vw, 76px);
-  line-height: .98;
+  font-size: clamp(34px, 4.6vw, 64px);
+  line-height: .99;
   letter-spacing: -.045em;
 }
 
@@ -158,6 +158,17 @@ html.js .pack.in .packTile { animation: pack-light .2s var(--ease) forwards, til
 .packTile:hover { transform: translateY(-3px); border-color: var(--accent); }
 .packTile:hover svg { transform: scale(1.15); }
 .packTile svg { transition: transform .25s var(--ease); }
+
+.packCaption {
+  margin: 14px 0 0;
+  padding: 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.pack > code {
+  margin: 0 0 16px;
+}
 
 @media (prefers-reduced-motion: reduce) {
   .packTile:hover, .packTile:hover svg { transform: none; }
@@ -614,22 +625,114 @@ table.support tr:last-child td { border-bottom: 0; }
 
 .meta { color: var(--muted); font-size: 13px; }
 
-/* WHY THE DOWNLOAD PAGE KEEPS ITS SHAPE: the support page's grammar is exactly the ask - one standing lead with one action, and the steps below it; only the lead's content differs. */
+/* WHY THE WINDOW IS FIXED TO ONE COLUMN MEASURE TEXT: the hero text sits at 680px so no line runs past a natural measure, and the action sits left of it, near the reader's thumb when the page is rotated. */
 
-.unduhHero { display: flex; flex-direction: column; align-items: flex-start; }
-.unduhHero .unduhMain .pack, .unduhHero .pack { margin-top: 26px; }
-.unduhMain .also, .unduhHero .also { margin: 14px 0 0; }
-.unduhHero .hero-cta { margin: 18px 0 10px; }
+.unduhHero {}
 
-.statRow {
+.statBand {
   display: flex;
   flex-wrap: wrap;
-  align-items: baseline;
-  gap: 6px 14px;
-  margin: 12px 0 6px;
-  color: var(--muted);
-  font-size: 13px;
+  gap: 24px 36px;
+  margin: 22px 0 0;
+  padding: 0;
+}
+
+.statBand > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.statBand .stat-num {
+  color: var(--ink);
+  font-weight: 640;
+  letter-spacing: -.03em;
+  font-size: 28px;
+  line-height: 1;
   font-variant-numeric: tabular-nums;
 }
 
-.statRow .stat-num { margin-right: 6px; }
+.statBand dd {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+/* WHY THE SCREENSHOT EARNS ITS PLACE: it is not a decoration, it is the product doing the product's job, and the caption says so in plain words. */
+
+.artifact {
+  margin: 96px 0;
+}
+
+.artifact img {
+  display: block;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  width: 100%;
+  height: auto;
+}
+
+.artifact figcaption {
+  display: flex;
+  gap: 16px;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  margin-top: 18px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.artifact figcaption a { color: var(--accent); text-decoration: none; white-space: nowrap; }
+.artifact figcaption a:hover { color: var(--accent-strong); }
+
+/* WHY THE THREE FOLDS DO NOT SCREAM: these are reference material, scanned once and closed; the accent marks the disclosure chevron, and the body text stays at 16px. */
+
+.quiet {
+  max-width: var(--prose);
+  display: grid;
+  gap: 0;
+  margin-top: 64px;
+}
+
+.fold {
+  border-top: 1px solid var(--line);
+  padding: 18px 0;
+}
+
+.fold > summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+  cursor: pointer;
+  list-style: none;
+  font-weight: 600;
+  font-size: 17px;
+  letter-spacing: -.01em;
+}
+
+.fold > summary::after {
+  content: " +";
+  color: var(--accent);
+  font-size: 21px;
+  font-weight: 400;
+  transition: transform .2s var(--ease);
+}
+
+.fold[open] > summary::after {
+  content: " –";
+}
+
+.foldFacts {
+  display: grid;
+  grid-template-columns: minmax(120px, max-content) 1fr;
+  gap: 10px 20px;
+  margin: 16px 0 0;
+  font-size: 14px;
+}
+
+.foldFacts dt { color: var(--ink); }
+.foldFacts dd { margin: 0; color: var(--muted); }
+
+.fold .meta { margin: 14px 0 0; }

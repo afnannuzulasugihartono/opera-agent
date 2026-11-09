@@ -1,8 +1,7 @@
 <!-- @last-edited: 2026-11-09 UTC+7. -->
-<!-- @title: unduh - one door, quieter facts, and the details in two columns. -->
-<!-- @state: the hero centers one action with three quiet facts beneath; permissions and the Web Store note sit side by side; the hub is reached from beranda. -->
-<!-- @dependencies: site.css, download.css, i18n.js, reveal.js, wayfind.js, palette.js. -->
-
+<!-- @title: unduh - the door: one archive, five browsers, one action. -->
+<!-- @state: one hero with a giant door and the archive fan; one proof strip from a real MCP document; permissions and the store note folded below; the merged file page carries the steps. -->
+<!-- @dependencies: site.css, download.css, i18n.js, reveal.js, wayfind.js, palette.js, logos.js. -->
 
 <!doctype html>
 <html lang="id">
@@ -11,15 +10,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="theme-color" content="#000000" />
   <title data-i18n="meta.title">Unduh — Opera Agent</title>
-  <meta name="description" content="Unduh Opera Agent: arsip manual atau CRX bertanda tangan untuk Chrome, Edge, Brave, Opera, dan Vivaldi." />
+  <meta name="description" content="Unduh Opera Agent: satu arsip untuk Chrome, Edge, Brave, Opera, dan Vivaldi. Build terbaru, selalu." />
   <link rel="stylesheet" href="/site.css" />
-  <link rel="stylesheet" href="/support.css" />
   <link rel="stylesheet" href="/download.css" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%230b0d10'/%3E%3Cpath d='M5.2 2.2v10.2l2.5-2.3 1.5 3.6 1.9-.8-1.6-3.6h3.1L5.2 2.2Z' fill='%233ecf8e'/%3E%3C/svg%3E" />
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="Opera Agent" />
   <meta property="og:title" content="Unduh — Opera Agent" />
-  <meta property="og:description" content="Unduh Opera Agent: arsip manual atau CRX bertanda tangan untuk Chrome, Edge, Brave, Opera, dan Vivaldi." />
+  <meta property="og:description" content="Unduh Opera Agent: satu arsip untuk Chrome, Edge, Brave, Opera, dan Vivaldi. Build terbaru, selalu." />
   <meta property="og:url" content="https://opera-agent.pages.dev/unduh" />
   <meta property="og:locale" content="id_ID" />
 </head>
@@ -27,7 +25,7 @@
   <header>
     <div class="wrap">
       <nav>
-        <a class="brand" href="/beranda.html" aria-current="page"><svg class="brandMark" viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="7"  /><path d="M8 5.6v12.8l3.1-2.9 1.9 4.5 2.4-1-2-4.5h3.9L8 5.6Z"  /></svg><span>Opera Agent</span></a>
+        <a class="brand" href="/beranda.html"><svg class="brandMark" viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="7"  /><path d="M8 5.6v12.8l3.1-2.9 1.9 4.5 2.4-1-2-4.5h3.9L8 5.6Z"  /></svg><span>Opera Agent</span></a>
         <a href="/fitur.html" data-i18n="nav.features">Fitur</a>
         <a href="/unduh.html" data-i18n="nav.download" aria-current="page">Unduh</a>
         <a href="/harga" data-i18n="nav.price">Harga</a>
@@ -40,13 +38,18 @@
     </div>
   </header>
 
-  <main class="wrap prose supportMain unduhMain">
-    <header class="supportHero unduhHero" data-reveal>
-      <h1 data-i18n="page.title">Pasang Opera Agent</h1>
-      <p data-i18n="page.lede">Tanpa toko: satu arsip untuk semua Chromium. Build terbaru, selalu.</p>
-      <p class="hero-cta"><a class="btn giant" href="./unduh-berkas.html" data-i18n="door">Unduh Opera Agent</a></p>
-      <p class="statRow"><span class="stat-num">35</span> <span data-i18n="stat.tools">tool MCP</span> &middot; <span class="stat-num">31</span> <span data-i18n="stat.prims">primitif browser</span></p>
-      <p class="also" data-i18n-html="also">juga tersedia: <a href="./unduh-berkas.html">Panduan format</a> &middot; <a href="./dashboard.html">Dashboard</a></p>
+  <main class="wrap wide">
+    <div class="hero" data-reveal>
+      <div class="hero-text">
+        <h1 class="heroTitle" data-i18n="page.title">Pasang Opera Agent</h1>
+        <p class="lede" data-i18n="page.lede">Tanpa toko: satu arsip untuk semua browser Chromium. Build terbaru, selalu.</p>
+        <p class="hero-cta"><a class="btn giant" href="./unduh-berkas.html" data-i18n="door">Unduh Opera Agent</a></p>
+        <p class="also" data-i18n-html="also">juga tersedia: <a href="./unduh-berkas.html">Panduan format</a> &middot; <a href="./dashboard.html">Dashboard</a></p>
+        <dl class="statBand" aria-label="Fakta produk">
+          <div><dt><span class="stat-num">35</span></dt><dd data-i18n="stat.tools">tool MCP</dd></div>
+          <div><dt><span class="stat-num">31</span></dt><dd data-i18n="stat.prims">primitif browser</dd></div>
+        </dl>
+      </div>
 
       <aside class="pack" data-reveal aria-label="Satu arsip untuk lima browser">
         <code>opera-agent.zip</code>
@@ -57,61 +60,47 @@
           <li class="packTile" title="Opera" data-logo="opera">O</li>
           <li class="packTile" title="Vivaldi" data-logo="vivaldi">V</li>
         </ol>
+        <p class="packCaption" data-i18n="pack.caption">Satu arsip, lima browser, nol daftar putih.</p>
       </aside>
-    </header>
+    </div>
 
-    <div class="fixList">
-      <details class="fix" id="step1" data-reveal>
-        <summary><span class="fixIndex">01</span><span data-i18n="steps.one.title">Unduh arsip</span></summary>
-        <p data-i18n-html="steps.one.body">Tekan tombol di atas. Berkas <code>opera-agent.zip</code> tersimpan ke folder Unduhan.</p>
-      </details>
-      <details class="fix" id="step2" data-reveal>
-        <summary><span class="fixIndex">02</span><span data-i18n="steps.two.title">Ekstrak ke folder tetap</span></summary>
-        <p data-i18n-html="steps.two.body">Unzip <code>opera-agent.zip</code> ke folder yang tidak akan kamu rapikan lagi, misalnya <code>C:\OperaAgent\</code>.</p>
-      </details>
-      <details class="fix" id="step3" data-reveal>
-        <summary><span class="fixIndex">03</span><span data-i18n="steps.three.title">Buka halaman extension</span></summary>
-        <p data-i18n-html="steps.three.body"><code>chrome://extensions</code> di Chrome, <code>edge://extensions</code> di Edge, <code>opera://extensions</code> di Opera dan Vivaldi.</p>
-      </details>
-      <details class="fix" id="step4" data-reveal>
-        <summary><span class="fixIndex">04</span><span data-i18n="steps.four.title">Aktifkan mode pengembang</span></summary>
-        <p data-i18n-html="steps.four.body">Toggle di pojok kanan atas, lalu <strong>Load unpacked</strong> dan pilih folder hasil ekstrak.</p>
-      </details>
-      <details class="fix" id="step5" data-reveal>
-        <summary><span class="fixIndex">05</span><span data-i18n="steps.five.title">Pair dari Dashboard</span></summary>
-        <p data-i18n-html="steps.five.body">Buka <a href="./dashboard.html">Dashboard</a>, klik <strong>Pair device</strong>, tempel kode 10 menit di popup extension.</p>
-      </details>
+    <figure class="artifact" data-reveal>
+      <img src="/bukti/canvas-docs.jpg" alt="Dokumen Google Docs berisi laporan ringkasan yang ditulis seluruhnya oleh asisten AI lewat MCP, terlihat tabel Operasi dan Hasil serta tiga temuan" width="1920" height="877" loading="lazy" />
+      <figcaption>
+        <span data-i18n="artifact.cap">Ini bukan mockup: dokumen itu ditulis seluruhnya dari endpoint MCP yang sama dengan yang Anda sambungkan.</span>
+        <a href="./bukti.html" data-i18n="artifact.link">Lihat bukti &rarr;</a>
+      </figcaption>
+    </figure>
 
-      <details class="fix" id="izin" data-reveal>
-        <summary><span class="fixIndex">+</span><span data-i18n="perms.title">Izin, dengan alasan jelas.</span></summary>
-        <dl class="facts restrained">
+    <section class="quiet">
+      <details class="fold" id="izin">
+        <summary><span data-i18n="perms.title">Izin, dengan alasan jelas.</span></summary>
+        <dl class="foldFacts">
           <dt><code>tabs</code></dt><dd data-i18n="perms.tabs">Membuka dan menavigasi tab.</dd>
           <dt><code>scripting</code></dt><dd data-i18n="perms.scripting">Menjaga content script tetap hidup.</dd>
-          <dt><code>storage</code></dt><dd data-i18n="perms.storage">Menyimpan token dan setelan lokal.</dd>
-          <dt><code>alarms</code></dt><dd data-i18n="perms.alarms">Menjaga polling tetap berjalan.</dd>
+          <dt><code>storage</code></dt><dd data-i18n="perms.storage">Menyimpan token dan setelan lokal di browser Anda.</dd>
+          <dt><code>alarms</code></dt><dd data-i18n="perms.alarms">Menjaga heartbeat tetap segar.</dd>
           <dt><code>debugger</code></dt><dd data-i18n="perms.debugger">Klik terpercaya, screenshot, dan aksesibilitas.</dd>
-          <dt><code>downloads</code></dt><dd data-i18n="perms.downloads">Menyimpan dan membuktikan berkas yang diunduh.</dd>
+          <dt><code>downloads</code></dt><dd data-i18n="perms.downloads">Menyimpan berkas dengan nama asli arsip, lalu membuktikannya.</dd>
         </dl>
-        <p class="meta" data-i18n="perms.host">Host permission berlaku di semua asal — kamu yang menentukan halaman. Screenshot ditolak di tab private, dan field password, OTP, PIN, kartu, serta CVV diblokir.</p>
+        <p class="meta" data-i18n-html="perms.host">Host permission berlaku di semua asal — kamu yang menentukan halaman. Screenshot ditolak di tab private, dan field password, OTP, PIN, kartu, serta CVV diblokir.</p>
       </details>
-
-      <details class="fix" id="review" data-reveal>
-        <summary><span class="fixIndex">+</span><span data-i18n="review.title">Kenapa belum ada tombol pasang sekali klik</span></summary>
-        <p data-i18n-html="review.body">Extension dengan akses <code>debugger</code> harus lewat review Chrome Web Store. Sementara itu, pengguna pertama memuat sendiri, dan listing menyusul setelah review.</p>
+      <details class="fold" id="review">
+        <summary><span data-i18n="review.title">Kenapa belum ada tombol pasang sekali klik?</span></summary>
+        <p data-i18n-html="review.body">Extension dengan akses <code>debugger</code> harus lewat review Chrome Web Store. Sementara itu Anda memuat arsip yang sama sendiri, dan listing permanen menyusul setelah review.</p>
       </details>
-
-      <details class="fix" id="riwayat" data-reveal>
-        <summary><span class="fixIndex">+</span><span data-i18n="side.title">Build lama &amp; riwayat</span></summary>
+      <details class="fold" id="riwayat">
+        <summary><span data-i18n="side.title">Build lama &amp; riwayat</span></summary>
         <p data-i18n-html="side.body">Setiap rilis 1.6.x bertanda tangan tetap tersedia di <a href="https://github.com/afnannuzulasugihartono/opera-agent/releases">GitHub Releases</a> — .zip, .crx dan SHA256SUMS — untuk mesin enterprise.</p>
       </details>
-    </div>
+    </section>
   </main>
 
         <footer>
     <div class="wrap footGrid simplified">
       <div class="footCol">
         <span class="footBrand">Opera Agent</span>
-        <span class="footNote" data-i18n="footer.rights">© 2026 Opera Agent. Hak cipta dilindungi.</span>
+        <span class="footNote" data-i18n="footer.rights">c 2026 Opera Agent. Hak cipta dilindungi.</span>
         <span class="doors"><a href="https://github.com/afnannuzulasugihartono/opera-agent" data-i18n="footer.source">Kode sumber</a></span>
       </div>
       <div class="footCol">
@@ -136,65 +125,56 @@
       </div>
     </div>
   </footer>
+  <script src="./i18n.js"></script>
+  <script src="/wayfind.js"></script>
+  <script src="/palette.js"></script>
+  <script src="/logos.js"></script>
+  <script src="/reveal.js"></script>
 
   <script type="application/json" id="i18n-dict">{
   "en": {
-    "also": "also available: <a href=\"./unduh-berkas.html\">Format guide</a> &middot; <a href=\"./dashboard.html\">Dashboard</a>",
-    "door": "Download Opera Agent",
-    "footer.account": "Account",
     "footer.bukti": "Proof",
+    "footer.source": "Source code",
+    "footer.legal": "Legal",
     "footer.docs": "Docs",
     "footer.download": "Download",
-    "footer.features": "Features",
-    "footer.home": "Home",
-    "footer.legal": "Legal",
-    "footer.privacy": "Privacy",
     "footer.product": "Product",
-    "footer.rights": "© 2026 Opera Agent. All rights reserved.",
-    "footer.source": "Source code",
-    "footer.support": "Support",
-    "footer.terms": "Terms",
-    "meta.title": "Download - Opera Agent",
-    "nav.docs": "Docs",
     "nav.download": "Download",
+    "nav.signin": "Sign in",
     "nav.features": "Features",
     "nav.price": "Pricing",
-    "nav.signin": "Sign in",
+    "nav.docs": "Docs",
     "nav.support": "Support",
-    "page.lede": "Storeless: one archive for every Chromium browser. The newest build, always.",
+    "meta.title": "Download - Opera Agent",
     "page.title": "Install Opera Agent",
-    "perms.alarms": "Keep polling alive.",
-    "perms.debugger": "Trusted clicks, screenshots, and accessibility.",
-    "perms.downloads": "Save and prove downloaded files.",
-    "perms.scripting": "Keep the content script alive.",
-    "perms.storage": "Store local tokens and settings.",
-    "perms.tabs": "Open and navigate tabs.",
-    "perms.title": "Permissions, clearly explained.",
-    "review.body": "An extension with <code>debugger</code> access must pass Chrome Web Store review. Until then the first users load it themselves, and the listing follows after review.",
-    "review.title": "Why there is no one-click install button yet",
-    "side.body": "Every signed 1.6.x release stays available on <a href=\"https://github.com/afnannuzulasugihartono/opera-agent/releases\">GitHub Releases</a> - .zip, .crx and SHA256SUMS - for enterprise machines.",
-    "side.title": "Older builds &amp; history",
-    "steps.five.body": "Open <a href=\"./dashboard.html\">Dashboard</a>, click <strong>Pair device</strong>, paste the 10-minute code into the extension popup.",
-    "steps.five.title": "Pair from the Dashboard",
-    "steps.four.body": "Toggle it in the top right, then <strong>Load unpacked</strong> and pick the extracted folder.",
-    "steps.four.title": "Enable developer mode",
-    "steps.one.body": "Press the button above. <code>opera-agent.zip</code> lands in your Downloads folder.",
-    "steps.one.title": "Download the archive",
-    "steps.three.body": "<code>chrome://extensions</code> in Chrome, <code>edge://extensions</code> in Edge, <code>opera://extensions</code> in Opera and Vivaldi.",
-    "steps.three.title": "Open the extensions page",
-    "steps.two.body": "Unzip <code>opera-agent.zip</code> to a folder you will not tidy away, for example <code>C:\\OperaAgent\\</code>.",
-    "steps.two.title": "Extract it to a fixed folder",
+    "page.lede": "Storeless: one archive for every Chromium browser. The newest build, always.",
+    "door": "Download Opera Agent",
+    "also": "also available: <a href=\"./unduh-berkas.html\">Format guide</a> &middot; <a href=\"./dashboard.html\">Dashboard</a>",
     "stat.tools": "MCP tools",
     "stat.prims": "browser primitives",
-    "perms.host": "Host permission applies to any origin - you name the page. Screenshots are refused in private tabs, and password, OTP, PIN, card and CVV fields are blocked."
+    "pack.caption": "One archive, five browsers, zero whitelist.",
+    "artifact.cap": "Not a mockup: this document was written entirely from the same MCP endpoint you would connect.",
+    "artifact.link": "See the proof",
+    "perms.title": "Permissions, clearly explained",
+    "perms.tabs": "Open and navigate tabs.",
+    "perms.scripting": "Keep the content script alive.",
+    "perms.storage": "Store local tokens and settings on this browser.",
+    "perms.alarms": "Keep the heartbeat fresh.",
+    "perms.debugger": "Trusted clicks, screenshots, and accessibility.",
+    "perms.downloads": "Save files with the archive's real name and verify them.",
+    "perms.host": "Screenshots are refused in private tabs, and password, OTP, PIN, card and CVV fields are never answered.",
+    "review.title": "Why there is no one-click install button yet",
+    "review.body": "An extension with <code>debugger</code> access must pass Chrome Web Store review. Until then you load the same archive yourself, and the listing follows after review.",
+    "side.title": "Older builds &amp; releases",
+    "side.body": "Every signed 1.6.x release stays on <a href=\"https://github.com/afnannuzulasugihartono/opera-agent/releases\">GitHub Releases</a> — .zip, .crx and SHA256SUMS — for enterprise machines.",
+    "footer.rights": "c 2026 Opera Agent. All rights reserved.",
+    "footer.home": "Home",
+    "footer.privacy": "Privacy",
+    "footer.terms": "Terms",
+    "footer.account": "Account",
+    "footer.features": "Features",
+    "footer.support": "Support"
   }
 }</script>
-  <script src="./i18n.js"></script>
-
-  <script src="/wayfind.js"></script>
-  <script src="/palette.js"></script>
-
-  <script src="/logos.js"></script>
-  <script src="/reveal.js"></script>
 </body>
 </html>
