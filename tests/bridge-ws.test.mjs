@@ -99,7 +99,7 @@ test('a handshake completes and a pushed command arrives without being asked for
     const answer = await pending;
     assert.equal(answer.ok, true);
     assert.equal(answer.result.length, 1, 'the merged list reaches the caller');
-    assert.equal(answer.result[0].id % 1000000000, 7, 'the row names the browser that owns it');
+    assert.equal(answer.result[0].id % 10000000000, 7, 'the row names the browser that owns it');
     assert.equal(answer.result[0].url, 'https://x/');
     assert.ok(answer.ms < 200, 'a loopback round trip is milliseconds, not the relay second');
   } finally {
@@ -327,7 +327,7 @@ test('the command door settles against the device and names a device failure', a
     assert.equal(good.status, 200);
     assert.equal(good.body.ok, true);
     assert.equal(good.body.result.length, 1);
-    assert.equal(Number(good.body.result[0].id) % 1000000000, 7, 'the settled envelope crosses the door unwrapped');
+    assert.equal(Number(good.body.result[0].id) % 10000000000, 7, 'the settled envelope crosses the door unwrapped');
 
     const failing = post({ method: 'tabs.list', params: {}, timeoutMs: 5000 });
     const second = await nextCommand(seen);

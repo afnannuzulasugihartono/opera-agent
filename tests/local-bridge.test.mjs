@@ -103,13 +103,13 @@ test('tab operations round-trip through the device', async () => {
 
   const listed = await listBridgeTargets();
   assert.equal(listed.length, 1);
-  assert.equal(listed[0].id % 1000000000, 7, 'the listed target is namespaced by the browser that owns it');
+  assert.equal(listed[0].id % 10000000000, 7, 'the listed target is namespaced by the browser that owns it');
   assert.deepEqual({ url: listed[0].url, title: listed[0].title }, { url: 'https://x/', title: 'X' });
   const opened = await openBridgeTarget('https://y/');
-  assert.equal(opened.id % 1000000000, 8, 'an opened tab answers in that browser\'s namespace');
+  assert.equal(opened.id % 10000000000, 8, 'an opened tab answers in that browser\'s namespace');
   assert.deepEqual({ url: opened.url, title: opened.title }, { url: 'https://y/', title: '' },
     'an opened tab answers with the same shape a listed one has');
-  assert.equal(opened.id >= 1000000000, true);
+  assert.equal(opened.id >= 10000000000, true);
   assert.deepEqual(await closeBridgeTarget(opened.id), { id: 8, closed: true },
     'closing a namespaced target reaches the browser that owns it, with its own local id');
 
@@ -354,7 +354,7 @@ test('a driver that loses the port adopts the bridge that won it', async () => {
     assert.equal(await bridgeReachable(), true, 'the loser sees the link the winner holds');
     const tabs = await listBridgeTargets();
     assert.equal(tabs.length, 1);
-    assert.equal(tabs[0].id % 1000000000, 11, 'the listed target is namespaced by the browser that owns it');
+    assert.equal(tabs[0].id % 10000000000, 11, 'the listed target is namespaced by the browser that owns it');
     assert.equal(tabs[0].url, 'https://y/');
     assert.equal(tabs[0].title, 'Y');
 
@@ -372,7 +372,7 @@ test('a driver that loses the port adopts the bridge that won it', async () => {
     assert.equal(await bridgeReachable(), true, 'the guest sees the link come back');
     const again = await listBridgeTargets();
     assert.equal(again.length, 1);
-    assert.equal(again[0].id % 1000000000, 12, 'the revived browser owns the target it names');
+    assert.equal(again[0].id % 10000000000, 12, 'the revived browser owns the target it names');
     assert.equal(again[0].url, 'https://z/');
   } finally {
     await closeBridge();

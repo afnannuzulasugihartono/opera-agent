@@ -39,7 +39,8 @@ globalThis.chrome = {
     onActivated: event('tabs.onActivated'),
     query: async () => [{ id: 5, url: 'https://example/', title: 'Example' }],
     create: async ({ url }) => ({ id: 6, url, title: '' }),
-    remove: async (id) => ({ removed: id })
+    remove: async (id) => ({ removed: id }),
+    get: async (id) => (Number.isInteger(id) ? { id, url: 'https://tab/', title: 'Tab' } : null)
   },
   runtime: {
     onMessage: event('runtime.onMessage'),
@@ -120,10 +121,17 @@ test('the worker connects on its own, without being asked', () => {
   assert.equal(bridge.linked(), true, 'the socket came up by itself');
 });
 
+test('tabs.get answers the tab the caller names', async () => {
+  const answer = await bridge.send('tabs.get', { tabId: 5 });
+  assert.equal(answer.ok, true);
+  assert.equal(answer.result.id, 5);
+  assert.equal(answer.result.url, 'https://tab/');
+});
+
 test('a pushed command runs and its answer comes back over the same socket', async () => {
   const answer = await bridge.send('tabs.list', {});
   assert.equal(answer.ok, true);
-  assert.equal(answer.result[0].id % 1000000000, 5, 'the row is namespaced by the browser that owns it');
+  assert.equal(answer.result[0].id % 10000000000, 5, 'the row is namespaced by the browser that owns it');
   assert.ok(answer.ms < 500, `a loopback round trip is milliseconds (took ${answer.ms} ms)`);
 });
 

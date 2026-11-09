@@ -15,7 +15,8 @@
 // WHY A TARGET ID IS NAMESPACED BY SLOT.
 // Every browser numbers its tabs from one, so two browsers hand out the same target for different pages.
 // The driver parses target ids as numbers, so the name must be a number too: the slot walks in the upper digits and the browser's own id in the lower ones.
-// SLOT_STRIDE is a billion, far past any tab id a browser numbers in, so the digits never overlap.
+// SLOT_STRIDE is ten billion, comfortably past any tab id a Chromium build numbers in on 32-bit ints (max 2,147,483,647), so the digits never overlap.
+// A billion was tried first and collided: Chrome and Brave now mint tab ids that fill the whole 32-bit range, and a tab id above a billion made every routed command address a slot that does not exist.
 
 import { randomUUID } from 'node:crypto';
 import { createServer } from 'node:http';
@@ -27,7 +28,7 @@ import { BridgeSocket, acceptKey, encodeText, isOriginAllowed, isWebSocketUpgrad
 import { createLeaseTable } from './leases.js';
 import { DEVICE_PROTOCOL_VERSION } from './lib/socket-protocol.js';
 
-const SLOT_STRIDE = 1000000000;
+const SLOT_STRIDE = 10000000000;
 
 // WHY THE METER IS A CLOUD CALL AND NOT A LOCAL GUESS.
 // The local drive is on the same machine as the caller, so it cannot tell a paid account from a stranger by looking inward.
@@ -86,9 +87,32 @@ export function createBridgeServer({ port = 9451, host = '127.0.0.1', heartbeatM
   let lastRefusal = null;
   const pendingReports = new Set();
 
-  const readyDevices = () => [...devices.values()]
-    .filter((device) => !device.socket.closed && device.handshaken && device.slot !== null)
-    .sort((a, b) => a.slot - b.slot);
+  // WHY ONE ROW PER BROWSER.
+  // A browser that reconnected while its old socket still burned an open file-handles entry gets listed twice, and every caller that counts rows then counts a phantom browser: the merged list returns the same tabs twice and the meter charges both sockets for one list.
+  // The freshest socket per instanceId is the one the person's browser is actually on; the stale ones are closed, so the close path reaps them instead of leaking until the idle reaper fires.
+  const readyDevices = () => {
+    const newest = new Map();
+    const stale = [];
+    for (const device of devices.values()) {
+      if (device.socket.closed || !device.handshaken || device.slot === null) continue;
+      const key = String(device.instanceId || device.deviceName || device.id);
+      const known = newest.get(key);
+      if (!known) {
+        newest.set(key, device);
+        continue;
+      }
+      const fresher = (device.connectedAt ?? 0) >= (known.connectedAt ?? 0) ? device : known;
+      const older = fresher === device ? known : device;
+      stale.push(older);
+      newest.set(key, fresher);
+    }
+    for (const dead of stale) {
+      if (dead.socket.closed || dead.replaced) continue;
+      dead.replaced = true;
+      try { dead.socket.close(1000, 'replaced by a newer socket from the same browser'); } catch { dead.socket.destroy?.(); }
+    }
+    return [...newest.values()].sort((a, b) => a.slot - b.slot);
+  };
 
   const firstReady = () => readyDevices()[0] || null;
 
