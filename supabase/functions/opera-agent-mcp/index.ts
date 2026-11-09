@@ -9,6 +9,7 @@ import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/
 import { AsyncLocalStorage } from "node:async_hooks";
 import { streamCommandEvents } from "../_shared/command-stream.ts";
 import * as z from "zod/v4";
+import { planInfo } from "./plan-info.ts";
 import { createEdgeLog } from "../_shared/edge-log.js";
 import { CORS_DEFAULT_ORIGINS, resolveAllowedOrigin } from "../_shared/cors.js";
 import { CommandFailure, sealVmProgram } from "../_shared/seal-vm-program.js";
@@ -502,8 +503,8 @@ async function latestPublishedVersion() {
 async function executeStatus(method: string, params: Record<string, unknown>, timeoutMs: number | undefined, deviceName: string, provider: string, userId: string | null) {
   const answer = await execute(method, params, timeoutMs, deviceName, provider);
   if (answer.isError) return answer;
-  const presence = await devicePresence(userId);
-  const merged = { ...(answer.structuredContent ?? {}), ...presence };
+  const [presence, plan] = await Promise.all([devicePresence(userId), planInfo(await db(), userId)]);
+  const merged = { ...(answer.structuredContent ?? {}), ...presence, ...(plan ?? {}) };
   return {
     ...answer,
     structuredContent: merged,

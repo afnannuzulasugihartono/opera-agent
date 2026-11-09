@@ -1,0 +1,57 @@
+// @last-edited: 2026-11-09 UTC+7.
+// @title: hosted-plan-gate.test — the hosted caller learns its plan at the door, not at the wall.
+// @state: the plan, its quota, today's usage for the account that owns the device, and the safe answer when the database cannot.
+// @dependencies: node:test, strict, ../supabase/functions/opera-agent-mcp/plan-info.ts, ../supabase/functions/_shared/plans.js.
+
+import test from 'node:test';
+import assert from 'node:assert/strict';
+
+import { PLANS } from '../supabase/functions/_shared/plans.js';
+import { planInfo } from '../supabase/functions/opera-agent-mcp/plan-info.ts';
+
+function fakeDb({ plan = null, status = 'active', count = 0, fail = false } = {}) {
+  const calls = [];
+  return {
+    calls,
+    from(table) {
+      calls.push(table);
+      if (fail) throw new Error('the database is behind');
+      if (table === 'opera_account_plans') {
+        return {
+          select: () => ({
+            eq: () => ({
+              maybeSingle: async () => ({ data: plan ? { plan, status } : null })
+            })
+          })
+        };
+      }
+      return {
+        select: () => ({
+          eq: () => ({
+            gte: async () => ({ count })
+          })
+        })
+      };
+    }
+  };
+}
+
+test('browser_status carries the plan for the account with the device', async () => {
+  const answer = await planInfo(fakeDb({ plan: 'plan.firm', status: 'active', count: 314 }), 'user-1');
+  assert.deepEqual(answer, { plan: 'plan.firm', planStatus: 'active', planQuota: PLANS['plan.firm'].dailyQuota, planUsed: 314 });
+});
+
+test('an account with no plan row is a pilot, not an absence of limits', async () => {
+  const answer = await planInfo(fakeDb({ plan: null, count: 0 }), 'user-2');
+  assert.equal(answer.plan, 'plan.pilot');
+  assert.equal(answer.planQuota, PLANS['plan.pilot'].dailyQuota);
+  assert.equal(answer.planUsed, 0);
+});
+
+test('a static caller is not given someone else\'s plan', async () => {
+  assert.equal(await planInfo(fakeDb({}), null), null);
+});
+
+test('a reluctant database costs the fields, not the answer', async () => {
+  assert.equal(await planInfo(fakeDb({ fail: true }), 'user-3'), null);
+});
