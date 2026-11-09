@@ -15,10 +15,12 @@ export async function planInfo(db, userId: string | null): Promise<Record<string
   try {
     const { data } = await db
       .from('opera_account_plans')
-      .select('plan, status')
+      .select('plan, status, expires_at')
       .eq('user_id', userId)
       .maybeSingle();
-    const plan = String(data?.plan ?? 'plan.pilot');
+    const expiry = data?.expires_at ? Date.parse(String(data.expires_at)) : null;
+    const expired = expiry !== null && Number.isFinite(expiry) && expiry <= Date.now();
+    const plan = String(expired ? 'plan.pilot' : (data?.plan ?? 'plan.pilot'));
     const status = String(data?.status ?? 'active');
     const quota = PLANS[plan]?.dailyQuota ?? PLANS['plan.pilot'].dailyQuota;
     const midnight = new Date();
@@ -35,7 +37,7 @@ export async function planInfo(db, userId: string | null): Promise<Record<string
       .gte('created_at', midnight.toISOString());
     const reported = (reports ?? []).reduce((sum, row) => sum + Number(row?.commands ?? 0), 0);
     const planUsed = Number(count ?? 0) + reported;
-    return { plan, planStatus: status, planQuota: quota, planUsed, planRemaining: Math.max(0, quota - planUsed), planExhausted: planUsed >= quota };
+    return { plan, planStatus: status, planQuota: quota, planUsed, planRemaining: Math.max(0, quota - planUsed), planExhausted: planUsed >= quota, ...(expiry ? { planExpiresAt: new Date(expiry).toISOString() } : {}) };
   } catch {
     return null;
   }

@@ -313,8 +313,8 @@ test('the features page shows one task travelling from a sentence to a file', ()
 test('the price page answers each rule in place, and its cards answer the pointer', () => {
   // WHY THIS PAGE NEEDS A SHAPE: measured against firecrawl.dev/pricing on 2026-11-05, its billing rules sit behind questions that open in place, and its cards answer the pointer; five open paragraphs read as a wall.
   const html = read('harga.html');
-  const rules = [...html.matchAll(/<details class="qa" id="([a-z]+)">/g)].map((match) => match[1]);
-  assert.deepEqual(rules, ['prabayar', 'pekerjaan', 'gagal', 'batas', 'model'], 'each rule opens in place and keeps the anchor its map names');
+  const rules = [...html.matchAll(/<details class="qa" id="([a-z]+)"[^>]*>/g)].map((match) => match[1]);
+  assert.deepEqual(rules, ['prabayar', 'plan', 'pekerjaan', 'gagal', 'batas', 'model'], 'each rule opens in place and keeps the anchor its map names');
   for (const id of rules) assert.ok(html.includes(`href="#${id}"`), `the map still reaches ${id}`);
   assert.match(html, /<script src="\/spotlight\.js"[^>]*><\/script>/, 'and the cards take the shared pointer light');
   const sheet = read('harga.css');

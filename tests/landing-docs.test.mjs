@@ -55,11 +55,13 @@ test('the price page shows its ways to buy as cards and its facts in one glance'
   // WHY THE CARDS: measured against firecrawl.dev/pricing on 2026-11-04, the reader sees the choices as cards and the rules as a single glance list.
   // A reader who only skims still learns how to buy, and a reader who wants the rules finds every number in one list.
   const html = read('landing/harga.html');
-  assert.ok((html.match(/class="priceCard"/g) || []).length >= 3, 'the ways to buy stand as cards');
+  assert.ok((html.match(/class="priceCard/g) || []).length >= 2, 'the two ways to buy stand as cards');
+  assert.ok((html.match(/id="buyWallet"|id="buyFirm"/g) || []).length === 2, 'and both carry a working buy button');
+  assert.match(html, /class="priceCardPrice"/, 'with the amount big enough to read at a glance');
   assert.match(html, /class="glance"/, 'the facts stand in one glance list');
   assert.match(html, /<dl class="glance"/, 'and the glance list is a definition list');
   const sheet = read('landing/harga.css');
-  assert.match(sheet, /\.priceCards \{[^}]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\)/s, 'three cards on a wide screen');
+  assert.match(sheet, /\.priceCards \{[^}]*grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/s, 'two cards on a wide screen');
   assert.match(sheet, /@media \(max-width: 860px\)[\s\S]*?\.priceCards \{[^}]*grid-template-columns: 1fr/s, 'and one column on a phone');
 });
 
