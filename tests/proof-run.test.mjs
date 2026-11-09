@@ -15,7 +15,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { installedBrowsers } from '../local/driver.js';
-import { launchProofBrowser, runProof, serveCompany, sha256, speakMcp } from '../scripts/proof-run.mjs';
+import { launchProofBrowser, runProof, serveCompany, sha256, speakMcp, findExtensionBrowser } from '../scripts/proof-run.mjs';
 
 const root = path.resolve(fileURLToPath(new URL('..', import.meta.url)));
 const company = path.join(root, 'tests', 'fixtures', 'mock-company');
@@ -26,6 +26,9 @@ const canShowWindow = process.platform !== 'linux'
 const noBrowser = browsers.length > 0 && canShowWindow
   ? false
   : 'this machine cannot start a browser window';
+const noExtensionBrowser = findExtensionBrowser()
+  ? false
+  : 'this machine cannot load the extension into a browser (Chrome for Testing or Chromium is missing); set OPERA_PROOF_BROWSER';
 
 test('the fixture portal answers with the page and the CSV a drive needs', async () => {
   const portal = await serveCompany(company);
@@ -46,7 +49,7 @@ test('the fixture portal answers with the page and the CSV a drive needs', async
   }
 });
 
-test('the proof browser answers its own port and is gone when the run ends', { skip: noBrowser }, async () => {
+test('the proof browser answers its own port and is gone when the run ends', { skip: noExtensionBrowser }, async () => {
   const browser = await launchProofBrowser();
   const { port } = browser;
   try {
@@ -65,7 +68,7 @@ test('the proof browser answers its own port and is gone when the run ends', { s
   assert.equal(alive, false, 'the browser the run started must close with it');
 });
 
-test('the server opens the portal tab and reads the page', { skip: noBrowser }, async () => {
+test('the server opens the portal tab and reads the page', { skip: noExtensionBrowser }, async () => {
   const portal = await serveCompany(company);
   const browser = await launchProofBrowser();
   const mcp = speakMcp({ port: browser.port, cwd: root });
@@ -93,7 +96,7 @@ test('the server opens the portal tab and reads the page', { skip: noBrowser }, 
   }
 });
 
-test('one drive downloads the CSV and leaves the four files the site ships', { skip: noBrowser }, async () => {
+test('one drive downloads the CSV and leaves the four files the site ships', { skip: noExtensionBrowser }, async () => {
   const work = fs.mkdtempSync(path.join(os.tmpdir(), 'opera-proof-test-'));
   try {
     const result = await runProof({
