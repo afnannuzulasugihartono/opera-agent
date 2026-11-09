@@ -9,6 +9,7 @@ import fs from 'node:fs';
 
 import { listPageWebSockets, pageWebSocketById } from '../local/transport.js';
 import { openSession } from '../local/driver.js';
+import { closeBridge } from '../local/bridge.js';
 
 const PAGES = [
   { id: 'AAA', type: 'page', title: 'Untitled document', url: 'https://docs.google.com/a', webSocketDebuggerUrl: 'ws://x/aaa' },
@@ -112,3 +113,4 @@ test('the driver has no port road left in it', () => {
   assert.doesNotMatch(driver, /remote-debugging-port/, 'the driver launches no browser');
   assert.doesNotMatch(driver, /spawnBrowser/, 'and it spawns nothing');
 });
+test.after(async () => { await closeBridge(); });

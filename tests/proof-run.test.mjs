@@ -15,7 +15,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { installedBrowsers } from '../local/driver.js';
-import { launchProofBrowser, runProof, serveCompany, sha256, speakMcp, findExtensionBrowser } from '../scripts/proof-run.mjs';
+import { launchProofBrowser, runProof, serveCompany, sha256, speakMcp } from '../scripts/proof-run.mjs';
 
 const root = path.resolve(fileURLToPath(new URL('..', import.meta.url)));
 const company = path.join(root, 'tests', 'fixtures', 'mock-company');
@@ -26,9 +26,9 @@ const canShowWindow = process.platform !== 'linux'
 const noBrowser = browsers.length > 0 && canShowWindow
   ? false
   : 'this machine cannot start a browser window';
-const noExtensionBrowser = findExtensionBrowser()
+const noExtensionBrowser = process.env.OPERA_PROOF_BROWSER
   ? false
-  : 'this machine cannot load the extension into a browser (Chrome for Testing or Chromium is missing); set OPERA_PROOF_BROWSER';
+  : 'this run has no extension-capable browser; set OPERA_PROOF_BROWSER to one (Chrome for Testing or Chromium)';
 
 test('the fixture portal answers with the page and the CSV a drive needs', async () => {
   const portal = await serveCompany(company);
