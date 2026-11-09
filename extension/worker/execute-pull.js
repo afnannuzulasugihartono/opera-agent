@@ -22,7 +22,7 @@ import { privateTabIds, isPrivateTab, setPrivateTab, PRIVATE_TABS_KEY } from './
 import { readListenSession, listenStop, postListenChunk } from './listen.js';
 import { notReadyError } from './action-focus.js';
 import { createSocketClient, connectionPatch } from '../lib/socket-client.js';
-import { instanceId } from '../lib/instance-id.js';
+import { instanceId } from './instance-id.js';
 import { completionFrame } from '../lib/socket-protocol.js';
 import { loadWatchers, armWatchersForTab, handleWatchFacts, commandTimeoutError } from './watch-registry.js';
 import { screenshotCache } from './capture.js';

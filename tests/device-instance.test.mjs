@@ -1,7 +1,7 @@
 // @last-edited: 2026-11-09 UTC+7.
 // @title: device-instance — a browser keeps an identity, so a second browser is a second device.
 // @state: the identity on the handshake, its absence tolerated, and the bridge naming the browser it heard.
-// @dependencies: node:test, strict, ../extension/lib/instance-id.js, ../extension/lib/socket-protocol.js, ../supabase/functions/opera-agent-bridge/bridge-socket.ts, ../local/bridge-ws.js.
+// @dependencies: node:test, strict, ../extension/worker/instance-id.js, ../extension/lib/socket-protocol.js, ../supabase/functions/opera-agent-bridge/bridge-socket.ts, ../local/bridge-ws.js.
 
 // WHY THIS FILE EXISTS
 
@@ -15,7 +15,7 @@ import assert from 'node:assert/strict';
 import { createBridgeServer } from '../local/bridge-ws.js';
 import { DEVICE_PROTOCOL_VERSION, handshakeFrame } from '../extension/lib/socket-protocol.js';
 import { handshakePayload } from '../supabase/functions/opera-agent-bridge/bridge-socket.ts';
-import { newInstanceId } from '../extension/lib/instance-id.js';
+import { newInstanceId } from '../extension/worker/instance-id.js';
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 

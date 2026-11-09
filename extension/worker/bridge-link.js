@@ -35,7 +35,7 @@
 
 import { log } from '../lib/log.js';
 import { createSocketClient } from '../lib/socket-client.js';
-import { instanceId } from '../lib/instance-id.js';
+import { instanceId } from './instance-id.js';
 import { releaseDebuggerSession, releaseIdleDebuggerSessions } from '../lib/debugger-session.js';
 import { withDebugger } from './capture.js';
 
