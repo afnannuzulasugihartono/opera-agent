@@ -25,9 +25,9 @@ if (gateVerdict.status !== 0) {
 const manifest = JSON.parse(fs.readFileSync(path.join(root, 'extension/manifest.json'), 'utf8'));
 const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
 assert.equal(manifest.name, 'Opera Agent');
-assert.equal(manifest.version, '1.6.30');
-assert.equal(PRODUCT_VERSION, '1.6.30');
-assert.equal(pkg.version, '1.6.30');
+assert.equal(manifest.version, '1.6.31');
+assert.equal(PRODUCT_VERSION, '1.6.31');
+assert.equal(pkg.version, '1.6.31');
 assert.equal(manifest.manifest_version, 3);
 assert.ok(manifest.permissions.includes('debugger'));
 assert.ok(manifest.permissions.includes('storage'));

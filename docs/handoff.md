@@ -9,7 +9,7 @@ What is true now, and what to do next. Cap 150 lines. Spent detail: git history.
 
 - `main` = `origin/main`. #112 and #113 (stacked on #112) are open and wait for the owner's
   merge; a branch starts from `main` and merges back by `--rebase` once the four checks are green.
-- Version `1.6.30` in [`extension/manifest.json`](../extension/manifest.json) is the source
+- Version `1.6.31` in [`extension/manifest.json`](../extension/manifest.json) is the source
   of truth; [`check.mjs`](../scripts/check.mjs) also asserts the MCP version, the store form, and the secret regex.
 - **1.6.27 shipped on 2026-10-15** as `e99bf5a`; the CRX route answers 200 with
   `x-opera-sha256` equal to the bytes, and the release carries both zips, the CRX and SHA256SUMS.
