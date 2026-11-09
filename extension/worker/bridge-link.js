@@ -35,6 +35,7 @@
 
 import { log } from '../lib/log.js';
 import { createSocketClient } from '../lib/socket-client.js';
+import { instanceId } from '../lib/instance-id.js';
 import { releaseDebuggerSession, releaseIdleDebuggerSessions } from '../lib/debugger-session.js';
 import { withDebugger } from './capture.js';
 
@@ -199,7 +200,9 @@ export function ensureBridgeLink() {
   trace = [];
   const mine = ++generation;
   // The port is found before the socket is opened, so a stale build lands on the road that is actually listening rather than on the one it remembers.
-  discoverBridge().then((found) => {
+  discoverBridge().then(async (found) => {
+    if (mine !== generation) return;
+    const mineId = await instanceId().catch(() => '');
     if (mine !== generation) return;
     bridgePort = found.port;
     bridgeUrl = found.url;
@@ -208,6 +211,7 @@ export function ensureBridgeLink() {
       url: found.url,
       token: '',
       deviceName: 'bridge',
+      instanceId: mineId,
       execute,
       onState: (event) => {
         if (mine !== generation) return;

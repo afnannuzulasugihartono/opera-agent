@@ -91,6 +91,7 @@ export function createBridgeServer({
   const leases = createLeaseTable();
   let socket = null;
   let handshaken = false;
+  let deviceInstance = '';
   let connectedAt = 0;
   let lastHeardAt = 0;
   let timer = null;
@@ -120,6 +121,7 @@ export function createBridgeServer({
       const message = parsed.message;
       if (message.type === 'hello') {
         handshaken = true;
+        deviceInstance = String(message.instanceId || deviceInstance || next.id).slice(0, 64);
         send(JSON.stringify({ type: 'ready', protocolVersion: DEVICE_PROTOCOL_VERSION, serverTime: now() }));
         flush();
         return;
@@ -141,6 +143,7 @@ export function createBridgeServer({
       socket = null;
       handshaken = false;
       connectedAt = 0;
+      deviceInstance = '';
       devices.delete(next.id);
       state.emit('state', { status: 'disconnected' });
       for (const entry of waiting.values()) {
@@ -210,6 +213,7 @@ export function createBridgeServer({
         ok: true,
         linked: Boolean(socket && !socket.closed),
         deviceId: socket ? socket.id : null,
+        deviceInstanceId: deviceInstance || null,
         queued: queue.length,
         waiting: waiting.size,
         lastHeardMsAgo: lastHeardAt ? now() - lastHeardAt : null

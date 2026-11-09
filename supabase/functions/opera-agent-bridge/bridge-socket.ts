@@ -161,7 +161,8 @@ export function handshakePayload(message) {
   const token = typeof message.token === "string" ? message.token.trim() : "";
   const deviceName = typeof message.deviceName === "string" ? message.deviceName.trim() : "";
   if (!token || !deviceName) return null;
-  return { token, deviceName };
+  const instanceId = typeof message.instanceId === "string" ? message.instanceId.trim().slice(0, 64) : "";
+  return instanceId ? { token, deviceName, instanceId } : { token, deviceName };
 }
 
 export function frameForCommand(command, serverTime) {

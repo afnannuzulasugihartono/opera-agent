@@ -22,6 +22,7 @@ import { privateTabIds, isPrivateTab, setPrivateTab, PRIVATE_TABS_KEY } from './
 import { readListenSession, listenStop, postListenChunk } from './listen.js';
 import { notReadyError } from './action-focus.js';
 import { createSocketClient, connectionPatch } from '../lib/socket-client.js';
+import { instanceId } from '../lib/instance-id.js';
 import { completionFrame } from '../lib/socket-protocol.js';
 import { loadWatchers, armWatchersForTab, handleWatchFacts, commandTimeoutError } from './watch-registry.js';
 import { screenshotCache } from './capture.js';
@@ -93,7 +94,8 @@ async function pair(code) {
     extensionVersion: PRODUCT_VERSION,
     protocolVersion: PROTOCOL_VERSION,
     capabilities: Object.keys(METHOD_SPECS),
-    browserName: globalThis.OperaAgentBrowserId?.browserName || 'Unknown'
+    browserName: globalThis.OperaAgentBrowserId?.browserName || 'Unknown',
+    instanceId: await instanceId()
   }, 15000);
   if (!data.ok) throw new Error(data.error || 'Pairing failed.');
   await chrome.storage.local.set({
@@ -177,6 +179,7 @@ async function ensureSocket() {
     url,
     token: cfg.deviceToken,
     deviceName: cfg.deviceName,
+    instanceId: await instanceId(),
     execute: async (command) => {
       emitCommandEvent(cfg, command.id, 'received', { method: command.method });
       const execution = await executeCommand(command, cfg);
