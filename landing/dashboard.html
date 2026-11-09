@@ -373,7 +373,7 @@
       "history.colDevice": "Device",
       "history.colDuration": "Duration",
       "history.emptyTitle": "No command history yet.",
-      "history.emptyBody": "Run your first job from the <a href=\"#aksi\">Aksi tab</a>.",
+      "history.emptyBody": "Run your first job from the <a href=\"#aksi\">Action tab</a>.",
       "history.noMatchTitle": "No command matches that.",
       "history.noMatchBody": "Loosen the status filter or the keyword.",
       "history.reset": "Clear filters",
@@ -412,7 +412,7 @@
       "saldo.priceEmptyTitle": "Can't load the price list.",
       "saldo.priceEmptyBody": "Try the reload button.",
       "saldo.walletEmptyTitle": "No balance movements yet.",
-      "saldo.walletEmptyBody": "Top up first, then run one job from the <a href=\"#aksi\">Aksi tab</a>.",
+      "saldo.walletEmptyBody": "Top up first, then run one job from the <a href=\"#aksi\">Action tab</a>.",
       "pairing.title": "Manual pairing",
       "pairing.meta": "A one-time code, valid for 10 minutes, bound to this account. Paste it into the extension popup on the device you want to connect.",
       "pairing.nameLabel": "Device name",
@@ -681,6 +681,12 @@
         showNav: 'Tampilkan navigasi',
         hideNav: 'Sembunyikan navigasi',
         konsolOperatorOnly: '{n} tabel di sini hanya untuk akun operator.',
+        konsolGroupOwner: 'Milik akun ini',
+        konsolGroupOperator: 'Operator',
+        konsolReadFailed: 'gagal membaca tabel',
+        csvFailedPrefix: 'Ekspor gagal:',
+        countdownActive: 'berlaku {time}',
+        thisBrowserChip: '{browser} di browser ini',
         pairWorking: 'Membuat kode…',
         pairCopied: 'Kode disalin. Tempel di popup extension.',
         runFailedPrefix: 'Gagal:',
@@ -772,6 +778,12 @@
         showNav: 'Show navigation',
         hideNav: 'Hide navigation',
         konsolOperatorOnly: '{n} tables here are for the operator account only.',
+        konsolGroupOwner: 'Your account',
+        konsolGroupOperator: 'Operator',
+        konsolReadFailed: 'failed to read the table',
+        csvFailedPrefix: 'Export failed:',
+        countdownActive: 'valid {time}',
+        thisBrowserChip: '{browser} in this browser',
         pairWorking: 'Creating the code…',
         pairCopied: 'Code copied. Paste it into the extension popup.',
         runFailedPrefix: 'Failed:',
@@ -887,7 +899,7 @@
         }
         const minutes = Math.floor(left / 60000);
         const seconds = Math.floor((left % 60000) / 1000);
-        $('pairCountdown').textContent = `berlaku ${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+        $('pairCountdown').textContent = fmt(w('countdownActive'), { time: `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}` });
       };
       tick();
       pairTimer = setInterval(tick, 1000);
@@ -929,7 +941,10 @@
         chip.textContent = '—';
         chip.className = 'chip warn';
         $('planRemaining').textContent = '–';
-        $('planTrack').setAttribute('aria-valuenow', '0');
+        // WHY the bar goes away entirely: a progressbar at zero announces "you spent nothing", which is not what an unreadable plan says.
+        // The error line carries the state; the track and its fill stay neutral.
+        $('planTrack').setAttribute('aria-hidden', 'true');
+        $('planTrack').removeAttribute('aria-valuenow');
         $('planFill').style.width = '0%';
         $('planUsed').textContent = '–';
         $('planQuota').textContent = '–';
@@ -938,6 +953,7 @@
         $('planExhaustedBanner').hidden = true;
         return;
       }
+      $('planTrack').removeAttribute('aria-hidden');
       const quota = Math.max(1, Number(answer.dailyQuota) || 0);
       const used = Math.max(0, Number(answer.usedToday) || 0);
       const remaining = Math.max(0, quota - used);
@@ -961,7 +977,11 @@
 
     async function refreshPlan() {
       const session = await currentSession();
-      if (!session) return;
+      if (!session) {
+        // WHY the plan still answers when the session does not: a dropped packet on the auth probe is not a fact about the account, and the view must not keep reading as if the plan were known.
+        paintPlan(null);
+        return;
+      }
       try {
         const response = await fetch(`${REST}/rpc/opera_my_plan`, { method: 'POST', headers: headersFor(session.token), body: '{}' });
         paintPlan(await response.json().catch(() => null));
@@ -972,7 +992,11 @@
 
     async function load() {
       const session = await currentSession();
-      if (!session) return;
+      if (!session) {
+        // WHY before the early return: the transient case would otherwise leave a permanently dashed hero with no warn line and no retry, exactly the state that looks like a broken product.
+        paintPlan(null);
+        return;
+      }
       const { token, user } = session;
       liveToken = token;
       liveUser = user;
@@ -1182,7 +1206,7 @@
             <h3>${esc(device.name)}</h3>
             <span class="chip">${esc(device.extensionVersion || '-')}</span>
             ${device.browserName ? `<span class="chip">${esc(device.browserName)}</span>` : ''}
-            ${!device.browserName && lastSeen.browser ? `<span class="chip">${esc(lastSeen.browser)} di browser ini</span>` : ''}
+            ${!device.browserName && lastSeen.browser ? `<span class="chip">${esc(fmt(w('thisBrowserChip'), { browser: lastSeen.browser }))}</span>` : ''}
           </div>
           <dl class="facts">
             <dt>${esc(w('dtStatus'))}</dt><dd><span class="${device.status === 'online' ? 'online' : 'offline'}">${esc(device.status)}</span></dd>
@@ -1467,7 +1491,7 @@
 
       // WHY grouped and not one flat wall: sixteen names read as a list of tables only when the two rules behind them are visible — nine belong to this account, seven to the operator.
       // The server sends the scope; the page shows it.
-      const groupOf = { owner: 'Milik akun ini', operator: 'Operator' };
+      const groupOf = { owner: w('konsolGroupOwner'), operator: w('konsolGroupOperator') };
       let lastScope = null;
       $('konsolList').innerHTML = entries.map((entry) => {
         const head = entry.scope === lastScope ? '' : `<span class="konsolGroup">${esc(groupOf[entry.scope] || entry.scope)}</span>`;
@@ -1576,7 +1600,8 @@
             p_sort: konsol.sort,
             p_dir: konsol.dir
           });
-          if (!page?.ok) throw new Error(say(page?.error || 'gagal membaca tabel'));
+          const refusal = page?.error ? say(String(page.error)) : w('konsolReadFailed');
+          if (!page?.ok) throw new Error(refusal);
           total = page.total || 0;
           const rowsOnPage = page.rows || [];
           if (!rowsOnPage.length) break;
@@ -1598,7 +1623,7 @@
         URL.revokeObjectURL(href);
         konsolSay(fmt(w('csvDone'), { n: konsolNf(fetched), name: konsol.table }), 'ok');
       } catch (error) {
-        konsolSay(`Ekspor gagal: ${error.message}.`, 'warn');
+        konsolSay(`${w('csvFailedPrefix')} ${error.message}.`, 'warn');
       } finally {
         $('konsolCsv').disabled = false;
       }

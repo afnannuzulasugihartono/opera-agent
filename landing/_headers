@@ -290,7 +290,7 @@
 
 /dashboard
   Cache-Control: no-store
-  Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-n/5+pc8WpyvpFQ2Ciumq/JB8QEm5pn2Y6j+Rk4HOPAs='; connect-src https://*.supabase.co; style-src 'self' 'unsafe-inline'; img-src data:; font-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
+  Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-BLpjwThqUxpCQ0/1cdpy7gGKQxWHFJfw68+avPWP3Ng='; connect-src https://*.supabase.co; style-src 'self' 'unsafe-inline'; img-src data:; font-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
   Referrer-Policy: no-referrer
   X-Content-Type-Options: nosniff
   Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
@@ -301,7 +301,7 @@
 
 /dashboard.html
   Cache-Control: no-store
-  Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-n/5+pc8WpyvpFQ2Ciumq/JB8QEm5pn2Y6j+Rk4HOPAs='; connect-src https://*.supabase.co; style-src 'self' 'unsafe-inline'; img-src data:; font-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
+  Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-BLpjwThqUxpCQ0/1cdpy7gGKQxWHFJfw68+avPWP3Ng='; connect-src https://*.supabase.co; style-src 'self' 'unsafe-inline'; img-src data:; font-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
   Referrer-Policy: no-referrer
   X-Content-Type-Options: nosniff
   Strict-Transport-Security: max-age=63072000; includeSubDomains; preload

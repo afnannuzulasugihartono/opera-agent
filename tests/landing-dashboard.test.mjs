@@ -13,6 +13,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import { createHash } from 'node:crypto';
 import { siteHeaders } from './helpers/site-headers.mjs';
 
 const root = new URL('..', import.meta.url);
@@ -234,6 +235,17 @@ test('the dashboard shares the site navigation and footer', () => {
   assert.match(html, /privasi\.html/, 'the privacy policy is linked');
   assert.match(html, /syarat\.html/, 'the terms are linked');
   assert.match(html, /Keluar|akun\.html/, 'the way to the account page is one click away');
+});
+
+test('the inline module matches the hash its own CSP rule names', () => {
+  const html = read('dashboard.html');
+  const body = /<script type="module">([\s\S]*?)<\/script>/.exec(html)[1];
+  const hash = "'sha256-" + createHash('sha256').update(body, 'utf8').digest('base64') + "'";
+  const sheet = read('_headers');
+  for (const path of ['/dashboard', '/dashboard.html']) {
+    const block = sheet.split('\n\n').find((b) => b.startsWith(`${path}\n`));
+    assert.ok(block && block.includes(hash), `_headers names the dashboard's exact inline module for ${path}`);
+  }
 });
 
 test('the dashboard may reach only Supabase like the auth page', () => {
@@ -901,8 +913,10 @@ test('the plan hero answers the screen’s one question, with the real numbers',
   const html = read('dashboard.html');
 
   assert.match(html, /id="planCard"/, 'the largest block on the page is the plan');
-  assert.match(html, /role="progressbar"/, 'the quota bar is a real progressbar');
-  assert.match(html, /aria-valuenow="0"/, 'and starts honest, before the account is read');
+  assert.match(html, /id="planTrack"/, 'the quota bar is really there');
+  assert.match(html, /role="progressbar"/, 'and exposes progress semantics on the success path');
+  assert.match(html, /planTrack'\)\.setAttribute\('aria-hidden', 'true'\)/, 'and removes them entirely when the plan cannot be read');
+  assert.match(html, /planTrack'\)\.removeAttribute\('aria-valuenow'\)/, 'so a screen reader never hears a zero it did not earn');
   assert.match(html, /id="planFill"/, 'the fill paints the ratio the account actually spent');
   assert.match(html, /id="planExhaustedBanner" hidden/, 'the exhausted state exists, and is hidden until it is true');
   assert.match(html, /id="planError" hidden/, 'and so is the failure state');

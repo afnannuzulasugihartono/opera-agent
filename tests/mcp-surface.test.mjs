@@ -273,7 +273,8 @@ test('browser_status answers its plan even when the command it carried failed', 
   const body = source.slice(at, end < 0 ? undefined : end);
   assert.doesNotMatch(body, /if \(answer\.isError\) return answer;/, 'the plan is merged before the failure is returned');
   assert.match(body, /planInfo\(/, 'the plan is resolved on every path, success and failure alike');
-  assert.match(body, /\.\.\.(?:\(plan \?\? \{\}\)|plan)/, 'the failure path spreads the plan into the answer it returns');
+  assert.match(body, /structuredContent \?\? \{\}\),\s*\.\.\.\(plan \?\? \{\}\)/, 'the failure path spreads the original structuredContent before adding the plan, so the failure taxonomy survives');
+  assert.match(body, /part\.type === "text" \? \{ \.\.\.part, text: JSON\.stringify\(merged\) \} : part/, 'and the text part is re-serialized from the same merged object');
 });
 
 test('the tool count and names match the contract', () => {
