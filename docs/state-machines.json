@@ -1,0 +1,887 @@
+{
+  "version": 1,
+  "generated": "2026-11-09 UTC",
+  "source": "Two read-only sweeps, 2026-11-09 UTC: extension/|local/|lib/ (~200 files) and supabase/|landing/|scripts/|store/|.github/",
+  "why": "An implicit state machine is code whose behavior hangs on state nobody declared. It is the shape of every silent failure in this product: the 'connected but dead' bridge, the ghost listen session, the command that completes after its timeout, the plan that runs out mid-run. The register names each one, and the gate (tests/implicit-state-machines.test.mjs) refuses hidden state nobody can point at. The decision order is fixed: UX > DX > AX — a failure the user can feel is fixed before a convenience for either of us.",
+  "machines": [
+    {
+      "id": "bridge-device-lifecycle",
+      "kind": "local",
+      "where": "local/bridge-ws.js:483",
+      "states": [
+        "socket-open",
+        "hello",
+        "verifying",
+        "handshaken",
+        "refused",
+        "reaped"
+      ],
+      "writers": "attach, meterSession, heartbeat reaper, close handler",
+      "readers": "readyDevices(), pickDevice, flush, /health, doctor",
+      "wrongIfConfused": "a socket closed mid-meter-check leaves verifying forever and the device sits handshaken:false, so commands queue while /health reports it linked; two sockets with one instanceId share a slot, so tab ids cross browsers",
+      "decision": "model",
+      "why": "verifying needs a timeout, re-hello re-meters, one slot per instance; this is the 'connected but dead' machine, the most confusing failure in the product",
+      "rank": 1
+    },
+    {
+      "id": "command-lifecycle",
+      "kind": "sql",
+      "where": "supabase/migrations/20260907204146_opera_agent_1_0_0_core.sql:35",
+      "states": [
+        "queued",
+        "claimed",
+        "completed",
+        "failed",
+        "expired",
+        "cancelled"
+      ],
+      "writers": "opera_enqueue, opera_claim_next (overdue→expired), opera_complete_command",
+      "readers": "opera_await, the bridge, every dashboard/akun view",
+      "wrongIfConfused": "a device that dies after claim leaves the row claimed until expiry; the agent reports AWAIT_TIMEOUT while the browser may still be mid-click — user sees 'failed' for work that happened",
+      "decision": "model",
+      "why": "one status enum, missing cancelled writer, no stuck-claimed surface; the await is the whole product, UX first",
+      "rank": 1
+    },
+    {
+      "id": "device-command-socket-machine",
+      "kind": "extension",
+      "where": "extension/lib/socket-client.js:173",
+      "states": [
+        "connecting",
+        "ready",
+        "reconnecting",
+        "stale",
+        "recycling",
+        "rejected",
+        "stopped"
+      ],
+      "writers": "socket events, the watchdog, connect()/stop()",
+      "readers": "isReady() gates send(); connectionPatch() drives the popup badge",
+      "wrongIfConfused": "a meter-refused 4001 latches closedByUs; the badge reads starting/rejected while friendlyStatus never maps those states, so raw English renders in an Indonesian UI and the person cannot tell dead from slow",
+      "decision": "model",
+      "why": "one declared socket state feeds both the in-memory client and the popup projection; the badge must never lie — UX wins",
+      "rank": 1
+    },
+    {
+      "id": "device-lifecycle",
+      "kind": "sql",
+      "where": "supabase/migrations/20260907204146_opera_agent_1_0_0_core.sql:13",
+      "states": [
+        "offline",
+        "online",
+        "disabled",
+        "revoked",
+        "idle-expired"
+      ],
+      "writers": "opera_pair_device, heartbeat, revoke (hash rotation), 7-day idle check",
+      "readers": "every auth path, dashboard, pairing functions",
+      "wrongIfConfused": "a revoked device renders as plain 'offline' — the user cannot tell rebooting from revoked, and re-pairing is the only cure, never said on the page; a disabled device can never pair again",
+      "decision": "model",
+      "why": "three death paths with one status column; revoke needs a visible state, not a rotated hash",
+      "rank": 1
+    },
+    {
+      "id": "listen-capture-lifecycle",
+      "kind": "extension",
+      "where": "extension/worker/listen.js:21",
+      "states": [
+        "idle",
+        "tapping",
+        "recording",
+        "stopping",
+        "ended"
+      ],
+      "writers": "listenStart, postListenChunk, listenStop, unpair, tabs.onRemoved, tab reload",
+      "readers": "LISTEN_ACTIVE guard, postListenChunk's tab match, listenStop's ended answer",
+      "wrongIfConfused": "reload the tab mid-listen and the page believes nothing is recording while storage insists one is live; media.stream_start then refuses with 'A listening session is already live' and the person cannot record until they stop a ghost",
+      "decision": "model",
+      "why": "one listen model that the worker reconciles on tab events — otherwise LISTEN_ACTIVE ghosts are the standing UX",
+      "rank": 1
+    },
+    {
+      "id": "loopback-bridge-link-machine",
+      "kind": "extension",
+      "where": "extension/worker/bridge-link.js:85",
+      "states": [
+        "unstarted",
+        "proving",
+        "running",
+        "retry-in-5s",
+        "stopped"
+      ],
+      "writers": "ensureBridgeLink, onState, the BRIDGE alarm, tab activation, startup",
+      "readers": "browser.ping, debugger idle release, the alarm",
+      "wrongIfConfused": "socket closes at 00:00:10 and the alarm only fires at 00:00:30 → loopback commands silently take the cloud road for ~20s; three entry roads race and generation arbitrates invisibly",
+      "decision": "model",
+      "why": "one starter, one alarm, everyone else calls the starter; the 30-second blind spot is paid for in every slow call — UX first",
+      "rank": 1
+    },
+    {
+      "id": "pending-completion-slot",
+      "kind": "extension",
+      "where": "extension/worker/execute-pull.js:155",
+      "states": [
+        "absent",
+        "owed",
+        "sent",
+        "expired"
+      ],
+      "writers": "every command writes its completion frame before returning; the flush writes it on connect; the 5-minute reaper expires it",
+      "readers": "flushPendingCompletion on 'connected'; the socket drain",
+      "wrongIfConfused": "the command executed, the frame never wrote, the caller's 60-second budget expires and the agent re-runs — double booking, double send, double purchase, with the stored copy expiring silently with no log line the user ever sees",
+      "decision": "model",
+      "why": "the resend must be part of the socket machine (ack clears, else expires with a logged reason); a silent retry foot-gun with money attached — UX first",
+      "rank": 1
+    },
+    {
+      "id": "watcher-lifecycle",
+      "kind": "extension",
+      "where": "extension/worker/watch-registry.js:23",
+      "states": [
+        "armed",
+        "firing",
+        "retired"
+      ],
+      "writers": "watch.start/stop/stop_all, handleWatchFacts, content script (watchState)",
+      "readers": "watch fire actions (click/burst/workflow/report), pruneWatchers on every read",
+      "wrongIfConfused": "two copies of the watcher runtime (worker storage vs page memory) count fires independently; a tab reload resets the page side while the storage side survives — the ad-skip that fires twice is the story every user tells about this product",
+      "decision": "model",
+      "why": "one owner of the watcher runtime (storage as the record, page as cache of it) — UX first",
+      "rank": 1
+    },
+    {
+      "id": "workflow-run-lifecycle",
+      "kind": "sql",
+      "where": "supabase/migrations/20260908031756_opera_agent_async_workflow_runner.sql:3",
+      "states": [
+        "queued",
+        "running",
+        "completed",
+        "failed",
+        "expired",
+        "cancelled"
+      ],
+      "writers": "opera_start_workflow (insert queued), opera-agent-runner (queued→running, running→terminal)",
+      "readers": "opera_await_workflow, run_workflow, every dashboard/Konsol view",
+      "wrongIfConfused": "a runner that dies mid-workflow leaves 'running' forever; opera_await_workflow times out with a row saying work is still happening — the console shows an eternally-running row with no retry",
+      "decision": "model",
+      "why": "same shape as command lifecycle; a stuck-running sweep is the missing piece — UX first",
+      "rank": 1
+    },
+    {
+      "id": "account-plan-quota-gate",
+      "kind": "sql",
+      "where": "supabase/migrations/20261109090000_opera_account_plans.sql:4",
+      "states": [
+        "active-pilot",
+        "active-firm",
+        "paused"
+      ],
+      "writers": "nothing in-tree — plan changes are hand SQL; usage reports written by opera_device_session_report",
+      "readers": "bridge claim gate, hosted MCP plan-info, dashboard hero, local loopback meter",
+      "wrongIfConfused": "a paused account gets a plan error naming the plan but not the fix; UTC reset at 07:00 WIB is invisible in the UI; long local drives are invisible until session close",
+      "decision": "model",
+      "why": "one quota with five copies; the gate tests pin the numbers but not the clock-window semantics the user actually feels",
+      "rank": 2
+    },
+    {
+      "id": "action-pipeline-resolve-machine",
+      "kind": "extension",
+      "where": "extension/worker/action-focus.js:154",
+      "states": [
+        "no-ref",
+        "resolving",
+        "wait-ramp",
+        "healed",
+        "ready",
+        "ambiguous",
+        "not-found",
+        "not-actionable"
+      ],
+      "writers": "contentCall(page.action_state), postAction, three retry counters",
+      "readers": "page.click/fill/hover/pointer/key/stream/burst",
+      "wrongIfConfused": "three nested retry machines with overlapping verdicts; an unactionable target gets 'ready' when trusted !== true, so a disabled button gets 'clicked' and reports success",
+      "decision": "model",
+      "why": "one arbiter for one element and three attempt clocks — no click that claims delivery that never landed — UX first",
+      "rank": 2
+    },
+    {
+      "id": "alarms-vs-interactive-flows",
+      "kind": "extension",
+      "where": "extension/worker/execute-pull.js:32",
+      "states": [
+        "alarmed",
+        "user-invoked",
+        "storage-triggered"
+      ],
+      "writers": "the WAKE alarm (×3 registrations), dispatch, pair/unpair, storage.onChanged",
+      "readers": "heartbeat, ensureSocket, bridge-link",
+      "wrongIfConfused": "two alarms at the same period both firing ensure → a paused worker wakes twice per period, duplicate completions written twice, meter spent twice",
+      "decision": "model",
+      "why": "one starter, one alarm, everyone else calls the starter; duplicate wakes cost battery and correctness",
+      "rank": 2
+    },
+    {
+      "id": "bridge-adopt-probe-machine",
+      "kind": "local",
+      "where": "local/bridge.js:57",
+      "states": [
+        "unstarted",
+        "listening-owner",
+        "adopted-guest",
+        "takeover"
+      ],
+      "writers": "ensureServer, adopted.probe, prove, takeover retry",
+      "readers": "every tool call, the doctor",
+      "wrongIfConfused": "a guest's linked is a memory of the last probe; a dead owner looks like a slow owner until the next call pays the probe; a genuinely failing command could technically run twice on the takeover retry",
+      "decision": "model",
+      "why": "owner/guest must be explicit in the returned object, not inferable only from failure mode — the machine already distinguishes them, the caller never sees it",
+      "rank": 2
+    },
+    {
+      "id": "bridge-socket-handshake",
+      "kind": "edge",
+      "where": "supabase/functions/opera-agent-bridge/bridge-socket.ts:193",
+      "states": [
+        "opened",
+        "handshake-pending",
+        "verifying",
+        "ready",
+        "closed-4001",
+        "closed-4002"
+      ],
+      "writers": "the socket handler only",
+      "readers": "complete(), the drain poll, /health",
+      "wrongIfConfused": "a device that finishes verifying after the handshake timer closed is still verified server-side and keeps verifying into the closed socket on every reconnect; a plan flipped to paused between handshake and drain refuses the command only after it was claimed",
+      "decision": "model",
+      "why": "two handshakes (edge vs loopback) with different budgets and trust models; one declared 'socket ready' across both is the missing piece",
+      "rank": 2
+    },
+    {
+      "id": "content-ref-lifecycle",
+      "kind": "extension",
+      "where": "extension/content.js:245",
+      "states": [
+        "minted",
+        "connected",
+        "revalidated",
+        "detached",
+        "expired",
+        "unresolvable"
+      ],
+      "writers": "getRef/resolveActionRef, mutation observers, pagehide/disposed",
+      "readers": "runActionPipeline, page.click/fill/pointer/key all consume refs find mints",
+      "wrongIfConfused": "agent holds a ref minted before a navigation; it looks valid until click time, dies with TARGET_NOT_READY, and the error embeds mutationVersion drift as a version counter acting as an invisible epoch",
+      "decision": "model",
+      "why": "the refState enum is half-declared already; finish it (single ref model with epoch) or agents keep paying dead-ref round trips",
+      "rank": 2
+    },
+    {
+      "id": "crx-release-chain",
+      "kind": "sql",
+      "where": "supabase/migrations/20260908021039_opera_agent_releases.sql:4",
+      "states": [
+        "inactive",
+        "active"
+      ],
+      "writers": "publish-crx.yml only — two statements in one POST, not a proven transaction",
+      "readers": "every installed extension, the update function, two other workflows",
+      "wrongIfConfused": "a failure between deactivate and insert leaves zero active rows → update.xml 404s for the entire install base, silently",
+      "decision": "model",
+      "why": "one_active index is the model; publish must be one transaction — the only unguarded gap",
+      "rank": 2
+    },
+    {
+      "id": "debugger-session-registry",
+      "kind": "extension",
+      "where": "extension/lib/debugger-session.js:19",
+      "states": [
+        "unattached",
+        "attaching",
+        "attached",
+        "idle-expired",
+        "invalidated",
+        "release-pending"
+      ],
+      "writers": "withDebugger, releaseDebuggerSession, handleDebuggerDetach, releaseIdleDebuggerSessions",
+      "readers": "withDebugger, the Chrome debug bar, the alarm idle-release",
+      "wrongIfConfused": "an attached session whose tab closed never reaps → the 'started debugging this browser' bar stays pinned on a tab that is gone; DevTools-open silently invalidates attach and every later call pays a detach/attach churn",
+      "decision": "model",
+      "why": "the flag, the registry and the alarm-reap are one lifecycle with three clocks; one declared model with one release path — UX of the always-on bar wins",
+      "rank": 2
+    },
+    {
+      "id": "invoice-payment-lifecycle",
+      "kind": "billing",
+      "where": "supabase/migrations/20261015090000_opera_billing.sql:23",
+      "states": [
+        "open-none",
+        "open-unknown",
+        "open-live",
+        "open-expired",
+        "paid",
+        "void"
+      ],
+      "writers": "invoice_create, the QRIS detector cron (live opt-in), the notification path (paid), attempts tracked by two indexes",
+      "readers": "customer page, notification logger, wallet top-up, Midtrans probes",
+      "wrongIfConfused": "paid-but-page-still-says-open; double payment with two attempt ids on one row; QRIS detector live closes the wrong invoice by amount FIFO",
+      "decision": "model",
+      "why": "three orthogonal axes on one row (status × link-state × attempt-ids), each guarded separately; exactly the case the one-model rule exists for",
+      "rank": 2
+    },
+    {
+      "id": "landing-auth-session",
+      "kind": "site",
+      "where": "landing/index.html:212",
+      "states": [
+        "unprobed",
+        "signed-in",
+        "sign-in-required",
+        "renewing",
+        "returning-signed-in"
+      ],
+      "writers": "proveSession, renewAccessToken, proveStoredSession",
+      "readers": "every guarded action on the auth pages",
+      "wrongIfConfused": "a network blip at the auth probe reads as signed-out and the user is bounced to the sign-in page while their session was fine — the exact failure the renewAccessToken path exists to prevent",
+      "decision": "model",
+      "why": "the RETURNABLE branch already handles the blip; the contract is: never confuse unreachable auth with a dead session — UX first",
+      "rank": 2
+    },
+    {
+      "id": "landing-install-marker",
+      "kind": "site",
+      "where": "landing/dashboard.html (installState/checklist)",
+      "states": [
+        "unknown",
+        "not-installed",
+        "installed",
+        "installed-and-paired",
+        "installed-and-ran"
+      ],
+      "writers": "the content script marker (documentElement data-opera-agent), the install MutationObserver, the device poll",
+      "readers": "the checklist, the primary CTA, renderChecklist",
+      "wrongIfConfused": "a MutationObserver misses a marker that lands between reads and the page never flips — the user is told to install what is already installed",
+      "decision": "model",
+      "why": "the marker flow already self-heals (MutationObserver) and the checklist is the onboarding a new user sees first — UX first",
+      "rank": 2
+    },
+    {
+      "id": "landing-plan-hero-state",
+      "kind": "site",
+      "where": "landing/dashboard.html (planCard)",
+      "states": [
+        "loading",
+        "ok",
+        "unreadable",
+        "exhausted"
+      ],
+      "writers": "refreshPlan (planet RPC via session), paintPlan",
+      "readers": "the progressbar, the exhausted banner, the retry button",
+      "wrongIfConfused": "on the unreadable path a progressbar at zero announces 'you spent nothing' to assistive tech while the account state is unknown — the exact lie this card exists to remove",
+      "decision": "model",
+      "why": "the failure path hides the progressbar semantics entirely and offers a one-click retry — UX first",
+      "rank": 2
+    },
+    {
+      "id": "mcp-diff-caches",
+      "kind": "local",
+      "where": "local/mcp-server.js:129",
+      "states": [
+        "prev-snapshot",
+        "diff-computed",
+        "last-seen-updated"
+      ],
+      "writers": "afterAction (module-global lastSeen + WeakMaps)",
+      "readers": "afterAction, withAdvice — every tool error advice row",
+      "wrongIfConfused": "two agents drive two tabs on one MCP process; tab A errors and the advice rows quote tab B's last read — the error message shows a page the agent was never on",
+      "decision": "model",
+      "why": "scope lastSeen per driver or delete it — advice grounded in the wrong page is exactly the wrong-move factory the advice system exists to remove",
+      "rank": 2
+    },
+    {
+      "id": "pairing-code-lifecycle",
+      "kind": "sql",
+      "where": "supabase/migrations/20260907204146_opera_agent_1_0_0_core.sql:26",
+      "states": [
+        "minted",
+        "consumed",
+        "expired"
+      ],
+      "writers": "opera_create_pairing_code (cancels issuer's older codes), opera_pair_device (consume, name-clash suffixing)",
+      "readers": "opera_pair_device, the dashboard countdown, operator console",
+      "wrongIfConfused": "create a new code and the one you already copied to the second browser silently stops working; expired vs wrong-name vs owned-name are indistinguishable to the person pasting it",
+      "decision": "model",
+      "why": "issuance rate-limit + ownership + suffixing are one model; the refused-path naming is the gap — UX first",
+      "rank": 2
+    },
+    {
+      "id": "wallet-reservation-lifecycle",
+      "kind": "billing",
+      "where": "supabase/migrations/20261104120000_opera_wallet.sql:28",
+      "states": [
+        "open",
+        "settled",
+        "refunded",
+        "expired"
+      ],
+      "writers": "opera_wallet_reserve/settle/refund/expire (lazy sweep at read time), creditTopUp on invoice paid",
+      "readers": "opera_wallet_available (gates every reserve), billing function, dashboard saldo view",
+      "wrongIfConfused": "a crash between reserve and settle drops available by an amount the balance still shows, the copy never mentions holds exist, and a settle after the window silently refunds — work done, money returned, no explanation rendered",
+      "decision": "model",
+      "why": "balance-as-ledger-sum is a fine declared model; the hold-vs-balance gap and the missing sweep must be visible — UX first",
+      "rank": 2
+    },
+    {
+      "id": "landing-listen-session-lifecycle",
+      "kind": "site",
+      "where": "landing/dashboard.html (#dengar)",
+      "states": [
+        "live",
+        "ended",
+        "stopped-by-page"
+      ],
+      "writers": "the listen function via the paired device, the 30-minute cap in the function",
+      "readers": "the dashboard metadata view",
+      "wrongIfConfused": "a crashed device leaves a live row that blocks the next listen on that device — the person sees 'a listening session is already live' with no stop path except the device itself",
+      "decision": "model",
+      "why": "the partial unique index is a good fence; the force-end path is the owner's missing escape, not a modelling gap — UX second",
+      "rank": 3
+    },
+    {
+      "id": "landing-wallet-reservation-lifecycle",
+      "kind": "site",
+      "where": "landing/dashboard.html (#saldo)",
+      "states": [
+        "open",
+        "settled",
+        "refunded",
+        "expired"
+      ],
+      "writers": "the billing function via walletCall, top-up opens a new tab",
+      "readers": "available vs balance paint, the ledger timeline merge",
+      "wrongIfConfused": "the saldo view merges ledger rows and reservation rows into one timeline from two machines with no indication of which is which; an expired hold looks like a missing charge",
+      "decision": "model",
+      "why": "the page already renders the raw rows; nothing on it can distinguish hold-vs-spend — the UX gap a bookkeeper closes with a support message",
+      "rank": 3
+    },
+    {
+      "id": "local-statement-manifest",
+      "kind": "local",
+      "where": "local/statements.js:203",
+      "states": [
+        "unrecorded",
+        "recorded",
+        "duplicate-refused"
+      ],
+      "writers": "statementDelivered",
+      "readers": "bookkeeper billing",
+      "wrongIfConfused": "a replace:false on a delivery whose file was overwritten by hand blocks the correction; the extension and local stores never compare, so one month shows delivered on one surface and missing on the other",
+      "decision": "model",
+      "why": "two stores, one client-month, one duplicate rule — decide which file is the record and make the other read it; UX first",
+      "rank": 3
+    },
+    {
+      "id": "statement-manifest-extension",
+      "kind": "extension",
+      "where": "extension/worker/statement.js:22",
+      "states": [
+        "downloading",
+        "complete",
+        "interrupted",
+        "verified",
+        "duplicate-refused",
+        "replace"
+      ],
+      "writers": "statementDownload, waitForDownload, verifyInPage",
+      "readers": "statement.manifest, delivery billing",
+      "wrongIfConfused": "interrupted download + conflictAction overwrite leaves a file on disk whose delivery was never recorded in the manifest — the client-month the billing cannot see is the estate's standing joke",
+      "decision": "model",
+      "why": "one manifest verdict shared with the local twin — the two stores never agree, so the same client-month can be delivered on one surface and missing on the other",
+      "rank": 3
+    },
+    {
+      "id": "stored-connection-state-slot",
+      "kind": "extension",
+      "where": "extension/worker/utils.js:11",
+      "states": [
+        "starting",
+        "connecting",
+        "ready",
+        "reconnecting",
+        "rejected",
+        "unpaired",
+        "unreachable"
+      ],
+      "writers": "setState, pair/unpair, ensureSocket",
+      "readers": "none — written on every patch, read never",
+      "wrongIfConfused": "on service-worker death the in-memory object resets to starting while the stored slot keeps the last stamped state and the badge sits on 'Menghubungkan' indefinitely with no error shown",
+      "decision": "delete",
+      "why": "a write-only slot is stored state pretending to be a model; fold into the socket machine or delete the write — the badge already reads the live object",
+      "rank": 3
+    },
+    {
+      "id": "v2-release-registry",
+      "kind": "sql",
+      "where": "supabase/migrations/20261010080000_opera_agent_v2_releases.sql:11",
+      "states": [
+        "active",
+        "inactive"
+      ],
+      "writers": "none in-tree",
+      "readers": "none — operator Konsol lists it, the update function reads opera_releases only",
+      "wrongIfConfused": "two 'release registries' visible in the console; an operator flips active on the wrong table and nothing anyone can observe changes — the confusion is the table's existence",
+      "decision": "delete",
+      "why": "an unreadable registry is a page that lies; deleting is an owner sign-off, recorded here before any SQL touches it",
+      "rank": 3
+    },
+    {
+      "id": "bridge-command-queue",
+      "kind": "local",
+      "where": "local/bridge-ws.js:81",
+      "states": [
+        "queued",
+        "dispatched",
+        "resolved",
+        "rejected",
+        "timeout"
+      ],
+      "writers": "commandRaw, flush, takeToken, armTimeout, the completion handler",
+      "readers": "HTTP /command, the MCP tools, the doctor",
+      "wrongIfConfused": "a completion that lands after armTimeout resolves an already-rejected waiter and is dropped; the sender believes it was lost when it was merely late — consistent, silent, harmless",
+      "decision": "tolerate",
+      "why": "bounded by armTimeout and the PLAN_LIMIT refusal; the drop path is deliberate; no user-visible lie, just a late answer nobody hears — AX last",
+      "rank": 4
+    },
+    {
+      "id": "ephemeral-workflow-lease",
+      "kind": "sql",
+      "where": "supabase/migrations/20261009000000_opera_agent_ephemeral_workflows.sql:4",
+      "states": [
+        "registered",
+        "swept",
+        "re-registered"
+      ],
+      "writers": "opera_register_ephemeral_workflow, inline sweep at register time",
+      "readers": "opera_start_workflow, the adhoc command",
+      "wrongIfConfused": "a long adhoc workflow is swept mid-flight at lease=now+60min; re-invoking the same request_id re-runs the task against a page the agent already touched",
+      "decision": "tolerate",
+      "why": "lease + idempotency + copy-on-register is the right model for throwaway jobs — tolerate, longer lease for in-flight runs is the named fix",
+      "rank": 4
+    },
+    {
+      "id": "lease-table",
+      "kind": "tooling",
+      "where": "local/leases.js:20",
+      "states": [
+        "free",
+        "claimed",
+        "expired",
+        "released-owner-only"
+      ],
+      "writers": "bridge /lease door, the driver's leaseTab",
+      "readers": "driverFor, close_tab",
+      "wrongIfConfused": "an agent that crashes mid-call leaves the tab claimed for 60s and every later agent on that tab gets 'driven by … until …Z'; renewal-per-call holds the tab for a stuck-but-alive agent",
+      "decision": "tolerate",
+      "why": "expiry is the model and it is honest; the refusal names owner and expiry — a bounded wait, not silent loss — AX second",
+      "rank": 4
+    },
+    {
+      "id": "local-bridge-device-state",
+      "kind": "tooling",
+      "where": "local/bridge-ws.js:69",
+      "states": [
+        "socket",
+        "hello",
+        "verifying",
+        "handshaken",
+        "refused",
+        "reaped"
+      ],
+      "writers": "hello/pong/close frames only, reportSession once at close",
+      "readers": "every /command door, /health, the MCP transport",
+      "wrongIfConfused": "a browser that reconnects mid-drive gets the same slot but a fresh meter envelope — the same account re-spends its session allowance by closing and reopening the extension repeatedly; a crashed drive reports nothing until process exit",
+      "decision": "tolerate",
+      "why": "the allowance is the model and is enforced; per-N-interval reporting instead of per-close is a refinement not a defect — AX second",
+      "rank": 4
+    },
+    {
+      "id": "popup-inflight-attribution",
+      "kind": "extension",
+      "where": "extension/worker/action-focus.js:83",
+      "states": [
+        "empty",
+        "pushed",
+        "spliced-by-lastIndexOf"
+      ],
+      "writers": "withActionPopupTracking, tabs.onCreated, tabs.onRemoved",
+      "readers": "page.click/page.fill responses",
+      "wrongIfConfused": "an action pushed on tab A attributes a popup opened on tab B due to a timer; the finally-splice can remove the wrong stack entry for nested actions on one tab",
+      "decision": "tolerate",
+      "why": "bounded and self-healing; the failure is a mislabeled attribution, not two agents disagreeing — tolerated until seen in the wild",
+      "rank": 4
+    },
+    {
+      "id": "price-list-active",
+      "kind": "billing",
+      "where": "supabase/migrations/20261015090000_opera_billing.sql:11",
+      "states": [
+        "active",
+        "inactive"
+      ],
+      "writers": "migrations only",
+      "readers": "every invoice line; harga.html (static copy drifts)",
+      "wrongIfConfused": "toggling plan.firm off makes the firm plan unbillable mid-cycle with a 409 only in function logs; the static price page keeps selling it",
+      "decision": "tolerate",
+      "why": "the gap is page copy vs table rows, which belongs to a test, not a state model — tolerate with a drift test to be added",
+      "rank": 4
+    },
+    {
+      "id": "private-tabs-slot",
+      "kind": "extension",
+      "where": "extension/worker/private-tabs.js:8",
+      "states": [
+        "absent",
+        "present"
+      ],
+      "writers": "popup toggle, tabs.onRemoved cleanup",
+      "readers": "isPrivateTab in page.capture and listenStart",
+      "wrongIfConfused": "a stale id blocks capture on a recycled tab id — the user flagged nothing and the agent is refused anyway",
+      "decision": "tolerate",
+      "why": "converge-on-write list, capped at 200 ids, recycled ids recycle the block rather than grant it — tolerated, UX copy names the reason",
+      "rank": 4
+    },
+    {
+      "id": "session-store-fronted",
+      "kind": "local",
+      "where": "local/sessions.js:113",
+      "states": [
+        "no-session",
+        "cached-driver",
+        "fronted",
+        "closed"
+      ],
+      "writers": "open (create-on-first-touch), closeTab",
+      "readers": "every tool call, close_tab",
+      "wrongIfConfused": "two Maps keyed by the same tabId with different lifetimes; the cached driver outlives close_tab by process exit; a dead-tab driver surfaces 60s later as 'no answer from the tab'",
+      "decision": "tolerate",
+      "why": "bounded by close_tab hygiene and process lifetime; the cached-front behavior is the point and it works — DX second",
+      "rank": 4
+    },
+    {
+      "id": "capability-allowlist",
+      "kind": "sql",
+      "where": "supabase/migrations/20260907204146_opera_agent_1_0_0_core.sql:6",
+      "states": [
+        "enabled",
+        "disabled"
+      ],
+      "writers": "seed migrations only (re-set enabled=true)",
+      "readers": "opera_enqueue's not-allowlisted refusal, opera_start_workflow's not-found",
+      "wrongIfConfused": "disabling a method by hand stops enqueue with a string the model reads as 'not allowlisted' and may route around; the human sees a dead tool with a hint pointing at nothing",
+      "decision": "tolerate",
+      "why": "internal gate with no UI; the AX cost is bounded and the gate itself is the kind — tolerate, no state-model needed",
+      "rank": 5
+    },
+    {
+      "id": "cdp-closed-flag",
+      "kind": "local",
+      "where": "local/cdp.js:16",
+      "states": [
+        "open",
+        "closed"
+      ],
+      "writers": "close()",
+      "readers": "every bridged CDP call",
+      "wrongIfConfused": "one failed call that trips close() bricks the session for its lifetime with a single canned message and no re-open path",
+      "decision": "tolerate",
+      "why": "terminal-by-design close; loud and final beats half-dead — tolerate, DX last",
+      "rank": 5
+    },
+    {
+      "id": "delta-observation-continuity",
+      "kind": "lib",
+      "where": "lib/delta-first-observation.js:138",
+      "states": [
+        "BOOTSTRAP",
+        "CONTIGUOUS",
+        "REPLAY",
+        "RESET_REQUIRED"
+      ],
+      "writers": "the reducer fed by reconciliation",
+      "readers": "semantic-working-state, directive compiler",
+      "wrongIfConfused": "a replay silently re-applies or is dropped per verdict; a consumer that ignores REPLAY vs RESET_REQUIRED applies or loses a document edit",
+      "decision": "tolerate",
+      "why": "explicitly verdicted per observation; the machine is there, consumers must read the enum — tolerate",
+      "rank": 5
+    },
+    {
+      "id": "dev-shim-supervisor",
+      "kind": "local",
+      "where": "local/dev-shim.js:51",
+      "states": [
+        "live",
+        "reloading",
+        "poisoned",
+        "dirty"
+      ],
+      "writers": "reload, onChildExit, scheduleReload",
+      "readers": "onClientLine's poison/swap branches",
+      "wrongIfConfused": "after poisoning, every tools/call errors with 'save a file to rebuild it' while the tool cache keeps listing tools that all fail — the UI looks alive and green while every call is a refusal",
+      "decision": "tolerate",
+      "why": "dev-only path, refuses loudly, never silently wrong; production spawns the worker directly — tolerate, DX last",
+      "rank": 5
+    },
+    {
+      "id": "focus-guard-cache",
+      "kind": "local",
+      "where": "local/focus-guard.js:39",
+      "states": [
+        "unasked",
+        "machine-state-fresh",
+        "invalidated-by-restore"
+      ],
+      "writers": "machine(), ensureFront after a restore",
+      "readers": "every input tool",
+      "wrongIfConfused": "between a human Alt-Tab and the 1.5s TTL expiry, an input tool is told the window is minimized and refuses on a hearing page",
+      "decision": "tolerate",
+      "why": "bounded staleness by design; the restore re-checks hasFocus page-side before acting — tolerate, DX last",
+      "rank": 5
+    },
+    {
+      "id": "github-release-latest",
+      "kind": "tooling",
+      "where": ".github/workflows/release.yml",
+      "states": [
+        "latest-points-at-newest-date",
+        "latest-points-at-explicit-tag"
+      ],
+      "writers": "release.yml only (latest is computed by guard)",
+      "readers": "anyone clicking Latest",
+      "wrongIfConfused": "an old tag published late steals Latest from a newer one — the download every buyer gets differs from 'newest'",
+      "decision": "tolerate",
+      "why": "guarded in-tree (the workflow computes latest); converting the habit into an explicit repository convention is documentation, not code — tolerate",
+      "rank": 5
+    },
+    {
+      "id": "goal-ledger-dark",
+      "kind": "sql",
+      "where": "supabase/migrations/20260911162525_opera_agent_goal_head.sql:4",
+      "states": [
+        "OPEN",
+        "PARTIAL",
+        "SATISFIED",
+        "BLOCKED",
+        "CANCELLED",
+        "EXPIRED"
+      ],
+      "writers": "opera_goal_head_apply (flag-gated)",
+      "readers": "opera_goal_head_get",
+      "wrongIfConfused": "same flag family as the VM; the revision fence is correct and unreachable — a future flip inherits zero observability",
+      "decision": "tolerate",
+      "why": "already a strict model; inert until an owner flips the flag — tolerate",
+      "rank": 5
+    },
+    {
+      "id": "oauth-token-expiry",
+      "kind": "local",
+      "where": "local/oauth.js:184",
+      "states": [
+        "no-token",
+        "valid",
+        "expired",
+        "refreshed-or-null"
+      ],
+      "writers": "accessToken, login flow",
+      "readers": "hosted-MCP cloud.js, doctor",
+      "wrongIfConfused": "a dead refresh token yields null and every cloud call falls into 'not signed in' with no hint the fix is opera-agent-mcp auth",
+      "decision": "tolerate",
+      "why": "printed login instructions exist; the failure names a next step — tolerate, DX last",
+      "rank": 5
+    },
+    {
+      "id": "operator-konsol-scope",
+      "kind": "sql",
+      "where": "supabase/migrations/20261010090000_opera_agent_konsol_tables.sql:16",
+      "states": [
+        "not-operator",
+        "operator"
+      ],
+      "writers": "the migration itself (seed: earliest paired device's owner)",
+      "readers": "the Konsol view",
+      "wrongIfConfused": "a second account becomes operator only by hand SQL; the person sees seven locked doors with no request path and no explanation beyond the locked icon",
+      "decision": "tolerate",
+      "why": "read-only surface; the predicate duplication is pinned by tests; a promotion door is a product call, not a modelling gap — tolerate",
+      "rank": 5
+    },
+    {
+      "id": "reactive-vm-host-persistence",
+      "kind": "lib",
+      "where": "lib/reactive-vm-host.js:125",
+      "states": [
+        "quiescent",
+        "retry-pending",
+        "terminal"
+      ],
+      "writers": "classifyVmPersistence, RETRY frames",
+      "readers": "the VM host, the effects saga",
+      "wrongIfConfused": "a retry frame masquerading as terminal, or a terminal frame counted as pending, hides a diverging effect",
+      "decision": "tolerate",
+      "why": "explicitly typed transitions; the flag ships the host with off-by-default — tolerate, inert until flipped",
+      "rank": 5
+    },
+    {
+      "id": "tx-8d-journal-dark",
+      "kind": "sql",
+      "where": "supabase/migrations/20260913143306_transaction_journal_8d_dark.sql:14",
+      "states": [
+        "OFF",
+        "DARK",
+        "ENFORCED"
+      ],
+      "writers": "the policy + operator fence functions (mode-gated)",
+      "readers": "none in production paths",
+      "wrongIfConfused": "one SQL update away from terminating real browser tasks under a consent ritual nobody has clicked through",
+      "decision": "tolerate",
+      "why": "inert, reviewed, reject-by-default; removing it is an owner decision, not a refactor — tolerate",
+      "rank": 5
+    },
+    {
+      "id": "vm-host-dark",
+      "kind": "sql",
+      "where": "supabase/migrations/20260912061541_opera_agent_reactive_vm_host.sql:25",
+      "states": [
+        "idle",
+        "running",
+        "suspended",
+        "returned",
+        "limit-reached",
+        "failed",
+        "cancelled",
+        "expired"
+      ],
+      "writers": "opera_vm_enqueue/claim/checkpoint/release/cancel — flag-gated, never called",
+      "readers": "opera-agent-vm (only when the flag flips)",
+      "wrongIfConfused": "the flag flips with zero UI anywhere — a stray SQL update turns a week of an unshipped host on for the whole live project with no banner",
+      "decision": "tolerate",
+      "why": "explicit model behind an owner-flipped flag; inert by default — tolerate",
+      "rank": 5
+    },
+    {
+      "id": "waits-settle-watcher",
+      "kind": "local",
+      "where": "local/waits.js:28",
+      "states": [
+        "unwatched",
+        "watcher-installed",
+        "missing",
+        "failed"
+      ],
+      "writers": "watch()/settle() only",
+      "readers": "every settle → every action's afterAction snapshot",
+      "wrongIfConfused": "the deadline-branch can leave baseline stale from before a navigation; changes delta reports against a dead document",
+      "decision": "tolerate",
+      "why": "self-heals by re-arm; the delta is telemetry not an action decision — tolerate, AX last",
+      "rank": 5
+    }
+  ]
+}

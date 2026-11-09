@@ -18,7 +18,8 @@ These ride with every job. Read them before acting, not once per session.
 - Look once: a session carries a few pictures at most, and a provider may refuse the prompt at eight, so read the picture you need now, not every picture you took, and let the page answer in text when it can.
 - Work the Plan → Execute → Fix loop, and repeat it: each round ends with a fresh run against the artefact, not a restated intention. The runs are `npm test` and `npm run check`, plus `py tests/browser_extension_test.py` for anything the extension does inside a page.
 - Audit everything, delete the trash, simplify the program: sweep for dead files, dead exports, and stale scaffolds, remove what you find, and leave the tree simpler than you met it.
-- Never ask any human for signing keys or any secret material: publisher secrets live only in GitHub Secrets — verify presence with `gh secret list` (names only, values never print), and treat publishing as your own dispatch task, not a question for the owner.
+- Never ask any human for signing keys or any secret material: publisher secrets live only in GitHub Secrets - verify presence with `gh secret list` (names only, values never print), and treat publishing as your own dispatch task, not a question for the owner.
+- Find every implicit state machine you touch and decide its fate before you ship: model it, delete it, or tolerate it with a written reason - ranked user > developer > agent, always. The register is `docs/state-machines.json`; the gate is `tests/implicit-state-machines.test.mjs`.
 
 ## Goals
 
@@ -36,4 +37,5 @@ Choose in this order. Simple outranks all three.
 
 1. **Function** — it works, proven by driving it.
 2. **Feature** — justified by a real case. No case, no feature.
-3. **Speed** — short round trips. Measure before claiming a gain.
+3. **Speed** - short round trips. Measure before claiming a gain.
+
