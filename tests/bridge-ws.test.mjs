@@ -94,10 +94,12 @@ test('a handshake completes and a pushed command arrives without being asked for
     const command = device.frames.find((f) => f.ok && f.message.type === 'command')?.message;
     assert.equal(command.command.method, 'tabs.list', 'the command arrived pushed, not polled');
 
-    device.push(JSON.stringify({ type: 'complete', commandId: command.command.id, ok: true, result: { tabs: [] } }));
+    device.push(JSON.stringify({ type: 'complete', commandId: command.command.id, ok: true, result: [{ id: 7, url: 'https://x/', title: 'X' }] }));
     const answer = await pending;
     assert.equal(answer.ok, true);
-    assert.deepEqual(answer.result, { tabs: [] });
+    assert.equal(answer.result.length, 1, 'the merged list reaches the caller');
+    assert.equal(answer.result[0].id % 1000000000, 7, 'the row names the browser that owns it');
+    assert.equal(answer.result[0].url, 'https://x/');
     assert.ok(answer.ms < 200, 'a loopback round trip is milliseconds, not the relay second');
   } finally {
     device.close();
@@ -323,7 +325,8 @@ test('the command door settles against the device and names a device failure', a
     const good = await answered;
     assert.equal(good.status, 200);
     assert.equal(good.body.ok, true);
-    assert.deepEqual(good.body.result, { tabs: [{ id: '7' }] }, 'the settled envelope crosses the door unwrapped');
+    assert.equal(good.body.result.length, 1);
+    assert.equal(Number(good.body.result[0].id) % 1000000000, 7, 'the settled envelope crosses the door unwrapped');
 
     const failing = post({ method: 'tabs.list', params: {}, timeoutMs: 5000 });
     const second = await nextCommand(seen);

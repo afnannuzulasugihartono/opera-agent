@@ -115,7 +115,7 @@ test('the worker connects on its own, without being asked', () => {
 test('a pushed command runs and its answer comes back over the same socket', async () => {
   const answer = await bridge.send('tabs.list', {});
   assert.equal(answer.ok, true);
-  assert.deepEqual(answer.result[0].id, 5);
+  assert.equal(answer.result[0].id % 1000000000, 5, 'the row is namespaced by the browser that owns it');
   assert.ok(answer.ms < 500, `a loopback round trip is milliseconds (took ${answer.ms} ms)`);
 });
 
