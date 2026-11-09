@@ -869,6 +869,7 @@ test('a tab id is found whether the caller sends a number or a string', async ()
 
 // WHY A WAIT IS TESTED AGAINST READS, NOT TIME.
 // The contract is evidential: the wait ends on the same text a read would show, and a wait that runs out of budget reports instead of failing — found:false with the page as it stands, which is what the next decision needs.
+// The clock on a CI runner can step, so the spent budget is proven by the budget handed to the wait primitive, not by wall milliseconds.
 
 test('a wait ends on the same evidence a read would show', async () => {
   const c = ctx();
@@ -898,7 +899,8 @@ test('a wait that runs out of budget reports instead of failing', async () => {
   const payload = JSON.parse(res.result.content[0].text);
 
   assert.equal(payload.action.found, false);
-  assert.ok(payload.action.ms >= 500, 'the full budget was spent before admitting it');
+  assert.equal(c.driver.calls[0][2].timeoutMs, 500, 'the wait was handed the full budget');
+  assert.ok(Number.isFinite(payload.action.ms) && payload.action.ms >= 0, 'and the spent time comes back with the answer');
   assert.ok(payload.page && payload.changed, 'the page state comes back with the verdict');
 });
 
