@@ -128,6 +128,68 @@ test('the surface covers what the driver can actually do', async () => {
 // The entry point hands the server a function that answers the port per call, because the pipe is chosen per call.
 // The status answer used to hand that promise straight to the caller, and JSON turned it into an empty object, so an agent asking "where am I" was told nothing at all - and the answer that names the road is the one an agent reads first.
 
+test('browser_status carries the meter of every linked device', async () => {
+  const http = await import('node:http');
+  const health = {
+    ok: true, linked: true, queued: 0, waiting: 0, meterRefusal: null,
+    devices: [
+      { slot: 1, id: 'dev-a', instanceId: 'inst-a', deviceName: 'opera-a', extensionVersion: '1.6.34', connectedAt: 1, meter: { plan: 'plan.firm', allowance: 500, dailyQuota: 5000, sent: 2, usedToday: 300, remaining: 4700 } },
+      { slot: 2, id: 'dev-b', instanceId: 'inst-b', deviceName: 'opera-b', extensionVersion: '1.6.34', connectedAt: 2, meter: { plan: 'plan.firm', allowance: 500, dailyQuota: 5000, sent: 0, usedToday: 5000, remaining: 0 } }
+    ]
+  };
+  const bridge = http.createServer((req, res) => {
+    if (req.url === '/health') { res.writeHead(200, { 'content-type': 'application/json' }); res.end(JSON.stringify(health)); return; }
+    res.writeHead(404); res.end();
+  });
+  await new Promise((resolve) => bridge.listen(0, '127.0.0.1', resolve));
+  const ephemeral = bridge.address().port;
+  try {
+    const server = createMcpServer({ ...ctx(), port: async () => ephemeral });
+    const res = await server.handle({ jsonrpc: '2.0', id: 91, method: 'tools/call', params: { name: 'browser_status', arguments: {} } });
+    const payload = JSON.parse(res.result.content[0].text);
+    const now = new Date();
+    const expectedReset = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1)).toISOString();
+    const byName = Object.fromEntries(payload.devices.map((d) => [d.name, d]));
+    assert.equal(byName['opera-a'].plan.plan, 'plan.firm');
+    assert.equal(byName['opera-a'].plan.remaining, 4700);
+    assert.equal(byName['opera-a'].plan.dailyQuota, 5000);
+    assert.equal(byName['opera-a'].plan.resetsAt, expectedReset);
+    assert.ok(byName['opera-a'].plan.resetsAt.endsWith('00:00:00.000Z'), 'the reset is the UTC midnight after this one, not a local wall clock');
+    assert.equal(byName['opera-b'].plan.remaining, 0);
+    assert.equal(payload.planExhausted, true);
+    assert.deepEqual(payload.planExhaustedDevices, ['opera-b']);
+  } finally {
+    await new Promise((resolve) => bridge.close(resolve));
+  }
+});
+
+test('browser_status stays quiet when every linked device has headroom', async () => {
+  const http = await import('node:http');
+  const usedToday = 206;
+  const health = {
+    ok: true, linked: true, queued: 0, waiting: 0, meterRefusal: null,
+    devices: [
+      { slot: 1, id: 'dev-a', instanceId: 'inst-a', deviceName: 'opera-a', extensionVersion: '1.6.34', connectedAt: 1, meter: { plan: 'plan.firm', allowance: 500, dailyQuota: 5000, sent: 0, usedToday, remaining: 4794 } }
+    ]
+  };
+  const bridge = http.createServer((req, res) => {
+    if (req.url === '/health') { res.writeHead(200, { 'content-type': 'application/json' }); res.end(JSON.stringify(health)); return; }
+    res.writeHead(404); res.end();
+  });
+  await new Promise((resolve) => bridge.listen(0, '127.0.0.1', resolve));
+  const ephemeral = bridge.address().port;
+  try {
+    const server = createMcpServer({ ...ctx(), port: async () => ephemeral });
+    const res = await server.handle({ jsonrpc: '2.0', id: 92, method: 'tools/call', params: { name: 'browser_status', arguments: {} } });
+    const payload = JSON.parse(res.result.content[0].text);
+    assert.equal(payload.planExhausted, undefined, 'no device at zero means no exhaustion claim');
+    assert.equal(payload.planExhaustedDevices, undefined);
+    assert.equal(payload.devices[0].plan.remaining, 4794);
+  } finally {
+    await new Promise((resolve) => bridge.close(resolve));
+  }
+});
+
 test('browser_status names the port the drive is on', async () => {
   const server = createMcpServer({ ...ctx(), port: async () => 9451 });
   const res = await server.handle({
