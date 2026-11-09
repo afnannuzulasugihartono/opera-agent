@@ -9,7 +9,7 @@
 // WHY one file: the service worker, the MCP server, and the Node tests must agree on exactly which primitives exist.
 // A second copy of the list would eventually disagree.
 
-export const PRODUCT_VERSION = '1.6.31';
+export const PRODUCT_VERSION = '1.6.32';
 export const PROTOCOL_VERSION = 1;
 
 import { resolveKeyInput } from './keyboard.js';

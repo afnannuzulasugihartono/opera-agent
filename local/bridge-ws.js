@@ -188,6 +188,7 @@ export function createBridgeServer({ port = 9451, host = '127.0.0.1', heartbeatM
       token: identity.token,
       plan: String(opened.plan ?? 'plan.pilot'),
       allowance: Math.max(0, Number(opened.sessionAllowance) || 0),
+      dailyQuota: Math.max(0, Number(opened.dailyQuota) || 0),
       sent: 0,
       usedToday: Number(opened.usedToday) || 0,
       reported: false
@@ -200,7 +201,7 @@ export function createBridgeServer({ port = 9451, host = '127.0.0.1', heartbeatM
   }
 
   const meterOf = (device) => (device.meter
-    ? { plan: device.meter.plan, allowance: device.meter.allowance, sent: device.meter.sent, usedToday: device.meter.usedToday }
+    ? { plan: device.meter.plan, allowance: device.meter.allowance, dailyQuota: device.meter.dailyQuota, sent: device.meter.sent, usedToday: device.meter.usedToday, remaining: Math.max(0, device.meter.dailyQuota - device.meter.usedToday - device.meter.sent) }
     : null);
 
   const refusalNote = () => (lastRefusal && now() - lastRefusal.at <= METER_WINDOW_MS ? lastRefusal.message : null);
@@ -393,7 +394,7 @@ export function createBridgeServer({ port = 9451, host = '127.0.0.1', heartbeatM
         linked: live.length > 0,
         deviceId: live[0]?.id ?? null,
         deviceInstanceId: live[0]?.instanceId ?? null,
-        devices: live.map((device) => ({ slot: device.slot, id: device.id, instanceId: device.instanceId || null, connectedAt: device.connectedAt, meter: meterOf(device) })),
+        devices: live.map((device) => ({ slot: device.slot, id: device.id, instanceId: device.instanceId || null, extensionVersion: device.extensionVersion || null, connectedAt: device.connectedAt, meter: meterOf(device) })),
         queued: queue.length,
         waiting: waiting.size,
         lastHeardMsAgo: live[0]?.lastHeardAt ? now() - live[0].lastHeardAt : null,
@@ -478,6 +479,7 @@ export function createBridgeServer({ port = 9451, host = '127.0.0.1', heartbeatM
       const message = parsed.message;
       if (message.type === 'hello') {
         device.instanceId = String(message.instanceId || device.id).slice(0, 64);
+        device.extensionVersion = String(message.extensionVersion || '').slice(0, 32);
         if (device.handshaken) {
           if (!device.socket.closed) device.socket.send(JSON.stringify({ type: 'ready', protocolVersion: DEVICE_PROTOCOL_VERSION, serverTime: now() }));
           return;

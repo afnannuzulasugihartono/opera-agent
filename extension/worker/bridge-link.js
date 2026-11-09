@@ -35,9 +35,11 @@
 
 import { log } from '../lib/log.js';
 import { createSocketClient } from '../lib/socket-client.js';
+import { PRODUCT_VERSION } from '../lib/protocol.js';
 import { instanceId } from './instance-id.js';
 import { releaseDebuggerSession, releaseIdleDebuggerSessions } from '../lib/debugger-session.js';
 import { withDebugger } from './capture.js';
+import { getConfig } from './utils.js';
 
 // WHY THE PORT IS DISCOVERED AND NOT ASSUMED.
 // Measured: a stale extension dialled ws://127.0.0.1:19451 while the local server listened on 9451, the connection was refused, and every command silently took the cloud relay instead - 268 to 797 ms a call where loopback answers in 8 to 13 ms. The port is the one thing a stale build gets wrong, and getting it wrong costs twenty to fifty times the latency with nothing in the answer that says so.
@@ -202,16 +204,24 @@ export function ensureBridgeLink() {
   // The port is found before the socket is opened, so a stale build lands on the road that is actually listening rather than on the one it remembers.
   discoverBridge().then(async (found) => {
     if (mine !== generation) return;
-    const mineId = await instanceId().catch(() => '');
+    const [mineId, pairing] = await Promise.all([
+      instanceId().catch(() => ''),
+      getConfig().catch(() => null)
+    ]);
     if (mine !== generation) return;
     bridgePort = found.port;
     bridgeUrl = found.url;
     note(found.discovered ? `port ${found.port} discovered` : `port ${found.port} configured`);
+    const paired = pairing?.paired === true ? pairing : null;
+    // WHY THE HELLO CARRIES THE PAIRED CREDENTIALS.
+    // The loopback bridge meters each session against the account that owns this browser, and it cannot meter a stranger with no token: this one ask is what tells the meter who is driving.
+    // A browser that is not paired sends an empty token as before, and the meter refuses the session with the reason, which is the honest answer for an unmetered drive.
     client = createSocketClient({
       url: found.url,
-      token: '',
-      deviceName: 'bridge',
+      token: paired ? String(pairing.deviceToken || '') : '',
+      deviceName: paired ? String(pairing.deviceName || 'opera') : 'bridge',
       instanceId: mineId,
+      extensionVersion: PRODUCT_VERSION,
       execute,
       onState: (event) => {
         if (mine !== generation) return;

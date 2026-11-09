@@ -25,12 +25,13 @@ export const FRAME_MAX_BYTES = 4 * 1024 * 1024;
 
 export const DEVICE_PROTOCOL_VERSION = 2;
 
-export function handshakeFrame(token, deviceName, instanceId = '') {
+export function handshakeFrame(token, deviceName, instanceId = '', extensionVersion = '') {
   return JSON.stringify({
     type: 'hello',
     token,
     deviceName,
     ...(instanceId ? { instanceId } : {}),
+    ...(extensionVersion ? { extensionVersion: String(extensionVersion).slice(0, 32) } : {}),
     protocolVersion: DEVICE_PROTOCOL_VERSION
   });
 }
