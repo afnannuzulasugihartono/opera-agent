@@ -47,7 +47,20 @@ function fakeDb({ plan = null, status = 'active', count = 0, reports = [], fail 
 
 test('browser_status carries the plan for the account with the device', async () => {
   const answer = await planInfo(fakeDb({ plan: 'plan.firm', status: 'active', count: 314 }), 'user-1');
-  assert.deepEqual(answer, { plan: 'plan.firm', planStatus: 'active', planQuota: PLANS['plan.firm'].dailyQuota, planUsed: 314 });
+  assert.deepEqual(answer, { plan: 'plan.firm', planStatus: 'active', planQuota: PLANS['plan.firm'].dailyQuota, planUsed: 314, planRemaining: PLANS['plan.firm'].dailyQuota - 314, planExhausted: false });
+});
+
+test('a pilot at the cap reports zero remaining and exhausted', async () => {
+  const answer = await planInfo(fakeDb({ plan: 'plan.pilot', count: 200 }), 'user-2');
+  assert.equal(answer.planRemaining, 0);
+  assert.equal(answer.planExhausted, true);
+});
+
+test('usage reports from the loopback bridge count toward exhaustion', async () => {
+  const answer = await planInfo(fakeDb({ plan: 'plan.pilot', count: 190, reports: [{ commands: 10 }] }), 'user-4');
+  assert.equal(answer.planUsed, 200);
+  assert.equal(answer.planExhausted, true);
+  assert.equal(answer.planRemaining, 0);
 });
 
 test('spend from the loopback bridge lands in the same number the caller sees', async () => {

@@ -260,6 +260,14 @@ const windowTruth = (window, browsers, tabs = []) => {
 // The caller drives over whichever road the bridge holds; when that road is the loopback bridge, the health answer names the browsers linked to it by name and id.
 // A remote road has no local bridge to ask, and the answer says so by carrying no devices field rather than an invented one.
 
+const nextUtcMidnight = () => {
+  const now = new Date();
+  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1)).toISOString();
+};
+
+// WHY THE METER RIDES THE SAME READ.
+// The bridge already knows each device's plan headroom; a caller that could only learn it after the first refused command would waste the very commands the check exists to protect.
+
 const linkedDevices = async (port) => {
   if (!Number.isInteger(port) || port <= 0) return null;
   try {
@@ -267,7 +275,7 @@ const linkedDevices = async (port) => {
     if (!response.ok) return null;
     const health = await response.json();
     if (!Array.isArray(health?.devices)) return null;
-    return health.devices.map((d) => ({ name: d?.deviceName ?? null, id: d?.id ?? null, instanceId: d?.instanceId ?? null, extensionVersion: d?.extensionVersion ?? null, slot: d?.slot ?? null, port }));
+    return health.devices.map((d) => ({ name: d?.deviceName ?? null, id: d?.id ?? null, instanceId: d?.instanceId ?? null, extensionVersion: d?.extensionVersion ?? null, slot: d?.slot ?? null, port, plan: d?.meter ? { plan: d.meter.plan ?? null, allowance: Number(d.meter.allowance) || 0, dailyQuota: Number(d.meter.dailyQuota) || 0, usedToday: Number(d.meter.usedToday) || 0, remaining: Number(d.meter.remaining) || 0, resetsAt: nextUtcMidnight() } : null }));
   } catch {
     return null;
   }
@@ -503,10 +511,12 @@ const windowMatch = async (tab, driver) => (tab ? String(tab.title ?? '') : page
         const pages = await fallback.tabs().catch(() => []);
         const live = Number(await livePort(context));
         const devices = await linkedDevices(live);
+        const exhausted = devices?.filter((d) => d.plan && Number(d.plan.remaining) <= 0).map((d) => d.name);
         return asText({
           browsers: context.browsers,
           port: live,
           ...(devices ? { devices } : {}),
+          ...(exhausted?.length ? { planExhausted: true, planExhaustedDevices: exhausted } : {}),
           window: windowTruth(window, context.browsers, pages)
         });
       }

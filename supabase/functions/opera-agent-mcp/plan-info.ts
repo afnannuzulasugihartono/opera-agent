@@ -1,12 +1,12 @@
 // @last-edited: 2026-11-09 UTC+7.
 // @title: plan-info — what the hosted caller may see: the plan it is on, and how much of the day it has spent.
-// @state: the plan, its quota, today's usage, both for the account that owns the device the caller is typing through.
+// @state: the plan, its quota, today's usage, and what remains, for the account that owns the device the caller is typing through.
 // @dependencies: ./index.ts through one injection of the database client.
 
 // WHY THIS FILE EXISTS
 
 // The bridge refuses a command at its limit; the hosted caller ought to know where the limit is before it hits it.
-// browser_status is the tool every agent is told to call first, so the plan is answered there: plan, planQuota, planUsed, planStatus.
+// browser_status is the tool every agent is told to call first, so the plan is answered there: plan, planQuota, planUsed, planStatus, planRemaining, planExhausted.
 
 import { PLANS } from '../_shared/plans.js';
 
@@ -34,7 +34,8 @@ export async function planInfo(db, userId: string | null): Promise<Record<string
       .eq('user_id', userId)
       .gte('created_at', midnight.toISOString());
     const reported = (reports ?? []).reduce((sum, row) => sum + Number(row?.commands ?? 0), 0);
-    return { plan, planStatus: status, planQuota: quota, planUsed: Number(count ?? 0) + reported };
+    const planUsed = Number(count ?? 0) + reported;
+    return { plan, planStatus: status, planQuota: quota, planUsed, planRemaining: Math.max(0, quota - planUsed), planExhausted: planUsed >= quota };
   } catch {
     return null;
   }

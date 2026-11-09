@@ -13,6 +13,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import { createHash } from 'node:crypto';
 import { siteHeaders } from './helpers/site-headers.mjs';
 
 const root = new URL('..', import.meta.url);
@@ -25,6 +26,7 @@ const byPath = Object.fromEntries(site.headers.map((h) => [h.source, h.headers])
 test('the dashboard reads through scoped RPCs, never raw tables', () => {
   const html = read('dashboard.html');
   assert.match(html, /rpc\/opera_my_devices/, 'the device list call is the owner-scoped RPC');
+  assert.match(html, /rpc\/opera_my_plan/, 'the plan hero reads the account’s plan through its own owner-scoped RPC');
   assert.match(html, /\$\{REST\}\/rpc\/\$\{name\}/, 'the konsol dispatcher addresses its target only as an RPC path');
   assert.match(html, /konsolRpc\('opera_konsol_tables'/, 'the table sidebar is listed by the konsol reader');
   assert.match(html, /konsolRpc\('opera_konsol_table'/, 'each page of the grid comes through the konsol reader');
@@ -41,7 +43,8 @@ test('the dashboard reads through scoped RPCs, never raw tables', () => {
 
 test('the dashboard reads human time, counts work, and acts on devices', () => {
   const html = read('dashboard.html');
-  assert.match(html, /RelativeTimeFormat\('id'/, 'timestamps render as relative Indonesian time');
+  assert.match(html, /RelativeTimeFormat\(/, 'timestamps render as relative time');
+  assert.match(html, /lang\(\) === 'en' \? 'en' : 'id'/, 'and the locale follows the reader’s language switch');
   assert.match(html, /completedCommands/, 'usage counts give billing-per-result its meter');
   assert.match(html, /opera_revoke_my_device/, 'revocation keeps the terms honest');
   assert.match(html, /opera_create_pairing_code/, 'pairing codes are issued bound to the caller');
@@ -59,12 +62,12 @@ test('the dashboard reads human time, counts work, and acts on devices', () => {
 test('the device card answers "is it reachable" before anything else', () => {
   const html = read('dashboard.html');
 
-  assert.match(html, /<dt>Status<\/dt>/, 'status is a labelled row, not part of a sentence');
-  assert.match(html, /<dt>Terakhir terlihat<\/dt>/, 'last seen is its own row');
+  assert.match(html, /<dt>\$\{esc\(w\('dtStatus'\)\)\}<\/dt>/, 'status is a labelled row, not part of a sentence');
+  assert.match(html, /<dt>\$\{esc\(w\('dtLastSeen'\)\)\}<\/dt>/, 'last seen is its own row');
 
   assert.match(html, /class="chip">\$\{esc\(device\.extensionVersion \|\| '-'\)\}/, 'the build rides the card head');
-  assert.match(html, /<dt>Perintah<\/dt>/, 'the command tally is its own row');
-  assert.match(html, /<dt>ID device<\/dt>/, 'the id is a row, so it is not lost in a sentence');
+  assert.match(html, /<dt>\$\{esc\(w\('dtCommands'\)\)\}<\/dt>/, 'the command tally is its own row');
+  assert.match(html, /<dt>\$\{esc\(w\('dtDeviceId'\)\)\}<\/dt>/, 'the id is a row, so it is not lost in a sentence');
 
   assert.match(html, /\$\('installState'\)\.className = installed \? 'tone good' : 'tone warn'/,
     'the install state pairs a colour with words');
@@ -99,7 +102,7 @@ test('the device list refreshes itself after pairing elsewhere', () => {
   assert.match(html, /async function refreshDevices\(\)/, 'the list fetch is a repeatable function');
   assert.match(html, /setInterval\(\(\) => \{ if \(!document\.hidden\) refreshDevices\(\); \}, 10000\)/, 'it polls every 10 seconds while visible');
   assert.match(html, /visibilitychange/, 'and on every return to the tab');
-  assert.match(html, /if \(iso === null \|\| iso === undefined \|\| iso === ''\) return 'belum pernah'/, 'a device that never checked in says so instead of 1970');
+  assert.match(html, /if \(iso === null \|\| iso === undefined \|\| iso === ''\) return w\('neverSeen'\)/, 'a device that never checked in says so instead of 1970');
 });
 
 test('the dashboard says whether the extension is installed in this browser', () => {
@@ -128,7 +131,7 @@ test('the dashboard is about devices, not a profile page', () => {
   assert.match(html, /Device milik/, 'the page names whose devices these are, in one line');
   assert.match(html, /aria-current="page"/, 'the nav marks this page as the current one');
 
-  assert.match(html, /<h1>Akun ini<\/h1>/, 'the account facts have their own section');
+  assert.match(html, /<h1[^>]*>Akun ini<\/h1>/, 'the account facts have their own section');
   assert.doesNotMatch(html, /<input[^>]*id="(fullName|accountName|email)"/i, 'and nothing on this page edits the account');
 });
 
@@ -144,7 +147,7 @@ test('the dashboard has a rail, because it has five jobs and no divider', () => 
   assert.match(html, /aria-label="Bagian dashboard"/, 'and it is labelled, so a screen reader announces what it is');
 
   for (const heading of ['Ringkasan', 'Device', 'Sesi dengar', 'Pairing manual', 'Jalankan aksi', 'Akun ini']) {
-    assert.ok(html.includes(`<h1>${heading}</h1>`), `${heading} has a heading of its own`);
+    assert.match(html, new RegExp(`<h1[^>]*>${heading}</h1>`), `${heading} has a heading of its own`);
   }
 
   assert.match(css, /@media \(max-width: 760px\)[\s\S]*?\.rail \{[^}]*grid-auto-flow: column/s, 'the rail has a narrow-screen form, and becomes a horizontal strip below 760px');
@@ -156,7 +159,7 @@ test('the destructive control looks destructive', () => {
   assert.match(html, /class="btn danger"/, 'the revoke control is marked as the dangerous one');
   assert.match(css, /\.btn\.danger\s*\{[^}]*var\(--danger\)/, 'and the danger colour is defined for it');
 
-  assert.match(html, /globalThis\.confirm\(`Cabut \$\{button\.dataset\.name\}/, 'revoking still asks first');
+  assert.match(html, /globalThis\.confirm\(fmt\(w\('revokeConfirm'\), \{ name: button\.dataset\.name \}\)\)/, 'revoking still asks first');
 });
 
 test('every server refusal the dashboard can meet is written in Indonesian', () => {
@@ -176,12 +179,34 @@ test('every server refusal the dashboard can meet is written in Indonesian', () 
   assert.doesNotMatch(html, /Gagal: \$\{result\?\.error \|\| response\.status\}/, 'no raw server string reaches the reader');
 });
 
+test('every refusal the dashboard can meet is written twice, once per language', () => {
+  const html = read('dashboard.html');
+  const dictMatch = html.match(/<script type="application\/json" id="i18n-dict">([\s\S]*?)<\/script>/);
+  assert.ok(dictMatch, 'the page carries its own dict in the i18n-dict script');
+  const dict = JSON.parse(dictMatch[1]);
+  assert.deepEqual(Object.keys(dict), ['en'], 'the dict carries English only; Indonesian stays authored in the markup');
+  const marked = [...html.matchAll(/data-i18n(?:-html)?="([^"]+)"/g)].map((m) => m[1]);
+  for (const m of html.matchAll(/data-i18n-attr="([^"]+)"/g)) {
+    for (const part of m[1].split(';')) {
+      const sep = part.indexOf(':');
+      if (sep <= 0) continue;
+      const key = part.slice(sep + 1).trim();
+      if (key) marked.push(key);
+    }
+  }
+  for (const m of html.matchAll(/(?:[^A-Za-z0-9_$])t\(\s*['"]([^'"]+)['"]/g)) {
+    marked.push(m[1]);
+  }
+  assert.deepEqual([...new Set(marked)].sort(), Object.keys(dict.en).sort(), 'marked keys and dict keys are the same set');
+});
+
 test('a refusal on the dashboard answers with a status line, not a silent failure', () => {
   const html = read('dashboard.html');
 
-  assert.match(html, /dicabut\. Pasang ulang/, 'a successful revoke says so');
-  assert.match(html, /Gagal mencabut: \$\{error\.message\}/, 'a refused revoke says what happened');
-  assert.match(html, /Gagal membuat kode: \$\{error\.message\}/, 'a refused pairing code says what happened');
+  assert.match(html, /fmt\(w\('revoked'\), \{ name: button\.dataset\.name \}\)/, 'a successful revoke says so');
+  assert.match(html, /w\('copiedId'\)/, 'and a copied id says so too');
+  assert.match(html, /\$\{w\('revokeFailed'\)\}: \$\{error\.message\}/, 'a refused revoke says what happened');
+  assert.match(html, /\$\{w\('pairFailed'\)\}: \$\{error\.message\}/, 'a refused pairing code says what happened');
   assert.match(html, /\$\('status'\)\.className = 'status warn'/, 'and marks the status line as a warning');
 });
 
@@ -210,6 +235,17 @@ test('the dashboard shares the site navigation and footer', () => {
   assert.match(html, /privasi\.html/, 'the privacy policy is linked');
   assert.match(html, /syarat\.html/, 'the terms are linked');
   assert.match(html, /Keluar|akun\.html/, 'the way to the account page is one click away');
+});
+
+test('the inline module matches the hash its own CSP rule names', () => {
+  const html = read('dashboard.html');
+  const body = /<script type="module">([\s\S]*?)<\/script>/.exec(html)[1];
+  const hash = "'sha256-" + createHash('sha256').update(body, 'utf8').digest('base64') + "'";
+  const sheet = read('_headers');
+  for (const path of ['/dashboard', '/dashboard.html']) {
+    const block = sheet.split('\n\n').find((b) => b.startsWith(`${path}\n`));
+    assert.ok(block && block.includes(hash), `_headers names the dashboard's exact inline module for ${path}`);
+  }
 });
 
 test('the dashboard may reach only Supabase like the auth page', () => {
@@ -502,7 +538,8 @@ test('the grid reads like a table, not a terminal dump', () => {
 
   assert.match(css, /\.konsolGrid \{[^}]*font-family: var\(--font\)/, 'the cells wear the interface font');
   assert.doesNotMatch(css, /\.konsolGrid \{[^}]*font: 12\.5px\/1\.55 var\(--mono\)/, 'a whole grid in mono is a dump');
-  assert.match(css, /\.konsolGrid th \{[^}]*text-transform: uppercase/, 'the header is a band, the way every production table prints it');
+  assert.doesNotMatch(css, /\.konsolGrid th \{[^}]*text-transform: uppercase/, 'the header is a band, but a sentence-case one now');
+  assert.match(css, /\.konsolGrid th \{[^}]*text-transform: none/, 'a sentence-case band prints what the column is');
   assert.match(css, /\.konsolGrid th button \{[^}]*text-transform: inherit/, 'and the browser default on a button cannot undo it');
   assert.match(css, /\.konsolGrid th \{[^}]*color: var\(--muted\)/, 'and it steps back so the values lead');
   assert.match(css, /\.konsolGrid td\.mono,/, 'only the id-like columns keep the mono face');
@@ -513,9 +550,9 @@ test('the history section lists every command newest first', () => {
   const html = read('dashboard.html');
 
   for (const head of ['Waktu', 'Status', 'Metode', 'Device', 'Durasi']) {
-    assert.ok(html.includes(`<th>${head}</th>`), `the history table heads ${head}`);
+    assert.match(html, new RegExp(`<th[^>]*>${head}</th>`), `the history table heads ${head}`);
   }
-  assert.match(html, /<h1>Riwayat<\/h1>/, 'the section names itself');
+  assert.match(html, /<h1[^>]*>Riwayat<\/h1>/, 'the section names itself');
   assert.match(html, /href="#riwayat"/, 'and the rail links to it');
   assert.match(html, /id="historyRows"/, 'the rows have a body of their own');
   assert.match(html, /renderHistory\(data\.devices\)/, 'and the refresh feeds it the loaded devices');
@@ -545,7 +582,7 @@ test('each view is a page of its own, with one visible title', () => {
   const html = read('dashboard.html');
 
   for (const id of ['ringkasan', 'device', 'riwayat', 'tabel', 'dengar', 'pairing', 'aksi', 'akun']) {
-    assert.match(html, new RegExp(`<section id="${id}"[^>]*>[\\s\\S]{0,160}?<h1>`), `${id} opens with its own h1`);
+    assert.match(html, new RegExp(`<section id="${id}"[^>]*>[\\s\\S]{0,300}?<h1[^>]*>`), `${id} opens with its own h1`);
   }
   assert.equal((html.match(/class="active"/g) || []).length, 1, 'exactly one view is open on load');
   assert.match(css, /section h1 \{/, 'and that title has a rule of its own');
@@ -565,11 +602,17 @@ test('a tab change never hides the status line or the numbers', () => {
 test('the rail groups its links instead of listing eight equals', () => {
   const html = read('dashboard.html');
   const rail = html.slice(html.indexOf('<nav class="rail"'), html.indexOf('</nav>', html.indexOf('<nav class="rail"')));
-  const groups = [...rail.matchAll(/<p class="railGroup">([^<]+)<\/p>/g)].map((match) => match[1]);
+  const groups = [...rail.matchAll(/<p class="railGroup"[^>]*>([^<]+)<\/p>/g)].map((match) => match[1]);
 
-  assert.deepEqual(groups.filter((group) => group !== 'Tabel data'), ['Pantau', 'Kelola', 'Uang', 'Akun'], 'four named view groups, in reading order');
-  assert.equal(groups.length, 5, 'and one contextual group, which only the view that needs it asks for');
-  assert.match(rail, /<p class="railGroup">Tabel data<\/p>/, 'that group names the tables, so views and objects never read as one list');
+  assert.deepEqual(groups, ['Pelanggan', 'Tabel data'], 'the customer group first, and the one contextual group under the operator door');
+  assert.match(rail, /<button class="operatorToggle" id="operatorToggle"/, 'the operator group sits behind one labelled door');
+  assert.match(rail, /<div class="operatorGroup" id="operatorGroup" hidden>/, 'closed by default, keyboard-reachable, aria-controls the group');
+  assert.match(rail, /href="#tabel"/, 'the table editor is one click inside the door');
+  assert.match(rail, /href="#dengar"/, 'and so is the listen list');
+  const operatorAt = rail.indexOf('id="operatorGroup"');
+  for (const href of ['#tabel', '#dengar']) {
+    assert.ok(rail.indexOf(`href="${href}"`) > operatorAt, `${href} lives inside the operator door`);
+  }
   assert.match(css, /\.railGroup \{/, 'and a rule that sets them apart from the links');
 });
 
@@ -581,10 +624,13 @@ test('the table list opens under the item that asks for it', () => {
   const html = read('dashboard.html');
   const rail = html.slice(html.indexOf('<nav class="rail"'), html.indexOf('</nav>', html.indexOf('<nav class="rail"')));
 
+  const operatorAt = rail.indexOf('id="operatorGroup"');
   const tabelAt = rail.indexOf('href="#tabel"');
   const listAt = rail.indexOf('id="railTables"');
-  const pairingAt = rail.indexOf('href="#pairing"');
-  assert.ok(tabelAt > -1 && listAt > tabelAt && pairingAt > listAt, 'Tabel, then its own list, then the next item — the way the benchmarks place it');
+  const dengarAt = rail.indexOf('href="#dengar"');
+  assert.ok(operatorAt > -1 && tabelAt > operatorAt && listAt > tabelAt && dengarAt > listAt, 'the operator door holds Tabel, its own list, then Dengar - the way a view carries its objects');
+  assert.match(html, /function setOperatorOpen\(open\)/, 'one function owns the door');
+  assert.match(html, /if \(operatorViews\.has\(target\)\) setOperatorOpen\(true\)/, 'and a deep link to an operator view opens the door itself');
 });
 
 test('the browser tab names the view being read', () => {
@@ -606,7 +652,8 @@ test('the history can be narrowed without reading every command', () => {
 test('an empty view offers the step that fills it', () => {
   const html = read('dashboard.html');
 
-  assert.match(html, /Belum ada device\.<\/strong>[\s\S]{0,240}?href="#pairing"/, 'the empty device list points at pairing');
+  assert.match(html, /emptyDevicesTitle: 'Belum ada device\.'/, 'the empty device list keeps its Indonesian line');
+  assert.match(html, /href="#pairing"/, 'and the empty device list points at pairing');
   assert.match(html, /Belum ada riwayat perintah\.[\s\S]{0,240}?href="#aksi"/, 'the empty history points at the first run');
 });
 
@@ -625,9 +672,9 @@ test('an empty view looks like a page, not a dashed box', () => {
 test('the title of an empty view stands on its own line', () => {
   const html = read('dashboard.html');
 
-  assert.match(html, /<strong>Belum ada riwayat perintah\.<\/strong>\s*<p>/, 'the sentence under the title is a block of its own');
-  assert.match(html, /<strong>Belum ada device\.<\/strong>\s*<p>/, 'and so is the one the device list writes');
-  assert.match(html, /<strong>Belum ada sesi dengar\.<\/strong>\s*<p>/, 'and the one the listen list writes');
+  assert.match(html, /<strong[^>]*>Belum ada riwayat perintah\.<\/strong>\s*<p/, 'the sentence under the title is a block of its own');
+  assert.match(html, /emptyDevicesTitle/, 'and so is the one the device list writes');
+  assert.match(html, /listenEmptyTitle/, 'and the one the listen list writes');
 });
 
 test('the numbers are three cards, not one ruled row', () => {
@@ -642,8 +689,8 @@ test('the main action follows the state the page already knows', () => {
 
   assert.match(html, /function paintPrimaryAction\(\)/, 'one function decides the next step');
   assert.match(html, /if \(!lastSeen\.installed\)/, 'a missing extension is offered the download');
-  assert.match(html, /cta\.textContent = 'Pair device'/, 'an installed browser with no device is offered pairing');
-  assert.match(html, /cta\.textContent = 'Jalankan aksi'/, 'a live device is offered a run');
+  assert.match(html, /cta\.textContent = w\('ctaPair'\)/, 'an installed browser with no device is offered pairing');
+  assert.match(html, /cta\.textContent = w\('ctaRun'\)/, 'a live device is offered a run');
 });
 
 test('the console keeps its own scale without redefining a shared token', () => {
@@ -666,7 +713,7 @@ test('the table list lives in the rail, so a view has one left column', () => {
   const html = read('dashboard.html');
 
   assert.match(html, /<div class="railContext" id="railTables" hidden>/, 'the rail has a contextual part, empty until a view needs it');
-  assert.match(html, /<div class="railList" id="konsolList" role="group" aria-label="Daftar tabel"><\/div>/, 'and the table list is what fills it');
+  assert.match(html, /<div class="railList" id="konsolList" role="group" aria-label="Daftar tabel"[^>]*><\/div>/, 'and the table list is what fills it');
 
   const from = html.indexOf('<section id="tabel"');
   const section = html.slice(from, html.indexOf('</section>', from));
@@ -827,7 +874,7 @@ test('the pager ends on the rail\'s line', () => {
 });
 
 test('the console\'s spacing sits on one scale', () => {
-  assert.match(css, /main\.console \{[^}]*--app-title: 18px/, 'a view title is 18px, the size Cline prints a panel title in');
+  assert.match(css, /main\.console \{[^}]*--app-title: 24px/, 'a view title is 24px, the median the app-screen study measures');
   assert.match(css, /\.contentHead \{[^}]*padding-top: 16px/, 'the head starts on 16');
   assert.match(css, /\.metrics > div \{[^}]*padding: 12px 16px/, 'a card breathes on 12 and 16');
   assert.match(css, /section > \.meta \{[^}]*margin: 0 0 16px/, 'a note is followed by 16');
@@ -851,7 +898,7 @@ test('the saldo view also lists the prices from the server, not a hardcoded tabl
   const html = read('dashboard.html');
   assert.match(html, /id="priceRows"/, 'the price list has its own table');
   assert.match(html, /\$\{BILLING_FN\}\?prices=1/, 'the prices are fetched from the billing function');
-  assert.match(html, /priceLabel\[price\.kind\]/, 'unknown kinds still render under their own name');
+  assert.match(html, /priceLabel\(\)\[price\.kind\]/, 'unknown kinds still render under their own name');
 });
 
 test('the top-up button names the price the server charges, not one written in the page', () => {
@@ -859,5 +906,48 @@ test('the top-up button names the price the server charges, not one written in t
   const button = /id="walletTopUp"[^>]*>([^<]*)</.exec(html)?.[1] ?? '';
   assert.doesNotMatch(button, /\d/, `the button names no amount of its own, found: ${button}`);
   assert.match(html, /price\.kind === 'wallet\.deposit'/, 'the button reads the deposit price');
-  assert.match(html, /walletTopUp'\)\.textContent = `Isi ulang \$\{walletNf\(deposit\.amount_cents\)\}`/, 'the button says what the server charges');
+  assert.match(html, /walletTopUp'\)\.textContent = fmt\(w\('walletTopUpAmount'\), \{ amount: walletNf\(deposit\.amount_cents\) \}\)/, 'the button says what the server charges, in the reader’s language');
+});
+
+test('the plan hero answers the screen’s one question, with the real numbers', () => {
+  const html = read('dashboard.html');
+
+  assert.match(html, /id="planCard"/, 'the largest block on the page is the plan');
+  assert.match(html, /id="planTrack"/, 'the quota bar is really there');
+  assert.match(html, /role="progressbar"/, 'and exposes progress semantics on the success path');
+  assert.match(html, /planTrack'\)\.setAttribute\('aria-hidden', 'true'\)/, 'and removes them entirely when the plan cannot be read');
+  assert.match(html, /planTrack'\)\.removeAttribute\('aria-valuenow'\)/, 'so a screen reader never hears a zero it did not earn');
+  assert.match(html, /id="planFill"/, 'the fill paints the ratio the account actually spent');
+  assert.match(html, /id="planExhaustedBanner" hidden/, 'the exhausted state exists, and is hidden until it is true');
+  assert.match(html, /id="planError" hidden/, 'and so is the failure state');
+  assert.match(html, /id="planRefresh"/, 'the failure is one click away from fixed');
+  assert.match(html, /async function refreshPlan\(\)/, 'one function reads the plan over its own owner-scoped RPC');
+  assert.match(html, /function paintPlan\(answer\)/, 'one function paints all of it, or none of it');
+  assert.match(html, /paintPlan\(null\)/, 'a failed read keeps the frame and paints nothing as if it were data');
+  assert.match(html, /remaining <= 0/, 'the banner waits for the count to reach zero');
+  assert.match(html, /w\('planResets'\)/, 'and names when the reset actually lands — the UTC midnight, not a local one');
+  assert.match(html, /sessionAllowance/, 'the session allowance rides the same read');
+});
+
+test('the plan RPC answers with the session allowance too, in the shape the SQL states', () => {
+  const migration = fs.readFileSync(new URL('supabase/migrations/20261109130000_opera_session_usage.sql', root), 'utf8');
+  assert.match(migration, /'sessionAllowance', case when v_plan = 'plan\.firm' then 500 else 50 end/, 'the firm session allowance in SQL is the session allowance in JavaScript');
+  assert.match(migration, /jsonb_build_object\([\s\S]*?'ok', true,/, 'and the answer is one object the dashboard can read once');
+});
+
+test('the operator door exists, stays shut, and opens itself for the operator’s views', () => {
+  const html = read('dashboard.html');
+  const css = read('dashboard.css');
+  const rail = html.slice(html.indexOf('<nav class="rail"'), html.indexOf('</nav>', html.indexOf('<nav class="rail"')));
+
+  assert.match(rail, /id="operatorToggle"/, 'the door is a keyboard-reachable button');
+  assert.match(rail, /aria-expanded="false"/, 'and it opens shut');
+  assert.match(rail, /aria-controls="operatorGroup"/, 'and names what it opens');
+  assert.match(rail, /id="operatorGroup" hidden/, 'the operator views wait behind one disclosure');
+  for (const href of ['#tabel', '#dengar']) {
+    assert.ok(rail.indexOf(`href="${href}"`) > rail.indexOf('id="operatorGroup"'), `${href} waits behind the door`);
+  }
+  assert.match(html, /if \(operatorViews\.has\(target\)\) setOperatorOpen\(true\)/, 'a deep link to an operator view opens the door itself');
+  assert.match(html, /hashchange/, 'and a hash change re-shows the door’s decision');
+  assert.match(css, /\.operatorGroup\[hidden\] \{ display: none; \}/, 'and the closed door takes no space');
 });

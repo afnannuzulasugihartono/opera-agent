@@ -221,7 +221,7 @@ test('MCP exposes focused browser tools and no generic command escape hatch', ()
 });
 
 test('R4 keeps the protocol inventory frozen at 31 allowlisted primitives for release 1.6.32 (page.stream and statement added)', () => {
-  assert.equal(PRODUCT_VERSION, '1.6.34');
+  assert.equal(PRODUCT_VERSION, '1.6.35');
   assert.equal(ALLOWED_METHODS.length, 31);
   assert.deepEqual([...ALLOWED_METHODS].sort(), FROZEN_METHODS);
 });
@@ -264,6 +264,17 @@ test('the status tool says whether the extension is there at all', () => {
   assert.match(source, /deviceStatus/, 'and the device state is named');
   assert.match(source, /latestExtensionVersion/, 'and the newest published version is named, so an extension Chrome has not installed yet is visible');
   assert.match(source, /extensionUpdatePending/, 'and the gap is stated as a fact');
+});
+
+test('browser_status answers its plan even when the command it carried failed', () => {
+  const at = source.indexOf('async function executeStatus');
+  assert.ok(at >= 0, 'executeStatus stays a named function');
+  const end = source.indexOf('\nfunction ', at + 1);
+  const body = source.slice(at, end < 0 ? undefined : end);
+  assert.doesNotMatch(body, /if \(answer\.isError\) return answer;/, 'the plan is merged before the failure is returned');
+  assert.match(body, /planInfo\(/, 'the plan is resolved on every path, success and failure alike');
+  assert.match(body, /structuredContent \?\? \{\}\),\s*\.\.\.\(plan \?\? \{\}\)/, 'the failure path spreads the original structuredContent before adding the plan, so the failure taxonomy survives');
+  assert.match(body, /part\.type === "text" \? \{ \.\.\.part, text: JSON\.stringify\(merged\) \} : part/, 'and the text part is re-serialized from the same merged object');
 });
 
 test('the tool count and names match the contract', () => {

@@ -13,8 +13,8 @@ const read = (name) => fs.readFileSync(new URL(name, root), 'utf8');
 
 const TOGGLE = '<span class="lang" data-lang-toggle></span>';
 
-const DICT_PAGES = ['beranda.html', 'unduh.html', 'unduh-berkas.html', 'fitur.html', 'studi.html', 'bukti.html', 'dukungan.html', 'docs.html', '404.html', 'privasi.html', 'syarat.html', 'index.html'];
-const TOGGLE_PAGES = [...DICT_PAGES, 'akun.html', 'dashboard.html', 'oauth/consent.html'];
+const DICT_PAGES = ['beranda.html', 'unduh.html', 'unduh-berkas.html', 'fitur.html', 'studi.html', 'bukti.html', 'dukungan.html', 'docs.html', '404.html', 'privasi.html', 'syarat.html', 'index.html', 'dashboard.html'];
+const TOGGLE_PAGES = [...DICT_PAGES, 'akun.html', 'oauth/consent.html'];
 
 function attrKeys(page) {
   const html = read(`landing/${page}`);
@@ -55,7 +55,7 @@ test('every marked string has English, and no dict carries a string nothing mark
 
 test('the pages without a dict mark nothing, so no toggle promises what is not there', () => {
 
-  for (const page of ['akun.html', 'dashboard.html', 'oauth/consent.html']) {
+  for (const page of ['akun.html', 'oauth/consent.html']) {
     assert.doesNotMatch(read(`landing/${page}`), /i18n-dict/, `${page} carries no dict`);
     assert.deepEqual(attrKeys(page), [], `${page} marks no string without a dict to translate it`);
     assert.match(read(`landing/${page}`), /<script src="(?:\.\.?\/|\/)i18n\.js"><\/script>/, `${page} loads the mechanism so its toggle paints and persists`);

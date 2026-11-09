@@ -1,7 +1,8 @@
-<!-- @last-edited: 2026-10-28 UTC+7. -->
-<!-- @title: dashboard — the control panel: devices, history, the project's tables, pairing, and one command. -->
-<!-- @state: an app shell, not a brochure: an app bar with the live status line and the next action, a metric strip above the views, one rail with three named groups, and one visible view at a time chosen by the hash. -->
-<!-- Reads only through opera_my_devices and the opera_konsol_* reader RPCs — never a raw table path; reads the content script's DOM marker to say whether the extension is installed here. -->
+<!-- @last-edited: 2026-11-09 UTC+7. -->
+<!-- @title: dashboard - the control panel: the plan you are on, your devices, the runs, the project's tables. -->
+<!-- @state: an app shell, not a brochure: a rail with a customer group and one operator door, a plan hero on the landing view, and the account, devices, history and tables one tap away. -->
+<!-- The hash decides the active view. -->
+<!-- Reads only through opera_my_* and the opera_konsol_* reader RPCs - never a raw table path; reads the content script's DOM marker to say whether the extension is installed here. -->
 <!-- @dependencies: site.css, app.css, dashboard.css, i18n.js, wayfind.js, palette.js. -->
 
 <!doctype html>
@@ -28,48 +29,47 @@
     <div class="wrap">
       <nav>
         <a class="brand" href="/beranda.html" aria-current="page"><svg class="brandMark" viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="7"  /><path d="M8 5.6v12.8l3.1-2.9 1.9 4.5 2.4-1-2-4.5h3.9L8 5.6Z"  /></svg><span>Opera Agent</span></a>
-        <a href="/fitur.html">Fitur</a>
-        <a href="/unduh.html">Unduh</a>
-        <a href="/harga">Harga</a>
-        <a href="/dukungan.html">Dukungan</a>
-        <a href="/docs.html">Docs</a>
+        <a href="/fitur.html" data-i18n="nav.features">Fitur</a>
+        <a href="/unduh.html" data-i18n="nav.download">Unduh</a>
+        <a href="/harga" data-i18n="nav.price">Harga</a>
+        <a href="/dukungan.html" data-i18n="nav.support">Dukungan</a>
+        <a href="/docs.html" data-i18n="nav.docs">Docs</a>
         <span class="lang" data-lang-toggle></span>
-        <button class="navSearch" type="button" aria-label="Cari halaman Ctrl K" aria-keyshortcuts="Control+K Meta+K"><svg class="navSearchIcon" viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><circle cx="7" cy="7" r="4.5" fill="none" stroke="currentColor" stroke-width="1.5"></circle><path d="M10.6 10.6 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path></svg><kbd class="navSearchKey">Ctrl K</kbd></button>
-        <a class="navCta" href="/">Masuk</a>
+        <button class="navSearch" type="button" aria-label="Cari halaman Ctrl K" aria-keyshortcuts="Control+K Meta+K" data-i18n-attr="aria-label:nav.search"><svg class="navSearchIcon" viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><circle cx="7" cy="7" r="4.5" fill="none" stroke="currentColor" stroke-width="1.5"></circle><path d="M10.6 10.6 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path></svg><kbd class="navSearchKey">Ctrl K</kbd></button>
+        <a class="navCta" href="/" data-i18n="nav.signin">Masuk</a>
       </nav>
     </div>
   </header>
 
   <main class="wrap wide console">
     <div class="layout">
-      <nav class="rail" aria-label="Bagian dashboard">
+      <nav class="rail" aria-label="Bagian dashboard" data-i18n-attr="aria-label:rail.sections">
         <div class="railHead">
-          <p class="railTitle">Konsol</p>
-          <button class="railCollapse" id="railCollapse" type="button" aria-expanded="true" title="Sembunyikan navigasi" aria-label="Sembunyikan navigasi">
+          <p class="railTitle" data-i18n="rail.title">Opera Agent</p>
+          <button class="railCollapse" id="railCollapse" type="button" aria-expanded="true" title="Sembunyikan navigasi" aria-label="Sembunyikan navigasi" data-i18n-attr="title:rail.collapseHide;aria-label:rail.collapseHide">
             <svg class="railIcon" viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3 5 8l5 5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" /></svg>
           </button>
         </div>
-        <p class="railGroup">Pantau</p>
-        <a href="#ringkasan" aria-current="true"><svg class="railIcon" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 13a6 6 0 1 1 11 0" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" /><path d="M8 13 11 7" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" /></svg><span>Ringkasan</span></a>
+        <p class="railGroup" data-i18n="rail.customer">Pelanggan</p>
+        <a href="#ringkasan" aria-current="true"><svg class="railIcon" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 13a6 6 0 1 1 11 0" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" /><path d="M8 13 11 7" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" /></svg><span data-i18n="rail.overview">Ringkasan</span></a>
         <a href="#device"><svg class="railIcon" viewBox="0 0 16 16" aria-hidden="true"><rect x="2" y="3" width="12" height="8.5" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.5" /><path d="M6 14h4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" /></svg><span id="railDeviceLabel">Device</span></a>
-        <a href="#riwayat"><svg class="railIcon" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="5.75" fill="none" stroke="currentColor" stroke-width="1.5" /><path d="M8 4.75V8l2.5 1.75" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" /></svg><span>Riwayat</span></a>
-        <a href="#dengar"><svg class="railIcon" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 8h2M6 4.5v7M9.5 2.5v11M13 6.5v3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" /></svg><span>Dengar</span></a>
-        <p class="railGroup">Kelola</p>
-        <a href="#tabel"><svg class="railIcon" viewBox="0 0 16 16" aria-hidden="true"><rect x="2" y="2.5" width="12" height="11" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.5" /><path d="M2 6.25h12M6.25 6.25V13.5" fill="none" stroke="currentColor" stroke-width="1.5" /></svg><span>Tabel</span></a>
+        <a href="#riwayat"><svg class="railIcon" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="5.75" fill="none" stroke="currentColor" stroke-width="1.5" /><path d="M8 4.75V8l2.5 1.75" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" /></svg><span data-i18n="rail.history">Riwayat</span></a>
+        <a href="#aksi"><svg class="railIcon" viewBox="0 0 16 16" aria-hidden="true"><path d="M5.5 3.75 12 8l-6.5 4.25z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" /></svg><span data-i18n="rail.action">Aksi</span></a>
+        <a href="#saldo"><svg class="railIcon" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="5.25" fill="none" stroke="currentColor" stroke-width="1.5" /><path d="M8 5.25v5.5M6.4 6.6h2.4a1.2 1.2 0 0 1 0 2.4H6.4" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" /></svg><span data-i18n="rail.balance">Saldo</span></a>
+        <a href="#pairing"><svg class="railIcon" viewBox="0 0 16 16" aria-hidden="true"><path d="M6.5 9.5a3 3 0 0 1 0-4.2l1.4-1.4a3 3 0 0 1 4.2 4.2l-.7.7" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" /><path d="M9.5 6.5a3 3 0 0 1 0 4.2L8.1 12.1a3 3 0 0 1-4.2-4.2l.7-.7" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" /></svg><span data-i18n="rail.pairing">Pairing</span></a>
+        <a href="#akun"><svg class="railIcon" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="5.75" r="2.75" fill="none" stroke="currentColor" stroke-width="1.5" /><path d="M3 13.25a5 5 0 0 1 10 0" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" /></svg><span data-i18n="rail.account">Akun</span></a>
+        <button class="operatorToggle" id="operatorToggle" type="button" aria-expanded="false" aria-controls="operatorGroup"><span data-i18n="rail.operator">Operator</span><svg class="railIcon" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 4.5 10.5 8 6 11.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" /></svg></button>
+        <div class="operatorGroup" id="operatorGroup" hidden>
+          <a href="#tabel"><svg class="railIcon" viewBox="0 0 16 16" aria-hidden="true"><rect x="2" y="2.5" width="12" height="11" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.5" /><path d="M2 6.25h12M6.25 6.25V13.5" fill="none" stroke="currentColor" stroke-width="1.5" /></svg><span data-i18n="rail.tablesLink">Tabel</span></a>
 
-        <!-- WHY a contextual part: the object of the Tabel view is a list of tables, and a second sidebar inside the content made the one view with two left columns. -->
-        <!-- WHY it opens under Tabel and not at the end of the rail: measured against Cline, the objects of a view open directly under that view's item. -->
-        <!-- The reader arrived at Tabel and found its tables below "Akun". -->
-        <div class="railContext" id="railTables" hidden>
-          <p class="railGroup">Tabel data</p>
-          <div class="railList" id="konsolList" role="group" aria-label="Daftar tabel"></div>
+          <!-- WHY a contextual part: the object of the Tabel view is a list of tables, and a second sidebar inside the content made the one view with two left columns. -->
+          <!-- WHY it opens under Tabel and not at the end of the rail: the objects of a view open directly under that view's item. -->
+          <div class="railContext" id="railTables" hidden>
+            <p class="railGroup" data-i18n="rail.tables">Tabel data</p>
+            <div class="railList" id="konsolList" role="group" aria-label="Daftar tabel" data-i18n-attr="aria-label:rail.tables"></div>
+          </div>
+          <a href="#dengar"><svg class="railIcon" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 8h2M6 4.5v7M9.5 2.5v11M13 6.5v3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" /></svg><span data-i18n="rail.listen">Dengar</span></a>
         </div>
-        <a href="#pairing"><svg class="railIcon" viewBox="0 0 16 16" aria-hidden="true"><path d="M6.5 9.5a3 3 0 0 1 0-4.2l1.4-1.4a3 3 0 0 1 4.2 4.2l-.7.7" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" /><path d="M9.5 6.5a3 3 0 0 1 0 4.2L8.1 12.1a3 3 0 0 1-4.2-4.2l.7-.7" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" /></svg><span>Pairing</span></a>
-        <a href="#aksi"><svg class="railIcon" viewBox="0 0 16 16" aria-hidden="true"><path d="M5.5 3.75 12 8l-6.5 4.25z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" /></svg><span>Aksi</span></a>
-        <p class="railGroup">Uang</p>
-        <a href="#saldo"><svg class="railIcon" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="5.25" fill="none" stroke="currentColor" stroke-width="1.5" /><path d="M8 5.25v5.5M6.4 6.6h2.4a1.2 1.2 0 0 1 0 2.4H6.4" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" /></svg><span>Saldo</span></a>
-        <p class="railGroup">Akun</p>
-        <a href="#akun"><svg class="railIcon" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="5.75" r="2.75" fill="none" stroke="currentColor" stroke-width="1.5" /><path d="M3 13.25a5 5 0 0 1 10 0" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" /></svg><span>Akun</span></a>
       </nav>
 
       <div class="content tabbed">
@@ -78,23 +78,46 @@
           <div class="appBar">
             <p class="appWho" id="whoami">Memeriksa sesi…</p>
             <div class="appActions">
-              <a class="btn ghost sm" href="./unduh.html" id="primaryCta">Pasang extension</a>
-              <a class="btn ghost sm" href="./akun.html">Kelola akun</a>
+              <a class="btn ghost sm" href="./unduh.html" id="primaryCta" data-i18n="home.installExtension">Pasang extension</a>
+              <a class="btn ghost sm" href="./akun.html" data-i18n="home.manageAccount">Kelola akun</a>
             </div>
           </div>
 
           <p class="status appStatus" id="status" role="status" aria-live="polite">&nbsp;</p>
 
           <dl class="metrics" id="metrics">
-            <div><dt>Device ter-pairing</dt><dd id="statDevices" data-count="0">–</dd></div>
-            <div><dt>Daring sekarang</dt><dd id="statOnline" data-count="0">–</dd></div>
-            <div><dt>Perintah selesai</dt><dd id="statCommands" data-count="0">–</dd></div>
+            <div><dt data-i18n="home.pairCount">Device ter-pairing</dt><dd id="statDevices" data-count="0">–</dd></div>
+            <div><dt data-i18n="home.onlineNow">Daring sekarang</dt><dd id="statOnline" data-count="0">–</dd></div>
+            <div><dt data-i18n="home.commandsDone">Perintah selesai</dt><dd id="statCommands" data-count="0">–</dd></div>
           </dl>
         </div>
 
         <section id="ringkasan" class="active">
-          <h1>Ringkasan</h1>
-          <p class="meta">Kesiapan akun ini: extension di browser, device yang ter-pairing, dan langkah berikutnya.</p>
+          <h1 data-i18n="home.title">Ringkasan</h1>
+
+          <div class="planCard" id="planCard">
+            <div class="planHead">
+              <div>
+                <p class="planLabel" data-i18n="plan.label">Paket akun ini</p>
+                <h2 class="planName"><code id="planName">–</code></h2>
+              </div>
+              <span class="chip" id="planChip">–</span>
+            </div>
+            <div class="planMain">
+              <div class="planFigure">
+                <span class="planRemaining" id="planRemaining">–</span>
+                <span class="planRemainingLabel" data-i18n="plan.remaining">perintah tersisa hari ini</span>
+              </div>
+              <div class="planUsage">
+                <div class="planTrack" role="progressbar" id="planTrack" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Pemakaian kuota hari ini" data-i18n-attr="aria-label:plan.usageLabel"><div class="planFill" id="planFill"></div></div>
+                <p class="planNumbers"><strong><span id="planUsed">–</span></strong> <span data-i18n="plan.of">dari</span> <span id="planQuota">–</span> <span data-i18n="plan.usedToday">perintah dipakai hari ini</span></p>
+                <p class="planFoot"><span><span id="planAllowance">–</span> <span data-i18n="plan.session">/ sesi</span></span><span class="planResets" id="planResets">–</span><a class="planLink" href="/harga" data-i18n="plan.cta">Kelola paket</a></p>
+              </div>
+            </div>
+            <p class="planExhausted" id="planExhaustedBanner" hidden><span data-i18n="plan.exhausted">Plan habis — reset besok 00.00 UTC.</span> <a href="/harga" data-i18n="plan.upgrade">Lihat paket</a></p>
+            <p class="planError" id="planError" hidden><span data-i18n="plan.error">Status paket tidak bisa dibaca.</span><button class="btn ghost sm" id="planRefresh" type="button" data-i18n="plan.retry">Coba lagi</button></p>
+          </div>
+
           <div class="card">
             <p class="tone" id="installState" role="status" aria-live="polite">&nbsp;</p>
             <ol class="checklist" id="checklist"></ol>
@@ -102,42 +125,42 @@
         </section>
 
         <section id="device">
-          <h1>Device</h1>
-          <p class="meta">Device yang ter-pairing ke akun ini, beserta sepuluh perintah terakhirnya.</p>
+          <h1 data-i18n="device.title">Device</h1>
+          <p class="meta" data-i18n="device.meta">Device yang ter-pairing ke akun ini, beserta sepuluh perintah terakhirnya.</p>
           <div id="devices"></div>
         </section>
 
         <section id="riwayat">
-          <h1>Riwayat</h1>
-          <p class="meta">Perintah terbaru di semua device, terbaru dulu. Hanya method dan status — tanpa isi perintah.</p>
+          <h1 data-i18n="history.title">Riwayat</h1>
+          <p class="meta" data-i18n="history.meta">Perintah terbaru di semua device, terbaru dulu. Hanya method dan status — tanpa isi perintah.</p>
           <div class="toolbar">
-            <div class="segmented" role="group" aria-label="Saring status">
-              <button type="button" data-filter="" aria-pressed="true">Semua</button>
-              <button type="button" data-filter="completed" aria-pressed="false">Selesai</button>
-              <button type="button" data-filter="failed" aria-pressed="false">Gagal</button>
-              <button type="button" data-filter="pending" aria-pressed="false">Antrean</button>
+            <div class="segmented" role="group" aria-label="Saring status" data-i18n-attr="aria-label:history.filterGroup">
+              <button type="button" data-filter="" aria-pressed="true" data-i18n="history.filterAll">Semua</button>
+              <button type="button" data-filter="completed" aria-pressed="false" data-i18n="history.filterCompleted">Selesai</button>
+              <button type="button" data-filter="failed" aria-pressed="false" data-i18n="history.filterFailed">Gagal</button>
+              <button type="button" data-filter="pending" aria-pressed="false" data-i18n="history.filterPending">Antrean</button>
             </div>
-            <input id="historySearch" type="search" placeholder="Cari metode atau device…" autocomplete="off" spellcheck="false" maxlength="64" aria-label="Cari di riwayat" />
+            <input id="historySearch" type="search" placeholder="Cari metode atau device…" autocomplete="off" spellcheck="false" maxlength="64" aria-label="Cari di riwayat" data-i18n-attr="placeholder:history.searchPlaceholder;aria-label:history.searchAria" />
             <span class="meta" id="historyCount">–</span>
           </div>
           <div class="card tableCard">
             <table class="history">
               <thead>
-                <tr><th>Waktu</th><th>Status</th><th>Metode</th><th>Device</th><th>Durasi</th></tr>
+                <tr><th scope="col" data-i18n="history.colTime">Waktu</th><th scope="col" data-i18n="history.colStatus">Status</th><th scope="col" data-i18n="history.colMethod">Metode</th><th scope="col" data-i18n="history.colDevice">Device</th><th scope="col" data-i18n="history.colDuration">Durasi</th></tr>
               </thead>
               <tbody id="historyRows"></tbody>
             </table>
-            <div class="empty" id="historyEmpty" hidden><strong>Belum ada riwayat perintah.</strong><p>Jalankan aksi pertama dari <a href="#aksi">tab Aksi</a>.</p></div>
-            <div class="empty" id="historyNoMatch" hidden><strong>Tidak ada perintah yang cocok.</strong><p>Longgarkan saringan status atau kata kuncinya.</p><button class="btn ghost sm" type="button" id="historyReset">Hapus filter</button></div>
+            <div class="empty" id="historyEmpty" hidden><strong data-i18n="history.emptyTitle">Belum ada riwayat perintah.</strong><p data-i18n-html="history.emptyBody">Jalankan aksi pertama dari <a href="#aksi">tab Aksi</a>.</p></div>
+            <div class="empty" id="historyNoMatch" hidden><strong data-i18n="history.noMatchTitle">Tidak ada perintah yang cocok.</strong><p data-i18n="history.noMatchBody">Longgarkan saringan status atau kata kuncinya.</p><button class="btn ghost sm" type="button" id="historyReset" data-i18n="history.reset">Hapus filter</button></div>
           </div>
         </section>
 
         <section id="tabel">
-          <h1>Tabel</h1>
-          <p class="meta">Data proyek, hanya-baca: baris disaring server, kolom rahasia disamarkan sebelum keluar.</p>
+          <h1 data-i18n="tabel.title">Tabel</h1>
+          <p class="meta" data-i18n="tabel.meta">Data proyek, hanya-baca: baris disaring server, kolom rahasia disamarkan sebelum keluar.</p>
           <div class="konsolBar">
-            <input id="konsolSearch" type="search" placeholder="Cari di tabel ini…" autocomplete="off" spellcheck="false" maxlength="64" aria-label="Cari baris di tabel ini" />
-            <button class="btn ghost sm" id="konsolCsv" type="button" title="Unduh hingga 5.000 baris sesuai filter saat ini">Ekspor CSV</button>
+            <input id="konsolSearch" type="search" placeholder="Cari di tabel ini…" autocomplete="off" spellcheck="false" maxlength="64" aria-label="Cari baris di tabel ini" data-i18n-attr="placeholder:tabel.searchPlaceholder;aria-label:tabel.searchAria" />
+            <button class="btn ghost sm" id="konsolCsv" type="button" title="Unduh hingga 5.000 baris sesuai filter saat ini" data-i18n-attr="title:tabel.csvTitle" data-i18n="tabel.csv">Ekspor CSV</button>
           </div>
           <p class="status" id="konsolStatus" role="status" aria-live="polite">&nbsp;</p>
           <div class="konsolScroll">
@@ -145,72 +168,71 @@
               <thead id="konsolHead"><tr><th scope="col">Memuat…</th></tr></thead>
               <tbody id="konsolRows"></tbody>
             </table>
-            <div class="empty" id="konsolEmpty" hidden><strong>Tabel ini kosong.</strong> Tidak ada baris yang cocok dengan akun dan filter ini.</div>
+            <div class="empty" id="konsolEmpty" hidden><strong data-i18n="tabel.emptyTitle">Tabel ini kosong.</strong> <span data-i18n="tabel.emptyBody">Tidak ada baris yang cocok dengan akun dan filter ini.</span></div>
           </div>
           <div class="konsolBar konsolFoot">
-            <button class="btn ghost sm" id="konsolPrev" type="button">‹ Sebelumnya</button>
+            <button class="btn ghost sm" id="konsolPrev" type="button" data-i18n="tabel.prev">‹ Sebelumnya</button>
             <span class="meta" id="konsolPage">–</span>
-            <button class="btn ghost sm" id="konsolNext" type="button">Berikutnya ›</button>
+            <button class="btn ghost sm" id="konsolNext" type="button" data-i18n="tabel.next">Berikutnya ›</button>
           </div>
           <pre class="konsolJson" id="konsolJson" hidden></pre>
         </section>
 
         <section id="dengar">
-          <h1>Sesi dengar</h1>
-          <p class="meta">Sesi dengar audio ke akun ini: metadata saja, tanpa isi pembicaraan. Isi transkrip hanya ada di hasil tool model.</p>
+          <h1 data-i18n="dengar.title">Sesi dengar</h1>
+          <p class="meta" data-i18n="dengar.meta">Sesi dengar audio ke akun ini: metadata saja, tanpa isi pembicaraan. Isi transkrip hanya ada di hasil tool model.</p>
           <div id="listens"></div>
         </section>
 
         <section id="saldo">
-          <h1>Saldo</h1>
-          <p class="meta">Saldo prabayar untuk pekerjaan yang selesai: diisi lewat QRIS, dipotong saat satu pekerjaan selesai, dikembalikan penuh saat gagal. Angka di sini dibaca dari server setiap kali halaman ini dibuka.</p>
+          <h1 data-i18n="saldo.title">Saldo</h1>
+          <p class="meta" data-i18n="saldo.meta">Saldo prabayar untuk pekerjaan yang selesai: diisi lewat QRIS, dipotong saat satu pekerjaan selesai, dikembalikan penuh saat gagal. Angka di sini dibaca dari server setiap kali halaman ini dibuka.</p>
           <div class="card">
             <dl class="metrics">
-              <div><dt>Saldo</dt><dd id="walletBalance">–</dd></div>
-              <div><dt>Tersedia sekarang</dt><dd id="walletAvailable">–</dd></div>
+              <div><dt data-i18n="saldo.balance">Saldo</dt><dd id="walletBalance">–</dd></div>
+              <div><dt data-i18n="saldo.available">Tersedia sekarang</dt><dd id="walletAvailable">–</dd></div>
             </dl>
             <div class="row">
-              <button class="btn" id="walletTopUp" type="button">Isi ulang</button>
-              <button class="btn ghost sm" id="walletRefresh" type="button">Muat ulang</button>
+              <button class="btn" id="walletTopUp" type="button" data-i18n="saldo.topUp">Isi ulang</button>
+              <button class="btn ghost sm" id="walletRefresh" type="button" data-i18n="saldo.refresh">Muat ulang</button>
             </div>
             <p class="status" id="walletStatus" role="status" aria-live="polite">&nbsp;</p>
           </div>
           <div class="card tableCard">
-            <p class="meta">Daftar harga — dibaca dari server setiap halaman dibuka, sama seperti saldo. Yang dipotong hanya saat satu pekerjaan selesai.</p>
+            <p class="meta" data-i18n="saldo.pricesMeta">Daftar harga — dibaca dari server setiap halaman dibuka, sama seperti saldo. Yang dipotong hanya saat satu pekerjaan selesai.</p>
             <table class="history">
               <thead>
-                <tr><th>Pekerjaan</th><th>Harga</th></tr>
+                <tr><th scope="col" data-i18n="saldo.colJob">Pekerjaan</th><th scope="col" data-i18n="saldo.colPrice">Harga</th></tr>
               </thead>
               <tbody id="priceRows"></tbody>
             </table>
-            <div class="empty" id="priceEmpty" hidden><strong>Belum bisa memuat harga.</strong><p>Coba tombol muat ulang.</p></div>
+            <div class="empty" id="priceEmpty" hidden><strong data-i18n="saldo.priceEmptyTitle">Belum bisa memuat harga.</strong><p data-i18n="saldo.priceEmptyBody">Coba tombol muat ulang.</p></div>
           </div>
           <div class="card tableCard">
             <table class="history">
               <thead>
-                <tr><th>Waktu</th><th>Jenis</th><th>Jumlah</th><th>Catatan</th></tr>
+                <tr><th scope="col" data-i18n="history.colTime">Waktu</th><th scope="col" data-i18n="saldo.colKind">Jenis</th><th scope="col" data-i18n="saldo.colAmount">Jumlah</th><th scope="col" data-i18n="saldo.colNote">Catatan</th></tr>
               </thead>
               <tbody id="walletRows"></tbody>
             </table>
-            <div class="empty" id="walletEmpty" hidden><strong>Belum ada pergerakan saldo.</strong><p>Isi ulang dulu, lalu jalankan satu pekerjaan dari tab Aksi.</p></div>
+            <div class="empty" id="walletEmpty" hidden><strong data-i18n="saldo.walletEmptyTitle">Belum ada pergerakan saldo.</strong><p data-i18n-html="saldo.walletEmptyBody">Isi ulang dulu, lalu jalankan satu pekerjaan dari <a href="#aksi">tab Aksi</a>.</p></div>
           </div>
         </section>
 
       <div class="duo">
         <section id="pairing">
-          <h1>Pairing manual</h1>
+          <h1 data-i18n="pairing.title">Pairing manual</h1>
           <div class="card">
-            <p class="meta">Kode sekali pakai, berlaku 10 menit, terikat ke akun ini. Tempel di popup extension
-              pada device yang ingin kamu hubungkan.</p>
-            <label for="pairName">Nama device</label>
+            <p class="meta" data-i18n="pairing.meta">Kode sekali pakai, berlaku 10 menit, terikat ke akun ini. Tempel di popup extension pada device yang ingin kamu hubungkan.</p>
+            <label for="pairName" data-i18n="pairing.nameLabel">Nama device</label>
             <input id="pairName" type="text" autocomplete="off" spellcheck="false" maxlength="64" placeholder="opera" />
             <div class="row">
-              <button class="btn" id="pairButton" type="button">Buat kode pairing</button>
+              <button class="btn" id="pairButton" type="button" data-i18n="pairing.button">Buat kode pairing</button>
             </div>
             <div class="pairCodeBox" id="pairCodeBox" hidden>
               <code class="pairCode" id="pairCode"></code>
               <div class="row">
-                <button class="btn ghost" type="button" id="pairCopy">Salin kode</button>
+                <button class="btn ghost" type="button" id="pairCopy" data-i18n="pairing.copy">Salin kode</button>
                 <p class="status" id="pairCountdown" role="status" aria-live="polite"></p>
               </div>
             </div>
@@ -219,14 +241,13 @@
         </section>
 
         <section id="aksi">
-          <h1>Jalankan aksi</h1>
+          <h1 data-i18n="aksi.title">Jalankan aksi</h1>
           <div class="card">
-            <p class="meta">Perintah dikirim ke device milikmu sendiri. Device menolak halaman yang
-              menampilkan password, kode sekali pakai, atau pembayaran.</p>
-            <label for="runMethod">Primitive</label>
+            <p class="meta" data-i18n="aksi.meta">Perintah dikirim ke device milikmu sendiri. Device menolak halaman yang menampilkan password, kode sekali pakai, atau pembayaran.</p>
+            <label for="runMethod" data-i18n="aksi.methodLabel">Primitive</label>
             <input id="runMethod" type="text" autocomplete="off" spellcheck="false" maxlength="64" value="tabs.list" />
             <div class="row">
-              <button class="btn" id="runButton" type="button">Jalankan</button>
+              <button class="btn" id="runButton" type="button" data-i18n="aksi.run">Jalankan</button>
             </div>
             <p class="status" id="runStatus" role="status" aria-live="polite">&nbsp;</p>
           </div>
@@ -234,12 +255,12 @@
       </div>
 
         <section id="akun">
-          <h1>Akun ini</h1>
+          <h1 data-i18n="akun.title">Akun ini</h1>
           <div class="card">
             <dl class="facts" id="accountFacts"></dl>
             <div class="row">
-              <a class="btn ghost" href="./akun.html">Kelola akun</a>
-              <a class="btn ghost" href="./unduh.html">Pasang di device lain</a>
+              <a class="btn ghost" href="./akun.html" data-i18n="home.manageAccount">Kelola akun</a>
+              <a class="btn ghost" href="./unduh.html" data-i18n="akun.installElsewhere">Pasang di device lain</a>
             </div>
           </div>
         </section>
@@ -251,37 +272,161 @@
     <div class="wrap footGrid">
       <div class="footCol">
         <span class="footBrand">Opera Agent</span>
-        <span class="footNote">© 2026 Opera Agent. Hak cipta dilindungi.</span>
-        <span class="doors"><a href="https://github.com/afnannuzulasugihartono/opera-agent">Kode sumber</a></span>
+        <span class="footNote" data-i18n="footer.copy">© 2026 Opera Agent. Hak cipta dilindungi.</span>
+        <span class="doors"><a href="https://github.com/afnannuzulasugihartono/opera-agent" data-i18n="footer.source">Kode sumber</a></span>
       </div>
       <div class="footCol">
-        <h3>Produk</h3>
+        <h3 data-i18n="footer.product">Produk</h3>
         <span class="doors">
-          <a href="./beranda.html">Beranda</a>
-          <a href="./fitur.html">Fitur</a>
-          <a href="./unduh.html">Unduh</a>
-          <a href="./bukti.html">Bukti</a>
-          <a href="./docs.html">Docs</a>
+          <a href="./beranda.html" data-i18n="footer.home">Beranda</a>
+          <a href="./fitur.html" data-i18n="nav.features">Fitur</a>
+          <a href="./unduh.html" data-i18n="nav.download">Unduh</a>
+          <a href="./bukti.html" data-i18n="footer.bukti">Bukti</a>
+          <a href="./docs.html" data-i18n="nav.docs">Docs</a>
         </span>
       </div>
       <div class="footCol">
-        <h3>Akun</h3>
+        <h3 data-i18n="footer.account">Akun</h3>
         <span class="doors">
-          <a href="./index.html">Masuk</a>
-          <a href="./akun.html">Akun</a>
-          <a href="./dashboard.html">Dashboard</a>
+          <a href="./index.html" data-i18n="nav.signin">Masuk</a>
+          <a href="./akun.html" data-i18n="footer.accountLink">Akun</a>
+          <a href="./dashboard.html" data-i18n="footer.dashboard">Dashboard</a>
         </span>
       </div>
       <div class="footCol">
-        <h3>Legal</h3>
+        <h3 data-i18n="footer.legal">Legal</h3>
         <span class="doors">
-          <a href="./privasi.html">Privasi</a>
-          <a href="./syarat.html">Syarat</a>
-          <a href="./dukungan.html">Dukungan</a>
+          <a href="./privasi.html" data-i18n="footer.privacy">Privasi</a>
+          <a href="./syarat.html" data-i18n="footer.terms">Syarat</a>
+          <a href="./dukungan.html" data-i18n="nav.support">Dukungan</a>
         </span>
       </div>
     </div>
   </footer>
+
+  <script type="application/json" id="i18n-dict">
+  {
+    "en": {
+      "nav.features": "Features",
+      "nav.download": "Download",
+      "nav.price": "Pricing",
+      "nav.support": "Support",
+      "nav.docs": "Docs",
+      "nav.signin": "Sign in",
+      "nav.search": "Search pages Ctrl K",
+      "footer.copy": "© 2026 Opera Agent. All rights reserved.",
+      "footer.source": "Source code",
+      "footer.product": "Product",
+      "footer.home": "Home",
+      "footer.bukti": "Proof",
+      "footer.account": "Account",
+      "footer.accountLink": "Account",
+      "footer.dashboard": "Dashboard",
+      "footer.legal": "Legal",
+      "footer.privacy": "Privacy",
+      "footer.terms": "Terms",
+      "rail.title": "Opera Agent",
+      "rail.customer": "Customers",
+      "rail.operator": "Operator",
+      "rail.tablesLink": "Tables",
+      "rail.listen": "Listen",
+      "rail.pairing": "Pairing",
+      "rail.account": "Account",
+      "rail.balance": "Balance",
+      "rail.action": "Action",
+      "rail.history": "History",
+      "rail.overview": "Overview",
+      "rail.tables": "Data tables",
+      "rail.collapseHide": "Hide navigation",
+      "rail.sections": "Dashboard sections",
+      "home.title": "Overview",
+      "home.installExtension": "Install the extension",
+      "home.manageAccount": "Manage account",
+      "home.pairCount": "Paired devices",
+      "home.onlineNow": "Online now",
+      "home.commandsDone": "Commands finished",
+      "plan.label": "Your plan",
+      "plan.remaining": "commands left today",
+      "plan.of": "of",
+      "plan.usedToday": "commands used today",
+      "plan.session": "/ session",
+      "plan.usageLabel": "Quota used today",
+      "plan.cta": "Manage plan",
+      "plan.upgrade": "See plans",
+      "plan.exhausted": "Plan exhausted — resets tomorrow 00:00 UTC.",
+      "plan.error": "Couldn't read the plan status.",
+      "plan.retry": "Retry",
+      "device.title": "Devices",
+      "device.meta": "Devices paired to this account, with their last ten commands.",
+      "history.title": "History",
+      "history.meta": "The latest commands on every device, newest first. Method and status only — never the command contents.",
+      "history.filterGroup": "Filter by status",
+      "history.filterAll": "All",
+      "history.filterCompleted": "Completed",
+      "history.filterFailed": "Failed",
+      "history.filterPending": "Queued",
+      "history.searchPlaceholder": "Search method or device…",
+      "history.searchAria": "Search history",
+      "history.colTime": "Time",
+      "history.colStatus": "Status",
+      "history.colMethod": "Method",
+      "history.colDevice": "Device",
+      "history.colDuration": "Duration",
+      "history.emptyTitle": "No command history yet.",
+      "history.emptyBody": "Run your first job from the <a href=\"#aksi\">Action tab</a>.",
+      "history.noMatchTitle": "No command matches that.",
+      "history.noMatchBody": "Loosen the status filter or the keyword.",
+      "history.reset": "Clear filters",
+      "tabel.title": "Tables",
+      "tabel.meta": "Project data, read-only: rows filtered server-side, secret columns masked before they leave.",
+      "tabel.searchPlaceholder": "Search this table…",
+      "tabel.searchAria": "Search rows in this table",
+      "tabel.csv": "Export CSV",
+      "tabel.csvTitle": "Download up to 5,000 rows matching the current filter",
+      "tabel.emptyTitle": "This table is empty.",
+      "tabel.emptyBody": "No row matches this account and this filter.",
+      "tabel.prev": "‹ Previous",
+      "tabel.next": "Next ›",
+      "dengar.title": "Listening sessions",
+      "dengar.meta": "Audio sessions to this account: metadata only, never the spoken words. Transcripts live in the model's tool results alone.",
+      "saldo.title": "Balance",
+      "saldo.meta": "Prepaid balance for finished jobs: top up via QRIS, charged when one job completes, refunded in full on failure. Numbers here are read from the server every time this page opens.",
+      "saldo.balance": "Balance",
+      "saldo.available": "Available now",
+      "saldo.topUp": "Top up",
+      "saldo.refresh": "Reload",
+      "saldo.pricesMeta": "Price list — read from the server every time this page opens, like the balance. Charged only when one job completes.",
+      "saldo.colJob": "Job",
+      "saldo.colPrice": "Price",
+      "saldo.colKind": "Kind",
+      "saldo.colAmount": "Amount",
+      "saldo.colNote": "Note",
+      "saldo.kindDeposit": "Top up",
+      "saldo.kindSettle": "Job finished",
+      "saldo.kindRefund": "Refund",
+      "saldo.kindAdjust": "Adjustment",
+      "saldo.priceDeposit": "Top up balance (QRIS)",
+      "saldo.priceSimple": "Simple job — on completion",
+      "saldo.priceReport": "Report — on completion",
+      "saldo.priceBatchItem": "Per item in a batch — on completion",
+      "saldo.priceEmptyTitle": "Can't load the price list.",
+      "saldo.priceEmptyBody": "Try the reload button.",
+      "saldo.walletEmptyTitle": "No balance movements yet.",
+      "saldo.walletEmptyBody": "Top up first, then run one job from the <a href=\"#aksi\">Action tab</a>.",
+      "pairing.title": "Manual pairing",
+      "pairing.meta": "A one-time code, valid for 10 minutes, bound to this account. Paste it into the extension popup on the device you want to connect.",
+      "pairing.nameLabel": "Device name",
+      "pairing.button": "Create pairing code",
+      "pairing.copy": "Copy code",
+      "aksi.title": "Run an action",
+      "aksi.meta": "The command goes to your own device. Devices refuse pages showing passwords, one-time codes, or payments.",
+      "aksi.methodLabel": "Primitive",
+      "aksi.run": "Run",
+      "akun.title": "This account",
+      "akun.installElsewhere": "Install on another device"
+    }
+  }
+  </script>
 
   <script src="./i18n.js"></script>
 
@@ -363,7 +508,7 @@
       node.dataset.done = String(done);
       node.dataset.all = String(all);
       if (!motionOK || !('IntersectionObserver' in window)) {
-        node.textContent = `${done} dari ${all}`;
+        node.textContent = fmt(w('countOf'), { done, all });
         return;
       }
       const seen = new IntersectionObserver((entries) => {
@@ -372,7 +517,7 @@
         let shown = 0;
         const tick = setInterval(() => {
           shown = Math.min(done, shown + Math.max(1, Math.ceil(done / 40)));
-          node.textContent = `${shown} dari ${all}`;
+          node.textContent = fmt(w('countOf'), { done: shown, all });
           if (shown >= done) clearInterval(tick);
         }, 20);
       }, { threshold: 0.4 });
@@ -385,16 +530,16 @@
     // People read "2 jam lalu", not ISO strings.
     const relativeTime = (() => {
       try {
-        const format = new Intl.RelativeTimeFormat('id', { numeric: 'auto' });
+        const format = new Intl.RelativeTimeFormat(lang() === 'en' ? 'en' : 'id', { numeric: 'auto' });
 
         // WHY the English unit keys and not Indonesian words: format() takes CLDR unit identifiers and localises them through the locale itself.
         // Passing "menit" throws "Invalid unit argument" at call time, and because the throw happened while building the device list, the live dashboard rendered zero device cards while its status line still said one was paired.
         const steps = [[60, 1, 'second'], [3600, 60, 'minute'], [86400, 3600, 'hour'], [2592000, 86400, 'day'], [31536000, 604800, 'week']];
         return (iso) => {
           // WHY the empty check and not just the NaN check below: new Date(null) is the epoch, not NaN, so a device that never checked in rendered as "57 tahun yang lalu" instead of never.
-          if (iso === null || iso === undefined || iso === '') return 'belum pernah';
+          if (iso === null || iso === undefined || iso === '') return w('neverSeen');
           const then = new Date(iso).getTime();
-          if (Number.isNaN(then)) return 'belum pernah';
+          if (Number.isNaN(then)) return w('neverSeen');
           const seconds = Math.round((then - Date.now()) / 1000);
           for (const [limit, divisor, unit] of steps) {
             if (Math.abs(seconds) < limit) return format.format(Math.round(seconds / divisor), unit);
@@ -402,7 +547,7 @@
           return format.format(Math.round(seconds / 31536000), 'year');
         };
       } catch (error) {
-        return (iso) => String(iso || 'belum pernah');
+        return (iso) => String(iso || w('neverSeen'));
       }
     })();
 
@@ -438,7 +583,7 @@
       } catch (error) {
         // WHY the temporary branch comes first: a renewal that could not reach Auth is a network problem, and answering it with a sign-out is what made every reader look like the product had forgotten them.
         if (temporary) {
-          $('status').textContent = 'Tidak bisa menghubungi layanan auth. Sesi Anda tetap aman; coba lagi sebentar.';
+          $('status').textContent = w('authUnreachable');
           $('status').className = 'status warn';
           return null;
         }
@@ -465,16 +610,218 @@
     // Showing a raw server string to an operator reads as a broken product, and the rate-limit refusal is the one message they will actually meet.
     const say = (raw) => TRANSLATED[String(raw)] || String(raw);
 
+    // WHY a second dictionary: the static chrome swaps via data-i18n, but the strings this module builds are swapped by re-rendering, so they read the live language the same way.
+    // The Indonesian values are byte-identical to the strings they replace, so nothing a reader meets in id changes.
+    const lang = () => (typeof window !== 'undefined' && window.OperaAgentI18n && typeof window.OperaAgentI18n.getLang === 'function' ? window.OperaAgentI18n.getLang() : 'id');
+    const fmt = (template, values) => String(template).replace(/\{(\w+)\}/g, (_, key) => (values && key in values ? values[key] : ''));
+    const W = {
+      id: {
+        whoamiPrefix: 'Device milik ',
+        installInstalled: 'Opera Agent terpasang di browser ini.',
+        installMissing: 'Opera Agent belum terpasang di browser ini. Pasang dulu di bagian Unduh, lalu pair dengan akun ini.',
+        stepInstall: 'Pasang extension di browser ini',
+        stepPair: 'Pair device',
+        stepRun: 'Jalankan perintah pertama',
+        checklistDone: 'Semua langkah selesai. Konsol ini memantau device Anda.',
+        ctaInstall: 'Pasang extension',
+        ctaPair: 'Pair device',
+        ctaCheckDevice: 'Cek device',
+        ctaRun: 'Jalankan aksi',
+        unitSec: 'dtk',
+        unitMin: 'mnt',
+        unitHour: 'jam',
+        historyUnit: 'perintah',
+        listenStarted: 'Mulai',
+        listenSegments: 'Segmen',
+        listenTranscribed: 'tertranskrip',
+        listenEmptyTitle: 'Belum ada sesi dengar.',
+        listenEmptyBody: 'Mulai dari model dengan media_stream_start.',
+        emptyDevicesTitle: 'Belum ada device.',
+        emptyDevicesBody: 'Pasang Opera Agent di browser ini, lalu buat kode pairing untuk dihubungkannya ke akun ini.',
+        emptyPairCta: 'Buat kode pairing',
+        noDeviceBound: 'Belum ada device terikat ke akun ini.',
+        devicesLine: '{n} device ter-pairing, {o} daring.',
+        dtStatus: 'Status',
+        dtLastSeen: 'Terakhir terlihat',
+        dtCommands: 'Perintah',
+        dtDeviceId: 'ID device',
+        copyHint: 'Klik untuk menyalin',
+        salinId: 'Salin ID',
+        revoke: 'Cabut device ini',
+        copiedId: 'ID device disalin',
+        copyManual: 'Salin manual',
+        revokeConfirm: 'Cabut {name}? Perintah baru berhenti seketika; pairing ulang menghidupkannya lagi.',
+        revoked: '{name} dicabut. Pasang ulang untuk menghidupkannya.',
+        revokeFailed: 'Gagal mencabut',
+        accountAddress: 'Alamat',
+        accountProvider: 'Provider',
+        accountId: 'ID akun',
+        accountOnline: 'Device daring',
+        accountJoined: 'Bergabung',
+        runSending: 'Mengirim…',
+        queued: '{method} masuk antrean; device mengambilnya dalam hitungan detik. Riwayat di Device akan memperbarui sendiri.',
+        runFailed: 'Gagal menjalankan',
+        pairExpired: 'kedaluwarsa — buat kode baru',
+        pairValid: 'berlaku 10 menit',
+        pairFailed: 'Gagal membuat kode',
+        walletReloading: 'Memuat saldo…',
+        walletTopUpFailed: 'Isi ulang tidak bisa dimulai',
+        pricingFailed: 'Belum bisa memuat harga.',
+        planActive: 'aktif',
+        planPaused: 'ditahan',
+        planResets: 'reset besok 00.00 UTC',
+        planAgo: 'terpakai hari ini',
+        deviceUnit: 'perintah',
+        rowsUnit: 'baris',
+        countOf: '{done} dari {all}',
+        neverSeen: 'belum pernah',
+        authUnreachable: 'Tidak bisa menghubungi layanan auth. Sesi Anda tetap aman; coba lagi sebentar.',
+        devicesLoadFailed: 'Belum bisa memuat device. Coba lagi sebentar.',
+        konsolTableFailed: 'Konsol tidak bisa membaca tabel itu.',
+        showNav: 'Tampilkan navigasi',
+        hideNav: 'Sembunyikan navigasi',
+        konsolOperatorOnly: '{n} tabel di sini hanya untuk akun operator.',
+        konsolGroupOwner: 'Milik akun ini',
+        konsolGroupOperator: 'Operator',
+        konsolReadFailed: 'gagal membaca tabel',
+        csvFailedPrefix: 'Ekspor gagal:',
+        countdownActive: 'berlaku {time}',
+        thisBrowserChip: '{browser} di browser ini',
+        pairWorking: 'Membuat kode…',
+        pairCopied: 'Kode disalin. Tempel di popup extension.',
+        runFailedPrefix: 'Gagal:',
+        runFailedNet: 'Gagal ({msg})',
+        networkWord: 'jaringan',
+        pairCodeReady: 'Kode untuk {name} siap di atas.',
+        konsolLoading: 'Memuat…',
+        konsolZeroRows: '0 baris',
+        konsolPageLine: 'Halaman {p} dari {c} · {a}–{b} dari {t} baris',
+        konsolMatch: '{n} baris {table} cocok dengan “{s}”.',
+        konsolRows: '{table} — {n} baris.',
+        konsolLoadFailed: 'Konsol data belum bisa dimuat. Muat ulang halaman sebentar lagi.',
+        csvOperatorOnly: 'Hanya akun operator yang boleh membaca tabel ini',
+        csvPreparing: 'Menyiapkan CSV…',
+        csvDone: '{n} baris diunduh sebagai {name}.csv.',
+        walletLoaded: 'Saldo dibaca dari server.',
+        walletLoadFailed: 'Gagal memuat saldo',
+        walletLoadImpossible: 'Tidak bisa memuat saldo sekarang.',
+        walletUnreachable: 'Tidak bisa menjangkau server saldo. Coba muat ulang.',
+        walletTopUpOpening: 'Membuka halaman pembayaran.',
+        walletUnreachablePay: 'Tidak bisa menjangkau server pembayaran. Coba lagi.',
+        walletTopUpOpened: 'Halaman pembayaran dibuka di tab baru. Saldo bertambah setelah pembayaran dikonfirmasi.',
+        walletTopUpAmount: 'Isi ulang {amount}',
+        reservationTask: 'Tugas {code}'
+      },
+      en: {
+        whoamiPrefix: 'Devices of ',
+        installInstalled: 'Opera Agent is installed in this browser.',
+        installMissing: "Opera Agent isn't installed in this browser yet. Install it from Download first, then pair it with this account.",
+        stepInstall: 'Install the extension in this browser',
+        stepPair: 'Pair a device',
+        stepRun: 'Run your first command',
+        checklistDone: 'Every step is done. This console watches your devices.',
+        ctaInstall: 'Install the extension',
+        ctaPair: 'Pair a device',
+        ctaCheckDevice: 'Check devices',
+        ctaRun: 'Run an action',
+        unitSec: 's',
+        unitMin: 'min',
+        unitHour: 'h',
+        historyUnit: 'commands',
+        listenStarted: 'Started',
+        listenSegments: 'Segments',
+        listenTranscribed: 'transcribed',
+        listenEmptyTitle: 'No listening sessions yet.',
+        listenEmptyBody: 'Start one from the model with media_stream_start.',
+        emptyDevicesTitle: 'No devices yet.',
+        emptyDevicesBody: 'Install Opera Agent in this browser, then create a pairing code to connect it to this account.',
+        emptyPairCta: 'Create a pairing code',
+        noDeviceBound: 'No device is bound to this account.',
+        devicesLine: '{n} paired, {o} online.',
+        dtStatus: 'Status',
+        dtLastSeen: 'Last seen',
+        dtCommands: 'Commands',
+        dtDeviceId: 'Device ID',
+        copyHint: 'Click to copy',
+        salinId: 'Copy ID',
+        revoke: 'Revoke this device',
+        copiedId: 'Device ID copied',
+        copyManual: 'Copy manually',
+        revokeConfirm: 'Revoke {name}? New commands stop immediately; pairing again revives it.',
+        revoked: '{name} revoked. Reinstall to bring it back.',
+        revokeFailed: 'Revoke failed',
+        accountAddress: 'Address',
+        accountProvider: 'Provider',
+        accountId: 'Account ID',
+        accountOnline: 'Devices online',
+        accountJoined: 'Joined',
+        runSending: 'Sending…',
+        queued: '{method} queued; the device picks it up within seconds. History on Devices updates itself.',
+        runFailed: 'Could not run',
+        pairExpired: 'expired — create a new code',
+        pairValid: 'valid for 10 minutes',
+        pairFailed: 'Could not create the code',
+        walletReloading: 'Reloading the balance…',
+        walletTopUpFailed: 'Could not start the top-up',
+        pricingFailed: "Can't load the price list.",
+        planActive: 'active',
+        planPaused: 'paused',
+        planResets: 'resets tomorrow 00:00 UTC',
+        planAgo: 'used today',
+        deviceUnit: 'commands',
+        rowsUnit: 'rows',
+        countOf: '{done} of {all}',
+        neverSeen: 'never',
+        authUnreachable: "Can't reach the auth service. Your session is safe; try again in a moment.",
+        devicesLoadFailed: "Can't load the devices right now. Try again in a moment.",
+        konsolTableFailed: 'The console could not read that table.',
+        showNav: 'Show navigation',
+        hideNav: 'Hide navigation',
+        konsolOperatorOnly: '{n} tables here are for the operator account only.',
+        konsolGroupOwner: 'Your account',
+        konsolGroupOperator: 'Operator',
+        konsolReadFailed: 'failed to read the table',
+        csvFailedPrefix: 'Export failed:',
+        countdownActive: 'valid {time}',
+        thisBrowserChip: '{browser} in this browser',
+        pairWorking: 'Creating the code…',
+        pairCopied: 'Code copied. Paste it into the extension popup.',
+        runFailedPrefix: 'Failed:',
+        runFailedNet: 'Failed ({msg})',
+        networkWord: 'network',
+        pairCodeReady: 'The code for {name} is ready above.',
+        konsolLoading: 'Loading…',
+        konsolZeroRows: '0 rows',
+        konsolPageLine: 'Page {p} of {c} · {a}–{b} of {t} rows',
+        konsolMatch: '{n} rows in {table} match “{s}”.',
+        konsolRows: '{table} — {n} rows.',
+        konsolLoadFailed: 'Could not load the data console. Reload the page in a moment.',
+        csvOperatorOnly: 'Only the operator account may read this table',
+        csvPreparing: 'Preparing CSV…',
+        csvDone: '{n} rows downloaded as {name}.csv.',
+        walletLoaded: 'Balance read from the server.',
+        walletLoadFailed: 'Could not load the balance',
+        walletLoadImpossible: 'Could not load the balance right now.',
+        walletUnreachable: "Can't reach the balance server. Try reloading.",
+        walletTopUpOpening: 'Opening the payment page.',
+        walletUnreachablePay: "Can't reach the payment server. Try again.",
+        walletTopUpOpened: 'The payment page opened in a new tab. The balance grows once the payment is confirmed.',
+        walletTopUpAmount: 'Top up {amount}',
+        reservationTask: 'Task {code}'
+      }
+    };
+    const w = (key) => (W[lang()] && W[lang()][key]) || W.id[key];
+
     // WHY the account facts live here and not only on akun.html: this page is where a reader lands to answer "is this the right account", and the address is the one fact that answers it.
     // Nothing here is editable, so it cannot drift from the account page, which owns every write.
     function renderAccountFacts(user, devices) {
       const online = devices.filter((device) => device.status === 'online').length;
       const facts = [
-        ['Alamat', `<code>${esc(user.email)}</code>`],
-        ['Provider', esc((user.app_metadata?.providers || [user.app_metadata?.provider || 'email']).join(', '))],
-        ['ID akun', `<code>${esc(user.id)}</code>`],
-        ['Device daring', `${online} dari ${devices.length}`],
-        ['Bergabung', user.created_at ? esc(relativeTime(user.created_at)) : '—']
+        [w('accountAddress'), `<code>${esc(user.email)}</code>`],
+        [w('accountProvider'), esc((user.app_metadata?.providers || [user.app_metadata?.provider || 'email']).join(', '))],
+        [w('accountId'), `<code>${esc(user.id)}</code>`],
+        [w('accountOnline'), `${online} / ${devices.length}`],
+        [w('accountJoined'), user.created_at ? esc(relativeTime(user.created_at)) : '—']
       ];
       $('accountFacts').innerHTML = facts.map(([term, value]) => `<dt>${esc(term)}</dt><dd>${value}</dd>`).join('');
     }
@@ -490,12 +837,12 @@
     function renderChecklist() {
       const { installed, devices, total } = lastSeen;
       const steps = [
-        { done: installed, text: 'Pasang extension di browser ini' },
-        { done: devices.length > 0, text: 'Pair device' },
-        { done: total > 0, text: 'Jalankan perintah pertama' }
+        { done: installed, text: w('stepInstall') },
+        { done: devices.length > 0, text: w('stepPair') },
+        { done: total > 0, text: w('stepRun') }
       ];
       if (steps.every((step) => step.done)) {
-        $('checklist').innerHTML = '<li class="done"><span class="box">✓</span><span>Semua langkah selesai. Konsol ini memantau device Anda.</span></li>';
+        $('checklist').innerHTML = `<li class="done"><span class="box">✓</span><span>${esc(w('checklistDone'))}</span></li>`;
         return;
       }
       $('checklist').innerHTML = steps.map((step, index) =>
@@ -512,23 +859,23 @@
       const online = lastSeen.devices.filter((device) => device.status === 'online').length;
       if (!lastSeen.installed) {
         cta.href = './unduh.html';
-        cta.textContent = 'Pasang extension';
+        cta.textContent = w('ctaInstall');
         cta.className = 'btn primary sm';
         return;
       }
       cta.className = 'btn sm';
       if (!devices) {
         cta.href = '#pairing';
-        cta.textContent = 'Pair device';
+        cta.textContent = w('ctaPair');
         return;
       }
       if (!online) {
         cta.href = '#device';
-        cta.textContent = 'Cek device';
+        cta.textContent = w('ctaCheckDevice');
         return;
       }
       cta.href = '#aksi';
-      cta.textContent = 'Jalankan aksi';
+      cta.textContent = w('ctaRun');
     }
 
     let pairTimer = null;
@@ -546,35 +893,114 @@
       const tick = () => {
         const left = expiry - Date.now();
         if (!Number.isFinite(expiry) || left <= 0) {
-          $('pairCountdown').textContent = Number.isFinite(expiry) ? 'kedaluwarsa — buat kode baru' : 'berlaku 10 menit';
+          $('pairCountdown').textContent = Number.isFinite(expiry) ? w('pairExpired') : w('pairValid');
           if (pairTimer) { clearInterval(pairTimer); pairTimer = null; }
           return;
         }
         const minutes = Math.floor(left / 60000);
         const seconds = Math.floor((left % 60000) / 1000);
-        $('pairCountdown').textContent = `berlaku ${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+        $('pairCountdown').textContent = fmt(w('countdownActive'), { time: `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}` });
       };
       tick();
       pairTimer = setInterval(tick, 1000);
       $('pairCopy').onclick = async () => {
         try {
           await navigator.clipboard.writeText(result.code);
-          $('pairStatus').textContent = 'Kode disalin. Tempel di popup extension.';
+          $('pairStatus').textContent = w('pairCopied');
           $('pairStatus').className = 'status ok';
         } catch (error) {
-          $('pairStatus').textContent = `Salin manual: ${result.code}`;
+          $('pairStatus').textContent = `${w('copyManual')}: ${result.code}`;
           $('pairStatus').className = 'status warn';
         }
       };
     }
 
+    function paintInstallState() {
+      // WHY a function and not a read in one place: the content script runs at document_idle, so the marker can land after this module has already read the document, and a language switch has to repaint the same sentence.
+      const installed = document.documentElement.dataset.operaAgent === 'installed';
+      $('installState').textContent = installed
+        ? w('installInstalled')
+        : w('installMissing');
+      $('installState').className = installed ? 'tone good' : 'tone warn';
+      lastSeen.installed = installed;
+      lastSeen.browser = document.documentElement.dataset.operaAgentBrowser || '';
+      renderChecklist();
+      paintPrimaryAction();
+    }
+
+    const planNf = (n) => Number(n || 0).toLocaleString(lang() === 'en' ? 'en-US' : 'id-ID');
+
+    function paintPlan(answer) {
+      // WHY the plan is painted as one block: the RPC answers plan, status, quota and spend together, so a half-loaded hero would show a quota without the plan that set it.
+      const ok = answer?.ok === true;
+      $('planError').hidden = ok;
+      $('planCard').classList.remove('is-exhausted', 'is-warning');
+      const chip = $('planChip');
+      if (!ok) {
+        $('planName').textContent = '—';
+        chip.textContent = '—';
+        chip.className = 'chip warn';
+        $('planRemaining').textContent = '–';
+        // WHY the bar goes away entirely: a progressbar at zero announces "you spent nothing", which is not what an unreadable plan says.
+        // The error line carries the state; the track and its fill stay neutral.
+        $('planTrack').setAttribute('aria-hidden', 'true');
+        $('planTrack').removeAttribute('aria-valuenow');
+        $('planFill').style.width = '0%';
+        $('planUsed').textContent = '–';
+        $('planQuota').textContent = '–';
+        $('planAllowance').textContent = '–';
+        $('planResets').textContent = '—';
+        $('planExhaustedBanner').hidden = true;
+        return;
+      }
+      $('planTrack').removeAttribute('aria-hidden');
+      const quota = Math.max(1, Number(answer.dailyQuota) || 0);
+      const used = Math.max(0, Number(answer.usedToday) || 0);
+      const remaining = Math.max(0, quota - used);
+      const percent = Math.min(100, Math.round((used / quota) * 100));
+      $('planName').textContent = String(answer.plan ?? 'plan.pilot');
+      const statusValue = String(answer.status ?? 'active');
+      chip.textContent = statusValue === 'active' ? w('planActive') : w('planPaused');
+      chip.className = `chip ${statusValue === 'active' ? 'good' : 'warn'}`;
+      $('planRemaining').textContent = planNf(remaining);
+      $('planTrack').setAttribute('aria-valuenow', String(percent));
+      $('planFill').style.width = `${percent}%`;
+      $('planUsed').textContent = planNf(used);
+      $('planQuota').textContent = planNf(quota);
+      $('planAllowance').textContent = planNf(Number(answer.sessionAllowance) || (String(answer.plan) === 'plan.firm' ? 500 : 50));
+      $('planResets').textContent = w('planResets');
+      const exhausted = remaining <= 0;
+      $('planCard').classList.toggle('is-exhausted', exhausted);
+      $('planCard').classList.toggle('is-warning', !exhausted && percent >= 80);
+      $('planExhaustedBanner').hidden = !exhausted;
+    }
+
+    async function refreshPlan() {
+      const session = await currentSession();
+      if (!session) {
+        // WHY the plan still answers when the session does not: a dropped packet on the auth probe is not a fact about the account, and the view must not keep reading as if the plan were known.
+        paintPlan(null);
+        return;
+      }
+      try {
+        const response = await fetch(`${REST}/rpc/opera_my_plan`, { method: 'POST', headers: headersFor(session.token), body: '{}' });
+        paintPlan(await response.json().catch(() => null));
+      } catch {
+        paintPlan(null);
+      }
+    }
+
     async function load() {
       const session = await currentSession();
-      if (!session) return;
+      if (!session) {
+        // WHY before the early return: the transient case would otherwise leave a permanently dashed hero with no warn line and no retry, exactly the state that looks like a broken product.
+        paintPlan(null);
+        return;
+      }
       const { token, user } = session;
       liveToken = token;
       liveUser = user;
-      $('whoami').textContent = `Device milik ${user.email}.`;
+      $('whoami').textContent = `${w('whoamiPrefix')}${user.email}.`;
 
       // WHY the sign-in link leaves a signed-in page: "Masuk" beside a live session is a contradiction the reader has to resolve, and the app bar already offers the account.
       const navCta = document.querySelector('header .navCta');
@@ -584,17 +1010,7 @@
       // WHY this is a function and not a single read: the content script runs at document_idle, so the marker can land after this module has already read the document.
       // Reading once would show "not installed" on a browser that has it, and the reader would go and install a second copy.
       // The attribute change is the one event that means the answer changed.
-      const reportInstallState = () => {
-        const installed = document.documentElement.dataset.operaAgent === 'installed';
-        $('installState').textContent = installed
-          ? 'Opera Agent terpasang di browser ini.'
-          : 'Opera Agent belum terpasang di browser ini. Pasang dulu di bagian Unduh, lalu pair dengan akun ini.';
-        $('installState').className = installed ? 'tone good' : 'tone warn';
-        lastSeen.installed = installed;
-        lastSeen.browser = document.documentElement.dataset.operaAgentBrowser || '';
-        renderChecklist();
-        paintPrimaryAction();
-      };
+      const reportInstallState = () => paintInstallState();
       reportInstallState();
       if (!installObserved) {
         installObserved = true;
@@ -604,6 +1020,7 @@
         });
       }
       await refreshDevices();
+      await refreshPlan();
 
       // WHY polling and not a push channel: pairing completes in the extension popup, a separate context this page cannot hear, so a list read once stays frozen on "offline" after a successful pairing.
       // Re-reading the owner-scoped list every 10 seconds (and on every return to the tab) is what makes the list move on its own.
@@ -623,12 +1040,12 @@
       if (!createdAt || !completedAt) return '–';
       const ms = new Date(completedAt).getTime() - new Date(createdAt).getTime();
       if (!Number.isFinite(ms) || ms < 0) return '–';
-      if (ms < 1000) return '< 1 dtk';
+      if (ms < 1000) return '< 1 ' + w('unitSec');
       const seconds = Math.floor(ms / 1000);
-      if (seconds < 60) return `${seconds} dtk`;
+      if (seconds < 60) return `${seconds} ${w('unitSec')}`;
       const minutes = Math.floor(seconds / 60);
-      if (minutes < 60) return `${minutes} mnt ${seconds % 60} dtk`;
-      return `${Math.floor(minutes / 60)} jam ${minutes % 60} mnt`;
+      if (minutes < 60) return `${minutes} ${w('unitMin')} ${seconds % 60} ${w('unitSec')}`;
+      return `${Math.floor(minutes / 60)} ${w('unitHour')} ${minutes % 60} ${w('unitMin')}`;
     }
 
     // WHY the history keeps its rows in memory and paints from them: the filter and the search box both narrow one list, and refetching on every keystroke would make a local question wait on the network.
@@ -640,7 +1057,7 @@
     const absoluteTime = (iso) => {
       const ms = new Date(iso).getTime();
       if (!Number.isFinite(ms)) return '';
-      return new Intl.DateTimeFormat('id', { dateStyle: 'medium', timeStyle: 'short' }).format(ms);
+      return new Intl.DateTimeFormat(lang() === 'en' ? 'en-GB' : 'id', { dateStyle: 'medium', timeStyle: 'short' }).format(ms);
     };
 
     function renderHistory(devices) {
@@ -661,7 +1078,7 @@
         if (!historyQuery) return true;
         return `${row.method} ${row.device} ${row.status}`.toLowerCase().includes(historyQuery);
       });
-      $('historyCount').textContent = `${rows.length} dari ${historyAll.length} perintah`;
+      $('historyCount').textContent = `${rows.length}/${historyAll.length} ${w('historyUnit')}`;
       $('historyEmpty').hidden = historyAll.length > 0;
       $('historyNoMatch').hidden = rows.length > 0 || historyAll.length === 0;
       if (!rows.length) {
@@ -724,7 +1141,7 @@
         data = null;
       }
       if (!data?.ok) {
-        $('status').textContent = 'Belum bisa memuat device. Coba lagi sebentar.';
+        $('status').textContent = w('devicesLoadFailed');
         $('status').className = 'status warn';
         return;
       }
@@ -762,22 +1179,22 @@
               <span class="chip">${esc(session.status)}</span>
             </div>
             <dl class="facts">
-              <dt>Mulai</dt><dd>${esc(relativeTime(session.startedAt))}</dd>
-              <dt>Segmen</dt><dd>${esc(session.segments ?? 0)} tertranskrip</dd>
+              <dt>${esc(w('listenStarted'))}</dt><dd>${esc(relativeTime(session.startedAt))}</dd>
+              <dt>${esc(w('listenSegments'))}</dt><dd>${esc(session.segments ?? 0)} ${esc(w('listenTranscribed'))}</dd>
             </dl>
           </div>`).join('')
-          : '<div class="empty"><strong>Belum ada sesi dengar.</strong><p>Mulai dari model dengan media_stream_start.</p></div>';
+          : `<div class="empty"><strong>${esc(w('listenEmptyTitle'))}</strong><p>${esc(w('listenEmptyBody'))}</p></div>`;
       } catch (error) {
         $('listens').innerHTML = '';
       }
       if (!data.devices.length) {
-        $('status').textContent = 'Belum ada device terikat ke akun ini.';
+        $('status').textContent = w('noDeviceBound');
         $('status').className = 'status warn';
-        $('devices').innerHTML = '<div class="empty"><strong>Belum ada device.</strong><p>Pasang Opera Agent di browser ini, lalu buat kode pairing untuk dihubungkannya ke akun ini.</p><a class="btn ghost sm" href="#pairing">Buat kode pairing</a></div>';
+        $('devices').innerHTML = `<div class="empty"><strong>${esc(w('emptyDevicesTitle'))}</strong><p>${esc(w('emptyDevicesBody'))}</p><a class="btn ghost sm" href="#pairing">${esc(w('emptyPairCta'))}</a></div>`;
         return;
       }
       const online = data.devices.filter((device) => device.status === 'online').length;
-      $('status').textContent = `${data.devices.length} device ter-pairing, ${online} daring.`;
+      $('status').textContent = fmt(w('devicesLine'), { n: data.devices.length, o: online });
       $('status').className = online ? 'status ok' : 'status warn';
 
       // WHY the state rides the first line: two stacked cards once differed only in a middle row, so the down device hid in plain sight.
@@ -789,18 +1206,18 @@
             <h3>${esc(device.name)}</h3>
             <span class="chip">${esc(device.extensionVersion || '-')}</span>
             ${device.browserName ? `<span class="chip">${esc(device.browserName)}</span>` : ''}
-            ${!device.browserName && lastSeen.browser ? `<span class="chip">${esc(lastSeen.browser)} di browser ini</span>` : ''}
+            ${!device.browserName && lastSeen.browser ? `<span class="chip">${esc(fmt(w('thisBrowserChip'), { browser: lastSeen.browser }))}</span>` : ''}
           </div>
           <dl class="facts">
-            <dt>Status</dt><dd><span class="${device.status === 'online' ? 'online' : 'offline'}">${esc(device.status)}</span></dd>
-            <dt>Terakhir terlihat</dt><dd>${esc(relativeTime(device.lastSeenAt))}</dd>
-            <dt>Perintah</dt><dd>${esc(device.completedCommands ?? 0)} dari ${esc(device.totalCommands ?? 0)} selesai</dd>
-            <dt>ID device</dt><dd><code class="deviceId" data-copy="${esc(device.id)}" title="Klik untuk menyalin">${esc(device.id)}</code></dd>
+            <dt>${esc(w('dtStatus'))}</dt><dd><span class="${device.status === 'online' ? 'online' : 'offline'}">${esc(device.status)}</span></dd>
+            <dt>${esc(w('dtLastSeen'))}</dt><dd>${esc(relativeTime(device.lastSeenAt))}</dd>
+            <dt>${esc(w('dtCommands'))}</dt><dd>${esc(device.completedCommands ?? 0)} / ${esc(device.totalCommands ?? 0)}</dd>
+            <dt>${esc(w('dtDeviceId'))}</dt><dd><code class="deviceId" data-copy="${esc(device.id)}" title="${esc(w('copyHint'))}">${esc(device.id)}</code></dd>
           </dl>
           <ul class="commands">${device.commands.map((command) => `<li><code>${esc(command.method)}</code>${command.provider ? `<span class="chip">${esc(command.provider)}</span>` : ''}<span class="${commandInk(command.status)}">${esc(command.status)}</span></li>`).join('')}</ul>
           <div class="row">
-            <button class="btn ghost" type="button" data-copy="${esc(device.id)}">Salin ID</button>
-            <button class="btn danger" type="button" data-revoke="${esc(device.id)}" data-name="${esc(device.name)}">Cabut device ini</button>
+            <button class="btn ghost" type="button" data-copy="${esc(device.id)}">${esc(w('salinId'))}</button>
+            <button class="btn danger" type="button" data-revoke="${esc(device.id)}" data-name="${esc(device.name)}">${esc(w('revoke'))}</button>
           </div>
         </div>`).join('');
 
@@ -813,28 +1230,28 @@
         const id = target.dataset.copy;
         try {
           await navigator.clipboard.writeText(id);
-          $('status').textContent = `ID device disalin: ${id}`;
+          $('status').textContent = `${w('copiedId')}: ${id}`;
           $('status').className = 'status ok';
         } catch (error) {
           // Clipboard is blocked without a user gesture or a secure context, and the
           // id is on screen anyway, so saying so beats a silent failure.
-          $('status').textContent = `Salin manual: ${id}`;
+          $('status').textContent = `${w('copyManual')}: ${id}`;
           $('status').className = 'status warn';
         }
       };
       for (const button of document.querySelectorAll('[data-revoke]')) {
         button.addEventListener('click', async () => {
-          if (!globalThis.confirm(`Cabut ${button.dataset.name}? Perintah baru berhenti seketika; pairing ulang menghidupkannya lagi.`)) return;
+          if (!globalThis.confirm(fmt(w('revokeConfirm'), { name: button.dataset.name }))) return;
           button.disabled = true;
           try {
             const response = await fetch(`${REST}/rpc/opera_revoke_my_device`, { method: 'POST', headers: headersFor(token), body: JSON.stringify({ p_device_id: button.dataset.revoke }) });
             const result = await response.json();
             if (!result?.ok) throw new Error(say(result?.error || response.status));
-            $('status').textContent = `${button.dataset.name} dicabut. Pasang ulang untuk menghidupkannya.`;
+            $('status').textContent = fmt(w('revoked'), { name: button.dataset.name });
             $('status').className = 'status ok';
           } catch (error) {
             button.disabled = false;
-            $('status').textContent = `Gagal mencabut: ${error.message}.`;
+            $('status').textContent = `${w('revokeFailed')}: ${error.message}.`;
             $('status').className = 'status warn';
             return;
           }
@@ -848,7 +1265,7 @@
       if (!session) return;
       const { token } = session;
       const method = $('runMethod').value.trim();
-      $('runStatus').textContent = 'Mengirim…';
+      $('runStatus').textContent = w('runSending');
       $('runStatus').className = 'status';
       try {
         const response = await fetch(`${REST}/rpc/opera_run_on_my_device`, { method: 'POST', headers: headersFor(token), body: JSON.stringify({ p_method: method }) });
@@ -860,12 +1277,12 @@
         if (!result?.ok) {
           const code = result?.error?.code || result?.status;
           if (code === 'AWAIT_TIMEOUT' || code === 'queued') {
-            $('runStatus').textContent = `${method} masuk antrean; device mengambilnya dalam hitungan detik. Riwayat di Device akan memperbarui sendiri.`;
+            $('runStatus').textContent = fmt(w('queued'), { method });
             $('runStatus').className = 'status ok';
             setTimeout(refreshDevices, 4000);
             return;
           }
-          $('runStatus').textContent = `Gagal: ${say(result?.error?.message || result?.error)}.`;
+          $('runStatus').textContent = `${w('runFailedPrefix')} ${say(result?.error?.message || result?.error)}.`;
           $('runStatus').className = 'status warn';
           return;
         }
@@ -876,7 +1293,7 @@
         $('runStatus').className = 'status ok';
         refreshDevices();
       } catch (error) {
-        $('runStatus').textContent = `Gagal (${error?.message || 'jaringan'}).`;
+        $('runStatus').textContent = fmt(w('runFailedNet'), { msg: error?.message || w('networkWord') }) + '.';
         $('runStatus').className = 'status warn';
       }
     });
@@ -898,7 +1315,7 @@
       if (!session) return;
       const { token } = session;
       const name = ($('pairName').value.trim() || 'opera').slice(0, 64);
-      $('pairStatus').textContent = 'Membuat kode…';
+      $('pairStatus').textContent = w('pairWorking');
       $('pairStatus').className = 'status';
       hidePairingCode();
       try {
@@ -906,10 +1323,10 @@
         const result = await response.json();
         if (!result?.ok) throw new Error(say(result?.error || response.status));
         showPairingCode(result);
-        $('pairStatus').textContent = `Kode untuk ${result.deviceName} siap di atas.`;
+        $('pairStatus').textContent = fmt(w('pairCodeReady'), { name: result.deviceName });
         $('pairStatus').className = 'status ok';
       } catch (error) {
-        $('pairStatus').textContent = `Gagal membuat kode: ${error.message}.`;
+        $('pairStatus').textContent = `${w('pairFailed')}: ${error.message}.`;
         $('pairStatus').className = 'status warn';
       }
     });
@@ -992,7 +1409,7 @@
 
       // WHY the sequence check: a fast reader can switch tables or pages while a response is still crossing the wire, and without it the older answer lands last and the grid shows page one of the table the reader just left.
       const seq = ++konsol.seq;
-      konsolSay('Memuat…');
+      konsolSay(w('konsolLoading'));
       const data = await konsolRpc('opera_konsol_table', {
         p_table: konsol.table,
         p_limit: konsol.limit,
@@ -1007,7 +1424,8 @@
         // WHY the clear: the static header row says "Memuat…" only while the first load is in flight; a first load that fails must not leave it promising data that never arrived.
         // A later failure keeps the last good grid.
         if (!$('konsolRows').children.length) $('konsolHead').innerHTML = '';
-        konsolSay(say(data?.error || 'Konsol tidak bisa membaca tabel itu.'), 'warn');
+        const tableRefusal = data?.error ? say(String(data.error)) : w('konsolTableFailed');
+        konsolSay(tableRefusal, 'warn');
         return;
       }
       konsol.cols = data.columns || [];
@@ -1036,13 +1454,15 @@
       const pageCount = Math.max(1, Math.ceil(konsol.total / konsol.limit));
 
       // WHY the page position and the row span together: "1–50 dari 28.745" says how much exists and "Halaman 2 dari 575" says where the reader stands — the footer of totals every production table closes with.
-      $('konsolPage').textContent = konsol.total === 0 ? '0 baris' : `Halaman ${pageNo} dari ${pageCount} · ${konsolNf(from)}–${konsolNf(to)} dari ${konsolNf(konsol.total)} baris`;
+      $('konsolPage').textContent = konsol.total === 0
+        ? w('konsolZeroRows')
+        : fmt(w('konsolPageLine'), { p: pageNo, c: pageCount, a: konsolNf(from), b: konsolNf(to), t: konsolNf(konsol.total) });
       $('konsolPrev').disabled = konsol.offset <= 0;
       $('konsolNext').disabled = to >= konsol.total;
       $('konsolEmpty').hidden = konsol.rows.length !== 0;
       konsolSay(konsol.search
-        ? `${konsolNf(konsol.total)} baris ${konsol.table} cocok dengan “${konsol.search}”.`
-        : `${konsol.table} — ${konsolNf(konsol.total)} baris.`, 'ok');
+        ? fmt(w('konsolMatch'), { n: konsolNf(konsol.total), table: konsol.table, s: konsol.search })
+        : fmt(w('konsolRows'), { table: konsol.table, n: konsolNf(konsol.total) }), 'ok');
     }
 
     async function konsolOpen(name) {
@@ -1064,20 +1484,20 @@
 
         // WHY the clear: the static header row exists only for the first-load state; a list that never arrived means no table ever will, and "Memuat…" would promise otherwise.
         $('konsolHead').innerHTML = '';
-        konsolSay('Konsol data belum bisa dimuat. Muat ulang halaman sebentar lagi.', 'warn');
+        konsolSay(w('konsolLoadFailed'), 'warn');
         return;
       }
       const entries = data.tables || [];
 
       // WHY grouped and not one flat wall: sixteen names read as a list of tables only when the two rules behind them are visible — nine belong to this account, seven to the operator.
       // The server sends the scope; the page shows it.
-      const groupOf = { owner: 'Milik akun ini', operator: 'Operator' };
+      const groupOf = { owner: w('konsolGroupOwner'), operator: w('konsolGroupOperator') };
       let lastScope = null;
       $('konsolList').innerHTML = entries.map((entry) => {
         const head = entry.scope === lastScope ? '' : `<span class="konsolGroup">${esc(groupOf[entry.scope] || entry.scope)}</span>`;
         lastScope = entry.scope;
         return `${head}
-        <button type="button" data-table="${esc(entry.name)}" ${entry.readable ? '' : 'disabled aria-disabled="true"'} aria-current="${entry.name === konsol.table ? 'true' : 'false'}" title="${entry.readable ? esc(`${konsolNf(entry.total)} baris`) : 'Hanya akun operator yang boleh membaca tabel ini'}">
+        <button type="button" data-table="${esc(entry.name)}" ${entry.readable ? '' : 'disabled aria-disabled="true"'} aria-current="${entry.name === konsol.table ? 'true' : 'false'}" title="${entry.readable ? esc(`${konsolNf(entry.total)} ${w('rowsUnit')}`) : esc(w('csvOperatorOnly'))}">
           <span>${esc(entry.name.replace(/^opera_/, ''))}</span>
           <span class="meta">${entry.readable ? konsolNf(entry.total) : '–'}</span>
         </button>`;
@@ -1085,7 +1505,7 @@
       const first = entries.find((entry) => entry.readable);
       if (first && !konsol.table) await konsolOpen(first.name);
       const locked = entries.filter((entry) => !entry.readable).length;
-      if (locked && !konsol.table) konsolSay(`${locked} tabel di sini hanya untuk akun operator.`, 'warn');
+      if (locked && !konsol.table) konsolSay(fmt(w('konsolOperatorOnly'), { n: locked }), 'warn');
     }
 
     async function konsolInit() {
@@ -1165,7 +1585,7 @@
       if (!konsol.table) return;
       const cap = 5000;
       $('konsolCsv').disabled = true;
-      konsolSay('Menyiapkan CSV…');
+      konsolSay(w('csvPreparing'));
       try {
         const lines = [konsol.cols.map((col) => konsolCsvCell(col.name)).join(',')];
         let offset = 0;
@@ -1180,7 +1600,8 @@
             p_sort: konsol.sort,
             p_dir: konsol.dir
           });
-          if (!page?.ok) throw new Error(say(page?.error || 'gagal membaca tabel'));
+          const refusal = page?.error ? say(String(page.error)) : w('konsolReadFailed');
+          if (!page?.ok) throw new Error(refusal);
           total = page.total || 0;
           const rowsOnPage = page.rows || [];
           if (!rowsOnPage.length) break;
@@ -1200,9 +1621,9 @@
         link.click();
         link.remove();
         URL.revokeObjectURL(href);
-        konsolSay(`${konsolNf(fetched)} baris diunduh sebagai ${konsol.table}.csv.`, 'ok');
+        konsolSay(fmt(w('csvDone'), { n: konsolNf(fetched), name: konsol.table }), 'ok');
       } catch (error) {
-        konsolSay(`Ekspor gagal: ${error.message}.`, 'warn');
+        konsolSay(`${w('csvFailedPrefix')} ${error.message}.`, 'warn');
       } finally {
         $('konsolCsv').disabled = false;
       }
@@ -1213,13 +1634,15 @@
     // The function reads them with the service role and takes the owner from the session, which is also why the balance here cannot be edited from the page.
 
     const walletNf = (cents) => `Rp${(Number(cents) / 100).toLocaleString('id-ID')}`;
-    const walletKindLabel = { deposit: 'Isi ulang', settle: 'Pekerjaan selesai', refund: 'Pengembalian', adjust: 'Penyesuaian' };
-    const priceLabel = {
-      'wallet.deposit': 'Isi ulang saldo (QRIS)',
-      'task.simple': 'Pekerjaan sederhana — saat selesai',
-      'task.report': 'Laporan — saat selesai',
-      'task.batch_item': 'Per item batch — saat selesai'
-    };
+    // WHY the prices are looked up by kind and never trusted as English: the job names sold to the customer live in the shared dictionary, so the price list speaks the customer's language in both.
+    const t = (key, fallback) => (typeof window !== 'undefined' && window.OperaAgentI18n && typeof window.OperaAgentI18n.t === 'function' ? window.OperaAgentI18n.t(key, fallback) : fallback);
+    const walletKindLabel = () => ({ deposit: t('saldo.kindDeposit', 'Isi ulang'), settle: t('saldo.kindSettle', 'Pekerjaan selesai'), refund: t('saldo.kindRefund', 'Pengembalian'), adjust: t('saldo.kindAdjust', 'Penyesuaian') });
+    const priceLabel = () => ({
+      'wallet.deposit': t('saldo.priceDeposit', 'Isi ulang saldo (QRIS)'),
+      'task.simple': t('saldo.priceSimple', 'Pekerjaan sederhana - saat selesai'),
+      'task.report': t('saldo.priceReport', 'Laporan - saat selesai'),
+      'task.batch_item': t('saldo.priceBatchItem', 'Per item batch - saat selesai')
+    });
 
     async function walletCall(action, body = {}) {
       const session = await currentSession();
@@ -1235,7 +1658,7 @@
 
     async function walletLoad() {
       const status = $('walletStatus');
-      status.textContent = 'Memuat saldo…';
+      status.textContent = w('walletReloading');
       status.className = 'status';
       // WHY a dropped packet is a warn line and not a stuck status: a fetch refused by the browser or the network rejects instead of answering, and an unhandled rejection leaves the last line on screen forever — the reader cannot tell "loading" from "broken".
       let balance = null;
@@ -1250,7 +1673,7 @@
           rows.textContent = '';
           for (const price of priceAnswer.prices) {
             const tr = document.createElement('tr');
-            for (const text of [priceLabel[price.kind] || price.kind, walletNf(price.amount_cents)]) {
+            for (const text of [priceLabel()[price.kind] || price.kind, walletNf(price.amount_cents)]) {
               const td = document.createElement('td');
               td.textContent = text;
               tr.appendChild(td);
@@ -1261,20 +1684,20 @@
           // The page used to name Rp10.000 while the server charged Rp1.000, so the button lied about the money.
           // The price is one row on the server, and the button now says what that row says.
           const deposit = priceAnswer.prices.find((price) => price.kind === 'wallet.deposit');
-          if (deposit) $('walletTopUp').textContent = `Isi ulang ${walletNf(deposit.amount_cents)}`;
+          if (deposit) $('walletTopUp').textContent = fmt(w('walletTopUpAmount'), { amount: walletNf(deposit.amount_cents) });
           $('priceEmpty').hidden = priceAnswer.prices.length > 0;
         } else {
           $('priceEmpty').hidden = false;
         }
       } catch {
-        status.textContent = 'Tidak bisa menjangkau server saldo. Coba muat ulang.';
+        status.textContent = w('walletUnreachable');
         status.className = 'status warn';
         return;
       }
       if (!balance?.ok || !history?.ok) {
         status.textContent = balance === null || history === null
-          ? 'Tidak bisa memuat saldo sekarang.'
-          : `Gagal memuat saldo: ${balance?.why || history?.why || 'server menolak'}.`;
+          ? w('walletLoadImpossible')
+          : `${w('walletLoadFailed')}: ${balance?.why || history?.why || 'server menolak'}.`;
         status.className = 'status warn';
         return;
       }
@@ -1285,8 +1708,8 @@
       for (const entry of history.entries) {
         const tr = document.createElement('tr');
         const kind = entry.kind.startsWith('reservation.')
-          ? `Tugas ${entry.kind.slice('reservation.'.length)}`
-          : (walletKindLabel[entry.kind] || entry.kind);
+          ? fmt(w('reservationTask'), { code: entry.kind.slice('reservation.'.length) })
+          : (walletKindLabel()[entry.kind] || entry.kind);
         for (const text of [relativeTime(entry.at), kind, walletNf(entry.amountCents), entry.note || '–']) {
           const td = document.createElement('td');
           td.textContent = text;
@@ -1295,32 +1718,41 @@
         rows.appendChild(tr);
       }
       $('walletEmpty').hidden = history.entries.length > 0;
-      status.textContent = 'Saldo dibaca dari server.';
+      status.textContent = w('walletLoaded');
       status.className = 'status ok';
     }
 
     $('walletRefresh').addEventListener('click', walletLoad);
     $('walletTopUp').addEventListener('click', async () => {
       const status = $('walletStatus');
-      status.textContent = 'Membuka halaman pembayaran…';
+      status.textContent = w('walletTopUpOpening');
       status.className = 'status';
       let opened = null;
       try {
         opened = await walletCall('wallet-deposit');
       } catch {
-        status.textContent = 'Tidak bisa menjangkau server pembayaran. Coba lagi.';
+        status.textContent = w('walletUnreachablePay');
         status.className = 'status warn';
         return;
       }
       if (opened?.ok && opened.url) {
         globalThis.open(opened.url, '_blank', 'noopener');
-        status.textContent = 'Halaman pembayaran dibuka di tab baru. Saldo bertambah setelah pembayaran dikonfirmasi.';
+        status.textContent = w('walletTopUpOpened');
         status.className = 'status ok';
       } else {
-        status.textContent = `Tidak bisa membuka isi ulang: ${opened?.why || opened?.error || 'server menolak'}.`;
+        status.textContent = `${w('walletTopUpFailed')}: ${opened?.why || opened?.error || 'server menolak'}.`;
         status.className = 'status warn';
       }
     });
+
+    // WHY one function owns the operator door: the toggle and the hash deep-link both move it, and if they wrote their own state the two controls would fight.
+    function setOperatorOpen(open) {
+      const toggle = $('operatorToggle');
+      const group = $('operatorGroup');
+      if (!toggle || !group) return;
+      toggle.setAttribute('aria-expanded', String(open));
+      group.hidden = !open;
+    }
 
     // WHY one visible section: eight stacked jobs read as a form nobody finished.
     // Tabs show one at a time, deep-linked by hash so #riwayat is shareable.
@@ -1330,6 +1762,10 @@
       const wanted = (globalThis.location.hash || '#ringkasan').slice(1);
       const target = sections.some((section) => section.id === wanted) ? wanted : 'ringkasan';
       for (const section of sections) section.classList.toggle('active', section.id === target);
+
+      // WHY the door opens itself for the operator's views: a deep link to #tabel or #dengar must land on the frame the reader came for, never on an empty door they cannot tell was closed.
+      const operatorViews = new Set(['tabel', 'dengar']);
+      if (operatorViews.has(target)) setOperatorOpen(true);
 
       // WHY the document title follows the view: eight views share one URL, so the tab strip is the only place a reader with several tabs open can tell them apart.
       const heading = sections.find((section) => section.id === target)?.querySelector('h1')?.textContent?.trim();
@@ -1359,8 +1795,28 @@
       collapse.addEventListener('click', () => {
         const collapsed = document.body.classList.toggle('rail-collapsed');
         collapse.setAttribute('aria-expanded', String(!collapsed));
-        collapse.title = collapsed ? 'Tampilkan navigasi' : 'Sembunyikan navigasi';
+        collapse.title = collapsed ? w('showNav') : w('hideNav');
       });
+    }
+
+    const operatorToggle = $('operatorToggle');
+    if (operatorToggle) {
+      operatorToggle.addEventListener('click', () => {
+        setOperatorOpen(operatorToggle.getAttribute('aria-expanded') !== 'true');
+      });
+    }
+
+    const planRefresh = $('planRefresh');
+    if (planRefresh) planRefresh.addEventListener('click', refreshPlan);
+
+    // WHY the repaint on toggle: the strings this module builds are swapped by re-rendering, so flipping the language repaints them in the new one without a reload.
+    for (const button of document.querySelectorAll('button[data-lang]')) {
+      button.addEventListener('click', () => setTimeout(() => {
+        paintInstallState();
+        if (liveUser) renderAccountFacts(liveUser, lastSeen.devices);
+        refreshDevices();
+        refreshPlan();
+      }, 0));
     }
 
     showSection();
