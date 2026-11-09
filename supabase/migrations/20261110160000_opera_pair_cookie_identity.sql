@@ -22,8 +22,6 @@ declare
   v_base text;
   v_name text;
   v_suffix integer := 1;
-  v_adopt boolean := false;
-  v_adopted_from text := '';
 begin
   if p_token_hash !~ '^[a-f0-9]{64}$' then return jsonb_build_object('ok', false, 'error', 'Invalid device token hash.'); end if;
   if v_legacy <> '' and v_legacy !~ '^[A-Za-z0-9._:-]{1,64}$' then return jsonb_build_object('ok', false, 'error', 'Invalid device identity.'); end if;
