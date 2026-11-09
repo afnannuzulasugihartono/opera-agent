@@ -1,6 +1,6 @@
 /*
- * @last-edited: 2026-10-26 UTC+7.
- * @title: download.css — the download hub, the per-browser cards, the steps and the checksum block.
+ * @last-edited: 2026-11-09 UTC+7.
+ * @title: download.css - the download hub, the per-browser cards, the steps and the checksum block.
  * @state: one large door, five browser cards, and the verification prose the two download pages share.
  * @dependencies: site.css.
  *
@@ -93,52 +93,131 @@
   color: var(--on-fill);
 }
 
-.stats {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 18px 40px;
-  margin: 26px 0 26px;
-  padding: 22px 0 0;
-  border-top: 1px solid var(--line);
-}
-
-.stat {
-  display: grid;
-  grid-template-columns: auto auto;
-  grid-template-rows: auto auto;
-  column-gap: 8px;
-  align-items: baseline;
-}
-
-.stat-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  align-self: center;
-}
-
-.stat-dot.live { background: var(--accent); }
-.stat-dot.safe { background: var(--brand); }
-
-.stat-label {
-  color: var(--muted);
-  font-size: 13px;
-  line-height: 1.35;
-}
-
-.stat-num {
-  grid-column: 1 / -1;
-  color: var(--ink);
-  font-size: 28px;
-  font-weight: 640;
-  letter-spacing: -.04em;
-  line-height: 1.1;
-  font-variant-numeric: tabular-nums;
-}
-
 .also {
   color: var(--muted);
   font-size: 13.5px;
+}
+
+/*
+ * WHY THE PAGE ARRIVES IN FIVE BEATS: the reader meets the door one line at a time - title, value, money, door, facts - and the composition resolves before the eye has anywhere else to go.
+ * Each beat rides once, 70-90 ms apart, and never blocks a reader who gets there first.
+ */
+
+@keyframes arrive {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: none; }
+}
+
+html.js [data-arrive] {
+  opacity: 0;
+  animation: arrive .55s var(--ease) both;
+}
+
+html.js [data-arrive]:nth-of-type(1) { animation-delay: .02s; }
+html.js [data-arrive]:nth-of-type(2) { animation-delay: .1s; }
+html.js [data-arrive]:nth-of-type(3) { animation-delay: .18s; }
+html.js [data-arrive]:nth-of-type(4) { animation-delay: .26s; }
+html.js [data-arrive]:nth-of-type(5) { animation-delay: .34s; }
+html.js [data-arrive]:nth-of-type(6) { animation-delay: .42s; }
+
+@media (prefers-reduced-motion: reduce) {
+  html.js [data-arrive] { opacity: 1; animation: none; }
+}
+
+/* WHY THE DOOR ANSWERS THE CURSOR: one door, one reach - the arrow keeps its place while the hand arrives, and a small drift reads as "you can go" rather than "something moved". */
+
+.btn.giant { position: relative; }
+
+.btn.giant::after { transition: transform .22s var(--ease); }
+
+.btn.giant:hover::after,
+.btn.giant:focus-visible::after {
+  transform: translate(5px, -50%);
+}
+
+.btn.giant:hover { background: var(--accent-strong); }
+
+/* WHY THE FAN POPS AS IT LIGHTS: a browser that exists because of this door earns a beat of presence when the light arrives - a scale breath, not a bounce - so the fan reads as five browsers waking up, in order. */
+
+@keyframes tile-pop {
+  0% { transform: scale(1); }
+  42% { transform: scale(1.12); }
+  100% { transform: scale(1); }
+}
+
+html.js .pack.in .packTile:nth-child(1) { animation-delay: .38s, .6s; }
+html.js .pack.in .packTile:nth-child(2) { animation-delay: .48s, .7s; }
+html.js .pack.in .packTile:nth-child(3) { animation-delay: .58s, .8s; }
+html.js .pack.in .packTile:nth-child(4) { animation-delay: .68s, .9s; }
+html.js .pack.in .packTile:nth-child(5) { animation-delay: .78s, 1s; }
+
+html.js .pack.in .packTile { animation: pack-light .2s var(--ease) forwards, tile-pop .5s var(--ease) 1; }
+
+.packTile svg { display: block; }
+
+.packTile:hover { transform: translateY(-3px); border-color: var(--accent); }
+.packTile:hover svg { transform: scale(1.15); }
+.packTile svg { transition: transform .25s var(--ease); }
+
+@media (prefers-reduced-motion: reduce) {
+  .packTile:hover, .packTile:hover svg { transform: none; }
+}
+
+/*
+ * WHY THE FACTS ARE QUIET: the page makes one ask, so the supporting numbers sit at caption weight - the reader who opens the door never had to compare three stats to find it.
+ * The numerals ride tabular figures so the three facts align even though their lengths differ by three words.
+ */
+
+.quietFacts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 22px;
+  margin: 22px 0 0;
+  padding: 18px 0 0;
+  border-top: 1px solid var(--line);
+  list-style: none;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+  font-variant-numeric: tabular-nums;
+}
+
+.stat-num {
+  color: var(--ink);
+  font-size: 15px;
+  font-weight: 640;
+  letter-spacing: -.01em;
+}
+
+/*
+ * WHY TWO COLUMNS: the page had one long vertical staircase - door, stats, permissions, review - and the reader's eye kept landing on the next section before finishing the last.
+ * The two questions the page answers (why these permissions, why not a button) read side by side now, and each owns its measure.
+ */
+
+.downloadBody.cleanGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  gap: clamp(28px, 4vw, 56px);
+  max-width: none;
+}
+
+.cleanGrid .column > h2:first-child { margin-top: 0; }
+.cleanGrid .column > p:first-of-type { margin-top: 0; }
+
+.facts.restrained { margin-bottom: 18px; }
+
+.asideBox {
+  padding: 22px 24px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface);
+}
+
+.asideBox h3 { margin: 0 0 8px; font-size: 16px; letter-spacing: -.02em; }
+.asideBox p { margin: 0; }
+
+@media (max-width: 900px) {
+  .downloadBody.cleanGrid { grid-template-columns: minmax(0, 1fr); }
 }
 
 /*
@@ -226,17 +305,7 @@ html.js .pack.in code::before { animation: pack-stem .24s var(--ease) both; }
 
 html.js .pack.in .packRow::after { animation: pack-bar .3s var(--ease) .2s both; }
 
-html.js .pack.in .packTile { animation: pack-light .2s var(--ease) both; }
-
-/*
- * WHY THE TILES WAIT THEIR TURN: the light reaches one browser at a time, so the eye reads a fan and not five lamps switching together.
- */
-
-html.js .pack.in .packTile:nth-child(1) { animation-delay: .36s; }
-html.js .pack.in .packTile:nth-child(2) { animation-delay: .46s; }
-html.js .pack.in .packTile:nth-child(3) { animation-delay: .56s; }
-html.js .pack.in .packTile:nth-child(4) { animation-delay: .66s; }
-html.js .pack.in .packTile:nth-child(5) { animation-delay: .76s; }
+/* WHY the tiles wait their turn: the light reaches one browser at a time, so the eye reads a fan and not five lamps switching together - the delay now rides on the new dual-track rule above. */
 
 @keyframes pack-stem {
   to { transform: scaleY(1); }
@@ -320,6 +389,9 @@ html.js .pack.in .packTile:nth-child(5) { animation-delay: .76s; }
 }
 
 .browser:hover { border-color: var(--line-strong); }
+
+.glyph svg { transition: transform .25s var(--ease); }
+.browser:hover .glyph svg { transform: scale(1.12); }
 
 .browser.yours {
   border-color: var(--accent);

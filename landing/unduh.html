@@ -1,6 +1,6 @@
-<!-- @last-edited: 2026-10-26 UTC+7. -->
-<!-- @title: unduh — one giant door, then the details. -->
-<!-- @state: the hero centers the title, the value, and the one door; both formats share one page with its own browser cards. -->
+<!-- @last-edited: 2026-11-09 UTC+7. -->
+<!-- @title: unduh - one door, quieter facts, and the details in two columns. -->
+<!-- @state: the hero centers one action with three quiet facts beneath; permissions and the Web Store note sit side by side; the hub is reached from beranda. -->
 <!-- @dependencies: site.css, download.css, i18n.js, reveal.js, wayfind.js, palette.js. -->
 
 
@@ -42,49 +42,55 @@
   <main class="wrap wide">
     <div class="hero" data-reveal>
       <div class="hero-text">
-        <h1 data-i18n="page.title">Pasang Opera Agent</h1>
-         <p data-i18n="page.value">Tanpa toko: satu arsip .zip untuk semua browser Chromium; mesin enterprise dapat memakai CRX bertanda tangan.</p>
-         <p class="muted" data-i18n-html="page.money">Memasang gratis. Harga per pekerjaan ada di halaman <a href="/harga">Harga</a>.</p>
+        <h1 data-i18n="page.title" data-arrive>Pasang Opera Agent</h1>
+        <p class="hero-value" data-i18n="page.value" data-arrive>Tanpa toko: satu arsip untuk semua browser Chromium — Chrome, Edge, Brave, Opera, Vivaldi. Build terbaru, selalu.</p>
+        <p class="hero-cta" data-arrive><a class="btn giant" href="./unduh-berkas.html" data-i18n="door">Unduh Opera Agent</a></p>
+        <p class="muted" data-i18n-html="page.money" data-arrive>Memasang gratis. Harga per pekerjaan ada di halaman <a href="/harga">Harga</a>.</p>
 
-         <p data-i18n="page.fresh">Build terbaru, selalu.</p>
-
-        <div class="stats" data-reveal aria-label="Cakupan produk">
-          <div class="stat"><span class="stat-dot live"></span><span class="stat-label" data-i18n="stat.mcp">Perintah MCP</span><span class="stat-num">35</span></div>
-          <div class="stat"><span class="stat-dot safe"></span><span class="stat-label" data-i18n="stat.prims">Primitif browser</span><span class="stat-num">31</span></div>
+        <div class="quietFacts" aria-label="Fakta produk" data-arrive>
+          <span><span class="stat-num">35</span> <span class="quietTxt" data-i18n="fact.cmds">perintah MCP,</span></span>
+          <span><span class="stat-num">31</span> <span class="quietTxt" data-i18n="fact.prims">primitif browser.</span></span>
+          <span class="quietTxt" data-i18n="fact.free">Gratis dipasang, build terbaru.</span>
         </div>
-
-        <p class="hero-cta"><a class="btn giant" href="./unduh-berkas.html" data-i18n="door">Unduh Opera Agent</a></p>
-        <p class="also" data-i18n-html="also">juga tersedia: <a href="./unduh-berkas.html">Panduan format</a> &middot; <a href="./dashboard.html">Dashboard</a></p>
+        <p class="also" data-i18n-html="also" data-arrive>juga tersedia: <a href="./unduh-berkas.html">Panduan format</a> &middot; <a href="./dashboard.html">Dashboard</a></p>
       </div>
 
       <aside class="pack" data-reveal aria-label="Satu arsip untuk lima browser">
         <code>opera-agent.zip</code>
         <ol class="packRow" aria-hidden="true">
-          <li class="packTile" title="Chrome">C</li>
-          <li class="packTile" title="Edge">E</li>
-          <li class="packTile" title="Brave">B</li>
-          <li class="packTile" title="Opera">O</li>
-          <li class="packTile" title="Vivaldi">V</li>
+          <li class="packTile" title="Chrome" data-logo="chrome">C</li>
+          <li class="packTile" title="Edge" data-logo="edge">E</li>
+          <li class="packTile" title="Brave" data-logo="brave">B</li>
+          <li class="packTile" title="Opera" data-logo="opera">O</li>
+          <li class="packTile" title="Vivaldi" data-logo="vivaldi">V</li>
         </ol>
       </aside>
     </div>
 
-    <div class="downloadBody" data-reveal>
-     <h2 data-i18n="perms.title">Izin, dengan alasan jelas.</h2>
-     <p data-i18n="perms.sub">Enam izin. Tidak ada yang tersembunyi.</p>
-    <dl class="facts">
-       <dt><code>tabs</code></dt><dd data-i18n="perms.tabs">Membuka dan menavigasi tab.</dd>
-       <dt><code>scripting</code></dt><dd data-i18n="perms.scripting">Menjaga content script tetap hidup.</dd>
-       <dt><code>storage</code></dt><dd data-i18n="perms.storage">Menyimpan token dan setelan lokal.</dd>
-       <dt><code>alarms</code></dt><dd data-i18n="perms.alarms">Menjaga polling tetap berjalan.</dd>
-       <dt><code>debugger</code></dt><dd data-i18n="perms.debugger">Klik terpercaya, screenshot, dan aksesibilitas.</dd>
-       <dt><code>downloads</code></dt><dd data-i18n="perms.downloads">Menyimpan dan membuktikan berkas yang diunduh.</dd>
-    </dl>
-    <p data-i18n-html="perms.host">Host permission <code>http://*/*</code> dan <code>https://*/*</code> karena kamu yang menentukan halaman tujuan saat runtime, jadi daftar asal tidak bisa diketahui lebih dulu. Batas sesungguhnya ditegakkan di kode: setiap primitive menolak tab non-http(s), screenshot ditolak di tab private, dan field password, OTP, PIN, kartu, serta CVV diblokir.</p>
+    <div class="downloadBody cleanGrid" data-reveal>
+     <section class="column">
+      <h2 data-i18n="perms.title">Izin, dengan alasan jelas.</h2>
+      <p data-i18n="perms.sub">Enam izin. Tidak ada yang tersembunyi.</p>
+      <dl class="facts restrained">
+        <dt><code>tabs</code></dt><dd data-i18n="perms.tabs">Membuka dan menavigasi tab.</dd>
+        <dt><code>scripting</code></dt><dd data-i18n="perms.scripting">Menjaga content script tetap hidup.</dd>
+        <dt><code>storage</code></dt><dd data-i18n="perms.storage">Menyimpan token dan setelan lokal.</dd>
+        <dt><code>alarms</code></dt><dd data-i18n="perms.alarms">Menjaga polling tetap berjalan.</dd>
+        <dt><code>debugger</code></dt><dd data-i18n="perms.debugger">Klik terpercaya, screenshot, dan aksesibilitas.</dd>
+        <dt><code>downloads</code></dt><dd data-i18n="perms.downloads">Menyimpan dan membuktikan berkas yang diunduh.</dd>
+      </dl>
+      <p class="meta" data-i18n-html="perms.host">Host permission <code>http://*/*</code> dan <code>https://*/*</code> karena kamu yang menentukan halaman tujuan saat runtime, jadi daftar asal tidak bisa diketahui lebih dulu. Batas sesungguhnya ditegakkan di kode: setiap primitive menolak tab non-http(s), screenshot ditolak di tab private, dan field password, OTP, PIN, kartu, serta CVV diblokir.</p>
+     </section>
 
-    <h2 data-i18n="review.title">Kenapa belum ada tombol pasang sekali klik</h2>
-    <p data-i18n-html="review.body">Extension dengan akses <code>debugger</code> harus lewat review Chrome Web Store.
-    Sementara itu pengguna pertama memuat sendiri, dan listing menyusul setelah review.</p>
+     <section class="column">
+      <h2 data-i18n="review.title">Kenapa belum ada tombol pasang sekali klik</h2>
+      <p data-i18n-html="review.body">Extension dengan akses <code>debugger</code> harus lewat review Chrome Web Store.
+      Sementara itu pengguna pertama memuat sendiri, dan listing menyusul setelah review.</p>
+      <div class="asideBox">
+        <h3 data-i18n="side.title">Build lama &amp; riwayat</h3>
+        <p data-i18n-html="side.body">Setiap rilis 1.6.x bertanda tangan tetap tersedia di <a href="https://github.com/afnannuzulasugihartono/opera-agent/releases">GitHub Releases</a> — .zip, .crx dan SHA256SUMS — untuk mesin enterprise.</p>
+      </div>
+     </section>
     </div>
   </main>
 
@@ -134,11 +140,10 @@
     "nav.support": "Support",
     "meta.title": "Download — Opera Agent",
     "page.title": "Install Opera Agent",
-    "page.value": "Storeless: one .zip archive for every Chromium browser; enterprise machines can use the signed CRX.",
+    "page.value": "Storeless: one archive for every Chromium browser - Chrome, Edge, Brave, Opera, Vivaldi. The newest build, always.",
     "page.money": "Installing is free. The price per job is on the <a href=\"/harga\">Pricing</a> page.",
-    "page.fresh": "The newest build, always.",
-    "stat.mcp": "MCP commands",
-    "stat.prims": "browser primitives",
+    "fact.free": "Installs free, newest build.",
+    "fact.cmds": "35 MCP commands",
     "door": "Download Opera Agent",
     "also": "also available: <a href=\"./unduh-berkas.html\">Format guide</a> &middot; <a href=\"./dashboard.html\">Dashboard</a>",
     "perms.title": "Permissions, clearly explained.",
@@ -152,13 +157,16 @@
     "perms.host": "Host permission <code>http://*/*</code> and <code>https://*/*</code> because you name the destination page at runtime, so the origin list cannot be known ahead. The real limit is enforced in code: every primitive refuses non-http(s) tabs, screenshots are refused in private tabs, and password, OTP, PIN, card, and CVV fields are blocked.",
     "review.title": "Why there is no one-click install button yet",
     "review.body": "An extension with <code>debugger</code> access must pass Chrome Web Store review. Until then the first users load it themselves, and the listing follows after review.",
+    "side.title": "Older builds &amp; history",
+    "side.body": "Every signed 1.6.x release stays available on <a href=\"https://github.com/afnannuzulasugihartono/opera-agent/releases\">GitHub Releases</a> - .zip, .crx and SHA256SUMS - for enterprise machines.",
     "footer.rights": "© 2026 Opera Agent. All rights reserved.",
     "footer.home": "Home",
     "footer.privacy": "Privacy",
     "footer.terms": "Terms",
+    "footer.account": "Account",
     "footer.features": "Features",
     "footer.support": "Support",
-    "footer.account": "Account"
+    "fact.prims": "31 browser primitives"
   }
 }</script>
   <script src="./i18n.js"></script>
@@ -166,6 +174,7 @@
   <script src="/wayfind.js"></script>
   <script src="/palette.js"></script>
 
+  <script src="/logos.js"></script>
   <script src="/reveal.js"></script>
 </body>
 </html>
