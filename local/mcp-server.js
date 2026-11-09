@@ -256,6 +256,23 @@ const windowTruth = (window, browsers, tabs = []) => {
 // The pipe is chosen per call because a worker can wake up late, so a port captured at startup is a lie the moment after it.
 // Measured on the user's own machine: the drive was already on the bridge, list_tabs returned the real tabs, and browser_status still named the debugging port nothing was listening on — the kind of wrong answer that sends someone off to debug a port that was never in the way.
 
+// WHY THE LIST IS HERE AND NOT ON THE MCP SURFACE.
+// The caller drives over whichever road the bridge holds; when that road is the loopback bridge, the health answer names the browsers linked to it by name and id.
+// A remote road has no local bridge to ask, and the answer says so by carrying no devices field rather than an invented one.
+
+const linkedDevices = async (port) => {
+  if (!Number.isInteger(port) || port <= 0) return null;
+  try {
+    const response = await fetch(`http://127.0.0.1:${port}/health`, { signal: AbortSignal.timeout(1000) });
+    if (!response.ok) return null;
+    const health = await response.json();
+    if (!Array.isArray(health?.devices)) return null;
+    return health.devices.map((d) => ({ name: d?.deviceName ?? null, id: d?.id ?? null, instanceId: d?.instanceId ?? null, extensionVersion: d?.extensionVersion ?? null, slot: d?.slot ?? null, port }));
+  } catch {
+    return null;
+  }
+};
+
 const livePort = async (context) => (typeof context.port === 'function' ? await context.port() : context.port);
 
 // WHY EVERY ANSWER NAMES THE TAB IT HIT.
@@ -484,9 +501,12 @@ const windowMatch = async (tab, driver) => (tab ? String(tab.title ?? '') : page
       case 'browser_status': {
         const window = await driver.windowState();
         const pages = await fallback.tabs().catch(() => []);
+        const live = Number(await livePort(context));
+        const devices = await linkedDevices(live);
         return asText({
           browsers: context.browsers,
-          port: await livePort(context),
+          port: live,
+          ...(devices ? { devices } : {}),
           window: windowTruth(window, context.browsers, pages)
         });
       }
