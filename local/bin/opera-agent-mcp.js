@@ -13,6 +13,7 @@ const USAGE = `opera-agent-mcp <mode>
 
   local   drive the everyday browser on this machine, over the loopback bridge
   cloud   drive it through the hosted Opera Agent server
+  auth    sign in with a browser and keep the token beside this install
 
   --help  print this
 `;
@@ -28,8 +29,17 @@ if (mode === 'help' || process.argv.includes('--help')) {
 if (mode === 'local') {
   await import('./opera-local.js');
 } else if (mode === 'cloud') {
-  process.stderr.write('The cloud mode is not built yet: this package still drives the local browser.\n');
-  process.exit(3);
+  const { serveCloud } = await import('../cloud.js');
+  process.exitCode = await serveCloud();
+} else if (mode === 'auth') {
+  const { login } = await import('../oauth.js');
+  try {
+    const answer = await login();
+    process.stdout.write('Signed in. The token is stored in ' + answer.file + '\n');
+  } catch (error) {
+    process.stderr.write('Sign-in did not finish: ' + String(error?.message || error) + '\n');
+    process.exitCode = 4;
+  }
 } else {
   process.stderr.write(`Unknown mode: ${mode}\n${USAGE}`);
   process.exit(2);
