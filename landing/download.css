@@ -342,7 +342,10 @@ html.js .packTile:nth-child(5) { animation-delay: .58s; }
 }
 
 @media (max-width: 1040px) {
-  .browsers { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .browsers { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+  .browsers .browser { grid-column: span 2; }
+  .browsers .browser:nth-child(4) { grid-column: 2 / span 2; }
+  .browsers .browser:nth-child(5) { grid-column: 4 / span 2; }
 }
 
 @media (max-width: 720px) {
@@ -358,7 +361,7 @@ html.js .packTile:nth-child(5) { animation-delay: .58s; }
   display: flex;
   flex-direction: column;
   gap: 2px;
-  padding: 24px 18px 18px;
+  padding: 26px 20px 20px;
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: var(--surface);
@@ -379,10 +382,10 @@ html.js .packTile:nth-child(5) { animation-delay: .58s; }
 .glyph {
   display: grid;
   place-items: center;
-  width: 52px;
-  height: 52px;
-  margin: 0 auto 10px;
-  border-radius: 14px;
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 12px;
+  border-radius: 15px;
   background: var(--surface-2);
   color: var(--ink);
 }
@@ -391,18 +394,10 @@ html.js .packTile:nth-child(5) { animation-delay: .58s; }
 
 .browser h2,
 .browser h3 {
-  margin: 0 0 8px;
+  margin: 0 0 12px;
   color: var(--ink);
   font-size: 19px;
   letter-spacing: -.02em;
-  text-align: center;
-}
-
-.cardHint {
-  margin: 0 0 14px;
-  color: var(--muted);
-  font-size: 12.5px;
-  line-height: 1.5;
   text-align: center;
 }
 
@@ -495,15 +490,6 @@ html.js .packTile:nth-child(5) { animation-delay: .58s; }
 
 .browser .more-list a:hover { background: var(--surface); color: var(--accent-strong); }
 
-.req {
-  margin: 12px 0 0;
-  padding: 0 2px;
-  color: var(--muted);
-  font-size: 12px;
-  line-height: 1.55;
-  text-align: left;
-}
-
 /* WHY THE STEPS KEEP THE SITE'S OWN GRAMMAR: the site already ships an ordered-steps block with a leading-zero counter, accent ink and 44px of air; a second copy here incremented the counter twice and painted the steps in two designs at once. */
 
 
@@ -522,23 +508,21 @@ p strong, li strong { color: var(--ink); }
 
 code {
   font-family: var(--mono);
-  font-size: .84em;
-  padding: 2px 7px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
-  background: var(--surface-2);
+  font-size: .92em;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-decoration-break: slice;
+  -webkit-box-decoration-break: slice;
   color: var(--ink);
   overflow-wrap: anywhere;
 }
 
 pre {
   margin: 0;
-  padding: 14px 16px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
-  background: var(--surface-2);
-  color: var(--ink);
   font: 13px/1.7 var(--mono);
+  color: var(--ink);
   overflow-wrap: anywhere;
   white-space: pre-wrap;
 }
@@ -561,6 +545,15 @@ pre {
   border-top: 1px solid var(--line);
 }
 
+.verifyPanel pre {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  font: 13px/1.7 var(--mono);
+}
+
 .verifyTag {
   display: block;
   margin-bottom: 8px;
@@ -568,12 +561,7 @@ pre {
   font: 500 11px/1 var(--mono);
 }
 
-.verifyPanel pre {
-  padding: 0;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-}
+
 
 
 /* WHY ONE COLUMN FOR EVERYTHING BELOW THE CARDS: the five cards answer the only question that matters at a glance; the prose after them is one narrow read, centered so the eye does not ping-pong. */

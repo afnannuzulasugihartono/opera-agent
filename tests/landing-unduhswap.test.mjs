@@ -43,25 +43,27 @@ test('the also-available row names the other doors without leaving the page', ()
   assert.match(hubCss, /\.hero-text h1 \{[^}]*text-align: left/, 'and the hero reads left like the reference, beside its visual');
 });
 
-test('every merged card names its own extensions surface and the archive requirement', () => {
+test('every merged card offers the archive, and the install steps name the surface once', () => {
 
   const cards = [...berkas.matchAll(/<article class="browser" data-browser="(\w+)">([\s\S]*?)<\/article>/g)];
   assert.deepEqual(cards.map((m) => m[1]), ['chrome', 'edge', 'brave', 'opera', 'vivaldi']);
   const names = { chrome: 'Chrome', edge: 'Edge', brave: 'Brave', opera: 'Opera', vivaldi: 'Vivaldi' };
-  const surfaces = { chrome: 'chrome://extensions', edge: 'edge://extensions', brave: 'brave://extensions', opera: 'opera://extensions', vivaldi: 'opera://extensions' };
   for (const [, key, body] of cards) {
     assert.ok(body.includes(`<h2>${names[key]}</h2>`), `${key} names itself`);
     assert.ok(body.includes('<span class="glyph"'), `${key} carries a text glyph, not an image asset`);
     assert.doesNotMatch(body, /<img/, `${key} loads no image`);
 
     assert.match(body, new RegExp(`<a\\b[^>]*class="btn"[^>]*href="${escapeRe(ZIP)}"[^>]*download[^>]*>Unduh \\.zip</a>`), `${key} offers the one archive`);
-    assert.ok(body.includes(`<code>${surfaces[key]}</code>`), `${key} names its own extensions surface`);
-    assert.match(body, /mode developer/, `${key} states the requirement`);
+    assert.doesNotMatch(body, /<p class="req"/, `${key} stays one glance short of prose; the steps below carry the requirement`);
     assert.match(body, /<span\b[^>]*class="badge"[^>]*hidden[^>]*>Browser Anda<\/span>/, `${key} hides its badge until detected`);
   }
+
+  const steps = /<ol class="steps">([\s\S]*?)<\/ol>/.exec(berkas)[1];
+  assert.ok(steps.includes('<code>chrome://extensions</code>'), 'the install guide names the Chrome surface once');
+  assert.match(steps, /mode pengembang/, 'the install guide states developer mode once');
 });
 
-test('every merged card keeps the enterprise frame on its signed file', () => {
+test('every merged card keeps the signed file one click away, without button weight', () => {
   const cards = [...berkas.matchAll(/<article class="browser" data-browser="(\w+)">([\s\S]*?)<\/article>/g)];
   assert.deepEqual(cards.map((m) => m[1]), ['chrome', 'edge', 'brave', 'opera', 'vivaldi']);
   for (const [, key, body] of cards) {
@@ -72,8 +74,6 @@ test('every merged card keeps the enterprise frame on its signed file', () => {
     assert.doesNotMatch(more[1], /class="btn"/, `${key} gives the signed file no button weight`);
     assert.match(more[1], /update\.xml\?id=[a-p]{32}/, `${key} also offers the manifest the updater reads, pinned to this extension`);
 
-    assert.match(body, /enterprise-managed/, `${key} keeps the policy audience`);
-    assert.match(body, /Drag-and-drop manual ditolak/, `${key} keeps the manual rejection`);
     assert.doesNotMatch(body, /mengizinkan pemasangan/, `${key} implies no consumer install`);
   }
 });

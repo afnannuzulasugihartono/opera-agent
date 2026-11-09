@@ -95,8 +95,8 @@ test('the hero states the value in one sentence, and the steps live on the merge
 
 test('the enterprise block is retired; the .crx stays one click away in every card', () => {
 
-  assert.match(berkas, /enterprise-managed/, 'policy installs are the audience');
-  assert.match(berkas, /drag-and-drop/, 'manual installs are named as rejected');
+  assert.doesNotMatch(berkas, /enterprise-managed/, 'the page carries no enterprise framing');
+  assert.doesNotMatch(berkas, /[Dd]rag-and-drop/, 'the page names no manual-install rejection');
   assert.doesNotMatch(berkas, /BLOCKED/, 'the policy console copy is gone');
   assert.doesNotMatch(berkas, /pengguna rumahan pakai/, 'the home-user pitch is gone');
   assert.doesNotMatch(berkas, /namanya membawa versi build/, 'the filename note is gone');
