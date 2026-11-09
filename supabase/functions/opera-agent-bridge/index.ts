@@ -7,6 +7,7 @@ import "@supabase/edge-runtime";
 import { createClient } from "@supabase/supabase-js";
 import { createEdgeLog } from "../_shared/edge-log.js";
 import { CORS_DEFAULT_ORIGINS, resolveAllowedOrigin } from "../_shared/cors.js";
+import { gateVerdict } from "./plan-gate.ts";
 import { isUpgradeRequest, serveDeviceSocket } from "./bridge-socket.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -336,6 +337,14 @@ async function claimForDevice(
 const DRAIN_POLL_MS = 100;
 const DRAIN_WAIT_MS = 10000;
 
+async function planForDevice(identity: { deviceName: string; token: string }) {
+  const profile = await rpc("opera_device_plan", {
+    p_device_name: identity.deviceName.trim(),
+    p_token_hash: await sha256(identity.token.toLowerCase())
+  });
+  return profile?.ok ? profile : null;
+}
+
 function subscribe(identity: { deviceName: string; token: string }, onCommand: (command: unknown) => void) {
   let draining = false;
 
@@ -348,6 +357,16 @@ function subscribe(identity: { deviceName: string; token: string }, onCommand: (
         const claimed = await claimForDevice(identity, { waitMs: first ? 0 : DRAIN_WAIT_MS });
         first = false;
         if (!claimed?.command) return false;
+        const admitted = gateVerdict(await planForDevice(identity), claimed.command);
+        if (!admitted.ok) {
+          await complete({
+            ...identity,
+            commandId: claimed.command.id,
+            ok: false,
+            error: { code: admitted.code, message: admitted.message }
+          }).catch(() => {});
+          continue;
+        }
         onCommand(claimed.command);
       }
     } catch (error) {
@@ -385,8 +404,14 @@ async function verifyDeviceSocket(identity: { token: string; deviceName: string 
     p_token_hash: await sha256(identity.token.toLowerCase())
   });
   if (!deviceId) return { ok: false };
+  const profile = await rpc("opera_device_plan", {
+    p_device_name: identity.deviceName.trim(),
+    p_token_hash: await sha256(identity.token.toLowerCase())
+  });
+  if (!profile?.ok) return { ok: false, message: "The plan for this device could not be read; only accounts with a plan may connect." };
+  if (profile.status !== "active") return { ok: false, message: `plan ${profile.plan} is not active for this account` };
   connectDirectDb().catch(() => { directDb = null; });
-  return { ok: true, deviceId };
+  return { ok: true, deviceId, plan: profile.plan };
 }
 
 Deno.serve((req: Request) => {
