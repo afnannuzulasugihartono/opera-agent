@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-21 UTC+7.
+// @last-edited: 2026-11-09 UTC+7.
 // @title: tools — the 34 tools this MCP server offers, and the schemas they take.
 // @state: every tool the surface advertises, with the input shape each one answers.
 // @dependencies: @modelcontextprotocol/sdk, zod/v4, ../_shared/seal-vm-program.js.
@@ -181,15 +181,15 @@ type ExecutionMode = "background" | "foreground";
 export function registerTools(server: McpServer, deps: ToolDeps) {
   const {
     execute, executeScreenshot, executeMap, executeStatus, runWorkflow, runAdhoc, rpc, textResult, toolError,
-    callVmHost, vmRunResult, rpcErrorParts, db, deviceName, provider, caller
+    callVmHost, vmRunResult, rpcErrorParts, db, deviceName, provider, caller, deviceResolution
   } = deps;
 
   server.registerTool("browser_status", {
     title: "Check Opera Agent",
-    description: "Check whether the user's local Opera Agent extension is online and list its capabilities. Call this first for browser-control requests. Returns: ok, paired, product, version, deviceName, capabilities, protocolVersion and time, plus bridge.lastError when the bridge has failed, the worker's own faults as errors with errorCount (errorsTruncated and omittedErrors when the list did not fit), and extensionPresent with deviceStatus (online, offline or never), deviceLastSeenAt, deviceExtensionVersion, latestExtensionVersion and extensionUpdatePending, so an extension that was never installed is told from one whose device is asleep, and one Chrome has not updated yet is named.",
+    description: "Check whether the user's local Opera Agent extension is online and list its capabilities. Call this first for browser-control requests. Returns: ok, paired, product, version, deviceName, capabilities, protocolVersion and time, plus bridge.lastError when the bridge has failed, the worker's own faults as errors with errorCount (errorsTruncated and omittedErrors when the list did not fit), extensionPresent with deviceStatus (online, offline or never), deviceLastSeenAt, deviceExtensionVersion, latestExtensionVersion and extensionUpdatePending, so an extension that was never installed is told from one whose device is asleep, and one Chrome has not updated yet is named; and device (name, source pin|freshest, pinned, ageMs) naming the browser it will drive and how it chose it.",
     inputSchema: { timeoutMs: timeoutSchema },
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false }
-  }, ({ timeoutMs }: { timeoutMs?: number }) => executeStatus("browser.ping", {}, timeoutMs, deviceName, provider, caller?.userId ?? null));
+  }, ({ timeoutMs }: { timeoutMs?: number }) => executeStatus("browser.ping", {}, timeoutMs, deviceName, provider, caller?.userId ?? null, deviceResolution ?? null));
 
   server.registerTool("run_browser_burst", {
     title: "Run fast Opera action burst",
