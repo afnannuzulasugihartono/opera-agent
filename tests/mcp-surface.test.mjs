@@ -1,4 +1,4 @@
-// @last-edited: 2026-11-07 UTC+7.
+// @last-edited: 2026-11-09 UTC+7.
 // @title: mcp-surface.test — the MCP surface the cloud advertises is the one the tools register.
 // @state: the tool names, their count, their titles, what each one returns, their documented inputs, the consent page, and the digest of the source that holds them.
 // @dependencies: node:test, strict, node:fs, promises, node:crypto, canonical-source-hash, protocol.
@@ -65,7 +65,7 @@ const FROZEN_READ_PAGE_PROPERTIES = [
 ];
 
 const FROZEN_TOOL_SCHEMAS = Object.freeze({
-  browser_status: 'fac82d0ca487721a',
+  browser_status: '51fc361281e4aff7',
   run_browser_burst: 'ddfc9835ac4f4e9a',
   run_workflow: '09ce624d89ed95ba',
   run_program: '4220be7d53db3ab1',
@@ -296,12 +296,18 @@ test('an empty allowlist admits nobody, because every caller drives the same dev
   assert.match(authenticate, /!ALLOWED_USER_IDS\.has\(data\.user\.id\) && !ALLOWED_USER_EMAILS\.has\(email\)\) return null/);
 });
 
-test('resolveDeviceName never hands out a device the caller does not own', () => {
+// WHY THIS TEST MOVED AND NOT ITS INTENT.
+// The pin used to be honored forever: one stale pairing blackholed every hosted command to AWAIT_OUTCOME_UNKNOWN behind a 401 that read as a broken credential.
+// The contract is now: the pin serves only while the browser heartbeats, ownership is always checked against the caller's user_id, a silent browser falls back to the freshest fresh one the caller owns, and no fresh browser at all is a named 503 refusal, never a 401 and never an invented name.
 
-  const fn = source.match(/async function resolveDeviceName\([\s\S]*?\n}\n/)[0];
+test('resolveDeviceFresh never hands out a device the caller does not own', () => {
+
+  const fn = source.match(/async function resolveDeviceFresh\([\s\S]*?\n}\n/)[0];
   assert.doesNotMatch(fn, /return deviceFromHeader/);
-  assert.match(fn, /return null/);
-  assert.match(source, /if \(!deviceName\) return unauthorized\(req\);/);
+  assert.match(fn, /\.eq\("user_id", auth\.userId\)/);
+  assert.match(fn, /return resolveDevice\(\{ pin:/);
+  assert.match(source, /if \(!resolution\.name\) return noLiveDevice\(req\);/);
+  assert.match(source, /function noLiveDevice\(req: Request\)/);
 });
 
 test('wait_events exposes only the caller-owned device events', () => {
@@ -325,7 +331,7 @@ test('each command is stamped with its harness provider, never used for access',
   assert.match(source, /\[\/opencode\/i, "opencode"\]/);
   assert.match(source, /return "unknown";/);
   assert.match(source, /const provider = await resolveProvider\(req, authContext\);/);
-  assert.match(source, /createServer\(deviceName, provider, caller\)/);
+  assert.match(source, /createServer\(resolution\.name, provider, caller, resolution\)/);
   assert.match(source, /p_provider: provider \|\| null/);
   assert.doesNotMatch(source, /await supabase\.from\("opera_commands"\)\.update\(\{ provider \}\)/);
   assert.match(source, /await supabase\.from\("opera_workflow_runs"\)\.update\(\{ provider \}\)/);

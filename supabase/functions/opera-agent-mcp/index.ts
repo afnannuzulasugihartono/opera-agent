@@ -1,5 +1,5 @@
-// @last-edited: 2026-10-21 UTC+7.
-// @title: opera-agent-mcp — the MCP surface: the tools an agent calls, over the protocol it declares.
+// @last-edited: 2026-11-09 UTC+7.
+// @title: opera-agent-mcp - the MCP surface: the tools an agent calls, over the protocol it declares.
 // @state: the transport, the tool registry, and the program sealing every VM call passes through.
 // @dependencies: edge-runtime, mcp, webStandardStreamableHttp, supabase-js, v4, edge-log, cors.
 
@@ -16,6 +16,7 @@ import { CommandFailure, sealVmProgram } from "../_shared/seal-vm-program.js";
 import { compileAdhocGraph } from "../_shared/adhoc-compile.js";
 import { registerTools } from "./tools.ts";
 import { tidyForAi } from "./tidy.ts";
+import { resolveDevice } from "./device.ts";
 
 // WHY THE DEPS ARE TYPED FROM THE FUNCTIONS THEMSELVES.
 // A hand-written type beside a function is a second version of that function, and the two drift.
@@ -36,6 +37,7 @@ export type ToolDeps = {
   rpcErrorParts: typeof rpcErrorParts;
   db: typeof db;
   deviceName: string;
+  deviceResolution?: DeviceResolution | null;
   provider: string;
   caller: VmCaller | null;
 };
@@ -90,19 +92,34 @@ function corsHeadersFor(req: Request): Record<string, string> {
 
 type AuthContext = { type: "static" } | { type: "user"; userId: string };
 export type VmCaller = { userId: string; token: string };
-async function resolveDeviceName(auth: AuthContext, req?: Request): Promise<string | null> {
-  if (auth.type === "static") return DEVICE_NAME;
+export type DeviceResolution = { name: string | null; source: "pin" | "freshest" | null; pinned: string | null; ageMs: number | null };
+
+// WHY THE PIN NEVER WINS FOREVER.
+// A paired device is remembered for a week of heartbeats; a device that fell silent is not a browser that answers.
+// The pin wins only while it is fresh; otherwise the browser the person actually has open wins, and the answer names which one it drove.
+
+async function resolveDeviceFresh(auth: AuthContext, req?: Request): Promise<DeviceResolution> {
+  if (auth.type === "static") return { name: DEVICE_NAME, source: "pin", pinned: DEVICE_NAME, ageMs: null };
   const deviceFromHeader = req?.headers.get("x-opera-device")?.trim() || "";
   const supabase = await db();
-  let query = supabase.from("opera_devices").select("device_name").eq("user_id", auth.userId).neq("status", "disabled");
-  if (deviceFromHeader) {
-    query = query.eq("device_name", deviceFromHeader);
-  }
-  query = query.limit(1);
-  const { data } = await query.single();
-  if (data?.device_name) return data.device_name;
+  const { data } = await supabase
+    .from("opera_devices")
+    .select("device_name, last_seen_at, status")
+    .eq("user_id", auth.userId)
+    .neq("status", "disabled")
+    .limit(25);
+  return resolveDevice({ pin: deviceFromHeader || null, devices: data ?? [] });
+}
 
-  return null;
+// WHY A MISSING LIVE BROWSER IS NOT A 401.
+// A caller whose token is fine but whose paired browsers are asleep got "unauthorized" and read its own credential as broken; the truth is simpler and more actionable.
+// The command is not sent, the account is fine, and the fix is a browser that is open.
+
+function noLiveDevice(req: Request) {
+  return json(req, {
+    error: "no_live_browser",
+    error_description: "No Opera Agent browser answered for this account right now. Open Chrome or Brave with Opera Agent installed and paired, then try again; the command was not sent."
+  }, 503);
 }
 
 const PROVIDER_PATTERNS: Array<[RegExp, string]> = [
@@ -500,20 +517,24 @@ async function latestPublishedVersion() {
   }
 }
 
-async function executeStatus(method: string, params: Record<string, unknown>, timeoutMs: number | undefined, deviceName: string, provider: string, userId: string | null) {
+// WHY PRESENCE AND PLAN ARE READ BEFORE THE ANSWER.
+// The caller who most needs the plan is the one whose command just failed for want of it, and answering only the success path hides the limit from the exact moment the work stopped.
+// They are independent of the answer, so they are fired before the command runs; the merge after it is free.
+
+async function executeStatus(method: string, params: Record<string, unknown>, timeoutMs: number | undefined, deviceName: string, provider: string, userId: string | null, resolution?: DeviceResolution | null) {
+  const merging = Promise.all([devicePresence(userId), planInfo(await db(), userId)]);
   const answer = await execute(method, params, timeoutMs, deviceName, provider);
-  // WHY THE PLAN IS NOT CONDITIONAL ON THE ANSWER BEING OK.
-  // The caller who most needs the plan is the one whose command just failed for want of it; answering only the success path hid the limit from the exact moment the work stopped.
-  const [presence, plan] = await Promise.all([devicePresence(userId), planInfo(await db(), userId)]);
+  const [presence, plan] = await merging;
+  const device = resolution ? { device: { name: resolution.name, source: resolution.source, pinned: resolution.pinned, ageMs: resolution.ageMs } } : {};
   if (answer.isError) {
-    const merged = { ...(answer.structuredContent ?? {}), ...(plan ?? {}) };
+    const merged = { ...(answer.structuredContent ?? {}), ...(plan ?? {}), ...(presence ?? {}), ...device };
     return {
       ...answer,
       structuredContent: merged,
       content: (answer.content ?? []).map((part) => part.type === "text" ? { ...part, text: JSON.stringify(merged) } : part)
     };
   }
-  const merged = { ...(answer.structuredContent ?? {}), ...presence, ...(plan ?? {}) };
+  const merged = { ...(answer.structuredContent ?? {}), ...presence, ...(plan ?? {}), ...device };
   return {
     ...answer,
     structuredContent: merged,
@@ -802,7 +823,7 @@ async function connectDirectDb(): Promise<void> {
   directDb = { sql: (text: unknown, values: unknown) => pg.unsafe(text as string, values as unknown[], { prepare: true }) as unknown as Promise<unknown[]> };
 }
 
-async function handleWsMessage(message: unknown, ctx: { deviceName: string; provider: string; caller: VmCaller | null }) {
+async function handleWsMessage(message: unknown, ctx: { deviceName: string; deviceResolution?: DeviceResolution | null; provider: string; caller: VmCaller | null }) {
   if (!message || typeof message !== "object" || Array.isArray(message)) {
     throw new CommandFailure("INVALID_REQUEST", "The message must be a JSON object.");
   }
@@ -838,7 +859,7 @@ async function handleWsMessage(message: unknown, ctx: { deviceName: string; prov
     },
     body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/call", params: { name, arguments: (args ?? {}) as Record<string, unknown> } })
   });
-  const server = createServer(ctx.deviceName, ctx.provider, ctx.caller);
+  const server = createServer(ctx.deviceName, ctx.provider, ctx.caller, ctx.deviceResolution ?? null);
   const transport = new WebStandardStreamableHTTPServerTransport({ enableJsonResponse: true });
   await server.connect(transport);
   const response = await transport.handleRequest(request);
@@ -865,7 +886,7 @@ function serveMcpSocket(req: Request) {
     }
   };
 
-  let authed: { deviceName: string; provider: string; caller: VmCaller | null } | null = null;
+  let authed: { deviceName: string; deviceResolution?: DeviceResolution | null; provider: string; caller: VmCaller | null } | null = null;
   let queue: Promise<void> = Promise.resolve();
 
   socket.onmessage = (event: MessageEvent) => {
@@ -901,16 +922,16 @@ function serveMcpSocket(req: Request) {
           socket.close(4401, "unauthorized");
           return;
         }
-        const deviceName = await resolveDeviceName(authContext, fake);
-        if (!deviceName) {
-          socket.close(4401, "unauthorized");
+        const resolution = await resolveDeviceFresh(authContext, fake);
+        if (!resolution.name) {
+          socket.close(4401, "no live browser");
           return;
         }
         const provider = await resolveProvider(fake, authContext);
         const caller: VmCaller | null = authContext.type === "user"
           ? { userId: authContext.userId, token: bearerToken(fake) }
           : null;
-        authed = { deviceName, provider, caller };
+        authed = { deviceName: resolution.name, deviceResolution: resolution, provider, caller };
         try {
           await connectDirectDb();
         } catch {
@@ -938,7 +959,7 @@ function serveMcpSocket(req: Request) {
   return response;
 }
 
-function createServer(deviceName: string = DEVICE_NAME, provider = "", caller: VmCaller | null = null) {
+function createServer(deviceName: string = DEVICE_NAME, provider = "", caller: VmCaller | null = null, deviceResolution: DeviceResolution | null = null) {
   const server = new McpServer(
     { name: "opera-agent", version: SERVER_VERSION },
     {
@@ -970,6 +991,7 @@ function createServer(deviceName: string = DEVICE_NAME, provider = "", caller: V
     rpcErrorParts,
     db,
     deviceName,
+    deviceResolution,
     provider,
     caller
   });
@@ -1003,8 +1025,8 @@ Deno.serve(async (req: Request) => {
   const requestStartedAt = Date.now();
   const authContext = await authenticate(req);
   if (!authContext) return unauthorized(req);
-  const deviceName = await resolveDeviceName(authContext, req);
-  if (!deviceName) return unauthorized(req);
+  const resolution = await resolveDeviceFresh(authContext, req);
+  if (!resolution.name) return noLiveDevice(req);
   const provider = await resolveProvider(req, authContext);
   const caller: VmCaller | null = authContext.type === "user"
     ? { userId: authContext.userId, token: bearerToken(req) }
@@ -1012,7 +1034,7 @@ Deno.serve(async (req: Request) => {
   const identityDoneAt = Date.now();
 
   try {
-    const server = createServer(deviceName, provider, caller);
+    const server = createServer(resolution.name, provider, caller, resolution);
     const serverBuiltAt = Date.now();
 
     const transport = new WebStandardStreamableHTTPServerTransport({ enableJsonResponse: false });
