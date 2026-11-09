@@ -466,13 +466,14 @@ function execute(method: string, params: Record<string, unknown>, timeoutMs?: nu
 async function devicePresence(userId: string | null) {
   if (!userId) return { extensionPresent: false, deviceStatus: "unknown", deviceLastSeenAt: null, deviceExtensionVersion: null, latestExtensionVersion: null, extensionUpdatePending: false };
   try {
+    // WHY THE NEVER-SEEN ROWS QUALIFY LAST: Postgres puts NULL first on a descending order, so rows that never reported "this browser" won the presence slot over the one actually running.
     const supabase = await db();
     const { data } = await supabase
       .from("opera_devices")
       .select("status, last_seen_at, extension_version")
       .eq("user_id", userId)
       .neq("status", "disabled")
-      .order("last_seen_at", { ascending: false })
+      .order("last_seen_at", { ascending: false, nullsFirst: false })
       .limit(1)
       .maybeSingle();
     const latest = await latestPublishedVersion();
