@@ -30,6 +30,15 @@
 - A device that disconnects mid-command: only its own in-flight commands may fail.
 - A browser that presents the same device name twice: the pairing must tell them apart instead of rejecting one.
 
+## The order these tasks must run in, and why
+
+**Task 3 first, then Task 1, then Task 2.** The order in this file is not the order to run it in, and running it in the written order is not merely awkward - it is dangerous.
+
+- **The identity comes first (Task 3).** The bridge can only send a command to the right browser if it knows which browser a target belongs to, and today it cannot: every device presents the same name, and the targets of two browsers both number `1`.
+- **Recency cannot stand in for the identity.** The everyday browser's extension reconnects on its own alarm every thirty seconds, so "the device that connected last" is that browser most of the time, and a proof run would drive the person's real browser instead of its own.
+- **The multi-socket bridge alone (Task 1) is worse than nothing.** With several sockets connected and the routing still pointing at one device, every command from a second driver silently reaches the first browser. The user would be driving their own tabs without knowing it.
+- **So the three land together.** Task 3 gives every browser a name of its own, Task 1 lets them all stay connected, and Task 2 routes each command to the browser that owns the target.
+
 ---
 
 ### Task 1: The bridge carries several devices
