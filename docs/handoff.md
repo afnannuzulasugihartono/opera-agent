@@ -9,7 +9,7 @@ What is true now, and what to do next. Cap 150 lines. Spent detail: git history.
 
 - `main` = `origin/main`. #112 and #113 (stacked on #112) are open and wait for the owner's
   merge; a branch starts from `main` and merges back by `--rebase` once the four checks are green.
-- Version `1.6.34` in [`extension/manifest.json`](../extension/manifest.json) is the source of truth; [`check.mjs`](../scripts/check.mjs) also asserts the MCP version, the store form, and the secret regex.
+- Version `1.6.35` in [`extension/manifest.json`](../extension/manifest.json) is the source of truth; [`check.mjs`](../scripts/check.mjs) also asserts the MCP version, the store form, and the secret regex. 1.6.34 was staged on npm (not public) and published to the update service; **the plan is visible before it runs out** — `browser_status` carries it on both roads (local passes each linked device's meter through with `planExhausted`; hosted merges `planInfo` with `planRemaining`/`planExhausted` even when the command failed), and the rebuilt dashboard opens with a plan hero (`opera_my_plan`) under a rail grouped Pelanggan / one Operator door, bilingual id/en — verified against a local mock Supabase through a CDP-pointed Chrome (firm, exhausted, unreadable-plan, phone width, deep links, both languages).
 - **1.6.27 shipped on 2026-10-15** as `e99bf5a`; the CRX route answers 200 with
   `x-opera-sha256` equal to the bytes, and the release carries both zips, the CRX and SHA256SUMS.
   The two releases published with no files on 2026-10-25 are drafts now, and `release.yml`

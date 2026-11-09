@@ -133,8 +133,8 @@ test('browser_status carries the meter of every linked device', async () => {
   const health = {
     ok: true, linked: true, queued: 0, waiting: 0, meterRefusal: null,
     devices: [
-      { slot: 1, id: 'dev-a', instanceId: 'inst-a', deviceName: 'opera-a', extensionVersion: '1.6.34', connectedAt: 1, meter: { plan: 'plan.firm', allowance: 500, dailyQuota: 5000, sent: 2, usedToday: 300, remaining: 4700 } },
-      { slot: 2, id: 'dev-b', instanceId: 'inst-b', deviceName: 'opera-b', extensionVersion: '1.6.34', connectedAt: 2, meter: { plan: 'plan.firm', allowance: 500, dailyQuota: 5000, sent: 0, usedToday: 5000, remaining: 0 } }
+      { slot: 1, id: 'dev-a', instanceId: 'inst-a', deviceName: 'opera-a', extensionVersion: '1.6.35', connectedAt: 1, meter: { plan: 'plan.firm', allowance: 500, dailyQuota: 5000, sent: 2, usedToday: 300, remaining: 4700 } },
+      { slot: 2, id: 'dev-b', instanceId: 'inst-b', deviceName: 'opera-b', extensionVersion: '1.6.35', connectedAt: 2, meter: { plan: 'plan.firm', allowance: 500, dailyQuota: 5000, sent: 0, usedToday: 5000, remaining: 0 } }
     ]
   };
   const bridge = http.createServer((req, res) => {
@@ -169,7 +169,7 @@ test('browser_status stays quiet when every linked device has headroom', async (
   const health = {
     ok: true, linked: true, queued: 0, waiting: 0, meterRefusal: null,
     devices: [
-      { slot: 1, id: 'dev-a', instanceId: 'inst-a', deviceName: 'opera-a', extensionVersion: '1.6.34', connectedAt: 1, meter: { plan: 'plan.firm', allowance: 500, dailyQuota: 5000, sent: 0, usedToday, remaining: 4794 } }
+      { slot: 1, id: 'dev-a', instanceId: 'inst-a', deviceName: 'opera-a', extensionVersion: '1.6.35', connectedAt: 1, meter: { plan: 'plan.firm', allowance: 500, dailyQuota: 5000, sent: 0, usedToday, remaining: 4794 } }
     ]
   };
   const bridge = http.createServer((req, res) => {
