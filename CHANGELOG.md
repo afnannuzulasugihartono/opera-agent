@@ -8,6 +8,7 @@ What each release contained, and why. The notes live in
 
 | Release | Date | Notes |
 | --- | --- | --- |
+| 1.6.36 | 2026-11-09 | [one browser, one device, even when the extension is removed and installed again](docs/releases/1.6.36.md) |
 | 1.6.35 | 2026-11-09 | [the plan you are on is visible before it runs out, and the dashboard says so](docs/releases/1.6.35.md) |
 | 1.6.34 | 2026-11-09 | [the local bridge retries once its socket drops](docs/releases/1.6.34.md) |
 | 1.6.33 | 2026-11-09 | [no websocket at a dead bridge, and the second browser keeps its name](docs/releases/1.6.33.md) |

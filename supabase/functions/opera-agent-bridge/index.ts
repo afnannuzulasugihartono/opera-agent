@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-21 UTC+7.
+// @last-edited: 2026-11-09 UTC+7.
 // @title: opera-agent-bridge - the cloud bridge: the device socket, the command queue it serves, and the session meter the local drive pays.
 // @state: the socket upgrade, the CORS answer, the enqueue a device claims from, and the session open and report the loopback bridge asks once per session.
 // @dependencies: edge-runtime, supabase-js, edge-log.
@@ -119,7 +119,8 @@ async function pair(body: Record<string, unknown>) {
     p_protocol_version: clamp(body.protocolVersion, 1, 1000, 1),
     p_capabilities: Array.isArray(body.capabilities) ? body.capabilities.slice(0, 100) : [],
     p_browser_name: browserName,
-    p_instance_id: typeof body.instanceId === "string" ? body.instanceId.trim().slice(0, 64) : ""
+    p_instance_id: typeof body.instanceId === "string" ? body.instanceId.trim().slice(0, 64) : "",
+    p_cookie_instance_id: typeof body.cookieInstanceId === "string" ? body.cookieInstanceId.trim().slice(0, 64) : ""
   });
   return json(result || { ok: false, error: "Pairing failed." }, result?.ok ? 200 : 401);
 }

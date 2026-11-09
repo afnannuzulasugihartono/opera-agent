@@ -1,4 +1,4 @@
-# @last-edited: 2026-10-21 UTC+7.
+# @last-edited: 2026-11-09 UTC+7.
 # @title: _headers Ã¢â‚¬â€ the CSP and cache policy every path of the site answers with.
 # @state: the policy per path; tests/landing-hosting.test.mjs reads every rule against the code.
 # @dependencies: none.
@@ -290,7 +290,7 @@
 
 /dashboard
   Cache-Control: no-store
-  Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-j07l3XiN1zDIwH1bwi/ODC2jXcDiIyRYHfSG9uIISeg='; connect-src https://*.supabase.co; style-src 'self' 'unsafe-inline'; img-src data:; font-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
+  Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-j07l3XiN1zDIwH1bwi/ODC2jXcDiIyRYHfSG9uIISeg=' 'sha256-2EemCUKmVLD+1yxsvO4TFA7c24XfKIklotQr5kS00aI='; connect-src https://*.supabase.co; style-src 'self' 'unsafe-inline'; img-src data:; font-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
   Referrer-Policy: no-referrer
   X-Content-Type-Options: nosniff
   Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
@@ -301,7 +301,7 @@
 
 /dashboard.html
   Cache-Control: no-store
-  Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-j07l3XiN1zDIwH1bwi/ODC2jXcDiIyRYHfSG9uIISeg='; connect-src https://*.supabase.co; style-src 'self' 'unsafe-inline'; img-src data:; font-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
+  Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-j07l3XiN1zDIwH1bwi/ODC2jXcDiIyRYHfSG9uIISeg=' 'sha256-2EemCUKmVLD+1yxsvO4TFA7c24XfKIklotQr5kS00aI='; connect-src https://*.supabase.co; style-src 'self' 'unsafe-inline'; img-src data:; font-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
   Referrer-Policy: no-referrer
   X-Content-Type-Options: nosniff
   Strict-Transport-Security: max-age=63072000; includeSubDomains; preload

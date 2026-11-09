@@ -27,3 +27,20 @@ export async function instanceId() {
   await chrome.storage.local.set({ [KEY]: created });
   return created;
 }
+
+// WHY pairIdentity IS ITS OWN CALL.
+// Everything else that sends the identity (the socket hello, the heartbeat, the discovery file) must keep the value the pairing row was minted with, or a mid-flight rename would split one browser into two devices.
+// The cookie identity is only ever preferred at pair time, where the server knows how to adopt the row the legacy id named.
+// A browser that never saw the cookie and holds no storage id sends nothing, exactly like the old build.
+
+export async function cookieInstanceId() {
+  const stored = await chrome.storage.local.get('oaDeviceCookieId');
+  const value = String(stored?.oaDeviceCookieId || '').trim();
+  return value ? `b:${value}`.slice(0, 64) : '';
+}
+
+export async function pairIdentity() {
+  const cookie = await cookieInstanceId();
+  const legacy = await instanceId();
+  return { cookie, legacy };
+}
