@@ -258,7 +258,7 @@ export function serveDeviceSocket(req, { verifyDevice, complete, subscribe, log,
       const verified = await verifyDevice(identity);
       if (!verified?.ok) {
         disarmHandshake();
-        socket.send(JSON.stringify({ type: "error", error: "Unauthorized device." }));
+        socket.send(JSON.stringify({ type: "error", error: String(verified?.message || "Unauthorized device.").slice(0, 300) }));
         socket.close(4001, "unauthorized");
         return;
       }

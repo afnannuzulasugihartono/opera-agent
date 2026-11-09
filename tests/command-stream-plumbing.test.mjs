@@ -111,6 +111,7 @@ function harness(emit = { ok: true, eventId: 7 }) {
       if (name === 'opera_emit_command_event') return { data: emit };
       if (name === 'opera_auth_device') return { data: 'device-uuid' };
       if (name === 'opera_claim_next_wait') return { data: { ok: true, command: null } };
+      if (name === 'opera_device_plan') return { data: { ok: true, plan: 'plan.pilot', status: 'active', dailyQuota: 200, usedToday: 1 } };
       throw new Error(`Unexpected RPC ${name}`);
     },
     async removeChannel() { }
@@ -118,6 +119,7 @@ function harness(emit = { ok: true, eventId: 7 }) {
   vm.runInNewContext(bridgeSource, {
     createClient: () => client,
     createEdgeLog: () => ({ error() {} }),
+    gateVerdict: () => ({ ok: true, plan: 'plan.pilot', quota: 200, used: 1 }),
     CORS_DEFAULT_ORIGINS, resolveAllowedOrigin,
     isUpgradeRequest, serveDeviceSocket,
     WebSocket: { OPEN: 1 },
