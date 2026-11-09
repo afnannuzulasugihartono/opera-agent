@@ -174,6 +174,7 @@ export function createSocketClient({
   url,
   token,
   deviceName,
+  instanceId = '',
   execute,
   onState = () => {},
   WebSocketImpl = globalThis.WebSocket,
@@ -310,7 +311,7 @@ export function createSocketClient({
       heard();
       connectedAt = now();
       retryMs = BASE_RETRY_MS;
-      frame(handshakeFrame(token, deviceName));
+      frame(handshakeFrame(token, deviceName, instanceId));
     };
 
     next.onmessage = (event) => {

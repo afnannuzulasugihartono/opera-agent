@@ -117,7 +117,8 @@ async function pair(body: Record<string, unknown>) {
     p_extension_version: String(body.extensionVersion || "").slice(0, 64),
     p_protocol_version: clamp(body.protocolVersion, 1, 1000, 1),
     p_capabilities: Array.isArray(body.capabilities) ? body.capabilities.slice(0, 100) : [],
-    p_browser_name: browserName
+    p_browser_name: browserName,
+    p_instance_id: typeof body.instanceId === "string" ? body.instanceId.trim().slice(0, 64) : ""
   });
   return json(result || { ok: false, error: "Pairing failed." }, result?.ok ? 200 : 401);
 }

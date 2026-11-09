@@ -1,16 +1,18 @@
 {
-  "name": "opera-local",
-  "version": "0.1.0",
-  "description": "Drive your own Chromium browser over CDP from an MCP client, with no cloud round trip and no dependencies.",
+  "name": "opera-agent-mcp",
+  "version": "1.6.29",
+  "description": "Drive your own browser from an MCP client: the everyday profile over the loopback bridge, or the hosted server.",
   "type": "module",
   "bin": {
+    "opera-agent-mcp": "bin/opera-agent-mcp.js",
     "opera-local": "bin/opera-local.js"
   },
   "files": [
-    "bin",
     "action-strategy.js",
     "advice.js",
     "agent-guide.js",
+    "bin",
+    "bin/opera-agent-mcp.js",
     "bridge-ws.js",
     "bridge.js",
     "browsers.js",
@@ -19,6 +21,7 @@
     "captcha-solver.js",
     "caret-guard.js",
     "cdp.js",
+    "decks.js",
     "dev-shim.js",
     "dialog.js",
     "documents.js",
@@ -27,6 +30,8 @@
     "gates.js",
     "input.js",
     "leases.js",
+    "lib/endpoints.js",
+    "lib/socket-protocol.js",
     "mcp-server.js",
     "menu-tree.js",
     "observe.js",
@@ -44,7 +49,6 @@
     "reports.js",
     "sessions.js",
     "spreadsheets.js",
-    "decks.js",
     "statements.js",
     "surface-profile.js",
     "tools.js",
@@ -66,5 +70,8 @@
     "google-sheets",
     "google-slides"
   ],
-  "license": "MIT"
+  "license": "MIT",
+  "scripts": {
+    "prepack": "node ../scripts/pack-mcp.mjs"
+  }
 }

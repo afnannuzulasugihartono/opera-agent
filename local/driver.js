@@ -88,70 +88,18 @@ async function openBridgeSession({ tabUrl, targetId, timeoutMs, primitivesOption
   };
 }
 
-// WHY THE PIPE IS ASKED, NOT SETTLED.
+// WHY THERE IS ONE ROAD.
 // The extension reaches the profile the person is actually logged into, and a debugging port cannot — it opens a fresh profile with nothing signed in.
-// So the link is asked for on every session and the debugging port is what is left when there is no extension, which is the one case where it is the only thing that can work at all.
-// `OPERA_LOCAL_TRANSPORT=cdp` still forces the port for a machine with no extension, and nothing else has to be configured anywhere.
+// The port road therefore bought a different browser, not a faster one, and a second browser is a second queue and a second place a plan could be missed.
+// So the link is asked for on every session, and there is nothing else to configure anywhere.
 
 export async function openSession({
-  id,
-  port = 9333,
   tabUrl = null,
   targetId = null,
-  platform = process.platform,
-  exists = existsSync,
-  env = process.env,
-  spawnBrowser = spawn,
-  launch = true,
   timeoutMs = 15000,
-  primitives: primitivesOptions = {},
-  viaBridge = null
+  primitives: primitivesOptions = {}
 } = {}) {
-  const bridged = viaBridge ?? (env.OPERA_LOCAL_TRANSPORT !== 'cdp' && await bridgeReachable());
-  if (bridged) return openBridgeSession({ tabUrl, targetId, timeoutMs, primitivesOptions });
-
-  let reused = false;
-  let target = null;
-
-  if (tabUrl) {
-    target = (await openTab(port, tabUrl)).webSocketDebuggerUrl;
-    reused = true;
-  } else if (targetId) {
-    target = (await pageWebSocketById(port, targetId)).url;
-    reused = true;
-  } else {
-    try {
-      target = await discoverPageWebSocket(port);
-      reused = true;
-    } catch {
-      if (!launch) throw new Error(`No browser is listening on port ${port}.`);
-    }
-  }
-
-  let child = null;
-  if (!reused) {
-    const entry = resolveBinary({ id, platform, exists, env });
-    const userDataDir = mkdtempSync(join(tmpdir(), 'opera-local-'));
-    const args = launchArgs({ browser: entry, port, userDataDir });
-    child = spawnBrowser(entry.binary, args, { detached: false, stdio: 'ignore' });
-  }
-
-  if (!target) {
-    const chosen = await pageWebSocketById(port, targetId, { timeoutMs });
-    target = chosen.url;
-  }
-  const transport = await connect(target, { timeoutMs });
-  const cdp = createCdpClient(transport);
-
-  return {
-    port,
-    reused,
-    binary: reused ? null : resolveBinary({ id, platform, exists, env }).binary,
-    cdp,
-    ...createPrimitives(cdp, primitivesOptions),
-    close() {
-      cdp.close();
-      if (child) child.kill();
-    }
-  };
+  const linked = await bridgeReachable().catch(() => false);
+  if (!linked) throw new Error(LINK_ERROR);
+  return openBridgeSession({ tabUrl, targetId, timeoutMs, primitivesOptions });
 }

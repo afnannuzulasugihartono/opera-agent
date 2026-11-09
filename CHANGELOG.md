@@ -8,6 +8,7 @@ What each release contained, and why. The notes live in
 
 | Release | Date | Notes |
 | --- | --- | --- |
+| 1.6.31 | 2026-11-09 | [a second browser is a device, not a rejection](docs/releases/1.6.31.md) |
 | 1.6.30 | 2026-11-09 | [a full-page capture that comes back in time to be read](docs/releases/1.6.30.md) |
 | 1.6.29 | 2026-11-08 | [a full-page capture that survives the whole document](docs/releases/1.6.29.md) |
 | 1.6.28 | 2026-11-08 | [the whole page in one answer, and a worker that says what broke](docs/releases/1.6.28.md) |

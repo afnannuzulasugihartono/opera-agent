@@ -5,9 +5,11 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 
 import { listPageWebSockets, pageWebSocketById } from '../local/transport.js';
 import { openSession } from '../local/driver.js';
+import { closeBridge } from '../local/bridge.js';
 
 const PAGES = [
   { id: 'AAA', type: 'page', title: 'Untitled document', url: 'https://docs.google.com/a', webSocketDebuggerUrl: 'ws://x/aaa' },
@@ -56,10 +58,14 @@ test('a browser with no page target fails loudly', async () => {
 // A session that names its tab must land on that tab's socket, not the first page's.
 // Measured live: every tabId call before this fix drove the same first tab, because the session resolved before it looked at the name.
 
-function stubBrowser(sockets) {
+function stubBrowser(sockets, { reachable = true, urls = [] } = {}) {
   const realFetch = globalThis.fetch;
   const realSocket = globalThis.WebSocket;
-  globalThis.fetch = fakeFetch(PAGES);
+  globalThis.fetch = async (url) => {
+    urls.push(String(url));
+    if (!reachable) throw new Error('connection refused');
+    return fakeFetch(PAGES)(url);
+  };
   globalThis.WebSocket = class {
     constructor(url) {
       sockets.push(url);
@@ -74,43 +80,37 @@ function stubBrowser(sockets) {
   };
 }
 
-test('a session that names its tab connects to that tab, never the first page', async () => {
+// WHY THE PORT ROAD IS GONE AND THE LINK IS THE ONLY WAY.
+// Chrome refuses a debugging port on the profile the person is signed into, so that road could only ever open a fresh profile with nothing in it.
+// The bridge reaches the everyday profile at the same speed, over the same commands, and it is the road the plan is metered on.
+
+test('a session with no extension linked fails with the link error that names the extension', async () => {
   const sockets = [];
-  const restore = stubBrowser(sockets);
+  const restore = stubBrowser(sockets, { reachable: false });
   try {
-    const session = await openSession({ port: 1, targetId: 'BBB', launch: false, env: { OPERA_LOCAL_TRANSPORT: 'cdp' } });
-    assert.deepEqual(sockets, ['ws://x/bbb']);
-    assert.equal(session.reused, true);
-    session.close();
+    await assert.rejects(() => openSession({}), /extension is not connected/);
+    assert.deepEqual(sockets, [], 'no socket is opened when there is no extension to talk to');
   } finally {
     restore();
   }
 });
 
-test('a session that names nothing keeps the first page', async () => {
+test('a session never opens a debugging port', async () => {
   const sockets = [];
-  const restore = stubBrowser(sockets);
+  const urls = [];
+  const restore = stubBrowser(sockets, { reachable: false, urls });
   try {
-    const session = await openSession({ port: 1, launch: false, env: { OPERA_LOCAL_TRANSPORT: 'cdp' } });
-    assert.deepEqual(sockets, ['ws://x/aaa']);
-    session.close();
+    await assert.rejects(() => openSession({}), /extension is not connected/);
+    assert.equal(urls.some((url) => url.includes(':9333')), false, 'no debugging port is asked for');
   } finally {
     restore();
   }
 });
 
-test('a session that names an unknown tab fails without launching anything', async () => {
-  const sockets = [];
-  const restore = stubBrowser(sockets);
-  let spawned = 0;
-  try {
-    await assert.rejects(
-      () => openSession({ port: 1, targetId: 'NOPE', launch: true, spawnBrowser: () => { spawned += 1; }, env: { OPERA_LOCAL_TRANSPORT: 'cdp' } }),
-      /No page target NOPE/
-    );
-    assert.equal(spawned, 0);
-    assert.deepEqual(sockets, []);
-  } finally {
-    restore();
-  }
+test('the driver has no port road left in it', () => {
+  const driver = fs.readFileSync(new URL('../local/driver.js', import.meta.url), 'utf8');
+  assert.doesNotMatch(driver, /OPERA_LOCAL_TRANSPORT/, 'the transport switch is gone');
+  assert.doesNotMatch(driver, /remote-debugging-port/, 'the driver launches no browser');
+  assert.doesNotMatch(driver, /spawnBrowser/, 'and it spawns nothing');
 });
+test.after(async () => { await closeBridge(); });

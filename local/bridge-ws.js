@@ -1,6 +1,6 @@
-// @last-edited: 2026-10-28 UTC+7.
+// @last-edited: 2026-11-09 UTC+7.
 // @title: bridge-ws — the loopback command server, speaking the frames the cloud bridge speaks.
-// @state: the heartbeat that keeps the worker alive, the idle reap, and the origin check.
+// @state: every browser that connects is carried, each target names its browser, and each command reaches the one that owns it.
 // @dependencies: none.
 
 // WHY THE HEARTBEAT IS THE WHOLE POINT.
@@ -8,41 +8,35 @@
 // A ping that asks nothing resets that timer, so the socket stays live without asking for work.
 // The loopback port binds to 127.0.0.1 only: this server hands commands to the browser sitting on this machine and must never be reachable from the network.
 
+// WHY EVERY BROWSER ON THE MACHINE IS CARRIED.
+// Two browsers used to fight over one device slot, so the second one to connect was closed out and the first was told nothing about it.
+// A browser is now a device the server keeps, and a device leaves only when it leaves.
+
+// WHY A TARGET ID IS NAMESPACED BY SLOT.
+// Every browser numbers its tabs from one, so two browsers hand out the same target for different pages.
+// The driver parses target ids as numbers, so the name must be a number too: the slot walks in the upper digits and the browser's own id in the lower ones.
+// SLOT_STRIDE is a billion, far past any tab id a browser numbers in, so the digits never overlap.
+
 import { randomUUID } from 'node:crypto';
 import { createServer } from 'node:http';
 import { EventEmitter } from 'node:events';
 
-import { parseFrame } from '../extension/lib/socket-protocol.js';
+import { parseFrame } from './lib/socket-protocol.js';
 import { BridgeSocket, acceptKey, encodeText, isOriginAllowed, isWebSocketUpgrade } from './ws-server.js';
 import { createLeaseTable } from './leases.js';
+import { DEVICE_PROTOCOL_VERSION } from './lib/socket-protocol.js';
 
-const DEVICE_PROTOCOL_VERSION = 1;
-const HEARTBEAT_MS = 20000;
-const HEARTBEAT_PAYLOAD = JSON.stringify({ type: 'ping' });
+const SLOT_STRIDE = 1000000000;
+const slotOf = (tabId) => Math.floor(Number(tabId) / SLOT_STRIDE);
+const localTabOf = (tabId) => {
+  const slot = slotOf(tabId);
+  return slot > 0 ? Number(tabId) - slot * SLOT_STRIDE : Number(tabId);
+};
 
-// WHY IDLENESS IS MEASURED FROM THE LAST WORD, NOT THE HELLO.
-// The reap used to read the connection clock: any socket older than two minutes died whether it was mid-drive or long gone, and whatever call was in flight died with it as "still in flight when the device disconnected".
-// Measured live as disconnects striking busy workers at random.
 // The last-heard clock was already maintained for the health report; the reap reads it now, so only silence is reaped and traffic never is.
 
 const IDLE_SOCKET_MS = 120000;
-
-// WHY LISTEN BEFORE THE 101.
-// A device can send its hello in the same tick it reads the handshake response, and a listener attached after the write loses exactly that first frame: the server waits for a hello that already arrived and never spoke.
-// So the socket and its listeners exist first, and only then does the handshake go out.
-
-// WHY A COMMAND TIMES OUT HERE.
-// A command is enqueued, pushed the moment the device is ready, and settles on its completion frame.
-// A device that never answers fails at the caller, named by method and budget, instead of inside a held request that nobody is reading and nobody can cancel.
-
-// WHY THE EXTENSION ORIGINS ARE NAMED HERE.
-// Chrome sends `chrome-extension://<id>` as the Origin of a WebSocket opened from an MV3 service worker.
-// A server that allows only localhost therefore refuses the one client that is meant to connect, and nothing notices: a Node client sends no Origin at all, so every test stays green while the browser is dead.
-// These two ids are the whole installed fleet - the CRX signing key moved, so an install that has not been replaced still presents the old one - and tests/local-bridge.test.mjs asserts the real header against this list.
-
-// WHY NO WILDCARD.
-// Any page on this machine can open a socket to 127.0.0.1, and one that gets through drives the browser as if the person asked it to.
-// The list is the whole boundary.
+const HEARTBEAT_FRAME = JSON.stringify({ type: 'ping' });
 
 const BRIDGE_ORIGINS = Object.freeze([
   'localhost',
@@ -51,147 +45,183 @@ const BRIDGE_ORIGINS = Object.freeze([
   'chrome-extension://ohbbpamcljckmjhcpkcmefdobkoeaick'
 ]);
 
-// WHY THE SERVER KEEPS A LIST OF ITS OWN SOCKETS.
-// Node detaches an upgraded socket from its connection tracking, so `server.close()` keeps waiting on a socket it can no longer see and `closeAllConnections()` cannot reach it.
-// Measured: an upgraded socket whose peer vanished left the server counting one connection forever, and close never called back — a driver shutdown hanging on a bridge nobody is using.
-// This server accepts these sockets, so this server ends them, by destroying rather than ending: a polite end waits for a FIN the peer may never send.
-// It also ends the socket a reconnect replaced — one device, one socket is the design, and an orphan left counting against the listener is enough to make a shutdown hang with nothing left to drive.
-
-// WHY NOTHING IS PUSHED BEFORE THE HANDSHAKE.
-// The device refuses a command it has not been given a `ready` for — deliberately, so work never runs against an unproven identity — and it refuses it by dropping the frame in silence.
-// A server that pushed the moment the socket attached lost the first command of every connection, in a window a few milliseconds wide and invisible from the caller's side: the call simply never answered.
-// Measured as one failed test in three full-suite runs.
-// The queue is the honest place for that command, and `flush` sends it the instant the handshake lands.
-
-// WHY THERE IS A DOOR IN THE LOOPBACK WALL.
-// One server owns the device socket, and a second driver on this machine had nowhere to go: it lost the port, and the whole session's tools failed by name on every call.
-// The command door lets a second process drive the same browser instead of refusing to live.
-// It binds to 127.0.0.1 only, exactly like the socket beside it: whoever is already on this machine may drive this machine's browser, which is what that socket already allowed.
-
-// WHY THE ANSWER OVER THE DOOR IS THE SETTLED ENVELOPE, UNWRAPPED.
-// A door that re-wrapped `{ ok, result }` inside another `{ ok, result }` made every adopted caller read a proof ping as a failed ping, so a second driver could never talk to a bridge it had reached.
-// Over the door the answer is the answer in process, byte for byte.
-
-// WHY THE TAB CLAIM IS HELD BY THE BRIDGE AND NOT BY A DRIVER.
-// Each agent spawns its own driver process, and two processes have two memories: a claim kept inside one of them lets the other drive straight through it, which is the collision the claim exists to stop.
-// The bridge is the one place both drivers already meet — one of them owns it and the others reach it through the door — so the claim sits beside the port and every driver on the machine reads the same table.
-
-export function createBridgeServer({
-  port = 9451,
-  host = '127.0.0.1',
-  allowedOrigins = BRIDGE_ORIGINS,
-  heartbeatMs = HEARTBEAT_MS,
-  now = () => Date.now()
-} = {}) {
+export function createBridgeServer({ port = 9451, host = '127.0.0.1', heartbeatMs = 20000, allowedOrigins = BRIDGE_ORIGINS, now = () => Date.now() } = {}) {
   const state = new EventEmitter();
   const devices = new Map();
-  const waiting = new Map();
-  const queue = [];
   const attached = new Set();
   const leases = createLeaseTable();
-  let socket = null;
-  let handshaken = false;
-  let connectedAt = 0;
-  let lastHeardAt = 0;
+  const queue = [];
+  const waiting = new Map();
+  let slotCounter = 0;
   let timer = null;
 
-  function send(text) {
-    return socket ? socket.send(text) : false;
-  }
+  const readyDevices = () => [...devices.values()]
+    .filter((device) => !device.socket.closed && device.handshaken)
+    .sort((a, b) => a.slot - b.slot);
 
-  function deliver(command) {
-    if (!socket || socket.closed || !handshaken) return false;
-    return send(JSON.stringify({ type: 'command', command }));
-  }
+  const firstReady = () => readyDevices()[0] || null;
 
-  function attach(next, request) {
-    if (socket && socket !== next) socket.close(1000);
-    socket = next;
-    handshaken = false;
-    connectedAt = now();
-    lastHeardAt = now();
-    attached.add(next);
-    devices.set(next.id, { id: next.id, connectedAt });
+  const routedSlot = (params) => {
+    const raw = params?.tabId;
+    if (raw === undefined || raw === null || raw === '') return 0;
+    const tabId = Number(raw);
+    return Number.isInteger(tabId) ? slotOf(tabId) : 0;
+  };
 
-    next.on('text', (raw) => {
-      lastHeardAt = now();
-      const parsed = parseFrame(raw);
-      if (!parsed.ok) return;
-      const message = parsed.message;
-      if (message.type === 'hello') {
-        handshaken = true;
-        send(JSON.stringify({ type: 'ready', protocolVersion: DEVICE_PROTOCOL_VERSION, serverTime: now() }));
-        flush();
-        return;
-      }
-      if (message.type === 'pong') return;
-      if (message.type !== 'complete') return;
+  const pickDevice = (params) => {
+    const slot = routedSlot(params);
+    if (slot > 0) return readyDevices().find((device) => device.slot === slot) || null;
+    return firstReady();
+  };
 
-      const entry = waiting.get(String(message.commandId));
-      if (!entry) return;
-      waiting.delete(String(message.commandId));
-      entry.resolve(message.ok === true
-        ? { ok: true, result: message.result ?? {}, ms: now() - entry.sentAt }
-        : { ok: false, error: message.error ?? { code: 'EXECUTION_ERROR', message: 'Command failed.' }, ms: now() - entry.sentAt });
-    });
+  const toWire = (frame) => {
+    const params = frame.params && typeof frame.params === 'object' ? { ...frame.params } : {};
+    if (Number.isInteger(Number(params.tabId)) && slotOf(params.tabId) > 0) {
+      params.tabId = localTabOf(params.tabId);
+    }
+    return { ...frame, params };
+  };
 
-    next.on('close', () => {
-      attached.delete(next);
-      if (socket !== next) return;
-      socket = null;
-      handshaken = false;
-      connectedAt = 0;
-      devices.delete(next.id);
-      state.emit('state', { status: 'disconnected' });
-      for (const entry of waiting.values()) {
-        entry.reject(new Error(`${entry.method} was still in flight when the device disconnected`));
-      }
-      waiting.clear();
-    });
+  const namespacedId = (device, localId) => device.slot * SLOT_STRIDE + Number(localId);
 
-    state.emit('state', { status: 'ready', id: next.id });
+  function sendTo(device, text) {
+    if (device.socket.closed) return false;
+    return device.socket.send(text);
   }
 
   function flush() {
     while (queue.length) {
-      if (!deliver(queue[0])) break;
-      queue.shift();
+      const index = queue.findIndex((frame) => pickDevice(frame.params) !== null);
+      if (index < 0) break;
+      const [frame] = queue.splice(index, 1);
+      const target = pickDevice(frame.params);
+      sendTo(target, JSON.stringify({ type: 'command', command: toWire(frame) }));
     }
   }
 
-  function command(method, params = {}, { timeoutMs = 60000 } = {}) {
-    const id = `${now().toString(36)}-${randomUUID().slice(0, 13)}`;
+  // The id generator is shared so the clock format cannot drift between the two command doors.
+  function commandId() {
+    return `${now().toString(36)}-${randomUUID().slice(0, 13)}`;
+  }
+
+  function armTimeout(id, method, timeoutMs, reject) {
+    setTimeout(() => {
+      if (!waiting.has(id)) return;
+      waiting.delete(id);
+      const index = queue.findIndex((item) => item.id === id);
+      if (index >= 0) queue.splice(index, 1);
+      reject(new Error(`no answer for ${method} within ${timeoutMs} ms`));
+    }, timeoutMs + 500).unref?.();
+  }
+
+  function registerWait(device, id, method, resolve, reject) {
+    waiting.set(id, { resolve, reject, method, deviceId: device ? device.id : null, sentAt: now() });
+  }
+
+  function waitForReady(timeoutMs) {
+    const deadline = now() + timeoutMs;
+    return new Promise((resolve) => {
+      const poll = () => {
+        const live = readyDevices();
+        if (live.length || now() >= deadline) return resolve(live);
+        setTimeout(poll, 15);
+      };
+      poll();
+    });
+  }
+
+  function commandRaw(method, params, { timeoutMs } = {}) {
+    const id = commandId();
     const frame = { id, method, params, timeoutMs };
     return new Promise((resolve, reject) => {
-      const entry = { resolve, reject, method, sentAt: now() };
-      waiting.set(id, entry);
-      queue.push(frame);
-      flush();
-      setTimeout(() => {
-        if (!waiting.has(id)) return;
-        waiting.delete(id);
-        const index = queue.findIndex((item) => item.id === id);
-        if (index >= 0) queue.splice(index, 1);
-        reject(new Error(`no answer for ${method} within ${timeoutMs} ms`));
-      }, timeoutMs + 500).unref?.();
+      const device = pickDevice(params);
+      registerWait(device, id, method, resolve, reject);
+      if (device) {
+        if (!sendTo(device, JSON.stringify({ type: 'command', command: toWire(frame) }))) {
+          waiting.delete(id);
+          reject(new Error('the device socket is closed'));
+          return;
+        }
+      } else {
+        queue.push(frame);
+        flush();
+      }
+      armTimeout(id, method, timeoutMs, reject);
+    });
+  }
+
+  // WHY THE LIST IS MERGED HERE AND NOT IN THE CALLER.
+  // Two browsers have different tab counts and different numbering; the caller sees one list, with each row naming the browser it belongs to, and a browser that fails to answer is a failure and not an empty success.
+  async function mergedTargets(timeoutMs) {
+    const started = now();
+    let live = readyDevices();
+    if (!live.length) live = await waitForReady(timeoutMs);
+    if (!live.length) throw new Error('no linked device answers tabs.list');
+    const answers = await Promise.all(live.map((device) => commandToDevice(device, 'tabs.list', {}, timeoutMs)));
+    for (const answer of answers) if (!answer.ok) return answer;
+    return {
+      ok: true,
+      ms: now() - started,
+      result: answers.flatMap((answer, index) => {
+        const result = answer?.result;
+        const items = Array.isArray(result) ? result : Array.isArray(result?.tabs) ? result.tabs : [];
+        return items.map((tab) => ({ id: namespacedId(live[index], tab.id), url: tab.url ?? '', title: tab.title ?? '' }));
+      })
+    };
+  }
+
+  async function openedTarget(timeoutMs, params) {
+    let live = readyDevices();
+    if (!live.length) live = await waitForReady(timeoutMs);
+    if (!live.length) throw new Error('no linked device answers tabs.open');
+    const target = live[0];
+    const opened = await commandToDevice(target, 'tabs.open', params, timeoutMs);
+    if (!opened.ok) return opened;
+    return { ok: true, result: { ...opened.result, id: namespacedId(target, opened.result?.id) }, ms: opened.ms };
+  }
+
+  // WHY THE LIST IS MERGED HERE AND NOT IN THE CALLER.
+  // Two browsers have different tab counts and different numbering; the caller sees one list, with each row naming the browser it belongs to.
+  // Opening a tab likewise answers with that browser's namespace, so the very same id drives the next command.
+  async function command(method, params = {}, { timeoutMs = 60000 } = {}) {
+    if (method === 'tabs.list') return mergedTargets(timeoutMs);
+    if (method === 'tabs.open') return openedTarget(timeoutMs, params);
+    return commandRaw(method, params, { timeoutMs });
+  }
+
+  function commandToDevice(device, method, params, timeoutMs) {
+    const id = commandId();
+    const frame = { id, method, params, timeoutMs };
+    return new Promise((resolve, reject) => {
+      registerWait(device, id, method, resolve, reject);
+      sendTo(device, JSON.stringify({ type: 'command', command: frame }));
+      armTimeout(id, method, timeoutMs, reject);
     });
   }
 
   const heartbeat = () => {
-    if (socket && !socket.closed) send(HEARTBEAT_PAYLOAD);
-    if (socket && lastHeardAt && now() - lastHeardAt > IDLE_SOCKET_MS) {
-      socket.close(1001);
-      return;
+    for (const device of devices.values()) {
+      if (device.socket.closed) continue;
+      device.socket.send(HEARTBEAT_FRAME);
+      if (device.lastHeardAt && now() - device.lastHeardAt > IDLE_SOCKET_MS) {
+        device.socket.close(1001);
+      }
     }
     timer = setTimeout(heartbeat, heartbeatMs);
   };
 
   const readJson = (req) => new Promise((resolve) => {
     let body = '';
-    req.on('data', (piece) => { body += piece; });
+    req.on('data', (chunk) => {
+      body += chunk;
+      if (body.length > 1024 * 1024) {
+        resolve(null);
+        return;
+      }
+    });
     req.on('end', () => {
       try {
-        resolve(JSON.parse(body || '{}'));
+        resolve(JSON.parse(body));
       } catch {
         resolve(null);
       }
@@ -205,14 +235,17 @@ export function createBridgeServer({
 
   const server = createServer((req, res) => {
     if (req.url === '/health') {
+      const live = readyDevices();
       res.writeHead(200, { 'content-type': 'application/json' });
       res.end(JSON.stringify({
         ok: true,
-        linked: Boolean(socket && !socket.closed),
-        deviceId: socket ? socket.id : null,
+        linked: live.length > 0,
+        deviceId: live[0]?.id ?? null,
+        deviceInstanceId: live[0]?.instanceId ?? null,
+        devices: live.map((device) => ({ slot: device.slot, id: device.id, instanceId: device.instanceId || null, connectedAt: device.connectedAt })),
         queued: queue.length,
         waiting: waiting.size,
-        lastHeardMsAgo: lastHeardAt ? now() - lastHeardAt : null
+        lastHeardMsAgo: live[0]?.lastHeardAt ? now() - live[0].lastHeardAt : null
       }));
       return;
     }
@@ -223,9 +256,10 @@ export function createBridgeServer({
           json(res, 400, { ok: false, error: { message: 'a command needs a method' } });
           return;
         }
-                const timeoutMs = Number(body.timeoutMs) > 0 ? Number(body.timeoutMs) : 60000;
+        const timeoutMs = Number(body.timeoutMs) > 0 ? Number(body.timeoutMs) : 60000;
         try {
-          json(res, 200, await command(body.method, body.params ?? {}, { timeoutMs }));
+          const answer = await command(body.method, body.params ?? {}, { timeoutMs });
+          json(res, 200, answer);
         } catch (error) {
           json(res, 200, { ok: false, error: { message: String(error?.message ?? error) } });
         }
@@ -253,8 +287,9 @@ export function createBridgeServer({
       })();
       return;
     }
-    res.writeHead(404);
-    res.end();
+
+    res.writeHead(404, { 'content-type': 'text/plain' });
+    res.end('not found\n');
   });
 
   server.on('upgrade', (req, socketHandle, head) => {
@@ -278,6 +313,51 @@ export function createBridgeServer({
     timer = setTimeout(heartbeat, heartbeatMs);
   });
 
+  function attach(next, request) {
+    const slot = ++slotCounter;
+    const device = { id: next.id, slot, socket: next, instanceId: '', handshaken: false, connectedAt: now(), lastHeardAt: now() };
+    devices.set(next.id, device);
+    attached.add(next);
+
+    next.on('text', (raw) => {
+      device.lastHeardAt = now();
+      const parsed = parseFrame(raw);
+      if (!parsed.ok) return;
+      const message = parsed.message;
+      if (message.type === 'hello') {
+        device.instanceId = String(message.instanceId || device.id).slice(0, 64);
+        device.handshaken = true;
+        device.lastHeardAt = now();
+        if (!device.socket.closed) device.socket.send(JSON.stringify({ type: 'ready', protocolVersion: DEVICE_PROTOCOL_VERSION, serverTime: now() }));
+        flush();
+        return;
+      }
+      if (message.type === 'pong') return;
+      if (message.type !== 'complete') return;
+
+      const entry = waiting.get(String(message.commandId));
+      if (!entry) return;
+      waiting.delete(String(message.commandId));
+      entry.resolve(message.ok === true
+        ? { ok: true, result: message.result ?? {}, ms: now() - entry.sentAt }
+        : { ok: false, error: message.error ?? { code: 'EXECUTION_ERROR', message: 'Command failed.' }, ms: now() - entry.sentAt });
+    });
+
+    next.on('close', () => {
+      attached.delete(next);
+      devices.delete(next.id);
+      state.emit('state', { status: 'disconnected' });
+      for (const [id, entry] of waiting) {
+        if (entry.deviceId === device.id) {
+          entry.reject(new Error(`${entry.method} was still in flight when browser ${device.slot} disconnected`));
+          waiting.delete(id);
+        }
+      }
+    });
+
+    state.emit('state', { status: 'ready', id: next.id });
+  }
+
   return {
     address() {
       const bound = server.address();
@@ -298,21 +378,22 @@ export function createBridgeServer({
       clearTimeout(timer);
       for (const open of attached) open.socket.destroy();
       attached.clear();
-      socket = null;
+      devices.clear();
       await new Promise((resolve) => server.close(resolve));
     },
     linked() {
-      return Boolean(socket && !socket.closed);
+      return attached.size > 0;
     },
     leases,
-    send: (method, params, options) => command(method, params, options),
+    send: (method, params, options) => command(method, params ?? {}, options),
     on: (event, handler) => state.on(event, handler),
     state: () => ({
-      linked: Boolean(socket && !socket.closed),
-      deviceId: socket ? socket.id : null,
+      linked: attached.size > 0,
+      deviceId: readyDevices()[0]?.id ?? null,
+      devices: readyDevices().map((device) => ({ slot: device.slot, id: device.id, instanceId: device.instanceId || null })),
       queued: queue.length,
       waiting: waiting.size,
-      lastHeardMsAgo: lastHeardAt ? now() - lastHeardAt : null
+      lastHeardMsAgo: readyDevices()[0]?.lastHeardAt ? now() - readyDevices()[0].lastHeardAt : null
     })
   };
 }

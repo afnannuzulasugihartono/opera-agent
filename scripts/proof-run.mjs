@@ -1,13 +1,13 @@
 // @last-edited: 2026-11-06 UTC+7.
 // @title: proof-run — one real drive: a browser reads a portal, the CSV lands, and four office files come out with the bytes the site ships.
 // @state: the fixture portal, a throwaway Chrome, the MCP client over stdio, the five steps, and the record the suite rechecks.
-// @dependencies: node:child_process, node:crypto, node:fs, node:http, node:os, node:path, node:url, ../local/browsers.js, ../local/driver.js, ../local/transport.js.
+// @dependencies: node:child_process, node:crypto, node:fs, node:http, node:os, node:path, node:url, ../local/browsers.js, ../local/transport.js.
 
 // WHY THIS FILE EXISTS.
 // The product claims it drives a browser and hands back designed office files, and until this run the claim rested on separate tests: one drove a fake page, another wrote a workbook.
 // A run that does both in one breath is the only thing that answers "can it actually do the job", and the hashes are what make the answer checkable instead of a story.
 
-import { spawn } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import http from 'node:http';
@@ -16,7 +16,6 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { launchArgs } from '../local/browsers.js';
-import { installedBrowsers } from '../local/driver.js';
 import { waitForBrowser } from '../local/transport.js';
 
 // WHY THE SERVER ANSWERS FROM A WHITELIST.
@@ -55,31 +54,93 @@ export async function serveCompany(company = path.resolve('tests', 'fixtures', '
 
 const SHARED_PORT = 9222;
 
+// WHY THE PROOF HAS A PORT OF ITS OWN.
+// The extension cannot be configured after install, so the copy the proof loads is the copy the proof patches, and the bridge that copy dials belongs to the proof alone.
+// That means the everyday browser keeps its own bridge and the proof keeps a separate one: two extensions, two browsers, two loopback ports, and nobody drives the signed-in window by accident.
+
+export const PROOF_BRIDGE_PORT = 19451;
+
+const EXTENSION_CANDIDATES = () => {
+  const programFiles = process.env.ProgramFiles ? [process.env.ProgramFiles] : ['C:\\Program Files'];
+  const local = process.env.LOCALAPPDATA ? [process.env.LOCALAPPDATA] : [];
+  const found = [];
+  for (const base of [...programFiles, ...local]) {
+    const root = path.join(base, 'Google', 'Chrome for Testing');
+    try {
+      for (const version of fs.readdirSync(root)) {
+        found.push(path.join(root, version, 'win64', 'chrome.exe'));
+      }
+    } catch {
+    }
+  }
+  if (process.platform !== 'win32') {
+    for (const name of ['chrome-for-testing', 'chromium', 'chromium-browser']) {
+      found.push(name);
+    }
+  }
+  return found;
+};
+
+function browserBinary(candidates) {
+  for (const candidate of candidates) {
+    if (candidate.includes(path.sep) && fs.existsSync(candidate)) return candidate;
+    if (!candidate.includes(path.sep)) {
+      const result = spawnSync(candidate, ['--version'], { stdio: 'ignore', timeout: 5000 });
+      if (result.status === 0) return candidate;
+    }
+  }
+  return null;
+}
+
+// WHY THE EXTENSION IS PATCHED IN A COPY.
+// The proof proves the extension that would ship, so the only edit it makes is the address it dials; every line that decides what this product is remains the shipped line.
+
+export function extensionForProof(root, bridgePort) {
+  const target = fs.mkdtempSync(path.join(os.tmpdir(), 'opera-proof-extension-'));
+  fs.cpSync(path.join(root, 'extension'), target, { recursive: true });
+  const linkPath = path.join(target, 'worker', 'bridge-link.js');
+  const link = fs.readFileSync(linkPath, 'utf8');
+  const swapped = link.replace('ws://127.0.0.1:9451', `ws://127.0.0.1:${bridgePort}`);
+  if (swapped === link) throw new Error('the proof could not patch the extension copy to dial its own bridge');
+  fs.writeFileSync(linkPath, swapped, 'utf8');
+  return target;
+}
+
+export function findExtensionBrowser() {
+  if (process.env.OPERA_PROOF_BROWSER) return process.env.OPERA_PROOF_BROWSER;
+  return browserBinary(EXTENSION_CANDIDATES());
+}
+
 // WHY THE PROFILE IS TEMPORARY AND ITS REMOVAL IS FORGIVING.
 // The cookies and history the run makes must die with it, and a profile folder Chrome still holds for a moment is cleared by the operating system later.
 // A cleanup that could throw would mask the step that actually failed.
 
-export async function launchProofBrowser({ port = Number(process.env.OPERA_PROOF_PORT || 9444), env = process.env, extraArgs = [] } = {}) {
-  if (port === SHARED_PORT) throw new Error(`${SHARED_PORT} is the shared browser; the proof run refuses to drive it.`);
-  const [entry] = installedBrowsers({ env });
-  if (!entry?.binary) throw new Error('No Chromium browser was found on this machine.');
+export async function launchProofBrowser({ port = Number(process.env.OPERA_PROOF_PORT || 9444), bridgePort = Number(process.env.OPERA_PROOF_BRIDGE_PORT || PROOF_BRIDGE_PORT), root = process.cwd(), env = process.env, extraArgs = [] } = {}) {
+  if (port === SHARED_PORT || bridgePort === SHARED_PORT) throw new Error(`${SHARED_PORT} is the shared browser; the proof run refuses to drive it.`);
+  const binary = findExtensionBrowser();
+  if (!binary) throw new Error('no browser that can load the proof extension is installed; set OPERA_PROOF_BROWSER to one (Chrome for Testing or Chromium)');
+  const extension = extensionForProof(root, bridgePort);
   const userDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'opera-proof-'));
-  const child = spawn(entry.binary, launchArgs({ browser: entry, port, userDataDir, extraArgs }), { stdio: 'ignore' });
+  const entry = { id: 'proof', name: 'Proof Chrome', family: 'chromium', protocol: 'cdp', binary };
+  const child = spawn(binary, [...launchArgs({ browser: entry, port, userDataDir, extraArgs }), `--load-extension=${extension}`, `--disable-extensions-except=${extension}`], { stdio: 'ignore' });
 
   const up = await waitForBrowser(port, { timeoutMs: 15000 }).then(() => true, () => false);
   if (!up) {
     child.kill();
     fs.rmSync(userDataDir, { recursive: true, force: true });
-    throw new Error(`${entry.name} did not answer port ${port}; nothing was driven.`);
+    fs.rmSync(extension, { recursive: true, force: true });
+    throw new Error(`the proof browser did not answer port ${port}; nothing was driven.`);
   }
 
   return {
     port,
-    name: entry.name,
+    bridgePort,
+    name: 'Proof Chrome',
     close() {
       child.kill();
       try {
         fs.rmSync(userDataDir, { recursive: true, force: true });
+        fs.rmSync(extension, { recursive: true, force: true });
       } catch {
 
       }
@@ -101,10 +162,10 @@ const parseAnswer = (text) => {
   }
 };
 
-export function speakMcp({ port, cwd = process.cwd(), env = process.env, transport = 'cdp' } = {}) {
+export function speakMcp({ port, cwd = process.cwd(), env = process.env, bridgePort = null, transport = 'bridge' } = {}) {
   const child = spawn(process.execPath, [path.join(cwd, 'local', 'bin', 'opera-local.js')], {
     cwd,
-    env: { ...env, OPERA_LOCAL_TRANSPORT: transport, OPERA_LOCAL_PORT: String(port) },
+    env: { ...env, OPERA_BRIDGE_PORT: String(bridgePort ?? port ?? env.OPERA_BRIDGE_PORT ?? 9451) },
     stdio: ['pipe', 'pipe', 'inherit']
   });
 
@@ -243,7 +304,7 @@ export async function runProof({
   const company = path.join(root, 'tests', 'fixtures', 'mock-company');
   const portal = await serveCompany(company);
   const browser = await launchProofBrowser();
-  const mcp = speakMcp({ port: browser.port, cwd: root });
+  const mcp = speakMcp({ port: browser.port, bridgePort: browser.bridgePort, cwd: root });
   const steps = [];
 
   const note = (step) => {
