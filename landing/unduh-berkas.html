@@ -40,10 +40,10 @@
   </header>
 
   <main class="wrap wide">
-    <header class="heroFiles" data-reveal>
+    <div class="heroFiles" data-reveal>
       <h1 data-i18n="page.title">Unduh berkas</h1>
       <p class="lede" data-i18n="page.sub">Satu build. Lima browser. Sekali klik.</p>
-    </header>
+    </div>
 
     <div class="browsers" id="berkas">
       <article class="browser" data-browser="chrome">
@@ -152,7 +152,7 @@
     "support.title": "Which browsers are supported",
     "support.th.crx": ".crx file",
     "support.th.zip": ".zip archive",
-    "support.meta": "Chrome, Edge, and Brave refuse a .crx outside the Web Store on unmanaged machines.",
+    "support.meta": "On unmanaged machines, Chrome, Edge and Brave refuse a .crx outside the Web Store.",
     "back": "Back to Download",
     "card.yours": "Your browser",
     "card.zip": "Download .zip",
@@ -168,8 +168,8 @@
     "verify.intro": "The fingerprint changes every release. Compare with the server:",
     "policy.enterprise": "<code>.crx</code> for <strong>enterprise-managed</strong> machines. Home users take the <a href=\"#berkas\">zip archive</a> above.",
     "policy.crx": "Download the latest .crx",
-    "policy.meta": "On <code>chrome://policy</code>, unmanaged machines read BLOCKED, and the file’s name carries the build version you received.",
-    "support.intro": "Chromium: Chrome, Edge, Brave, Opera, Vivaldi. Firefox is not supported - no <code>debugger</code> permission.",
+    "policy.meta": "On <code>chrome://policy</code>, unmanaged machines read BLOCKED; the filename carries the build version.",
+    "support.intro": "Chromium: Chrome, Edge, Brave, Opera, Vivaldi. Firefox has no <code>debugger</code> permission.",
     "support.no": "refused",
     "support.yes": "works",
     "support.not": "no",
@@ -190,10 +190,10 @@
 
     <h2 data-i18n="steps.title">Lima langkah memasang dari arsip</h2>
     <ol class="steps">
-      <li><strong>Ekstrak arsip.</strong> Unzip ke folder tetap, misalnya <code>C:\OperaAgent\</code>.</li>
+      <li><strong>Ekstrak arsip.</strong> Ke folder tetap, misalnya <code>C:\OperaAgent\</code>.</li>
       <li><strong>Buka halaman extension.</strong> <code>chrome://extensions</code>.</li>
       <li><strong>Aktifkan mode pengembang.</strong> Toggle pojok atas.</li>
-      <li><strong>Muat folder.</strong> Load unpacked, pilih folder berisi <code>manifest.json</code>.</li>
+      <li><strong>Muat folder.</strong> Load unpacked — pilih folder berisi <code>manifest.json</code>.</li>
       <li><strong>Pasangkan device.</strong> <a href="./dashboard.html">Dashboard</a>, tempel kode pairing.</li>
     </ol>
 
@@ -206,10 +206,10 @@
     <p data-i18n-html="policy.enterprise"><code>.crx</code> untuk mesin <strong>enterprise-managed</strong>. pengguna rumahan pakai <a href="#berkas">arsip zip</a> di atas.</p>
 
     <p><a class="btn" href="https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/download/opera-agent.crx" download data-i18n="policy.crx">Unduh berkas .crx terbaru</a></p>
-    <p class="meta" data-i18n-html="policy.meta">Di <code>chrome://policy</code>, mesin unmanaged berstatus BLOCKED. namanya membawa versi build - jadi dua unduhan tidak terlihat sama.</p>
+    <p class="meta" data-i18n-html="policy.meta">Di <code>chrome://policy</code>, mesin unmanaged berstatus BLOCKED; namanya membawa versi build.</p>
 
-    <h2 data-i18n="support.title">Browser mana yang didukung</h2>
-    <p data-i18n-html="support.intro">Chromium: Chrome, Edge, Brave, Opera, Vivaldi. Firefox tidak didukung - Firefox tidak punya izin <code>debugger</code>.</p>
+    <h2 data-i18n="support.title">Browser yang didukung</h2>
+    <p data-i18n-html="support.intro">Chromium: Chrome, Edge, Brave, Opera, Vivaldi. Firefox tidak punya izin <code>debugger</code>.</p>
     <table class="support">
       <thead>
         <tr><th>Browser</th><th data-i18n="support.th.crx">Berkas .crx</th><th data-i18n="support.th.zip">Arsip .zip</th></tr>
@@ -223,7 +223,7 @@
         <tr><td>Firefox</td><td class="no" data-i18n="support.not">tidak</td><td class="no" data-i18n="support.not">tidak</td></tr>
       </tbody>
     </table>
-    <p class="meta" data-i18n="support.meta">Chrome, Edge, dan Brave menolak .crx di luar Web Store pada mesin unmanaged.</p>
+    <p class="meta" data-i18n="support.meta">Chrome, Edge, Brave: .crx di luar Web Store ditolak di mesin unmanaged.</p>
 
     <p><a href="./unduh.html" data-i18n="back">Kembali ke Unduh</a></p>
     </div>

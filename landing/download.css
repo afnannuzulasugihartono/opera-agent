@@ -18,10 +18,10 @@
 }
 
 .hero-text h1 {
-  max-width: 15ch;
-  margin: 0 0 22px;
+  max-width: 13ch;
+  margin: 0 0 24px;
   text-align: left;
-  font-size: clamp(38px, 4.9vw, 72px);
+  font-size: clamp(44px, 6.6vw, 88px);
   line-height: .98;
   letter-spacing: -.042em;
 }
@@ -30,8 +30,8 @@
   max-width: 48ch;
   margin: 0 0 26px;
   color: var(--muted);
-  font-size: 18px;
-  line-height: 1.58;
+  font-size: 19px;
+  line-height: 1.6;
   text-align: left;
 }
 
@@ -112,14 +112,14 @@ html.js .btn.giant::after {
 
 .also a { text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; }
 
-/* WHY THE NUMBERS STAY OUT OF THE READING LINE: three counts in a row at caption weight are easier to skim than three sentences explaining the same numbers. */
+/* WHY THE NUMBERS STAY IN THE BACKGROUND: two counts at caption weight are easier to skim than three sentences explaining the same numbers. */
 
 .statBand {
   display: flex;
   flex-wrap: wrap;
   gap: 28px 44px;
-  margin: 26px 0 0;
-  padding: 18px 0 0;
+  margin: 24px 0 0;
+  padding: 16px 0 0;
   border-top: 1px solid var(--line);
 }
 
@@ -182,11 +182,11 @@ html.js .btn.giant::after {
   display: grid;
   place-items: center;
   aspect-ratio: 1;
-  border: 1px solid var(--line);
-  border-radius: 10px;
+  border: 0;
+  border-radius: 12px;
   background: var(--surface-2);
   color: var(--muted);
-  transition: transform .18s var(--ease), border-color .18s var(--ease);
+  transition: transform .18s var(--ease), background .18s var(--ease);
 }
 
 html.js .packTile {
@@ -213,34 +213,31 @@ html.js .packTile:nth-child(5) { animation-delay: .58s; }
 
 .packTile svg { display: block; }
 
-.packTile:hover { transform: translateY(-3px); border-color: var(--accent); }
+.packTile:hover { transform: translateY(-3px); background: var(--surface); }
 .packTile:hover svg { transform: scale(1.12); }
 .packTile svg { transition: transform .22s var(--ease); }
 
-.packCaption {
-  margin: 14px 0 0;
-  padding: 0;
-  text-align: center;
-  color: var(--muted);
-  font-size: 12px;
-}
 
 /* WHY THE SCREENSHOT IS THE ARGUMENT: a product picture of the product doing the product's job is the only image a software page needs; the caption says what the picture is, plainly. */
 
 .artifact {
   margin: clamp(36px, 5vh, 60px) 0 0;
+  padding: 16px 16px 15px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
 }
 
 .artifact img {
   display: block;
   width: 100%;
   height: auto;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
+  border-radius: 10px;
   object-fit: cover;
 }
 
 .artifact figcaption {
+  padding: 0 4px;
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
@@ -322,7 +319,7 @@ html.js .packTile:nth-child(5) { animation-delay: .58s; }
 
 .heroFiles h1 {
   margin: 0 0 16px;
-  font-size: clamp(36px, 4.6vw, 56px);
+  font-size: clamp(40px, 5.4vw, 64px);
   letter-spacing: -.04em;
   line-height: 1.02;
 }
@@ -502,26 +499,10 @@ html.js .packTile:nth-child(5) { animation-delay: .58s; }
   margin: 12px 0 0;
   padding: 0 2px;
   color: var(--muted);
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.55;
   text-align: left;
 }
-
-.req code {
-  font-size: 10px;
-  overflow-wrap: anywhere;
-}
-
-.cardPolicy {
-  margin: 8px 0 0;
-  padding: 0 2px;
-  color: var(--muted);
-  font-size: 10.5px;
-  line-height: 1.55;
-  text-align: left;
-}
-
-.cardPolicy strong { color: var(--ink); }
 
 /* WHY THE STEPS KEEP THE SITE'S OWN GRAMMAR: the site already ships an ordered-steps block with a leading-zero counter, accent ink and 44px of air; a second copy here incremented the counter twice and painted the steps in two designs at once. */
 
@@ -609,10 +590,6 @@ pre {
 .support td.yes { color: var(--accent); }
 .support td.no { color: var(--muted); }
 .support tr:last-child td { border-bottom: 0; }
-
-.back {
-  margin-top: 28px;
-}
 
 
 .fallbackBody {
