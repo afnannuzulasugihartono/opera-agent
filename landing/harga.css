@@ -1,24 +1,29 @@
 /*
- * @last-edited: 2026-11-04 UTC+7.
- * @title: harga.css — the price page: three cards for the ways to buy, and one list for the facts.
- * @state: a three-column card row over a two-column fact list, both collapsing to one column on a phone.
+ * @last-edited: 2026-11-09 UTC+7.
+ * @title: harga.css - the price page: two ways to buy, one column of answers.
+ * @state: two purchase panels side by side over an answered-in-place list of the rules.
  * @dependencies: site.css.
  *
- * WHY a page sheet: the cards and the glance list belong to this page alone; the shell, the buttons and the tokens come from site.css.
+ * WHY a page sheet: the purchase panels and the rule list belong to this page alone; the shell, the buttons and the tokens come from site.css.
  */
+
+/* —— the two ways to buy —————————————————————————————————————— */
 
 .priceCards {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 14px;
-  margin: 0 0 34px;
+  margin: 0 0 26px;
 }
 
 .priceCard {
   --mx: 50%;
   --my: 50%;
   position: relative;
-  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 22px;
   overflow: hidden;
   border: 1px solid var(--line);
   border-radius: var(--radius);
@@ -33,26 +38,118 @@
   transform: translateY(-2px);
 }
 
+.priceCardFeatured {
+  border-color: var(--line-strong);
+}
+
+.priceCardBadge {
+  margin: -6px 0 8px;
+  color: var(--accent);
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
 .priceCard h2 {
-  margin: 0 0 8px;
-  font-size: 16px;
-  letter-spacing: -.02em;
-}
-
-.priceCard p {
-  margin: 0;
+  margin: 0 0 12px;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0;
   color: var(--muted);
-  font-size: 14px;
-  line-height: 1.55;
 }
 
-.priceCard strong {
+.priceCardPrice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 10px;
+  margin: 0 0 14px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--line);
+}
+
+.priceCardAmount {
+  font-size: 40px;
+  line-height: 1;
+  font-weight: 640;
+  letter-spacing: -.04em;
+  font-variant-numeric: tabular-nums;
+}
+
+.priceCardUnit {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.priceCardList {
+  display: grid;
+  gap: 10px;
+  margin: 0 0 22px;
+  padding: 0;
+  list-style: none;
   color: var(--ink);
-  font-family: var(--mono);
-  font-weight: 500;
+  font-size: 14px;
+  line-height: 1.5;
 }
 
-/* ── the glance list ─────────────────────────────────────────────────────── */
+.priceCardList li {
+  position: relative;
+  padding-left: 20px;
+}
+
+.priceCardList li::before {
+  content: "✓";
+  position: absolute;
+  left: 0;
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.priceCardCta {
+  width: 100%;
+  justify-content: center;
+  margin-top: auto;
+}
+
+/* —— the purchase note ———————————————————————————————————— */
+
+.purchaseNote {
+  margin: 0 0 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--app-radius-sm, var(--radius-sm));
+  background: var(--surface-soft);
+  color: var(--muted);
+  font-size: 13.5px;
+}
+
+.purchaseNote.warn {
+  border-color: color-mix(in srgb, var(--warn) 40%, transparent);
+  background: color-mix(in srgb, var(--warn) 10%, transparent);
+  color: var(--warn);
+}
+
+.purchaseSignedOut {
+  margin: 0 0 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  color: var(--muted);
+  font-size: 13.5px;
+}
+
+.purchaseSignedOut[hidden],
+.purchaseNote[hidden] { display: none; }
+
+.purchaseAside {
+  margin: 4px 0 24px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.purchaseAside strong { color: var(--ink); font-weight: 600; }
+
+/* —— the glance list ————————————————————————————————————— */
 
 .glance {
   display: grid;
@@ -74,6 +171,8 @@
   border-bottom: 1px solid var(--line);
 }
 
+.glance > div:nth-child(2n) { border-right: 0; }
+
 .glance dt {
   color: var(--muted);
   font-size: 14px;
@@ -89,23 +188,14 @@
 
 @media (max-width: 860px) {
   .priceCards { grid-template-columns: 1fr; }
-  .glance { grid-template-columns: 1fr; }
+  .glance { grid-template-columns: 1fr; padding: 4px 18px; }
 }
 
-/* ── the rules, answered in place ─────────────────────────────────────────── */
-
-/*
- * WHY THE RULES OPEN IN PLACE: measured against firecrawl.dev/pricing on 2026-11-05, its billing rules wait behind questions that open where they stand, and five open paragraphs read as a wall before the reader has a question.
- */
+/* —— the rules, answered in place ———————————————————————— */
 
 .qa > summary { font-size: 18px; }
 
 .qa:first-of-type { border-top: 1px solid var(--line); }
-
-/*
- * WHY THE PHONE KEEPS ONLY THE RULES: the rows are their own map, and the same five labels twice in a row is a list that reads as a stutter.
- * The sidebar stays on a wide screen, where it sits beside the text instead of above it.
- */
 
 @media (max-width: 899px) {
   main.prose .toc { display: none; }

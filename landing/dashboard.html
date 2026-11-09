@@ -640,7 +640,7 @@
         emptyDevicesBody: 'Pasang Opera Agent di browser ini, lalu buat kode pairing untuk dihubungkannya ke akun ini.',
         emptyPairCta: 'Buat kode pairing',
         noDeviceBound: 'Belum ada device terikat ke akun ini.',
-        devicesLine: '{n} device ter-pairing, {o} daring.',
+        devicesOffline: '{names} sedang offline',
         dtStatus: 'Status',
         dtLastSeen: 'Terakhir terlihat',
         dtCommands: 'Perintah',
@@ -737,7 +737,7 @@
         emptyDevicesBody: 'Install Opera Agent in this browser, then create a pairing code to connect it to this account.',
         emptyPairCta: 'Create a pairing code',
         noDeviceBound: 'No device is bound to this account.',
-        devicesLine: '{n} paired, {o} online.',
+        devicesOffline: '{names} offline',
         dtStatus: 'Status',
         dtLastSeen: 'Last seen',
         dtCommands: 'Commands',
@@ -1194,8 +1194,15 @@
         return;
       }
       const online = data.devices.filter((device) => device.status === 'online').length;
-      $('status').textContent = fmt(w('devicesLine'), { n: data.devices.length, o: online });
-      $('status').className = online ? 'status ok' : 'status warn';
+      // WHY THE HEALTHY CASE IS SILENT: the tiles count the devices; a line that repeats them is noise the reader scans past, and this line's whole job is to interrupt only when something is wrong.
+      const offline = data.devices.filter((device) => device.status !== 'online').map((device) => device.name);
+      if (offline.length) {
+        $('status').textContent = fmt(w('devicesOffline'), { names: offline.join(', ') });
+        $('status').className = 'status warn';
+      } else {
+        $('status').textContent = '';
+        $('status').className = 'status ok';
+      }
 
       // WHY the state rides the first line: two stacked cards once differed only in a middle row, so the down device hid in plain sight.
       // The build moves up beside the name for the same reason; the facts below keep the rest.

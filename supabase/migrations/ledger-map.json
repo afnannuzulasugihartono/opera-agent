@@ -7,14 +7,14 @@
   "name": 24,
   "content": 20,
   "ledger-names-the-file": 2,
-  "no-ledger-row": 2,
+  "no-ledger-row": 3,
   "part-of-combined": 13,
   "applied-outside-ledger": 6,
   "applied-then-recorded": 2
  },
- "treeFiles": 117,
+ "treeFiles": 118,
  "resolved": 109,
- "unapplied": 2,
+ "unapplied": 3,
  "map": [
   {
    "file": "20260907204146_opera_agent_1_0_0_core.sql",
@@ -716,6 +716,12 @@
    "file": "20261109130000_opera_session_usage.sql",
    "remote": null,
    "evidence": "applied-outside-ledger",
+   "cover": null
+  },
+  {
+   "file": "20261110120000_opera_plan_expiry.sql",
+   "remote": null,
+   "evidence": "no-ledger-row",
    "cover": null
   }
  ]

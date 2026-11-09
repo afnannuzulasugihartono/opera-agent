@@ -659,9 +659,11 @@ async function markPaid(notification: Record<string, unknown>): Promise<{ ok: bo
   }
   if (!needsClosing(invoice)) {
     const wallet = await creditTopUp(invoice);
+    await activatePlanFromInvoice(invoice);
     return { ok: true, invoice: invoice.id, wallet, why: `the invoice was already paid at ${invoice.paid_at}` };
   }
   const wallet = await creditTopUp(invoice);
+  await activatePlanFromInvoice(invoice);
   const paidMethod = String(notification.payment_type || "").trim();
   const transactionId = String(notification.transaction_id || "").trim();
   const { data: closed, error: updateError } = await supabase.from("opera_invoices")
@@ -718,6 +720,35 @@ async function walletOwner(req: Request, body: Record<string, unknown>): Promise
     .maybeSingle();
   const owner = (data as { user_id?: string | null } | null)?.user_id;
   return owner && UUID_SHAPE.test(owner) ? owner : null;
+}
+
+// WHY A PLACE THAT SELLS A PLAN TRUSTS ONLY A PERSON.
+// A paired device proves the machine, not the wallet of the person at it; a subscription is renewed by a person in their own browser.
+// Device credentials therefore never open plan-subscribe: a visitor with a paired machine but no session is asked to sign in, like anyone else.
+
+async function sessionOrNull(req: Request): Promise<string | null> {
+  const header = req.headers.get("authorization") || "";
+  const bearer = header.startsWith("Bearer ") ? header.slice(7).trim() : "";
+  if (!bearer || bearer === BILLING_TOKEN) return null;
+  const supabase = await db();
+  const { data } = await supabase.auth.getUser(bearer);
+  const id = data?.user?.id;
+  return id && UUID_SHAPE.test(id) ? id : null;
+}
+
+// WHY A PLACE THAT SELLS A PLAN ALSO ACTIVATES IT AT THE MOMENT OF PAYMENT.
+// A paid plan invoice that did not flip the account would leave the buyer with a receipt and the old quota, and the fix would live in a support thread.
+// The activation is client-observable only through the ordinary plan readers, and those were taught to degrade on expiry in the same release that sells it.
+
+async function activatePlanFromInvoice(invoice: InvoiceRow): Promise<void> {
+  const lines = Array.isArray(invoice.lines?.priced) ? invoice.lines.priced : [];
+  const purchased = lines.map((line) => line?.kind).filter((kind): kind is string => typeof kind === "string" && kind.startsWith("plan."));
+  if (!purchased.length) return;
+  const supabase = await db();
+  for (const kind of purchased.slice(0, 1)) {
+    const { error } = await supabase.rpc("opera_plan_activate_purchase", { p_owner: invoice.customer_id, p_kind: kind });
+    if (error) log.error("PLAN_ACTIVATE_FAILED", `invoice ${invoice.id} -> ${kind}: ${error.message}`);
+  }
 }
 
 // WHY A WALLET FUNCTION'S ERROR IS RAISED AND NOT RETURNED AS A REFUSAL.
@@ -912,6 +943,7 @@ async function closeFromFeed(match: { invoiceId: string; transactionId: string; 
   if (error) throw new Error(`the feed-paid invoice could not be closed: ${error.message}`);
   if (!closed) return false;
   await creditTopUp(closed);
+  await activatePlanFromInvoice(closed);
   return true;
 }
 
@@ -1056,6 +1088,41 @@ const cors = {
       if (isWalletAction(String(body.action || ""))) {
         const out = await handleWalletAction(String(body.action), body, walletDeps(req));
         return json(out.body, out.status, cors);
+      }
+
+      // WHY A PLAN SUBSCRIPTION IS THE PERSON, NOT THE DEVICE.
+      // A paired device proves the machine, not the account; a subscription is renewed by a person in their own browser, so a visitor with a paired machine but no session is asked to sign in like anyone else.
+      if (body.action === "plan-subscribe") {
+        const owner = await sessionOrNull(req);
+        if (!owner) return json({ error: "masuk dulu untuk berlangganan" }, 401, cors);
+        const plan = String(body.plan || "plan.firm");
+        if (plan !== "plan.firm") return json({ error: "yang dijual di sini saat ini hanya plan.firm" }, 400, cors);
+        const supabase = await db();
+        const { data: openRows } = await supabase.from("opera_invoices")
+          .select("id, lines, status")
+          .eq("customer_id", owner)
+          .eq("status", "open")
+          .order("created_at", { ascending: false })
+          .limit(5);
+        const reusable = (openRows || []).find((row) => {
+          const lines = Array.isArray(row?.lines?.priced) ? row.lines.priced : [];
+          return lines.some((line) => line?.kind === "plan.firm");
+        });
+        if (reusable) {
+          const token = invoiceToken(String(reusable.id), BILLING_SECRET);
+          const base = BILLING_PAGE_URL || `${SUPABASE_URL}/functions/v1/opera-agent-billing`;
+          const link = `${base}?invoice_id=${encodeURIComponent(String(reusable.id))}&token=${token}`;
+          return json({ ok: true, url: link, invoice: reusable, reused: true }, 200, cors);
+        }
+        const date = new Date().toISOString().slice(0, 10);
+        const out = await createInvoice({
+          customer_id: owner,
+          period: `plan-${date}-${Date.now().toString(36)}`,
+          lines: [{ kind: "plan.firm", quantity: 1, description: "Plan Firm - 30 hari, kuota 5000 perintah per hari" }]
+        });
+        const base = BILLING_PAGE_URL || `${SUPABASE_URL}/functions/v1/opera-agent-billing`;
+        const link = `${base}?invoice_id=${encodeURIComponent(out.invoice.id)}&token=${out.token}`;
+        return json({ ok: true, url: link, invoice: out.invoice }, 200, cors);
       }
 
       // WHY THE SWEEP IS AN OPERATOR CALL AND NOT A PUBLIC ONE.

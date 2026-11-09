@@ -9,7 +9,7 @@ import assert from 'node:assert/strict';
 import { PLANS } from '../supabase/functions/_shared/plans.js';
 import { planInfo } from '../supabase/functions/opera-agent-mcp/plan-info.ts';
 
-function fakeDb({ plan = null, status = 'active', count = 0, reports = [], fail = false } = {}) {
+function fakeDb({ plan = null, status = 'active', count = 0, reports = [], fail = false, expires = null } = {}) {
   const calls = [];
   return {
     calls,
@@ -20,7 +20,7 @@ function fakeDb({ plan = null, status = 'active', count = 0, reports = [], fail 
         return {
           select: () => ({
             eq: () => ({
-              maybeSingle: async () => ({ data: plan ? { plan, status } : null })
+              maybeSingle: async () => ({ data: plan ? { plan, status, ...(expires ? { expires_at: expires } : {}) } : null })
             })
           })
         };
@@ -66,6 +66,23 @@ test('usage reports from the loopback bridge count toward exhaustion', async () 
 test('spend from the loopback bridge lands in the same number the caller sees', async () => {
   const answer = await planInfo(fakeDb({ plan: 'plan.pilot', count: 40, reports: [{ commands: 9 }, { commands: 1 }] }), 'user-4');
   assert.equal(answer.planUsed, 50, 'the hosted number carries both surfaces');
+});
+
+test('an expired purchased plan reads as pilot with the expiry named', async () => {
+  const past = new Date(Date.now() - 86_400_000).toISOString();
+  const answer = await planInfo(fakeDb({ plan: 'plan.firm', status: 'active', count: 0, expires: past }), 'user-9');
+  assert.equal(answer.plan, 'plan.pilot');
+  assert.equal(answer.planQuota, PLANS['plan.pilot'].dailyQuota);
+  assert.equal(answer.planExhausted, false);
+  assert.ok(answer.planExpiresAt, 'the expiry is named so the caller can offer a renew');
+});
+
+test('a live purchased plan reads as firm with the expiry named', async () => {
+  const future = new Date(Date.now() + 86_400_000).toISOString();
+  const answer = await planInfo(fakeDb({ plan: 'plan.firm', status: 'active', count: 0, expires: future }), 'user-8');
+  assert.equal(answer.plan, 'plan.firm');
+  assert.equal(answer.planQuota, PLANS['plan.firm'].dailyQuota);
+  assert.ok(answer.planExpiresAt, 'the expiry is named so the caller knows when it renews');
 });
 
 test('an account with no plan row is a pilot, not an absence of limits', async () => {
