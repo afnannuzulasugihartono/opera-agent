@@ -9,8 +9,7 @@ What is true now, and what to do next. Cap 150 lines. Spent detail: git history.
 
 - `main` = `origin/main`. #112 and #113 (stacked on #112) are open and wait for the owner's
   merge; a branch starts from `main` and merges back by `--rebase` once the four checks are green.
-- Version `1.6.32` in [`extension/manifest.json`](../extension/manifest.json) is the source
-  of truth; [`check.mjs`](../scripts/check.mjs) also asserts the MCP version, the store form, and the secret regex.
+- Version `1.6.32` in [`extension/manifest.json`](../extension/manifest.json) is the source of truth; [`check.mjs`](../scripts/check.mjs) also asserts the MCP version, the store form, and the secret regex.
 - **1.6.27 shipped on 2026-10-15** as `e99bf5a`; the CRX route answers 200 with
   `x-opera-sha256` equal to the bytes, and the release carries both zips, the CRX and SHA256SUMS.
   The two releases published with no files on 2026-10-25 are drafts now, and `release.yml`
@@ -21,7 +20,7 @@ What is true now, and what to do next. Cap 150 lines. Spent detail: git history.
   with a blank line around them; indented blocks document the code under them; a sentence is
   one line. The gate is `format(file) === file`, pinned by `tests/comment-format.test.mjs`.
 - **#100 is green, and the landing styles have one home.** New-code duplication fell from
-  9.2% to 2.0%, and the shared chrome, footer and download rules live in `landing/site.css`.
+  9.2% to 2.0%; the shared chrome, footer and download rules live in `landing/site.css`.
 - **The dead code is gone, and a gate holds it.** `tests/hygiene.test.mjs` fails when a module
   with its own code is reached by nothing but its own test.
 - **Every file says what it is.** All four header fields are on every walked source file; the
@@ -33,9 +32,10 @@ What is true now, and what to do next. Cap 150 lines. Spent detail: git history.
   fails a missing standard file, a pull request that skips CI, a CRLF file, or a dead path.
 - **The browser drive depends on nothing but the page it drives.** A ref dies with its
   document, its route or the extension epoch, so the drive re-finds what it clicks.
-- Gates: `npm test`, `npm run check` - 31 primitives, 203 runtime safety files, 1968 unit tests, green.
-- **The local drive is metered where it happens.** The loopback bridge asks the cloud once per session,
-  enforces the allowance with the plan named in the refusal, and reports usage at session end into the shared count.
+- Gates: `npm test`, `npm run check` - 31 primitives, 203 runtime safety files, 1972 unit tests, green.
+- **The local drive is metered where it happens.** The hello carries the paired credentials (1.6.32, published);
+  the loopback bridge verifies the session once, enforces the allowance with the plan named in the refusal, and reports usage into the shared count;
+  `opera-agent-mcp doctor` prints what is linked and the one fix when it is not.
 - **The local driver is modular, and its tests are too.** `local/primitives.js` assembles the
   modules; `tools.js` holds the MCP surface as data; the tests are one file per module.
 - Production, measured against the live database: 76 `opera_*` functions (65
