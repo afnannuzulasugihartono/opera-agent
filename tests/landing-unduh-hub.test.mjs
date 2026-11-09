@@ -93,15 +93,15 @@ test('the hero states the value in one sentence, and the steps live on the merge
   assert.match(steps, /Load unpacked/, 'then the load');
 });
 
-test('the CRX section is framed enterprise-only, with the button untouched', () => {
+test('the enterprise block is retired; the .crx stays one click away in every card', () => {
 
   assert.match(berkas, /enterprise-managed/, 'policy installs are the audience');
   assert.match(berkas, /drag-and-drop/, 'manual installs are named as rejected');
-  assert.match(berkas, /BLOCKED/, 'the unmanaged status is stated');
-  assert.match(berkas, /pengguna rumahan pakai <a href="#berkas">arsip zip<\/a>/, 'home users are sent to the zip on this same page');
-  assert.doesNotMatch(berkas, /mengizinkan pemasangan/, 'no sentence implies a consumer browser allows it');
-  assert.match(berkas, new RegExp(`<a\\b[^>]*class="btn"[^>]*href="${escapeRe(CRX)}"[^>]*download[^>]*>Unduh berkas \\.crx terbaru</a>`), 'the button and its endpoint are unchanged');
-  assert.match(berkas, /namanya membawa versi build/, 'the filename note stays');
+  assert.doesNotMatch(berkas, /BLOCKED/, 'the policy console copy is gone');
+  assert.doesNotMatch(berkas, /pengguna rumahan pakai/, 'the home-user pitch is gone');
+  assert.doesNotMatch(berkas, /namanya membawa versi build/, 'the filename note is gone');
+  assert.doesNotMatch(berkas, /Unduh berkas \\.crx terbaru/, 'the one big .crx button is gone');
+  assert.equal((berkas.match(new RegExp(escapeRe(CRX), 'g')) || []).length, 5, 'the version-less .crx stays one click away in every card');
 });
 
 test('the hub needs no script hash, and the shared policy still names the merged script', () => {

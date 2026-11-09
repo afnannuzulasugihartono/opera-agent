@@ -146,7 +146,6 @@
     "meta.title": "Download files — Opera Agent",
     "page.title": "Download files",
     "page.sub": "One build. Five browsers. One click.",
-    "fallback.body": "If policy is refused, take the <a href=\"#berkas\">zip archive</a> above.",
     "verify.title": "Verify the files",
     "verify.match": "Both numbers must match.",
     "support.title": "Which browsers are supported",
@@ -166,9 +165,6 @@
     "card.vivaldi.req": "Open <code>opera://extensions</code>, developer mode; .crx = <strong>enterprise-managed</strong> machines; drag-and-drop refused.",
     "steps.title": "Five steps",
     "verify.intro": "The fingerprint changes every release. Compare with the server:",
-    "policy.enterprise": "<code>.crx</code> for <strong>enterprise-managed</strong> machines. Home users take the <a href=\"#berkas\">zip archive</a> above.",
-    "policy.crx": "Download the latest .crx",
-    "policy.meta": "On <code>chrome://policy</code>, unmanaged machines read BLOCKED; the filename carries the build version.",
     "support.intro": "Chromium: Chrome, Edge, Brave, Opera, Vivaldi. Firefox has no <code>debugger</code> permission.",
     "support.no": "refused",
     "support.yes": "works",
@@ -184,10 +180,6 @@
 }
     </script>
     <div class="downloadBody centered" data-reveal>
-    <p data-i18n-html="fallback.body">Kalau kebijakan ditolak, ambil <a href="#berkas">arsip .zip</a> di atas.</p>
-
-    
-
     <h2 data-i18n="steps.title">Lima langkah memasang dari arsip</h2>
     <ol class="steps">
       <li><strong>Ekstrak arsip.</strong> Ke folder tetap, misalnya <code>C:\OperaAgent\</code>.</li>
@@ -200,16 +192,21 @@
     <h2 id="verifikasi" data-i18n="verify.title">Verifikasi berkas</h2>
 
     <p data-i18n-html="verify.intro">Sidik jari berubah setiap rilis. Bandingkan dengan server:</p>
-    <pre><code aria-hidden="true"><span class="typewriter" data-type="curl.exe -sI https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/download/opera-agent.zip | findstr /i x-opera-sha256"></span><span class="cursor" aria-hidden="true"></span></code></pre><noscript><pre><code>curl.exe -sI https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/download/opera-agent.zip | findstr /i x-opera-sha256</code></pre></noscript><pre><code>Get-FileHash .\opera-agent-*.zip -Algorithm SHA256</code></pre>
+    <div class="verifyPanel">
+      <div class="verifyBlock">
+        <span class="verifyTag">server</span>
+        <pre><code aria-hidden="true"><span class="typewriter" data-type="curl.exe -sI https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/download/opera-agent.zip | findstr /i x-opera-sha256"></span><span class="cursor" aria-hidden="true"></span></code></pre><noscript><pre><code>curl.exe -sI https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/download/opera-agent.zip | findstr /i x-opera-sha256</code></pre></noscript>
+      </div>
+      <div class="verifyBlock">
+        <span class="verifyTag">lokal</span>
+        <pre><code>Get-FileHash .\opera-agent-*.zip -Algorithm SHA256</code></pre>
+      </div>
+    </div>
     <p data-i18n="verify.match">Kedua angka harus sama.</p>
-
-    <p data-i18n-html="policy.enterprise"><code>.crx</code> untuk mesin <strong>enterprise-managed</strong>. pengguna rumahan pakai <a href="#berkas">arsip zip</a> di atas.</p>
-
-    <p><a class="btn" href="https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/download/opera-agent.crx" download data-i18n="policy.crx">Unduh berkas .crx terbaru</a></p>
-    <p class="meta" data-i18n-html="policy.meta">Di <code>chrome://policy</code>, mesin unmanaged berstatus BLOCKED; namanya membawa versi build.</p>
 
     <h2 data-i18n="support.title">Browser yang didukung</h2>
     <p data-i18n-html="support.intro">Chromium: Chrome, Edge, Brave, Opera, Vivaldi. Firefox tidak punya izin <code>debugger</code>.</p>
+    <div class="tablePanel">
     <table class="support">
       <thead>
         <tr><th>Browser</th><th data-i18n="support.th.crx">Berkas .crx</th><th data-i18n="support.th.zip">Arsip .zip</th></tr>
@@ -223,6 +220,7 @@
         <tr><td>Firefox</td><td class="no" data-i18n="support.not">tidak</td><td class="no" data-i18n="support.not">tidak</td></tr>
       </tbody>
     </table>
+    </div>
     <p class="meta" data-i18n="support.meta">Chrome, Edge, Brave: .crx di luar Web Store ditolak di mesin unmanaged.</p>
 
     <p><a href="./unduh.html" data-i18n="back">Kembali ke Unduh</a></p>

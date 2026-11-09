@@ -531,10 +531,6 @@ code {
   overflow-wrap: anywhere;
 }
 
-pre + pre {
-  margin-top: 12px;
-}
-
 pre {
   margin: 0;
   padding: 14px 16px;
@@ -547,6 +543,38 @@ pre {
   white-space: pre-wrap;
 }
 
+/* WHY THE VERIFY READS AS ONE INSTRUMENT: two labeled commands in one frame, the server's digest and the file the reader downloaded side by side, instead of two loose terminal boxes. */
+
+.verifyPanel {
+  margin: 14px 0 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.verifyBlock {
+  padding: 12px 16px 13px;
+}
+
+.verifyBlock + .verifyBlock {
+  border-top: 1px solid var(--line);
+}
+
+.verifyTag {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--muted);
+  font: 500 11px/1 var(--mono);
+}
+
+.verifyPanel pre {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
 
 /* WHY ONE COLUMN FOR EVERYTHING BELOW THE CARDS: the five cards answer the only question that matters at a glance; the prose after them is one narrow read, centered so the eye does not ping-pong. */
 
@@ -555,20 +583,27 @@ pre {
   margin: 0 auto;
 }
 
-.downloadBody.centered .fallbackBody {
-  margin: 0 0 22px;
-  text-align: left;
-  font-size: 13.5px;
-}
-
 .btn-row {
   margin: 0;
 }
 
+/* WHY THE TABLE GETS A FRAME: the verdict grid is the one answer a reader scans for; framing it with the same border and radius as the verify panel gives the three sections one voice. */
+
+.tablePanel {
+  margin: 14px 0 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.tablePanel tbody tr { transition: background .15s var(--ease); }
+.tablePanel tbody tr:hover { background: var(--surface-2); }
+
 .support {
   width: 100%;
   border-collapse: collapse;
-  margin: 12px 0 10px;
+  margin: 0;
   font-size: 13.5px;
 }
 
