@@ -99,6 +99,25 @@ export function createBridgeServer({ port = 9451, host = '127.0.0.1', heartbeatM
     }
   }
 
+  // The id generator is shared so the clock format cannot drift between the two command doors.
+  function commandId() {
+    return `${now().toString(36)}-${randomUUID().slice(0, 13)}`;
+  }
+
+  function armTimeout(id, method, timeoutMs, reject) {
+    setTimeout(() => {
+      if (!waiting.has(id)) return;
+      waiting.delete(id);
+      const index = queue.findIndex((item) => item.id === id);
+      if (index >= 0) queue.splice(index, 1);
+      reject(new Error(`no answer for ${method} within ${timeoutMs} ms`));
+    }, timeoutMs + 500).unref?.();
+  }
+
+  function registerWait(device, id, method, resolve, reject) {
+    waiting.set(id, { resolve, reject, method, deviceId: device ? device.id : null, sentAt: now() });
+  }
+
   function waitForReady(timeoutMs) {
     const deadline = now() + timeoutMs;
     return new Promise((resolve) => {
@@ -112,30 +131,22 @@ export function createBridgeServer({ port = 9451, host = '127.0.0.1', heartbeatM
   }
 
   function commandRaw(method, params, { timeoutMs } = {}) {
-    const id = `${now().toString(36)}-${randomUUID().slice(0, 13)}`;
+    const id = commandId();
     const frame = { id, method, params, timeoutMs };
     return new Promise((resolve, reject) => {
       const device = pickDevice(params);
-      const entry = { resolve, reject, method, deviceId: device ? device.id : null, sentAt: now() };
+      registerWait(device, id, method, resolve, reject);
       if (device) {
-        waiting.set(id, entry);
         if (!sendTo(device, JSON.stringify({ type: 'command', command: toWire(frame) }))) {
           waiting.delete(id);
           reject(new Error('the device socket is closed'));
           return;
         }
       } else {
-        waiting.set(id, entry);
         queue.push(frame);
         flush();
       }
-      setTimeout(() => {
-        if (!waiting.has(id)) return;
-        waiting.delete(id);
-        const index = queue.findIndex((item) => item.id === id);
-        if (index >= 0) queue.splice(index, 1);
-        reject(new Error(`no answer for ${method} within ${timeoutMs} ms`));
-      }, timeoutMs + 500).unref?.();
+      armTimeout(id, method, timeoutMs, reject);
     });
   }
 
@@ -179,17 +190,12 @@ export function createBridgeServer({ port = 9451, host = '127.0.0.1', heartbeatM
   }
 
   function commandToDevice(device, method, params, timeoutMs) {
-    const id = `${now().toString(36)}-${randomUUID().slice(0, 13)}`;
+    const id = commandId();
     const frame = { id, method, params, timeoutMs };
     return new Promise((resolve, reject) => {
-      const entry = { resolve, reject, method, deviceId: device.id, sentAt: now() };
-      waiting.set(id, entry);
+      registerWait(device, id, method, resolve, reject);
       sendTo(device, JSON.stringify({ type: 'command', command: frame }));
-      setTimeout(() => {
-        if (!waiting.has(id)) return;
-        waiting.delete(id);
-        reject(new Error(`no answer for ${method} within ${timeoutMs} ms`));
-      }, timeoutMs + 500).unref?.();
+      armTimeout(id, method, timeoutMs, reject);
     });
   }
 

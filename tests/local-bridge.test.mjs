@@ -34,7 +34,6 @@ import {
 } from '../local/bridge.js';
 import { createCdpClient } from '../local/cdp.js';
 import { createBridgeServer } from '../local/bridge-ws.js';
-import { completionFrame, handshakeFrame, normalizeCommand, pongFrame } from '../extension/lib/socket-protocol.js';
 
 process.env.OPERA_BRIDGE_PORT = '0';
 
@@ -43,67 +42,7 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 // WHY the device speaks the protocol rather than echoing bytes.
 // The server settles a command on its completion frame and refuses anything else, so a device that made its own replies would prove nothing about the one the real extension sends.
 
-// WHY THE HELLO GOES OUT ON OPEN.
-// The real client announces itself the moment the socket opens, and the server holds every command until it hears it — which is the whole point, since the device drops anything that arrives before it has been given a `ready`.
-// A device that waited for `ready` before saying hello would wait forever, and every command with it.
-
-function scriptedDevice(url, handle, { answerProof = true, deaf = false } = {}) {
-  const seen = [];
-  let socket = null;
-  let open = false;
-
-  const connected = new Promise((resolve, reject) => {
-    socket = new WebSocket(url);
-    socket.addEventListener('open', () => {
-      open = true;
-      socket.send(handshakeFrame('', 'scripted'));
-      resolve();
-    });
-    socket.addEventListener('error', () => reject(new Error('the scripted device could not connect')));
-    socket.addEventListener('close', () => { open = false; });
-    socket.addEventListener('message', (event) => {
-      let frame;
-      try {
-        frame = JSON.parse(typeof event.data === 'string' ? event.data : String(event.data));
-      } catch {
-        return;
-      }
-      if (frame.type === 'ping') {
-        if (!deaf) socket.send(pongFrame());
-        return;
-      }
-      if (frame.type !== 'command') return;
-
-      const command = normalizeCommand(frame);
-      seen.push(command);
-      if (deaf) return;
-      if (command.method === 'ping') {
-        if (answerProof) socket.send(completionFrame(command.id, true, { pong: true }));
-        return;
-      }
-      Promise.resolve()
-        .then(() => handle(command))
-        .then(
-          (result) => socket.send(completionFrame(command.id, true, result)),
-          (error) => socket.send(completionFrame(command.id, false, null, {
-            code: 'BRIDGE_COMMAND_FAILED',
-            message: error?.message || String(error)
-          }))
-        );
-    });
-  });
-  connected.catch(() => {});
-
-  return {
-    seen,
-    pings: () => seen.filter((command) => command.method === 'ping').length,
-    connected,
-    async stop() {
-      if (open) socket.close();
-      await Promise.race([connected, sleep(250)]);
-    }
-  };
-}
+import { scriptedDevice } from './helpers/scripted-device.mjs';
 
 // WHY a registry.
 // A test that fails mid-body leaves its device attached, and the next test is then answered by a stranger — which reads as a flaky bridge rather than as a failed assertion.

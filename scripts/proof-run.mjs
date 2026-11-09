@@ -74,7 +74,7 @@ const EXTENSION_CANDIDATES = () => {
     }
   }
   if (process.platform !== 'win32') {
-    for (const name of ['chrome-for-testing', 'chrome-headless-shell', 'chromium', 'chromium-browser']) {
+    for (const name of ['chrome-for-testing', 'chromium', 'chromium-browser']) {
       found.push(name);
     }
   }
@@ -85,7 +85,7 @@ function browserBinary(candidates) {
   for (const candidate of candidates) {
     if (candidate.includes(path.sep) && fs.existsSync(candidate)) return candidate;
     if (!candidate.includes(path.sep)) {
-      const result = spawnSync(candidate, ['--version'], { stdio: 'ignore' });
+      const result = spawnSync(candidate, ['--version'], { stdio: 'ignore', timeout: 5000 });
       if (result.status === 0) return candidate;
     }
   }
