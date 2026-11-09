@@ -1,4 +1,4 @@
-@last-edited: 2026-10-21 UTC+7.
+@last-edited: 2026-11-09 UTC+7.
 @related: [first three bookkeepers](first-three-bookkeepers.md) - [statements job](../jobs/statements.md)
 
 # Runbook sesi pilot (operator)
@@ -18,29 +18,22 @@ waktunya jadi tidak bisa dibandingkan.
 
 ## Di mesin klien (remote desktop, operator yang mengetik)
 
-1. Tutup Chrome yang sedang berjalan. Tanya dulu apakah ada tab yang belum disimpan.
-2. Buka Chrome dengan profil yang biasa dipakai, plus debug port:
-
-   chrome.exe --remote-debugging-port=9333 --user-data-dir="%LOCALAPPDATA%\Google\Chrome\User Data"
-
-   Catatan: ini membuka CDP di localhost. Aman selama sesi berlangsung dan ditutup
-   setelahnya. Jangan biarkan port ini terbuka semalaman.
+1. Tanya dulu apakah ada tab yang belum disimpan.
+2. Pasang extension Opera Agent di browser klien (hubungi operator untuk CRX-nya; atau
+   load unpacked dari `extension/`), lalu pair lewat dashboard — meter butuh device
+   yang ter-pair.
 3. Minta pemilik akun login ke portal bank sendiri. Operator tidak mengetik password,
    tidak menjawab OTP, tidak melihat layar saat login. Setelah login, operator kembali.
-4. Verifikasi koneksi:
+4. Pasang paket dan verifikasi:
 
-   node -e "fetch('http://127.0.0.1:9333/json/version').then(r=>r.json()).then(x=>console.log(x.Browser))"
+   npm i -g opera-agent-mcp
 
-   Harusnya mencetak versi Chrome. Kalau gagal, port atau profil salah.
-5. Pasang opencode bila belum ada (Node 20+), lalu jalankan:
-
-   node local/bin/opera-local.js
-
-   Paket `opera-local` belum ada di npm (`npm view opera-local` jawab 404),
-   jadi yang dipakai perintah di atas, dari clone repo.
-
-   dengan `OPERA_LOCAL_PORT=9333` (default). MCP client (opencode/Claude Desktop)
-   diarahkan ke server ini.
+   Paket belum di publikasikan ke npm (`npm view opera-agent-mcp` jawab 404), jadi
+   selama itu yang dipakai adalah `cd local && npm install -g .` dari clone repo.
+   `opera-agent-mcp doctor` harus berakhir dengan `verdict: ready` — kalau
+   `degraded`, pesan paling bawah menyebut satu perbaikan yang berlaku.
+5. Jalankan server stdio dan arahkan MCP client (opencode/Claude Desktop) ke paket ini
+   dengan args `["local"]`.
 
 ## Sesi (operator drive, klien menonton)
 

@@ -1,15 +1,21 @@
-# opera-local
+# opera-agent-mcp
 
-Drive your own Chromium browser from an MCP client, over the Chrome DevTools
-Protocol, with no cloud round trip and no dependencies.
+Drive your own browser from an MCP client, with no dependencies. Two modes, one command:
 
 ```bash
-node local/bin/opera-local.js
+npm i -g opera-agent-mcp
 ```
 
-`npx opera-local` is the published form of this package, and it is not on the
-registry yet — `npm view opera-local` answers 404 — so the command above is the
-one that works today, from a clone.
+| mode | what drives | what it needs |
+|---|---|---|
+| `opera-agent-mcp local` | the everyday profile on this machine, over the loopback bridge | Node 20+, the extension, a paired device |
+| `opera-agent-mcp cloud` | the paired device's browser, through the hosted server | an account, an OAuth login, a paired device |
+| `opera-agent-mcp auth` | sign in once, keep the token beside this install | a browser, or `OPERA_AGENT_MCP_TOKEN` |
+| `opera-agent-mcp doctor` | print what is connected and what the plan allows | nothing but this install |
+
+`npx opera-agent-mcp` is the published form of this package. It is not on the
+registry yet, so installing from a clone works today: clone this repository,
+`cd local`, `npm install -g .`.
 
 ## Why this exists
 
@@ -28,79 +34,47 @@ not by reading documentation.
 
 ## Requirements
 
-Node 20 or newer, and a Chromium browser already running with a debugging port:
+Node 20 or newer, the Opera Agent extension on the everyday browser, and a paired
+device for the meter. The bridge — not a debugging port — is the road: Chrome
+refuses a debugging port on the Default profile, the extension cannot be driven
+from a headless harness, and the everyday window is the one people actually use.
+
+Load the extension from `extension/` (chrome://extensions, developer mode, load
+unpacked; it persists in the profile) or install the signed CRX from the
+download page. Pair the browser in the dashboard: the meter needs a paired
+device to name whose allowance the session spends.
+
+Then:
 
 ```bash
-# macOS / Linux
-"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --remote-debugging-port=9333
-
-# Windows
-"C:\Program Files\Google Chrome\Application\chrome.exe" --remote-debugging-port=9333
+opera-agent-mcp doctor
 ```
 
-## Persistent setup (Windows)
+is the one command to reach for. It prints the bridge, the device, the
+extension version, the plan, the quota, and the fix when something is degraded —
+`ready` when everything is wired. `OPERA_BRIDGE_PORT` (default `9451`) names
+the loopback port; `OPERA_AGENT_HOME` names the paired device file's folder.
+A dedicated, separate test profile with the extension pre-loaded is
+`local\bin\opera-chrome.cmd` — on macOS and Linux the equivalent is one
+Chrome invocation with `--load-extension`.
 
-Opening Chrome normally first makes a second launch join the running process and
-silently drop the debugging port, and an unpacked extension loaded by hand
-vanishes with a temporary profile. The launcher below fixes both: a dedicated
-persistent profile, the debugging port, and the extension on every start.
+## The meter
 
-```bat
-local\bin\opera-chrome.cmd
-```
+The local drive is metered where it happens. At the start of a session the
+bridge asks the cloud once (`session_open`, with the device credentials the
+hello carries), then enforces the returned allowance locally: one command past
+it answers `PLAN_LIMIT_REACHED` with the plan named. When the session ends, the
+usage is reported once and folded into the same daily count the hosted surface
+reads, so `plan.pilot` carries 200 commands per day and 50 per session, and
+`plan.firm` carries 5000 and 500. Cloud unreachable means the local drive
+stops, with the reason named — an unmetered drive is not offered. The gate
+lives in the bridge and in the hosted MCP, never in readable client code.
 
-Sign in to Google once inside it; the profile at
-`%LOCALAPPDATA%\OperaAgent\ChromeProfile` keeps the login, and
-`--load-extension` keeps `extension/` loaded no matter how often Chrome closes.
-Browse in this window whenever the agent is driving: a normally-opened Chrome
-window cannot be driven and blocks this one from starting.
-
-### Your everyday Chrome instead: the bridge
-
-Chrome refuses a debugging port on the Default profile, so the everyday window
-cannot be driven over CDP at all — the flag dies with an error and no port. The
-bridge is the road that remains: the extension dials this machine's loopback
-bridge and carries raw CDP both ways, so the whole surface below runs on your
-real tabs with no flags, no queue and no cloud.
-
-The transport is one WebSocket on loopback (`local/bridge-ws.js`). The
-extension opens it, the server pushes a command the moment one exists, and the
-completion frame carries the answer back. The device refuses a command it has
-not been given a `ready` for, so the first command waits in the queue and goes
-out the instant the handshake lands. A ping every twenty seconds resets
-Chrome's service worker timer, so the socket stays live without asking for
-work.
-
-```bash
-OPERA_LOCAL_TRANSPORT=bridge node local/bin/opera-local.js
-```
-
-Load the extension unpacked once from `extension/` (it persists in the
-profile), reload it after pulling, and drive. The touched tab comes forward so
-you can watch, and every click and hover leaves a red or blue ring where it
-landed. Trust boundary, stated plainly: loopback without auth, exactly what the
-debugging port it replaces already was.
-
-Point a client at it:
-
-```json
-{
-  "mcpServers": {
-    "opera-local": {
-      "command": "node",
-      "args": ["local/bin/opera-local.js"],
-      "env": { "OPERA_LOCAL_PORT": "9333" }
-    }
-  }
-}
-```
-
-| variable | default | meaning |
-|---|---|---|
-| `OPERA_LOCAL_PORT` | `9333` | the debugging port to drive |
-| `OPERA_LOCAL_BROWSER` | first installed | which browser a session that opens one is aimed at |
-| `OPERA_LOCAL_TRANSPORT` | unset (auto) | unset picks the bridge when an extension is linked, CDP otherwise; `bridge` drives the everyday profile through the extension |
-| `OPERA_BRIDGE_PORT` | `9451` | the loopback port the extension dials into |
+Trust boundary, stated plainly: the loopback socket admits this machine's
+processes (any of them) as well as the extension — the CRX signature is the
+only identity the origin check conveys, and local automation was always
+possible on a local machine. What the meter bounds is the account's spend,
+not who drives.
 
 ## Tools
 

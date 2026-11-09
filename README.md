@@ -1,4 +1,4 @@
-@last-edited: 2026-10-07 UTC+7.
+@last-edited: 2026-11-09 UTC+7.
 @related: [`AGENTS.md`](AGENTS.md) - [`docs/security.md`](docs/security.md) - [`docs/api.md`](docs/api.md)
 
 # Opera Agent
@@ -39,6 +39,27 @@ A private, local-browser control bridge.
 | Cloud MCP surface | **35** tools ([`supabase/functions/opera-agent-mcp/index.ts`](supabase/functions/opera-agent-mcp/index.ts)) |
 | Local MCP surface | **54** tools ([`local/mcp-server.js`](local/mcp-server.js)) - the operator's own signed-in Chrome, no cloud hop, plus the wallet that pays for the work |
 | Distribution | Signed CRX3 self-updates from the update service |
+
+## One command, two modes
+
+```bash
+npm i -g opera-agent-mcp
+```
+
+| | |
+|---|---|
+| `opera-agent-mcp local` | the everyday browser on this machine, over the loopback bridge |
+| `opera-agent-mcp cloud` | the hosted server, through OAuth |
+| `opera-agent-mcp auth` | sign in once; the token stays beside this install |
+| `opera-agent-mcp doctor` | print what is connected and what the plan allows |
+
+The local drive is metered where it happens: the bridge verifies the session
+against the account once, enforces the allowance locally, and reports the usage
+into the same daily count the hosted surface reads, so a command past the
+allowance answers `PLAN_LIMIT_REACHED` with the plan named. The gate lives in
+the bridge and in the hosted MCP, never in readable client code. The package
+is not on the registry yet; install it from a clone with
+`cd local && npm install -g .`. The full answer: [`docs/agent-call.md`](docs/agent-call.md).
 
 Every number in that table is measured, not typed: `tests/readme.test.mjs` reads the
 primitives from the protocol, the tools from the frozen contract and the local server,
