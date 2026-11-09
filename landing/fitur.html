@@ -41,8 +41,7 @@
   <main class="wrap">
     <section class="featureHero" data-reveal>
       <h1 data-i18n="page.title">Browser Anda, alat kerja.</h1>
-      <p class="lede" data-i18n="page.sub">Apa yang bisa dilakukan dan untuk siapa.</p>
-      <p class="featureIntro" data-i18n-html="intro"><strong>Companion dengan AI di belakangnya.</strong> Anda berbicara. Browser bekerja. Hasilnya menjadi artefak nyata.</p>
+      <p class="featureIntro" data-i18n-html="intro"><strong>Companion dengan AI di belakangnya.</strong> Anda berbicara. Browser bekerja.</p>
       <div class="row heroActions">
         <a class="btn primary" href="./unduh.html" data-i18n="cta.download">Unduh Opera Agent</a>
         <a class="btn" href="./beranda.html#install" data-i18n="hero.how">Lihat cara kerja</a>
@@ -89,7 +88,7 @@
     <section class="bento" data-reveal aria-label="Kemampuan utama">
       <article class="bentoArticle">
         <h2 data-i18n="s1.title">35 tool, 31 primitive</h2>
-        <p data-i18n="s1.body">Baca halaman, isi formulir, navigasi, dan verifikasi hasil. Google Maps, YouTube, dan Docs adalah contoh awal.</p>
+        <p data-i18n="s1.body">Baca, isi, navigasi, verifikasi. Maps, YouTube, Docs adalah contoh awal.</p>
       </article>
       <article class="bentoArticle">
         <h2 data-i18n="s2.title">Enam izin, dijelaskan satu per satu</h2>
@@ -101,7 +100,7 @@
       </article>
       <article class="bentoArticle">
         <h2 data-i18n="s4.title">Pairing device</h2>
-        <p data-i18n-html="s4.body">Kode sekali pakai mengikat device baru ke akun Anda dalam sepuluh menit. Kelola di <a href="./dashboard.html">Dashboard</a>.</p>
+        <p data-i18n-html="s4.body">Kode sekali pakai mengikat device ke akun Anda. Kelola di <a href="./dashboard.html">Dashboard</a>.</p>
       </article>
       <article class="bentoArticle">
         <h2 data-i18n="s5.title">Baca halaman tanpa eksploitasi</h2>
@@ -117,7 +116,7 @@
       </article>
       <article class="bentoArticle">
         <h2 data-i18n="s8.title">Portal yang minta masuk tidak lagi membekukan kerja</h2>
-        <p data-i18n="s8.body">Agen membaca halaman lebih dulu: ia tahu ada sign-in atau captcha, menunggu Anda menyelesaikannya di browser Anda sendiri, lalu lanjut di tab yang sama. Kode sekali pakai tidak pernah dijawab agen.</p>
+        <p data-i18n="s8.body">Sign-in atau captcha? Agen membaca dulu, menunggu Anda menyelesaikannya, lalu lanjut di tab yang sama. Kode sekali pakai tidak pernah dijawab agen.</p>
       </article>
     </section>
 
@@ -138,8 +137,8 @@
     </section>
   </main>
 
-    <footer>
-    <div class="wrap footGrid">
+        <footer>
+    <div class="wrap footGrid simplified">
       <div class="footCol">
         <span class="footBrand">Opera Agent</span>
         <span class="footNote" data-i18n="footer.rights">© 2026 Opera Agent. Hak cipta dilindungi.</span>
@@ -153,12 +152,6 @@
           <a href="./unduh.html" data-i18n="footer.download">Unduh</a>
           <a href="./bukti.html" data-i18n="footer.bukti">Bukti</a>
           <a href="./docs.html" data-i18n="footer.docs">Docs</a>
-        </span>
-      </div>
-      <div class="footCol">
-        <h3 data-i18n="footer.account">Akun</h3>
-        <span class="doors">
-          <a href="./index.html" data-i18n="footer.signin">Masuk</a>
           <a href="./akun.html" data-i18n="footer.account">Akun</a>
           <a href="./dashboard.html">Dashboard</a>
         </span>
@@ -174,70 +167,66 @@
     </div>
   </footer>
 
-  <script type="application/json" id="i18n-dict">
-  {
-    "en": {
-      "footer.bukti": "Proof",
-      "footer.source": "Source code",
-      "footer.legal": "Legal",
-      "footer.docs": "Docs",
-      "footer.download": "Download",
-      "footer.product": "Product",
-      "nav.download": "Download",
-      "nav.signin": "Sign in",
-      "nav.features": "Features",
-      "nav.price": "Pricing",
-      "nav.docs": "Docs",
-      "nav.support": "Support",
-      "meta.title": "Features — Opera Agent",
-      "page.title": "Your browser, as a work tool.",
-      "page.sub": "What it does, and who it is for.",
-      "hero.how": "See how it works",
-      "intro": "<strong>A companion with an AI behind it.</strong> You talk. The browser works. The result becomes a real artefact.",
-      "stat.tools": "tools",
-      "stat.prims": "primitives",
-      "stat.perms": "permissions",
-      "s1.title": "35 tools, 31 primitives",
-      "s1.body": "Read pages, fill forms, navigate, and verify outcomes. Google Maps, YouTube, and Docs are the first examples.",
-      "s2.title": "Six permissions, each explained",
-      "s2.body": "Each permission has one reason you can read on the <a href=\"./unduh.html\">Download</a> page.",
-      "s3.title": "Your own model",
-      "s3.body": "Your endpoint and key stay in your browser. Page content only goes to the model you choose. <a href=\"./privasi.html\">Privacy</a>.",
-      "s4.title": "Device pairing",
-      "s4.body": "A one-time code binds a new device to your account for ten minutes. Manage it in the <a href=\"./dashboard.html\">Dashboard</a>.",
-      "s5.title": "Read pages without exploits",
-      "s5.body": "Passwords, one-time codes, tokens, and payment fields are always refused.",
-      "s6.title": "MCP for any harness",
-      "s6.body": "OpenCode, Kilo Code, and Claude Code share one endpoint. <a href=\"./docs.html\">Docs</a>.",
-      "s7.title": "Four files from one conversation",
-      "s7.body": "A financial report, a strategy deck, a research paper, and a marketing plan — written as files you can open right away: <a href=\"./contoh/laporan-keuangan-2026-09.xlsx\" download>Report (.xlsx)</a>, <a href=\"./contoh/rencana-strategis-2027.pptx\" download>Deck (.pptx)</a>, <a href=\"./contoh/riset-promo.docx\" download>Paper (.docx)</a>, <a href=\"./contoh/rencana-pemasaran-2027.docx\" download>Marketing (.docx)</a>. <a href=\"./studi.html\">The full case study</a>.",
-      "s8.title": "A portal that asks to sign in no longer freezes the work",
-      "s8.body": "The agent reads the page first: it knows there is a sign-in or a captcha, waits while you finish it in your own browser, then continues on the same tab. A one-time code is never answered by the agent.",
-      "task.title": "From one sentence to a file.",
-      "task.talk": "Talk",
-      "task.talk.body": "One sentence: summarise the Q4 onboarding check.",
-      "task.read": "Read",
-      "task.read.body": "Pages, buttons, and rows are read.",
-      "task.write": "Write",
-      "task.write.body": "Forms and cells are filled, not clicked blindly.",
-      "task.save": "Save",
-      "task.save.body": "The file and the proof are saved.",
-      "perm.title": "The permissions we ask for",
-      "perm.body": "No permission outside this list.",
-      "final.title": "One extension. Your browser.",
-      "final.sub": "The price and its rules are on the <a href=\"/harga\">Pricing</a> page.",
-      "cta.download": "Download",
-      "footer.rights": "© 2026 Opera Agent. All rights reserved.",
-      "footer.home": "Home",
-      "footer.privacy": "Privacy",
-      "footer.terms": "Terms",
-      "footer.signin": "Sign in",
-      "footer.account": "Account",
-      "footer.features": "Features",
-      "footer.support": "Support"
-    }
+  <script type="application/json" id="i18n-dict">{
+  "en": {
+    "footer.bukti": "Proof",
+    "footer.source": "Source code",
+    "footer.legal": "Legal",
+    "footer.docs": "Docs",
+    "footer.download": "Download",
+    "footer.product": "Product",
+    "nav.download": "Download",
+    "nav.signin": "Sign in",
+    "nav.features": "Features",
+    "nav.price": "Pricing",
+    "nav.docs": "Docs",
+    "nav.support": "Support",
+    "meta.title": "Features — Opera Agent",
+    "page.title": "Your browser, as a work tool.",
+    "hero.how": "See how it works",
+    "intro": "<strong>A companion with an AI behind it.</strong> You talk. The browser works. The result becomes a real artefact.",
+    "stat.tools": "tools",
+    "stat.prims": "primitives",
+    "stat.perms": "permissions",
+    "s1.title": "35 tools, 31 primitives",
+    "s1.body": "Read, fill, navigate, verify. Maps, YouTube, Docs are the first examples.",
+    "s2.title": "Six permissions, each explained",
+    "s2.body": "Each permission has one reason you can read on the <a href=\"./unduh.html\">Download</a> page.",
+    "s3.title": "Your own model",
+    "s3.body": "Your endpoint and key stay in your browser. Page content only goes to the model you choose. <a href=\"./privasi.html\">Privacy</a>.",
+    "s4.title": "Device pairing",
+    "s4.body": "A one-time code binds a device to your account. Manage from <a href=\"./dashboard.html\">Dashboard</a>.",
+    "s5.title": "Read pages without exploits",
+    "s5.body": "Passwords, one-time codes, tokens, and payment fields are always refused.",
+    "s6.title": "MCP for any harness",
+    "s6.body": "OpenCode, Kilo Code, and Claude Code share one endpoint. <a href=\"./docs.html\">Docs</a>.",
+    "s7.title": "Four files from one conversation",
+    "s7.body": "A financial report, a strategy deck, a research paper, and a marketing plan — written as files you can open right away: <a href=\"./contoh/laporan-keuangan-2026-09.xlsx\" download>Report (.xlsx)</a>, <a href=\"./contoh/rencana-strategis-2027.pptx\" download>Deck (.pptx)</a>, <a href=\"./contoh/riset-promo.docx\" download>Paper (.docx)</a>, <a href=\"./contoh/rencana-pemasaran-2027.docx\" download>Marketing (.docx)</a>. <a href=\"./studi.html\">The full case study</a>.",
+    "s8.title": "A portal that asks to sign in no longer freezes the work",
+    "s8.body": "Sign-in or captcha? The agent reads first, waits for you to complete it, and continues in the same tab. One-time codes are never answered by the agent.",
+    "task.title": "From one sentence to a file.",
+    "task.talk": "Talk",
+    "task.talk.body": "One sentence: summarise the Q4 onboarding check.",
+    "task.read": "Read",
+    "task.read.body": "Pages, buttons, and rows are read.",
+    "task.write": "Write",
+    "task.write.body": "Forms and cells are filled, not clicked blindly.",
+    "task.save": "Save",
+    "task.save.body": "The file and the proof are saved.",
+    "perm.title": "The permissions we ask for",
+    "perm.body": "No permission outside this list.",
+    "final.title": "One extension. Your browser.",
+    "final.sub": "The price and its rules are on the <a href=\"/harga\">Pricing</a> page.",
+    "cta.download": "Download",
+    "footer.rights": "© 2026 Opera Agent. All rights reserved.",
+    "footer.home": "Home",
+    "footer.privacy": "Privacy",
+    "footer.terms": "Terms",
+    "footer.features": "Features",
+    "footer.support": "Support",
+    "footer.account": "Account"
   }
-  </script>
+}</script>
   <script src="./i18n.js"></script>
 
   <script src="/wayfind.js"></script>
