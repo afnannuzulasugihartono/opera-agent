@@ -63,23 +63,21 @@ test('every merged card offers the archive, and the install steps name the surfa
   assert.match(steps, /mode pengembang/, 'the install guide states developer mode once');
 });
 
-test('the other downloads open as a menu over the page, never through it', () => {
+test('the other builds row sits under the button, the way the benchmark download page does it', () => {
 
-  assert.match(hubCss, /\.browser \.more-list \{[^}]*position: absolute/s, 'the list of other downloads is an overlay');
-  assert.match(hubCss, /\.more\[open\] \.more-list \{[^}]*opacity: 1/s, 'and it opens with motion, not a jump');
-  assert.match(hubCss, /\.browser \.more-list \{[^}]*z-index: 30/s, 'and it floats above the chrome below the card');
+  assert.match(hubCss, /\.otherBuilds \{[^}]*display: flex/s, 'the other builds render as one inline row');
+  assert.match(hubCss, /\.otherBuilds a \{[^}]*color: var\(--accent\)/s, 'as quiet accent links, not another button');
 });
 
-test('every merged card keeps the signed file one click away, without button weight', () => {
+test('every merged card carries the signed file and manifest inline, as quiet links', () => {
   const cards = [...berkas.matchAll(/<article class="browser" data-browser="(\w+)">([\s\S]*?)<\/article>/g)];
   assert.deepEqual(cards.map((m) => m[1]), ['chrome', 'edge', 'brave', 'opera', 'vivaldi']);
   for (const [, key, body] of cards) {
 
-    const more = /<details class="more">([\s\S]*?)<\/details>/.exec(body);
-    assert.ok(more, `${key} keeps a closed list for its other downloads`);
-    assert.match(more[1], new RegExp(`<a\\b[^>]*href="${escapeRe(CRX)}"[^>]*download[^>]*>Unduh \\.crx</a>`), `${key} offers the signed file inside it`);
-    assert.doesNotMatch(more[1], /class="btn"/, `${key} gives the signed file no button weight`);
-    assert.match(more[1], /update\.xml\?id=[a-p]{32}/, `${key} also offers the manifest the updater reads, pinned to this extension`);
+    assert.match(body, new RegExp(`<a\\b[^>]*href="${escapeRe(CRX)}"[^>]*download`), `${key} offers the signed file inline`);
+    assert.doesNotMatch(body, /class="btn"[^>]*crx/, `${key} gives the signed file no button weight`);
+    assert.match(body, /update\.xml\?id=[a-p]{32}/, `${key} also offers the manifest the updater reads, pinned to this extension`);
+    assert.doesNotMatch(body, /class="more"|moreWrap/, `${key} carries no disclosure widget; the other builds sit in plain sight`);
 
     assert.doesNotMatch(body, /mengizinkan pemasangan/, `${key} implies no consumer install`);
   }

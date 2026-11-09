@@ -63,7 +63,7 @@ test('the merged page carries one card per browser, each offering both files', (
     const filled = [...body.matchAll(/<a\b[^>]*class="btn"[^>]*>/g)];
     assert.equal(filled.length, 1, `${key} fills exactly one button`);
     assert.ok(filled[0][0].includes(ZIP), `${key} fills the archive, the file that installs everywhere`);
-    assert.match(body, /<details class="more">/, `${key} keeps its other downloads behind a closed list`);
+    assert.match(body, /<p class="otherBuilds">/, `${key} carries its other builds inline, like the benchmark download page`);
   }
 });
 
