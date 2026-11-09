@@ -72,14 +72,32 @@ async function run(page, shape = {}) {
 
   const nodes = {};
   nodes.__bodyClasses = new Set();
-  const element = (id) => (nodes[id] ||= {
-    id, textContent: '', innerHTML: '', className: '', value: '', hidden: true, href: '',
-    disabled: false, dataset: {}, children: [], querySelectorAll: () => [],
-    addEventListener() {}, querySelector: () => null, closest: () => null,
-
-    replaceChildren() { this.children.length = 0; },
-    append(child) { this.children.push(child); return child; }
-  });
+  const element = (id) => {
+    const classes = new Set();
+    const el = {
+      id, textContent: '', innerHTML: '', className: '', value: '', hidden: true, href: '',
+      disabled: false, dataset: {}, children: [], attributes: {},
+      classList: {
+        add: (...names) => names.forEach((name) => classes.add(name)),
+        remove: (...names) => names.forEach((name) => classes.delete(name)),
+        toggle: (name, force) => {
+          const want = force === undefined ? !classes.has(name) : force;
+          if (want) classes.add(name); else classes.delete(name);
+          return want;
+        },
+        contains: (name) => classes.has(name)
+      },
+      style: {},
+      setAttribute(name, value) { el.attributes[name] = String(value); },
+      removeAttribute(name) { delete el.attributes[name]; },
+      getAttribute(name) { return name in el.attributes ? el.attributes[name] : null; },
+      addEventListener() {}, querySelector: () => null, closest: () => null,
+      querySelectorAll: () => [],
+      replaceChildren() { this.children.length = 0; },
+      append(child) { this.children.push(child); return child; }
+    };
+    return nodes[id] ||= el;
+  };
 
   const preCreated = new Set(['status', 'whoami', 'profileCard', 'avatar', 'profileName', 'profileMeta', 'profileProvider', 'factEmail', 'factProvider', 'factLastSignIn', 'factUserId', 'linkedProviders', 'deviceSummary', 'signOutButton', 'runButton', 'runStatus', 'pairButton', 'pairStatus', 'devices', 'sessionStatus', ...CONSENT_ELEMENTS]);
   for (const id of preCreated) element(id);
