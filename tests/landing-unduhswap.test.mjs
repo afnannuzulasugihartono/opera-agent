@@ -63,6 +63,13 @@ test('every merged card offers the archive, and the install steps name the surfa
   assert.match(steps, /mode pengembang/, 'the install guide states developer mode once');
 });
 
+test('the other downloads open as a menu over the page, never through it', () => {
+
+  assert.match(hubCss, /\.browser \.more-list \{[^}]*position: absolute/s, 'the list of other downloads is an overlay');
+  assert.match(hubCss, /\.more\[open\] \.more-list \{[^}]*opacity: 1/s, 'and it opens with motion, not a jump');
+  assert.match(hubCss, /\.browser \.more-list \{[^}]*z-index: 30/s, 'and it floats above the chrome below the card');
+});
+
 test('every merged card keeps the signed file one click away, without button weight', () => {
   const cards = [...berkas.matchAll(/<article class="browser" data-browser="(\w+)">([\s\S]*?)<\/article>/g)];
   assert.deepEqual(cards.map((m) => m[1]), ['chrome', 'edge', 'brave', 'opera', 'vivaldi']);

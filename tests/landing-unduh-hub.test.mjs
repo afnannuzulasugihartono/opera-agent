@@ -87,7 +87,9 @@ test('the hero states the value in one sentence, and the steps live on the merge
   assert.match(hub, /mesin enterprise/, 'enterprise named where the updates land');
   assert.doesNotMatch(hub.replace(/<!--[\s\S]*?-->/g, ''), /instan/i, 'no instant promise');
   assert.doesNotMatch(hub, /<ol class="steps">/, 'the hub itself keeps no steps beside the door');
-  const steps = /<h2\b[^>]*>Lima langkah memasang dari arsip<\/h2>\s*<ol class="steps">([\s\S]*?)<\/ol>/.exec(berkas)[1];
+  const fold = /<details class="sectionFold" open>\s*<summary><h2\b[^>]*>Lima langkah memasang dari arsip<\/h2><\/summary>\s*<ol class="steps">([\s\S]*?)<\/ol>/.exec(berkas);
+  assert.ok(fold, 'the install steps live in an open fold on the page');
+  const steps = fold[1];
   assert.match(steps, /Ekstrak arsip/, 'first the extract');
   assert.match(steps, /mode pengembang/, 'then developer mode');
   assert.match(steps, /Load unpacked/, 'then the load');

@@ -337,8 +337,8 @@ html.js .packTile:nth-child(5) { animation-delay: .58s; }
 .browsers {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 16px;
-  margin: 0 0 clamp(40px, 5vh, 60px);
+  gap: 20px;
+  margin: 0 0 clamp(44px, 6vh, 72px);
 }
 
 @media (max-width: 1040px) {
@@ -445,6 +445,7 @@ html.js .packTile:nth-child(5) { animation-delay: .58s; }
   border: 0;
   border-radius: var(--radius-sm);
   background: var(--accent);
+  z-index: 30;
   color: var(--on-fill);
   font-size: 11.5px;
   font-weight: 600;
@@ -452,43 +453,86 @@ html.js .packTile:nth-child(5) { animation-delay: .58s; }
   white-space: nowrap;
 }
 
+/* WHY THE DOWNLOADS LIST FLOATS: pressing "Unduhan lain" used to grow the card and shove the whole row below it, so every press read as a relapse; the list now opens over what is beneath the card, like every menu on the web, and nothing moves. */
+
 .browser .more {
-  margin-top: 12px;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  background: var(--surface-soft);
+  position: relative;
+  margin-top: auto;
 }
 
 .browser .more > summary {
-  padding: 9px 12px;
-  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  padding: 11px 13px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
   color: var(--ink);
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
   list-style: none;
+  transition: border-color .18s var(--ease);
 }
 
+.browser .more > summary:hover { border-color: var(--line-strong); }
 .browser .more > summary::-webkit-details-marker { display: none; }
-.browser .more > summary::after { content: "+"; float: right; color: var(--muted); }
-.browser .more[open] > summary::after { content: "−"; font-size: 15px; color: var(--accent); }
+.browser .more > summary::after {
+  content: "+";
+  color: var(--muted);
+  font: 500 15px/1 var(--mono);
+  transition: transform .18s var(--ease);
+}
+.browser .more[open] > summary::after { transform: rotate(45deg); color: var(--ink); }
+.browser .more[open] > summary { border-color: var(--line-strong); }
 
 .browser .more-list {
   margin: 0;
-  padding: 0 8px 8px;
+  padding: 8px 6px 6px;
   list-style: none;
+}
+
+html.js .browser .more-list {
+  position: absolute;
+  z-index: 30;
+  top: calc(100% + 8px);
+  right: 0;
+  left: 0;
+  display: grid;
+  gap: 2px;
+  padding: 6px;
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-6px);
+  transition: opacity .18s var(--ease), transform .22s var(--ease), visibility .18s;
+}
+
+html.js .browser .more[open] .more-list {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.js .browser .more-list { transition: none; }
 }
 
 .browser .more-list a {
   display: block;
-  padding: 7px 8px;
+  padding: 9px 10px;
   border-radius: 8px;
-  color: var(--accent);
+  color: var(--ink);
   font-size: 12.5px;
   text-decoration: none;
 }
 
-.browser .more-list a:hover { background: var(--surface); color: var(--accent-strong); }
+.browser .more-list a:hover { background: var(--surface-2); }
 
 /* WHY THE STEPS KEEP THE SITE'S OWN GRAMMAR: the site already ships an ordered-steps block with a leading-zero counter, accent ink and 44px of air; a second copy here incremented the counter twice and painted the steps in two designs at once. */
 
@@ -500,7 +544,7 @@ html.js .packTile:nth-child(5) { animation-delay: .58s; }
 
 
 
-h2 { margin: clamp(36px, 5vh, 56px) 0 10px; font-size: clamp(22px, 2.4vw, 28px); letter-spacing: -.028em; }
+h2 { margin: clamp(36px, 5vh, 56px) 0 12px; font-size: clamp(22px, 2.4vw, 28px); letter-spacing: -.028em; }
 h2:first-child { margin-top: 0; }
 
 p, li { color: var(--muted); }
@@ -570,6 +614,50 @@ pre {
   max-width: 760px;
   margin: 0 auto;
 }
+
+/* WHY THE SECTIONS FOLD: the two answers that take more than a sentence — the install steps and the digest check — open on demand instead of stacking their full height on the page. */
+
+.sectionFold {
+  border-top: 1px solid var(--line);
+  margin: clamp(26px, 3.5vh, 36px) 0 0;
+  padding-top: clamp(16px, 2vh, 22px);
+}
+
+.sectionFold:first-child {
+  border-top: 0;
+  margin-top: 0;
+  padding-top: 0;
+}
+
+.sectionFold > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.sectionFold > summary::-webkit-details-marker { display: none; }
+
+.sectionFold > summary h2 {
+  margin: 0;
+  font-size: clamp(22px, 2.4vw, 28px);
+}
+
+.sectionFold > summary::after {
+  content: "+";
+  color: var(--muted);
+  font: 500 22px/1 var(--mono);
+  transition: transform .18s var(--ease), color .18s var(--ease);
+}
+
+.sectionFold > summary:hover::after { color: var(--ink); }
+.sectionFold[open] > summary::after { transform: rotate(45deg); }
+
+.sectionFold .steps { margin-top: 20px; }
+
+.foldBody { margin-top: 16px; }
 
 .btn-row {
   margin: 0;

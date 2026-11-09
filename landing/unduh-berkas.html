@@ -170,19 +170,22 @@
 }
     </script>
     <div class="downloadBody centered" data-reveal>
-    <h2 data-i18n="steps.title">Lima langkah memasang dari arsip</h2>
-    <ol class="steps">
+    <details class="sectionFold" open>
+      <summary><h2 data-i18n="steps.title">Lima langkah memasang dari arsip</h2></summary>
+      <ol class="steps">
       <li><strong>Ekstrak arsip.</strong> Ke folder tetap, misalnya <code>C:\OperaAgent\</code>.</li>
       <li><strong>Buka halaman extension.</strong> <code>chrome://extensions</code>.</li>
       <li><strong>Aktifkan mode pengembang.</strong> Toggle pojok atas.</li>
       <li><strong>Muat folder.</strong> Load unpacked — pilih folder berisi <code>manifest.json</code>.</li>
       <li><strong>Pasangkan device.</strong> <a href="./dashboard.html">Dashboard</a>, tempel kode pairing.</li>
-    </ol>
+      </ol>
+    </details>
 
-    <h2 id="verifikasi" data-i18n="verify.title">Verifikasi berkas</h2>
-
-    <p data-i18n-html="verify.intro">Sidik jari berubah setiap rilis. Bandingkan dengan server:</p>
-    <div class="verifyPanel">
+    <details class="sectionFold">
+      <summary><h2 id="verifikasi" data-i18n="verify.title">Verifikasi berkas</h2></summary>
+      <div class="foldBody">
+      <p data-i18n-html="verify.intro">Sidik jari berubah setiap rilis. Bandingkan dengan server:</p>
+      <div class="verifyPanel">
       <div class="verifyBlock">
         <span class="verifyTag">server</span>
         <pre><code aria-hidden="true"><span class="typewriter" data-type="curl.exe -sI https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/download/opera-agent.zip | findstr /i x-opera-sha256"></span><span class="cursor" aria-hidden="true"></span></code></pre><noscript><pre><code>curl.exe -sI https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/download/opera-agent.zip | findstr /i x-opera-sha256</code></pre></noscript>
@@ -191,8 +194,10 @@
         <span class="verifyTag">lokal</span>
         <pre><code>Get-FileHash .\opera-agent-*.zip -Algorithm SHA256</code></pre>
       </div>
-    </div>
-    <p data-i18n="verify.match">Kedua angka harus sama.</p>
+      </div>
+      <p data-i18n="verify.match">Kedua angka harus sama.</p>
+      </div>
+    </details>
 
     <h2 data-i18n="support.title">Browser yang didukung</h2>
     <p data-i18n-html="support.intro">Chromium: Chrome, Edge, Brave, Opera, Vivaldi. Firefox tidak punya izin <code>debugger</code>.</p>
