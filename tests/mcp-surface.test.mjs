@@ -23,7 +23,7 @@ const source = await mcpSurfaceSource();
 const config = JSON.parse(await readFile(configUrl, 'utf8'));
 const authSource = await readFile(authUrl, 'utf8');
 const consentSource = await readFile(consentUrl, 'utf8');
-const siteVercelConfig = siteHeaders();
+const siteHeadersFile = siteHeaders();
 const supabaseConfig = await readFile(supabaseConfigUrl, 'utf8');
 const contract = JSON.parse(
   fs.readFileSync(new URL('./fixtures/mcp-contract-v1.json', import.meta.url), 'utf8')
@@ -724,8 +724,8 @@ test('hosted OAuth consent artifact has no embedded privileged secret', () => {
   assert.match(consentSource, /JSON\.stringify\(\{ action \}\)/);
   assert.doesNotMatch(consentSource, /service_role|OPERA_AGENT_MCP_TOKEN|eyJhbGci/);
   assert.doesNotMatch(consentSource, /type="password"/i, 'the screen asks for no password of ours');
-  assert.ok(siteVercelConfig.headers.some((entry) => entry.source === '/oauth/consent'), 'and the site serves it under the policy that permits only Supabase');
-  const policy = siteVercelConfig.headers.find((entry) => entry.source === '/oauth/consent').headers.find((h) => h.key === 'Content-Security-Policy').value;
+  assert.ok(siteHeadersFile.headers.some((entry) => entry.source === '/oauth/consent'), 'and the site serves it under the policy that permits only Supabase');
+  const policy = siteHeadersFile.headers.find((entry) => entry.source === '/oauth/consent').headers.find((h) => h.key === 'Content-Security-Policy').value;
   assert.match(policy, /connect-src https:\/\/\*\.supabase\.co/, 'the consent page reaches Supabase and nothing else');
 });
 
