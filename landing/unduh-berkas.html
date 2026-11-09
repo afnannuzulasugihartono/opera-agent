@@ -154,8 +154,6 @@
     "fallback.body": "If the policy is refused, or your browser is not in the list above, take the <a href=\"#berkas\">.zip archive</a> from the cards above and load it yourself. This works in every Chromium browser.",
     "verify.title": "Verify the files",
     "verify.match": "Both numbers must match.",
-    "policy.title": "Company machines",
-    "policy.named": "the name carries the build version - two downloads never look the same.",
     "support.title": "Which browsers are supported",
     "support.th.crx": ".crx file",
     "support.th.zip": ".zip archive",
@@ -176,7 +174,7 @@
     "verify.intro": "The fingerprint changes every release. Compare with the server:",
     "policy.enterprise": "<code>.crx</code> for <strong>enterprise-managed</strong> machines. Home users take the <a href=\"#berkas\">zip archive</a> above.",
     "policy.crx": "Download the latest .crx",
-    "policy.meta": "On <code>chrome://policy</code>, unmanaged machines read BLOCKED. Loading the <code>.crx</code> directly is refused - not a broken file.",
+    "policy.meta": "On <code>chrome://policy</code>, unmanaged machines read BLOCKED, and the file’s name carries the build version you received.",
     "support.intro": "Runs on Chromium: Chrome, Edge, Brave, Opera, Vivaldi. Firefox no - no <code>debugger</code> permission.",
     "support.no": "refused",
     "support.yes": "works",
@@ -213,12 +211,8 @@
 
     <p data-i18n-html="policy.enterprise"><code>.crx</code> untuk mesin <strong>enterprise-managed</strong>. pengguna rumahan pakai <a href="#berkas">arsip zip</a> di atas.</p>
 
-    <section class="policyBox">
-      <h2 data-i18n="policy.title">Mesin perusahaan</h2>
-      <p><a class="btn" href="https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/download/opera-agent.crx" download data-i18n="policy.crx">Unduh berkas .crx terbaru</a></p>
-      <p class="meta" data-i18n="policy.named">namanya membawa versi build - jadi dua unduhan tidak terlihat sama.</p>
-      <p class="meta" data-i18n-html="policy.meta">Di <code>chrome://policy</code>, mesin unmanaged berstatus BLOCKED. Memuat <code>.crx</code> langsung ditolak &mdash; bukan kerusakan berkas.</p>
-    </section>
+    <p><a class="btn" href="https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/download/opera-agent.crx" download data-i18n="policy.crx">Unduh berkas .crx terbaru</a></p>
+    <p class="meta" data-i18n-html="policy.meta">Di <code>chrome://policy</code>, mesin unmanaged berstatus BLOCKED. namanya membawa versi build - jadi dua unduhan tidak terlihat sama.</p>
 
     <h2 data-i18n="support.title">Browser mana yang didukung</h2>
     <p data-i18n-html="support.intro">Berjalan di Chromium: Chrome, Edge, Brave, Opera, Vivaldi. Firefox tidak didukung - Firefox tidak punya izin <code>debugger</code>.</p>

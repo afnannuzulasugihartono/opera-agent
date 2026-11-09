@@ -14,7 +14,7 @@
   align-items: center;
   max-width: none;
   margin: 24px 0 0;
-  padding-bottom: clamp(48px, 6vh, 96px);
+  padding-bottom: clamp(28px, 4vh, 56px);
 }
 
 .hero-text h1 {
@@ -145,7 +145,7 @@
   justify-items: center;
   align-content: center;
   gap: 0;
-  padding: 44px 28px 38px;
+  padding: 34px 24px 30px;
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: var(--surface);
@@ -166,7 +166,7 @@
   grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 12px;
   width: 100%;
-  margin: 34px 0 0;
+  margin: 26px 0 0;
   padding: 0;
   list-style: none;
 }
@@ -221,7 +221,7 @@ html.js .packTile:nth-child(5) { animation-delay: .58s; }
 /* WHY THE SCREENSHOT IS THE ARGUMENT: a product picture of the product doing the product's job is the only image a software page needs; the caption says what the picture is, plainly. */
 
 .artifact {
-  margin: clamp(56px, 7vh, 88px) 0 0;
+  margin: clamp(36px, 5vh, 60px) 0 0;
 }
 
 .artifact img {
@@ -254,7 +254,7 @@ html.js .packTile:nth-child(5) { animation-delay: .58s; }
   max-width: 720px;
   display: grid;
   gap: 0;
-  margin: clamp(56px, 7vh, 88px) 0 0;
+  margin: clamp(36px, 5vh, 60px) 0 0;
 }
 
 .fold {
@@ -309,7 +309,7 @@ html.js .packTile:nth-child(5) { animation-delay: .58s; }
 .heroFiles {
   max-width: 760px;
   margin: 0 auto;
-  padding: clamp(36px, 5vh, 64px) 0 clamp(28px, 4vh, 44px);
+  padding: clamp(24px, 3.5vh, 44px) 0 clamp(22px, 3vh, 36px);
   text-align: center;
 }
 
@@ -334,7 +334,7 @@ html.js .packTile:nth-child(5) { animation-delay: .58s; }
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 16px;
-  margin: 0 0 clamp(56px, 7vh, 80px);
+  margin: 0 0 clamp(40px, 5vh, 60px);
 }
 
 @media (max-width: 1040px) {
@@ -525,25 +525,6 @@ html.js .packTile:nth-child(5) { animation-delay: .58s; }
 
 
 
-.policyBox {
-  margin: clamp(36px, 5vh, 56px) 0 0;
-  padding: 26px 26px 24px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: var(--surface);
-}
-
-.policyBox h2 {
-  margin: 0 0 10px;
-  color: var(--ink);
-  font-size: 16px;
-  letter-spacing: -.018em;
-}
-
-.policyBox p { margin: 0 0 10px; color: var(--muted); font-size: 13.5px; line-height: 1.58; }
-.policyBox p:last-of-type { margin-bottom: 0; }
-
-.policyBox strong { color: var(--ink); }
 
 h2 { margin: clamp(36px, 5vh, 56px) 0 10px; font-size: clamp(22px, 2.4vw, 28px); letter-spacing: -.028em; }
 h2:first-child { margin-top: 0; }
@@ -560,6 +541,10 @@ code {
   background: var(--surface-2);
   color: var(--ink);
   overflow-wrap: anywhere;
+}
+
+pre + pre {
+  margin-top: 12px;
 }
 
 pre {
@@ -583,7 +568,9 @@ pre {
 }
 
 .downloadBody.centered .fallbackBody {
-  margin: 0 0 clamp(28px, 4vh, 40px);
+  margin: 0 0 22px;
+  text-align: left;
+  font-size: 13.5px;
 }
 
 .btn-row {
@@ -638,7 +625,8 @@ pre {
 .typewriter {
   display: inline-block;
   overflow: hidden;
-  white-space: pre;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
   vertical-align: bottom;
   max-width: 100%;
 }
