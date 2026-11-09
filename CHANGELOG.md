@@ -8,6 +8,7 @@ What each release contained, and why. The notes live in
 
 | Release | Date | Notes |
 | --- | --- | --- |
+| 1.6.34 | 2026-11-09 | [the local bridge retries once its socket drops](docs/releases/1.6.34.md) |
 | 1.6.33 | 2026-11-09 | [no websocket at a dead bridge, and the second browser keeps its name](docs/releases/1.6.33.md) |
 | 1.6.32 | 2026-11-09 | [the everyday browser names itself to the meter](docs/releases/1.6.32.md) |
 | 1.6.31 | 2026-11-09 | [a second browser is a device, not a rejection](docs/releases/1.6.31.md) |

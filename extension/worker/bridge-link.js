@@ -227,9 +227,6 @@ export function ensureBridgeLink() {
     bridgeUrl = found.url;
     note(found.discovered ? `port ${found.port} discovered` : `port ${found.port} configured`);
     const paired = pairing?.paired === true ? pairing : null;
-    // WHY THE HELLO CARRIES THE PAIRED CREDENTIALS.
-    // The loopback bridge meters each session against the account that owns this browser, and it cannot meter a stranger with no token: this one ask is what tells the meter who is driving.
-    // A browser that is not paired sends an empty token as before, and the meter refuses the session with the reason, which is the honest answer for an unmetered drive.
     client = createSocketClient({
       url: found.url,
       token: paired ? String(pairing.deviceToken || '') : '',
@@ -239,8 +236,15 @@ export function ensureBridgeLink() {
       execute,
       onState: (event) => {
         if (mine !== generation) return;
-        if (event?.status === 'ready') note('ready');
-        if (event?.status === 'error') stats.lastError = String(event.message || 'error').slice(0, 300);
+        const s = event?.status;
+        if (s === 'connected') {
+          running = true;
+          note('ready');
+          return;
+        }
+        if (s === 'connecting' || s === 'unsent' || s === 'skipped') return;
+        running = false;
+        if (s === 'error') stats.lastError = String(event.message || 'error').slice(0, 300);
       }
     });
     client.start();
