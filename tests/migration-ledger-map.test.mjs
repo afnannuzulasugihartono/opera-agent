@@ -68,11 +68,12 @@ test('the counts the map states are the counts the map holds', () => {
   assert.equal(map.resolved, map.map.filter((entry) => entry.remote).length);
 });
 
-test('the three files applied outside the ledger are the ones the database proves', () => {
+test('the four files applied outside the ledger are the ones the database proves', () => {
   const outside = map.map.filter((entry) => entry.evidence === 'applied-outside-ledger').map((entry) => entry.file).sort();
   assert.deepEqual(outside, [
     '20261015090000_opera_billing.sql',
     '20261015091000_opera_invoice_id_text.sql',
+    '20261109090000_opera_account_plans.sql',
     '20261109120000_opera_device_instance.sql'
-  ], 'opera_invoices and opera_price_list exist, the device identity column exists, and no ledger row carries that SQL');
+  ], 'opera_invoices and opera_price_list exist, opera_account_plans exists, the device identity column exists, and no ledger row carries that SQL');
 });
