@@ -81,6 +81,13 @@ test('a configured port that answers is the one used, and it is named', async ()
   assert.equal(found.discovered, false, 'and the answer says it was configured rather than found');
 });
 
+test('with nothing listening on any candidate port, discovery answers no-port and no-url', async () => {
+  const found = await discoverBridge([]);
+  assert.equal(found.url, '', 'and the extension will not then open a WebSocket to a dead port');
+  assert.equal(found.port, 0);
+  assert.equal(found.discovered, false);
+});
+
 test('a port with nothing on it answers no, and one with the bridge answers yes', async () => {
   assert.equal(await probePort(19999), false, 'a dead port is detected rather than assumed');
   assert.equal(await probePort(PORT), true, 'and the port this suite is driving is found');

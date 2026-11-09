@@ -56,6 +56,30 @@ test('two browsers connect at once, and the merged list names both', async () =>
   await bridge.close();
 });
 
+test('a browser that disconnects and reconnects keeps its namespaced tab ids', async () => {
+  const bridge = createBridgeServer({ cloud: fakeCloud(), port: 0, heartbeatMs: 1000 });
+  await bridge.listen();
+  const { port } = bridge.address();
+
+  const once = async (instanceId, url) => {
+    const device = createScriptedDevice({ url: `ws://127.0.0.1:${port}`, instanceId, handle: () => [{ id: 3, url, title: instanceId }] });
+    await device.connected;
+    await sleep(50);
+    const answer = await bridge.send('tabs.list', {}, { timeoutMs: 2000 });
+    await device.stop();
+    await sleep(80);
+    return answer.result.find((tab) => tab.url === url)?.id;
+  };
+
+  const health = await fetch(`http://127.0.0.1:${port}/health`).then((response) => response.json());
+  const id1 = await once('browser-chrome', 'https://reconnect/');
+  // After a fresh connection cycle, a fresh tab read should keep the same namespaced id because the slot map is keyed by instanceId.
+  const id2 = await once('browser-chrome', 'https://reconnect/');
+  assert.equal(id1, id2, 'the same browser keeps the same tab id across reconnects');
+
+  await bridge.close();
+});
+
 test('a command for one browser reaches only that browser, and carries its tab number', async () => {
   const bridge = createBridgeServer({ cloud: fakeCloud(), port: 0, heartbeatMs: 1000 });
   await bridge.listen();
