@@ -62,7 +62,7 @@ export const STRAY_FILE_TAB = 'file://';
 export const TOOLS = Object.freeze([
   {
     name: 'browser_status',
-    description: 'Report which Chromium browsers are installed, which debugging port is live, and whether a browser window is in front on this machine. A page cannot see whether the window in front of it is the one the operating system has in front, so when clicks and keys go nowhere this is the call that says why.',
+    description: 'Report which Chromium browsers are installed, which port is live, and which browsers the loopback bridge holds linked - by name, id, slot and port. A page cannot see whether the window in front of it is the one the operating system has in front, so when clicks and keys go nowhere this is the call that says why.',
     inputSchema: { type: 'object', properties: {}, required: [] }
   },
   {

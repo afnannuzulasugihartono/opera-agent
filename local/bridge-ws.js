@@ -394,7 +394,7 @@ export function createBridgeServer({ port = 9451, host = '127.0.0.1', heartbeatM
         linked: live.length > 0,
         deviceId: live[0]?.id ?? null,
         deviceInstanceId: live[0]?.instanceId ?? null,
-        devices: live.map((device) => ({ slot: device.slot, id: device.id, instanceId: device.instanceId || null, extensionVersion: device.extensionVersion || null, connectedAt: device.connectedAt, meter: meterOf(device) })),
+        devices: live.map((device) => ({ slot: device.slot, id: device.id, instanceId: device.instanceId || null, deviceName: device.deviceName || null, extensionVersion: device.extensionVersion || null, connectedAt: device.connectedAt, meter: meterOf(device) })),
         queued: queue.length,
         waiting: waiting.size,
         lastHeardMsAgo: live[0]?.lastHeardAt ? now() - live[0].lastHeardAt : null,
@@ -479,6 +479,7 @@ export function createBridgeServer({ port = 9451, host = '127.0.0.1', heartbeatM
       const message = parsed.message;
       if (message.type === 'hello') {
         device.instanceId = String(message.instanceId || device.id).slice(0, 64);
+        device.deviceName = String(message.deviceName || '').trim().slice(0, 128) || null;
         device.extensionVersion = String(message.extensionVersion || '').slice(0, 32);
         if (device.handshaken) {
           if (!device.socket.closed) device.socket.send(JSON.stringify({ type: 'ready', protocolVersion: DEVICE_PROTOCOL_VERSION, serverTime: now() }));
@@ -550,7 +551,7 @@ export function createBridgeServer({ port = 9451, host = '127.0.0.1', heartbeatM
     state: () => ({
       linked: attached.size > 0,
       deviceId: readyDevices()[0]?.id ?? null,
-      devices: readyDevices().map((device) => ({ slot: device.slot, id: device.id, instanceId: device.instanceId || null, meter: meterOf(device) })),
+      devices: readyDevices().map((device) => ({ slot: device.slot, id: device.id, instanceId: device.instanceId || null, deviceName: device.deviceName || null, meter: meterOf(device) })),
       queued: queue.length,
       waiting: waiting.size,
       lastHeardMsAgo: readyDevices()[0]?.lastHeardAt ? now() - readyDevices()[0].lastHeardAt : null,
