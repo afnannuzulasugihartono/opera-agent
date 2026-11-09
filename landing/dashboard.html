@@ -500,7 +500,7 @@
       node.dataset.done = String(done);
       node.dataset.all = String(all);
       if (!motionOK || !('IntersectionObserver' in window)) {
-        node.textContent = `${done} dari ${all}`;
+        node.textContent = fmt(w('countOf'), { done, all });
         return;
       }
       const seen = new IntersectionObserver((entries) => {
@@ -509,7 +509,7 @@
         let shown = 0;
         const tick = setInterval(() => {
           shown = Math.min(done, shown + Math.max(1, Math.ceil(done / 40)));
-          node.textContent = `${shown} dari ${all}`;
+          node.textContent = fmt(w('countOf'), { done: shown, all });
           if (shown >= done) clearInterval(tick);
         }, 20);
       }, { threshold: 0.4 });
@@ -529,9 +529,9 @@
         const steps = [[60, 1, 'second'], [3600, 60, 'minute'], [86400, 3600, 'hour'], [2592000, 86400, 'day'], [31536000, 604800, 'week']];
         return (iso) => {
           // WHY the empty check and not just the NaN check below: new Date(null) is the epoch, not NaN, so a device that never checked in rendered as "57 tahun yang lalu" instead of never.
-          if (iso === null || iso === undefined || iso === '') return 'belum pernah';
+          if (iso === null || iso === undefined || iso === '') return w('neverSeen');
           const then = new Date(iso).getTime();
-          if (Number.isNaN(then)) return 'belum pernah';
+          if (Number.isNaN(then)) return w('neverSeen');
           const seconds = Math.round((then - Date.now()) / 1000);
           for (const [limit, divisor, unit] of steps) {
             if (Math.abs(seconds) < limit) return format.format(Math.round(seconds / divisor), unit);
@@ -539,7 +539,7 @@
           return format.format(Math.round(seconds / 31536000), 'year');
         };
       } catch (error) {
-        return (iso) => String(iso || 'belum pernah');
+        return (iso) => String(iso || w('neverSeen'));
       }
     })();
 
@@ -575,7 +575,7 @@
       } catch (error) {
         // WHY the temporary branch comes first: a renewal that could not reach Auth is a network problem, and answering it with a sign-out is what made every reader look like the product had forgotten them.
         if (temporary) {
-          $('status').textContent = 'Tidak bisa menghubungi layanan auth. Sesi Anda tetap aman; coba lagi sebentar.';
+          $('status').textContent = w('authUnreachable');
           $('status').className = 'status warn';
           return null;
         }
@@ -665,8 +665,14 @@
         planAgo: 'terpakai hari ini',
         deviceUnit: 'perintah',
         rowsUnit: 'baris',
+        countOf: '{done} dari {all}',
+        neverSeen: 'belum pernah',
+        authUnreachable: 'Tidak bisa menghubungi layanan auth. Sesi Anda tetap aman; coba lagi sebentar.',
+        devicesLoadFailed: 'Belum bisa memuat device. Coba lagi sebentar.',
+        konsolTableFailed: 'Konsol tidak bisa membaca tabel itu.',
         showNav: 'Tampilkan navigasi',
         hideNav: 'Sembunyikan navigasi',
+        konsolOperatorOnly: '{n} tabel di sini hanya untuk akun operator.',
         pairWorking: 'Membuat kode…',
         pairCopied: 'Kode disalin. Tempel di popup extension.',
         runFailedPrefix: 'Gagal:',
@@ -750,8 +756,14 @@
         planAgo: 'used today',
         deviceUnit: 'commands',
         rowsUnit: 'rows',
+        countOf: '{done} of {all}',
+        neverSeen: 'never',
+        authUnreachable: "Can't reach the auth service. Your session is safe; try again in a moment.",
+        devicesLoadFailed: "Can't load the devices right now. Try again in a moment.",
+        konsolTableFailed: 'The console could not read that table.',
         showNav: 'Show navigation',
         hideNav: 'Hide navigation',
+        konsolOperatorOnly: '{n} tables here are for the operator account only.',
         pairWorking: 'Creating the code…',
         pairCopied: 'Code copied. Paste it into the extension popup.',
         runFailedPrefix: 'Failed:',
@@ -1097,7 +1109,7 @@
         data = null;
       }
       if (!data?.ok) {
-        $('status').textContent = 'Belum bisa memuat device. Coba lagi sebentar.';
+        $('status').textContent = w('devicesLoadFailed');
         $('status').className = 'status warn';
         return;
       }
@@ -1380,7 +1392,8 @@
         // WHY the clear: the static header row says "Memuat…" only while the first load is in flight; a first load that fails must not leave it promising data that never arrived.
         // A later failure keeps the last good grid.
         if (!$('konsolRows').children.length) $('konsolHead').innerHTML = '';
-        konsolSay(say(data?.error || 'Konsol tidak bisa membaca tabel itu.'), 'warn');
+        const tableRefusal = data?.error ? say(String(data.error)) : w('konsolTableFailed');
+        konsolSay(tableRefusal, 'warn');
         return;
       }
       konsol.cols = data.columns || [];
@@ -1460,7 +1473,7 @@
       const first = entries.find((entry) => entry.readable);
       if (first && !konsol.table) await konsolOpen(first.name);
       const locked = entries.filter((entry) => !entry.readable).length;
-      if (locked && !konsol.table) konsolSay(`${locked} tabel di sini hanya untuk akun operator.`, 'warn');
+      if (locked && !konsol.table) konsolSay(fmt(w('konsolOperatorOnly'), { n: locked }), 'warn');
     }
 
     async function konsolInit() {

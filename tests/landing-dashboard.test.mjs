@@ -101,7 +101,7 @@ test('the device list refreshes itself after pairing elsewhere', () => {
   assert.match(html, /async function refreshDevices\(\)/, 'the list fetch is a repeatable function');
   assert.match(html, /setInterval\(\(\) => \{ if \(!document\.hidden\) refreshDevices\(\); \}, 10000\)/, 'it polls every 10 seconds while visible');
   assert.match(html, /visibilitychange/, 'and on every return to the tab');
-  assert.match(html, /if \(iso === null \|\| iso === undefined \|\| iso === ''\) return 'belum pernah'/, 'a device that never checked in says so instead of 1970');
+  assert.match(html, /if \(iso === null \|\| iso === undefined \|\| iso === ''\) return w\('neverSeen'\)/, 'a device that never checked in says so instead of 1970');
 });
 
 test('the dashboard says whether the extension is installed in this browser', () => {
