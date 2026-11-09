@@ -14,6 +14,7 @@ const USAGE = `opera-agent-mcp <mode>
   local   drive the everyday browser on this machine, over the loopback bridge
   cloud   drive it through the hosted Opera Agent server
   auth    sign in with a browser and keep the token beside this install
+  doctor  print what is connected, the plan, and what the plan allows
 
   --help  print this
 `;
@@ -26,7 +27,10 @@ if (mode === 'help' || process.argv.includes('--help')) {
   process.exit(0);
 }
 
-if (mode === 'local') {
+if (mode === 'doctor') {
+  const { doctor } = await import('../doctor.js');
+  process.exitCode = await doctor();
+} else if (mode === 'local') {
   await import('./opera-local.js');
 } else if (mode === 'cloud') {
   const { serveCloud } = await import('../cloud.js');

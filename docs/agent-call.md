@@ -1,13 +1,18 @@
 # Calling Opera Agent
 
-Three surfaces reach the same browser. Pick the one that matches where the agent
-runs and where the browser already is.
+One command, two modes. Pick the one that matches where the agent runs and
+where the browser already is.
 
-| surface | the agent runs | the browser is | the caller needs |
-|---|---|---|---|
-| hosted MCP | anywhere | the paired device's browser | an account, an OAuth login, a paired device |
-| local stdio MCP | on the browser's machine | a browser with a debugging port | Node 20, a Chromium |
-| the extension road | on the browser's machine | the everyday browser | the extension loaded, the loopback bridge |
+| mode | the browser | the caller needs |
+|---|---|---|
+| `opera-agent-mcp local` | the everyday profile on this machine | Node 20+, the extension, a paired device |
+| `opera-agent-mcp cloud` | the paired device's browser | an account, an OAuth login, a paired device |
+
+The install is one command:
+
+```bash
+npm i -g opera-agent-mcp
+```
 
 ## 1. Hosted MCP
 
@@ -71,7 +76,10 @@ What a caller gets wrong: the device header names which of your devices does
 the work, and the server uses the first paired device when the header is
 missing. A device that is offline is a device that answers nothing. The server
 adds 35 tools to the browser primitives, and every one of them acts on the
-paired device's browser, not on the machine the agent runs on.
+paired device's browser, not on the machine the agent runs on. `browser_status`
+answers with the plan, the quota and the remaining count; a call past the
+quota is answered `PLAN_LIMIT_REACHED` with the plan named, and the local
+road shares the same daily count.
 
 ### What a call answers
 
@@ -138,12 +146,13 @@ does not shrink when the list is cleared. Twenty distinct faults are kept;
 if the answer would not fit, the oldest rows are dropped and the answer says
 `errorsTruncated` with `omittedErrors`.
 
-## 2. Local stdio MCP
+## 2. `opera-agent-mcp local`
 
-The server speaks MCP over stdio and drives a browser on this machine.
+The same tools over stdio, driving the everyday browser on this machine
+through the loopback bridge — no cloud round trip per command.
 
 ```bash
-node local/bin/opera-local.js
+npm i -g opera-agent-mcp
 ```
 
 Point a client at it:
@@ -151,9 +160,9 @@ Point a client at it:
 ```json
 {
   "mcpServers": {
-    "opera-local": {
-      "command": "node",
-      "args": ["local/bin/opera-local.js"]
+    "opera-agent": {
+      "command": "opera-agent-mcp",
+      "args": ["local"]
     }
   }
 }
@@ -161,38 +170,52 @@ Point a client at it:
 
 | variable | default | meaning |
 |---|---|---|
-| `OPERA_LOCAL_PORT` | `9333` | the debugging port to drive |
-| `OPERA_LOCAL_BROWSER` | first installed | which browser a session that opens one is aimed at |
-| `OPERA_LOCAL_TRANSPORT` | unset (auto) | unset picks the bridge when an extension is linked, CDP otherwise; `bridge`/`cdp` force one |
 | `OPERA_BRIDGE_PORT` | `9451` | the loopback port the extension dials into |
+| `OPERA_AGENT_HOME` | `~/.opera-agent` | where the paired device file lives |
+| `OPERA_AGENT_MCP_CONFIG_HOME` | platform config dir | where the OAuth token lives |
+| `OPERA_AGENT_MCP_TOKEN` | unset | a static token wins over the OAuth login |
 
-What a caller gets wrong: Chrome refuses a debugging port on the Default profile,
-so the everyday window cannot be driven over CDP at all. A client pointed at port
-9333 with nothing listening there is refused with `No browser is listening on port 9333.` — the server does not open a second
-browser. Start a browser with a debugging port the way
-[`local/README.md`](../local/README.md) shows, or link the extension and let the
-bridge carry the drive. `browser_status` answers with the port the drive is
-really on, so read it first: `port: 9451` means the extension road, `port: 9333`
-means a debugging port.
+### The meter, and what refuses you
+
+The local drive is metered where it happens: the loopback bridge asks the
+cloud once per session (`session_open`, with the device credentials the
+extension's hello carries), counts locally, and refuses the session when the
+cloud cannot be reached. A command past the session allowance is answered
+`PLAN_LIMIT_REACHED` with the plan named. The usage is reported when the
+session ends, so the local road and the hosted road share one daily count
+per account — `plan.pilot` carries 200 commands per day and 50 per session;
+`plan.firm` carries 5000 and 500. The gate lives in the bridge and in the
+hosted MCP, never in readable client code. `opera-agent-mcp doctor` prints
+the bridge, the device, the extension version, the plan, and the quota.
+
+`browser_status` answers with the port the drive is really on, so read it
+first: `port: 9451` means the extension road.
 
 The server advertises 54 tools. `guide()` returns them as tasks rather than a
 list, and the full list is in [`local/README.md`](../local/README.md).
 
-## 3. The extension road
+## 3. `opera-agent-mcp cloud` and the extension road
 
 The extension in `extension/` opens a socket to this machine and carries CDP
-both ways, so the everyday browser can be driven without a debugging port and
-without a cloud round trip. The socket is one WebSocket on `127.0.0.1:9451`.
+both ways, so the everyday browser can be driven without a debugging port. The
+socket is one WebSocket on `127.0.0.1:9451`.
 
 1. Install the extension. The archive is on the site's download page, and
    `chrome://extensions` with developer mode on loads it unpacked.
-2. Start the local server with `OPERA_LOCAL_TRANSPORT=bridge`.
-3. Read `browser_status`. `port: 9451` means the extension is linked.
+2. Pair the browser in the dashboard — the meter needs a paired device to name
+   the account the session belongs to.
+3. Run `opera-agent-mcp doctor`. It prints the bridge, the device, the
+   extension version, the plan, and the quota; a `degraded` verdict names the
+   one fix that applies.
 
-What a caller gets wrong: the bridge holds one device socket, so a second
-extension connection evicts the first. Two drivers on one machine share the
-bridge rather than fight for it, and the everyday Chrome can only be linked to
-one bridge at a time.
+`opera-agent-mcp cloud` points the same tools at the hosted server through
+OAuth (or `OPERA_AGENT_MCP_TOKEN`), for machines and callers that should pay
+through the account instead of the loopback road.
+
+What a caller gets wrong: the bridge keeps every browser it is given and names
+each one apart, so the second browser on the machine is a device too, not a
+rejection. Every new browser re-pairs as itself instead of displacing the
+other's token.
 
 ### The record
 
@@ -216,7 +239,8 @@ with the hash in the record; it does not drive a browser again.
 
 ## Which road is this product on?
 
-The hosted server and the local driver are two ways to call the same tools. The
-hosted one needs an account and a paired device; the local one needs a browser
-on the machine. The extension is what makes the local road reach the browser
-you are already using.
+The hosted server and the installed package are two modes of one command. The
+cloud mode needs an account and a paired device; the local mode needs the
+extension, a paired browser, and one cloud call per session. Both roads are
+metered by the same shared daily count, with the gate in the bridge and in the
+hosted MCP — never in readable client code.

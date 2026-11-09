@@ -1,4 +1,4 @@
-// @last-edited: 2026-11-06 UTC+7.
+// @last-edited: 2026-11-09 UTC+7.
 // @title: agent-call-docs — the guide a reader is sent to must name the surfaces that exist and the tools that are registered.
 // @state: the call guide, the local README, the pilot runbook, and the tool list they must agree with.
 // @dependencies: node:test, strict, node:fs, node:url, local/tools.js.
@@ -18,8 +18,9 @@ const tools = TOOLS.map((entry) => entry.name);
 
 test('the call guide names every surface that exists', () => {
   const guide = read('docs/agent-call.md');
-  assert.ok(guide.includes('opera-agent-mcp'), 'the hosted server is named');
-  assert.match(guide, /local\/bin\/opera-local\.js/, 'the local server is named');
+  assert.ok(guide.includes('opera-agent-mcp'), 'the installed command is named');
+  assert.match(guide, /opera-agent-mcp local/, 'the local mode is named');
+  assert.match(guide, /opera-agent-mcp cloud/, 'the cloud mode is named');
   assert.match(guide, /extension/, 'the extension road is named');
 });
 
@@ -29,38 +30,39 @@ test('the guide and the README agree with the tool list', () => {
   for (const tool of tools) assert.ok(readme.includes(tool), `the README must name ${tool}`);
 });
 
-test('every page a reader is sent to names the command that works today', () => {
+test('every page a reader is sent to names the install that works today', () => {
   const pages = [
     ['the guide', read('docs/agent-call.md')],
     ['the README', read('local/README.md')],
     ['the runbook', read('docs/product/pilot-runbook.md')]
   ];
   for (const [name, text] of pages) {
-    assert.match(text, /node local\/bin\/opera-local\.js/, `${name} must name the command that works from a clone`);
+    assert.match(text, /npm i -g opera-agent-mcp|npm install -g \./, `${name} must name the install that works today`);
   }
 });
 
-// WHY THE TRANSPORT DEFAULT IS LOCKED.
-// The driver asks the bridge on every call when the variable is unset, so "unset" is auto, not CDP - a reader told otherwise waits on a port nobody opened.
+// WHY THE ROAD IS LOCKED.
+// The debug port died with the loopback bridge; a reader told to pick a transport waits on a port nothing opens.
+// The docs must say the bridge is the one road.
 
-test('the guide and the README state the transport default the code implements', () => {
+test('the guide says the bridge is the one road, with no transport flag left', () => {
   const guide = read('docs/agent-call.md');
   const readme = read('local/README.md');
   for (const [name, text] of [['the guide', guide], ['the README', readme]]) {
-    assert.match(text, /unset \(auto\)/, `${name} says unset means auto`);
-    assert.doesNotMatch(text, /unset \(CDP\)/, `${name} does not claim unset means CDP`);
+    assert.doesNotMatch(text, /OPERA_LOCAL_TRANSPORT/, `${name} does not carry the dead flag`);
   }
-  assert.ok(guide.includes('bridge when an extension is linked'), 'the guide says what auto picks first');
+  assert.match(guide, /loopback bridge/i, 'the guide names the road');
 });
 
-// WHY THE PORT REFUSAL IS LOCKED.
-// The MCP server opens its session with launch:false, so a port with nothing listening is an error, not a second browser on a fresh profile.
+// WHY THE DOCTOR IS THE GATE FOR A BROKEN INSTALL.
+// The everyday browser was the silently failing case: a refuse with no reason reads as a broken extension.
+// The one command that answers what is connected, the plan, and the quota is the doctor.
 
-test('the guide says a port with nothing listening is refused, not answered with a second browser', () => {
+test('the guide names the doctor as the answer for a broken install', () => {
   const guide = read('docs/agent-call.md');
-  assert.ok(guide.includes('No browser is listening on port 9333'), 'the refusal the server gives is named');
-  assert.doesNotMatch(guide, /opens a second browser/, 'the guide does not claim the server opens a second browser');
-  assert.match(guide, /local\/README\.md/, 'the guide points at the README for starting a browser with a port');
+  assert.match(guide, /opera-agent-mcp doctor/, 'the doctor is named');
+  assert.match(guide, /PLAN_LIMIT_REACHED/, 'the meter refusal is named');
+  assert.doesNotMatch(guide, /No browser is listening on port 9333/, 'the dead port refusal is gone');
 });
 
 // WHY THE HOSTED CLAIM IS DATED.

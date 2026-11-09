@@ -1,6 +1,6 @@
 {
   "name": "opera-agent-mcp",
-  "version": "1.6.29",
+  "version": "1.6.32",
   "description": "Drive your own browser from an MCP client: the everyday profile over the loopback bridge, or the hosted server.",
   "type": "module",
   "bin": {
@@ -13,6 +13,7 @@
     "agent-guide.js",
     "bin",
     "bin/opera-agent-mcp.js",
+    "doctor.js",
     "bridge-ws.js",
     "bridge.js",
     "browsers.js",
