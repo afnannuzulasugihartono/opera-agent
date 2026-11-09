@@ -266,6 +266,16 @@ test('the status tool says whether the extension is there at all', () => {
   assert.match(source, /extensionUpdatePending/, 'and the gap is stated as a fact');
 });
 
+test('browser_status answers its plan even when the command it carried failed', () => {
+  const at = source.indexOf('async function executeStatus');
+  assert.ok(at >= 0, 'executeStatus stays a named function');
+  const end = source.indexOf('\nfunction ', at + 1);
+  const body = source.slice(at, end < 0 ? undefined : end);
+  assert.doesNotMatch(body, /if \(answer\.isError\) return answer;/, 'the plan is merged before the failure is returned');
+  assert.match(body, /planInfo\(/, 'the plan is resolved on every path, success and failure alike');
+  assert.match(body, /\.\.\.(?:\(plan \?\? \{\}\)|plan)/, 'the failure path spreads the plan into the answer it returns');
+});
+
 test('the tool count and names match the contract', () => {
   const registered = [...source.matchAll(/server\.registerTool\("([a-z_]+)"/g)].map((m) => m[1]);
   assert.equal(registered.length, 35);

@@ -502,8 +502,17 @@ async function latestPublishedVersion() {
 
 async function executeStatus(method: string, params: Record<string, unknown>, timeoutMs: number | undefined, deviceName: string, provider: string, userId: string | null) {
   const answer = await execute(method, params, timeoutMs, deviceName, provider);
-  if (answer.isError) return answer;
+  // WHY THE PLAN IS NOT CONDITIONAL ON THE ANSWER BEING OK.
+  // The caller who most needs the plan is the one whose command just failed for want of it; answering only the success path hid the limit from the exact moment the work stopped.
   const [presence, plan] = await Promise.all([devicePresence(userId), planInfo(await db(), userId)]);
+  if (answer.isError) {
+    const merged = { ...(answer.structuredContent ?? {}), ...(plan ?? {}) };
+    return {
+      ...answer,
+      structuredContent: merged,
+      content: (answer.content ?? []).map((part) => part.type === "text" ? { ...part, text: JSON.stringify(merged) } : part)
+    };
+  }
   const merged = { ...(answer.structuredContent ?? {}), ...presence, ...(plan ?? {}) };
   return {
     ...answer,
