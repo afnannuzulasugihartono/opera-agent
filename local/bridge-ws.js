@@ -80,13 +80,14 @@ export function createBridgeServer({ port = 9451, host = '127.0.0.1', heartbeatM
   const leases = createLeaseTable();
   const queue = [];
   const waiting = new Map();
+  const slotByInstanceId = new Map();
   let slotCounter = 0;
   let timer = null;
   let lastRefusal = null;
   const pendingReports = new Set();
 
   const readyDevices = () => [...devices.values()]
-    .filter((device) => !device.socket.closed && device.handshaken)
+    .filter((device) => !device.socket.closed && device.handshaken && device.slot !== null)
     .sort((a, b) => a.slot - b.slot);
 
   const firstReady = () => readyDevices()[0] || null;
@@ -466,9 +467,21 @@ export function createBridgeServer({ port = 9451, host = '127.0.0.1', heartbeatM
     timer = setTimeout(heartbeat, heartbeatMs);
   });
 
+  function slotForInstance(instanceId) {
+    // WHY THE SLOT IS KEYED BY THE BROWSER'S OWN ID.
+    // A browser that reconnects with the same profile keeps the same slot, so every tab id the caller is holding is still valid for it.
+    // The in-memory map lives and dies with this process, which is enough: namespaced ids are valid only inside a bridge session.
+    const key = String(instanceId || '').trim();
+    if (!key) return ++slotCounter;
+    const known = slotByInstanceId.get(key);
+    if (known !== undefined) return known;
+    const next = ++slotCounter;
+    slotByInstanceId.set(key, next);
+    return next;
+  }
+
   function attach(next, request) {
-    const slot = ++slotCounter;
-    const device = { id: next.id, slot, socket: next, instanceId: '', handshaken: false, connectedAt: now(), lastHeardAt: now() };
+    const device = { id: next.id, slot: null, slotKey: null, socket: next, instanceId: '', handshaken: false, connectedAt: now(), lastHeardAt: now() };
     devices.set(next.id, device);
     attached.add(next);
 
@@ -481,6 +494,7 @@ export function createBridgeServer({ port = 9451, host = '127.0.0.1', heartbeatM
         device.instanceId = String(message.instanceId || device.id).slice(0, 64);
         device.deviceName = String(message.deviceName || '').trim().slice(0, 128) || null;
         device.extensionVersion = String(message.extensionVersion || '').slice(0, 32);
+        device.slot = slotForInstance(device.instanceId || device.deviceName || device.id);
         if (device.handshaken) {
           if (!device.socket.closed) device.socket.send(JSON.stringify({ type: 'ready', protocolVersion: DEVICE_PROTOCOL_VERSION, serverTime: now() }));
           return;

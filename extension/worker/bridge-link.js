@@ -64,13 +64,19 @@ export const probePort = async (port) => {
 // The configured address is tried first, because an operator who set one meant it.
 // Everything after it is a guess, and the first one that answers wins - the order is the order they were seen in the wild, not a ranking.
 
-export async function discoverBridge() {
+// WHY THE SOCKET IS NOT OPENED WHEN THE PROBE ANSWERS NOTHING.
+// The earlier discovery returned a configured address even when nothing listened: the extension then fired a WebSocket at a dead port on every wake, the browser's errors page filled with connection refused, and the bridge-died message stayed visible even after the bridge came back.
+// The probe now answers with no url when no candidate answers, the socket is not opened, and the extension re-asks in five seconds.
+
+export async function discoverBridge(candidates = null) {
   const configured = /^ws:\/\/127\.0\.0\.1:(\d+)/.exec(CONFIGURED_WS);
-  const order = configured ? [Number(configured[1]), ...CANDIDATE_PORTS.filter((p) => p !== Number(configured[1]))] : CANDIDATE_PORTS;
+  const order = candidates !== null
+    ? candidates
+    : (configured ? [Number(configured[1]), ...CANDIDATE_PORTS.filter((p) => p !== Number(configured[1]))] : CANDIDATE_PORTS);
   for (const port of order) {
     if (await probePort(port)) return { url: `ws://127.0.0.1:${port}`, port, discovered: port !== Number(configured?.[1] ?? -1) };
   }
-  return { url: CONFIGURED_WS, port: Number(configured?.[1] ?? 0), discovered: false };
+  return { url: '', port: 0, discovered: false };
 }
 
 const BRIDGE_ALARM = 'opera-bridge-link';
@@ -204,6 +210,14 @@ export function ensureBridgeLink() {
   // The port is found before the socket is opened, so a stale build lands on the road that is actually listening rather than on the one it remembers.
   discoverBridge().then(async (found) => {
     if (mine !== generation) return;
+    if (!found.url) {
+      stats.lastError = 'the local bridge could not be found on this machine; retrying later';
+      note('no local bridge on any candidate port');
+      running = false;
+      const retry = setTimeout(() => { ensureBridgeLink(); }, 5000);
+      if (typeof retry.unref === 'function') retry.unref();
+      return;
+    }
     const [mineId, pairing] = await Promise.all([
       instanceId().catch(() => ''),
       getConfig().catch(() => null)
