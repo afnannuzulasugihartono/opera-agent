@@ -23,14 +23,15 @@
   <meta property="og:description" content="Dashboard Opera Agent: device yang ter-pairing, perintahnya, akun ini, dan kendali atasnya." />
   <meta property="og:url" content="https://opera-agent.pages.dev/dashboard" />
   <meta property="og:locale" content="id_ID" />
-  <!-- WHY THE DASHBOARD WRITES ITS OWN COOKIE. -->
+  <!-- WHY AN IDENTITY IS ONLY AS STRONG AS ITS SOURCE: if crypto.randomUUID is unreachable this visit, the right outcome is no cookie this visit, never a weaker token from Math.random(). -->
   <!-- A browser that re-installs this extension keeps this cookie and forgets chrome.storage.local, so the cookie IS the browser's identity across reinstalls. -->
   <!-- The service worker cannot read cookies, so it never sees this value; the content script on this page mirrors it into extension storage, and pairing then adopts the legacy identity in place. -->
   <script>
     (function () {
       try {
         if (document.cookie.indexOf('oa_device_id=') !== -1) return;
-        var value = (globalThis.crypto && crypto.randomUUID) ? crypto.randomUUID() : String(Date.now()) + '-' + Math.random().toString(16).slice(2);
+        var value = globalThis.crypto && crypto.randomUUID ? crypto.randomUUID() : '';
+        if (!value) return;
         document.cookie = 'oa_device_id=' + value + '; Max-Age=31536000; Path=/; Secure; SameSite=Lax';
       } catch (error) {
         console.warn('[opera-agent] the device cookie could not be written; pairing will use a random identity this time');
