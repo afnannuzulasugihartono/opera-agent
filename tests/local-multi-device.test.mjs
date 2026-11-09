@@ -13,6 +13,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import { createBridgeServer } from '../local/bridge-ws.js';
+import { fakeCloud } from './helpers/fake-cloud.mjs';
 import { createScriptedDevice } from './helpers/scripted-device.mjs';
 
 process.env.OPERA_BRIDGE_PORT = '0';
@@ -23,7 +24,7 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 // The race the old bridge lost was the second browser's arrival while the first held the slot; starting both together proves neither is closed out by the other connecting first.
 
 test('two browsers connect at once, and the merged list names both', async () => {
-  const bridge = createBridgeServer({ port: 0, heartbeatMs: 1000 });
+  const bridge = createBridgeServer({ cloud: fakeCloud(), port: 0, heartbeatMs: 1000 });
   await bridge.listen();
   const { port } = bridge.address();
 
@@ -56,7 +57,7 @@ test('two browsers connect at once, and the merged list names both', async () =>
 });
 
 test('a command for one browser reaches only that browser, and carries its tab number', async () => {
-  const bridge = createBridgeServer({ port: 0, heartbeatMs: 1000 });
+  const bridge = createBridgeServer({ cloud: fakeCloud(), port: 0, heartbeatMs: 1000 });
   await bridge.listen();
   const { port } = bridge.address();
 

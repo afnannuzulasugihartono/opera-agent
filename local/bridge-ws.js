@@ -1,7 +1,7 @@
 // @last-edited: 2026-11-09 UTC+7.
 // @title: bridge-ws — the loopback command server, speaking the frames the cloud bridge speaks.
-// @state: every browser that connects is carried, each target names its browser, and each command reaches the one that owns it.
-// @dependencies: none.
+// @state: every browser that connects is carried, each target names its browser, each command reaches the one that owns it, and each session pays the cloud its allowance.
+// @dependencies: node:crypto, node:http, node:events, ./ws-server.js, ./leases.js, ./lib/*.
 
 // WHY THE HEARTBEAT IS THE WHOLE POINT.
 // Chrome ends an idle service worker after about thirty seconds and an inbound frame does not wake it, which is why the first loopback socket read as OPEN and heard nothing.
@@ -22,11 +22,39 @@ import { createServer } from 'node:http';
 import { EventEmitter } from 'node:events';
 
 import { parseFrame } from './lib/socket-protocol.js';
+import { DEFAULT_BRIDGE_URL } from './lib/endpoints.js';
 import { BridgeSocket, acceptKey, encodeText, isOriginAllowed, isWebSocketUpgrade } from './ws-server.js';
 import { createLeaseTable } from './leases.js';
 import { DEVICE_PROTOCOL_VERSION } from './lib/socket-protocol.js';
 
 const SLOT_STRIDE = 1000000000;
+
+// WHY THE METER IS A CLOUD CALL AND NOT A LOCAL GUESS.
+// The local drive is on the same machine as the caller, so it cannot tell a paid account from a stranger by looking inward.
+// It asks the cloud once per session and enforces what it is told; a local limit would be a number anyone with the source could edit, which is a gate that holds nothing.
+// The transport and the allowance are exactly what the extension already speaks to the cloud bridge, so nobody learns a second protocol.
+
+const CLOUD_TIMEOUT_MS = 10000;
+const METER_WINDOW_MS = 60000;
+
+export function createCloudMeter({ url = process.env.OPERA_CLOUD_URL || DEFAULT_BRIDGE_URL, fetchImpl = fetch, timeoutMs = CLOUD_TIMEOUT_MS } = {}) {
+  const post = async (body) => {
+    const response = await fetchImpl(url, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout(timeoutMs)
+    });
+    const answer = await response.json().catch(() => null);
+    if (!response.ok) throw new Error(answer?.error || `the cloud answered ${response.status}`);
+    return answer;
+  };
+  return {
+    sessionOpen: ({ deviceName, token }) => post({ action: 'session_open', deviceName, token }),
+    sessionReport: ({ deviceName, token, commands }) => post({ action: 'session_report', deviceName, token, commands })
+  };
+}
+
 const slotOf = (tabId) => Math.floor(Number(tabId) / SLOT_STRIDE);
 const localTabOf = (tabId) => {
   const slot = slotOf(tabId);
@@ -45,7 +73,7 @@ const BRIDGE_ORIGINS = Object.freeze([
   'chrome-extension://ohbbpamcljckmjhcpkcmefdobkoeaick'
 ]);
 
-export function createBridgeServer({ port = 9451, host = '127.0.0.1', heartbeatMs = 20000, allowedOrigins = BRIDGE_ORIGINS, now = () => Date.now() } = {}) {
+export function createBridgeServer({ port = 9451, host = '127.0.0.1', heartbeatMs = 20000, allowedOrigins = BRIDGE_ORIGINS, now = () => Date.now(), cloud = createCloudMeter() } = {}) {
   const state = new EventEmitter();
   const devices = new Map();
   const attached = new Set();
@@ -54,6 +82,8 @@ export function createBridgeServer({ port = 9451, host = '127.0.0.1', heartbeatM
   const waiting = new Map();
   let slotCounter = 0;
   let timer = null;
+  let lastRefusal = null;
+  const pendingReports = new Set();
 
   const readyDevices = () => [...devices.values()]
     .filter((device) => !device.socket.closed && device.handshaken)
@@ -84,6 +114,97 @@ export function createBridgeServer({ port = 9451, host = '127.0.0.1', heartbeatM
 
   const namespacedId = (device, localId) => device.slot * SLOT_STRIDE + Number(localId);
 
+  // WHY A TOKEN IS TAKEN AT THE SOCKET, NOT AT THE DOOR.
+  // Every path that hands a command to a device passes through this point: the routed call, the merged list, the queued backlog.
+  // A token spent here means a queued command cannot be delivered without paying for it, so nobody rides the queue for free.
+  // The ping proof pays nothing: it is the bridge's own liveness question, not the caller's work.
+
+  const refusalFor = (device) => ({
+    ok: false,
+    error: {
+      code: 'PLAN_LIMIT_REACHED',
+      message: `the session allowance of ${device.meter?.allowance ?? 0} commands for ${device.meter?.plan ?? 'plan.pilot'} is spent; reconnect to start a new session`
+    }
+  });
+
+  const takeToken = (device, method) => {
+    if (method === 'ping') return null;
+    if (!device.meter || device.meter.sent >= device.meter.allowance) return refusalFor(device);
+    device.meter.sent += 1;
+    return null;
+  };
+
+  // WHY ONE REPORT, AT THE END.
+  // The drive counts locally because the local road cannot pay for a round trip per command.
+  // The one report at the end is what folds the local spend back into the account's daily count, so the local road is not a bypass of the shared quota.
+  function reportSession(device) {
+    const meter = device.meter;
+    if (!meter || meter.reported || meter.sent === 0) return;
+    meter.reported = true;
+    const pending = Promise.resolve()
+      .then(() => cloud.sessionReport({ deviceName: meter.deviceName, token: meter.token, commands: meter.sent }))
+      .catch((error) => {
+        state.emit('state', { status: 'meter-report-failed', message: String(error?.message ?? error).slice(0, 200) });
+      })
+      .finally(() => pendingReports.delete(pending));
+    pendingReports.add(pending);
+  }
+
+  function noteRefusal(message) {
+    lastRefusal = { message, at: now() };
+    state.emit('state', { status: 'refused', message });
+  }
+
+  // WHY THE SESSION IS METERED AT HELLO, NOT AT THE FIRST COMMAND.
+  // The cloud is the only party that knows this account's plan and today's spend, and the local drive cannot learn it by looking inward.
+  // Asking once per session and enforcing the answer locally keeps the drive at millisecond cost while the allowance bounds what an unmetered session may do.
+  async function meterSession(device, message) {
+    const identity = {
+      deviceName: String(message.deviceName || '').trim().slice(0, 128),
+      token: String(message.token || '')
+    };
+    let opened = null;
+    let failure = null;
+    try {
+      opened = await cloud.sessionOpen(identity);
+    } catch (error) {
+      failure = String(error?.message ?? error);
+    }
+    if (device.socket.closed) return;
+    const refusal = failure
+      ? `the meter could not be reached: ${failure}`
+      : (!opened || opened.ok !== true || opened.status !== 'active')
+        ? `the meter refused the session: ${String(opened?.message ?? opened?.error ?? 'the account has no active plan')}`
+        : null;
+    if (refusal) {
+      device.socket.send(JSON.stringify({ type: 'error', error: refusal }));
+      device.socket.close(4001, 'the meter refused the session');
+      noteRefusal(refusal);
+      return;
+    }
+    device.verifying = false;
+    device.meter = {
+      deviceName: identity.deviceName,
+      token: identity.token,
+      plan: String(opened.plan ?? 'plan.pilot'),
+      allowance: Math.max(0, Number(opened.sessionAllowance) || 0),
+      sent: 0,
+      usedToday: Number(opened.usedToday) || 0,
+      reported: false
+    };
+    device.handshaken = true;
+    device.verifying = false;
+    device.lastHeardAt = now();
+    if (!device.socket.closed) device.socket.send(JSON.stringify({ type: 'ready', protocolVersion: DEVICE_PROTOCOL_VERSION, serverTime: now() }));
+    flush();
+  }
+
+  const meterOf = (device) => (device.meter
+    ? { plan: device.meter.plan, allowance: device.meter.allowance, sent: device.meter.sent, usedToday: device.meter.usedToday }
+    : null);
+
+  const refusalNote = () => (lastRefusal && now() - lastRefusal.at <= METER_WINDOW_MS ? lastRefusal.message : null);
+
   function sendTo(device, text) {
     if (device.socket.closed) return false;
     return device.socket.send(text);
@@ -95,7 +216,21 @@ export function createBridgeServer({ port = 9451, host = '127.0.0.1', heartbeatM
       if (index < 0) break;
       const [frame] = queue.splice(index, 1);
       const target = pickDevice(frame.params);
-      sendTo(target, JSON.stringify({ type: 'command', command: toWire(frame) }));
+      const waiter = waiting.get(frame.id);
+      const refusal = takeToken(target, frame.method);
+      if (refusal) {
+        if (waiter) {
+          waiting.delete(frame.id);
+          waiter.resolve({ ...refusal, ms: now() - waiter.sentAt });
+        }
+        continue;
+      }
+      if (!sendTo(target, JSON.stringify({ type: 'command', command: toWire(frame) }))) {
+        if (waiter) {
+          waiting.delete(frame.id);
+          waiter.reject(new Error('the device socket is closed'));
+        }
+      }
     }
   }
 
@@ -137,6 +272,13 @@ export function createBridgeServer({ port = 9451, host = '127.0.0.1', heartbeatM
       const device = pickDevice(params);
       registerWait(device, id, method, resolve, reject);
       if (device) {
+        const refusal = takeToken(device, method);
+        if (refusal) {
+          const entry = waiting.get(id);
+          waiting.delete(id);
+          resolve({ ...refusal, ms: entry ? now() - entry.sentAt : 0 });
+          return;
+        }
         if (!sendTo(device, JSON.stringify({ type: 'command', command: toWire(frame) }))) {
           waiting.delete(id);
           reject(new Error('the device socket is closed'));
@@ -193,8 +335,17 @@ export function createBridgeServer({ port = 9451, host = '127.0.0.1', heartbeatM
     const id = commandId();
     const frame = { id, method, params, timeoutMs };
     return new Promise((resolve, reject) => {
+      const refusal = takeToken(device, method);
+      if (refusal) {
+        resolve({ ...refusal, ms: 0 });
+        return;
+      }
       registerWait(device, id, method, resolve, reject);
-      sendTo(device, JSON.stringify({ type: 'command', command: frame }));
+      if (!sendTo(device, JSON.stringify({ type: 'command', command: frame }))) {
+        waiting.delete(id);
+        reject(new Error('the device socket is closed'));
+        return;
+      }
       armTimeout(id, method, timeoutMs, reject);
     });
   }
@@ -242,10 +393,11 @@ export function createBridgeServer({ port = 9451, host = '127.0.0.1', heartbeatM
         linked: live.length > 0,
         deviceId: live[0]?.id ?? null,
         deviceInstanceId: live[0]?.instanceId ?? null,
-        devices: live.map((device) => ({ slot: device.slot, id: device.id, instanceId: device.instanceId || null, connectedAt: device.connectedAt })),
+        devices: live.map((device) => ({ slot: device.slot, id: device.id, instanceId: device.instanceId || null, connectedAt: device.connectedAt, meter: meterOf(device) })),
         queued: queue.length,
         waiting: waiting.size,
-        lastHeardMsAgo: live[0]?.lastHeardAt ? now() - live[0].lastHeardAt : null
+        lastHeardMsAgo: live[0]?.lastHeardAt ? now() - live[0].lastHeardAt : null,
+        meterRefusal: refusalNote()
       }));
       return;
     }
@@ -326,10 +478,13 @@ export function createBridgeServer({ port = 9451, host = '127.0.0.1', heartbeatM
       const message = parsed.message;
       if (message.type === 'hello') {
         device.instanceId = String(message.instanceId || device.id).slice(0, 64);
-        device.handshaken = true;
-        device.lastHeardAt = now();
-        if (!device.socket.closed) device.socket.send(JSON.stringify({ type: 'ready', protocolVersion: DEVICE_PROTOCOL_VERSION, serverTime: now() }));
-        flush();
+        if (device.handshaken) {
+          if (!device.socket.closed) device.socket.send(JSON.stringify({ type: 'ready', protocolVersion: DEVICE_PROTOCOL_VERSION, serverTime: now() }));
+          return;
+        }
+        if (device.verifying) return;
+        device.verifying = true;
+        void meterSession(device, message);
         return;
       }
       if (message.type === 'pong') return;
@@ -346,6 +501,7 @@ export function createBridgeServer({ port = 9451, host = '127.0.0.1', heartbeatM
     next.on('close', () => {
       attached.delete(next);
       devices.delete(next.id);
+      reportSession(device);
       state.emit('state', { status: 'disconnected' });
       for (const [id, entry] of waiting) {
         if (entry.deviceId === device.id) {
@@ -376,6 +532,8 @@ export function createBridgeServer({ port = 9451, host = '127.0.0.1', heartbeatM
     },
     async close() {
       clearTimeout(timer);
+      for (const device of [...devices.values()]) reportSession(device);
+      await Promise.allSettled([...pendingReports]);
       for (const open of attached) open.socket.destroy();
       attached.clear();
       devices.clear();
@@ -390,10 +548,11 @@ export function createBridgeServer({ port = 9451, host = '127.0.0.1', heartbeatM
     state: () => ({
       linked: attached.size > 0,
       deviceId: readyDevices()[0]?.id ?? null,
-      devices: readyDevices().map((device) => ({ slot: device.slot, id: device.id, instanceId: device.instanceId || null })),
+      devices: readyDevices().map((device) => ({ slot: device.slot, id: device.id, instanceId: device.instanceId || null, meter: meterOf(device) })),
       queued: queue.length,
       waiting: waiting.size,
-      lastHeardMsAgo: readyDevices()[0]?.lastHeardAt ? now() - readyDevices()[0].lastHeardAt : null
+      lastHeardMsAgo: readyDevices()[0]?.lastHeardAt ? now() - readyDevices()[0].lastHeardAt : null,
+      meterRefusal: refusalNote()
     })
   };
 }

@@ -9,7 +9,7 @@ import assert from 'node:assert/strict';
 import { PLANS } from '../supabase/functions/_shared/plans.js';
 import { planInfo } from '../supabase/functions/opera-agent-mcp/plan-info.ts';
 
-function fakeDb({ plan = null, status = 'active', count = 0, fail = false } = {}) {
+function fakeDb({ plan = null, status = 'active', count = 0, reports = [], fail = false } = {}) {
   const calls = [];
   return {
     calls,
@@ -21,6 +21,15 @@ function fakeDb({ plan = null, status = 'active', count = 0, fail = false } = {}
           select: () => ({
             eq: () => ({
               maybeSingle: async () => ({ data: plan ? { plan, status } : null })
+            })
+          })
+        };
+      }
+      if (table === 'opera_usage_reports') {
+        return {
+          select: () => ({
+            eq: () => ({
+              gte: async () => ({ data: reports })
             })
           })
         };
@@ -39,6 +48,11 @@ function fakeDb({ plan = null, status = 'active', count = 0, fail = false } = {}
 test('browser_status carries the plan for the account with the device', async () => {
   const answer = await planInfo(fakeDb({ plan: 'plan.firm', status: 'active', count: 314 }), 'user-1');
   assert.deepEqual(answer, { plan: 'plan.firm', planStatus: 'active', planQuota: PLANS['plan.firm'].dailyQuota, planUsed: 314 });
+});
+
+test('spend from the loopback bridge lands in the same number the caller sees', async () => {
+  const answer = await planInfo(fakeDb({ plan: 'plan.pilot', count: 40, reports: [{ commands: 9 }, { commands: 1 }] }), 'user-4');
+  assert.equal(answer.planUsed, 50, 'the hosted number carries both surfaces');
 });
 
 test('an account with no plan row is a pilot, not an absence of limits', async () => {

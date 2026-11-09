@@ -13,6 +13,7 @@ import { connect as netConnect } from 'node:net';
 import { request as httpRequest } from 'node:http';
 
 import { createBridgeServer } from '../local/bridge-ws.js';
+import { fakeCloud } from './helpers/fake-cloud.mjs';
 import { acceptKey, encodeText } from '../local/ws-server.js';
 import { parseFrame } from '../extension/lib/socket-protocol.js';
 
@@ -71,7 +72,7 @@ function connect(port, origin) {
 }
 
 test('a handshake completes and a pushed command arrives without being asked for', async () => {
-  const bridge = createBridgeServer({ port: 0, heartbeatMs: 50 });
+  const bridge = createBridgeServer({ cloud: fakeCloud(), port: 0, heartbeatMs: 50 });
   await bridge.listen();
   const port = bridge.address().port;
   const device = await connect(port);
@@ -108,7 +109,7 @@ test('a handshake completes and a pushed command arrives without being asked for
 });
 
 test('an idle connection keeps receiving heartbeats so the worker never dies', async () => {
-  const bridge = createBridgeServer({ port: 0, heartbeatMs: 40 });
+  const bridge = createBridgeServer({ cloud: fakeCloud(), port: 0, heartbeatMs: 40 });
   await bridge.listen();
   const port = bridge.address().port;
   const device = await connect(port);
@@ -127,7 +128,7 @@ test('an idle connection keeps receiving heartbeats so the worker never dies', a
 });
 
 test('a device that never answers fails the caller instead of hanging forever', async () => {
-  const bridge = createBridgeServer({ port: 0, heartbeatMs: 1000 });
+  const bridge = createBridgeServer({ cloud: fakeCloud(), port: 0, heartbeatMs: 1000 });
   await bridge.listen();
   const port = bridge.address().port;
   const device = await connect(port);
@@ -148,7 +149,7 @@ test('a device that never answers fails the caller instead of hanging forever', 
 // It cost one test in three full-suite runs, and in a browser it would have cost one lost command in a hundred connections, which is a bug nobody ever reports.
 
 test('a command raised before the handshake is held, not lost', async () => {
-  const bridge = createBridgeServer({ port: 0, heartbeatMs: 1000 });
+  const bridge = createBridgeServer({ cloud: fakeCloud(), port: 0, heartbeatMs: 1000 });
   await bridge.listen();
   const port = bridge.address().port;
   const device = await connect(port);
@@ -213,7 +214,7 @@ function upgradeOnce(port, origin) {
 // A device that reconnects is how it happens in production — the worker is killed, comes back, and the socket it left behind is still counted.
 
 test('a reconnecting device leaves nothing behind that closing waits on', async () => {
-  const bridge = createBridgeServer({ port: 0, heartbeatMs: 1000 });
+  const bridge = createBridgeServer({ cloud: fakeCloud(), port: 0, heartbeatMs: 1000 });
   await bridge.listen();
   const port = bridge.address().port;
 
@@ -237,7 +238,7 @@ test('a reconnecting device leaves nothing behind that closing waits on', async 
 
 test('a busy socket survives its second minute and a silent one does not', async () => {
   let at = 1000000;
-  const bridge = createBridgeServer({ port: 0, heartbeatMs: 30, now: () => at });
+  const bridge = createBridgeServer({ cloud: fakeCloud(), port: 0, heartbeatMs: 30, now: () => at });
   await bridge.listen();
   const port = bridge.address().port;
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -277,7 +278,7 @@ test('a busy socket survives its second minute and a silent one does not', async
 // A door that answered `ok` with nothing in it would make every adopted call look like it worked.
 
 test('the command door settles against the device and names a device failure', async () => {
-  const bridge = createBridgeServer({ port: 0, heartbeatMs: 50 });
+  const bridge = createBridgeServer({ cloud: fakeCloud(), port: 0, heartbeatMs: 50 });
   await bridge.listen();
   const port = bridge.address().port;
   const device = await connect(port);

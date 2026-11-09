@@ -11,20 +11,26 @@
 
 import { completionFrame, handshakeFrame, normalizeCommand, pongFrame } from '../../extension/lib/socket-protocol.js';
 
-export function createScriptedDevice({ url, handle = () => [], answerProof = true, deaf = false, instanceId = undefined } = {}) {
+export function createScriptedDevice({ url, handle = () => [], answerProof = true, deaf = false, instanceId = undefined, token = '', deviceName = 'scripted' } = {}) {
   const seen = [];
+  const events = [];
   let socket = null;
   let open = false;
+  let resolveClosed;
+  const closed = new Promise((resolve) => { resolveClosed = resolve; });
 
   const connected = new Promise((resolve, reject) => {
     socket = new WebSocket(url);
     socket.addEventListener('open', () => {
       open = true;
-      socket.send(handshakeFrame('', 'scripted', instanceId));
+      socket.send(handshakeFrame(token, deviceName, instanceId));
       resolve();
     });
     socket.addEventListener('error', () => reject(new Error('the scripted device could not connect')));
-    socket.addEventListener('close', () => { open = false; });
+    socket.addEventListener('close', (event) => {
+      open = false;
+      resolveClosed({ code: Number(event?.code ?? 0), reason: String(event?.reason || '') });
+    });
     socket.addEventListener('message', (event) => {
       let frame;
       try {
@@ -32,6 +38,7 @@ export function createScriptedDevice({ url, handle = () => [], answerProof = tru
       } catch {
         return;
       }
+      events.push(frame);
       if (frame.type === 'ping') {
         if (!deaf) socket.send(pongFrame());
         return;
@@ -54,6 +61,8 @@ export function createScriptedDevice({ url, handle = () => [], answerProof = tru
 
   return {
     seen,
+    events,
+    closed,
     connected,
     pings: () => seen.filter((command) => command.method === 'ping').length,
     // WHY THIS CLOSE COMES WITH A SETTLE.

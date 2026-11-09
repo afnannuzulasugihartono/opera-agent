@@ -34,8 +34,23 @@ import {
 } from '../local/bridge.js';
 import { createCdpClient } from '../local/cdp.js';
 import { createBridgeServer } from '../local/bridge-ws.js';
+import { fakeCloud, startFakeCloud } from './helpers/fake-cloud.mjs';
 
 process.env.OPERA_BRIDGE_PORT = '0';
+
+// WHY A FAKE CLOUD ON THE DRIVER PATH.
+// The driver builds its own bridge, and the meter asks the cloud once per session, so the driver path needs an answerable cloud or every scripted device here would be refused by the real one.
+// A loopback HTTP server answers with a granted pilot session, which is the exact call production makes.
+
+let meter = null;
+test.before(async () => {
+  meter = await startFakeCloud();
+  process.env.OPERA_CLOUD_URL = meter.url;
+});
+test.after(async () => {
+  delete process.env.OPERA_CLOUD_URL;
+  await meter?.close();
+});
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -325,7 +340,7 @@ test('a port held by a stranger is named, not swallowed into a wrong pipe', asyn
 // This drives the real thing: a bridge server with a scripted device behind it, reached only through the door.
 
 test('a driver that loses the port adopts the bridge that won it', async () => {
-  const owner = createBridgeServer({ port: 0, heartbeatMs: 50 });
+  const owner = createBridgeServer({ cloud: fakeCloud(), port: 0, heartbeatMs: 50 });
   const { port } = await owner.listen();
   const device = scriptedDevice(`ws://127.0.0.1:${port}/`, () => [{ id: 11, url: 'https://y/', title: 'Y' }]);
   live.push(device);
@@ -398,7 +413,7 @@ test('the exported lease calls read the same table the door serves', async () =>
 });
 
 test('the lease door grants a free tab, refuses a held one, and frees it on release', async () => {
-  const owner = createBridgeServer({ port: 0 });
+  const owner = createBridgeServer({ cloud: fakeCloud(), port: 0 });
   const { port } = await owner.listen();
   const ask = async (body) => {
     const response = await fetch(`http://127.0.0.1:${port}/lease`, {

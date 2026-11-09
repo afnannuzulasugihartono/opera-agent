@@ -1,4 +1,4 @@
-@last-edited: 2026-10-26 UTC+7.
+@last-edited: 2026-11-09 UTC+7.
 @related: [AGENTS.md](../AGENTS.md)
 
 # handoff
@@ -33,7 +33,9 @@ What is true now, and what to do next. Cap 150 lines. Spent detail: git history.
   fails a missing standard file, a pull request that skips CI, a CRLF file, or a dead path.
 - **The browser drive depends on nothing but the page it drives.** A ref dies with its
   document, its route or the extension epoch, so the drive re-finds what it clicks.
-- Gates: `npm test`, `npm run check` - 31 primitives, 191 runtime safety files, 1824 unit tests, green.
+- Gates: `npm test`, `npm run check` - 31 primitives, 203 runtime safety files, 1968 unit tests, green.
+- **The local drive is metered where it happens.** The loopback bridge asks the cloud once per session,
+  enforces the allowance with the plan named in the refusal, and reports usage at session end into the shared count.
 - **The local driver is modular, and its tests are too.** `local/primitives.js` assembles the
   modules; `tools.js` holds the MCP surface as data; the tests are one file per module.
 - Production, measured against the live database: 76 `opera_*` functions (65
@@ -50,11 +52,10 @@ What is true now, and what to do next. Cap 150 lines. Spent detail: git history.
   password-gated portal the gate was detected, the drive stopped, and the download landed
   renamed in 464 ms ([`jobs/statements.md`](jobs/statements.md)).
 - **The pilot needs three bookkeepers, not more code, and it runs on their machine.** The offer is
-  in [`product/first-three-bookkeepers.md`](product/first-three-bookkeepers.md) and the run in
+  [`product/first-three-bookkeepers.md`](product/first-three-bookkeepers.md); the fixture-portal run in
   [`../proof/run.md`](../proof/run.md) rebuilt four site files byte for byte; fixture portal only.
 - **The bridge is a WebSocket with a heartbeat, not a held `POST /poll`.** Chrome ends an idle
-  service worker after about thirty seconds and an inbound frame does not wake it, so the
-  server pings.
+  service worker after ~30 seconds and an inbound frame does not wake it, so the server pings.
 - **One CORS policy and one credential-shape check.** Every edge function resolves the
   origin through [`_shared/cors.js`](../supabase/functions/_shared/cors.js); six modules
   import [`lib/secret-pattern.js`](../lib/secret-pattern.js), and `check` bars a redeclaration.
@@ -95,10 +96,9 @@ What is true now, and what to do next. Cap 150 lines. Spent detail: git history.
 
 1. **The Cloudflare API token pasted into a chat is still live** and carries
    `Account API Tokens Write`. The owner has chosen to leave it for now.
-2. **The migration ledger is mapped.** Measured 2026-10-26: 107 tree files against 113
-   applied versions; `supabase/migrations/ledger-map.json` names the version that applied each
-   file with its evidence — 103 proved, 2 with no ledger row, 2 applied outside the ledger (SQL
-   in the database, no row). `tests/migration-ledger-map.test.mjs` fails a file the map omits.
+2. **The migration ledger is mapped.** Measured 2026-10-26: 107 tree files against 113 applied
+   versions, each mapped with its evidence - 103 proved, 2 with no ledger row, 2 outside the ledger;
+   `tests/migration-ledger-map.test.mjs` fails a file the map omits.
 3. **OAuth via OpenCode works end to end.** Authorize answers 302 to the consent page, the
    code exchanges for a one-hour token, and a tool call completes. Google sign-in is unverified.
 4. **MCP resolves one device per account and stamps the harness provider.**
@@ -127,7 +127,7 @@ What is true now, and what to do next. Cap 150 lines. Spent detail: git history.
     documents `SHA512(order + status + amount + key)`, so real notifications were refused; the
     formula is now the provider's and the log reads `the provider signed it`. The page is served
     at `opera-agent.pages.dev/invoice`: a live link's refresh added no attempt, a forced-expired
-    link opened attempt 2 while attempt 1 answered `expire`, its late expire notification cleared
+    link opened attempt 2 while attempt 1 answered `expire`, its late expire cleared
     nothing, and a payment through attempt 2 closed `Uji Sandbox:2027-09` with its method and
     transaction id. No real money has moved: production is `[UNVERIFIED]`.
 

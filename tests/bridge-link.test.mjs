@@ -11,6 +11,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import { createBridgeServer } from '../local/bridge-ws.js';
+import { fakeCloud } from './helpers/fake-cloud.mjs';
 import { encodeText } from '../local/ws-server.js';
 
 const listeners = {};
@@ -56,7 +57,7 @@ globalThis.chrome = {
 const PORT = 9471;
 globalThis.OPERA_BRIDGE_WS = `ws://127.0.0.1:${PORT}`;
 
-const bridge = createBridgeServer({ port: PORT, heartbeatMs: 500 });
+const bridge = createBridgeServer({ cloud: fakeCloud(), port: PORT, heartbeatMs: 500 });
 await bridge.listen();
 
 const { stopBridgeLink, bridgeLinkState, ensureBridgeLink, discoverBridge, probePort } = await import('../extension/worker/bridge-link.js');
