@@ -4,17 +4,17 @@
  "method": "a tree file is proved applied by the ledger naming it (version, or the name the CLI recorded), or by the applied SQL carrying the file's tokens; a file whose SQL is in the database with no ledger row is applied-outside-ledger; a file applied by hand from its own text and then recorded with migration repair is applied-then-recorded, which claims the objects exist and does not claim a content match the ledger never stored",
  "counts": {
   "version-and-name": 48,
-  "name": 24,
+  "name": 25,
   "content": 20,
   "ledger-names-the-file": 2,
-  "no-ledger-row": 3,
+  "no-ledger-row": 2,
   "part-of-combined": 13,
   "applied-outside-ledger": 6,
   "applied-then-recorded": 2
  },
  "treeFiles": 118,
- "resolved": 109,
- "unapplied": 3,
+ "resolved": 110,
+ "unapplied": 2,
  "map": [
   {
    "file": "20260907204146_opera_agent_1_0_0_core.sql",
@@ -720,8 +720,8 @@
   },
   {
    "file": "20261110120000_opera_plan_expiry.sql",
-   "remote": null,
-   "evidence": "no-ledger-row",
+   "remote": "20261109113407",
+   "evidence": "name",
    "cover": null
   }
  ]
