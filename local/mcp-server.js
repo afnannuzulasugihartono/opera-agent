@@ -267,6 +267,7 @@ const nextUtcMidnight = () => {
 
 // WHY THE METER RIDES THE SAME READ.
 // The bridge already knows each device's plan headroom; a caller that could only learn it after the first refused command would waste the very commands the check exists to protect.
+
 const linkedDevices = async (port) => {
   if (!Number.isInteger(port) || port <= 0) return null;
   try {
