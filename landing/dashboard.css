@@ -56,11 +56,44 @@ main.console.wide {
  */
 
 main.console ~ footer {
-  padding: 12px 0;
-  font-size: 12.5px;
+  padding: 8px 0;
+  border-top: 1px solid var(--line);
+  font-size: 12px;
 }
 
-main.console ~ footer .cols { gap: 8px; }
+/* WHY ONE BAR AND NOT THE MAP: a console does not sell the site, it works inside it. The four-column door grid is for readers deciding where to go next; the reader already there wants the links, not the columns. */
+main.console ~ footer .footGrid {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 18px;
+  max-width: none;
+  padding: 0 20px;
+}
+
+main.console ~ footer .footCol {
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+}
+
+main.console ~ footer .footCol:first-child { margin-right: auto; }
+main.console ~ footer .footCol h3,
+main.console ~ footer .footNote { display: none; }
+
+main.console ~ footer .footBrand { font-size: 12px; }
+
+main.console ~ footer .footCol .doors {
+  flex-direction: row;
+  gap: 12px;
+}
+
+main.console ~ footer .doors a { font-size: 12px; }
+
+@media (max-width: 760px) {
+  main.console ~ footer .footGrid { gap: 4px 12px; padding: 0 16px; }
+  main.console ~ footer .footCol:first-child { margin-right: 0; }
+}
 
 /*
  * WHY a smaller radius and no shadow here: a console is a surface you work on, and the brochure radius made every card look like it was selling something.
