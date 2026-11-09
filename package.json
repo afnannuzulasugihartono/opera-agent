@@ -1,12 +1,12 @@
 {
   "name": "opera-agent",
-  "version": "1.6.35",
+  "version": "1.6.36",
   "private": true,
   "license": "MIT",
   "description": "Local Opera browser control bridge with Supabase-powered workflows and automation.",
   "type": "module",
   "scripts": {
-    "test": "node --test --test-timeout=120000 tests/*.test.mjs",
+    "test": "node --test --test-timeout=120000 --test-reporter=dot tests/*.test.mjs",
     "test:unit": "node --test tests/protocol.test.mjs tests/workflow-dsl.test.mjs",
     "test:browser": "python tests/browser_extension_test.py",
     "benchmark:semantic": "node scripts/semantic-baseline.mjs --runs=3",

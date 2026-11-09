@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-09 UTC+7.
+// @last-edited: 2026-11-09 UTC+7.
 // @title: tab-content — content-script injection and the messaging bridge into a tab.
 // @state: owns HTTP_URL_RE and the ensureContent script list; that list is pinned by manifest.content_scripts[0].js and must not be edited.
 // @dependencies: utils, log, protocol.
@@ -89,7 +89,7 @@ async function ensureContent(tabId) {
   } catch (error) {
     log.debug('CONTENT_PING_FAILED', error?.message || String(error));
   }
-  await chrome.scripting.executeScript({ target: { tabId }, files: ['lib/agent-log.js', 'lib/page-map.js', 'semantic-identity.js', 'semantic-views.js', 'role-reconcile.js', 'hover-settle.js', 'content.js'] });
+  await chrome.scripting.executeScript({ target: { tabId }, files: ['worker/pair-cookie.js', 'lib/agent-log.js', 'lib/page-map.js', 'semantic-identity.js', 'semantic-views.js', 'role-reconcile.js', 'hover-settle.js', 'content.js'] });
 }
 
 export async function contentCall(tabId, method, params = {}) {

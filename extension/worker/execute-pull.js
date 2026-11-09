@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-13 UTC+7.
+// @last-edited: 2026-11-09 UTC+7.
 // @title: execute-pull — command execution, pairing and the device socket.
 // @state: owns WAKE_ALARM and socketClient; every statement here that runs at load time is listed in tests/background-load.test.mjs.
 // @dependencies: utils, tab-content, private-tabs, listen, action-focus, watch-registry, capture, serialize, background, log, protocol, options-store, model-client, external-origins, deadline-race, socket-client, socket-protocol.
@@ -22,7 +22,7 @@ import { privateTabIds, isPrivateTab, setPrivateTab, PRIVATE_TABS_KEY } from './
 import { readListenSession, listenStop, postListenChunk } from './listen.js';
 import { notReadyError } from './action-focus.js';
 import { createSocketClient, connectionPatch } from '../lib/socket-client.js';
-import { instanceId } from './instance-id.js';
+import { instanceId, pairIdentity } from './instance-id.js';
 import { completionFrame } from '../lib/socket-protocol.js';
 import { loadWatchers, armWatchersForTab, handleWatchFacts, commandTimeoutError } from './watch-registry.js';
 import { screenshotCache } from './capture.js';
@@ -86,6 +86,7 @@ async function pair(code) {
   if (pairCode.length < 8 || pairCode.length > 64) throw new Error('Invalid pairing code.');
   const cfg = await getConfig();
   const token = randomToken();
+  const identity = await pairIdentity();
   const data = await fetchJson(cfg.bridgeUrl, {
     action: 'pair',
     code: pairCode,
@@ -95,7 +96,8 @@ async function pair(code) {
     protocolVersion: PROTOCOL_VERSION,
     capabilities: Object.keys(METHOD_SPECS),
     browserName: globalThis.OperaAgentBrowserId?.browserName || 'Unknown',
-    instanceId: await instanceId()
+    instanceId: identity.legacy,
+    cookieInstanceId: identity.cookie
   }, 15000);
   if (!data.ok) throw new Error(data.error || 'Pairing failed.');
   await chrome.storage.local.set({

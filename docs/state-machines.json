@@ -63,6 +63,21 @@
       "rank": 1
     },
     {
+      "id": "device-identity-source",
+      "kind": "extension",
+      "where": "extension/worker/pair-cookie.js:1",
+      "states": [
+        "cookie",
+        "legacy-random"
+      ],
+      "writers": "dashboard cookie setter, pair-cookie mirror, instance-id pairIdentity, opera_pair_device cookie/legacy adoption",
+      "readers": "opera_pair_device, the bridge pair action, the dashboard device list",
+      "wrongIfConfused": "re-install wipes chrome.storage.local, pair time mints a fresh identity, and the account drowns in ghost browsers that answered nothing; adoption requires the legacy row's owner to match the pairing code's issuer, or the row to be unowned, otherwise one account's stale identity could rename another account's device",
+      "decision": "model",
+      "why": "one browser keeps one device across reinstalls only if the identity lives in the browser profile (its cookie jar), not in data the extension deletes on removal; pair time adopts the legacy row in place so the device survives the upgrade, ranked user > developer",
+      "rank": 1
+    },
+    {
       "id": "device-lifecycle",
       "kind": "sql",
       "where": "supabase/migrations/20260907204146_opera_agent_1_0_0_core.sql:13",
