@@ -7,7 +7,7 @@
 
 // Chrome and Brave on one machine used to fight over one device slot, so the second browser was closed out and the first was told nothing about it.
 // The bridge now keeps every browser it is given, hands each a numeric namespace, and carries each command to the browser that owns the target it names.
-// A namespace cannot collide because the slot rides in the upper digits of a decimal number, while the browser's own tab ids never exceed a million.
+// A namespace cannot collide because the slot rides in the upper digits of a decimal number, while a Chromium build numbers tab ids across the whole 32-bit range; the stride is sized past that range, not past a comfortable guess.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -48,8 +48,8 @@ test('two browsers connect at once, and the merged list names both', async () =>
   const answer = await bridge.send('tabs.list', {}, { timeoutMs: 2000 });
   assert.equal(answer.ok, true);
   assert.equal(answer.result.length, 2, 'both browsers are in one list');
-  assert.equal(new Set(answer.result.map((tab) => tab.id % 1000000000)).size, 1, 'both number their own tabs from the same start');
-  assert.equal(new Set(answer.result.map((tab) => Math.floor(tab.id / 1000000000))).size, 2, 'and neither row can be mistaken for the other browser’s tab');
+  assert.equal(new Set(answer.result.map((tab) => tab.id % 10000000000)).size, 1, 'both number their own tabs from the same start');
+  assert.equal(new Set(answer.result.map((tab) => Math.floor(tab.id / 10000000000))).size, 2, 'and neither row can be mistaken for the other browser’s tab');
 
   await chrome.stop();
   await brave.stop();
@@ -118,5 +118,63 @@ test('a command for one browser reaches only that browser, and carries its tab n
 
   await chrome.stop();
   await brave.stop();
+  await bridge.close();
+});
+
+test('a 32-bit tab id from a real Chromium build round trips without crossing the namespace', async () => {
+  // WHY THIS TEST EXISTS Chrome and Brave mint tab ids that fill a 32-bit int now; a namespace stride that sits inside that range makes every routed id ambiguous, and the drive blackholes every per-tab command.
+  const BIG = 1517047131;
+  const bridge = createBridgeServer({ cloud: fakeCloud(), port: 0, heartbeatMs: 1000 });
+  await bridge.listen();
+  const { port } = bridge.address();
+
+  const chrome = createScriptedDevice({
+    url: `ws://127.0.0.1:${port}`,
+    instanceId: 'browser-chrome',
+    handle: (command) => command.method === 'tabs.list'
+      ? [{ id: BIG, url: 'https://big/', title: 'Big' }]
+      : { method: command.method, tabId: command.params?.tabId ?? null }
+  });
+  await chrome.connected;
+  await sleep(50);
+
+  const listed = await bridge.send('tabs.list', {}, { timeoutMs: 2000 });
+  assert.equal(listed.result[0].id, 10000000000 + BIG, 'the stride clears the whole 32-bit range');
+
+  chrome.seen.length = 0;
+  const cdp = await bridge.send('cdp', { tabId: listed.result[0].id, method: 'Page.getLayoutMetrics' }, { timeoutMs: 2000 });
+  assert.equal(cdp.ok, true);
+  const routed = chrome.seen.find((frame) => frame.method === 'cdp');
+  assert.equal(routed?.params?.tabId, BIG, 'the raw tab id crosses the door with the namespace digits gone');
+
+  await chrome.stop();
+  await bridge.close();
+});
+
+test('two sockets from the same browser collapse to one device', async () => {
+  // WHY THIS TEST EXISTS A browser that reconnects before its old socket is reaped was listed twice, and every caller that counts devices counted a phantom: the merged list returned the same tabs twice and the meter charged both sockets for one list.
+  const bridge = createBridgeServer({ cloud: fakeCloud(), port: 0, heartbeatMs: 1000 });
+  await bridge.listen();
+  const { port } = bridge.address();
+
+  const dupe = () => createScriptedDevice({
+    url: `ws://127.0.0.1:${port}`,
+    instanceId: 'browser-brave',
+    handle: () => [{ id: 5, url: 'https://brave/', title: 'Brave' }]
+  });
+  const first = dupe();
+  const second = dupe();
+  await Promise.all([first.connected, second.connected]);
+  await sleep(80);
+
+  const health = await fetch(`http://127.0.0.1:${port}/health`).then((response) => response.json());
+  assert.equal(health.devices.length, 1, 'one browser, one row');
+  assert.equal(health.devices[0].instanceId, 'browser-brave');
+
+  const answer = await bridge.send('tabs.list', {}, { timeoutMs: 2000 });
+  assert.equal(answer.result.length, 1, 'the duplicate socket does not bill twice for one list');
+
+  await first.stop();
+  await second.stop();
   await bridge.close();
 });

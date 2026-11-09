@@ -160,6 +160,13 @@ async function runCommand(command) {
     const created = await chrome.tabs.create({ url: String(params.url || 'about:blank'), active: params.active === true });
     return publicBridgeTab(created);
   }
+  if (method === 'tabs.get') {
+    const tabId = Number(params.tabId);
+    if (!Number.isInteger(tabId)) throw new Error(`bridge: tabs.get needs an integer tabId, got ${params.tabId}`);
+    const tab = await chrome.tabs.get(tabId).catch(() => null);
+    if (!tab) throw new Error(`bridge: no tab with id ${tabId}`);
+    return publicBridgeTab(tab);
+  }
   if (method === 'tabs.close') {
     const tabId = Number(params.tabId);
     await chrome.tabs.remove(tabId);
