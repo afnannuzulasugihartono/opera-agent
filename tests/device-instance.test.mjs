@@ -13,6 +13,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import { createBridgeServer } from '../local/bridge-ws.js';
+import { fakeCloud } from './helpers/fake-cloud.mjs';
 import { DEVICE_PROTOCOL_VERSION, handshakeFrame } from '../extension/lib/socket-protocol.js';
 import { handshakePayload } from '../supabase/functions/opera-agent-bridge/bridge-socket.ts';
 import { newInstanceId } from '../extension/worker/instance-id.js';
@@ -48,7 +49,7 @@ test('a generated identity is unique per call', () => {
 });
 
 test('the loopback bridge names the browser it heard, not only its socket', async () => {
-  const bridge = createBridgeServer({ port: 0, heartbeatMs: 500 });
+  const bridge = createBridgeServer({ cloud: fakeCloud(), port: 0, heartbeatMs: 500 });
   await bridge.listen();
   const { port } = bridge.address();
   const socket = new WebSocket(`ws://127.0.0.1:${port}`);

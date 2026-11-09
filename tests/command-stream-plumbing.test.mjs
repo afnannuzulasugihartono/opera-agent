@@ -1,6 +1,6 @@
 // @last-edited: 2026-10-13 UTC+7.
-// @title: command-stream-plumbing — the device side of the streaming channel must not become a way to stall or flood.
-// @state: 6 locks; bridge validation, the envelope cap, and the device fire-and-forget rule.
+// @title: command-stream-plumbing - the device side of the streaming channel must not become a way to stall or flood.
+// @state: bridge validation, the envelope cap, the device fire-and-forget rule, and the meter's two doors.
 // @dependencies: node:test, strict, node:fs, node:module, node:vm.
 
 // WHY THIS FILE EXISTS
@@ -112,6 +112,8 @@ function harness(emit = { ok: true, eventId: 7 }) {
       if (name === 'opera_auth_device') return { data: 'device-uuid' };
       if (name === 'opera_claim_next_wait') return { data: { ok: true, command: null } };
       if (name === 'opera_device_plan') return { data: { ok: true, plan: 'plan.pilot', status: 'active', dailyQuota: 200, usedToday: 1 } };
+      if (name === 'opera_device_session_open') return { data: { ok: true, plan: 'plan.pilot', status: 'active', dailyQuota: 200, usedToday: 3, sessionAllowance: 47 } };
+      if (name === 'opera_device_session_report') return { data: { ok: true, reported: args.p_commands } };
       throw new Error(`Unexpected RPC ${name}`);
     },
     async removeChannel() { }
@@ -409,4 +411,42 @@ test('emits are chained, so a done event cannot overtake the step events that pr
 
   const declared = pull.match(/^let emitChain = Promise\.resolve\(\);$/m);
   assert.ok(declared, 'emitChain must start as a resolved promise, or the first emit waits on nothing and the rest chain behind it');
+});
+
+// WHY THE METER RIDES THIS HARNESS.
+// The session open and the session report are the two doors the local bridge knocks on, and they carry the account's credentials, so they are pinned to the same refusal rules as every other authenticated action here.
+
+test('session_open reaches the meter RPC with the device token hashed, never in the clear', async () => {
+  const h = harness();
+  const res = await h.post({ action: 'session_open', token: 'a'.repeat(64), deviceName: 'opera' });
+  assert.equal(res.status, 200);
+  const call = h.calls.find((c) => c.name === 'opera_device_session_open');
+  assert.ok(call, 'the session never reached the RPC');
+  assert.equal(call.args.p_device_name, 'opera');
+  assert.notEqual(call.args.p_token_hash, 'a'.repeat(64), 'the raw token was forwarded instead of its hash');
+  assert.equal(call.args.p_token_hash.length, 64);
+  const body = await res.json();
+  assert.equal(body.sessionAllowance, 47);
+});
+
+test('session_open with a bad token never reaches the database', async () => {
+  const h = harness();
+  const res = await h.post({ action: 'session_open', token: 'short', deviceName: 'opera' });
+  assert.equal(res.status, 401);
+  assert.equal(h.calls.length, 0);
+});
+
+test('session_report clamps the count before it reaches the database', async () => {
+  const h = harness();
+  const res = await h.post({ action: 'session_report', token: 'a'.repeat(64), deviceName: 'opera', commands: 999999 });
+  assert.equal(res.status, 200);
+  const call = h.calls.find((c) => c.name === 'opera_device_session_report');
+  assert.equal(call.args.p_commands, 10000);
+});
+
+test('session_report with nothing to count never reaches the database', async () => {
+  const h = harness();
+  const res = await h.post({ action: 'session_report', token: 'a'.repeat(64), deviceName: 'opera', commands: 0 });
+  assert.equal(res.status, 400);
+  assert.equal(h.calls.length, 0);
 });

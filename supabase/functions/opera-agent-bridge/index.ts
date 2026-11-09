@@ -1,6 +1,6 @@
 // @last-edited: 2026-10-21 UTC+7.
-// @title: opera-agent-bridge — the cloud bridge: the device socket and the command queue it serves.
-// @state: the socket upgrade, the CORS answer, and the enqueue a device claims from.
+// @title: opera-agent-bridge - the cloud bridge: the device socket, the command queue it serves, and the session meter the local drive pays.
+// @state: the socket upgrade, the CORS answer, the enqueue a device claims from, and the session open and report the loopback bridge asks once per session.
 // @dependencies: edge-runtime, supabase-js, edge-log.
 
 import "@supabase/edge-runtime";
@@ -138,6 +138,37 @@ async function heartbeat(body: Record<string, unknown>) {
   return json(result || { ok: false }, result?.ok ? 200 : 401);
 }
 
+// WHY THE SESSION IS ONE CALL AND NOT TWO.
+// The local drive pays for exactly one round trip per session in exchange for a bounded, metered allowance; asking for the plan and the allowance separately would double that cost for no new information.
+
+async function sessionOpen(body: Record<string, unknown>) {
+  if (!validToken(body.token) || !validDeviceName(body.deviceName)) {
+    return json({ ok: false, error: "Unauthorized device." }, 401);
+  }
+  const result = await rpc("opera_device_session_open", {
+    p_device_name: body.deviceName.trim(),
+    p_token_hash: await sha256(body.token.toLowerCase())
+  });
+  return json(result || { ok: false, error: "The plan for this device could not be read." }, result?.ok ? 200 : 403);
+}
+
+async function sessionReport(body: Record<string, unknown>) {
+  if (!validToken(body.token) || !validDeviceName(body.deviceName)) {
+    return json({ ok: false, error: "Unauthorized device." }, 401);
+  }
+  const raw = Number(body.commands);
+  if (!Number.isFinite(raw) || raw < 1) {
+    return json({ ok: false, error: "commands must be an integer between 1 and 10000." }, 400);
+  }
+  const commands = Math.min(10000, Math.floor(raw));
+  const result = await rpc("opera_device_session_report", {
+    p_device_name: body.deviceName.trim(),
+    p_token_hash: await sha256(body.token.toLowerCase()),
+    p_commands: commands
+  });
+  return json(result || { ok: false }, result?.ok ? 200 : 403);
+}
+
 // WHY completion is a socket call, not an HTTP action.
 // The pull client is gone — the device learns work over its socket and answers over the same one — so the HTTP pull and complete actions were deleted with it.
 // This function stays because the socket still needs exactly what it does.
@@ -265,6 +296,8 @@ async function handle(req: Request) {
     if (action === "watch_event") return await watchEvent(body);
     if (action === "command_event") return await commandEvent(body);
     if (action === "start_workflow") return await startWorkflow(body);
+    if (action === "session_open") return await sessionOpen(body);
+    if (action === "session_report") return await sessionReport(body);
     return json({ ok: false, error: "Unknown action." }, 400);
   } catch (error) {
     if (error instanceof SyntaxError) {

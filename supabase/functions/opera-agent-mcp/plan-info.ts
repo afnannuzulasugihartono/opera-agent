@@ -28,7 +28,13 @@ export async function planInfo(db, userId: string | null): Promise<Record<string
       .select('id, opera_devices!inner(user_id)', { count: 'exact', head: true })
       .eq('opera_devices.user_id', userId)
       .gte('created_at', midnight.toISOString());
-    return { plan, planStatus: status, planQuota: quota, planUsed: Number(count ?? 0) };
+    const { data: reports } = await db
+      .from('opera_usage_reports')
+      .select('commands')
+      .eq('user_id', userId)
+      .gte('created_at', midnight.toISOString());
+    const reported = (reports ?? []).reduce((sum, row) => sum + Number(row?.commands ?? 0), 0);
+    return { plan, planStatus: status, planQuota: quota, planUsed: Number(count ?? 0) + reported };
   } catch {
     return null;
   }

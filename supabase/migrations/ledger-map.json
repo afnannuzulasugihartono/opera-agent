@@ -9,10 +9,10 @@
   "ledger-names-the-file": 2,
   "no-ledger-row": 2,
   "part-of-combined": 13,
-  "applied-outside-ledger": 5,
+  "applied-outside-ledger": 6,
   "applied-then-recorded": 2
  },
- "treeFiles": 116,
+ "treeFiles": 117,
  "resolved": 109,
  "unapplied": 2,
  "map": [
@@ -708,6 +708,12 @@
   },
   {
    "file": "20261109110000_opera_device_plan.sql",
+   "remote": null,
+   "evidence": "applied-outside-ledger",
+   "cover": null
+  },
+  {
+   "file": "20261109130000_opera_session_usage.sql",
    "remote": null,
    "evidence": "applied-outside-ledger",
    "cover": null

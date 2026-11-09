@@ -50,10 +50,15 @@ export function encodeText(text) {
   return Buffer.concat([header, payload]);
 }
 
-function encodeClose(code = 1000) {
-  const payload = Buffer.alloc(2);
-  payload.writeUInt16BE(code, 0);
-  return Buffer.concat([Buffer.from([0x88, 0x02]), payload]);
+// WHY THE REASON RIDES ALONG.
+// A bare 1001 says the browser asked to leave; it says nothing about why.
+// The socket close during the handshake carries the meter's reason so the extension can show it instead of a bare code.
+
+function encodeClose(code = 1000, reason = '') {
+  const head = Buffer.alloc(2);
+  head.writeUInt16BE(code, 0);
+  const payload = Buffer.concat([head, Buffer.from(String(reason), 'utf8').subarray(0, 120)]);
+  return Buffer.concat([Buffer.from([0x88, payload.length]), payload]);
 }
 
 function encodePong() {
@@ -196,9 +201,9 @@ export class BridgeSocket extends EventEmitter {
     return this.raw(encodeText(text));
   }
 
-  close(code = 1000) {
+  close(code = 1000, reason = '') {
     if (this.closed) return;
-    this.raw(encodeClose(code));
+    this.raw(encodeClose(code, reason));
     this.socket.end();
     this.finish();
   }

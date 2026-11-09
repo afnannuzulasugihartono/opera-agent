@@ -56,6 +56,7 @@ function trustedRecently() {
 
 function adoptedBridge(port) {
   let linked = false;
+  let meterRefusal = null;
   const call = async (method, params = {}, { timeoutMs = 60000 } = {}) => {
     let body;
     try {
@@ -86,6 +87,7 @@ function adoptedBridge(port) {
       throw new Error(`bridge: port ${port} is held by another process that is not a bridge`);
     }
     linked = body.linked === true;
+    meterRefusal = typeof body.meterRefusal === 'string' ? body.meterRefusal : null;
     return linked;
   };
   return {
@@ -97,7 +99,7 @@ function adoptedBridge(port) {
     linked: () => linked,
     send: (method, params, options) => call(method, params, options),
     on: () => {},
-    state: () => ({ linked, deviceId: null, queued: null, waiting: null, lastHeardMsAgo: null })
+    state: () => ({ linked, deviceId: null, queued: null, waiting: null, lastHeardMsAgo: null, meterRefusal })
   };
 }
 
@@ -140,11 +142,25 @@ async function prove(srv) {
 // A guest asks the owner instead — one round trip on a path that already pays one — and a live owner says yes.
 // The owner's own server keeps its in-process truth.
 
+function meterRefusalOf(srv) {
+  try {
+    const refusal = srv?.state?.().meterRefusal;
+    return typeof refusal === 'string' && refusal ? refusal : null;
+  } catch {
+    return null;
+  }
+}
+
+// WHY THE REFUSAL IS CARRIED, NOT THE LINK ERROR.
+// A device sitting right there, refused by the meter, is not a device that is not connected.
+// The person reading the answer needs the one sentence that says why the browser would not load, so when the meter is the reason, the meter's refusal is the error.
+
 async function attempt(method, params, timeoutMs, takeover = true) {
   const srv = await ensureServer();
   if (!srv.linked()) {
     const alive = srv.adopted ? await srv.probe().catch(() => false) : false;
-    if (!alive) throw new Error(LINK_ERROR);
+    const refusal = meterRefusalOf(srv);
+    if (!alive) throw new Error(refusal ? `bridge: the meter refused this device (${refusal})` : LINK_ERROR);
   }
   if (!trustedRecently() && !(await prove(srv))) {
     throw new Error(`bridge: no answer for the liveness proof in ${PROOF_TIMEOUT_MS} ms`);
