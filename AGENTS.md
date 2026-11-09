@@ -1,4 +1,4 @@
-@last-edited: 2026-10-07 UTC+7.
+@last-edited: 2026-11-09 UTC+7.
 @related: [`README.md`](README.md) - [`docs/handoff.md`](docs/handoff.md) - [`docs/security.md`](docs/security.md)
 
 # Opera Agent agent instructions
@@ -19,6 +19,8 @@ These ride with every job. Read them before acting, not once per session.
 - Work the Plan → Execute → Fix loop, and repeat it: each round ends with a fresh run against the artefact, not a restated intention. The runs are `npm test` and `npm run check`, plus `py tests/browser_extension_test.py` for anything the extension does inside a page.
 - Audit everything, delete the trash, simplify the program: sweep for dead files, dead exports, and stale scaffolds, remove what you find, and leave the tree simpler than you met it.
 - Never ask any human for signing keys or any secret material: publisher secrets live only in GitHub Secrets - verify presence with `gh secret list` (names only, values never print), and treat publishing as your own dispatch task, not a question for the owner.
+- Read the lines you need, never the file: ranges through `Select-Object -Skip n -First m` or `Select-String -Context`, logs through their tails. Printing a file whole to find one line is a failed search done in public.
+- Filter before you display. A command that can produce hundreds of lines runs through a bounded filter or the machinery the tree already carries - `npm test` ends in the dot reporter, one dot per test, failures printed in full at the end, nothing else. The gate is `tests/tidy-output.test.mjs`.
 - Find every implicit state machine you touch and decide its fate before you ship: model it, delete it, or tolerate it with a written reason - ranked user > developer > agent, always. The register is `docs/state-machines.json`; the gate is `tests/implicit-state-machines.test.mjs`.
 
 ## Goals
@@ -38,4 +40,3 @@ Choose in this order. Simple outranks all three.
 1. **Function** — it works, proven by driving it.
 2. **Feature** — justified by a real case. No case, no feature.
 3. **Speed** - short round trips. Measure before claiming a gain.
-
