@@ -1,43 +1,51 @@
 /*
  * @last-edited: 2026-11-09 UTC+7.
- * @title: download.css - the download hub, the per-browser cards, the steps and the checksum block.
- * @state: one large door, five browser cards, and the verification prose the two download pages share.
+ * @title: download.css - the two download pages: one hub door, five browser cards, the steps and the verification prose.
+ * @state: one shared hero measure, one card grammar, one table; the two pages differ only in which question they answer.
  * @dependencies: site.css.
- *
- * WHY two pages and one sheet: the hub answers "where do I start" and the file page answers "which one is mine"; both use the same card and step grammar.
  */
 
-.wrap.wide { max-width: var(--wrap); }
+/* WHY TWO PAGES, ONE SHEET: the hub promises where to start, the file page answers which one you need; splitting the grammar would mean two designs for one job. */
 
 .hero {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(300px, .85fr);
-  gap: clamp(24px, 3vw, 56px);
+  grid-template-columns: minmax(0, 1fr) minmax(320px, .8fr);
+  gap: clamp(40px, 5vw, 72px);
   align-items: center;
   max-width: none;
-  margin: 16px 0 56px;
+  margin: 24px 0 0;
+  padding-bottom: clamp(48px, 6vh, 96px);
 }
 
 .hero-text h1 {
-  max-width: 12ch;
-  margin: 0 0 18px;
+  max-width: 15ch;
+  margin: 0 0 22px;
   text-align: left;
-  font-size: clamp(34px, 4.6vw, 64px);
-  line-height: .99;
-  letter-spacing: -.045em;
+  font-size: clamp(38px, 4.9vw, 72px);
+  line-height: .98;
+  letter-spacing: -.042em;
 }
 
-.hero-text > p {
-  max-width: 56ch;
-  margin: 0 0 14px;
+.hero-text > p.lede {
+  max-width: 48ch;
+  margin: 0 0 26px;
   color: var(--muted);
-  font-size: 16px;
+  font-size: 18px;
+  line-height: 1.58;
   text-align: left;
 }
 
-.hero-cta { margin: 24px 0 12px; }
+.hero-cta {
+  margin: 0 0 16px;
+}
 
-/* WHY the giant door reads like a platform download: one filled control, a platform-sized label, and a shape the eye cannot confuse with a secondary link. */
+@media (max-width: 900px) {
+  .hero { grid-template-columns: minmax(0, 1fr); gap: 34px; margin-top: 8px; }
+  .hero-text h1 { font-size: clamp(34px, 9vw, 52px); }
+  .hero-text > p.lede { font-size: 16.5px; }
+}
+
+/* WHY ONE DOOR, ONE GRAMMAR: the door is a filled control with a verb the reader can say out loud; the arrow answers a hover, not a sigh. */
 
 .btn.giant {
   position: relative;
@@ -45,46 +53,37 @@
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  max-width: 430px;
-  min-height: 58px;
-  padding: 0 26px;
+  max-width: 480px;
+  min-height: 64px;
+  padding: 0 24px;
   border: 1px solid var(--accent);
   border-radius: var(--radius);
   background: var(--accent);
   color: var(--on-fill);
   font-size: 19px;
-  font-weight: 650;
-  letter-spacing: .01em;
+  font-weight: 640;
+  letter-spacing: .005em;
   line-height: 1;
   text-align: left;
   text-decoration: none;
-  transition: background .2s var(--ease), border-color .2s var(--ease);
-  animation: giant-breathe 0.6s var(--ease) 0.2s backwards;
-}
-
-@keyframes giant-breathe {
-  from { transform: scale(1); }
-  50% { transform: scale(1.015); }
-  to { transform: scale(1); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .btn.giant { animation: none; }
-}
-
-.btn.giant:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 3px var(--accent-soft);
+  animation: none;
+  transition: background .18s var(--ease), border-color .18s var(--ease), transform .18s var(--ease);
 }
 
 .btn.giant::after {
   content: "↓";
   position: absolute;
-  right: 24px;
+  right: 22px;
   top: 50%;
   transform: translateY(-50%);
-  font-size: 20px;
+  font-size: 21px;
   font-weight: 400;
+  transition: transform .18s var(--ease);
+}
+
+.btn.giant:hover::after,
+.btn.giant:focus-visible::after {
+  transform: translate(4px, -50%);
 }
 
 .btn.giant:hover {
@@ -93,286 +92,249 @@
   color: var(--on-fill);
 }
 
+.btn.giant:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
 .also {
-  color: var(--muted);
-  font-size: 13.5px;
-}
-
-/*
- * WHY THE PAGE ARRIVES IN FIVE BEATS: the reader meets the door one line at a time - title, value, money, door, facts - and the composition resolves before the eye has anywhere else to go.
- * Each beat rides once, 70-90 ms apart, and never blocks a reader who gets there first.
- */
-
-@keyframes arrive {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: none; }
-}
-
-html.js [data-arrive] {
-  opacity: 0;
-  animation: arrive .55s var(--ease) both;
-}
-
-html.js [data-arrive]:nth-of-type(1) { animation-delay: .02s; }
-html.js [data-arrive]:nth-of-type(2) { animation-delay: .1s; }
-html.js [data-arrive]:nth-of-type(3) { animation-delay: .18s; }
-html.js [data-arrive]:nth-of-type(4) { animation-delay: .26s; }
-html.js [data-arrive]:nth-of-type(5) { animation-delay: .34s; }
-html.js [data-arrive]:nth-of-type(6) { animation-delay: .42s; }
-
-@media (prefers-reduced-motion: reduce) {
-  html.js [data-arrive] { opacity: 1; animation: none; }
-}
-
-/* WHY THE DOOR ANSWERS THE CURSOR: one door, one reach - the arrow keeps its place while the hand arrives, and a small drift reads as "you can go" rather than "something moved". */
-
-.btn.giant { position: relative; }
-
-.btn.giant::after { transition: transform .22s var(--ease); }
-
-.btn.giant:hover::after,
-.btn.giant:focus-visible::after {
-  transform: translate(5px, -50%);
-}
-
-.btn.giant:hover { background: var(--accent-strong); }
-
-/* WHY THE FAN POPS AS IT LIGHTS: a browser that exists because of this door earns a beat of presence when the light arrives - a scale breath, not a bounce - so the fan reads as five browsers waking up, in order. */
-
-@keyframes tile-pop {
-  0% { transform: scale(1); }
-  42% { transform: scale(1.12); }
-  100% { transform: scale(1); }
-}
-
-html.js .pack.in .packTile:nth-child(1) { animation-delay: .38s, .6s; }
-html.js .pack.in .packTile:nth-child(2) { animation-delay: .48s, .7s; }
-html.js .pack.in .packTile:nth-child(3) { animation-delay: .58s, .8s; }
-html.js .pack.in .packTile:nth-child(4) { animation-delay: .68s, .9s; }
-html.js .pack.in .packTile:nth-child(5) { animation-delay: .78s, 1s; }
-
-html.js .pack.in .packTile { animation: pack-light .2s var(--ease) forwards, tile-pop .5s var(--ease) 1; }
-
-.packTile svg { display: block; }
-
-.packTile:hover { transform: translateY(-3px); border-color: var(--accent); }
-.packTile:hover svg { transform: scale(1.15); }
-.packTile svg { transition: transform .25s var(--ease); }
-
-.packCaption {
-  margin: 14px 0 0;
-  padding: 0;
-  color: var(--muted);
-  font-size: 12px;
-}
-
-.pack > code {
-  margin: 0 0 16px;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .packTile:hover, .packTile:hover svg { transform: none; }
-}
-
-/*
- * WHY THE FACTS ARE QUIET: the page makes one ask, so the supporting numbers sit at caption weight - the reader who opens the door never had to compare three stats to find it.
- * The numerals ride tabular figures so the three facts align even though their lengths differ by three words.
- */
-
-.quietFacts {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px 22px;
-  margin: 22px 0 0;
-  padding: 18px 0 0;
-  border-top: 1px solid var(--line);
-  list-style: none;
+  margin: 0;
   color: var(--muted);
   font-size: 13px;
-  line-height: 1.5;
+}
+
+.also a { text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+
+/* WHY THE NUMBERS STAY OUT OF THE READING LINE: three counts in a row at caption weight are easier to skim than three sentences explaining the same numbers. */
+
+.statBand {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 28px 44px;
+  margin: 26px 0 0;
+  padding: 18px 0 0;
+  border-top: 1px solid var(--line);
+}
+
+.statBand > div {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.statBand .stat-num {
+  color: var(--ink);
+  font-weight: 660;
+  letter-spacing: -.03em;
+  font-size: 27px;
+  line-height: 1;
   font-variant-numeric: tabular-nums;
 }
 
-.stat-num {
-  color: var(--ink);
-  font-size: 15px;
-  font-weight: 640;
-  letter-spacing: -.01em;
+.statBand dd {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.35;
 }
 
-/*
- * WHY TWO COLUMNS: the page had one long vertical staircase - door, stats, permissions, review - and the reader's eye kept landing on the next section before finishing the last.
- * The two questions the page answers (why these permissions, why not a button) read side by side now, and each owns its measure.
- */
-
-.downloadBody.cleanGrid {
-  display: grid;
-  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
-  gap: clamp(28px, 4vw, 56px);
-  max-width: none;
-}
-
-.cleanGrid .column > h2:first-child { margin-top: 0; }
-.cleanGrid .column > p:first-of-type { margin-top: 0; }
-
-.facts.restrained { margin-bottom: 18px; }
-
-.asideBox {
-  padding: 22px 24px;
-  border: 1px solid var(--line);
-  border-radius: 16px;
-  background: var(--surface);
-}
-
-.asideBox h3 { margin: 0 0 8px; font-size: 16px; letter-spacing: -.02em; }
-.asideBox p { margin: 0; }
-
-@media (max-width: 900px) {
-  .downloadBody.cleanGrid { grid-template-columns: minmax(0, 1fr); }
-}
-
-/*
- * WHY THE HERO CARRIES A PICTURE: measured against firecrawl.dev on 2026-11-05, a hero that only says "satu arsip" asks the reader to believe it, and the right half of this one stood empty.
- * One file fans out to the five browsers, and the light crosses the fan once when the block lands, so the claim is seen before it is read.
- */
+/* WHY THE FAN IS NOT DECORATION: it is the product's central promise carried as a picture - one file fans to five browsers - and the light reaches them one at a time so the eye reads a fan. */
 
 .pack {
   display: grid;
   justify-items: center;
-  padding: 34px 24px 30px;
+  align-content: center;
+  gap: 0;
+  padding: 44px 28px 38px;
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: var(--surface);
 }
 
-.pack code {
-  position: relative;
-  padding: 8px 12px;
+.pack > code {
+  padding: 9px 14px;
   border: 1px solid var(--line-strong);
   border-radius: var(--radius-sm);
   background: var(--surface-2);
   color: var(--ink);
-  font-size: 13px;
+  font-size: 12.5px;
+  letter-spacing: .02em;
 }
-
-.pack code::after,
-.pack code::before {
-  content: "";
-  position: absolute;
-  top: 100%;
-  left: 50%;
-  width: 1px;
-  height: 22px;
-  transform-origin: top center;
-}
-
-.pack code::after { background: var(--line-strong); }
-
-.pack code::before { background: var(--accent); }
 
 .packRow {
-  position: relative;
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 10px;
+  gap: 12px;
   width: 100%;
-  margin: 32px 0 0;
+  margin: 34px 0 0;
   padding: 0;
   list-style: none;
 }
-
-.packRow::after,
-.packRow::before {
-  content: "";
-  position: absolute;
-  top: -11px;
-  left: 10%;
-  right: 10%;
-  height: 1px;
-  transform-origin: left center;
-}
-
-.packRow::before { background: var(--line-strong); }
-
-.packRow::after { background: var(--accent); }
 
 .packTile {
   display: grid;
   place-items: center;
   aspect-ratio: 1;
   border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
+  border-radius: 10px;
   background: var(--surface-2);
   color: var(--muted);
-  font-family: var(--mono);
-  font-size: 13px;
+  transition: transform .18s var(--ease), border-color .18s var(--ease);
 }
 
-html.js .pack code::before { transform: scaleY(0); }
-
-html.js .packRow::after { transform: scaleX(0); }
-
-html.js .pack.in code::before { animation: pack-stem .24s var(--ease) both; }
-
-html.js .pack.in .packRow::after { animation: pack-bar .3s var(--ease) .2s both; }
-
-/* WHY the tiles wait their turn: the light reaches one browser at a time, so the eye reads a fan and not five lamps switching together - the delay now rides on the new dual-track rule above. */
-
-@keyframes pack-stem {
-  to { transform: scaleY(1); }
+html.js .packTile {
+  animation: pack-light .2s var(--ease) forwards;
+  opacity: 0;
 }
 
-@keyframes pack-bar {
-  to { transform: scaleX(1); }
-}
+html.js .packTile:nth-child(1) { animation-delay: .18s; }
+html.js .packTile:nth-child(2) { animation-delay: .28s; }
+html.js .packTile:nth-child(3) { animation-delay: .38s; }
+html.js .packTile:nth-child(4) { animation-delay: .48s; }
+html.js .packTile:nth-child(5) { animation-delay: .58s; }
 
 @keyframes pack-light {
+  from { opacity: 0; transform: scale(.92); }
   to {
+    opacity: 1;
+    transform: none;
     border-color: var(--accent);
     background: var(--accent-soft);
     color: var(--accent);
   }
 }
 
-@media (max-width: 900px) {
-  .hero { grid-template-columns: minmax(0, 1fr); gap: 30px; margin-bottom: 40px; }
-  .pack { max-width: 420px; }
+.packTile svg { display: block; }
+
+.packTile:hover { transform: translateY(-3px); border-color: var(--accent); }
+.packTile:hover svg { transform: scale(1.12); }
+.packTile svg { transition: transform .22s var(--ease); }
+
+.packCaption {
+  margin: 14px 0 0;
+  padding: 0;
+  text-align: center;
+  color: var(--muted);
+  font-size: 12px;
 }
 
-/* ── the file page ──────────────────────────────────────────────────────── */
+/* WHY THE SCREENSHOT IS THE ARGUMENT: a product picture of the product doing the product's job is the only image a software page needs; the caption says what the picture is, plainly. */
 
-.hero.files {
+.artifact {
+  margin: clamp(56px, 7vh, 88px) 0 0;
+}
+
+.artifact img {
   display: block;
+  width: 100%;
+  height: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  object-fit: cover;
+}
+
+.artifact figcaption {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px 24px;
+  margin-top: 14px;
+  color: var(--muted);
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+.artifact figcaption a { color: var(--accent); text-decoration: none; white-space: nowrap; }
+.artifact figcaption a:hover { color: var(--accent-strong); }
+
+/* WHY THE THREE FOLDS HOLD THE WORDS NOBODY NEEDS YET: permissions and review notes are required reading, but they are second reads after a visitor has already decided; quietly collapsed respects the decision. */
+
+.quiet {
+  max-width: 720px;
+  display: grid;
+  gap: 0;
+  margin: clamp(56px, 7vh, 88px) 0 0;
+}
+
+.fold {
+  border-top: 1px solid var(--line);
+  padding: 20px 0;
+}
+.fold:last-child { border-bottom: 1px solid var(--line); }
+
+.fold > summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+  cursor: pointer;
+  list-style: none;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -.012em;
+}
+
+.fold > summary::-webkit-details-marker { display: none; }
+
+.fold > summary::after {
+  content: "+";
+  color: var(--accent);
+  font-size: 20px;
+  font-weight: 400;
+  transition: transform .18s var(--ease);
+}
+
+.fold[open] > summary::after { transform: rotate(45deg); }
+
+.foldFacts {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 8px 22px;
+  margin: 14px 0 0;
+  font-size: 14px;
+}
+
+.foldFacts dt { color: var(--ink); }
+.foldFacts dd { margin: 0; color: var(--muted); }
+
+.fold .meta {
+  margin: 14px 0 0;
+  font-size: 13.5px;
+  line-height: 1.55;
+}
+
+/* ==== the files page ==== */
+
+.heroFiles {
   max-width: 760px;
-  margin: 8px auto 44px;
+  margin: 0 auto;
+  padding: clamp(36px, 5vh, 64px) 0 clamp(28px, 4vh, 44px);
   text-align: center;
 }
 
-.hero.files .eyebrow { justify-content: center; }
-
-.hero.files h1 { margin: 0 0 14px; font-size: clamp(38px, 4.6vw, 56px); }
-.hero.files p { margin: 0; font-size: 16.5px; text-align: center; }
-
-/* WHY one reading measure below the cards: the archive page is a document, and a paragraph that runs the full 1200px loses its reader after the first line. */
-
-.downloadBody {
-  max-width: 780px;
-  margin: 0;
+.heroFiles h1 {
+  margin: 0 0 16px;
+  font-size: clamp(36px, 4.6vw, 56px);
+  letter-spacing: -.04em;
+  line-height: 1.02;
 }
 
-.downloadBody.centered { margin: 0 auto; }
+.heroFiles .lede {
+  margin: 0 auto;
+  max-width: 52ch;
+  color: var(--muted);
+  font-size: 17px;
+  line-height: 1.58;
+}
 
-.downloadBody > h2:first-child { margin-top: 0; }
-
-.downloadBody .facts { margin: 18px 0 26px; }
-
-/* WHY five explicit tracks: the five supported browsers are one row, and an auto-fit track left Vivaldi alone under four cards. */
+/* WHY ONE ROW OF FIVE: the five browsers are equal citizens of one product; the cards are siblings, not a hierarchy; five columns at 1440px, three at tablet, one at phone. */
 
 .browsers {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 14px;
-  margin: 0 0 44px;
+  gap: 16px;
+  margin: 0 0 clamp(56px, 7vh, 80px);
 }
 
 @media (max-width: 1040px) {
@@ -380,7 +342,7 @@ html.js .pack.in .packRow::after { animation: pack-bar .3s var(--ease) .2s both;
 }
 
 @media (max-width: 720px) {
-  .browsers { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .browsers { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 }
 
 @media (max-width: 480px) {
@@ -391,18 +353,18 @@ html.js .pack.in .packRow::after { animation: pack-bar .3s var(--ease) .2s both;
   position: relative;
   display: flex;
   flex-direction: column;
-  padding: 26px 16px 18px;
+  gap: 2px;
+  padding: 24px 18px 18px;
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: var(--surface);
-  text-align: center;
-  transition: border-color .2s var(--ease), box-shadow .2s var(--ease), transform .2s var(--ease);
+  transition: border-color .18s var(--ease), transform .18s var(--ease);
 }
 
-.browser:hover { border-color: var(--line-strong); }
-
-.glyph svg { transition: transform .25s var(--ease); }
-.browser:hover .glyph svg { transform: scale(1.12); }
+.browser:hover {
+  border-color: var(--line-strong);
+  transform: translateY(-2px);
+}
 
 .browser.yours {
   border-color: var(--accent);
@@ -410,62 +372,107 @@ html.js .pack.in .packRow::after { animation: pack-bar .3s var(--ease) .2s both;
   box-shadow: 0 0 0 1px var(--accent);
 }
 
-.browser .glyph {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 48px;
-  height: 48px;
-  margin: 0 auto 12px;
-  border: 1px solid var(--line);
+.glyph {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  margin: 0 auto 10px;
   border-radius: 14px;
-  background: var(--surface-soft);
+  background: var(--surface-2);
   color: var(--ink);
-  font-size: 20px;
-  font-weight: 650;
 }
 
-.browser h3 { margin: 0 0 14px; font-size: 18px; }
+.glyph svg { display: block; }
 
-.browser .btn-row { display: flex; justify-content: center; }
+.browser h2,
+.browser h3 {
+  margin: 0 0 8px;
+  color: var(--ink);
+  font-size: 19px;
+  letter-spacing: -.02em;
+  text-align: center;
+}
+
+.cardHint {
+  margin: 0 0 14px;
+  color: var(--muted);
+  font-size: 12.5px;
+  line-height: 1.5;
+  text-align: center;
+}
+
+@keyframes giant-breathe {
+  0% { transform: scale(1); }
+  30% { transform: scale(1.02); }
+  100% { transform: scale(1); }
+}
+
+.btn.giant {
+  animation: giant-breathe 0.6s var(--ease) 0.2s backwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn.giant { animation: none; }
+}
 
 .browser .btn {
   width: 100%;
-  margin: 0;
-  border-color: var(--accent);
+  min-height: 46px;
+  padding: 0 16px;
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
   background: var(--accent);
   color: var(--on-fill);
   font-size: 14px;
+  font-weight: 650;
+  text-decoration: none;
+  transition: background .15s var(--ease), border-color .15s var(--ease);
 }
 
-.browser .btn:hover { background: var(--accent-strong); border-color: var(--accent-strong); color: var(--on-fill); }
+.browser .btn:hover {
+  background: var(--accent-strong);
+  border-color: var(--accent-strong);
+  color: var(--on-fill);
+}
 
-/* WHY details and not a select: a select fires navigation on change, hides its choices from the keyboard and from the page's own text, and needs script to restore the closed state on load. */
+.badge {
+  position: absolute;
+  top: -11px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 2px 10px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: var(--accent);
+  color: var(--on-fill);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
 
 .browser .more {
-  margin: 10px 0 0;
+  margin-top: 12px;
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: 10px;
   background: var(--surface-soft);
 }
 
-.browser .more[open] { border-color: var(--accent); }
-
 .browser .more > summary {
-  padding: 10px 13px;
-  border-radius: 12px;
+  padding: 9px 12px;
+  border-radius: 10px;
   color: var(--ink);
-  font-size: 12.5px;
+  font-size: 12px;
   font-weight: 600;
-  text-align: left;
   cursor: pointer;
   list-style: none;
 }
 
 .browser .more > summary::-webkit-details-marker { display: none; }
-
-.browser .more > summary::after { content: " ▾"; color: var(--muted); }
-.browser .more[open] > summary::after { content: " ▴"; }
+.browser .more > summary::after { content: "+"; float: right; color: var(--muted); }
+.browser .more[open] > summary::after { content: "−"; font-size: 15px; color: var(--accent); }
 
 .browser .more-list {
   margin: 0;
@@ -475,125 +482,165 @@ html.js .pack.in .packRow::after { animation: pack-bar .3s var(--ease) .2s both;
 
 .browser .more-list a {
   display: block;
-  padding: 8px 6px;
+  padding: 7px 8px;
   border-radius: 8px;
   color: var(--accent);
-  font-size: 13px;
-  text-align: left;
+  font-size: 12.5px;
   text-decoration: none;
 }
 
-.browser .more-list a:hover { background: var(--surface); }
+.browser .more-list a:hover { background: var(--surface); color: var(--accent-strong); }
 
-.browser .req {
+.req {
   margin: 12px 0 0;
-  padding: 0 4px;
+  padding: 0 2px;
   color: var(--muted);
-  font-size: 11.5px;
+  font-size: 11px;
   line-height: 1.55;
   text-align: left;
 }
 
-.browser .req code {
-  padding: 1px 4px;
-  font-size: 10.5px;
-  white-space: nowrap;
-}
-
-.browser .badge {
-  position: absolute;
-  top: -10px;
-  left: 50%;
-  transform: translateX(-50%);
-  padding: 3px 10px;
-  border-radius: var(--radius-sm);
-  background: var(--accent);
-  color: var(--on-fill);
+.req code {
   font-size: 10px;
-  font-weight: 650;
-  letter-spacing: .04em;
-  white-space: nowrap;
-}
-
-/* ── shared prose and tables ────────────────────────────────────────────── */
-
-h2 { margin: 38px 0 10px; font-size: 26px; letter-spacing: -.03em; }
-
-p, li { color: var(--muted); }
-
-p strong, li strong { color: var(--ink); }
-
-code, .hash {
-  font-family: var(--mono);
-  font-size: 12.5px;
-  padding: 2px 6px;
-  border: 1px solid var(--line);
-  border-radius: 7px;
-  background: var(--surface-soft);
-  overflow-wrap: anywhere;
-  word-break: break-word;
-  box-decoration-break: clone;
-  -webkit-box-decoration-break: clone;
-}
-
-pre {
-  margin: 0 0 16px;
-  padding: 14px 16px;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  background: var(--surface-soft);
-  white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
 
-pre code {
-  padding: 0;
-  border: 0;
-  background: none;
+.cardPolicy {
+  margin: 8px 0 0;
+  padding: 0 2px;
+  color: var(--muted);
+  font-size: 10.5px;
+  line-height: 1.55;
+  text-align: left;
 }
 
-ol.steps { margin: 0; padding: 0; }
+.cardPolicy strong { color: var(--ink); }
 
-dl.facts {
-  padding: 18px 20px;
+/* WHY THE STEPS KEEP THE SITE'S OWN GRAMMAR: the site already ships an ordered-steps block with a leading-zero counter, accent ink and 44px of air; a second copy here incremented the counter twice and painted the steps in two designs at once. */
+
+
+
+
+
+
+
+
+.policyBox {
+  margin: clamp(36px, 5vh, 56px) 0 0;
+  padding: 26px 26px 24px;
   border: 1px solid var(--line);
-  border-radius: 16px;
+  border-radius: var(--radius);
   background: var(--surface);
 }
 
-table.support {
-  width: 100%;
-  margin: 16px 0 8px;
-  border-collapse: collapse;
-  font-size: 14px;
+.policyBox h2 {
+  margin: 0 0 10px;
+  color: var(--ink);
+  font-size: 16px;
+  letter-spacing: -.018em;
 }
 
-table.support th,
-table.support td {
-  padding: 10px;
+.policyBox p { margin: 0 0 10px; color: var(--muted); font-size: 13.5px; line-height: 1.58; }
+.policyBox p:last-of-type { margin-bottom: 0; }
+
+.policyBox strong { color: var(--ink); }
+
+h2 { margin: clamp(36px, 5vh, 56px) 0 10px; font-size: clamp(22px, 2.4vw, 28px); letter-spacing: -.028em; }
+h2:first-child { margin-top: 0; }
+
+p, li { color: var(--muted); }
+p strong, li strong { color: var(--ink); }
+
+code {
+  font-family: var(--mono);
+  font-size: .84em;
+  padding: 2px 7px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+pre {
+  margin: 0;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  color: var(--ink);
+  font: 13px/1.7 var(--mono);
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+
+/* WHY ONE COLUMN FOR EVERYTHING BELOW THE CARDS: the five cards answer the only question that matters at a glance; the prose after them is one narrow read, centered so the eye does not ping-pong. */
+
+.downloadBody.centered {
+  max-width: 760px;
+  margin: 0 auto;
+}
+
+.downloadBody.centered .fallbackBody {
+  margin: 0 0 clamp(28px, 4vh, 40px);
+}
+
+.btn-row {
+  margin: 0;
+}
+
+.support {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0 10px;
+  font-size: 13.5px;
+}
+
+.support th, .support td {
+  padding: 10px 12px;
   border-bottom: 1px solid var(--line);
   text-align: left;
 }
 
-table.support th {
-  padding: 12px 10px;
+.support th {
+  padding: 12px;
   border-bottom: 1px solid var(--line-strong);
   color: var(--muted);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
-  letter-spacing: .04em;
+  letter-spacing: .06em;
   text-transform: uppercase;
 }
 
-table.support td.yes { color: var(--accent); }
-table.support td.no { color: var(--muted); }
-table.support tr:last-child td { border-bottom: 0; }
+.support td.yes { color: var(--accent); }
+.support td.no { color: var(--muted); }
+.support tr:last-child td { border-bottom: 0; }
+
+.back {
+  margin-top: 28px;
+}
+
+
+.fallbackBody {
+  margin: clamp(32px, 4vh, 48px) auto clamp(8px, 2vh, 16px);
+  max-width: 760px;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.6;
+  text-align: center;
+}
+
+.fallbackBody a { color: var(--accent); text-decoration: underline; text-underline-offset: 3px; }
+
+/* WHY THE TYPEWRITER KEEPS ITS SCRIPT: a line of code fading in reads like a demo, and a demo that never moves feels worse than the same line at rest. */
 
 .typewriter {
   display: inline-block;
   overflow: hidden;
   white-space: pre;
   vertical-align: bottom;
+  max-width: 100%;
 }
 
 .typewriter.live {
@@ -623,116 +670,12 @@ table.support tr:last-child td { border-bottom: 0; }
   .typewriter + .cursor { display: none; }
 }
 
-.meta { color: var(--muted); font-size: 13px; }
+/* ==== footer-level pins kept ==== */
 
-/* WHY THE WINDOW IS FIXED TO ONE COLUMN MEASURE TEXT: the hero text sits at 680px so no line runs past a natural measure, and the action sits left of it, near the reader's thumb when the page is rotated. */
+details.more summary { cursor: pointer; }
 
-.unduhHero {}
-
-.statBand {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 24px 36px;
-  margin: 22px 0 0;
-  padding: 0;
+@media (prefers-reduced-motion: reduce) {
+  .packTile,
+  .browser,
+  .steps > li { transition: none; }
 }
-
-.statBand > div {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.statBand .stat-num {
-  color: var(--ink);
-  font-weight: 640;
-  letter-spacing: -.03em;
-  font-size: 28px;
-  line-height: 1;
-  font-variant-numeric: tabular-nums;
-}
-
-.statBand dd {
-  margin: 0;
-  color: var(--muted);
-  font-size: 13px;
-}
-
-/* WHY THE SCREENSHOT EARNS ITS PLACE: it is not a decoration, it is the product doing the product's job, and the caption says so in plain words. */
-
-.artifact {
-  margin: 96px 0;
-}
-
-.artifact img {
-  display: block;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  width: 100%;
-  height: auto;
-}
-
-.artifact figcaption {
-  display: flex;
-  gap: 16px;
-  align-items: baseline;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  margin-top: 18px;
-  color: var(--muted);
-  font-size: 13px;
-}
-
-.artifact figcaption a { color: var(--accent); text-decoration: none; white-space: nowrap; }
-.artifact figcaption a:hover { color: var(--accent-strong); }
-
-/* WHY THE THREE FOLDS DO NOT SCREAM: these are reference material, scanned once and closed; the accent marks the disclosure chevron, and the body text stays at 16px. */
-
-.quiet {
-  max-width: var(--prose);
-  display: grid;
-  gap: 0;
-  margin-top: 64px;
-}
-
-.fold {
-  border-top: 1px solid var(--line);
-  padding: 18px 0;
-}
-
-.fold > summary {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 24px;
-  cursor: pointer;
-  list-style: none;
-  font-weight: 600;
-  font-size: 17px;
-  letter-spacing: -.01em;
-}
-
-.fold > summary::after {
-  content: " +";
-  color: var(--accent);
-  font-size: 21px;
-  font-weight: 400;
-  transition: transform .2s var(--ease);
-}
-
-.fold[open] > summary::after {
-  content: " –";
-}
-
-.foldFacts {
-  display: grid;
-  grid-template-columns: minmax(120px, max-content) 1fr;
-  gap: 10px 20px;
-  margin: 16px 0 0;
-  font-size: 14px;
-}
-
-.foldFacts dt { color: var(--ink); }
-.foldFacts dd { margin: 0; color: var(--muted); }
-
-.fold .meta { margin: 14px 0 0; }
