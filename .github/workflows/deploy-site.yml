@@ -49,7 +49,7 @@ jobs:
             echo "::error::CF_TOKEN and CF_ACCOUNT_ID are unset; not publishing from a guess"
             exit 1
           fi
-          npx --yes wrangler@latest pages deploy landing \
+          npx --yes wrangler@4 pages deploy landing \
             --project-name=opera-agent \
             --branch=main \
             --commit-hash="$GITHUB_SHA" \

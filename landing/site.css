@@ -1,6 +1,6 @@
 /*
  * @last-edited: 2026-11-09 UTC+7.
- * @title: site.css â€” the design tokens, reset, chrome and components every page of the site shares.
+ * @title: site.css — the design tokens, reset, chrome and components every page of the site shares.
  * @state: one dark canvas, one accent, one local typeface, an aligned 1160px shell, and the shared header, footer, card and control rules.
  * @dependencies: fonts/instrument-sans-latin.woff2.
  *
@@ -1451,7 +1451,7 @@ ul.consents button { margin-left: auto; }
 
 /*
  * WHY THE ARRIVAL IS SHARED: every public page has blocks that come in as the reader reaches them, and one rule is easier to keep honest than ten pages of their own.
- * WHY THE HIDE NEEDS THE js CLASS: only a page that announced itself may hide a block, so a reader without JavaScript â€” or with reduced motion â€” sees everything.
+ * WHY THE HIDE NEEDS THE js CLASS: only a page that announced itself may hide a block, so a reader without JavaScript — or with reduced motion — sees everything.
  * WHY THE ARRIVAL IS SHORT: the site's own rule is 150 to 200 milliseconds, and a page that takes half a second to settle reads as slow.
  */
 

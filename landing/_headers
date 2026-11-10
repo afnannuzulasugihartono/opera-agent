@@ -1,5 +1,5 @@
 # @last-edited: 2026-11-09 UTC+7.
-# @title: _headers Ã¢â‚¬â€ the CSP and cache policy every path of the site answers with.
+# @title: _headers — the CSP and cache policy every path of the site answers with.
 # @state: the policy per path; tests/landing-hosting.test.mjs reads every rule against the code.
 # @dependencies: none.
 
@@ -64,7 +64,7 @@
   X-Frame-Options: DENY
 
 /privasi
-# Ã¢â‚¬â€ the extensionless address serves the same file
+# — the extensionless address serves the same file
   Cache-Control: no-store
   Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-fazsXaeghFR6veNLQNxT3Wp/S1Tzz4I6pN9HuLhjvaQ=' 'sha256-P4Dg7DTSUOLZaPFt9jgYbJ1cN1KfSWqDRYaDvVbvV8w='; connect-src 'none'; style-src 'self' 'unsafe-inline'; img-src data:; font-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
   Referrer-Policy: no-referrer
@@ -87,7 +87,7 @@
   X-Frame-Options: DENY
 
 /syarat
-# Ã¢â‚¬â€ the extensionless address serves the same file
+# — the extensionless address serves the same file
   Cache-Control: no-store
   Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-fazsXaeghFR6veNLQNxT3Wp/S1Tzz4I6pN9HuLhjvaQ=' 'sha256-P4Dg7DTSUOLZaPFt9jgYbJ1cN1KfSWqDRYaDvVbvV8w='; connect-src 'none'; style-src 'self' 'unsafe-inline'; img-src data:; font-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
   Referrer-Policy: no-referrer
@@ -110,7 +110,7 @@
   X-Frame-Options: DENY
 
 /harga
-# Ã¢â‚¬â€ the extensionless address serves the same file
+# — the extensionless address serves the same file
   Cache-Control: no-store
   Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-Z4qsLq3lie9F3oOuLfBry88vAhxfwOses2kA8InQd/I='; connect-src https://*.supabase.co; style-src 'self' 'unsafe-inline'; img-src data:; font-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
   Referrer-Policy: no-referrer
@@ -122,7 +122,7 @@
   X-Frame-Options: DENY
 
 /docs
-# Ã¢â‚¬â€ the extensionless address serves the same file
+# — the extensionless address serves the same file
   Cache-Control: no-store
   Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-fazsXaeghFR6veNLQNxT3Wp/S1Tzz4I6pN9HuLhjvaQ=' 'sha256-P4Dg7DTSUOLZaPFt9jgYbJ1cN1KfSWqDRYaDvVbvV8w='; connect-src 'none'; style-src 'self' 'unsafe-inline'; img-src data:; font-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
   Referrer-Policy: no-referrer
@@ -198,7 +198,7 @@
   X-Frame-Options: DENY
 
 /unduh
-# Ã¢â‚¬â€ the extensionless address serves the same file
+# — the extensionless address serves the same file
   Cache-Control: no-store
   Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-fazsXaeghFR6veNLQNxT3Wp/S1Tzz4I6pN9HuLhjvaQ=' 'sha256-P4Dg7DTSUOLZaPFt9jgYbJ1cN1KfSWqDRYaDvVbvV8w='; connect-src 'none'; style-src 'self' 'unsafe-inline'; img-src data:; font-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
   Referrer-Policy: no-referrer
@@ -331,7 +331,7 @@
   X-Frame-Options: DENY
 
 /oauth/consent
-# Ã¢â‚¬â€ the consent page reaches the same single origin
+# — the consent page reaches the same single origin
   Cache-Control: no-store
   Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-qXDFNMCsYmcsKHs5fyYOfsIbOXOCxuxYYQ27e437vcs='; connect-src https://*.supabase.co; style-src 'self' 'unsafe-inline'; img-src data:; font-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
   Referrer-Policy: no-referrer
@@ -343,7 +343,7 @@
   X-Frame-Options: DENY
 
 /oauth/consent.html
-# Ã¢â‚¬â€ the consent page reaches the same single origin
+# — the consent page reaches the same single origin
   Cache-Control: no-store
   Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-qXDFNMCsYmcsKHs5fyYOfsIbOXOCxuxYYQ27e437vcs='; connect-src https://*.supabase.co; style-src 'self' 'unsafe-inline'; img-src data:; font-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
   Referrer-Policy: no-referrer
