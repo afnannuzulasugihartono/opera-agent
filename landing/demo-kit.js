@@ -164,6 +164,8 @@
       if (ocMetaRow) ocMetaRow.style.display = 'none';
       const ocTermCmd = demo.querySelector('#ocTermCmd');
       if (ocTermCmd) ocTermCmd.textContent = '';
+      const kiloMeta = demo.querySelector('#kiloMeta');
+      if (kiloMeta) kiloMeta.textContent = 'Needs auth';
       const ocTermType = demo.querySelector('#ocTermType');
       if (ocTermType) ocTermType.textContent = '';
       const ocTermDim = demo.querySelector('#ocTermDim');
@@ -569,11 +571,24 @@
           break;
         }
         case 'vscode':
-        case 'kilo':
         case 'cursor': {
           await press(demo.querySelector('.ddFileTab'), token);
           await wait(420, token);
           replaceStatus(TOAST);
+          break;
+        }
+        case 'kilo': {
+          const kiloMeta = demo.querySelector('#kiloMeta');
+          await press(demo.querySelector('#kiloSignIn'), token);
+          demo.classList.add('is-browser');
+          await wait(1000, token);
+          await press(demo.querySelector('#kiloConsentAllow'), token);
+          demo.classList.add('is-authed');
+          if (kiloMeta) kiloMeta.textContent = 'Connected · 35 tools';
+          await wait(1500, token);
+          demo.classList.remove('is-browser', 'is-authed');
+          demo.classList.add('is-connected');
+          await wait(1600, token);
           break;
         }
         case 'fastlane': {
