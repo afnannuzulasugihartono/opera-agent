@@ -90,8 +90,9 @@ test('the hero states the value in one sentence, and the steps live on the merge
   const fold = /<details class="sectionFold" open>\s*<summary><h2\b[^>]*>Cara memasang<\/h2><\/summary>\s*<div class="demo" aria-hidden="true">([\s\S]*?)<\/div>\s*<ol class="steps srOnly">([\s\S]*?)<\/ol>/.exec(berkas);
   assert.ok(fold, 'the install fold opens to the animated walkthrough, with the text kept underneath');
   const demo = fold[1];
-  assert.equal((demo.match(/<div class="scene s\d">/g) || []).length, 6, 'six scenes, one per beat: download, extract, extensions page, installed, pairing, verify');
-  assert.match(demo, /class="pip p6"/, 'six pips answer which beat is live');
+  assert.equal((demo.match(/<div class="scene s\d">/g) || []).length, 7, 'seven scenes, one per beat: desktop opens Chrome, download, extract, extensions page, installed, pairing, verify');
+  assert.match(demo, /class="taskbarWin"/, 'the walkthrough runs on a desktop, the way the owner lives in it');
+  assert.match(demo, /tChrome/, 'and the taskbar lights the app each beat lives in');
   assert.match(demo, /Extract all/, 'the explorer names the button the reader must find');
   assert.match(demo, /chrome:\/\/extensions/, 'and the extensions surface, named');
   assert.match(demo, /Open|Browse|folderPick/i, 'the file picker is part of the flow');

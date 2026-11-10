@@ -11,6 +11,9 @@
   'use strict';
 
   const TARGETS = [
+    ['dockChrome', '.tChrome'],
+    ['dockExplorer', '.tFolder'],
+    ['dockTerm', '.tTerm'],
     ['dlBtn', '.dlBigBtn'],
     ['dlShelf', '.dlShelf'],
     ['extract', '.extractAll'],

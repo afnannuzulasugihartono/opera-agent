@@ -705,17 +705,20 @@ pre {
 /* WHY THE FIVE STEPS ARE THE COMPUTER ITSELF: the user is told where each thing actually lives - the download shelf, the Explorer toolbar, the extensions page, the pairing popup, the terminal - so the steps teach the screens, not sentences. */
 
 .desktop {
-  margin-top: 20px;
-  border: 1px solid var(--line-strong);
-  border-radius: var(--radius);
+  position: relative;
+  margin: 20px calc(50% - 50vw) 0;
+  width: 100vw;
+  border: 0;
+  border-top: 1px solid var(--line-strong);
+  border-bottom: 1px solid var(--line-strong);
   background: var(--surface);
   overflow: hidden;
 }
 
 .demoStage {
   position: relative;
-  aspect-ratio: 5 / 3.0;
-  background: var(--surface);
+  aspect-ratio: 16 / 9.75;
+  background: color-mix(in srgb, var(--surface) 82%, var(--accent) 18%);
   overflow: hidden;
 }
 
@@ -727,23 +730,28 @@ pre {
   justify-content: center;
   gap: 12px;
   opacity: 0;
+  z-index: 10;
 }
 
-.s1 { animation: sc1 22s linear infinite } .s2 { animation: sc2 22s linear infinite } .s3 { animation: sc3 22s linear infinite } .s4 { animation: sc4 22s linear infinite } .s5 { animation: sc5 22s linear infinite } .s6 { animation: sc6 22s linear infinite }
+.s0 { animation: sc0 22s linear infinite } .s1 { animation: sc1 22s linear infinite } .s2 { animation: sc2 22s linear infinite } .s3 { animation: sc3 22s linear infinite } .s4 { animation: sc4 22s linear infinite } .s5 { animation: sc5 22s linear infinite } .s6 { animation: sc6 22s linear infinite }
 
-@keyframes sc1 { 0% { opacity: 0 } 1.5% { opacity: 1 } 15.5% { opacity: 1 } 17.5%, 100% { opacity: 0 } }
-@keyframes sc2 { 0%, 15% { opacity: 0 } 17.5% { opacity: 1 } 31.5% { opacity: 1 } 33.5%, 100% { opacity: 0 } }
+@keyframes sc0 { 0% { opacity: 1 } 4% { opacity: 1 } 8%, 100% { opacity: 0 } }
+@keyframes sc1 { 0%, 5% { opacity: 0 } 7% { opacity: 1 } 16.5% { opacity: 1 } 19%, 100% { opacity: 0 } }
+@keyframes sc2 { 0%, 16.5% { opacity: 0 } 19% { opacity: 1 } 31% { opacity: 1 } 33.5%, 100% { opacity: 0 } }
 @keyframes sc3 { 0%, 31% { opacity: 0 } 33.5% { opacity: 1 } 48.5% { opacity: 1 } 50.5%, 100% { opacity: 0 } }
 @keyframes sc4 { 0%, 48% { opacity: 0 } 50.5% { opacity: 1 } 64% { opacity: 1 } 66.5%, 100% { opacity: 0 } }
-@keyframes sc5 { 0%, 64% { opacity: 0 } 67% { opacity: 1 } 85% { opacity: 1 } 87%, 100% { opacity: 0 } }
-@keyframes sc6 { 0%, 85.5% { opacity: 0 } 87.5% { opacity: 1 } 97.5% { opacity: 1 } 100% { opacity: 0 } }
+@keyframes sc5 { 0%, 64% { opacity: 0 } 66.5% { opacity: 1 } 85% { opacity: 1 } 87%, 100% { opacity: 0 } }
+@keyframes sc6 { 0%, 84.5% { opacity: 0 } 87% { opacity: 1 } 97% { opacity: 1 } 100% { opacity: 0 } }
 
 .osWin {
-  width: min(92%, 500px);
-  border: 1px solid var(--line-strong);
-  border-radius: 10px;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  border-radius: 0;
   background: var(--surface-2);
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 /* shared window chrome */
@@ -778,17 +786,17 @@ pre {
 .dlName { font: 10.5px/1 var(--mono); color: var(--ink); }
 .dlTrack { height: 4px; border-radius: 2px; background: var(--line); overflow: hidden; }
 .dlShelf { transform: translateY(120%); opacity: 0; animation: dlShelfIn 22s linear infinite; }
-@keyframes dlShelfIn { 0%, 8% { transform: translateY(120%); opacity: 0 } 12%, 100% { transform: none; opacity: 1 } }
+@keyframes dlShelfIn { 0%, 10% { transform: translateY(120%); opacity: 0 } 13.5%, 100% { transform: none; opacity: 1 } }
 .dlFill { display: block; height: 100%; width: 7%; background: var(--accent); animation: dlFill 22s linear infinite; }
-@keyframes dlFill { 0%, 8.5% { width: 7% } 15.5%, 100% { width: 100% } }
+@keyframes dlFill { 0%, 10.5% { width: 7% } 16.5%, 100% { width: 100% } }
 
 .checkIcon { width: 16px; height: 16px; color: var(--accent); }
 .dlCheck { opacity: 0; animation: dlCheckIn 22s linear infinite; }
-@keyframes dlCheckIn { 0%, 14.5% { opacity: 0 } 16.5%, 100% { opacity: 1 } }
+@keyframes dlCheckIn { 0%, 15.5% { opacity: 0 } 17.5%, 100% { opacity: 1 } }
 
 /* scene 2 — Explorer, selected zip, Extract all */
 
-.expWin { width: min(92%, 500px); font-family: var(--mono); }
+.expWin { font-family: var(--mono); }
 
 .expTitleBar { display: flex; align-items: center; gap: 9px; padding: 9px 12px; background: var(--surface); border-bottom: 1px solid var(--line); }
 .expZipGlyph { width: 16px; height: 16px; }
@@ -816,7 +824,7 @@ pre {
 @keyframes extractPulse { 0%, 19.5% { transform: scale(1) } 22% { transform: scale(.92) } 24%, 100% { transform: scale(1) } }
 .toolItem.right { margin-left: auto; }
 
-.expBody { display: grid; grid-template-columns: 108px 1fr 138px; min-height: 150px; }
+.expBody { display: grid; grid-template-columns: 108px 1fr 138px; flex: 1; }
 .expNav { display: grid; align-content: start; gap: 3px; padding: 10px 7px; border-right: 1px solid var(--line); background: var(--surface); }
 .expNavItem { font: 10px/1.35 var(--mono); color: var(--muted); padding: 5px 8px; border-radius: 6px; }
 .expNavItem.sel { background: var(--line); color: var(--ink); }
@@ -843,7 +851,7 @@ pre {
 
 /* scenes 3-4 — the real extensions page */
 
-.extPage { background: var(--surface); }
+.extPage { background: var(--surface); display: flex; flex-direction: column; flex: 1; }
 
 .extTitleRow { display: flex; align-items: center; gap: 12px; padding: 13px 16px; }
 .extHeadPuzzle { width: 21px; height: 21px; color: var(--ink); flex: none; }
@@ -874,7 +882,7 @@ pre {
 .extBtn.pressed { background: var(--accent); color: var(--on-fill); animation: loadPulse 22s linear infinite; }
 @keyframes loadPulse { 0%, 54% { transform: scale(1) } 57.5% { transform: scale(.93) } 61%, 100% { transform: scale(1) } }
 
-.extSplit { display: grid; grid-template-columns: 132px 1fr; border-top: 1px solid var(--line); }
+.extSplit { display: grid; grid-template-columns: 132px 1fr; border-top: 1px solid var(--line); flex: 1; }
 .extSide { display: grid; align-content: start; gap: 3px; padding: 12px 8px; border-right: 1px solid var(--line); background: var(--surface); }
 .sideItem { font: 10px/1.4 var(--mono); color: var(--muted); padding: 6px 9px; border-radius: 14px; }
 .sideItem.sel { background: color-mix(in srgb, var(--accent) 26%, transparent); color: var(--accent); }
@@ -903,7 +911,7 @@ pre {
 /* scene 5 — the real dashboard, exactly as the owner sees it */
 
 
-.dashSplit { display: grid; grid-template-columns: 82px 1fr; border-top: 1px solid var(--line); background: var(--surface); }
+.dashSplit { display: grid; grid-template-columns: 92px 1fr; border-top: 1px solid var(--line); background: var(--surface); flex: 1; }
 
 .dashSide { display: grid; align-content: start; gap: 2px; padding: 10px 7px; border-right: 1px solid var(--line); background: var(--surface); }
 .dashSideItem { font: 9px/1.2 var(--mono); color: var(--muted); padding: 5px 7px; border-radius: 8px; }
@@ -930,7 +938,7 @@ pre {
 /* scene 6 — the two digests must agree */
 
 .termBar { display: flex; align-items: center; gap: 6px; padding: 9px 11px; background: var(--surface); border-bottom: 1px solid var(--line); }
-.termBody { display: grid; gap: 8px; padding: 12px 14px; background: var(--surface); font: 8.5px/1.65 var(--mono); }
+.termBody { display: grid; gap: 8px; align-content: start; padding: 13px 15px; background: var(--surface); font: 9px/1.7 var(--mono); flex: 1; }
 .termLine { display: block; color: var(--muted); white-space: nowrap; overflow: hidden; opacity: 0; }
 .termLine .psPrompt { color: var(--accent); }
 .t1 { animation: termLineIn 22s linear infinite } .t2 { animation: termLineIn2 22s linear infinite } .t3 { animation: termLineIn3 22s linear infinite } .t4 { animation: termLineIn4 22s linear infinite }
@@ -945,55 +953,6 @@ pre {
 @keyframes checkTermIn { 0%, 96.5% { stroke-dashoffset: 60; opacity: 0 } 99%, 100% { stroke-dashoffset: 0; opacity: 1 } }
 
 /* taskbar + pips */
-
-.taskbar { display: flex; align-items: center; gap: 12px; padding: 8px 13px; background: var(--surface-2); border-top: 1px solid var(--line); }
-.startGlyph { width: 15px; height: 15px; }
-.taskApps { display: flex; align-items: center; gap: 8px; flex: 1 1 auto; min-width: 0; }
-
-.taskApp { display: inline-flex; align-items: center; gap: 7px; height: 26px; padding: 0 11px; border: 1px solid transparent; border-radius: 8px; font: 600 10.5px/1 var(--mono); color: var(--muted); white-space: nowrap; }
-
-.taskAppIcon { display: inline-grid; place-items: center; width: 13px; height: 13px; flex: none; }
-.taskAppIcon.chrome { border: 1.5px solid currentColor; border-radius: 50%; }
-.taskAppIcon.explorer { border-radius: 2px; background: currentColor; clip-path: polygon(0 24%, 33% 24%, 44% 5%, 100% 5%, 100% 100%, 0 100%); }
-.taskAppIcon.term { background: currentColor; border-radius: 2px; }
-
-.tAppChrome { animation: tAppChromeOn 22s steps(1) infinite; }
-.tAppExplorer { animation: tAppExplorerOn 22s steps(1) infinite; }
-.tAppTerminal { animation: tAppTerminalOn 22s steps(1) infinite; }
-
-.taskApp.active, .taskApp.on { color: var(--ink); background: color-mix(in srgb, var(--accent) 18%, transparent); border-color: color-mix(in srgb, var(--accent) 40%, transparent); }
-
-@keyframes tAppChromeOn {
-  0%, 16% { color: var(--ink); background: color-mix(in srgb, var(--accent) 18%, transparent); border-color: color-mix(in srgb, var(--accent) 40%, transparent) }
-  17%, 33% { color: var(--muted); background: transparent; border-color: transparent }
-  34%, 83% { color: var(--ink); background: color-mix(in srgb, var(--accent) 18%, transparent); border-color: color-mix(in srgb, var(--accent) 40%, transparent) }
-  84%, 100% { color: var(--muted); background: transparent; border-color: transparent }
-}
-
-@keyframes tAppExplorerOn {
-  0%, 15% { color: var(--muted); background: transparent; border-color: transparent }
-  16%, 33% { color: var(--ink); background: color-mix(in srgb, var(--accent) 18%, transparent); border-color: color-mix(in srgb, var(--accent) 40%, transparent) }
-  34%, 100% { color: var(--muted); background: transparent; border-color: transparent }
-}
-
-@keyframes tAppTerminalOn {
-  0%, 83% { color: var(--muted); background: transparent; border-color: transparent }
-  84%, 100% { color: var(--ink); background: color-mix(in srgb, var(--accent) 18%, transparent); border-color: color-mix(in srgb, var(--accent) 40%, transparent) }
-}
-
-.taskClock { margin-left: auto; font: 10px/1 var(--mono); color: var(--muted); letter-spacing: .05em; }
-
-.demoPips { display: flex; gap: 8px; justify-content: center; padding: 12px 0 14px; border-top: 1px solid var(--line); background: var(--surface-2); }
-.pip { width: 24px; height: 4px; border-radius: 2px; background: var(--surface); }
-
-.p1 { animation: pip1 22s linear infinite } .p2 { animation: pip2 22s linear infinite } .p3 { animation: pip3 22s linear infinite } .p4 { animation: pip4 22s linear infinite } .p5 { animation: pip5 22s linear infinite } .p6 { animation: pip6 22s linear infinite }
-
-@keyframes pip1 { 0%, 1% { background: var(--surface) } 2%, 16% { background: var(--accent) } 17.5%, 100% { background: var(--surface) } }
-@keyframes pip2 { 0%, 17% { background: var(--surface) } 18.5%, 32.5% { background: var(--accent) } 34%, 100% { background: var(--surface) } }
-@keyframes pip3 { 0%, 33% { background: var(--surface) } 35.5%, 49.5% { background: var(--accent) } 51%, 100% { background: var(--surface) } }
-@keyframes pip4 { 0%, 50% { background: var(--surface) } 51.5%, 65% { background: var(--accent) } 67%, 100% { background: var(--surface) } }
-@keyframes pip5 { 0%, 67% { background: var(--surface) } 68.5%, 82% { background: var(--accent) } 83.5%, 100% { background: var(--surface) } }
-@keyframes pip6 { 0%, 82% { background: var(--surface) } 84%, 98.5% { background: var(--accent) } 100% { background: var(--surface) } }
 
 @media (prefers-reduced-motion: reduce) {
   .demo { display: none; }
@@ -1013,32 +972,41 @@ pre {
 @keyframes cursorPath {
   0% { left: 112%; top: 36%; opacity: 0 }
   2.5% { left: 112%; top: 36%; opacity: 0 }
-  4.5% { left: 96%; top: 44%; opacity: 1 }
-  6% { left: var(--c-dlBtn-x); top: var(--c-dlBtn-y) }
-  8.5% { left: var(--c-dlBtn-x); top: var(--c-dlBtn-y) }
-  11% { left: var(--c-dlShelf-x); top: var(--c-dlShelf-y) }
+  4.5% { left: 96%; top: 60%; opacity: 1 }
+  5.6% { left: var(--c-dockChrome-x); top: var(--c-dockChrome-y) }
+  6.3% { left: var(--c-dockChrome-x); top: var(--c-dockChrome-y) }
+  9.5% { left: var(--c-dlBtn-x); top: var(--c-dlBtn-y) }
+  10.4% { left: var(--c-dlBtn-x); top: var(--c-dlBtn-y) }
+  11.5% { left: var(--c-dlShelf-x); top: var(--c-dlShelf-y) }
   15.5% { left: var(--c-dlShelf-x); top: var(--c-dlShelf-y) }
-  20% { left: var(--c-extract-x); top: var(--c-extract-y) }
-  30.5% { left: var(--c-extract-x); top: var(--c-extract-y) }
-  37% { left: var(--c-toggle-x); top: var(--c-toggle-y) }
-  43.5% { left: var(--c-toggle-x); top: var(--c-toggle-y) }
+  17.5% { left: var(--c-dockExplorer-x); top: var(--c-dockExplorer-y) }
+  18.3% { left: var(--c-dockExplorer-x); top: var(--c-dockExplorer-y) }
+  22.3% { left: var(--c-extract-x); top: var(--c-extract-y) }
+  23.3% { left: var(--c-extract-x); top: var(--c-extract-y) }
+  30.5% { left: var(--c-manifest-x); top: var(--c-manifest-y) }
+  31.5% { left: var(--c-manifest-x); top: var(--c-manifest-y) }
+  33.6% { left: var(--c-dockChrome-x); top: var(--c-dockChrome-y) }
+  34.4% { left: var(--c-dockChrome-x); top: var(--c-dockChrome-y) }
+  37.5% { left: var(--c-toggle-x); top: var(--c-toggle-y) }
+  41% { left: var(--c-toggle-x); top: var(--c-toggle-y) }
   46.8% { left: var(--c-load-x); top: var(--c-load-y) }
-  53.5% { left: var(--c-load-x); top: var(--c-load-y) }
+  48.5% { left: var(--c-load-x); top: var(--c-load-y) }
   55.5% { left: var(--c-manifest-x); top: var(--c-manifest-y) }
-  59% { left: var(--c-manifest-x); top: var(--c-manifest-y) }
+  58% { left: var(--c-manifest-x); top: var(--c-manifest-y) }
   61.5% { left: var(--c-pick-x); top: var(--c-pick-y) }
-  65% { left: var(--c-pick-x); top: var(--c-pick-y) }
-  69% { left: var(--c-card-x); top: var(--c-card-y) }
+  64% { left: var(--c-pick-x); top: var(--c-pick-y) }
   70.8% { left: var(--c-pair-x); top: var(--c-pair-y) }
-  75% { left: var(--c-pair-x); top: var(--c-pair-y) }
-  78.6% { left: var(--c-copy-x); top: var(--c-copy-y) }
-  80.2% { left: var(--c-copy-x); top: var(--c-copy-y) }
-  82% { left: var(--c-trigger-x); top: var(--c-trigger-y) }
-  83.4% { left: var(--c-trigger-x); top: var(--c-trigger-y) }
-  85% { left: var(--c-field-x); top: var(--c-field-y) }
-  86.8% { left: var(--c-field-x); top: var(--c-field-y); opacity: 1 }
-  89% { left: 96%; top: 18%; opacity: 0 }
-  100% { left: 112%; top: 36%; opacity: 0 }
+  74% { left: var(--c-pair-x); top: var(--c-pair-y) }
+  79.3% { left: var(--c-copy-x); top: var(--c-copy-y) }
+  80.6% { left: var(--c-copy-x); top: var(--c-copy-y) }
+  82.3% { left: var(--c-trigger-x); top: var(--c-trigger-y) }
+  83.6% { left: var(--c-trigger-x); top: var(--c-trigger-y) }
+  85.2% { left: var(--c-field-x); top: var(--c-field-y) }
+  86.4% { left: var(--c-field-x); top: var(--c-field-y); opacity: 1 }
+  87.6% { left: var(--c-dockTerm-x); top: var(--c-dockTerm-y) }
+  88.8% { left: var(--c-dockTerm-x); top: var(--c-dockTerm-y); opacity: 1 }
+  96% { left: var(--c-card-x); top: var(--c-card-y); opacity: 1 }
+  100% { left: var(--c-card-x); top: var(--c-card-y); opacity: 0 }
 }
 
 .cursorArrow {
@@ -1048,46 +1016,50 @@ pre {
 }
 
 @keyframes cursorTipPress {
-  0%, 5.9% { transform: scale(1) }
-  6.7% { transform: scale(.76) }
-  8.3% { transform: scale(1) }
-  20.5% { transform: scale(1) }
-  21.5% { transform: scale(.76) }
-  22.6% { transform: scale(1) }
-  39.8% { transform: scale(1) }
-  40.8% { transform: scale(.76) }
+  0%, 5.5% { transform: scale(1) }
+  6% { transform: scale(.78) }
+  6.9% { transform: scale(1) }
+  9.3% { transform: scale(1) }
+  10.1% { transform: scale(.78) }
+  11.1% { transform: scale(1) }
+  17.4% { transform: scale(1) }
+  18.1% { transform: scale(.78) }
+  19% { transform: scale(1) }
+  22.1% { transform: scale(1) }
+  22.9% { transform: scale(.78) }
+  23.9% { transform: scale(1) }
+  33.4% { transform: scale(1) }
+  34.2% { transform: scale(.78) }
+  35.2% { transform: scale(1) }
+  40% { transform: scale(1) }
+  40.8% { transform: scale(.78) }
   41.9% { transform: scale(1) }
-  47.2% { transform: scale(1) }
-  48% { transform: scale(.76) }
-  49.2% { transform: scale(1) }
-  57.3% { transform: scale(1) }
-  58.3% { transform: scale(.76) }
-  59.4% { transform: scale(1) }
-  60.9% { transform: scale(1) }
-  61.6% { transform: scale(.76) }
-  62.9% { transform: scale(1) }
-  71.2% { transform: scale(1) }
-  71.9% { transform: scale(.76) }
-  73.1% { transform: scale(1) }
-  79.2% { transform: scale(1) }
-  80% { transform: scale(.76) }
-  81.2% { transform: scale(1) }
-  81.6% { transform: scale(1) }
-  82.2% { transform: scale(.76) }
-  83.3% { transform: scale(1) }
-  84.5% { transform: scale(1) }
-  85.3% { transform: scale(.76) }
-  86.2% { transform: scale(1) }
+  46.7% { transform: scale(1) }
+  47.5% { transform: scale(.78) }
+  48.6% { transform: scale(1) }
+  57.4% { transform: scale(1) }
+  58.1% { transform: scale(.78) }
+  59.3% { transform: scale(1) }
+  61.3% { transform: scale(1) }
+  62.1% { transform: scale(.78) }
+  63.2% { transform: scale(1) }
+  71.5% { transform: scale(1) }
+  72.2% { transform: scale(.78) }
+  73.3% { transform: scale(1) }
+  79.1% { transform: scale(1) }
+  79.9% { transform: scale(.78) }
+  80.9% { transform: scale(1) }
+  82.1% { transform: scale(1) }
+  82.9% { transform: scale(.78) }
+  84% { transform: scale(1) }
+  85.2% { transform: scale(1) }
+  85.9% { transform: scale(.78) }
+  86.9% { transform: scale(1) }
+  87.6% { transform: scale(1) }
+  88.3% { transform: scale(.78) }
+  89.3% { transform: scale(1) }
   100% { transform: scale(1) }
 }
-
-/* consistent windows — every OS window is the same size */
-
-.osWin,
-.expWin,
-.extReal,
-.dashReal,
-.termWin { width: min(92%, 500px); }
 
 /* scene 4 — the Browse For Folder dialog */
 
@@ -1254,7 +1226,7 @@ pre {
 
 /* scene 1 — the download page, and the one click that starts everything */
 
-.dlPageBody { display: grid; justify-items: center; align-content: center; gap: 8px; align-items: center; padding: 22px 18px 20px; background: var(--surface-2); }
+.dlPageBody { display: grid; justify-items: center; align-content: center; gap: 8px; padding: 26px 18px; background: var(--surface-2); flex: 1; }
 
 .dlPageKicker { font: 500 9.5px/1 var(--mono); letter-spacing: .14em; color: var(--accent); }
 .dlPageTitle { font: 600 15px/1.25 var(--mono); letter-spacing: -.02em; color: var(--ink); }
@@ -1275,9 +1247,9 @@ pre {
 .dlBigBtnIcon { width: 17px; height: 17px; }
 
 @keyframes dlBigPress {
-  0%, 5.9% { transform: scale(1) }
-  7.1% { transform: scale(.9) }
-  8.4%, 100% { transform: scale(1) }
+  0%, 8% { transform: scale(1) }
+  9% { transform: scale(.9) }
+  10.4%, 100% { transform: scale(1) }
 }
 
 .expRowNew { opacity: 0; animation: newFolderSpawn 22s linear infinite; }
@@ -1289,18 +1261,6 @@ pre {
 
 /* the ripple that lands with every real click, and the taskbar that names the window in front */
 
-.taskTitle { position: relative; flex: 1 1 auto; min-width: 0; height: 14px; align-self: center; }
-
-.tt { position: absolute; left: 0; top: 0; width: 100%; opacity: 0; font: 600 11px/1.6 var(--mono); color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.ttA { animation: ttA 22s steps(1) infinite }
-.ttB { animation: ttB 22s steps(1) infinite }
-.ttC { animation: ttC 22s steps(1) infinite }
-.ttD { animation: ttD 22s steps(1) infinite }
-
-@keyframes ttA { 0%, 32.9% { opacity: 1 } 33%, 100% { opacity: 0 } }
-@keyframes ttB { 0%, 32% { opacity: 0 } 33%, 64.5% { opacity: 1 } 64.6%, 100% { opacity: 0 } }
-@keyframes ttC { 0%, 64% { opacity: 0 } 65%, 86% { opacity: 1 } 86.1%, 100% { opacity: 0 } }
-@keyframes ttD { 0%, 86% { opacity: 0 } 86.6%, 100% { opacity: 1 } }
 
 .cursorRipple {
   position: absolute;
@@ -1316,36 +1276,48 @@ pre {
 }
 
 @keyframes rippleBurst {
-  0%, 5.9% { left: var(--c-dlBtn-x); top: var(--c-dlBtn-y); opacity: 0; transform: translate(-50%, -50%) scale(.25) }
-  7.1% { opacity: .95 }
-  9%, 20.5% { left: var(--c-dlBtn-x); top: var(--c-dlBtn-y); opacity: 0; transform: translate(-50%, -50%) scale(1.6) }
-  20.5% { left: var(--c-extract-x); top: var(--c-extract-y); opacity: 0; transform: translate(-50%, -50%) scale(.25) }
-  21.6% { opacity: .95 }
-  23.3%, 39.8% { left: var(--c-extract-x); top: var(--c-extract-y); opacity: 0; transform: translate(-50%, -50%) scale(1.6) }
-  39.8% { left: var(--c-toggle-x); top: var(--c-toggle-y); opacity: 0; transform: translate(-50%, -50%) scale(.25) }
-  40.9% { opacity: .95 }
-  42.6%, 47.2% { left: var(--c-toggle-x); top: var(--c-toggle-y); opacity: 0; transform: translate(-50%, -50%) scale(1.6) }
-  47.2% { left: var(--c-load-x); top: var(--c-load-y); opacity: 0; transform: translate(-50%, -50%) scale(.25) }
-  48.3% { opacity: .95 }
-  50.2%, 57.3% { left: var(--c-load-x); top: var(--c-load-y); opacity: 0; transform: translate(-50%, -50%) scale(1.6) }
-  57.3% { left: var(--c-manifest-x); top: var(--c-manifest-y); opacity: 0; transform: translate(-50%, -50%) scale(.25) }
-  58.4% { opacity: .95 }
-  60.1%, 60.9% { left: var(--c-manifest-x); top: var(--c-manifest-y); opacity: 0; transform: translate(-50%, -50%) scale(1.6) }
-  60.9% { left: var(--c-pick-x); top: var(--c-pick-y); opacity: 0; transform: translate(-50%, -50%) scale(.25) }
-  62% { opacity: .95 }
-  63.7%, 71.2% { left: var(--c-pick-x); top: var(--c-pick-y); opacity: 0; transform: translate(-50%, -50%) scale(1.6) }
-  71.2% { left: var(--c-pair-x); top: var(--c-pair-y); opacity: 0; transform: translate(-50%, -50%) scale(.25) }
-  72.3% { opacity: .95 }
-  74%, 79.2% { left: var(--c-pair-x); top: var(--c-pair-y); opacity: 0; transform: translate(-50%, -50%) scale(1.6) }
-  79.2% { left: var(--c-copy-x); top: var(--c-copy-y); opacity: 0; transform: translate(-50%, -50%) scale(.25) }
-  80.3% { opacity: .95 }
-  81.9%, 81.8% { left: var(--c-copy-x); top: var(--c-copy-y); opacity: 0; transform: translate(-50%, -50%) scale(1.6) }
-  81.8% { left: var(--c-trigger-x); top: var(--c-trigger-y); opacity: 0; transform: translate(-50%, -50%) scale(.25) }
-  82.6% { opacity: .95 }
-  83.9%, 84.5% { left: var(--c-trigger-x); top: var(--c-trigger-y); opacity: 0; transform: translate(-50%, -50%) scale(1.6) }
-  84.5% { left: var(--c-field-x); top: var(--c-field-y); opacity: 0; transform: translate(-50%, -50%) scale(.25) }
-  85.7% { opacity: .95 }
-  87.3%, 100% { left: var(--c-field-x); top: var(--c-field-y); opacity: 0; transform: translate(-50%, -50%) scale(1.6) }
+  5.6% { left: var(--c-dockChrome-x); top: var(--c-dockChrome-y); opacity: 0; transform: translate(-50%, -50%) scale(.28) }
+  6.5% { opacity: .95 }
+  7.8% { left: var(--c-dockChrome-x); top: var(--c-dockChrome-y); opacity: 0; transform: translate(-50%, -50%) scale(1.6) }
+  9.5% { left: var(--c-dlBtn-x); top: var(--c-dlBtn-y); opacity: 0; transform: translate(-50%, -50%) scale(.28) }
+  10.4% { opacity: .95 }
+  11.7% { left: var(--c-dlBtn-x); top: var(--c-dlBtn-y); opacity: 0; transform: translate(-50%, -50%) scale(1.6) }
+  17.5% { left: var(--c-dockExplorer-x); top: var(--c-dockExplorer-y); opacity: 0; transform: translate(-50%, -50%) scale(.28) }
+  18.4% { opacity: .95 }
+  19.7% { left: var(--c-dockExplorer-x); top: var(--c-dockExplorer-y); opacity: 0; transform: translate(-50%, -50%) scale(1.6) }
+  22.3% { left: var(--c-extract-x); top: var(--c-extract-y); opacity: 0; transform: translate(-50%, -50%) scale(.28) }
+  23.2% { opacity: .95 }
+  24.5% { left: var(--c-extract-x); top: var(--c-extract-y); opacity: 0; transform: translate(-50%, -50%) scale(1.6) }
+  33.6% { left: var(--c-dockChrome-x); top: var(--c-dockChrome-y); opacity: 0; transform: translate(-50%, -50%) scale(.28) }
+  34.5% { opacity: .95 }
+  35.8% { left: var(--c-dockChrome-x); top: var(--c-dockChrome-y); opacity: 0; transform: translate(-50%, -50%) scale(1.6) }
+  37.5% { left: var(--c-toggle-x); top: var(--c-toggle-y); opacity: 0; transform: translate(-50%, -50%) scale(.28) }
+  38.4% { opacity: .95 }
+  39.7% { left: var(--c-toggle-x); top: var(--c-toggle-y); opacity: 0; transform: translate(-50%, -50%) scale(1.6) }
+  46.8% { left: var(--c-load-x); top: var(--c-load-y); opacity: 0; transform: translate(-50%, -50%) scale(.28) }
+  47.7% { opacity: .95 }
+  49.0% { left: var(--c-load-x); top: var(--c-load-y); opacity: 0; transform: translate(-50%, -50%) scale(1.6) }
+  57.3% { left: var(--c-manifest-x); top: var(--c-manifest-y); opacity: 0; transform: translate(-50%, -50%) scale(.28) }
+  58.2% { opacity: .95 }
+  59.5% { left: var(--c-manifest-x); top: var(--c-manifest-y); opacity: 0; transform: translate(-50%, -50%) scale(1.6) }
+  61.5% { left: var(--c-pick-x); top: var(--c-pick-y); opacity: 0; transform: translate(-50%, -50%) scale(.28) }
+  62.4% { opacity: .95 }
+  63.7% { left: var(--c-pick-x); top: var(--c-pick-y); opacity: 0; transform: translate(-50%, -50%) scale(1.6) }
+  70.8% { left: var(--c-pair-x); top: var(--c-pair-y); opacity: 0; transform: translate(-50%, -50%) scale(.28) }
+  71.7% { opacity: .95 }
+  73.0% { left: var(--c-pair-x); top: var(--c-pair-y); opacity: 0; transform: translate(-50%, -50%) scale(1.6) }
+  79.3% { left: var(--c-copy-x); top: var(--c-copy-y); opacity: 0; transform: translate(-50%, -50%) scale(.28) }
+  80.2% { opacity: .95 }
+  81.5% { left: var(--c-copy-x); top: var(--c-copy-y); opacity: 0; transform: translate(-50%, -50%) scale(1.6) }
+  82.3% { left: var(--c-trigger-x); top: var(--c-trigger-y); opacity: 0; transform: translate(-50%, -50%) scale(.28) }
+  83.2% { opacity: .95 }
+  84.5% { left: var(--c-trigger-x); top: var(--c-trigger-y); opacity: 0; transform: translate(-50%, -50%) scale(1.6) }
+  85.2% { left: var(--c-field-x); top: var(--c-field-y); opacity: 0; transform: translate(-50%, -50%) scale(.28) }
+  86.1% { opacity: .95 }
+  87.4% { left: var(--c-field-x); top: var(--c-field-y); opacity: 0; transform: translate(-50%, -50%) scale(1.6) }
+  87.6% { left: var(--c-dockTerm-x); top: var(--c-dockTerm-y); opacity: 0; transform: translate(-50%, -50%) scale(.28) }
+  88.5% { opacity: .95 }
+  89.8% { left: var(--c-dockTerm-x); top: var(--c-dockTerm-y); opacity: 0; transform: translate(-50%, -50%) scale(1.6) }
 }
 
 .oaPopup { animation-timing-function: var(--spring); }
@@ -1353,3 +1325,72 @@ pre {
 .extCard { animation-timing-function: var(--spring); }
 .pairCodeRow { animation-timing-function: var(--spring); }
 .popupFieldValue { animation-timing-function: var(--spring); }
+
+/* the desktop is the computer; nothing floats past its frame */
+
+.deskIcons { position: absolute; z-index: 1; left: 16px; top: 14px; display: grid; gap: 20px; align-content: start; opacity: 1; animation: deskFade 22s steps(1) infinite; }
+
+@keyframes deskFade { 0%, 4% { opacity: 1 } 5.5%, 100% { opacity: 0 } }
+.deskIcon { display: grid; justify-items: center; gap: 6px; }
+.deskIcon em { font: 500 9px/1.3 var(--mono); font-style: normal; color: var(--ink); text-align: center; }
+.deskPcIcon { width: 40px; height: 40px; }
+
+.osWin.emptyDesk { width: 100%; height: 100%; background: transparent; border: 0; }
+
+.winGlyphs { margin-left: auto; display: flex; align-items: center; gap: 13px; align-self: center; padding-right: 2px; }
+.wgMin { width: 11px; border-bottom: 1.3px solid var(--muted); }
+.wgMax { width: 9px; height: 9px; border: 1.2px solid var(--muted); border-radius: 1px; }
+.wgClose { position: relative; width: 12px; height: 12px; }
+.wgClose::before, .wgClose::after { content: ""; position: absolute; left: 5px; top: 0.5px; width: 1.3px; height: 11px; background: var(--muted); }
+.wgClose::before { transform: rotate(45deg); }
+.wgClose::after { transform: rotate(-45deg); }
+
+.termBar { display: flex; align-items: center; gap: 6px; padding: 10px 11px; background: var(--surface); border-bottom: 1px solid var(--line); }
+.termBar .winGlyphs { padding-right: 2px; }
+
+.taskbarWin {
+  position: absolute;
+  z-index: 40;
+  bottom: 0; left: 0; right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  height: 46px;
+  padding: 0 12px;
+  background: color-mix(in srgb, var(--surface) 66%, transparent);
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+  border-top: 1px solid var(--line-strong);
+}
+
+.tbItem { display: grid; place-items: center; width: 38px; height: 38px; border-radius: 8px; background: transparent; }
+.tbItem svg { width: 21px; height: 21px; }
+
+.tChrome { animation: tChromeOn 22s steps(1) infinite; }
+.tFolder { animation: tFolderOn 22s steps(1) infinite; }
+.tTerm { animation: tTermOn 22s steps(1) infinite; }
+
+@keyframes tChromeOn {
+  0%, 4% { background: transparent }
+  6%, 16.5% { background: color-mix(in srgb, var(--ink) 18%, transparent) }
+  34%, 84% { background: color-mix(in srgb, var(--ink) 18%, transparent) }
+  86%, 100% { background: transparent }
+}
+
+@keyframes tFolderOn {
+  0%, 16% { background: transparent }
+  18%, 32.5% { background: color-mix(in srgb, var(--ink) 18%, transparent) }
+  34%, 100% { background: transparent }
+}
+
+@keyframes tTermOn {
+  0%, 84% { background: transparent }
+  86%, 100% { background: color-mix(in srgb, var(--ink) 18%, transparent) }
+}
+
+.tbTrayIcons { position: absolute; right: 10px; display: flex; align-items: center; gap: 11px; }
+.trayIcon { width: 16px; height: 16px; }
+.tbClock { position: absolute; right: 88px; display: grid; justify-items: end; font: 500 10.5px/1.3 var(--mono); color: var(--ink); }
+.tbClock time { display: block; }
+\n.scene.s1 .osWin { animation: winRise 22s linear infinite; }\n@keyframes winRise { 0%, 5% { opacity: 0; transform: translateY(30px) scale(.95) } 7% { opacity: 1; transform: none } 100% { opacity: 1; transform: none } }\n
