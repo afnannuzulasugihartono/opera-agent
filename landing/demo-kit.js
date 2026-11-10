@@ -192,6 +192,8 @@
       if (typedReset) typedReset.textContent = '';
       const ccTypedReset = demo.querySelector('#ccComposerTyped');
       if (ccTypedReset) ccTypedReset.textContent = '';
+      const ocTypedReset = demo.querySelector('#ocComposerTyped');
+      if (ocTypedReset) ocTypedReset.textContent = '';
       const ccNameText = demo.querySelector('#ccNameText');
       const ccNameField = demo.querySelector('#ccFieldName');
       if (ccNameText) ccNameText.textContent = '';
@@ -491,6 +493,29 @@
           await press(demo.querySelector('.ddFileTab'), token);
           await wait(420, token);
           replaceStatus(TOAST);
+          break;
+        }
+        case 'fastlane': {
+          const composer = demo.querySelector('.ocComposer');
+          await press(composer, token);
+          await wait(120, token);
+          demo.classList.add('is-writing');
+          const typed = demo.querySelector('#ocComposerTyped');
+          typed.textContent = '';
+          const prompt = 'Pasang MCP server Opera Agent dari https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp — verifikasi terhubung.';
+          for (const char of prompt) {
+            typed.textContent += char;
+            await wait(TYPE_PACE + 8, token);
+          }
+          demo.classList.add('is-ready');
+          await wait(320, token);
+          await press(demo.querySelector('.ocSendBtn'), token);
+          typed.textContent = '';
+          demo.classList.remove('is-writing', 'is-ready');
+          demo.classList.add('is-sent');
+          await wait(700, token);
+          demo.classList.add('is-solid');
+          await wait(2600, token);
           break;
         }
       }
