@@ -570,6 +570,30 @@
           await wait(1500, token);
           break;
         }
+        case 'opencode-cli': {
+          const [addLine, needAuth, listLine, needAuth2, authLine, connectedLine] = lines;
+          await press(addLine, token);
+          await typeLine(addLine, token, TYPE_PACE);
+          await wait(340, token);
+          reveal(needAuth, token);
+          await wait(300, token);
+          await typeLine(listLine, token, TYPE_PACE);
+          await wait(260, token);
+          reveal(needAuth2, token);
+          await wait(380, token);
+          await typeLine(authLine, token, TYPE_PACE);
+          await wait(240, token);
+          demo.classList.add('is-browser');
+          await wait(1000, token);
+          await press(demo.querySelector('#ocCliConsentAllow'), token);
+          demo.classList.add('is-authed');
+          reveal(connectedLine, token);
+          await wait(1500, token);
+          demo.classList.remove('is-browser', 'is-authed');
+          demo.classList.add('is-connected');
+          await wait(1500, token);
+          break;
+        }
         case 'vscode':
         case 'cursor': {
           await press(demo.querySelector('.ddFileTab'), token);
