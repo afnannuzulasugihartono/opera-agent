@@ -112,12 +112,13 @@
     "page.title": "Download files",
     "page.sub": "One build. Five browsers. One click.",
     "verify.title": "Verify the file",
-    "verify.intro": "The SHA-256 fingerprint changes every release. Paste one line from each command; the panel compares them.",
+    "verify.intro": "The SHA-256 fingerprint changes every release. Two commands below; both must print the same fingerprint.",
     "verify.tagServer": "Server",
     "verify.tagLocal": "Local",
     "verify.copy": "Copy",
     "verify.copyServer": "Copy the server command",
     "verify.copyLocal": "Copy the local command",
+    "verify.match": "Both fingerprints must match.",
     "support.title": "Which browsers are supported",
     "support.th.crx": ".crx file",
     "support.th.zip": ".zip archive",
@@ -364,30 +365,28 @@
     <details class="sectionFold" open>
       <summary><h2 id="verifikasi" data-i18n="verify.title">Verifikasi berkas</h2></summary>
       <div class="foldBody">
-      <p data-i18n-html="verify.intro">Sidik jari SHA-256 berubah di setiap rilis. Tempel sebaris dari masing-masing perintah; jawaban muncul seketika.</p>
+      <p data-i18n-html="verify.intro">Sidik jari SHA-256 berubah di setiap rilis. Dua perintah ini; keduanya harus menghasilkan nilai yang sama.</p>
       <div class="verifyPanel" id="verifyPanel">
         <div class="verifyHead">
           <svg viewBox="0 0 24 24" class="verifyShield" aria-hidden="true"><path d="M12 2.5 4.5 6.3v6.1c0 4.6 3.2 8.9 7.5 10.6 4.3-1.7 7.5-6 7.5-10.6V6.3L12 2.5Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M9 12l2.2 2.2L15.5 9.7" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
           <span class="verifyHeadTitle">SHA-256</span>
-          <span class="verifyStatus" aria-live="polite"><span class="verifyStatusDot" aria-hidden="true"></span><span class="verifyStatusText" id="verifyStatusText">Menunggu dua hash…</span></span>
+          <span class="verifyHeadTag">x-opera-sha256</span>
         </div>
         <div class="verifyBlock">
           <span class="verifyTag" data-i18n="verify.tagServer">Server</span>
           <div class="verifyCmdRow">
-            <pre><code aria-hidden="true"><span class="typewriter" data-type="curl.exe -sI https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/download/opera-agent.zip | findstr /i x-opera-sha256"></span><span class="cursor" aria-hidden="true"></span></code></pre><noscript><pre><code>curl.exe -sI https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/download/opera-agent.zip | findstr /i x-opera-sha256</code></pre></noscript>
+            <pre><code aria-hidden="true"><span class="verifyPrompt">PS C:\&gt;</span> <span class="verifyType" id="curlType"></span><span class="verifyCaret" id="curlCaret"></span></code></pre><noscript><pre><code>curl.exe -sI https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/download/opera-agent.zip | findstr /i x-opera-sha256</code></pre></noscript>
             <button class="verifyCopy" type="button" data-copy="curl.exe -sI https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/download/opera-agent.zip | findstr /i x-opera-sha256" aria-label="Salin perintah server" data-i18n-attr="aria-label:verify.copyServer"><svg viewBox="0 0 24 24" class="verifyCopyIcon" aria-hidden="true"><rect x="8.5" y="8.5" width="10.5" height="10.5" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M5.5 15.5V6a2 2 0 0 1 2-2h9" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg><svg viewBox="0 0 24 24" class="verifyCopyCheck" aria-hidden="true"><path d="M5 12.5 9.5 17 19 6.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="verifyCopyText" data-i18n="verify.copy">Salin</span></button>
           </div>
-          <label class="verifyField"><input class="verifyInput" type="text" id="digestServer" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="x-opera-sha256: a3f9c41d…" aria-label="Server SHA-256 fingerprint"><span class="verifyFieldDot" aria-hidden="true"></span></label>
         </div>
         <div class="verifyBlock">
           <span class="verifyTag" data-i18n="verify.tagLocal">Lokal</span>
           <div class="verifyCmdRow">
-            <pre><code aria-hidden="true">Get-FileHash .\opera-agent-*.zip -Algorithm SHA256</code></pre>
+            <pre><code aria-hidden="true"><span class="verifyPrompt">PS C:\&gt;</span> <span class="verifyType" id="localType"></span><span class="verifyCaret" id="localCaret"></span></code></pre><noscript><pre><code>Get-FileHash .\opera-agent-*.zip -Algorithm SHA256</code></pre></noscript>
             <button class="verifyCopy" type="button" data-copy="Get-FileHash .\opera-agent-*.zip -Algorithm SHA256" aria-label="Salin perintah lokal" data-i18n-attr="aria-label:verify.copyLocal"><svg viewBox="0 0 24 24" class="verifyCopyIcon" aria-hidden="true"><rect x="8.5" y="8.5" width="10.5" height="10.5" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M5.5 15.5V6a2 2 0 0 1 2-2h9" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg><svg viewBox="0 0 24 24" class="verifyCopyCheck" aria-hidden="true"><path d="M5 12.5 9.5 17 19 6.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="verifyCopyText" data-i18n="verify.copy">Salin</span></button>
           </div>
-          <label class="verifyField"><input class="verifyInput" type="text" id="digestLocal" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="A3F9C41D22E8…" aria-label="Local file SHA-256 fingerprint"><span class="verifyFieldDot" aria-hidden="true"></span></label>
         </div>
-        <p class="verifyVerdict" id="verifyVerdict" aria-live="polite"><svg viewBox="0 0 24 24" class="verifyVerdictIcon verifyVerdictWait" aria-hidden="true"><path d="M12 5.5v13M7.5 14 12 18.5 16.5 14" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg><svg viewBox="0 0 24 24" class="verifyVerdictIcon verifyVerdictMatch" aria-hidden="true"><path d="M5 12.5 9.5 17 19 6.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg><svg viewBox="0 0 24 24" class="verifyVerdictIcon verifyVerdictMismatch" aria-hidden="true"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span id="verifyVerdictText">Tempel kedua sebaris di atas untuk membandingkan.</span></p>
+        <p class="verifyVerdict"><svg viewBox="0 0 24 24" class="verifyVerdictIcon verifyVerdictMatch" aria-hidden="true"><path d="M5 12.5 9.5 17 19 6.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-i18n="verify.match">Kedua sidik jari harus sama.</span></p>
       </div>
       </div>
     </details>
@@ -450,36 +449,6 @@
     <script src="/logos.js"></script>
     <script src="/reveal.js"></script>
     <script src="./demo.js"></script>
-    <script>
-      // WHY THE TYPEWRITER STAYS BEHIND A HASH: the page CSP names every inline classic script by its sha256, so this block is shaped to be hashed, not hidden.
-      window.__typeLine = function () {
-      var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
-      var line = document.querySelector('.typewriter');
-      if (!line || reduce || !('IntersectionObserver' in window)) {
-        if (line) line.textContent = line.dataset.type;
-        return;
-      }
-      // WHY THE LINE IS LOOKED UP LATE: a classic script runs while the parser is still above the element it needs, so querySelector at parse time finds nothing.
-      // Ready-state first, element second.
-      // WHY THE PARENT IS WATCHED, NOT THE LINE: the span starts empty and an empty inline box has a zero-area intersection record, so the callback would never fire.
-      // The wrapping pre has the box the reader scrolls to.
-      var box = line.closest('pre') || line;
-      var seen = new IntersectionObserver(function (entries) {
-        if (!entries[0].isIntersecting) return;
-        seen.disconnect();
-        var text = line.dataset.type;
-        var i = 0;
-        line.classList.add('live');
-        var tick = setInterval(function () {
-          line.textContent = text.slice(0, ++i);
-          if (i >= text.length) clearInterval(tick);
-        }, 18);
-      });
-      seen.observe(box);
-      };
-      if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', window.__typeLine);
-      else window.__typeLine();
-  </script>
   <script type="module">
       const cards = [...document.querySelectorAll('[data-browser]')];
       const brands = (navigator.userAgentData?.brands || []).map((entry) => entry.brand).join(' ');

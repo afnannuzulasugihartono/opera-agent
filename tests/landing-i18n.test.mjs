@@ -125,7 +125,7 @@ test('the authored Indonesian stands byte-for-byte where the pins read it', () =
     ['landing/beranda.html', 'Hak cipta dilindungi'],
     ['landing/beranda.html', 'Asisten AI di '],
     ['landing/beranda.html', 'Pakai model sendiri'],
-    ['landing/unduh-berkas.html', 'Tempel kedua sebaris di atas untuk membandingkan.'],
+    ['landing/unduh-berkas.html', 'Kedua sidik jari harus sama.'],
     ['landing/404.html', 'Lima jalan keluar'],
     ['landing/dukungan.html', 'Menghubungkan AI harness (OpenCode, Kilo, ChatGPT, Claude)'],
     ['landing/fitur.html', 'Companion dengan AI di belakangnya'],

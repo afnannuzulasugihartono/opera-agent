@@ -498,7 +498,7 @@ pre {
   white-space: pre-wrap;
 }
 
-/* WHY THE VERIFY READS AS A SELF-CHECKING INSTRUMENT: the reader must never compare two 64-character strings with their eyes, so the panel takes the two lines from the two commands and answers on its own. */
+/* WHY THE VERIFY READS AS ONE STYLISED TERMINAL SESSION: the reader runs two commands, the page shows exactly those, and nothing else; the fold is a machine, not a form. */
 
 .verifyPanel {
   margin: 18px 0 0;
@@ -506,11 +506,7 @@ pre {
   border-radius: 14px;
   background: var(--surface);
   overflow: hidden;
-  transition: border-color .25s var(--ease);
 }
-
-.verifyPanel.is-match { border-color: color-mix(in srgb, var(--accent) 50%, var(--line-strong)); }
-.verifyPanel.is-mismatch { border-color: color-mix(in srgb, var(--danger) 55%, var(--line-strong)); }
 
 .verifyHead {
   display: flex;
@@ -532,41 +528,14 @@ pre {
   flex: none;
 }
 
-.verifyPanel.is-mismatch .verifyShield { background: color-mix(in srgb, var(--danger) 13%, transparent); color: var(--danger); }
-
 .verifyHeadTitle { font: 600 15px/1 var(--font); letter-spacing: .02em; color: var(--ink); }
-
-.verifyStatus {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  margin-left: auto;
-  padding: 6px 12px;
-  border: 1px solid var(--line-strong);
-  border-radius: 999px;
-  font: 500 10.5px/1 var(--mono);
-  color: var(--muted);
-  white-space: nowrap;
-  transition: border-color .2s var(--ease), color .2s var(--ease);
-}
-
-.verifyStatusDot { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); animation: verify-wait 1.5s ease-in-out infinite; flex: none; }
-
-.verifyPanel.is-complete .verifyStatusDot { animation: none; }
-.verifyPanel.is-match .verifyStatusDot { background: var(--accent); }
-.verifyPanel.is-mismatch .verifyStatusDot { background: var(--danger); }
-.verifyPanel.is-match .verifyStatus { border-color: color-mix(in srgb, var(--accent) 45%, transparent); color: var(--accent); }
-.verifyPanel.is-mismatch .verifyStatus { border-color: color-mix(in srgb, var(--danger) 50%, transparent); color: var(--danger); }
-
-@keyframes verify-wait { 0%, 100% { opacity: 1 } 50% { opacity: .3 } }
+.verifyHeadTag { margin-left: auto; font: 500 11px/1 var(--mono); color: var(--muted); letter-spacing: .05em; }
 
 .verifyBlock { display: grid; gap: 10px; padding: 16px 18px 16px; }
 
 .verifyBlock + .verifyBlock { border-top: 1px solid var(--line); }
 
-.verifyTag { display: flex; align-items: center; gap: 8px; color: var(--muted); font: 600 10px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; }
-
-.verifyTag::after { content: none; }
+.verifyTag { display: flex; align-items: center; gap: 8px; color: var(--muted); font: 600 10px/1 var(--mono); letter-spacing: .15em; text-transform: uppercase; }
 
 .verifyCmdRow {
   display: flex;
@@ -580,26 +549,41 @@ pre {
 
 .verifyBlock:first-of-type .verifyCmdRow { border-left-color: var(--accent); }
 
-.verifyPanel pre {
+.verifyCmdRow pre {
   flex: 1;
   min-width: 0;
   margin: 0;
-  padding: 12px 14px;
+  padding: 13px 16px;
   border: 0;
-  border-radius: 0;
   background: none;
-  font: 12px/1.55 var(--mono);
+  font: 12.5px/1.55 var(--mono);
   white-space: pre;
   overflow-x: auto;
 }
+
+.verifyPrompt { color: var(--accent); font-weight: 600; }
+.verifyType { color: var(--ink); }
+
+.verifyCaret {
+  display: none;
+  width: 8px;
+  height: 14px;
+  margin-left: 2px;
+  vertical-align: -2px;
+  background: var(--accent);
+  animation: verify-blink 1.05s steps(1) infinite;
+}
+.verifyCaret.is-on { display: inline-block; }
+
+@keyframes verify-blink { 0%, 49% { opacity: 1 } 50%, 100% { opacity: 0 } }
 
 .verifyCopy {
   flex: none;
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  height: 46px;
-  padding: 0 16px;
+  height: 48px;
+  padding: 0 17px;
   border: 0;
   border-left: 1px solid var(--line);
   background: transparent;
@@ -618,64 +602,19 @@ pre {
 .verifyCopy.is-copied .verifyCopyIcon { display: none; }
 .verifyCopy.is-copied .verifyCopyCheck { display: block; }
 
-.verifyField { position: relative; display: block; }
-
-.verifyInput {
-  width: 100%;
-  padding: 12px 46px;
-  height: 54px;
-  border: 1px solid var(--line-strong);
-  border-radius: 10px;
-  background: var(--surface-2);
-  color: var(--ink);
-  font: 14px/1 var(--mono);
-  letter-spacing: .06em;
-  text-align: center;
-  transition: border-color .15s var(--ease), box-shadow .15s var(--ease);
-}
-
-.verifyInput::placeholder { color: var(--muted); opacity: .55; }
-.verifyInput:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent); }
-.verifyInput.is-valid { border-color: color-mix(in srgb, var(--accent) 55%, var(--line-strong)); }
-.verifyPanel.is-mismatch .verifyInput.is-valid { border-color: color-mix(in srgb, var(--danger) 55%, var(--line-strong)); }
-
-.verifyFieldDot {
-  position: absolute;
-  right: 17px;
-  top: 50%;
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  background: var(--muted);
-  opacity: .35;
-  transform: translateY(-50%);
-  transition: background .15s var(--ease), opacity .15s var(--ease), box-shadow .15s var(--ease);
-}
-
-.verifyInput.is-valid ~ .verifyFieldDot { background: var(--accent); opacity: 1; box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent); }
-.verifyPanel.is-mismatch .verifyInput.is-valid ~ .verifyFieldDot { background: var(--danger); box-shadow: 0 0 0 3px color-mix(in srgb, var(--danger) 22%, transparent); }
-
 .verifyVerdict {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 11px;
   margin: 0;
   padding: 14px 18px;
   border-top: 1px solid var(--line);
-  color: var(--muted);
-  font: 600 14px/1.45 var(--font);
-  transition: background .2s var(--ease), color .2s var(--ease);
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+  font: 600 13.5px/1.45 var(--font);
 }
 
-.verifyVerdictIcon { width: 20px; height: 20px; flex: none; display: none; }
-.verifyVerdictWait { display: block; }
-.verifyPanel.is-match .verifyVerdictWait,
-.verifyPanel.is-mismatch .verifyVerdictWait { display: none; }
-.verifyPanel.is-match .verifyVerdictMatch { display: block; }
-.verifyPanel.is-mismatch .verifyVerdictMismatch { display: block; }
-
-.verifyPanel.is-match .verifyVerdict { color: var(--accent); background: color-mix(in srgb, var(--accent) 8%, transparent); }
-.verifyPanel.is-mismatch .verifyVerdict { color: var(--danger); background: color-mix(in srgb, var(--danger) 7%, transparent); }
+.verifyVerdictIcon { width: 18px; height: 18px; flex: none; }
 
 /* WHY ONE COLUMN FOR EVERYTHING BELOW THE CARDS: the five cards answer the only question that matters at a glance; the prose after them is one narrow read, centered so the eye does not ping-pong. */
 
@@ -770,45 +709,6 @@ pre {
 .support td.yes { color: var(--accent); }
 .support td.no { color: var(--muted); }
 .support tr:last-child td { border-bottom: 0; }
-
-
-/* WHY THE TYPEWRITER KEEPS ITS SCRIPT: a line of code fading in reads like a demo, and a demo that never moves feels worse than the same line at rest. */
-
-.typewriter {
-  display: inline-block;
-  overflow: hidden;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-  vertical-align: bottom;
-  max-width: 100%;
-}
-
-.typewriter.live {
-  animation: type-ch 2.4s steps(120) forwards;
-}
-
-@keyframes type-ch {
-  from { max-width: 0; }
-  to { max-width: 100%; }
-}
-
-.typewriter + .cursor {
-  display: inline-block;
-  width: 7px;
-  height: 13px;
-  background: var(--accent);
-  vertical-align: baseline;
-  animation: cursor-blink 1s steps(2, start) infinite;
-}
-
-@keyframes cursor-blink {
-  to { visibility: hidden; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .typewriter { animation: none; white-space: pre-wrap; }
-  .typewriter + .cursor { display: none; }
-}
 
 /* ==== footer-level pins kept ==== */
 
