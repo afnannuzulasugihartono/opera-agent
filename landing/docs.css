@@ -1413,4 +1413,10 @@ html.js .quickStart.in .quickDoor:nth-child(3) { animation-delay: .19s; }
 .claudeAuthRow.is-on { opacity: 1; }
 .mcpDemo.is-authed .claudeRowOpera .claudeDot { background:#33dd99; }
 .mcpDemo.is-authed .oc2RowOpera .oc2Dot { background:#32d583; }
-
+.expectedRow code { background: transparent; border: 0; padding: 0; color: inherit; font: inherit; }
+.expectLabel { margin: 0 0 8px; font: 600 11px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--ink); letter-spacing: .02em; }
+.expectedBox { display: grid; gap: 4px; padding: 12px 14px; margin: 0 0 12px; border: 1px solid var(--line-strong); border-radius: 12px; background: var(--surface); }
+.expectedRow { display: flex; align-items: center; gap: 10px; font: 12px/1.8 var(--mono); color: var(--ink); }
+.expectedCheck { color: #32d583; font-weight: 800; flex: none; }
+.expectedNote { margin-left: auto; font: 400 11px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--muted); }
+@media (max-width: 640px) { .expectedNote { display: none; } }

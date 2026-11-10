@@ -1270,16 +1270,34 @@ opencode mcp auth opera-agent</code></pre>
 
         <section data-reveal>
       <h2 id="verifikasi">Verifikasi</h2>
-      <p class="muted">Setelah memasang, salin prompt ini ke AI Anda:</p>
+      <p class="muted">Setelah memasang, kirim prompt ini ke AI Anda:</p>
       <div class="copybox">
         <pre><code id="cfg-verify">Call browser_status and show me the answer.</code></pre>
         <button type="button" data-copy="cfg-verify" data-i18n="copy">Salin</button>
       </div>
-      <p>Jawaban yang benar: <code>ok: true</code> — ekstensi daring, versi selaras, nama device sama dengan yang Anda pilih.</p>
+      <p class="expectLabel">Jawaban yang benar:</p>
+      <div class="expectedBox" role="presentation">
+        <div class="expectedRow"><span class="expectedCheck">&#10003;</span><code>ok: true</code><span class="expectedNote">ekstensi daring</span></div>
+        <div class="expectedRow"><span class="expectedCheck">&#10003;</span><code>paired: true</code><span class="expectedNote">tertaut ke akun Anda</span></div>
+        <div class="expectedRow"><span class="expectedCheck">&#10003;</span><code>deviceName: opera</code><span class="expectedNote">device yang Anda pilih</span></div>
+        <div class="expectedRow"><span class="expectedCheck">&#10003;</span><code>version: 1.6.36</code><span class="expectedNote">selaras dengan server</span></div>
+      </div>
+      <details class="stepsDrop">
+        <summary>Kalau jawabannya <code>ok: false</code></summary>
+        <div class="stepsDropBody">
+          <p>Opera tidak terbuka, atau ekstensinya mati. Buka Opera, pastikan ekstensi Opera Agent aktif, lalu panggil <code>browser_status</code> lagi.</p>
+        </div>
+      </details>
       <details class="stepsDrop">
         <summary>Kalau <code>paired</code> false</summary>
         <div class="stepsDropBody">
-          <p>Extension belum di-pair — buka <a href="./dashboard.html#pairing">Dashboard → Pairing</a>, buat kode, tempel di extension, lalu panggil <code>browser_status</code> lagi.</p>
+          <p>Ekstensi belum ditautkan ke akun Anda. Buka <a href="./dashboard.html#pairing">Dashboard &#8594; Pairing</a>, buat kode pairing, tempel di ekstensi, lalu panggil <code>browser_status</code> lagi.</p>
+        </div>
+      </details>
+      <details class="stepsDrop">
+        <summary>Kalau versinya beda</summary>
+        <div class="stepsDropBody">
+          <p>Ekstensi Anda tertinggal. Perbarui ke versi terbaru dari halaman <a href="./unduh.html">Unduh</a>, muat ulang ekstensi, lalu panggil <code>browser_status</code> lagi.</p>
         </div>
       </details>
     </section>
