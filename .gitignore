@@ -1,6 +1,6 @@
 # @last-edited: 2026-10-25 UTC+7.
-# @title: .gitignore — Repository file.
-# @state: chore(governance): judge tracked root entries, not raw disk listings.
+# @title: .gitignore - what the repository never tracks, so nothing generated or secret reaches a clone.
+# @state: dependencies, build output, signing keys, and machine-local state are untracked; the tracked few, like .env.example and store-manifest.json, are named here on purpose.
 # @dependencies: none stated.
 
 # Dependencies
