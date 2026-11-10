@@ -1,19 +1,19 @@
-// @last-edited: 2026-10-22 UTC+7.
-// @title: monetization — what a delivery is worth, to whom, and what an agent hands over.
-// @state: the offer shape, the decided price, the billing unit, and the two decisions still open.
-// @dependencies: none.
+# @last-edited: 2026-11-10 UTC+7.
+# @title: monetization — what a delivery is worth, to whom, and what an agent hands over.
+# @state: the offer shape, the decided price, the billing unit; one decision open, one resolved.
+# @dependencies: none.
 
-// WHY THIS DOCUMENT EXISTS
-//
-// A tool is not bought; a result is. The question that decides whether this earns
-// anything is not "what does the browser driver cost" but "what is a delivered client
-// month worth to a bookkeeper, and what may an agent that uses this hand to its own
-// user". Both answers change what gets built next, and both were being answered in
-// chat.
-//
-// The answers below are the ones this tree can already support. The ones it cannot
-// are named as open, with what would settle them, because a price guessed in advance
-// is a promise made on no evidence.
+## Why this document exists
+
+A tool is not bought; a result is. The question that decides whether this earns
+anything is not "what does the browser driver cost" but "what is a delivered client
+month worth to a bookkeeper, and what may an agent that uses this hand to its own
+user". Both answers change what gets built next, and both were being answered in
+chat.
+
+The answers below are the ones this tree can already support. The ones it cannot
+are named as open, with what would settle them, because a price guessed in advance
+is a promise made on no evidence.
 
 ## The offer
 
@@ -84,17 +84,20 @@ The first three firms get the pilot price locked, and there is no setup fee. The
 invoice is issued after the first batch is accepted, so a failed batch is Rp 0. This
 is a decision, not evidence: the first three payments are what will prove it.
 
-## Two decisions still open
+## The decisions
 
 1. **Unattended delivery.** Today the job needs an operator on the call, which makes
    this a service with a ceiling of hours. For it to be income, the statement job has
    to run on the client's own machine without a person watching — the extension and
    the cloud bridge path — and leave the file and the manifest there. Acceptance:
    the client runs one command, the manifest gains a row, and nobody is on a call.
-2. **Whether the cloud surface grows the job.** The 31 cloud tools have no `download`
-   and no statement calls, so an agent on rented infrastructure cannot deliver a file
-   to the user's disk today. Either the job moves to the device, or the cloud surface
-   grows a delivery call. The first is smaller and keeps the data on the machine.
+2. **Whether the cloud surface grows the job. — resolved, after this was written.**
+   `statement_deliver` and `statement_manifest` are on the cloud surface: the
+   device fetches and names the file under the caller's own name, it lands in the
+   user's download folder, the bytes never leave the machine, and the manifest the
+   invoice is checked against stays on the user's disk. What it needs from the
+   caller is the same operation the local surface exposes, so an agent on rented
+   infrastructure can deliver a file to the operator's machine today.
 
 ## What proves the price
 

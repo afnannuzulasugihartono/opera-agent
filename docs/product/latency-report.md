@@ -1,6 +1,6 @@
-// @last-edited: 2026-11-03 UTC+7.
-// @title: latency-report — the numbers the handoff quotes, and the command that re-measures them.
-// @state: the baseline measured before the wait and burst change, the same bench after it, and what moved.
+# @last-edited: 2026-11-03 UTC+7.
+# @title: latency-report — the numbers the handoff quotes, and the command that re-measures them.
+# @state: the baseline measured before the wait and burst change, the same bench after it, and what moved.
 
 # Latency, measured
 

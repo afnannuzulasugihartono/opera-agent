@@ -209,7 +209,7 @@ hypothesis; the kill test is whether anyone renews without being asked.
 
 ## Sources
 
-- Browser Use pricing and task landscape: https://browser-use.com/pricing ,
+- Browser Use pricing and task landscape: https://browser-use.com/pricing,
   https://browser-use.com/showcase/landscape
 - Browserbase pricing: https://www.browserbase.com/pricing
 - Hacker News, Notte launch thread: https://news.ycombinator.com/item?id=44827216
@@ -217,5 +217,5 @@ hypothesis; the kill test is whether anyone renews without being asked.
 - r/personalfinance, downloading statements: https://www.reddit.com/r/personalfinance/comments/179amov/
 - r/agency, too many client reports: https://www.reddit.com/r/agency/comments/1d77l2o/
 - Rollstack pricing: https://www.rollstack.com/pricing
-- Indonesian service prices: https://fastwork.id/data-entry ,
-  https://www.sribu.com/id/entry-data/website , https://jasaketikin.com/jasa-input-data/
+- Indonesian service prices: https://fastwork.id/data-entry,
+  https://www.sribu.com/id/entry-data/website, https://jasaketikin.com/jasa-input-data/
