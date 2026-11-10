@@ -611,103 +611,41 @@ html.js .quickStart.in .quickDoor:nth-child(3) { animation-delay: .19s; }
 .mcpDemo[data-agent="terminal"] .ddGlyphs i, .mcpDemo[data-agent="terminal"] .ddBrand { color: #EDEDED; background: transparent; border-color: #EDEDED; }
 .mcpDemo[data-agent="terminal"] .ddTbAgent .ddBrand { color: #CB3837; }
 
-/* ChatGPT web — the REAL flow: Settings (white, left rail) floats on the dark chat canvas; Advanced settings opens "New App"; Create stays disabled until the risk checkbox is ticked */
+/* ChatGPT web — asli sesuai screenshot 2026 (dark): jendela browser gelap, panel Settings gelap, gerbang Developer mode, OAuth, lalu tools dipanggil dari composer */
 
-.settingsStage { position: absolute; left: 0; right: 0; top: 36px; bottom: 0; z-index: 5; display: grid; place-items: center; opacity: 0; visibility: hidden; background: radial-gradient(125% 115% at 50% 112%, rgba(16, 163, 127, .12) 0%, transparent 55%), #191919; transition: opacity .3s var(--ease), visibility 0s .3s; }
-.mcpDemo.is-settings .settingsStage { opacity: 1; visibility: visible; transition: opacity .3s var(--ease), visibility 0s 0s; }
+.chatWin { background: #202124; }
 
-.settingsCard { position: relative; width: 610px; height: 394px; background: #ffffff; color: #0d0d0d; border-radius: 14px; box-shadow: 0 30px 70px rgba(0, 0, 0, .5); display: grid; grid-template-columns: 168px 1fr; overflow: hidden; }
+.browserBar { flex: none; background: #202124; }
+.browserTabs { display: flex; align-items: flex-end; gap: 4px; padding: 7px 10px 0; background: #181a1d; }
+.browserTab { display: flex; align-items: center; gap: 8px; height: 33px; padding: 0 10px; border-radius: 9px 9px 0 0; background: #202124; font: 500 12px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #e8e8e8; }
+.browserFavicon { flex: none; width: 16px; height: 16px; border-radius: 50%; display: grid; place-items: center; background: #10a37f; }
+.browserFavicon svg { width: 9px; height: 9px; }
+.browserTabClose { display: grid; place-items: center; width: 15px; height: 15px; border-radius: 4px; color: #8a8a8a; font: 400 12px/1 system-ui; margin-left: 2px; }
+.browserTabClose:hover { background: rgba(255, 255, 255, .1); color: #ececec; }
+.browserPlus { align-self: center; width: 24px; height: 24px; display: grid; place-items: center; border-radius: 6px; color: #a8a8a8; font: 400 16px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+.browserPlus:hover { background: rgba(255, 255, 255, .07); }
 
-.settingsClose { position: absolute; left: 12px; top: 10px; z-index: 3; width: 26px; height: 26px; display: grid; place-items: center; border: 0; border-radius: 7px; background: transparent; color: #3d3d3d; cursor: pointer; padding: 0; }
-.settingsClose:hover { background: #f0f0f0; }
+.browserRow { display: flex; align-items: center; gap: 8px; height: 44px; padding: 0 12px 6px; background: #202124; }
+.navBtn { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 6px; color: #9b9b9b; }
+.navBtn svg { stroke: currentColor; fill: none; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.navBtn.off { color: #5c5c5c; }
+.browserRefresh { display: grid; place-items: center; width: 28px; height: 28px; color: #c8c8c8; }
+.browserRefresh svg { stroke: currentColor; fill: none; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.browserUrl { flex: 1; display: flex; align-items: center; gap: 8px; height: 30px; padding: 0 12px; border-radius: 999px; background: #2b2b2b; font: 400 12.5px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #c8c8c8; overflow: hidden; white-space: nowrap; }
+.browserUrl svg { flex: none; stroke: #8f8f8f; fill: none; stroke-width: 1.6; }
+.browserExt { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 8px; background: rgba(255, 255, 255, .05); }
+.browserExt svg { width: 17px; height: 17px; }
+.browserAvatar { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: #10a37f; color: #ffffff; font: 650 11px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
 
-.settingsRail { display: grid; align-content: start; gap: 2px; padding: 44px 12px 12px; border-right: 1px solid #eeeeee; background: #ffffff; }
-.settingsRailItem { display: flex; align-items: center; gap: 10px; height: 31px; padding: 0 10px; border-radius: 8px; font: 500 11px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #3d3d3d; }
-.settingsRailItem svg { width: 17px; height: 17px; stroke: currentColor; fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; flex: none; }
-.settingsRailItem.sel { background: #f0f0f0; color: #0d0d0d; }
-
-.settingsBody { position: relative; padding: 15px 19px 13px 22px; display: grid; align-content: start; gap: 9px; min-width: 0; }
-.settingsTitle { margin: 2px 0 0; font: 600 17px/1.2 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; letter-spacing: -.01em; color: #0d0d0d; }
-
-.permRow, .appsLabelRow { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.permRow { padding-bottom: 11px; border-bottom: 1px solid #ececec; }
-.permText { display: grid; gap: 2px; min-width: 0; }
-.secLabel { font: 600 11px/1.25 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #0d0d0d; }
-.secSub { font: 400 10px/1.35 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #6b6b6b; max-width: 255px; }
-.permSelect { display: flex; align-items: center; gap: 6px; flex: none; padding: 7px 11px; border: 1px solid #e0e0e0; border-radius: 999px; font: 500 11px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #2b2b2b; white-space: nowrap; }
-.permSelect svg { stroke: #6b6b6b; }
-.appsAdd { display: flex; align-items: center; gap: 7px; flex: none; padding: 7px 13px 7px 11px; border: 1px solid #d8d8d8; border-radius: 999px; font: 500 11px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #0d0d0d; white-space: nowrap; }
-
-.appItem { display: flex; align-items: center; gap: 11px; min-width: 0; padding: 8px 2px; border-bottom: 1px solid #ececec; }
-.appItemIcon { flex: none; width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; overflow: hidden; }
-.appItemIcon.gws { background: #ffffff; border: 1px solid #ececec; }
-.appItemIcon.gws svg { width: 18px; height: 18px; }
-.appItemIcon.oa { background: #10a37f; font: 650 12px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #ffffff; letter-spacing: .02em; }
-.appItemText { display: grid; gap: 2px; min-width: 0; }
-.appItemName { display: flex; align-items: center; gap: 7px; font: 600 11.5px/1.2 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #0d0d0d; white-space: nowrap; }
-.appItemMeta { font: 400 10px/1.2 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #6b6b6b; white-space: nowrap; }
-.devPill { flex: none; padding: 2px 4px 1.5px; border-radius: 4px; background: #f9deda; color: #b3261e; font: 650 8px/1.3 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; letter-spacing: .06em; }
-.appItemChev { margin-left: auto; flex: none; color: #8a8a8a; }
-.appItemOA { opacity: 0; transform: translateY(7px); transition: opacity .3s var(--ease), transform .34s var(--spring); }
-.mcpDemo.is-row .appItemOA { opacity: 1; transform: none; }
-
-.advRow { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding-top: 2px; }
-.advLabel { display: flex; align-items: center; gap: 9px; font: 500 11px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #3d3d3d; }
-.advLabel svg { stroke: #6b6b6b; width: 16px; height: 16px; fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
-.advCreate { display: flex; align-items: center; gap: 6px; flex: none; padding: 8px 12px 8px 14px; border: 1px solid #d8d8d8; border-radius: 999px; background: transparent; font: 600 11px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #0d0d0d; cursor: pointer; white-space: nowrap; }
-.advCreate:hover { background: #f4f4f4; }
-.advCreate svg { stroke: #3d3d3d; }
-
-.settingsVeil { position: absolute; inset: 0; z-index: 20; background: rgba(13, 13, 13, .52); opacity: 0; transition: opacity .28s var(--ease); pointer-events: none; }
-.mcpDemo.is-appform .settingsVeil { opacity: 1; }
-
-.newAppCard { position: absolute; z-index: 30; width: 470px; background: #ffffff; color: #0d0d0d; border-radius: 14px; box-shadow: 0 40px 90px rgba(0, 0, 0, .55); opacity: 0; transform: translateY(16px) scale(.96); transition: opacity .26s var(--ease), transform .34s var(--spring); pointer-events: none; }
-.mcpDemo.is-appform .newAppCard { opacity: 1; transform: none; }
-
-.newAppHead { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px 2px 18px; }
-.newAppTitle { font: 600 13px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #0d0d0d; }
-.newAppClose { width: 26px; height: 26px; display: grid; place-items: center; border: 0; border-radius: 7px; background: transparent; color: #3d3d3d; cursor: pointer; padding: 0; }
-.newAppClose:hover { background: #f0f0f0; }
-
-.newAppBody { display: grid; gap: 7px; padding: 6px 16px 12px; }
-.newAppLabel { margin-bottom: -3px; font: 600 10px/1.2 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #3d3d3d; }
-.connRow { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: -3px; }
-.connRow .newAppLabel { margin: 0; }
-.newAppField { display: flex; align-items: center; height: 30px; padding: 0 10px; border: 1px solid #dcdcdc; border-radius: 7.5px; background: #ffffff; font: 400 12px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #0d0d0d; overflow: hidden; white-space: nowrap; }
-.newAppField.mono { font: 400 10.5px/1 var(--mono); letter-spacing: -.01em; }
-.newAppField.is-on { border-color: #171717; box-shadow: 0 0 0 2.5px rgba(23, 23, 23, .1); }
-.dpPlaceholder { color: #b5b5b5; }
-.newAppField.has-value .dpPlaceholder { display: none; }
-
-.connSeg { display: flex; gap: 2px; padding: 2px; border-radius: 9px; background: #e9e9e9; }
-.connSegItem { display: flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 7px; font: 500 10.5px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #3d3d3d; }
-.connSegItem.sel { background: #ffffff; color: #0d0d0d; box-shadow: 0 1px 3px rgba(0, 0, 0, .18); }
-.connSegItem svg { stroke: #6b6b6b; }
-
-.newAppSelect { display: flex; align-items: center; justify-content: space-between; height: 30px; padding: 0 10px; border: 1px solid #dcdcdc; border-radius: 7.5px; background: #ffffff; font: 400 12px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #0d0d0d; }
-.newAppSelect svg { stroke: #6b6b6b; }
-
-.newAppWarn { display: flex; align-items: center; gap: 9px; padding: 6px 10px; border-radius: 7px; background: #fdf0e8; font: 500 10px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #8a3a1d; }
-.newAppWarn u { text-decoration: underline dotted; text-underline-offset: 1px; }
-
-.newAppUnderstand { display: grid; grid-template-columns: auto 1fr; gap: 10px; align-items: start; padding: 8px 11px; border: 1px solid #e5e5e5; border-radius: 8px; }
-.unCheckbox { width: 16px; height: 16px; margin-top: 1px; display: grid; place-items: center; border: 1.5px solid #c9c9c9; border-radius: 4px; background: #ffffff; color: transparent; transition: background .18s var(--ease), border-color .18s var(--ease), color .18s var(--ease); }
-.unCheckbox svg { stroke: currentColor; }
-.unCheckbox.is-checked { background: #171717; border-color: #171717; color: #ffffff; }
-.unText { font: 400 9px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #6b6b6b; }
-.unText strong { display: block; font-size: 10.5px; font-weight: 650; color: #171717; }
-
-.newAppFoot { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 0 16px 12px; }
-.guideLink { display: flex; align-items: center; gap: 6px; text-decoration: underline; text-underline-offset: 2px; font: 500 10.5px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #0d0d0d; }
-.newAppCreate { border: 0; border-radius: 999px; padding: 9px 24px; background: #e9e9e9; color: #9a9a9a; font: 600 11px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; cursor: not-allowed; transition: background .25s var(--ease), color .25s var(--ease); }
-.newAppCreate.is-enabled { background: #171717; color: #ffffff; cursor: pointer; }
-
-/* ChatGPT web — empty-chat home, the avatar menu, and the Developer mode gate: the demo starts where a user lands, and the app is proved in the composer at the end */
-
-.chatStage { position: absolute; left: 0; right: 0; top: 36px; bottom: 0; z-index: 4; display: grid; grid-template-columns: 176px 1fr; background: #1e1e1e; }
+.chatStage { position: absolute; left: 0; right: 0; top: 78px; bottom: 0; z-index: 4; display: flex; background: #1e1e1e; }
 .mcpDemo.is-settings .chatStage { visibility: hidden; }
 
-.chatRail { display: flex; flex-direction: column; gap: 2px; padding: 12px 8px; border-right: 1px solid rgba(255, 255, 255, .08); background: #171717; overflow: hidden; }
+.settingsStage { position: absolute; left: 0; right: 0; top: 78px; bottom: 0; z-index: 5; display: grid; place-items: center; opacity: 0; visibility: hidden; background: #161616; transition: opacity .3s var(--ease), visibility 0s .3s; }
+.mcpDemo.is-settings .settingsStage { opacity: 1; visibility: visible; transition: opacity .3s var(--ease), visibility 0s 0s; }
+
+.chatRail { display: flex; flex-direction: column; gap: 2px; padding: 12px 8px; border-right: 1px solid rgba(255, 255, 255, .08); background: #171717; overflow: hidden; width: 176px; flex: none; }
+.chatMain { position: relative; display: flex; flex: 1; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 18px 190px 40px; min-width: 0; overflow: hidden; }
+
 .railBrand { display: flex; align-items: center; gap: 8px; padding: 2px 8px 8px; color: #e8e8e8; }
 .railBrand svg { width: 15px; height: 15px; }
 .railBrand b { font: 600 11.5px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; letter-spacing: -.01em; }
@@ -727,24 +665,44 @@ html.js .quickStart.in .quickDoor:nth-child(3) { animation-delay: .19s; }
 .railName { font: 600 11.5px/1.2 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #e8e8e8; }
 .railSub { font: 400 9.5px/1.2 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #8a8a8a; }
 
-.chatMain { position: relative; display: grid; place-items: center; min-width: 0; overflow: hidden; }
-.composerWrap { position: relative; width: min(560px, 88%); }
+.chatHint { position: absolute; left: 0; right: 0; bottom: 12px; margin: 0; text-align: center; font: 400 10px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #6f6f6f; }
+
+.chatTurns { order: 1; display: flex; flex-direction: column; gap: 12px; width: 100%; opacity: 0; max-height: 0; overflow: hidden; transition: opacity .35s var(--ease); }
+.mcpDemo.is-usermsg .chatTurns { opacity: 1; max-height: 330px; }
+.chatUser { align-self: flex-end; max-width: 78%; padding: 9px 14px; border-radius: 18px 18px 4px 18px; background: #2b2b2b; color: #e8e8e8; font: 400 12px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+.chatAssistant { align-self: flex-start; display: grid; gap: 8px; max-width: 88%; }
+.toolCard { display: flex; align-items: center; gap: 9px; width: max-content; padding: 7px 12px; border-radius: 10px; border: 1px solid rgba(255, 255, 255, .1); background: rgba(255, 255, 255, .04); font: 500 10px/1.4 var(--mono); color: #c8c8c8; }
+.toolCard b { color: #ffffff; }
+.toolCardMeta { color: #8a8a8a; }
+.toolSpin { flex: none; width: 13px; height: 13px; border-radius: 50%; border: 2px solid rgba(255, 255, 255, .18); border-top-color: #10a37f; animation: spin360 .7s linear infinite; }
+@keyframes spin360 { to { transform: rotate(360deg); } }
+.toolCheck { display: none; flex: none; color: #19c37d; }
+.mcpDemo.is-solid .toolSpin { display: none; }
+.mcpDemo.is-solid .toolCheck { display: block; }
+.answerText { margin: 0; font: 400 11.5px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #ececec; opacity: 0; transform: translateY(4px); transition: opacity .35s var(--ease), transform .35s var(--ease); }
+.answerText b { color: #ffffff; }
+.mcpDemo.is-solid .answerText { opacity: 1; transform: none; }
+
+.composerWrap { order: 2; position: relative; width: min(560px, 100%); }
 .composer { display: flex; align-items: center; gap: 12px; height: 48px; padding: 0 8px 0 10px; border: 1px solid rgba(255, 255, 255, .16); border-radius: 24px; background: #262626; transition: border-color .25s var(--ease), box-shadow .25s var(--ease); }
 .composerAdd { flex: none; width: 31px; height: 31px; display: grid; place-items: center; border: 0; border-radius: 50%; background: rgba(255, 255, 255, .07); color: #d8d8d8; cursor: pointer; }
 .composerAdd:hover { background: rgba(255, 255, 255, .12); }
 .composerPh { flex: 1; min-width: 0; font: 400 13px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #8f8f8f; white-space: nowrap; overflow: hidden; }
-.composerMeta { flex: none; display: flex; align-items: center; gap: 6px; }
+.composerTyped { display: none; flex: 1; min-width: 0; font: 400 13px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #ececec; white-space: nowrap; overflow: hidden; }
+.mcpDemo.is-writing .composerPh, .mcpDemo.is-sent .composerPh { display: none; }
+.mcpDemo.is-writing .composerTyped, .mcpDemo.is-sent .composerTyped { display: block; }
+.composerMeta { flex: none; display: flex; align-items: center; gap: 7px; }
 .composerMeta svg { stroke: #9b9b9b; fill: none; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
-.composerSend { width: 32px; height: 32px; display: grid; place-items: center; border-radius: 50%; background: rgba(255, 255, 255, .06); }
-.composerSend svg { stroke: #6f6f6f; }
+.composerSend { width: 32px; height: 32px; display: grid; place-items: center; border-radius: 50%; background: rgba(255, 255, 255, .06); transition: background .25s var(--ease); }
+.composerSend svg { stroke: #6f6f6f; transition: stroke .25s var(--ease); }
+.mcpDemo.is-ready .composerSend { background: #ececec; }
+.mcpDemo.is-ready .composerSend svg { stroke: #0d0d0d; }
 
 .composer.devmode { border-color: #f97316; box-shadow: 0 0 0 1.5px rgba(249, 115, 22, .5); }
-.devModeFlag { position: absolute; right: 4px; bottom: calc(100% + 10px); display: none; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; background: #f97316; color: #ffffff; font: 650 10px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; letter-spacing: .02em; box-shadow: 0 6px 16px rgba(249, 115, 22, .4); }
-.devModeFlag::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: #ffffff; }
+.devModeFlag { flex: none; display: none; align-items: center; gap: 5px; padding: 5px 9px; border-radius: 999px; background: #f97316; color: #ffffff; font: 650 9px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; letter-spacing: .03em; }
+.devModeFlag::before { content: ""; width: 5px; height: 5px; border-radius: 50%; background: #ffffff; }
 .mcpDemo.is-toggled .devModeFlag { display: inline-flex; }
 .mcpDemo.is-toggled .composer { border-color: #f97316; box-shadow: 0 0 0 1.5px rgba(249, 115, 22, .5); }
-
-.chatHint { position: absolute; left: 0; right: 0; bottom: 12px; margin: 0; text-align: center; font: 400 10px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #6f6f6f; }
 
 .toolsMenu { position: absolute; left: 0; bottom: calc(100% + 10px); z-index: 18; width: 268px; padding: 6px; border: 1px solid rgba(255, 255, 255, .12); border-radius: 14px; background: #242424; box-shadow: 0 18px 44px rgba(0, 0, 0, .55); opacity: 0; visibility: hidden; transform: translateY(8px); transition: opacity .22s var(--ease), transform .28s var(--spring), visibility 0s .28s; }
 .mcpDemo.is-toolsmenu .toolsMenu { opacity: 1; visibility: visible; transform: none; transition-delay: 0s; }
@@ -774,26 +732,127 @@ html.js .quickStart.in .quickDoor:nth-child(3) { animation-delay: .19s; }
 .profileRowBtn { width: 100%; border: 0; background: transparent; cursor: pointer; text-align: left; }
 .profileRowBtn:hover { background: rgba(255, 255, 255, .07); }
 
-.bodyMain, .bodyAdvanced { display: grid; gap: 9px; align-content: start; min-width: 0; }
-.bodyAdvanced { display: none; }
-.mcpDemo.is-advanced .bodyMain { display: none; }
-.mcpDemo.is-advanced .bodyAdvanced { display: grid; }
+.settingsCard { position: relative; width: 610px; height: 396px; background: #212121; color: #ececec; border: 1px solid rgba(255, 255, 255, .08); border-radius: 14px; box-shadow: 0 30px 70px rgba(0, 0, 0, .55); display: grid; grid-template-columns: 166px 1fr; overflow: hidden; }
+
+.settingsClose { position: absolute; left: 11px; top: 10px; z-index: 3; width: 26px; height: 26px; display: grid; place-items: center; border: 0; border-radius: 7px; background: transparent; color: #c8c8c8; cursor: pointer; padding: 0; }
+.settingsClose:hover { background: rgba(255, 255, 255, .08); }
+
+.settingsRail { display: grid; align-content: start; gap: 2px; padding: 42px 12px 12px; border-right: 1px solid rgba(255, 255, 255, .09); background: transparent; }
+.settingsRailItem { display: flex; align-items: center; gap: 10px; height: 31px; padding: 0 10px; border-radius: 8px; font: 500 11px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #a8a8a8; }
+.settingsRailItem svg { width: 17px; height: 17px; stroke: currentColor; fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+.settingsRailItem.sel { background: rgba(255, 255, 255, .09); color: #ffffff; }
+
+.settingsBody { position: relative; display: grid; padding: 15px 19px 14px 22px; min-width: 0; overflow: hidden; }
+.bodyMain, .bodyAdvanced { display: grid; gap: 9px; align-content: start; min-width: 0; grid-area: 1 / 1; transition: opacity .22s var(--ease), transform .28s var(--spring), visibility 0s .28s; }
+.bodyAdvanced { opacity: 0; visibility: hidden; transform: translateY(10px); pointer-events: none; }
+.mcpDemo.is-advanced .bodyMain { opacity: 0; visibility: hidden; transform: translateY(-6px); pointer-events: none; }
+.mcpDemo.is-advanced .bodyAdvanced { opacity: 1; visibility: visible; transform: none; pointer-events: auto; transition-delay: 0s; }
+
+.settingsTitle { margin: 2px 0 0; font: 600 16.5px/1.2 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; letter-spacing: -.01em; color: #ffffff; }
+
+.permRow, .appsLabelRow { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.permRow { padding-bottom: 11px; border-bottom: 1px solid rgba(255, 255, 255, .08); }
+.permText { display: grid; gap: 2px; min-width: 0; }
+.secLabel { font: 600 11px/1.25 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #ffffff; }
+.secSub { font: 400 10px/1.35 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #9b9b9b; max-width: 255px; }
+.permSelect { display: flex; align-items: center; gap: 6px; flex: none; padding: 7px 11px; border: 1px solid rgba(255, 255, 255, .14); border-radius: 999px; font: 500 11px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #d8d8d8; white-space: nowrap; }
+.permSelect svg { stroke: #9b9b9b; }
+.appsAdd { display: flex; align-items: center; gap: 7px; flex: none; padding: 7px 13px 7px 11px; border: 1px solid rgba(255, 255, 255, .16); border-radius: 999px; font: 500 11px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #ececec; white-space: nowrap; }
+
+.appItem { display: flex; align-items: center; gap: 11px; min-width: 0; padding: 8px 2px; border-bottom: 1px solid rgba(255, 255, 255, .08); }
+.appItemIcon { flex: none; width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; overflow: hidden; }
+.appItemIcon.gws { background: #202124; border: 1px solid rgba(255, 255, 255, .12); }
+.appItemIcon.gws svg { width: 17px; height: 17px; }
+.appItemIcon.oa { background: #10a37f; font: 650 12px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #ffffff; letter-spacing: .02em; }
+.appItemText { display: grid; gap: 2px; min-width: 0; }
+.appItemName { display: flex; align-items: center; gap: 7px; font: 600 11.5px/1.2 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #ececec; white-space: nowrap; }
+.appItemMeta { font: 400 10px/1.2 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #9b9b9b; white-space: nowrap; }
+.devPill { flex: none; padding: 2px 4px 1.6px; border-radius: 4px; background: rgba(248, 113, 113, .2); color: #fca5a5; font: 650 8px/1.3 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; letter-spacing: .06em; }
+.appItemChev { margin-left: auto; flex: none; color: #8a8a8a; }
+.appItemOA { opacity: 0; transform: translateY(7px); transition: opacity .3s var(--ease), transform .34s var(--spring); }
+.mcpDemo.is-row .appItemOA { opacity: 1; transform: none; }
+
+.advRow { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding-top: 2px; }
+.advLabel { display: flex; align-items: center; gap: 9px; font: 500 11px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #c8c8c8; }
+.advLabel svg { stroke: #9b9b9b; width: 16px; height: 16px; fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+.advCreate { display: flex; align-items: center; gap: 6px; flex: none; padding: 8px 12px 8px 14px; border: 1px solid rgba(255, 255, 255, .16); border-radius: 999px; background: transparent; font: 600 11px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #ececec; cursor: pointer; white-space: nowrap; }
+.advCreate:hover { background: rgba(255, 255, 255, .07); }
+.advCreate svg { stroke: #d4d4d4; }
 
 .advBackRow { display: flex; align-items: center; gap: 8px; margin: -2px 0 0 -6px; }
-.advBack { width: 28px; height: 28px; display: grid; place-items: center; border: 0; border-radius: 8px; background: transparent; color: #3d3d3d; cursor: pointer; padding: 0; }
-.advBack:hover { background: #f0f0f0; }
-.advTitle { font: 600 15px/1.2 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #0d0d0d; letter-spacing: -.01em; }
+.advBack { width: 28px; height: 28px; display: grid; place-items: center; border: 0; border-radius: 8px; background: transparent; color: #ececec; cursor: pointer; padding: 0; }
+.advBack:hover { background: rgba(255, 255, 255, .08); }
+.advTitle { font: 600 15px/1.2 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #ffffff; letter-spacing: -.01em; }
 
-.devRow { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 14px; padding: 12px; border: 1px solid #ececec; border-radius: 12px; background: #fafafa; }
+.devRow { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 14px; padding: 12px; border: 1px solid rgba(255, 255, 255, .09); border-radius: 12px; background: rgba(255, 255, 255, .04); }
 .devText { display: grid; gap: 5px; min-width: 0; }
-.devLabel { display: flex; align-items: center; gap: 8px; font: 600 12px/1.3 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #0d0d0d; }
-.elevPill { padding: 2px 6px 1.6px; border-radius: 999px; background: #fde3e2; color: #c5221f; font: 650 8.5px/1.3 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; letter-spacing: .05em; white-space: nowrap; }
-.devDesc { font: 400 10px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #6b6b6b; }
-.devDesc u { text-decoration: underline; text-underline-offset: 2px; }
+.devLabel { display: flex; align-items: center; gap: 8px; font: 600 12px/1.3 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #ffffff; }
+.elevPill { padding: 2px 6px 1.6px; border-radius: 999px; background: rgba(248, 113, 113, .2); color: #fca5a5; font: 650 8.5px/1.3 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; letter-spacing: .05em; white-space: nowrap; }
+.devDesc { font: 400 10px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #a8a8a8; }
+.devDesc u { text-decoration: underline; text-underline-offset: 2px; color: #ececec; }
 
-.devModeToggle { flex: none; position: relative; width: 46px; height: 27px; border: 0; border-radius: 14px; background: #c6c6c6; cursor: pointer; padding: 0; transition: background .22s var(--ease); }
-.devModeToggle::after { content: ""; position: absolute; top: 2.5px; left: 3px; width: 22px; height: 22px; border-radius: 50%; background: #ffffff; box-shadow: 0 1px 3px rgba(0, 0, 0, .3); transition: transform .22s var(--spring); }
-.devModeToggle.is-on { background: #34c759; }
+.devModeToggle { flex: none; position: relative; width: 46px; height: 27px; border: 0; border-radius: 14px; background: #3d3d3d; cursor: pointer; padding: 0; transition: background .22s var(--ease); }
+.devModeToggle::after { content: ""; position: absolute; top: 2.5px; left: 3px; width: 22px; height: 22px; border-radius: 50%; background: #ffffff; box-shadow: 0 1px 3px rgba(0, 0, 0, .4); transition: transform .22s var(--spring); }
+.devModeToggle.is-on { background: #19c37d; }
 .devModeToggle.is-on::after { transform: translateX(19px); }
 
-.advFootRow { display: flex; justify-content: flex-end; padding-top: 4px; }
+.advFootRow { display: flex; justify-content: flex-end; padding-top: 6px; }
+
+.settingsVeil { position: absolute; inset: 0; z-index: 20; background: rgba(0, 0, 0, .55); opacity: 0; transition: opacity .28s var(--ease); pointer-events: none; }
+.mcpDemo.is-appform .settingsVeil, .mcpDemo.is-authing .settingsVeil { opacity: 1; }
+
+.newAppCard { position: absolute; z-index: 30; width: 472px; background: #212121; color: #ececec; border: 1px solid rgba(255, 255, 255, .09); border-radius: 14px; box-shadow: 0 40px 90px rgba(0, 0, 0, .65); opacity: 0; transform: translateY(16px) scale(.96); transition: opacity .26s var(--ease), transform .34s var(--spring); pointer-events: none; }
+.mcpDemo.is-appform .newAppCard { opacity: 1; transform: none; }
+
+.newAppHead { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px 2px 18px; }
+.newAppTitle { font: 600 13.5px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #ffffff; }
+.newAppClose { width: 26px; height: 26px; display: grid; place-items: center; border: 0; border-radius: 7px; background: transparent; color: #c8c8c8; cursor: pointer; padding: 0; }
+.newAppClose:hover { background: rgba(255, 255, 255, .08); }
+
+.newAppBody { display: grid; gap: 7px; padding: 6px 16px 12px; }
+.newAppLabel { margin-bottom: -3px; font: 600 10px/1.2 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #c8c8c8; }
+.connRow { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: -3px; }
+.connRow .newAppLabel { margin: 0; }
+.newAppField { display: flex; align-items: center; height: 30px; padding: 0 11px; border: 1px solid transparent; border-radius: 7.5px; background: #2f2f2f; font: 400 12px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #ececec; overflow: hidden; white-space: nowrap; }
+.newAppField.mono { font: 400 10.5px/1 var(--mono); letter-spacing: -.01em; }
+.newAppField.is-on { border-color: rgba(255, 255, 255, .35); box-shadow: 0 0 0 3px rgba(255, 255, 255, .06); }
+.dpPlaceholder { color: #6f6f6f; }
+.newAppField.has-value .dpPlaceholder { display: none; }
+
+.connSeg { display: flex; gap: 2px; padding: 2px; border-radius: 9px; background: rgba(255, 255, 255, .06); }
+.connSegItem { display: flex; align-items: center; gap: 6px; padding: 5px 14px; border-radius: 7px; font: 500 10.5px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #a8a8a8; }
+.connSegItem.sel { background: #2f2f2f; color: #ffffff; box-shadow: 0 1px 4px rgba(0, 0, 0, .4); }
+.connSegItem svg { stroke: #9b9b9b; }
+
+.newAppSelect { display: flex; align-items: center; justify-content: space-between; height: 30px; padding: 0 11px; border: 1px solid transparent; border-radius: 7.5px; background: #2f2f2f; font: 400 12px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #ececec; }
+.newAppSelect svg { stroke: #a8a8a8; }
+
+.newAppWarn { display: flex; align-items: center; gap: 9px; padding: 6px 10px; border-radius: 7px; background: rgba(244, 162, 97, .13); font: 500 10px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #f4a261; }
+.newAppWarn u { text-decoration: underline dotted; text-underline-offset: 1px; color: #ffffff; }
+
+.newAppUnderstand { display: grid; grid-template-columns: auto 1fr; gap: 10px; align-items: start; padding: 8px 11px; border: 1px solid rgba(255, 255, 255, .09); border-radius: 8px; }
+.unCheckbox { width: 16px; height: 16px; margin-top: 1px; display: grid; place-items: center; border: 1.5px solid rgba(255, 255, 255, .3); border-radius: 4px; background: transparent; color: transparent; transition: background .18s var(--ease), border-color .18s var(--ease), color .18s var(--ease); }
+.unCheckbox svg { stroke: currentColor; }
+.unCheckbox.is-checked { background: #ececec; border-color: #ececec; color: #0d0d0d; }
+.unText { font: 400 9px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #9b9b9b; }
+.unText strong { display: block; font-size: 10.5px; font-weight: 650; color: #ffffff; }
+
+.newAppFoot { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 0 16px 13px; }
+.guideLink { display: flex; align-items: center; gap: 6px; text-decoration: underline; text-underline-offset: 2px; font: 500 10.5px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #c8c8c8; }
+.newAppCreate { border: 0; border-radius: 999px; padding: 8px 22px; background: rgba(255, 255, 255, .08); color: #6f6f6f; font: 600 11px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; cursor: not-allowed; transition: background .25s var(--ease), color .25s var(--ease); }
+.newAppCreate.is-enabled { background: #ececec; color: #0d0d0d; cursor: pointer; }
+
+.oauthCard { position: absolute; z-index: 35; width: 400px; display: grid; justify-items: center; gap: 11px; padding: 22px 24px 18px; background: #212121; color: #ececec; border: 1px solid rgba(255, 255, 255, .09); border-radius: 14px; box-shadow: 0 40px 90px rgba(0, 0, 0, .65); text-align: center; opacity: 0; transform: translateY(14px) scale(.96); transition: opacity .26s var(--ease), transform .34s var(--spring); pointer-events: none; }
+.mcpDemo.is-authing .oauthCard { opacity: 1; transform: none; }
+
+.oauthLogo { display: grid; place-items: center; width: 52px; height: 52px; border-radius: 50%; background: #10a37f; }
+.oauthLogo svg { width: 26px; height: 26px; }
+.oauthTitle { font: 600 15.5px/1.25 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #ffffff; letter-spacing: -.01em; }
+.oauthHost { font: 500 10px/1 var(--mono); color: #8a8a8a; }
+.oauthPerms { width: 100%; margin: 0; padding: 10px 0; border-top: 1px solid rgba(255, 255, 255, .09); border-bottom: 1px solid rgba(255, 255, 255, .09); list-style: none; display: grid; gap: 8px; text-align: left; }
+.oauthPerms li { display: flex; gap: 8px; align-items: flex-start; font: 400 11px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #c8c8c8; }
+.oauthPerms li svg { flex: none; margin-top: 1px; stroke: #19c37d; stroke-width: 2; }
+.oauthAuth { width: 100%; border: 0; border-radius: 9px; padding: 12px 0; background: #ffffff; color: #0d0d0d; font: 600 12.5px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; cursor: pointer; transition: background .2s var(--ease); }
+.oauthAuth:hover { background: #d8d8d8; }
+.oauthCancel { font: 400 11px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #8a8a8a; }.mcpDemo .is-hover { outline: 1.5px solid color-mix(in srgb, var(--accent) 65%, transparent); outline-offset: 2px; border-radius: 8px; }
+

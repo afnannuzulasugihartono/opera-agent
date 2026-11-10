@@ -126,7 +126,11 @@
       guard(token);
       const to = measure(el);
       const distance = Math.hypot(to.x - pos.x, to.y - pos.y);
-      if (distance < 1) return;
+      if (distance < 1) {
+        el.classList.add('is-hover');
+        return;
+      }
+      el.classList.add('is-hover');
       const duration = Math.min(640, Math.max(230, distance * 0.6));
       const animation = await tween(cursor, [
         { transform: `translate3d(${pos.x - HOT.x}px, ${pos.y - HOT.y}px, 0)` },
@@ -156,6 +160,7 @@
       await wait(115, token);
       el.classList.remove('is-pressed');
       cursor.classList.remove('is-pressed');
+      el.classList.remove('is-hover');
       await wait(190, token);
     };
 
@@ -182,7 +187,9 @@
     };
 
     const reset = (token) => {
-      demo.classList.remove('is-open', 'is-modal', 'is-row', 'is-done', 'is-appform', 'is-menu', 'is-settings', 'is-advanced', 'is-toolsmenu', 'is-toggled');
+      demo.classList.remove('is-open', 'is-modal', 'is-row', 'is-done', 'is-appform', 'is-menu', 'is-settings', 'is-advanced', 'is-toolsmenu', 'is-toggled', 'is-authing', 'is-writing', 'is-sent', 'is-ready', 'is-usermsg', 'is-solid');
+      const typedReset = demo.querySelector('#composerTyped');
+      if (typedReset) typedReset.textContent = '';
       for (const line of lines) {
         line.classList.remove('is-on');
         if (line.dataset.raw) {
@@ -290,9 +297,13 @@
           await wait(300, token);
           await press(finish, token);
           demo.classList.remove('is-appform');
-          await wait(200, token);
+          demo.classList.add('is-authing');
+          await wait(560, token);
+          await press(demo.querySelector('.oauthAuth'), token);
+          demo.classList.remove('is-authing');
+          await wait(150, token);
           demo.classList.add('is-row');
-          await wait(900, token);
+          await wait(950, token);
           await press(demo.querySelector('.settingsClose'), token);
           demo.classList.remove('is-settings', 'is-row');
           await wait(360, token);
@@ -304,6 +315,26 @@
           oaToggle.classList.add('is-on');
           oaToggle.setAttribute('aria-checked', 'true');
           demo.classList.add('is-toggled');
+          await wait(650, token);
+          await press(demo.querySelector('.composerPh'), token);
+          demo.classList.remove('is-toolsmenu');
+          await wait(240, token);
+          demo.classList.add('is-writing');
+          const typed = demo.querySelector('#composerTyped');
+          typed.textContent = '';
+          for (const char of 'Summarize the Q3 sales sheet and post it to Slack') {
+            typed.textContent += char;
+            await wait(TYPE_PACE + 12, token);
+          }
+          demo.classList.add('is-ready');
+          await wait(280, token);
+          await press(demo.querySelector('.composerSend'), token);
+          typed.textContent = '';
+          demo.classList.remove('is-writing', 'is-ready');
+          demo.classList.add('is-sent', 'is-usermsg');
+          await wait(950, token);
+          demo.classList.add('is-solid');
+          await wait(2300, token);
           break;
         }
         case 'claude': {
