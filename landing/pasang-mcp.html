@@ -42,44 +42,46 @@
   <div class="prose docBody">
     <p class="lang-note">Halaman ini tersedia dalam Bahasa Indonesia. / This page is available in Indonesian.</p>
     <h1>Pasang MCP</h1>
-    <p class="updated">Satu endpoint. Semua AI harness.</p>
-    <p class="lede">ChatGPT, Claude, Codex, Claude Code, OpenCode, VS Code (Copilot), Kilo Code, Cursor, dan terminal - semuanya memakai satu server MCP dengan 35 tool di atas 31 primitive browser.</p>
+    <p class="updated">Cloud dulu, selalu. Local khusus desktop dan CLI.</p>
 
     <section data-reveal>
-      <h2 id="butuh">Yang Anda butuhkan</h2>
-      <ol class="steps">
-        <li><strong>Extension terpasang.</strong> Opera Agent dimuat di Chromium (<a href="./unduh.html">Unduh</a>).</li>
-        <li><strong>Sudah di-pair.</strong> Buka <a href="./dashboard.html">Dashboard</a>, buka Pairing, buat kode, tempel.</li>
-        <li><strong>Nama device.</strong> Nama yang Anda pilih saat pairing - semua konfigurasi di bawah memakainya.</li>
-      </ol>
+      <h2 id="hosted">Cloud MCP (hosted) — wajib untuk Web, Desktop, CLI</h2>
+      <p class="muted">Server hosted Opera Agent di cloud; tool yang sama, jawaban yang sama. Web (ChatGPT, Claude), desktop (OpenCode, VS Code, Kilo Code, Cursor), dan CLI (Codex, Claude Code, terminal) semuanya memakai ini.</p>
+      <p class="muted">Web wajib, desktop dan CLI juga wajib — bedanya web tidak butuh Local.</p>
       <div class="copybox">
         <pre><code id="endpoint">https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp</code></pre>
         <button type="button" data-copy="endpoint" data-i18n="copy">Salin</button>
       </div>
-      <p class="muted">Endpoint di atas dipakai di seluruh halaman ini. 35 tool, 31 primitive, satu server.</p>
+      <ol class="steps">
+        <li><strong>Tempel URL.</strong> Masukkan endpoint di atas ke harness Anda — connector (ChatGPT/Claude), remote MCP (OpenCode, VS Code, Kilo, Cursor), atau <code>opencode mcp add opera-agent --url https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp</code>.</li>
+        <li><strong>Masuk di browser.</strong> Klik Sign in dan ikuti OAuth Opera Agent; lain kali browser terbuka karena sesi tersimpan.</li>
+        <li><strong>Izinkan tool.</strong> Pilih Allow all tools; 35 tool langsung tersedia.</li>
+      </ol>
     </section>
 
     <section data-reveal>
-      <h2 id="dua-jalan">Dua cara menyambung</h2>
-      <table class="cmpTable">
-        <thead><tr><th></th><th>Lokal (npm)</th><th>Hosted (remote + OAuth)</th></tr></thead>
-        <tbody>
-          <tr><td>Menjalankan</td><td><code>opera-agent-mcp</code> di mesin Anda</td><td>Server hosted Opera Agent</td></tr>
-          <tr><td>Paling cocok untuk</td><td>Harness yang berjalan di mesin yang sama (Claude Code, Codex, OpenCode)</td><td>Harness yang web-only (ChatGPT web, Claude web) dan konektor remote</td></tr>
-          <tr><td>Keputusan browser</td><td>Langsung ke browser Anda lewat loopback bridge</td><td>Lewat server hosted, setelah masuk OAuth</td></tr>
-          <tr><td>Masuk</td><td>Otomatis dari pairing extension</td><td>Satu kali OAuth sign-in</td></tr>
-        </tbody>
-      </table>
-      <p>Keduanya memakai tool yang sama, nama yang sama, jawaban yang sama.</p>
+      <h2 id="local">Local MCP (npm) — wajib untuk Desktop dan CLI</h2>
+      <p class="muted">Bridge lokal di mesin Anda; menjanjikan akses loopback langsung ke browser tanpa lewat cloud. Desktop dan CLI wajib memasang ini selain Cloud.</p>
+      <div class="copybox">
+        <pre><code id="local-bridge">npx opera-agent-mcp</code></pre>
+        <button type="button" data-copy="local-bridge" data-i18n="copy">Salin</button>
+      </div>
+      <ol class="steps">
+        <li><strong>Extension terpasang.</strong> Opera Agent dimuat di Chromium (<a href="./unduh.html">Unduh</a>).</li>
+        <li><strong>Sudah di-pair.</strong> Buka <a href="./dashboard.html">Dashboard</a> → Pairing → buat kode → tempel di extension.</li>
+        <li><strong>Jalankan bridge.</strong> <code>npx opera-agent-mcp</code> akan mendengarkan di loopback; harness lokal bisa memakainya langsung.</li>
+        <li><strong>Nama device.</strong> Nama yang Anda pilih saat pairing akan dipakai di semua konfigurasi local.</li>
+      </ol>
+      <p class="muted">Cloud wajib untuk semua; Local hanya desktop dan CLI karena perlu loopback ke browser di mesin ini.</p>
     </section>
 
-<h2 id="fastlane">Fast lane</h2>
-    <p class="fastlaneSub">Dua jalur pemasangan di atas harness Anda - pilih satu dan selesaikan dalam satu menit.</p>
+<h2 id="fastlane">Fast lane — Desktop &amp; CLI</h2>
+    <p class="fastlaneSub">Untuk Desktop dan CLI, Anda wajib memasang Cloud <em>dan</em> Local — salah satunya saja tidak cukup. Pilih salah satu jalur (atau keduanya); keduanya akan selesai dalam satu menit.</p>
 
     <div class="fastlaneGrid">
       <div class="fastlaneCard">
         <span class="fastlaneTag">Prompt — untuk AI</span>
-        <h3 class="fastlaneCardTitle">Tanya AI yang hidup di web atau desktop</h3>
+        <h3 class="fastlaneCardTitle">Pasang Cloud via AI</h3>
         <p class="fastlaneCardSub">Tempel prompt ini ke ChatGPT, Claude, OpenCode, Cursor, atau harness AI lain. AI yang bisa mengelola konfigurasi akan memasang Opera Agent sendiri.</p>
         <div class="copybox">
           <pre><code id="fastlane-prompt">Pasang MCP server Opera Agent dari https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp — daftarkan sebagai remote server harness ini, lalu verifikasi sudah terhubung dengan 35 tool.</code></pre>
@@ -90,8 +92,8 @@
 
       <div class="fastlaneCard">
         <span class="fastlaneTag">Terminal — untuk lokal</span>
-        <h3 class="fastlaneCardTitle">Satu perintah di mesin Anda</h3>
-        <p class="fastlaneCardSub">Jalankan perintah ini di terminal Anda; OpenCode dan teman-teman menulis config-nya sendiri.</p>
+        <h3 class="fastlaneCardTitle">Satu perintah di mesin Anda — Local</h3>
+        <p class="fastlaneCardSub">Bridge loopback di mesin Anda; OpenCode, Codex, Claude Code, dan harness lain bisa menggunakannya langsung tanpa lewat cloud.</p>
         <div class="copybox">
           <pre><code id="fastlane-terminal">opencode mcp add opera-agent --url https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp &amp;&amp; opencode mcp list</code></pre>
           <button type="button" data-copy="fastlane-terminal" data-i18n="copy">Salin</button>
@@ -164,8 +166,8 @@
     </section>
 
 <section data-reveal>
-    <h2 id="harnesses">Pasang di harness Anda</h2>
-    <p class="muted">Geser kartu untuk melihat cara pasang di setiap harness.</p>
+    <h2 id="harnesses">Pasang per harness — Cloud (wajib semua) + Local (Desktop &amp; CLI)</h2>
+    <p class="muted">Web wajib Cloud saja; Desktop dan CLI wajib Cloud <em>dan</em> Local. Geser kartu untuk melihat demo pemasangan di setiap harness.</p>
 
     <div class="harnessTabs" role="tablist" aria-label="Kategori harness">
       <button class="harnessTab is-active" role="tab" id="tabWeb" aria-controls="panelWeb" aria-selected="true" type="button">Web</button>
@@ -174,6 +176,7 @@
     </div>
 
     <div class="harnessPanel" id="panelWeb" role="tabpanel" aria-labelledby="tabWeb" data-harness-panel="web">
+      <p class="muted"><strong>Web = Cloud saja.</strong> Tidak perlu Local — langsung pakai URL Cloud.</p>
       <div class="harnessTrack" data-harness-track="web">
       <div class="harnessCard" id="chatgpt">
         <h2>ChatGPT (web)</h2>
@@ -511,6 +514,7 @@
       </div>
     </div>
     <div class="harnessPanel" id="panelDesktop" role="tabpanel" aria-labelledby="tabDesktop" data-harness-panel="desktop" hidden>
+      <p class="muted"><strong>Desktop = Cloud + Local.</strong> Cloud untuk akses jauh, Local untuk loopback ke browser di mesin ini.</p>
       <div class="harnessTrack" data-harness-track="desktop">
       <div class="harnessCard" id="opencode">
         <h2>OpenCode</h2>
@@ -753,6 +757,7 @@
       </div>
     </div>
     <div class="harnessPanel" id="panelCli" role="tabpanel" aria-labelledby="tabCli" data-harness-panel="cli" hidden>
+      <p class="muted"><strong>CLI = Cloud + Local.</strong> Cloud untuk akses jauh, Local untuk loopback ke browser di mesin ini.</p>
       <div class="harnessTrack" data-harness-track="cli">
       <div class="harnessCard" id="codex">
         <h2>Codex CLI</h2>
