@@ -1421,3 +1421,7 @@ html.js .quickStart.in .quickDoor:nth-child(3) { animation-delay: .19s; }
 .expectedNote { margin-left: auto; font: 400 11px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--muted); }
 @media (max-width: 640px) { .expectedNote { display: none; } }
 .pageSub a { color: var(--accent); text-underline-offset: 2px; }
+.prose code, .prose kbd { overflow-wrap: anywhere; }
+.stepsDropBody > * { min-width: 0; }
+.prose p, .prose li { overflow-wrap: break-word; }
+.prose .copybox pre { white-space: pre-wrap; word-break: break-all; }
