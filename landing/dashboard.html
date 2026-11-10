@@ -823,10 +823,25 @@
     };
     const w = (key) => (W[lang()] && W[lang()][key]) || W.id[key];
 
+    // WHY PRESENCE IS MEASURED AND NOT READ FROM THE STORED STATUS.
+    // A device row keeps the status it was last written with, so a browser that died two days ago still reads "online" and the dashboard counted ghosts as daring.
+    // Presence is the same question the relay asks: has this device been seen inside the window the extension's heartbeat lives in.
+    // A device the owner disabled is never live, whatever its last sighting says.
+    const PRESENCE_WINDOW_MS = 120000;
+    const isDeviceLive = (device) => {
+      if (String(device?.status || '').toLowerCase() === 'disabled') return false;
+      const seen = Date.parse(device?.lastSeenAt || '');
+      return Number.isFinite(seen) && Date.now() - seen <= PRESENCE_WINDOW_MS;
+    };
+    const deviceStatusText = (device) => {
+      if (String(device?.status || '').toLowerCase() === 'disabled') return 'disabled';
+      return isDeviceLive(device) ? 'online' : 'offline';
+    };
+
     // WHY the account facts live here and not only on akun.html: this page is where a reader lands to answer "is this the right account", and the address is the one fact that answers it.
     // Nothing here is editable, so it cannot drift from the account page, which owns every write.
     function renderAccountFacts(user, devices) {
-      const online = devices.filter((device) => device.status === 'online').length;
+      const online = devices.filter(isDeviceLive).length;
       const facts = [
         [w('accountAddress'), `<code>${esc(user.email)}</code>`],
         [w('accountProvider'), esc((user.app_metadata?.providers || [user.app_metadata?.provider || 'email']).join(', '))],
@@ -867,7 +882,7 @@
       const cta = $('primaryCta');
       if (!cta) return;
       const devices = lastSeen.devices.length;
-      const online = lastSeen.devices.filter((device) => device.status === 'online').length;
+      const online = lastSeen.devices.filter(isDeviceLive).length;
       if (!lastSeen.installed) {
         cta.href = './unduh.html';
         cta.textContent = w('ctaInstall');
@@ -1161,7 +1176,7 @@
       // WHY the numbers live here and not in a second fetch: they are sums over the same payload the list renders, so the summary can never disagree with it.
       // The rail count rides along for the same reason.
       const total = data.devices.length;
-      const up = data.devices.filter((device) => device.status === 'online').length;
+      const up = data.devices.filter(isDeviceLive).length;
       const done = data.devices.reduce((n, device) => n + (device.completedCommands ?? 0), 0);
       const all = data.devices.reduce((n, device) => n + (device.totalCommands ?? 0), 0);
       countUp($('statDevices'), total);
@@ -1204,9 +1219,9 @@
         $('devices').innerHTML = `<div class="empty"><strong>${esc(w('emptyDevicesTitle'))}</strong><p>${esc(w('emptyDevicesBody'))}</p><a class="btn ghost sm" href="#pairing">${esc(w('emptyPairCta'))}</a></div>`;
         return;
       }
-      const online = data.devices.filter((device) => device.status === 'online').length;
+      const online = data.devices.filter(isDeviceLive).length;
       // WHY THE HEALTHY CASE IS SILENT: the tiles count the devices; a line that repeats them is noise the reader scans past, and this line's whole job is to interrupt only when something is wrong.
-      const offline = data.devices.filter((device) => device.status !== 'online').map((device) => device.name);
+      const offline = data.devices.filter((device) => !isDeviceLive(device) && deviceStatusText(device) !== 'disabled').map((device) => device.name);
       if (offline.length) {
         $('status').textContent = fmt(w('devicesOffline'), { names: offline.join(', ') });
         $('status').className = 'status warn';
@@ -1220,14 +1235,14 @@
       $('devices').innerHTML = data.devices.map((device) => `
         <div class="card">
           <div class="cardHead">
-            <span class="dot ${device.status === 'online' ? 'online' : 'offline'}" aria-hidden="true"></span>
+            <span class="dot ${isDeviceLive(device) ? 'online' : 'offline'}" aria-hidden="true"></span>
             <h3>${esc(device.name)}</h3>
             <span class="chip">${esc(device.extensionVersion || '-')}</span>
             ${device.browserName ? `<span class="chip">${esc(device.browserName)}</span>` : ''}
             ${!device.browserName && lastSeen.browser ? `<span class="chip">${esc(fmt(w('thisBrowserChip'), { browser: lastSeen.browser }))}</span>` : ''}
           </div>
           <dl class="facts">
-            <dt>${esc(w('dtStatus'))}</dt><dd><span class="${device.status === 'online' ? 'online' : 'offline'}">${esc(device.status)}</span></dd>
+            <dt>${esc(w('dtStatus'))}</dt><dd><span class="${isDeviceLive(device) ? 'online' : 'offline'}">${esc(deviceStatusText(device))}</span></dd>
             <dt>${esc(w('dtLastSeen'))}</dt><dd>${esc(relativeTime(device.lastSeenAt))}</dd>
             <dt>${esc(w('dtCommands'))}</dt><dd>${esc(device.completedCommands ?? 0)} / ${esc(device.totalCommands ?? 0)}</dd>
             <dt>${esc(w('dtDeviceId'))}</dt><dd><code class="deviceId" data-copy="${esc(device.id)}" title="${esc(w('copyHint'))}">${esc(device.id)}</code></dd>

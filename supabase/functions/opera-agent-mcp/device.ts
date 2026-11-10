@@ -46,7 +46,8 @@ const namedRows = (devices: DeviceRow[], now: number, windowMs: number): NamedRo
   for (const device of Array.isArray(devices) ? devices : []) {
     const name = String(device?.device_name ?? '').trim();
     if (!name) continue;
-    if (String(device?.status ?? '').trim().toLowerCase() === 'disabled') continue;
+    const status = String(device?.status ?? '').trim().toLowerCase();
+    if (status === 'disabled' || status === 'revoked') continue;
     const seen = device?.last_seen_at ? Date.parse(String(device.last_seen_at)) : Number.NaN;
     const ageMs = Number.isFinite(seen) ? Math.max(0, now - seen) : null;
     out.push({ name, ageMs, live: ageMs !== null && ageMs <= windowMs });

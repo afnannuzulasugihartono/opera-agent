@@ -28,7 +28,7 @@ const DEVICE = {
   name: 'opera',
   status: 'online',
   extensionVersion: '1.6.14',
-  lastSeenAt: new Date(Date.now() - 7_200_000).toISOString(),
+  lastSeenAt: new Date(Date.now() - 5_000).toISOString(),
   completedCommands: 8970,
   totalCommands: 9000,
   commands: [{ method: 'tabs.list', status: 'completed' }]

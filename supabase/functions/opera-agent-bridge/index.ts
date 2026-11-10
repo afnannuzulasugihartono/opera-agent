@@ -129,12 +129,14 @@ async function heartbeat(body: Record<string, unknown>) {
   if (!validToken(body.token) || !validDeviceName(body.deviceName)) {
     return json({ ok: false, error: "Unauthorized device." }, 401);
   }
+  // WHY THE BEAT CARRIES THE BROWSER: the name on the dashboard was written once at pairing, so a browser that changed since then kept the old name and two different browsers read the same.
   const result = await rpc("opera_heartbeat", {
     p_device_name: body.deviceName.trim(),
     p_token_hash: await sha256(body.token.toLowerCase()),
     p_extension_version: String(body.extensionVersion || "").slice(0, 64),
     p_protocol_version: clamp(body.protocolVersion, 1, 1000, 1),
-    p_capabilities: Array.isArray(body.capabilities) ? body.capabilities.slice(0, 100) : []
+    p_capabilities: Array.isArray(body.capabilities) ? body.capabilities.slice(0, 100) : [],
+    p_browser_name: String(body.browserName || "").slice(0, 64)
   });
   return json(result || { ok: false }, result?.ok ? 200 : 401);
 }

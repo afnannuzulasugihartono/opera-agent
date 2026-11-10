@@ -384,7 +384,10 @@ test('the summary answers in numbers, not in a sentence that repeats the list', 
     assert.ok(html.includes(`id="${id}"`), `the summary carries #${id}`);
   }
   assert.match(html, /completedCommands \?\? 0/, 'the command tally sums what the cards show');
-  assert.match(html, /\.device.*\.status === 'online'/, 'the online count filters the same list');
+  assert.match(html, /devices\.filter\(isDeviceLive\)/, 'the online count filters the same list');
+  assert.match(html, /PRESENCE_WINDOW_MS/, 'and presence is a window, not a stored flag');
+  assert.match(html, /Date\.parse\(device\?\.lastSeenAt/, 'measured from the last sighting');
+  assert.doesNotMatch(html, /device\.status === 'online'/, 'the stored status never decides who is online');
 });
 
 test('a failed command looks failed, not like every other row', () => {
@@ -400,7 +403,7 @@ test('a failed command looks failed, not like every other row', () => {
 test('a device card leads with its state, not its name alone', () => {
 
   const html = read('dashboard.html');
-  assert.match(html, /class="dot \$\{device\.status === 'online' \? 'online' : 'offline'\}"/, 'the name carries a state dot');
+  assert.match(html, /class="dot \$\{isDeviceLive\(device\) \? 'online' : 'offline'\}"/, 'the name carries a state dot');
   assert.match(html, /class="chip"/, 'and the build rides beside it, not rows down');
 });
 
