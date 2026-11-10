@@ -373,20 +373,20 @@
           <span class="verifyStatus" aria-live="polite"><span class="verifyStatusDot" aria-hidden="true"></span><span class="verifyStatusText" id="verifyStatusText">Menunggu dua hash…</span></span>
         </div>
         <div class="verifyBlock">
-          <div class="verifyRow">
-            <span class="verifyTag" data-i18n="verify.tagServer">Server</span>
+          <span class="verifyTag" data-i18n="verify.tagServer">Server</span>
+          <div class="verifyCmdRow">
+            <pre><code aria-hidden="true"><span class="typewriter" data-type="curl.exe -sI https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/download/opera-agent.zip | findstr /i x-opera-sha256"></span><span class="cursor" aria-hidden="true"></span></code></pre><noscript><pre><code>curl.exe -sI https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/download/opera-agent.zip | findstr /i x-opera-sha256</code></pre></noscript>
             <button class="verifyCopy" type="button" data-copy="curl.exe -sI https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/download/opera-agent.zip | findstr /i x-opera-sha256" aria-label="Salin perintah server" data-i18n-attr="aria-label:verify.copyServer"><svg viewBox="0 0 24 24" class="verifyCopyIcon" aria-hidden="true"><rect x="8.5" y="8.5" width="10.5" height="10.5" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M5.5 15.5V6a2 2 0 0 1 2-2h9" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg><svg viewBox="0 0 24 24" class="verifyCopyCheck" aria-hidden="true"><path d="M5 12.5 9.5 17 19 6.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="verifyCopyText" data-i18n="verify.copy">Salin</span></button>
           </div>
-          <pre><code aria-hidden="true"><span class="typewriter" data-type="curl.exe -sI https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/download/opera-agent.zip | findstr /i x-opera-sha256"></span><span class="cursor" aria-hidden="true"></span></code></pre><noscript><pre><code>curl.exe -sI https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/download/opera-agent.zip | findstr /i x-opera-sha256</code></pre></noscript>
-          <input class="verifyInput" type="text" id="digestServer" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="x-opera-sha256: a3f9c41d…" aria-label="Server SHA-256 fingerprint">
+          <label class="verifyField"><input class="verifyInput" type="text" id="digestServer" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="x-opera-sha256: a3f9c41d…" aria-label="Server SHA-256 fingerprint"><span class="verifyFieldDot" aria-hidden="true"></span></label>
         </div>
         <div class="verifyBlock">
-          <div class="verifyRow">
-            <span class="verifyTag" data-i18n="verify.tagLocal">Lokal</span>
+          <span class="verifyTag" data-i18n="verify.tagLocal">Lokal</span>
+          <div class="verifyCmdRow">
+            <pre><code aria-hidden="true">Get-FileHash .\opera-agent-*.zip -Algorithm SHA256</code></pre>
             <button class="verifyCopy" type="button" data-copy="Get-FileHash .\opera-agent-*.zip -Algorithm SHA256" aria-label="Salin perintah lokal" data-i18n-attr="aria-label:verify.copyLocal"><svg viewBox="0 0 24 24" class="verifyCopyIcon" aria-hidden="true"><rect x="8.5" y="8.5" width="10.5" height="10.5" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M5.5 15.5V6a2 2 0 0 1 2-2h9" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg><svg viewBox="0 0 24 24" class="verifyCopyCheck" aria-hidden="true"><path d="M5 12.5 9.5 17 19 6.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="verifyCopyText" data-i18n="verify.copy">Salin</span></button>
           </div>
-          <pre><code aria-hidden="true">Get-FileHash .\opera-agent-*.zip -Algorithm SHA256</code></pre>
-          <input class="verifyInput" type="text" id="digestLocal" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="A3F9C41D22E8…" aria-label="Local file SHA-256 fingerprint">
+          <label class="verifyField"><input class="verifyInput" type="text" id="digestLocal" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="A3F9C41D22E8…" aria-label="Local file SHA-256 fingerprint"><span class="verifyFieldDot" aria-hidden="true"></span></label>
         </div>
         <p class="verifyVerdict" id="verifyVerdict" aria-live="polite"><svg viewBox="0 0 24 24" class="verifyVerdictIcon verifyVerdictWait" aria-hidden="true"><path d="M12 5.5v13M7.5 14 12 18.5 16.5 14" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg><svg viewBox="0 0 24 24" class="verifyVerdictIcon verifyVerdictMatch" aria-hidden="true"><path d="M5 12.5 9.5 17 19 6.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg><svg viewBox="0 0 24 24" class="verifyVerdictIcon verifyVerdictMismatch" aria-hidden="true"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span id="verifyVerdictText">Tempel kedua sebaris di atas untuk membandingkan.</span></p>
       </div>

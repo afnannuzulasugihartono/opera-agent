@@ -59,6 +59,7 @@
     paintInput(localInput, local);
     panel.classList.toggle('is-match', Boolean(server) && server === local);
     panel.classList.toggle('is-mismatch', Boolean(server) && Boolean(local) && server !== local);
+    panel.classList.toggle('is-complete', Boolean(server) && Boolean(local));
     if (!server && !local) setText(say('waiting'), say('pasteBoth'));
     else if (!server || !local) setText(say('one'), say('pasteBoth'));
     else if (server === local) setText(say('match'), say('match'));
