@@ -48,6 +48,35 @@
       canvas.style.setProperty('--dd-k', String(scale));
     };
 
+    let zoomLevel = 1;
+
+    const applyZoom = (next) => {
+      zoomLevel = Math.min(1.6, Math.max(0.85, next));
+      demo.style.setProperty('zoom', String(zoomLevel));
+    };
+
+    const zoomButton = (markup, name, onClick) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'ddZoomBtn';
+      button.setAttribute('aria-label', name);
+      button.innerHTML = markup;
+      button.addEventListener('click', onClick);
+      return button;
+    };
+
+    const buildZoom = () => {
+      const bar = document.createElement('span');
+      bar.className = 'ddZoom';
+      bar.append(
+        zoomButton('<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 12h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>', 'Perkecil', () => applyZoom(zoomLevel / 1.18)),
+        zoomButton('<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 6v12M6 12h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>', 'Perbesar', () => applyZoom(zoomLevel * 1.18))
+      );
+      demo.appendChild(bar);
+    };
+
+    buildZoom();
+
     const measure = (el) => {
       const box = canvas.getBoundingClientRect();
       const rect = el.getBoundingClientRect();

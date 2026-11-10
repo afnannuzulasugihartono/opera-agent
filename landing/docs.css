@@ -295,8 +295,9 @@ html.js .quickStart.in .quickDoor:nth-child(3) { animation-delay: .19s; }
 
 .mcpDemo {
   position: relative;
-  margin: 18px auto 20px;
-  width: min(100%, 72vh * 1024 / 574);
+  margin: 18px 0 0 50%;
+  width: 100vw;
+  transform: translateX(-50%);
   aspect-ratio: 1024 / 574;
   border: 1px solid var(--line-strong);
   border-radius: 14px;
@@ -308,7 +309,37 @@ html.js .quickStart.in .quickDoor:nth-child(3) { animation-delay: .19s; }
   --dd-k: 1;
 }
 
-.ddCanvas { position: absolute; left: 0; top: 0; width: 1024px; height: 574px; transform: scale(var(--dd-k)); transform-origin: top left; }
+.ddCanvas { position: absolute; left: 0; top: 0; width: 1024px; height: 574px; transform: scale(calc(var(--dd-k) * var(--dd-zoom, 1))); transform-origin: top left; }
+
+.ddZoom {
+  position: absolute;
+  z-index: 70;
+  right: 10px;
+  top: 10px;
+  display: flex;
+  gap: 5px;
+  padding: 5px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--surface) 62%, transparent);
+  border: 1px solid var(--line-strong);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+
+.ddZoomBtn {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.ddZoomBtn:hover { background: color-mix(in srgb, var(--ink) 14%, transparent); }
+.ddZoomBtn svg { width: 17px; height: 17px; }
 
 .ddIcons { position: absolute; left: 18px; top: 16px; display: grid; gap: 18px; align-content: start; z-index: 1; transition: opacity .3s var(--ease); }
 .ddIcon { display: grid; justify-items: center; gap: 5px; }
