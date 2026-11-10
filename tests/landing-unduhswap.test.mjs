@@ -58,9 +58,9 @@ test('every merged card offers the archive, and the install steps name the surfa
     assert.match(body, /<span\b[^>]*class="badge"[^>]*hidden[^>]*>Browser Anda<\/span>/, `${key} hides its badge until detected`);
   }
 
-  const steps = /<ol class="steps">([\s\S]*?)<\/ol>/.exec(berkas)[1];
+  const steps = /<ol class="steps srOnly">([\s\S]*?)<\/ol>/.exec(berkas)[1];
   assert.ok(steps.includes('<code>chrome://extensions</code>'), 'the install guide names the Chrome surface once');
-  assert.match(steps, /mode pengembang/, 'the install guide states developer mode once');
+  assert.match(steps, /Developer mode/i, 'the install guide states developer mode once');
 });
 
 test('the other builds row sits under the button, the way the benchmark download page does it', () => {

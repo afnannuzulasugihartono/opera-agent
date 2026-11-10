@@ -37,6 +37,9 @@
   --danger-line: rgba(255, 107, 107, .28);
   --on-fill: #0a0a0a;
   --focus: #3ecf8e;
+  --chrome: #a8c7fa;
+  --chrome-on: #041e49;
+  --yellow: #f2c94c;
   --radius: 6px;
   --radius-sm: 4px;
   --ease: cubic-bezier(.25, .46, .45, .94);

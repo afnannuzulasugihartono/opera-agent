@@ -87,11 +87,18 @@ test('the hero states the value in one sentence, and the steps live on the merge
   assert.match(hub, /mesin enterprise/, 'enterprise named where the updates land');
   assert.doesNotMatch(hub.replace(/<!--[\s\S]*?-->/g, ''), /instan/i, 'no instant promise');
   assert.doesNotMatch(hub, /<ol class="steps">/, 'the hub itself keeps no steps beside the door');
-  const fold = /<details class="sectionFold" open>\s*<summary><h2\b[^>]*>Lima langkah memasang dari arsip<\/h2><\/summary>\s*<ol class="steps">([\s\S]*?)<\/ol>/.exec(berkas);
-  assert.ok(fold, 'the install steps live in an open fold on the page');
-  const steps = fold[1];
+  const fold = /<details class="sectionFold" open>\s*<summary><h2\b[^>]*>Cara memasang<\/h2><\/summary>\s*<div class="demo" aria-hidden="true">([\s\S]*?)<\/div>\s*<ol class="steps srOnly">([\s\S]*?)<\/ol>/.exec(berkas);
+  assert.ok(fold, 'the install fold opens to the animated walkthrough, with the text kept underneath');
+  const demo = fold[1];
+  assert.equal((demo.match(/<div class="scene s\d">/g) || []).length, 6, 'six scenes, one per beat: download, extract, extensions page, installed, pairing, verify');
+  assert.match(demo, /class="pip p6"/, 'six pips answer which beat is live');
+  assert.match(demo, /Extract all/, 'the explorer names the button the reader must find');
+  assert.match(demo, /chrome:\/\/extensions/, 'and the extensions surface, named');
+  assert.match(demo, /Open|Browse|folderPick/i, 'the file picker is part of the flow');
+  assert.match(demo, /oaPopup/, 'and the extension popup opens under the toolbar icon');
+  const steps = fold[2];
   assert.match(steps, /Ekstrak arsip/, 'first the extract');
-  assert.match(steps, /mode pengembang/, 'then developer mode');
+  assert.match(steps, /Developer mode/i, 'then developer mode');
   assert.match(steps, /Load unpacked/, 'then the load');
 });
 

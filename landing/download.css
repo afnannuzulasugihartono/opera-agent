@@ -158,22 +158,12 @@ html.js .btn.giant::after {
   background: var(--surface);
 }
 
-.pack > code {
-  padding: 9px 14px;
-  border: 1px solid var(--line-strong);
-  border-radius: var(--radius-sm);
-  background: var(--surface-2);
-  color: var(--ink);
-  font-size: 12.5px;
-  letter-spacing: .02em;
-}
-
 .packRow {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 12px;
   width: 100%;
-  margin: 26px 0 0;
+  margin: 0;
   padding: 0;
   list-style: none;
 }
@@ -700,4 +690,524 @@ pre {
   .btn.giant { animation: none; }
   .browser { transition: none; }
   .steps > li { transition: none; }
+}
+
+.steps.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* WHY THE FIVE STEPS ARE THE COMPUTER ITSELF: the user is told where each thing actually lives - the download shelf, the Explorer toolbar, the extensions page, the pairing popup, the terminal - so the steps teach the screens, not sentences. */
+
+.desktop {
+  margin-top: 20px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.demoStage {
+  position: relative;
+  aspect-ratio: 5 / 3.0;
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.scene {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  opacity: 0;
+}
+
+.s1 { animation: sc1 22s linear infinite } .s2 { animation: sc2 22s linear infinite } .s3 { animation: sc3 22s linear infinite } .s4 { animation: sc4 22s linear infinite } .s5 { animation: sc5 22s linear infinite } .s6 { animation: sc6 22s linear infinite }
+
+@keyframes sc1 { 0% { opacity: 0 } 1.5% { opacity: 1 } 15.5% { opacity: 1 } 17.5%, 100% { opacity: 0 } }
+@keyframes sc2 { 0%, 15% { opacity: 0 } 17.5% { opacity: 1 } 31.5% { opacity: 1 } 33.5%, 100% { opacity: 0 } }
+@keyframes sc3 { 0%, 31% { opacity: 0 } 33.5% { opacity: 1 } 48.5% { opacity: 1 } 50.5%, 100% { opacity: 0 } }
+@keyframes sc4 { 0%, 48% { opacity: 0 } 50.5% { opacity: 1 } 64% { opacity: 1 } 66.5%, 100% { opacity: 0 } }
+@keyframes sc5 { 0%, 64% { opacity: 0 } 67% { opacity: 1 } 85% { opacity: 1 } 87%, 100% { opacity: 0 } }
+@keyframes sc6 { 0%, 85.5% { opacity: 0 } 87.5% { opacity: 1 } 97.5% { opacity: 1 } 100% { opacity: 0 } }
+
+.osWin {
+  width: min(92%, 500px);
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+  background: var(--surface-2);
+  overflow: hidden;
+}
+
+/* shared window chrome */
+
+.tabStrip { display: flex; align-items: flex-end; gap: 8px; padding: 6px 10px 0; background: var(--surface); border-bottom: 1px solid var(--line); }
+.tabItem { display: flex; align-items: center; gap: 8px; padding: 7px 10px; background: var(--surface-2); border: 1px solid var(--line-strong); border-bottom: 0; border-radius: 8px 8px 0 0; font: 500 10px/1 var(--mono); color: var(--muted); }
+.tabMark { width: 9px; height: 9px; border-radius: 2.5px; background: var(--muted); }
+.tabMark.accent { background: var(--accent); }
+.tabClose { position: relative; width: 10px; height: 10px; }
+.tabClose::before, .tabClose::after { content: ""; position: absolute; left: 4.4px; top: 0.5px; width: 1.2px; height: 9px; background: var(--muted); }
+.tabClose::before { transform: rotate(45deg); }
+.tabClose::after { transform: rotate(-45deg); }
+.tabNew { position: relative; width: 15px; height: 15px; margin: 0 2px 4px auto; border: 1px solid var(--line-strong); border-radius: 4px; }
+.tabNew::before, .tabNew::after { content: ""; position: absolute; background: var(--muted); }
+.tabNew::before { left: 3px; right: 3px; top: 6.5px; height: 1.2px; }
+.tabNew::after { top: 3px; bottom: 3px; left: 6.5px; width: 1.2px; }
+
+.chromeNav { display: flex; align-items: center; gap: 9px; padding: 8px 10px; background: var(--surface-2); border-bottom: 1px solid var(--line); }
+.navArrow { width: 15px; height: 15px; color: var(--ink); flex: none; }
+.navArrow.dim { color: var(--muted); opacity: .55; }
+.addrPill { display: flex; align-items: center; gap: 7px; flex: 1; min-width: 0; padding: 6px 12px; background: var(--surface); border: 1px solid var(--line); border-radius: 999px; font: 10.5px/1 var(--mono); color: var(--muted); white-space: nowrap; overflow: hidden; }
+.extPuzzle { width: 14px; height: 14px; color: var(--accent); flex: none; }
+
+/* scene 1 — the download shelf fills */
+
+
+
+
+.dlShelf { display: flex; align-items: center; gap: 11px; padding: 11px 13px; border-top: 1px solid var(--line); background: var(--surface); }
+.dlIcon { padding: 8px 8px; border-radius: 8px; background: var(--accent); color: var(--on-fill); font: 600 10.5px/1 var(--mono); }
+.dlMeta { flex: 1; min-width: 0; display: grid; gap: 6px; }
+.dlName { font: 10.5px/1 var(--mono); color: var(--ink); }
+.dlTrack { height: 4px; border-radius: 2px; background: var(--line); overflow: hidden; }
+.dlShelf { transform: translateY(120%); opacity: 0; animation: dlShelfIn 22s linear infinite; }
+@keyframes dlShelfIn { 0%, 8% { transform: translateY(120%); opacity: 0 } 12%, 100% { transform: none; opacity: 1 } }
+.dlFill { display: block; height: 100%; width: 7%; background: var(--accent); animation: dlFill 22s linear infinite; }
+@keyframes dlFill { 0%, 8.5% { width: 7% } 15.5%, 100% { width: 100% } }
+
+.checkIcon { width: 16px; height: 16px; color: var(--accent); }
+.dlCheck { opacity: 0; animation: dlCheckIn 22s linear infinite; }
+@keyframes dlCheckIn { 0%, 14.5% { opacity: 0 } 16.5%, 100% { opacity: 1 } }
+
+/* scene 2 — Explorer, selected zip, Extract all */
+
+.expWin { width: min(92%, 500px); font-family: var(--mono); }
+
+.expTitleBar { display: flex; align-items: center; gap: 9px; padding: 9px 12px; background: var(--surface); border-bottom: 1px solid var(--line); }
+.expZipGlyph { width: 16px; height: 16px; }
+.expTitle { font: 600 11px/1 var(--mono); color: var(--ink); }
+.winGlyphs { margin-left: auto; display: flex; align-items: center; gap: 13px; }
+.wgMin { width: 10px; border-bottom: 1.3px solid var(--muted); }
+.wgMax { width: 9px; height: 9px; border: 1.2px solid var(--muted); border-radius: 1px; }
+.wgClose { position: relative; width: 11px; height: 11px; }
+.wgClose::before, .wgClose::after { content: ""; position: absolute; left: 4.6px; top: 0.5px; width: 1.2px; height: 10px; background: var(--muted); }
+.wgClose::before { transform: rotate(45deg); }
+.wgClose::after { transform: rotate(-45deg); }
+
+.expNavRow { display: flex; align-items: center; gap: 8px; padding: 7px 10px; background: var(--surface-2); border-bottom: 1px solid var(--line); }
+.crumbPill { display: flex; align-items: center; gap: 8px; padding: 6px 12px; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; min-width: 170px; }
+.crumbIcon { width: 14px; height: 14px; color: var(--muted); }
+.crumbText { font: 10.5px/1 var(--mono); color: var(--ink); }
+.searchPill { display: flex; align-items: center; gap: 7px; padding: 6px 12px; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; font: 10.5px/1 var(--mono); color: var(--muted); margin-left: auto; white-space: nowrap; }
+.searchIcon { width: 13px; height: 13px; color: var(--muted); }
+
+.expToolbar { display: flex; align-items: center; gap: 16px; padding: 8px 13px; background: var(--surface); border-bottom: 1px solid var(--line); }
+.toolItem { display: flex; align-items: center; gap: 7px; font: 10px/1 var(--mono); color: var(--muted); }
+.toolItem.toolPrimary { color: var(--accent); }
+.toolIcon { width: 15px; height: 15px; }
+.extractAll { color: var(--accent); animation: extractPulse 22s linear infinite; }
+@keyframes extractPulse { 0%, 19.5% { transform: scale(1) } 22% { transform: scale(.92) } 24%, 100% { transform: scale(1) } }
+.toolItem.right { margin-left: auto; }
+
+.expBody { display: grid; grid-template-columns: 108px 1fr 138px; min-height: 150px; }
+.expNav { display: grid; align-content: start; gap: 3px; padding: 10px 7px; border-right: 1px solid var(--line); background: var(--surface); }
+.expNavItem { font: 10px/1.35 var(--mono); color: var(--muted); padding: 5px 8px; border-radius: 6px; }
+.expNavItem.sel { background: var(--line); color: var(--ink); }
+.expNavItem.dimmed { opacity: .5; }
+
+.expList { display: grid; align-content: start; gap: 3px; padding: 8px 9px; background: var(--surface-2); }
+.expColRow { display: grid; grid-template-columns: 1.25fr .95fr .65fr; gap: 8px; padding: 2px 6px 6px; border-bottom: 1px solid var(--line); font: 8.5px/1 var(--mono); color: var(--muted); margin-bottom: 3px; }
+.expRow { display: grid; grid-template-columns: 1.25fr .95fr .65fr; align-items: center; gap: 8px; padding: 5px 6px; border-radius: 6px; font: 9px/1.3 var(--mono); color: var(--ink); white-space: nowrap; overflow: hidden; }
+.expRow svg { width: 14px; height: 14px; vertical-align: -3px; margin-right: 6px; }
+.expCell.dim { color: var(--muted); font-size: 8.5px; }
+.expRow.sel { background: var(--line); outline: 1px solid var(--line-strong); }
+.fileIconSm { display: inline-grid; place-items: center; width: 14px; height: 14px; border-radius: 3px; background: var(--line); color: var(--muted); font-size: 8px; vertical-align: -3px; margin-right: 6px; }
+
+.expDetails { display: flex; flex-direction: column; gap: 7px; padding: 12px 11px; border-left: 1px solid var(--line); background: var(--surface); align-items: center; }
+.expBigZip { width: 52px; height: 52px; }
+.expDetName { align-self: start; font: 600 10.5px/1.3 var(--mono); color: var(--ink); word-break: break-all; }
+.expDetRow { align-self: stretch; display: grid; gap: 2px; }
+.expDetKey { font: 8px/1 var(--mono); color: var(--muted); letter-spacing: .04em; }
+.expDetVal { font: 9px/1.35 var(--mono); color: var(--ink); word-break: break-word; }
+.expDetBtn { margin-top: auto; padding: 6px 14px; border: 1px solid var(--line-strong); border-radius: 6px; font: 9.5px/1 var(--mono); color: var(--muted); }
+
+.expStatusBar { display: flex; justify-content: space-between; padding: 5px 11px; border-top: 1px solid var(--line); background: var(--surface); font: 8.5px/1.5 var(--mono); color: var(--muted); }
+.expState { opacity: .6; }
+
+/* scenes 3-4 — the real extensions page */
+
+.extPage { background: var(--surface); }
+
+.extTitleRow { display: flex; align-items: center; gap: 12px; padding: 13px 16px; }
+.extHeadPuzzle { width: 21px; height: 21px; color: var(--ink); flex: none; }
+.extHeading { font: 600 16.5px/1 var(--mono); letter-spacing: -.03em; color: var(--ink); }
+.extSearch { display: flex; align-items: center; gap: 7px; flex: 1; min-width: 0; max-width: 210px; margin-inline: auto; padding: 7px 13px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 999px; font: 10px/1 var(--mono); color: var(--muted); white-space: nowrap; }
+
+.devMode { display: flex; align-items: center; gap: 9px; }
+.devLabel { font: 10.5px/1 var(--mono); color: var(--muted); white-space: nowrap; }
+
+.toggle { position: relative; width: 34px; height: 19px; border-radius: 10px; background: var(--line); flex: none; }
+.knob { position: absolute; top: 3px; left: 3px; width: 13px; height: 13px; border-radius: 50%; background: var(--on-fill); }
+.toggle.on { background: var(--accent); }
+.toggle.on .knob, .toggle .knob.knobOn { transform: translateX(15px); }
+.toggle.small { width: 29px; height: 17px; }
+.toggle.small .knob { width: 11px; height: 11px; }
+.toggle.small .knob.knobOn { transform: translateX(12px); }
+.s3 .toggle { animation: trackOn 22s linear infinite; }
+@keyframes trackOn { 0%, 41% { background: var(--line) } 44.5%, 100% { background: var(--accent) } }
+.s3 .knob { animation: knobOn 22s linear infinite; }
+@keyframes knobOn { 0%, 41% { transform: translateX(0) } 44.5%, 100% { transform: translateX(15px) } }
+
+.extActions { display: flex; gap: 9px; padding: 2px 16px 13px; }
+.extBtn { padding: 6px 15px; border: 1px solid var(--accent); border-radius: 999px; font: 10.5px/1 var(--mono); color: var(--accent); background: transparent; }
+.s3 .extBtn.loadReady { animation: loadReadyPress 22s linear infinite; }
+@keyframes loadReadyPress { 0%, 46.5% { transform: scale(1) } 48% { transform: scale(.93) } 49.5%, 100% { transform: scale(1) } }
+
+
+.extBtn.pressed { background: var(--accent); color: var(--on-fill); animation: loadPulse 22s linear infinite; }
+@keyframes loadPulse { 0%, 54% { transform: scale(1) } 57.5% { transform: scale(.93) } 61%, 100% { transform: scale(1) } }
+
+.extSplit { display: grid; grid-template-columns: 132px 1fr; border-top: 1px solid var(--line); }
+.extSide { display: grid; align-content: start; gap: 3px; padding: 12px 8px; border-right: 1px solid var(--line); background: var(--surface); }
+.sideItem { font: 10px/1.4 var(--mono); color: var(--muted); padding: 6px 9px; border-radius: 14px; }
+.sideItem.sel { background: color-mix(in srgb, var(--accent) 26%, transparent); color: var(--accent); }
+
+.extMain { display: grid; align-content: start; gap: 10px; min-height: 128px; padding: 12px 14px; background: var(--surface); }
+.extAllRow { display: flex; align-items: center; justify-content: space-between; }
+.extAllLabel { font: 600 10.5px/1 var(--mono); color: var(--ink); }
+.extEmpty { padding: 13px 10px; border: 1px dashed var(--line-strong); border-radius: 10px; font: 9.5px/1.5 var(--mono); color: var(--muted); text-align: center; }
+
+.extCard { display: grid; grid-template-columns: auto 1fr; gap: 12px 12px; padding: 12px 13px; border: 1px solid var(--line-strong); border-radius: 10px; background: var(--surface-2); animation: extCardIn 22s linear infinite; }
+@keyframes extCardIn { 0%, 60% { opacity: 0; transform: translateY(12px) } 64.5%, 100% { opacity: 1; transform: none } }
+
+.extCardIcon { width: 42px; height: 42px; border-radius: 9px; background: var(--accent); display: grid; place-items: center; }
+.extCardIcon svg { width: 24px; height: 24px; }
+.extCardIcon.mini { width: 26px; height: 26px; border-radius: 7px; }
+.extCardIcon.mini svg { width: 14px; height: 14px; }
+
+.extCardMeta { display: grid; gap: 5px; align-content: center; }
+.extCardName { font: 600 12px/1 var(--mono); color: var(--ink); }
+.extCardSub { font: 8.5px/1.55 var(--mono); color: var(--muted); max-width: 52ch; }
+
+.extCardFooter { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding-top: 10px; border-top: 1px solid var(--line); }
+.extCardBtns { display: flex; gap: 8px; }
+.extMiniBtn { padding: 5px 13px; border: 1px solid var(--accent); border-radius: 999px; font: 9.5px/1 var(--mono); color: var(--accent); }
+
+/* scene 5 — the real dashboard, exactly as the owner sees it */
+
+
+.dashSplit { display: grid; grid-template-columns: 82px 1fr; border-top: 1px solid var(--line); background: var(--surface); }
+
+.dashSide { display: grid; align-content: start; gap: 2px; padding: 10px 7px; border-right: 1px solid var(--line); background: var(--surface); }
+.dashSideItem { font: 9px/1.2 var(--mono); color: var(--muted); padding: 5px 7px; border-radius: 8px; }
+.dashSideItem.sel { background: var(--accent); color: var(--on-fill); }
+
+.dashMain { display: grid; align-content: start; gap: 9px; padding: 10px 11px; background: var(--surface); }
+.dashHeading { font: 600 13.5px/1.2 var(--mono); letter-spacing: -.02em; color: var(--ink); }
+
+.pairPanel { display: grid; gap: 7px; padding: 10px; border: 1px solid var(--line-strong); border-radius: 10px; background: var(--surface-2); }
+.pairPanelText { font: 8px/1.55 var(--mono); color: var(--muted); }
+.deviceNameLabel { font: 9px/1 var(--mono); color: var(--muted); }
+.deviceNameField { display: block; padding: 8px 10px; border: 1px solid var(--line-strong); border-radius: 7px; background: var(--surface); font: 9.5px/1 var(--mono); color: var(--ink); }
+
+.pairCreateBtn { justify-self: start; padding: 6px 12px; border: 1px solid var(--line-strong); border-radius: 7px; background: var(--surface); font: 9px/1.3 var(--mono); color: var(--ink); animation: pairCreatePress 22s linear infinite; }
+@keyframes pairCreatePress { 0%, 70% { transform: scale(1) } 72% { transform: scale(.93) } 73.5%, 100% { transform: scale(1) } }
+
+.pairCodeRow { display: grid; gap: 3px; padding: 9px 10px; border: 1px solid var(--accent); border-radius: 9px; background: color-mix(in srgb, var(--accent) 12%, transparent); opacity: 0; animation: pairCodeRowIn 22s linear infinite; }
+@keyframes pairCodeRowIn { 0%, 73.5% { opacity: 0; transform: translateY(8px) } 77.5%, 100% { opacity: 1; transform: none } }
+
+.pairCodeLabel { font: 8px/1 var(--mono); color: var(--muted); letter-spacing: .06em; }
+.pairCodeValue { font: 600 15px/1 var(--mono); letter-spacing: .12em; color: var(--accent); }
+.pairCodeHint { font: 7.5px/1 var(--mono); color: var(--muted); }
+
+/* scene 6 — the two digests must agree */
+
+.termBar { display: flex; align-items: center; gap: 6px; padding: 9px 11px; background: var(--surface); border-bottom: 1px solid var(--line); }
+.termBody { display: grid; gap: 8px; padding: 12px 14px; background: var(--surface); font: 8.5px/1.65 var(--mono); }
+.termLine { display: block; color: var(--muted); white-space: nowrap; overflow: hidden; opacity: 0; }
+.termLine .psPrompt { color: var(--accent); }
+.t1 { animation: termLineIn 22s linear infinite } .t2 { animation: termLineIn2 22s linear infinite } .t3 { animation: termLineIn3 22s linear infinite } .t4 { animation: termLineIn4 22s linear infinite }
+@keyframes termLineIn { 0%, 88% { opacity: 0 } 90%, 100% { opacity: 1 } }
+@keyframes termLineIn2 { 0%, 90% { opacity: 0 } 92%, 100% { opacity: 1 } }
+@keyframes termLineIn3 { 0%, 92% { opacity: 0 } 94%, 100% { opacity: 1 } }
+@keyframes termLineIn4 { 0%, 94% { opacity: 0 } 95.5%, 100% { opacity: 1 } }
+.hashLine { color: var(--ink); }
+
+.checkIconBig { width: 28px; height: 28px; color: var(--accent); }
+.checkTerm { justify-self: center; stroke-dasharray: 60; stroke-dashoffset: 60; opacity: 0; animation: checkTermIn 22s linear infinite; }
+@keyframes checkTermIn { 0%, 96.5% { stroke-dashoffset: 60; opacity: 0 } 99%, 100% { stroke-dashoffset: 0; opacity: 1 } }
+
+/* taskbar + pips */
+
+.taskbar { display: flex; align-items: center; gap: 12px; padding: 8px 13px; background: var(--surface-2); border-top: 1px solid var(--line); }
+.startGlyph { width: 15px; height: 15px; }
+.taskIcon { width: 14px; height: 14px; border-radius: 4px; background: var(--line-strong); }
+.taskIcon.folder { background: var(--accent); opacity: .75; border-radius: 0; clip-path: polygon(0 22%, 32% 22%, 42% 5%, 100% 5%, 100% 100%, 0 100%); }
+.taskIcon.chromeTask { background: transparent; border: 1.6px solid var(--accent); border-radius: 50%; }
+.taskIcon.termTask { background: var(--line); position: relative; }
+.taskClock { margin-left: auto; font: 10px/1 var(--mono); color: var(--muted); letter-spacing: .05em; }
+
+.demoPips { display: flex; gap: 8px; justify-content: center; padding: 12px 0 14px; border-top: 1px solid var(--line); background: var(--surface-2); }
+.pip { width: 24px; height: 4px; border-radius: 2px; background: var(--surface); }
+
+.p1 { animation: pip1 22s linear infinite } .p2 { animation: pip2 22s linear infinite } .p3 { animation: pip3 22s linear infinite } .p4 { animation: pip4 22s linear infinite } .p5 { animation: pip5 22s linear infinite } .p6 { animation: pip6 22s linear infinite }
+
+@keyframes pip1 { 0%, 1% { background: var(--surface) } 2%, 16% { background: var(--accent) } 17.5%, 100% { background: var(--surface) } }
+@keyframes pip2 { 0%, 17% { background: var(--surface) } 18.5%, 32.5% { background: var(--accent) } 34%, 100% { background: var(--surface) } }
+@keyframes pip3 { 0%, 33% { background: var(--surface) } 35.5%, 49.5% { background: var(--accent) } 51%, 100% { background: var(--surface) } }
+@keyframes pip4 { 0%, 50% { background: var(--surface) } 51.5%, 65% { background: var(--accent) } 67%, 100% { background: var(--surface) } }
+@keyframes pip5 { 0%, 67% { background: var(--surface) } 68.5%, 82% { background: var(--accent) } 83.5%, 100% { background: var(--surface) } }
+@keyframes pip6 { 0%, 82% { background: var(--surface) } 84%, 98.5% { background: var(--accent) } 100% { background: var(--surface) } }
+
+@media (prefers-reduced-motion: reduce) {
+  .demo { display: none; }
+  .steps.srOnly { position: static; width: auto; height: auto; margin: 0; overflow: visible; clip-path: none; white-space: normal; }
+}
+
+.cursor {
+  position: absolute;
+  z-index: 40;
+  left: 112%;
+  top: 88%;
+  opacity: 0;
+  pointer-events: none;
+  animation: cursorPath 22s linear infinite;
+}
+
+@keyframes cursorPath {
+  0% { left: 112%; top: 88%; opacity: 0 }
+  2.5% { left: 112%; top: 88%; opacity: 0 }
+  4.5% { left: 96%; top: 74%; opacity: 1 }
+  6.5% { left: 50%; top: 66.5% }
+  15% { left: 50%; top: 66.5% }
+  20% { left: 39.7%; top: 27.7% }
+  30.5% { left: 39.7%; top: 27.7% }
+  37% { left: 78.5%; top: 39.9% }
+  43.5% { left: 78.5%; top: 39.9% }
+  46.8% { left: 26.3%; top: 49% }
+  53.5% { left: 26.3%; top: 49% }
+  55.5% { left: 50%; top: 64.6% }
+  58% { left: 50%; top: 64.6% }
+  61.5% { left: 68.7%; top: 75.7% }
+  65% { left: 68.7%; top: 75.7% }
+  69% { left: 58%; top: 64% }
+  70.8% { left: 38.7%; top: 62.9% }
+  76% { left: 38.7%; top: 62.9% }
+  79.5% { left: 73.5%; top: 27.2% }
+  82% { left: 86.5%; top: 35.7% }
+  84.5% { left: 86.5%; top: 35.7%; opacity: 1 }
+  87% { left: 97%; top: 20%; opacity: 0 }
+  100% { left: 112%; top: 88%; opacity: 0 }
+}
+
+.cursorArrow {
+  width: 22px;
+  height: 22px;
+  animation: cursorTipPress 22s linear infinite;
+}
+
+@keyframes cursorTipPress {
+  0%, 21.2% { transform: scale(1) }
+  21.9% { transform: scale(.76) }
+  23% { transform: scale(1) }
+  40% { transform: scale(1) }
+  40.8% { transform: scale(.76) }
+  42% { transform: scale(1) }
+  47% { transform: scale(1) }
+  47.8% { transform: scale(.76) }
+  49% { transform: scale(1) }
+  57.5% { transform: scale(1) }
+  58.3% { transform: scale(.76) }
+  59.4% { transform: scale(1) }
+  60.8% { transform: scale(1) }
+  61.6% { transform: scale(.76) }
+  62.9% { transform: scale(1) }
+  71% { transform: scale(1) }
+  71.8% { transform: scale(.76) }
+  73% { transform: scale(1) }
+  79% { transform: scale(1) }
+  79.8% { transform: scale(.76) }
+  81% { transform: scale(1) }
+  81.3% { transform: scale(1) }
+  82.1% { transform: scale(.76) }
+  83.4% { transform: scale(1) }
+  100% { transform: scale(1) }
+}
+
+/* consistent windows — every OS window is the same size */
+
+.osWin,
+.expWin,
+.extReal,
+.dashReal,
+.termWin { width: min(92%, 500px); }
+
+/* scene 4 — the Browse For Folder dialog */
+
+.folderPick {
+  position: absolute;
+  z-index: 35;
+  left: 50%;
+  top: 15%;
+  transform: translateX(-50%);
+  width: min(84%, 430px);
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+  background: var(--surface-2);
+  overflow: hidden;
+  opacity: 0;
+  animation: folderPickIn 22s linear infinite;
+}
+
+@keyframes folderPickIn {
+  0%, 50.5% { opacity: 0; transform: translateX(-50%) scale(.96) }
+  53%, 63% { opacity: 1; transform: translateX(-50%) scale(1) }
+  65.5%, 100% { opacity: 0; transform: translateX(-50%) scale(.94) }
+}
+
+.pickHead { display: flex; align-items: center; gap: 9px; padding: 9px 12px; background: var(--surface); border-bottom: 1px solid var(--line); font: 600 11px/1 var(--mono); color: var(--ink); }
+.pickHeadIcon { width: 15px; height: 15px; color: var(--muted); }
+
+.wgCloseSm { position: relative; width: 12px; height: 12px; margin-left: auto; }
+.wgCloseSm::before, .wgCloseSm::after { content: ""; position: absolute; left: 5px; top: 0.5px; width: 1.4px; height: 11px; background: var(--muted); }
+.wgCloseSm::before { transform: rotate(45deg); }
+.wgCloseSm::after { transform: rotate(-45deg); }
+
+.pickCrumb { display: flex; align-items: center; gap: 9px; margin: 10px 12px 0; padding: 7px 12px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; font: 10.5px/1 var(--mono); color: var(--muted); }
+.pickCrumb b { color: var(--ink); font-weight: 600; }
+.pickSep { opacity: .55; }
+
+.pickList { display: grid; gap: 3px; margin: 9px 12px 0; padding: 8px 9px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }
+.pickColRow { display: grid; grid-template-columns: 1.25fr .95fr .65fr; gap: 8px; padding: 2px 6px 6px; border-bottom: 1px solid var(--line); font: 8.5px/1 var(--mono); color: var(--muted); margin-bottom: 3px; }
+.pickRow { display: grid; grid-template-columns: 1.25fr .95fr .65fr; align-items: center; gap: 8px; padding: 5px 6px; border-radius: 6px; font: 9px/1.3 var(--mono); color: var(--ink); white-space: nowrap; overflow: hidden; }
+.pickRow svg { width: 14px; height: 14px; vertical-align: -3px; margin-right: 6px; }
+.pickRow.sel { background: color-mix(in srgb, var(--accent) 16%, transparent); outline: 1px solid var(--accent); }
+.pickDim { color: var(--muted); font-size: 8.5px; }
+.fileIconSm.manifest { background: var(--accent); color: var(--on-fill); }
+
+.pickFoot { display: flex; justify-content: flex-end; gap: 8px; padding: 9px 12px 11px; }
+.pickBtn { padding: 7px 16px; border-radius: 7px; border: 1px solid var(--accent); background: var(--accent); color: var(--on-fill); font: 600 10.5px/1 var(--mono); animation: pickBtnPress 22s linear infinite; }
+@keyframes pickBtnPress { 0%, 61% { transform: scale(1) } 62.1% { transform: scale(.93) } 63.4%, 100% { transform: scale(1) } }
+
+/* scene 5 — the popup opens under the toolbar icon */
+
+.navIcons { display: flex; align-items: center; gap: 10px; margin-left: 10px; flex: none; }
+.navIcon { width: 16px; height: 16px; color: var(--muted); }
+.extTrigger { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 6px; background: var(--surface-2); border: 1px solid var(--line-strong); }
+.extTriggerIcon { width: 13px; height: 13px; }
+.navIconDot { width: 15px; height: 15px; border-radius: 50%; background: var(--line-strong); }
+
+.oaPopup {
+  position: absolute;
+  z-index: 34;
+  top: 80px;
+  right: 14px;
+  width: min(38%, 208px);
+  border: 1px solid var(--line-strong);
+  border-radius: 12px;
+  background: var(--surface-2);
+  overflow: hidden;
+  opacity: 0;
+  animation: popupAppear 22s linear infinite;
+}
+
+@keyframes popupAppear {
+  0%, 79% { opacity: 0; transform: scale(.85) translateY(-12px); transform-origin: top right; }
+  81.5%, 100% { opacity: 1; transform: none; }
+}
+
+.oaPanelOut { display: grid; gap: 8px; padding: 12px; }
+.oaPanelIn { position: absolute; inset: 0; display: grid; gap: 8px; align-content: start; padding: 12px; opacity: 0; animation: panelIn 22s linear infinite; background: var(--surface-2); }
+@keyframes panelIn { 0%, 84% { opacity: 0; transform: translateY(10px) } 87%, 100% { opacity: 1; transform: none } }
+
+.oaHeader { display: flex; align-items: center; gap: 8px; }
+.oaName { font: 600 12px/1 var(--mono); color: var(--ink); }
+
+.extCardIcon.outline { background: transparent; border: 1px solid var(--accent); }
+
+.oaPillOn,
+.oaPillOff { display: flex; align-items: center; gap: 7px; padding: 6px 11px; border-radius: 999px; font: 600 10px/1 var(--mono); letter-spacing: .02em; justify-self: start; }
+.oaPillOn { background: color-mix(in srgb, var(--accent) 14%, transparent); color: var(--accent); }
+.oaPillOff { background: var(--surface); color: var(--muted); border: 1px solid var(--line); }
+.oaDotOn { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
+.oaDotOff { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+
+.oaRows { display: grid; gap: 7px; padding: 10px 0 8px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.oaRow { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.oaKey { font: 7.5px/1.5 var(--mono); color: var(--muted); letter-spacing: .09em; }
+.oaVal { font: 10px/1.4 var(--mono); color: var(--ink); }
+.oaVal.dim { color: var(--muted); }
+.oaVal.ok { color: var(--accent); }
+
+.oaSection { font: 7px/1 var(--mono); color: var(--muted); letter-spacing: .12em; }
+
+.oaFieldLabel { font: 7.5px/1 var(--mono); color: var(--muted); letter-spacing: .09em; }
+.oaFieldEmpty { display: flex; align-items: center; min-height: 30px; padding: 8px 11px; border: 1px dashed var(--line-strong); border-radius: 9px; background: var(--surface); }
+.oaFieldValue { font: 600 13px/1 var(--mono); letter-spacing: .1em; color: var(--ink); opacity: 0; animation: oaPasteIn 22s linear infinite; }
+@keyframes oaPasteIn { 0%, 82.5% { opacity: 0 } 84.2%, 100% { opacity: 1 } }
+
+.oaHint { font: 8px/1.4 var(--mono); color: var(--muted); }
+
+.oaBtns { display: grid; gap: 6px; }
+.oaBtn { padding: 7px 9px; border: 1px solid var(--line-strong); border-radius: 8px; background: var(--surface); font: 8.5px/1.3 var(--mono); color: var(--ink); text-align: center; }
+.oaBtn.danger { color: var(--danger); border-color: var(--danger-line); }
+
+.pairCodeLine { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+
+.pairCopyBtn {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--line-strong);
+  border-radius: 7px;
+  background: var(--surface);
+  color: var(--muted);
+  cursor: pointer;
+  animation: pairCopyPress 22s linear infinite;
+}
+
+@keyframes pairCopyPress {
+  0%, 76% { transform: scale(1) }
+  77.3% { transform: scale(.88) }
+  78.8%, 100% { transform: scale(1) }
+}
+
+.copyIcon,
+.copiedIcon { position: absolute; width: 14px; height: 14px; }
+
+.copyIcon { animation: copyIconOut 22s linear infinite; }
+@keyframes copyIconOut {
+  0%, 77.3% { opacity: 1 }
+  79%, 100% { opacity: 0 }
+}
+
+.copiedIcon { color: var(--accent); opacity: 0; animation: copiedIconIn 22s linear infinite; }
+@keyframes copiedIconIn {
+  0%, 77.3% { opacity: 0 }
+  79%, 88% { opacity: 1 }
+  90%, 100% { opacity: 0 }
+}
+
+.oaFieldEmpty { animation: pasteFieldFlash 22s linear infinite; }
+@keyframes pasteFieldFlash {
+  0%, 82% { border-color: var(--line-strong) }
+  83.2% { border-color: var(--accent) }
+  86.5%, 100% { border-color: var(--line-strong) }
+}
+
+.pickTarget { background: transparent; transition: none; animation: pickRowSelect 22s linear infinite; }
+
+@keyframes pickRowSelect {
+  0%, 55.5% { background: transparent; outline: 1px solid transparent }
+  58.5%, 64% { background: color-mix(in srgb, var(--accent) 16%, transparent); outline: 1px solid var(--accent) }
+  66.5%, 100% { background: color-mix(in srgb, var(--accent) 16%, transparent); outline: 1px solid var(--accent) }
 }

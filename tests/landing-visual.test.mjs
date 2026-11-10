@@ -346,7 +346,8 @@ test('the download page shows one archive fanning out to every browser', () => {
   const html = read('unduh.html');
   assert.match(html, /<aside class="pack"/, 'the hero carries the archive');
   assert.equal((html.match(/class="packTile"/g) || []).length, 5, 'and one tile per supported browser');
-  assert.match(html, /<code>opera-agent\.zip<\/code>/, 'the archive is the file the cards serve');
+  assert.doesNotMatch(html, /<code>opera-agent\.zip<\/code>/, 'the archive caption is gone; the five marks say it');
+  assert.match(html, /class="packRow" aria-hidden="true"/, 'and the fan itself is the picture');
   const css = read('download.css');
   assert.match(css, /\.packTile:nth-child\(3\) \{[^}]*animation-delay/s, 'the tiles light in turn');
   assert.match(css, /@keyframes pack-light/, 'the light is one shot');

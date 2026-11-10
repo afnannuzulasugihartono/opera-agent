@@ -319,5 +319,5 @@ test('the download page has no typo where a stranger decides to trust it', () =>
   const html = read('unduh-berkas.html');
 
   assert.doesNotMatch(html, /polityvek/, 'kebijakan is spelled correctly');
-  assert.match(html, /Lima langkah memasang dari arsip/, 'the install section reads plainly');
+  assert.match(html, /Cara memasang/, 'the install section reads plainly');
 });
