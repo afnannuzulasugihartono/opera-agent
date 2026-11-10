@@ -19,6 +19,18 @@ import os from 'node:os';
 import path from 'node:path';
 import { createMcpServer, TOOLS } from '../local/mcp-server.js';
 
+// WHY THE FAILURE IS READ FROM THE ANSWER.
+// A refused tool answers the way the hosted wire answers: the call came back and it says what failed, so the message is read from the answer rather than from a protocol frame.
+
+const failureOf = (res) => {
+  const text = res?.result?.content?.[0]?.text ?? '';
+  try {
+    return String(JSON.parse(text).error?.message ?? '');
+  } catch {
+    return text;
+  }
+};
+
 // WHY every method here is async.
 // The real driver is async on every call, and a synchronous fake made the server's missing await invisible: it serialised a promise as {} and the lock still passed.
 // A fake that is shaped like the thing it stands in for is the only kind that can catch a bug in the real one.
@@ -294,8 +306,8 @@ test('document_build refuses a graph with no source and writes nothing', async (
         arguments: { source }
       }
     });
-    assert.ok(res.error, 'an invalid paper is a JSON-RPC error, not a result');
-    assert.match(res.error.message, /source/);
+    assert.ok(res.result?.isError, 'an invalid paper is a refusal that answers, not a crash');
+    assert.match(failureOf(res), /source/);
     assert.ok(!fs.existsSync(path.join(dir, 'bad.document.json')), 'no artifact is written for an invalid paper');
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
@@ -491,8 +503,8 @@ test('an input action is refused when the window came forward but the page is st
     params: { name: 'type', arguments: { text: 'hello' } }
   });
 
-  assert.match(res.error.message, /refused: brought Paper - Google Chrome back from the taskbar, but the page still cannot hear input/);
-  assert.match(res.error.message, /Nothing was sent/);
+  assert.match(failureOf(res), /refused: brought Paper - Google Chrome back from the taskbar, but the page still cannot hear input/);
+  assert.match(failureOf(res), /Nothing was sent/);
   assert.ok(!c.driver.calls.some(([name]) => name === 'type'), 'and not one character was typed into a window that cannot hear it');
 });
 
@@ -580,7 +592,7 @@ const clickOn = async (context, tabId) => {
     jsonrpc: '2.0', id: 95, method: 'tools/call',
     params: { name: 'click', arguments: { tabId, x: 10, y: 20 } }
   });
-  if (res.error) return { failed: String(res.error.message) };
+  if (res.result?.isError) return { failed: failureOf(res) };
   return JSON.parse(res.result.content[0].text);
 };
 
@@ -750,8 +762,8 @@ test('an unknown tool is an error, not a crash, because a model will ask for one
     params: { name: 'teleport', arguments: {} }
   });
 
-  assert.ok(res.error, 'an unknown tool must answer with an error');
-  assert.match(res.error.message, /teleport/);
+  assert.ok(res.result?.isError, 'an unknown tool must answer with a refusal');
+  assert.match(failureOf(res), /teleport/);
 });
 
 test('a missing required argument is refused before the driver is touched', async () => {
@@ -762,7 +774,7 @@ test('a missing required argument is refused before the driver is touched', asyn
     params: { name: 'type', arguments: {} }
   });
 
-  assert.ok(res.error);
+  assert.ok(res.result?.isError);
   assert.deepEqual(c.driver.calls, [], 'a refused call must not reach the browser');
 });
 
@@ -833,8 +845,8 @@ test('a driver that throws becomes an error result, not a dead server', async ()
     params: { name: 'read_page', arguments: {} }
   });
 
-  assert.ok(res.error);
-  assert.match(res.error.message, /target closed/);
+  assert.ok(res.result?.isError);
+  assert.match(failureOf(res), /target closed/);
 });
 
 test('a driver that is still pending is awaited, or its result serialises as {}', async () => {
@@ -877,8 +889,8 @@ test('a tab another agent holds is refused, with the holder and the expiry named
     params: { name: 'ax_snapshot', arguments: { tabId: 't1' } }
   });
 
-  assert.match(res.error.message, /agent-b/, 'the refusal names who holds the tab');
-  assert.match(res.error.message, /T\d\d:\d\d:\d\d/, 'and until when');
+  assert.match(failureOf(res), /agent-b/, 'the refusal names who holds the tab');
+  assert.match(failureOf(res), /T\d\d:\d\d:\d\d/, 'and until when');
   assert.equal(c.driver.calls.length, 0, 'and nothing was driven on that tab');
 });
 
@@ -926,7 +938,7 @@ test('a tab id is found whether the caller sends a number or a string', async ()
       params: { name: 'ax_snapshot', arguments: { tabId } }
     });
 
-    assert.ok(res.result, `an id sent as ${typeof tabId} was refused: ${res.error?.message ?? ''}`);
+    assert.ok(res.result, `an id sent as ${typeof tabId} was refused: ${failureOf(res)}`);
   }
 });
 
@@ -975,7 +987,7 @@ test('a wait with nothing to wait for is refused before the first read', async (
 
   const res = await server.handle({ jsonrpc: '2.0', id: 22, method: 'tools/call', params: { name: 'wait_for', arguments: {} } });
 
-  assert.ok(res.error);
+  assert.ok(res.result?.isError);
   assert.equal(waits, 0, 'a refused wait touches nothing');
 });
 
@@ -1219,7 +1231,7 @@ test('an invalid burst is refused before the browser is touched', async () => {
     params: { name: 'browser_burst', arguments: { steps: [] } }
   });
 
-  assert.match(res.error.message, /1-8 steps/);
+  assert.match(failureOf(res), /1-8 steps/);
   assert.deepEqual(c.driver.calls, []);
 });
 
@@ -1256,8 +1268,8 @@ test('upload on a page with no file input fails and says which road is left', as
     params: { name: 'upload', arguments: { filename: 'a.png', data: 'x' } }
   });
 
-  assert.match(res.error.message, /inputFound: false/);
-  assert.match(res.error.message, /drop_file/, 'and the road that does work is in the answer');
+  assert.match(failureOf(res), /inputFound: false/);
+  assert.match(failureOf(res), /drop_file/, 'and the road that does work is in the answer');
 });
 
 test('upload carries a file without touching the native dialog', async () => {
@@ -1386,8 +1398,8 @@ test('ask_page refuses anything that could act, and says what it may ask', async
       jsonrpc: '2.0', id: 53, method: 'tools/call',
       params: { name: 'ask_page', arguments: { tabId: 't1', method } }
     });
-    assert.match(res.error?.message ?? '', /read-only/, `${method} must be refused as an action`);
-    assert.match(res.error?.message ?? '', /Page.getFrameTree/, 'and the refusal lists what is allowed');
+    assert.match(failureOf(res), /read-only/, `${method} must be refused as an action`);
+    assert.match(failureOf(res), /Page.getFrameTree/, 'and the refusal lists what is allowed');
   }
   assert.ok(!c.driver.calls.some((call) => call[0] === 'ask'), 'nothing reached the browser');
 });

@@ -202,6 +202,11 @@ first: `port: 9451` means the extension road.
 The server advertises 54 tools. `guide()` returns them as tasks rather than a
 list, and the full list is in [`local/README.md`](../local/README.md).
 
+The local wire prints the same shape as the hosted one: one flat document per
+call, `{ ok: true, ...facts }` with the cost of the call under `elapsedMs`, and a
+refused tool answering `{ ok: false, error: { code, message } }` with the next
+move in the message. A refusal is an answer, not a broken protocol.
+
 ## 3. `opera-agent-mcp cloud` and the extension road
 
 The extension in `extension/` opens a socket to this machine and carries CDP

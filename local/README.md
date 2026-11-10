@@ -100,6 +100,11 @@ clickable coordinate, so a coordinate read off a screenshot can be clicked as-is
 Actions answer with where the page stands and the rows that changed; `ax_snapshot`
 is the deliberate look at every row.
 
+Every answer is one flat document: `{ ok: true, ...facts }`, with the cost of the
+call under `elapsedMs`. A refused tool answers the same way - `{ ok: false, error:
+{ code, message } }` - with the next move in the message, so the local road reads
+exactly like the hosted one.
+
 `download` writes a file to the folder the caller names and proves it by the file on
 disk — a `.crdownload` is not a result, and two files landing at once is not a
 result either: the newest of an ambiguous pair is somebody else's download, so the

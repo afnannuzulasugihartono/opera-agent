@@ -62,6 +62,21 @@ function isObject(value) {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
+// WHY A FAILED TOOL ANSWERS THE WAY THE HOSTED WIRE ANSWERS.
+// Both roads tell a model the same thing: the call came back and it says what failed.
+// A JSON-RPC error reads as a broken protocol, and a client that treats it that way can end the session over a refusal the agent could act on.
+// So a tool that failed answers as a tool result that says so: ok false, an error with a code and a message, and the advice for the next move in the same message.
+
+function toolFailure(error, context) {
+  const message = withAdvice(error, context);
+  const code = typeof error?.code === 'string' && error.code ? error.code : 'MCP_EXECUTION_ERROR';
+  const payload = { ok: false, error: { code, message } };
+  return {
+    content: [{ type: 'text', text: JSON.stringify(tidyForAi(payload)) }],
+    isError: true
+  };
+}
+
 // WHY THE COST RIDES INSIDE THE ANSWER AND NOT IN A BLOCK OF ITS OWN.
 // An answer is one document: a cost that sits beside it has to be read as a second document, and the hosted wire carries no such block.
 // So the cost is a fact of the answer, under elapsedMs, and both wires read facts the same way.
@@ -780,8 +795,12 @@ const windowMatch = async (tab, driver) => (tab ? String(tab.title ?? '') : page
         if (method === 'tools/list') return reply({ tools: TOOLS });
         if (method === 'tools/call') {
           const started = Date.now();
-          const out = await run(params?.name, params?.arguments ?? {});
-          return reply(withCost(out, Date.now() - started));
+          try {
+            const out = await run(params?.name, params?.arguments ?? {});
+            return reply(withCost(out, Date.now() - started));
+          } catch (error) {
+            return reply(toolFailure(error, { rows: lastSeen }));
+          }
         }
 
         if (method?.startsWith('notifications/')) return undefined;
