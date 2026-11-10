@@ -607,3 +607,122 @@ html.js .quickStart.in .quickDoor:nth-child(3) { animation-delay: .19s; }
 .mcpDemo[data-agent="terminal"] .ddTitleBar { background: #1C1C1C; color: #EDEDED; }
 .mcpDemo[data-agent="terminal"] .ddGlyphs i, .mcpDemo[data-agent="terminal"] .ddBrand { color: #EDEDED; background: transparent; border-color: #EDEDED; }
 .mcpDemo[data-agent="terminal"] .ddTbAgent .ddBrand { color: #CB3837; }
+
+/* ChatGPT Plugins tab, exactly as the real dark UI shows it: left rail, plugins list, install button */
+
+.mcpLight .ddChatBody {
+  background: #f2f2f0;
+  color: #1f1f1f;
+  grid-template-columns: 54px 1fr;
+}
+
+.mcpLight .ddTitleBar {
+  background: #f2f2f0;
+  color: #1f1f1f;
+  border-bottom: 1px solid #e0e0dc;
+}
+
+.mcpLight .ddGlyphs i { background: #1f1f1f; }
+
+.mcpLight .ddRail {
+  background: #f2f2f0;
+  border-right: 1px solid #e0e0dc;
+}
+
+.mcpLight .ddRailDot { color: #5f5f5c; }
+.mcpLight .ddRailDot.sel { background: #e3e3df; color: #1f1f1f; }
+
+.ddPluginsHead { display: grid; padding: 6px 4px 0; }
+.ddPluginsTitle { font: 600 22px/1.15 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #1f1f1f; letter-spacing: -.01em; }
+.ddPluginsSub { font: 500 12.5px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #5f5f5c; }
+
+.ddSearch {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin: 2px 2px 4px;
+  padding: 9px 13px;
+  border-radius: 20px;
+  background: #ffffff;
+  border: 1px solid #e0e0dc;
+  color: #8a8a86;
+  font: 400 13px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+.ddSearchText { font-size: 13px; color: #8a8a86; }
+
+.ddPluginsLabel {
+  padding: 2px 6px 2px 2px;
+  font: 500 11px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  color: #8a8a86;
+}
+
+.mcpLight .ddExisting {
+  background: #ffffff;
+  border: 1px solid #e0e0dc;
+  border-radius: 12px;
+  padding: 10px 12px;
+  grid-template-columns: auto 1fr auto;
+}
+
+.mcpLight .ddExistingIcon {
+  background: #1f1f1f;
+  color: #f2f2f0;
+  font: 600 12px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+.mcpLight .ddExistingName { font-size: 12.5px; color: #1f1f1f; }
+.mcpLight .ddExistingMeta { font-size: 11px; color: #5f5f5c; }
+
+.ddPluginRow {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: #ffffff;
+  border: 1px solid #e0e0dc;
+}
+
+.mcpLight .ddRow, .ddPluginRow { color: #1f1f1f; }
+.ddPluginRow .ddExistingIcon { background: #10a37f; color: #fff; }
+
+.ddInstallBtn {
+  border: 1px solid #1f1f1f;
+  border-radius: 18px;
+  padding: 7px 16px;
+  background: #1f1f1f;
+  color: #f2f2f0;
+  font: 600 13px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.ddInstallBtn:hover { background: #000; }
+
+.ddRowDone {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: #ffffff;
+  border: 1px solid #e0e0dc;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity .25s var(--ease), transform .3s var(--spring);
+}
+
+.ddRowDone .ddExistingIcon { background: #10a37f; color: #fff; }
+
+.mcpDemo.is-done .ddRowDone { opacity: 1; transform: none; }
+
+.ddPill {
+  border-radius: 18px;
+  padding: 8px 16px;
+  background: #e8f5ef;
+  color: #0e7054;
+  font: 600 13px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}

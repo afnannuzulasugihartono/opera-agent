@@ -165,6 +165,10 @@
       }
       const toggle = demo.querySelector('.ddRowToggle');
       if (toggle) toggle.classList.remove('on');
+      const search = demo.querySelector('.ddSearch .ddSearchText');
+      if (search) search.textContent = 'Search plugins';
+      const install = demo.querySelector('.ddInstallBtn');
+      if (install) install.textContent = 'Install';
       replaceStatus('');
       pos = { x: 820, y: 470 };
       paint();
@@ -181,7 +185,32 @@
       const url = 'https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp';
 
       switch (agent) {
-        case 'chatgpt':
+        case 'chatgpt': {
+          const sel = demo.querySelector('.ddRailDot.sel');
+          if (sel) {
+            await press(sel, token);
+            await wait(240, token);
+          }
+          const search = demo.querySelector('.ddSearch');
+          if (search) {
+            await press(search, token);
+            const text = search.querySelector('.ddSearchText');
+            text.textContent = '';
+            for (const char of 'Opera Agent') {
+              text.textContent += char;
+              await wait(TYPE_PACE + 10, token);
+            }
+            await wait(320, token);
+          }
+          const install = demo.querySelector('.ddInstallBtn');
+          if (install) {
+            await press(install, token);
+            install.textContent = 'Installing…';
+            await wait(620, token);
+            demo.classList.add('is-row', 'is-done');
+          }
+          break;
+        }
         case 'claude': {
           await press(demo.querySelector('.ddBtnCreate'), token);
           demo.classList.add('is-modal');
