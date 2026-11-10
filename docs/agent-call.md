@@ -16,7 +16,7 @@ npm i -g opera-agent-mcp
 
 ## 1. Hosted MCP
 
-As of 2026-11-06, the server speaks MCP over HTTP and asks for an OAuth token before it answers.
+As of 2026-11-10, the server speaks MCP over HTTP and asks for an OAuth token before it answers.
 
 ```
 https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp
@@ -32,7 +32,7 @@ WWW-Authenticate: Bearer resource_metadata="https://.../.well-known/oauth-protec
 
 The record of what it answered without a token is
 [`proof/hosted-mcp.json`](../proof/hosted-mcp.json) — a one-shot snapshot taken on
-2026-11-06 by `node scripts/hosted-mcp-check.mjs`, which also probes that the OAuth
+2026-11-10 by `node scripts/hosted-mcp-check.mjs`, which also probes that the OAuth
 client below is still accepted by the authorization server.
 
 Add it to `opencode.json` (OpenCode V2 reads servers from `mcp.servers`, and its
