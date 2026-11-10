@@ -55,7 +55,7 @@ function requireArguments(args, required) {
 // A browser that closed mid-call must not take the server with it, because the next tool call is still worth trying.
 
 function asText(value) {
-  return { content: [{ type: 'text', text: JSON.stringify(isObject(value) ? tidyForAi(value) : value, null, 1) }] };
+  return { content: [{ type: 'text', text: JSON.stringify(isObject(value) ? tidyForAi(value) : value) }] };
 }
 
 function isObject(value) {

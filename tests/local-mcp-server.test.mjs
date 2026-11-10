@@ -362,7 +362,7 @@ test('the computed read reaches the driver and answers what it read', async () =
   });
 
   assert.deepEqual(c.driver.calls.filter(([name]) => name === 'computed'), [['computed', { selector: 'button.bold', x: undefined, y: undefined }]]);
-  assert.match(res.result.content[0].text, /"name": "Bold"/);
+  assert.match(res.result.content[0].text, /"name":\s*"Bold"/);
 });
 
 test('scroll takes pixels, the end, a target text or a selector, and nothing is required', () => {
@@ -397,7 +397,7 @@ test('scroll reaches the driver with the arguments it was given', async () => {
   });
 
   assert.deepEqual(c.driver.calls.filter(([name]) => name === 'scroll'), [['scroll', { y: 1400, end: false, text: undefined, selector: undefined }]]);
-  assert.match(res.result.content[0].text, /"movedPx": 1400/);
+  assert.match(res.result.content[0].text, /"movedPx":\s*1400/);
 });
 
 test('append reaches the driver as one call with the text intact', async () => {
@@ -411,7 +411,7 @@ test('append reaches the driver as one call with the text intact', async () => {
   });
 
   assert.deepEqual(c.driver.calls.filter(([name]) => name === 'append'), [['append', 'one more line']]);
-  assert.match(res.result.content[0].text, /"atEnd": true/);
+  assert.match(res.result.content[0].text, /"atEnd":\s*true/);
 });
 
 test('a call runs the tool and returns its result as text content', async () => {
@@ -435,7 +435,7 @@ test('a stream reaches the driver as one call with its events intact', async () 
     params: { name: 'stream_keys', arguments: { events } }
   });
 
-  assert.match(res.result.content[0].text, /"events": 2/);
+  assert.match(res.result.content[0].text, /"events":\s*2/);
   assert.deepEqual(c.driver.calls.filter(([name]) => !['ensureFront', 'settle'].includes(name)), [['keys', events]]);
 });
 
