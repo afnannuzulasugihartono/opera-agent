@@ -298,6 +298,8 @@ html.js .quickStart.in .quickDoor:nth-child(3) { animation-delay: .19s; }
   width: min(100%, calc(72vh * 1024 / 574));
   margin: 18px auto 0;
   aspect-ratio: 1024 / 574;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 340px;
   border: 1px solid var(--line-strong);
   border-radius: 14px;
   overflow: hidden;
