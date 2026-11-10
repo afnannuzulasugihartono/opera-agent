@@ -498,42 +498,154 @@ pre {
   white-space: pre-wrap;
 }
 
-/* WHY THE VERIFY READS AS ONE INSTRUMENT: two labeled commands in one frame, the server's digest and the file the reader downloaded side by side, instead of two loose terminal boxes. */
+/* WHY THE VERIFY READS AS A SELF-CHECKING INSTRUMENT: the reader must never compare two 64-character strings with their eyes, so the panel takes the two lines from the two commands and answers on its own. */
 
 .verifyPanel {
   margin: 14px 0 0;
-  border: 1px solid var(--line);
+  border: 1px solid var(--line-strong);
   border-radius: var(--radius);
   background: var(--surface);
   overflow: hidden;
+  transition: border-color .25s var(--ease);
 }
 
+.verifyPanel.is-match { border-color: var(--accent); }
+.verifyPanel.is-mismatch { border-color: var(--danger); }
+
+.verifyHead {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 16px;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface-2);
+}
+
+.verifyShield { width: 19px; height: 19px; color: var(--accent); flex: none; }
+.verifyPanel.is-mismatch .verifyShield { color: var(--danger); }
+.verifyPanel.is-match .verifyShield { color: var(--accent); }
+
+.verifyHeadTitle { font: 600 13px/1 var(--mono); letter-spacing: .07em; color: var(--ink); }
+
+.verifyStatus {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-left: auto;
+  padding: 4px 10px;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  font: 500 11px/1 var(--mono);
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.verifyStatusDot { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); flex: none; }
+
+.verifyPanel.is-match .verifyStatus { border-color: var(--accent); color: var(--accent); }
+.verifyPanel.is-match .verifyStatusDot { background: var(--accent); }
+.verifyPanel.is-mismatch .verifyStatus { border-color: var(--danger); color: var(--danger); }
+.verifyPanel.is-mismatch .verifyStatusDot { background: var(--danger); }
+
 .verifyBlock {
-  padding: 12px 16px 13px;
+  padding: 13px 16px 14px;
+  display: grid;
+  gap: 10px;
 }
 
 .verifyBlock + .verifyBlock {
   border-top: 1px solid var(--line);
 }
 
-.verifyPanel pre {
-  margin: 0;
-  padding: 0;
-  border: 0;
-  border-radius: 0;
-  background: none;
-  font: 13px/1.7 var(--mono);
+.verifyRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
 }
 
 .verifyTag {
-  display: block;
-  margin-bottom: 8px;
   color: var(--muted);
   font: 500 11px/1 var(--mono);
+  letter-spacing: .05em;
+  text-transform: uppercase;
 }
 
+.verifyCopy {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 26px;
+  padding: 0 9px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--muted);
+  font: 500 10.5px/1 var(--mono);
+  cursor: pointer;
+  transition: color .15s var(--ease), border-color .15s var(--ease);
+}
 
+.verifyCopy:hover { color: var(--ink); border-color: var(--accent); }
+.verifyCopy:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.verifyCopyIcon { width: 13px; height: 13px; }
+.verifyCopyCheck { display: none; width: 13px; height: 13px; color: var(--accent); }
+.verifyCheckIcon { display: none; width: 13px; height: 13px; color: var(--accent); }
 
+.verifyCopy.is-copied .verifyCopyIcon { display: none; }
+.verifyCopy.is-copied .verifyCopyCheck { display: block; }
+
+.verifyPanel pre {
+  margin: 0;
+  padding: 11px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  font: 12px/1.65 var(--mono);
+  overflow-x: auto;
+}
+
+.verifyInput {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  color: var(--ink);
+  font: 12.5px/1.4 var(--mono);
+  letter-spacing: .02em;
+  transition: border-color .15s var(--ease), box-shadow .15s var(--ease);
+}
+
+.verifyInput::placeholder { color: var(--muted); opacity: .75; }
+.verifyInput:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 28%, transparent); }
+.verifyInput:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.verifyInput.is-valid { border-color: var(--accent); }
+.verifyPanel.is-mismatch .verifyInput.is-valid { border-color: var(--danger); }
+
+.verifyVerdict {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  padding: 12px 16px;
+  border-top: 1px solid var(--line);
+  background: transparent;
+  color: var(--muted);
+  font: 13px/1.5 var(--font);
+  transition: color .2s var(--ease);
+}
+
+.verifyVerdictIcon { width: 17px; height: 17px; flex: none; display: none; }
+.verifyVerdictWait { display: block; }
+.verifyPanel.is-match .verifyVerdictWait,
+.verifyPanel.is-mismatch .verifyVerdictWait { display: none; }
+.verifyPanel.is-match .verifyVerdictMatch { display: block; }
+.verifyPanel.is-mismatch .verifyVerdictMismatch { display: block; }
+
+.verifyPanel.is-match .verifyVerdict { color: var(--accent); }
+.verifyPanel.is-mismatch .verifyVerdict { color: var(--danger); }
 
 /* WHY ONE COLUMN FOR EVERYTHING BELOW THE CARDS: the five cards answer the only question that matters at a glance; the prose after them is one narrow read, centered so the eye does not ping-pong. */
 
