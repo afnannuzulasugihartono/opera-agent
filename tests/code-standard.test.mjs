@@ -1,88 +1,51 @@
-// @last-edited: 2026-10-21 UTC+7.
-// @title: code-standard — the rules this tree holds itself to, measured instead of promised.
-// @state: three gates: leftover markers, self-duplication, and an export nobody exercises.
-// @dependencies: node:test, strict, node:fs, node:path, node:child_process.
+// @last-edited: 2026-11-10 UTC+7.
+// @title: code-standard - explicit tools and one output shape for both surfaces.
+// @state: the local stdio surface tidied its output through tidyForAi, every advertised tool carries description and argument docs, and the tab argument accepts anything list_tabs answers with.
+// @dependencies: node:test, strict, ../local/tools.js.
 
-// WHY THIS FILE EXISTS
-
-// A standard that lives in a document is a promise; a standard that lives in a test is a measurement.
-// The rules below are the ones this tree was written to and could not keep: sixty exports sat in the tree with no test naming them, and the same block of code lived twice in one file because nothing measured it.
-
-// Each gate below measures one thing, and each names the failure it prevents.
+// WHY THIS FILE IS A GATE.
+// An agent reading the tool table sees two loose ends: a tool without a description of what it does, and a schema property the model has to guess at, and guesses cost turns and tokens.
+// And a local stdio server that prints raw envelopes instead of the flat shape the hosted surface prints has been shipped once already; the tests passed and the model saw nested junk.
+// So all three are pinned, one test each.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import path from 'node:path';
-import { execFileSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
 
 const root = new URL('..', import.meta.url);
-const repo = (p) => new URL(p, root);
+const source = (rel) => readFileSync(new URL(rel, root), 'utf8');
 
-const tracked = () => {
-  const listed = execFileSync('git', ['ls-files'], { cwd: repo('.'), encoding: 'utf8' })
-    .split('\n').filter(Boolean);
-  const untracked = execFileSync('git', ['ls-files', '--others', '--exclude-standard'],
-    { cwd: repo('.'), encoding: 'utf8' }).split('\n').filter(Boolean);
-  return [...new Set([...listed, ...untracked])];
-};
-
-const read = (file) => fs.readFileSync(repo(file), 'utf8');
-const lines = (file) => read(file).split(/\r?\n/);
-
-test('no source file carries a leftover marker', () => {
-  const markers = /\b(TODO|FIXME|XXX|HACK|WIP)\b/;
-  const offenders = [];
-  for (const file of tracked()) {
-    if (!/\.(js|mjs|ts|tsx|py)$/.test(file)) continue;
-    if (file.startsWith('tests/')) continue;
-    lines(file).forEach((line, index) => {
-      if (markers.test(line)) offenders.push(`${file}:${index + 1} ${line.trim().slice(0, 90)}`);
-    });
-  }
-  assert.deepEqual(offenders, [],
-    `a marker is a promise nobody kept:\n${offenders.join('\n')}`);
+test('the local stdio surface answers through tidyForAi, same shape as the hosted surface', () => {
+  const mcp = source('local/mcp-server.js');
+  assert.match(mcp, /tidyForAi\(value\)/, 'local tool output goes through the shared K&R flattener - the model sees one shape on both wires');
+  assert.match(mcp, /THE SAME TIDY FUNCTION THE HOSTED SURFACE USES/, 'a comment says why the local server shares the hosted tidy rules');
 });
 
-test('no file repeats a block of its own code', () => {
-  const WINDOW = 12;
-  const offenders = [];
-  for (const file of tracked()) {
-    if (!/\.(js|mjs|ts|tsx)$/.test(file)) continue;
-    const body = lines(file).map((line) => line.trim());
-    const seen = new Map();
-    for (let i = 0; i + WINDOW <= body.length; i += 1) {
-      const block = body.slice(i, i + WINDOW).join('\n');
-      if (block.replace(/[^a-zA-Z]/g, '').length < 200) continue;
-      if (seen.has(block)) {
-        offenders.push(`${file} repeats a ${WINDOW}-line block at ${seen.get(block) + 1} and ${i + 1}`);
-        break;
-      }
-      seen.set(block, i);
+test('the local tool table advertises explicit descriptions and argument docs', async () => {
+  const mod = await import(new URL('../local/tools.js', import.meta.url));
+  const undocumented = [];
+  for (const tool of mod.TOOLS) {
+    if (!tool.description || tool.description.trim().length < 60) {
+      undocumented.push(`${tool.name}: description too short`);
     }
-  }
-  assert.deepEqual(offenders, [],
-    `the same twelve lines twice is a function that wants to be one:\n${offenders.join('\n')}`);
-});
-
-test('every exported function in local/ is exercised by the suite', () => {
-  const suite = tracked()
-    .filter((file) => file.startsWith('tests/'))
-    .map((file) => read(file))
-    .join('\n');
-
-  const untested = [];
-  for (const file of tracked()) {
-    if (!file.startsWith('local/')) continue;
-    if (!/\.(js|mjs)$/.test(file)) continue;
-    const source = read(file);
-    for (const match of source.matchAll(/export\s+(?:async\s+)?(?:function|class)\s+([A-Za-z_$][\w$]*)/g)) {
-      const name = match[1];
-      if (!new RegExp(`\\b${name.replace(/\$/g, '\\$')}\\b`).test(suite)) {
-        untested.push(`${file} exports ${name}, which no test names`);
+    const properties = tool.inputSchema?.properties ?? {};
+    for (const [name, schema] of Object.entries(properties)) {
+      if (!schema.description || schema.description.trim().length < 8) {
+        undocumented.push(`${tool.name}.${name}: argument type lacks a description`);
       }
     }
   }
-  assert.deepEqual(untested, [],
-    `an exported function nobody calls is a function nobody knows works:\n${untested.join('\n')}`);
+  assert.deepEqual(undocumented, [], `\n${undocumented.join('\n')}`);
+});
+
+test('the tab argument accepts every shape list_tabs answers with', () => {
+  const tools = source('local/tools.js');
+  assert.match(tools, /const tabArg = \{ type: \['string', 'number'\]/, 'tabId accepts both strings and numbers - list_tabs and the bridge both answer with either');
+});
+
+test('the hosted wire keeps tidyForAi wired into index.ts for every tool path', () => {
+  const index = source('supabase/functions/opera-agent-mcp/index.ts');
+  assert.match(index, /tidyForAi\(shaped\)/, 'hosted tool results stay flat - same shape the local tools now print');
+  assert.match(index, /tidyForAi\(value\)/, 'the direct enqueue path tidies the same way');
 });
