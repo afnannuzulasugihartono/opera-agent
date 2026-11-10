@@ -1315,3 +1315,7 @@ html.js .quickStart.in .quickDoor:nth-child(3) { animation-delay: .19s; }
 .kiloHint code { font-family: var(--mono); color: #a5a397; }
 
 .kaiBrand { background: #1C1C1C; color: #FFD02F; }
+.kiloStatusBar { display: flex; align-items: center; justify-content: space-between; gap: 12px; height: 24px; padding: 0 12px; background: #141414; border-top: 1px solid rgba(255, 255, 255, .07); color: #8f8d82; font: 500 8px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+.kiloStatusLeft { display: flex; align-items: center; gap: 6px; }
+.kiloStatusDot { width: 6px; height: 6px; border-radius: 50%; background: #3fdd78; }
+.kiloStatusRight { font-family: var(--mono); color: #6f6d64; }
