@@ -295,9 +295,9 @@ html.js .quickStart.in .quickDoor:nth-child(3) { animation-delay: .19s; }
 
 .mcpDemo {
   position: relative;
-  margin: 18px 0 20px;
-  width: 100%;
-  aspect-ratio: 16 / 9.2;
+  margin: 18px auto 20px;
+  width: min(100%, 680px);
+  aspect-ratio: 1024 / 574;
   border: 1px solid var(--line-strong);
   border-radius: 14px;
   overflow: hidden;
@@ -489,6 +489,7 @@ html.js .quickStart.in .quickDoor:nth-child(3) { animation-delay: .19s; }
 .ddLine { opacity: 0; transition: opacity .18s var(--ease); }
 .ddLine.is-on { opacity: 1; }
 .ddTb.is-pressed { transform: scale(.9); }
+
 /* srOnly para practicing-agent: the animated demos carry the install instructions visually; the identical text stays available for screen readers. */
 
 .steps.srOnly {
@@ -522,3 +523,56 @@ html.js .quickStart.in .quickDoor:nth-child(3) { animation-delay: .19s; }
 .mcpDemo[data-agent="codex"] .ddClose::before, .mcpDemo[data-agent="codex"] .ddClose::after,
 .mcpDemo[data-agent="claude-code"] .ddClose::before, .mcpDemo[data-agent="claude-code"] .ddClose::after,
 .mcpDemo[data-agent="terminal"] .ddClose::before, .mcpDemo[data-agent="terminal"] .ddClose::after { background: #ffffff; }
+
+/* brand title bars taken from the real products: Claude black warm + coral, ChatGPT green-black, terminals black */
+
+.mcpDemo .ddTitleBar { --bar: var(--surface-2); }
+.mcpDemo .ddBrand { background: var(--surface-2); }
+.mcpDemo .brandMark { width: 18px; height: 18px; }
+
+.mcpDemo[data-agent="chatgpt"] { --bar: #212121; }
+.mcpDemo[data-agent="chatgpt"] .ddTitleBar { background: #212121; color: #EDEDED; }
+.mcpDemo[data-agent="chatgpt"] .ddGlyphs i { background: #EDEDED; }
+.mcpDemo[data-agent="chatgpt"] .ddBrand { background: transparent; color: #EDEDED; }
+.mcpDemo[data-agent="chatgpt"] .ddTbAgent .ddBrand { color: #10a37f; }
+.mcpDemo[data-agent="chatgpt"] .ddRow .ddExistingIcon { background: #212121; color: #EDEDED; }
+
+.mcpDemo[data-agent="claude"] { --bar: #1F1E1D; }
+.mcpDemo[data-agent="claude"] .ddTitleBar { background: #1F1E1D; color: #FAF9F6; }
+.mcpDemo[data-agent="claude"] .ddGlyphs i { background: #FAF9F6; }
+.mcpDemo[data-agent="claude"] .ddBrand { background: transparent; color: #CC785C; }
+.mcpDemo[data-agent="claude"] .ddTbAgent .ddBrand { color: #CC785C; }
+
+.mcpDemo[data-agent="codex"] { --bar: #0E0E0E; }
+.mcpDemo[data-agent="codex"] .ddTitleBar { background: #0E0E0E; color: #ECECEC; }
+.mcpDemo[data-agent="codex"] .ddGlyphs i, .mcpDemo[data-agent="codex"] .ddBrand { color: #ECECEC; background: transparent; border-color: #ECECEC; }
+.mcpDemo[data-agent="codex"] .ddTbAgent .ddBrand { color: #D9B365; }
+
+.mcpDemo[data-agent="claude-code"] { --bar: #0E0E0E; }
+.mcpDemo[data-agent="claude-code"] .ddTitleBar { background: #0E0E0E; color: #FAF9F6; }
+.mcpDemo[data-agent="claude-code"] .ddGlyphs i, .mcpDemo[data-agent="claude-code"] .ddBrand { color: #FAF9F6; background: transparent; }
+.mcpDemo[data-agent="claude-code"] .ddTbAgent .ddBrand { color: #CC785C; }
+
+.mcpDemo[data-agent="opencode"] { --bar: #0E0E0E; }
+.mcpDemo[data-agent="opencode"] .ddTitleBar { background: #0E0E0E; color: #F0F0F0; }
+.mcpDemo[data-agent="opencode"] .ddGlyphs i, .mcpDemo[data-agent="opencode"] .ddBrand { color: #F0F0F0; background: transparent; border-color: #F0F0F0; }
+.mcpDemo[data-agent="opencode"] .ddTbAgent .ddBrand { color: #F0F0F0; }
+
+.mcpDemo[data-agent="vscode"] { --bar: #007ACC; }
+.mcpDemo[data-agent="vscode"] .ddTitleBar { background: #007ACC; color: #FFFFFF; }
+.mcpDemo[data-agent="vscode"] .ddGlyphs i, .mcpDemo[data-agent="vscode"] .ddBrand { color: #FFFFFF; background: transparent; border-color: #FFFFFF; }
+.mcpDemo[data-agent="vscode"] .ddTbAgent .ddBrand { color: #007ACC; }
+
+.mcpDemo[data-agent="kilo"] { --bar: #1C1C1C; }
+.mcpDemo[data-agent="kilo"] .ddTitleBar { background: #1C1C1C; color: #FFD02F; }
+.mcpDemo[data-agent="kilo"] .ddGlyphs i, .mcpDemo[data-agent="kilo"] .ddBrand { color: #FFD02F; background: transparent; border-color: #FFD02F; }
+.mcpDemo[data-agent="kilo"] .ddTbAgent .ddBrand { color: #FFD02F; }
+
+.mcpDemo[data-agent="cursor"] { --bar: #0B0B0B; }
+.mcpDemo[data-agent="cursor"] .ddTitleBar { background: #0B0B0B; color: #F5F5F5; }
+.mcpDemo[data-agent="cursor"] .ddGlyphs i, .mcpDemo[data-agent="cursor"] .ddBrand { color: #F5F5F5; background: transparent; border-color: #F5F5F5; }
+
+.mcpDemo[data-agent="terminal"] { --bar: #1C1C1C; }
+.mcpDemo[data-agent="terminal"] .ddTitleBar { background: #1C1C1C; color: #EDEDED; }
+.mcpDemo[data-agent="terminal"] .ddGlyphs i, .mcpDemo[data-agent="terminal"] .ddBrand { color: #EDEDED; background: transparent; border-color: #EDEDED; }
+.mcpDemo[data-agent="terminal"] .ddTbAgent .ddBrand { color: #CB3837; }
