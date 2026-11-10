@@ -1122,7 +1122,7 @@ html.js .quickStart.in .quickDoor:nth-child(3) { animation-delay: .19s; }
 @media (max-width: 640px) { .mcpTrack { grid-auto-columns: 86vw; scroll-padding-inline: 12px; } .mcpCat { padding: 14px 12px 12px; } .mcpCard { padding: 12px; } }
 @media (prefers-reduced-motion: no-preference) { .mcpTrack { scroll-behavior: smooth; } }
 
-/* OPENCODE DESKTOP - replica of the real app: hamburger/grid/search title bar, session sidebar, shell tool card, @-context composer with model picker, Search MCPs dialog + OAuth browser window */
+/* OPENCODE DESKTOP - reference replica: title bar, session sidebar, welcome/split view, integrated terminal, composer with model picker, Search MCPs dialog + OAuth browser window */
 
 .ocDeskWin { display: flex; flex-direction: column; width: 82%; height: 400px; background: #0c0c0c; overflow: hidden; }
 
@@ -1138,7 +1138,6 @@ html.js .quickStart.in .quickDoor:nth-child(3) { animation-delay: .19s; }
 .ocGlyphs .ddClose::after { transform: rotate(-45deg); }
 .ocSessionPill { display: flex; align-items: center; gap: 8px; padding: 4px 10px; border-radius: 6px; background: #1a1a1c; color: #ececec; font: 450 10px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; white-space: nowrap; }
 .ocSessionClose { color: #6f6d64; }
-.ocTitleRight svg { color: #6f6d64; }
 
 .ocDeskBody { flex: 1; min-height: 0; display: flex; }
 .ocSide { width: 168px; flex: none; display: grid; grid-template-rows: auto 1fr auto; row-gap: 2px; padding: 10px 10px 10px 12px; border-right: 1px solid rgba(255, 255, 255, .06); background: #101010; }
@@ -1155,45 +1154,64 @@ html.js .quickStart.in .quickDoor:nth-child(3) { animation-delay: .19s; }
 .ocSidePlan { font: 400 7.5px/1.25 system-ui, sans-serif; color: #6f6d64; }
 
 .ocMain { position: relative; flex: 1; min-width: 0; display: flex; flex-direction: column; background: #0c0c0c; }
-.ocOutput { flex: 1; min-height: 0; display: grid; align-content: start; gap: 8px; padding: 12px 14px 4px; }
+.ocSplitRow { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr); }
+.ocSplitRow.has-terminal { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+.ocOutPane { display: grid; align-content: start; gap: 7px; padding: 10px 12px; min-width: 0; }
+.ocWelcome { display: grid; justify-items: center; gap: 7px; padding: 16px 10px 6px; color: #ececec; text-align: center; align-self: center; }
+.ocWelcomeBolt { opacity: .85; }
+.ocWelcomeTitle { font: 600 11.5px/1.2 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #ececec; }
+.ocWelcomeHint { font: 450 8.5px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #6f6d64; }
+.ocWelcomeHint kbd { padding: 1px 5px; border-radius: 3px; border: 1px solid rgba(255, 255, 255, .16); background: #1c1c1e; color: #a5a397; font: 500 9px/1.3 var(--mono); }
+
 .ocMetaRow { display: flex; align-items: center; gap: 6px; color: #6f6d64; font: 530 9px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
 .ocMetaExit { color: #3ecf8e; font-family: var(--mono); }
 
 .ocToolCard { display: grid; gap: 0; border: 1px solid rgba(255, 255, 255, .08); border-radius: 8px; background: #101010; overflow: hidden; }
-.ocToolHead { display: flex; align-items: center; gap: 8px; padding: 7px 10px; background: #101010; border-bottom: 1px solid rgba(255, 255, 255, .06); }
-.ocToolGlyph { display: grid; place-items: center; width: 18px; height: 18px; border-radius: 4px; background: rgba(255, 255, 255, .04); color: #b7b5aa; }
-.ocToolTitle { font: 600 9.5px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #e8e6dc; }
-.ocToolPath { font: 450 8.5px/1 var(--mono); color: #6f6d64; }
-.ocToolBody { padding: 9px 12px 10px; font: 10px/1.65 var(--mono); color: #d8d6cb; display: grid; gap: 1px; }
+.ocToolHead { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-bottom: 1px solid rgba(255, 255, 255, .06); background: #101010; }
+.ocToolGlyph { display: grid; place-items: center; width: 17px; height: 17px; border-radius: 4px; background: rgba(255, 255, 255, .04); color: #b7b5aa; }
+.ocToolTitle { font: 600 9px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #e8e6dc; }
+.ocToolPath { font: 450 8px/1 var(--mono); color: #6f6d64; }
+.ocToolBody { padding: 8px 11px 9px; font: 10px/1.65 var(--mono); color: #d8d6cb; display: grid; gap: 1px; }
 .ocCmdLine { display: flex; gap: 6px; align-items: baseline; min-height: 1.6em; }
 .ocTermPrompt { color: #6f6d64; }
 .ocTermCmd { color: #f7f6f1; }
 .ocTermCaret { display: inline-block; width: 6px; height: 11px; background: #f7f6f1; vertical-align: -1px; animation: ocCaretBlink 1.05s steps(1) infinite; }
+.ocTermCaretBlock { display: inline-block; width: 6px; height: 11px; background: #3ecf8e; vertical-align: -1px; animation: ocCaretBlink 1.05s steps(1) infinite; margin-left: 1px; }
 @keyframes ocCaretBlink { 50% { opacity: 0; } }
-.ocOut { padding-left: 12px; color: #a5a397; font-size: 9.5px; opacity: 0; transition: opacity .22s var(--ease); }
-.ocOut.dim { color: #6f6d64; }
-.ocOut.ok { color: #3ecf8e; }
+.ocOut { padding-left: 12px; color: #a5a397; font-size: 9px; opacity: 0; transition: opacity .22s var(--ease); }
+.ocOut.dim, .ocTermLine.dim { color: #6f6d64; }
+.ocOut.ok, .ocTermLine.ok { color: #3ecf8e; }
+.ocOut.is-on, .ocTermLine.ok, .ocTermLine.dim { opacity: 1; }
 .ocOut.is-on { opacity: 1; }
 
-.ocWorkingRow.is-done { opacity: 0; }
 .ocWorkingRow { display: flex; align-items: center; gap: 8px; color: #8f8d82; font: 450 9.5px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; transition: opacity .3s var(--ease); }
 .ocWorkingDot { width: 8px; height: 8px; border-radius: 50%; border: 1.5px solid rgba(255, 255, 255, .15); border-top-color: #f7f6f1; animation: ocWorkingPulse 1s linear infinite; }
 @keyframes ocWorkingPulse { to { transform: rotate(360deg); } }
 .ocWorkingPill { margin-left: auto; padding: 3px 8px; border-radius: 4px; background: #1a1a1c; font: 500 9px/1 var(--mono); color: #ececec; }
-.mcpDemo.is-mcps .ocWorkingRow, .mcpDemo.is-browser .ocWorkingRow { visibility: hidden; }
+.ocWorkingRow.is-done { opacity: 0; }
 
-.ocComposerWrap { flex: none; display: grid; place-items: center; padding: 6px 14px 10px; }
-.ocComposerBig { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 42px; padding: 0 8px 0 10px; border: 1px solid rgba(255, 255, 255, .14); border-radius: 21px; background: #1c1c1e; }
-.ocPlusBtn { flex: none; width: 26px; height: 26px; display: grid; place-items: center; border: 0; border-radius: 50%; background: transparent; color: #b7b5aa; cursor: pointer; }
+.ocTerminal { display: flex; flex-direction: column; background: #0a0a0a; border-left: 1px solid rgba(255, 255, 255, .06); min-width: 0; }
+.ocTermHead { display: flex; align-items: center; gap: 5px; height: 20px; padding: 0 10px; background: #0d0d0d; border-bottom: 1px solid rgba(255, 255, 255, .05); }
+.ocTermDot { width: 7px; height: 7px; border-radius: 50%; background: #3a3a3c; }
+.ocTermTitle { margin-left: 6px; font: 500 8px/1 var(--mono); color: #6f6d64; letter-spacing: .02em; }
+.ocTermBody { flex: 1; padding: 8px 11px; font: 9.5px/1.65 var(--mono); color: #d8d6cb; display: grid; align-content: start; gap: 1px; overflow: hidden; }
+.ocTermLine { min-height: 1.6em; white-space: pre-wrap; }
+.ocTermType { color: #ececec; }
+
+.ocComposerWrap { flex: none; display: grid; padding: 6px 12px 10px; }
+.ocComposerBig { display: flex; align-items: center; gap: 9px; width: 100%; min-height: 40px; padding: 0 8px 0 9px; border: 1px solid rgba(255, 255, 255, .14); border-radius: 20px; background: #1c1c1e; }
+.ocPlusBtn { flex: none; width: 25px; height: 25px; display: grid; place-items: center; border: 0; border-radius: 50%; background: transparent; color: #b7b5aa; cursor: pointer; }
 .ocPlusBtn:hover { background: rgba(255, 255, 255, .06); color: #ececec; }
-.ocModelBtn2, .ocBuildBtn, .ocMaxBtn { display: flex; align-items: center; gap: 5px; padding: 6px 8px; border-radius: 7px; color: #a5a397; font: 500 9.5px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; white-space: nowrap; }
+.ocComposerRight { margin-left: auto; display: flex; align-items: center; gap: 2px; }
+.ocModelBtn2, .ocBuildBtn, .ocMaxBtn { display: flex; align-items: center; gap: 5px; padding: 6px 7px; border-radius: 7px; color: #a5a397; font: 500 9px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; white-space: nowrap; }
 .ocModelBtn2 { color: #d8d6cb; }
 .ocBuildBtn, .ocMaxBtn { color: #8f8d82; }
-.ocStopBtn { flex: none; width: 26px; height: 26px; display: grid; place-items: center; border: 0; border-radius: 50%; background: #2b2b2e; color: #ececec; cursor: pointer; }
-.ocComposerRight { margin-left: auto; display: flex; align-items: center; gap: 3px; }
+.ocStopBtn { flex: none; width: 24px; height: 24px; display: grid; place-items: center; border: 0; border-radius: 50%; background: #2b2b2e; color: #ececec; cursor: pointer; }
 
-.ocSlash { position: absolute; z-index: 30; left: 50%; transform: translateX(-50%); bottom: 66px; display: none; align-items: center; gap: 9px; padding: 7px 10px 7px 8px; border-radius: 9px; background: #1c1c1e; border: 1px solid rgba(255, 255, 255, .12); box-shadow: 0 10px 30px rgba(0, 0, 0, .5); font: 500 10.5px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #ececec; white-space: nowrap; }
-.mcpDemo.is-slash .ocSlash { display: flex; }
+.ocSlash { position: absolute; z-index: 30; left: 50%; transform: translateX(-50%); bottom: 62px; display: none; align-items: center; gap: 9px; padding: 7px 10px 7px 8px; border-radius: 9px; background: #1c1c1e; border: 1px solid rgba(255, 255, 255, .12); box-shadow: 0 10px 30px rgba(0, 0, 0, .5); font: 500 10.5px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #ececec; white-space: nowrap; }
+.ocSlashTerminal, .ocSlashMcp { display: none; }
+.mcpDemo.is-slash-terminal .ocSlashTerminal { display: flex; }
+.mcpDemo.is-slash-mcp .ocSlashMcp { display: flex; }
 .ocSlash svg { color: #8f8d82; }
 .ocSlashCmd { font-family: var(--mono); color: #f7f6f1; }
 .ocSlashLabel { color: #a5a397; font-weight: 450; }
@@ -1264,4 +1282,4 @@ html.js .quickStart.in .quickDoor:nth-child(3) { animation-delay: .19s; }
 .ocConsentDecided { display: none; align-items: center; justify-content: center; gap: 9px; color: #3ecf8e; font: 600 10.5px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; padding: 6px 0; }
 .mcpDemo.is-authed .ocConsentDecided { display: inline-flex; }
 .mcpDemo.is-authed .ocConsentRow { display: none; }
-@media (prefers-reduced-motion: reduce) { .ocWorkingDot, .ocTermCaret { animation: none; } .ocTermCaret { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .ocWorkingDot, .ocTermCaret, .ocTermCaretBlock { animation: none; } .ocTermCaret, .ocTermCaretBlock { opacity: 1; } }

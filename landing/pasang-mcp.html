@@ -520,21 +520,36 @@
                       <div class="ocSideFoot"><span class="ocSideAvatar">A</span><span class="ocSideWho"><span class="ocSideName2">Afnan</span><span class="ocSidePlan">Personal</span></span></div>
                     </aside>
                     <div class="ocMain">
-                      <div class="ocOutput">
-                        <div class="ocMetaRow"><svg viewBox="0 0 24 24" width="10" height="10" aria-hidden="true"><path d="M9 6.5 13.5 11 9 15.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Used 1 shell<span class="ocMetaExit">· exit 0</span></div>
-                        <div class="ocToolCard">
-                          <div class="ocToolHead">
-                            <span class="ocToolGlyph"><svg viewBox="0 0 24 24" width="13" height="13" aria-hidden="true"><rect x="3" y="4.5" width="18" height="15" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M7 9.5l3.5 3L7 15.5M12.5 15h4" stroke="var(--accent)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
-                            <span class="ocToolTitle">Shell</span>
-                            <span class="ocToolPath">antarctica-site</span>
+                      <div class="ocSplitRow" id="ocSplitRow">
+                        <div class="ocOutPane" id="ocOutPane">
+                          <div class="ocWelcome" id="ocWelcome">
+                            <svg class="ocWelcomeBolt" viewBox="0 0 24 24" width="34" height="34" aria-hidden="true"><path d="M11.3 2 6.2 12.4h4.6L9.3 22l7.4-10.9h-4.7L14.4 2z" fill="var(--accent)"/></svg>
+                            <span class="ocWelcomeTitle">Fresh session</span>
+                            <span class="ocWelcomeHint">Type <kbd>/</kbd> in the composer to see commands.</span>
                           </div>
-                          <div class="ocToolBody">
-                            <div class="ocCmdLine"><span class="ocTermPrompt">$</span><span class="ocTermCmd" id="ocTermCmd"></span><span class="ocTermCaret"></span></div>
-                            <div class="ocOut dim">adding opera-agent to opencode.json…</div>
-                            <div class="ocOut ok">✓ opera-agent added · 35 tools · needs authentication</div>
+                          <div class="ocMetaRow" id="ocMetaRow" style="display:none"><svg viewBox="0 0 24 24" width="10" height="10" aria-hidden="true"><path d="M9 6.5 13.5 11 9 15.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Used 1 shell<span class="ocMetaExit">· exit 0</span></div>
+                          <div class="ocToolCard" id="ocToolCard" style="display:none">
+                            <div class="ocToolHead">
+                              <span class="ocToolGlyph"><svg viewBox="0 0 24 24" width="13" height="13" aria-hidden="true"><rect x="3" y="4.5" width="18" height="15" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M7 9.5l3.5 3L7 15.5M12.5 15h4" stroke="var(--accent)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                              <span class="ocToolTitle">Shell</span>
+                              <span class="ocToolPath">antarctica-site</span>
+                            </div>
+                            <div class="ocToolBody">
+                              <div class="ocCmdLine"><span class="ocTermPrompt">$</span><span class="ocTermCmd" id="ocTermCmd"></span><span class="ocTermCaret"></span></div>
+                              <div class="ocOut dim" id="ocOutDim">adding opera-agent to opencode.json…</div>
+                              <div class="ocOut ok" id="ocOutOk">✓ opera-agent added · 35 tools · needs authentication</div>
+                            </div>
+                          </div>
+                          <div class="ocWorkingRow" id="ocWorkingRow" style="visibility:hidden"><span class="ocWorkingDot"></span><span class="ocWorkingText">Working</span><span class="ocWorkingPill">1 shell</span></div>
+                        </div>
+                        <div class="ocTerminal" id="ocTerminal" style="display:none">
+                          <div class="ocTermHead"><span class="ocTermDot"></span><span class="ocTermDot"></span><span class="ocTermDot"></span><span class="ocTermTitle">Terminal — antarctica-site</span></div>
+                          <div class="ocTermBody" id="ocTermBody">
+                            <div class="ocTermLine"><span class="ocTermPrompt">PS C:\antarctica-site&gt;</span> <span class="ocTermCmd" id="ocTermType"></span><span class="ocTermCaret ocTermCaretBlock"></span></div>
+                            <div class="ocTermLine dim" id="ocTermDim">writing to opencode.json</div>
+                            <div class="ocTermLine ok" id="ocTermOk">✓ opera-agent · added — needs authentication</div>
                           </div>
                         </div>
-                        <div class="ocWorkingRow" id="ocWorkingRow"><span class="ocWorkingDot"></span><span class="ocWorkingText">Working</span><span class="ocWorkingPill">1 shell</span></div>
                       </div>
                       <div class="composerWrap ocComposerWrap">
                         <div class="ocComposerBig">
@@ -548,6 +563,12 @@
                             <button class="ocStopBtn" id="ocStopBtn" type="button" aria-label="Berhenti"><svg viewBox="0 0 24 24" width="12" height="12" aria-hidden="true"><rect x="7" y="7" width="10" height="10" rx="1.6" fill="currentColor"/></svg></button>
                           </span>
                         </div>
+                      </div>
+                      <div class="ocSlash ocSlashTerminal" id="slashTerminal" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" width="12" height="12" aria-hidden="true"><path d="M9 5v14M15 5v14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span class="ocSlashCmd">/terminal</span><span class="ocSlashLabel">Open a terminal</span><kbd class="ocSlashKbd">Ctrl+`</kbd>
+                      </div>
+                      <div class="ocSlash ocSlashMcp" id="slashMcp" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" width="12" height="12" aria-hidden="true"><path d="M9 5v14M15 5v14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span class="ocSlashCmd">/mcp</span><span class="ocSlashLabel">Toggle MCPs</span><kbd class="ocSlashKbd">Ctrl+;</kbd>
                       </div>
                       <div class="ocMcpDialog">
                         <div class="ocSearch"><svg viewBox="0 0 24 24" width="12" height="12" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16.2 16.2 20.5 20.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg><span class="ocSearchPh">Search MCPs</span></div>
@@ -582,9 +603,6 @@
                         </div>
                       </div>
                     </div>
-                  </div>
-                  <div class="ocSlash" aria-hidden="true">
-                    <svg viewBox="0 0 24 24" width="12" height="12" aria-hidden="true"><path d="M9 5v14M15 5v14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span class="ocSlashCmd">/mcp</span><span class="ocSlashLabel">Toggle MCPs</span><kbd class="ocSlashKbd">Ctrl+;</kbd>
                   </div>
                 </div>
                 <div class="ddWin ocBrowserWin">
@@ -630,13 +648,14 @@
                 <span class="ddChip">35 tools · connected</span>
               </div>
               <ol class="steps srOnly">
-                <li>Shell di OpenCode Desktop menjalankan: opencode mcp add opera-agent --url https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp.</li>
-                <li>Setelah tools terbaca, ketik /mcp di composer (atau Ctrl+;) lalu tekan Enter.</li>
-                <li>Dialog Search MCPs tampil; di baris opera-agent (dot oranye, Needs auth) klik Sign in.</li>
-                <li>Browser terbuka ke halaman Izin aplikasi Opera Agent; klik Izinkan.</li>
-                <li>Kembali ke OpenCode; opera-agent otomatis terpasang: dot hijau, toggle menyala.</li>
+                <li>Ketik / di composer OpenCode Desktop, pilih /terminal — panel terminal terbuka di samping.</li>
+                <li>Tempel di terminal: opencode mcp add opera-agent --url https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp.</li>
+                <li>Ketik /mcp (atau Ctrl+;), tekan Enter — dialog Search MCPs terbuka.</li>
+                <li>Di baris opera-agent (dot oranye, Needs auth) klik Sign in.</li>
+                <li>Browser terbuka ke halaman Izin aplikasi Opera Agent; klik Izinkan — opera-agent otomatis tersambung.</li>
               </ol>
             </div>
+
 
 
 
@@ -646,15 +665,16 @@
           <details class="stepsDrop">
             <summary>Langkah-langkah</summary>
             <div class="stepsDropBody">
-        <p>Satu kali di terminal — server ditambahkan ke daftar MCP (project ini; <code>--global</code> untuk semua proyek):</p>
+        <p>Satu kali di terminal - server ditambahkan ke daftar MCP (project ini; <code>--global</code> untuk semua proyek):</p>
             <div class="copybox">
                 <pre><code id="cfg-opencode">opencode mcp add opera-agent --url https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp</code></pre>
                 <button type="button" data-copy="cfg-opencode" data-i18n="copy">Salin</button>
               </div>
 <ol class="steps">
-                <li><strong>Buka composer.</strong> Klik kolom <em>Add follow-up</em> di OpenCode Desktop, ketik <code>/mcp</code>, tekan Enter — atau tekan <code>Ctrl+;</code> langsung.</li>
-                <li><strong>Ketik /mcp.</strong> Saran <em>Toggle MCPs</em> terbuka — tekan Enter. Dialog <em>Search MCPs</em> menampilkan server <code>opera-agent</code> dengan dot oranye <em>Needs auth</em>; klik <strong>Sign in</strong> di baris itu.</li>
-                <li><strong>Sign in.</strong> Browser terbuka; selesaikan OAuth — kembali ke dialog, dot jadi hijau dan toggle menyala (<code>Connected</code>).</li>
+                <li><strong>Ketik /terminal.</strong> Klik kolom <em>Add follow-up</em> di OpenCode Desktop, ketik <code>/terminal</code>, tekan Enter - panel terminal terbuka di samping output.</li>
+                <li><strong>Tempel perintah.</strong> Di terminal tempel <code>opencode mcp add opera-agent --url https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp</code> lalu Enter - muncul <code>✓ opera-agent added</code>.</li>
+                <li><strong>Ketik /mcp.</strong> Kolom composer, ketik <code>/mcp</code> (atau tekan <code>Ctrl+;</code>), tekan Enter - dialog <em>Search MCPs</em> terbuka.</li>
+                <li><strong>Klik Sign in.</strong> Di baris <code>opera-agent</code> (dot oranye <em>Needs auth</em>) klik <strong>Sign in</strong>; browser terbuka ke halaman <em>Izin aplikasi</em>; klik <strong>Izinkan</strong> - kembali ke OpenCode, dot hijau dan toggle menyala.</li>
                 <li><strong>Pakai.</strong> Tool muncul sebagai <code>opera-agent_*</code>.</li>
               </ol>
         <p>Atau mengedit manual — daftarkan di <code>mcp.servers</code> (skema V2; server tidak langsung di bawah <code>mcp</code>):</p>
