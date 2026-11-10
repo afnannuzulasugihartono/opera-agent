@@ -896,11 +896,20 @@
 
         <section data-reveal>
       <h2 id="verifikasi">Verifikasi</h2>
-      <p>Setelah pasang, tanyakan ke AI: <em>Panggil browser_status dan tampilkan jawabannya.</em> Jawaban yang benar terlihat seperti: <code>ok: true</code>, ekstensi dalam keadaan daring, versi selaras, dan device sesuai nama yang Anda pilih.</p>
-      <p>Jika <code>paired</code> false atau tidak terdeteksi: extension belum di-pair - buka <a href="./dashboard.html#pairing">Dashboard → Pairing</a> dan pair ulang.</p>
+      <p class="muted">Setelah memasang, salin prompt ini ke AI Anda:</p>
+      <div class="copybox">
+        <pre><code id="cfg-verify">Call browser_status and show me the answer.</code></pre>
+        <button type="button" data-copy="cfg-verify" data-i18n="copy">Salin</button>
+      </div>
+      <p>Jawaban yang benar: <code>ok: true</code> — ekstensi daring, versi selaras, nama device sama dengan yang Anda pilih.</p>
+      <details class="stepsDrop">
+        <summary>Kalau <code>paired</code> false</summary>
+        <div class="stepsDropBody">
+          <p>Extension belum di-pair — buka <a href="./dashboard.html#pairing">Dashboard → Pairing</a>, buat kode, tempel di extension, lalu panggil <code>browser_status</code> lagi.</p>
+        </div>
+      </details>
     </section>
 
-        <p class="meta">Satu-satunya endpoint resmi: <code>https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp</code>.</p>
   </div>
   </main>
 
