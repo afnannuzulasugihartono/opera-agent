@@ -90,7 +90,22 @@ test('the hero states the value in one sentence, and the steps live on the merge
   const fold = /<details class="sectionFold" open>\s*<summary><h2\b[^>]*>Cara memasang<\/h2><\/summary>\s*<div class="demo" aria-hidden="true">([\s\S]*?)<\/div>\s*<ol class="steps srOnly">([\s\S]*?)<\/ol>/.exec(berkas);
   assert.ok(fold, 'the install fold opens to the animated walkthrough, with the text kept underneath');
   const demo = fold[1];
-  assert.equal((demo.match(/<div class="scene s\d">/g) || []).length, 7, 'seven scenes, one per beat: desktop opens Chrome, download, extract, extensions page, installed, pairing, verify');
+  assert.equal((demo.match(/data-app="/g) || []).length, 3, 'three persistent windows: Chrome, Explorer, PowerShell');
+  assert.match(demo, /data-app="chrome"/, 'the browser is one window across every page it visits');
+  assert.match(demo, /class="chromePage pageExt"/, 'the extensions page lives inside that window, not beside it');
+  assert.match(demo, /class="chromePage pageDash"/, 'and so does the dashboard');
+  const driver = fs.readFileSync(new URL('../landing/demo.js', import.meta.url), 'utf8');
+  const sequence = [
+    'press(docks.chrome', 'press(pageDl.querySelector', 'press(docks.explorer',
+    "goTo('.pageExt'", "picker.classList.add('is-open')", "goTo('.pageDash'",
+    'openPopup(', 'press(docks.terminal'
+  ];
+  let at = -1;
+  for (const step of sequence) {
+    const next = driver.indexOf(step, at + 1);
+    assert.ok(next > at, `${step} follows the step before it`);
+    at = next;
+  }
   assert.match(demo, /class="taskbarWin"/, 'the walkthrough runs on a desktop, the way the owner lives in it');
   assert.match(demo, /tChrome/, 'and the taskbar lights the app each beat lives in');
   assert.match(demo, /Extract all/, 'the explorer names the button the reader must find');

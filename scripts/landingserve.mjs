@@ -25,7 +25,7 @@ const FILES = new Set([
   'studi.html', 'bukti.html', 'dukungan.html', 'docs.html', 'harga.html', 'site.css', 'beranda.css',
   'features.css', 'studi.css', 'bukti.css', 'download.css', 'auth.css', 'app.css', 'dashboard.css',
   'harga.css', 'docs.css', 'support.css', 'notfound.css', 'i18n.js', 'spotlight.js', 'docs.js', 'reveal.js',
-  'wayfind.js', 'palette.js', 'markdown.js', 'cursor-track.js', 'oauth/consent.html', 'fonts/instrument-sans-latin.woff2',
+  'wayfind.js', 'palette.js', 'markdown.js', 'demo.js', 'oauth/consent.html', 'fonts/instrument-sans-latin.woff2',
   'bukti/portal.jpg'
 ]);
 
