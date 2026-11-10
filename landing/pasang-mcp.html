@@ -42,7 +42,6 @@
   <div class="prose docBody">
     <p class="lang-note">Halaman ini tersedia dalam Bahasa Indonesia. / This page is available in Indonesian.</p>
     <h1>Pasang MCP</h1>
-    <p class="updated">Cloud dulu, selalu. Local khusus desktop dan CLI.</p>
 
     
     <section data-reveal>
@@ -51,25 +50,21 @@
 
       <div class="fastlaneGrid">
         <div class="fastlaneCard">
-          <span class="fastlaneTag">Prompt — untuk AI</span>
-          <h3 class="fastlaneCardTitle">Pasang Cloud via AI</h3>
-          <p class="fastlaneCardSub">Tempel prompt ini ke ChatGPT, Claude, OpenCode, Cursor, atau harness AI lain. AI yang bisa mengelola konfigurasi akan memasang Opera Agent sendiri.</p>
+          <span class="flIcon flIconAi"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 2l2.5 5.7 5.5 2-5.5 2.3L11 17.7l-2.5-5.7-5.5-2 5.5-2.3L11 2z" fill="currentColor"/><path d="M18.5 12.5l1 2.3 2.3 1-2.3 1-1 2.3-1-2.3-2.3-1 2.3-1 1-2.3z" fill="currentColor" fill-opacity=".6"/></svg></span>
+          <h3 class="fastlaneCardTitle">Prompt untuk AI</h3>
           <div class="copybox">
             <pre><code id="fastlane-prompt">Pasang MCP server Opera Agent dari https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp — daftarkan sebagai remote server harness ini, lalu verifikasi sudah terhubung dengan 35 tool.</code></pre>
             <button type="button" data-copy="fastlane-prompt" data-i18n="copy">Salin</button>
           </div>
-          <p class="fastlaneNote">OAuth sign-in dilakukan di browser yang terbuka setelah AI selesai memasang.</p>
         </div>
 
         <div class="fastlaneCard">
-          <span class="fastlaneTag">Terminal — untuk lokal</span>
-          <h3 class="fastlaneCardTitle">Satu perintah di mesin Anda — Local</h3>
-          <p class="fastlaneCardSub">Bridge loopback di mesin Anda; OpenCode, Codex, Claude Code, dan harness lain bisa menggunakannya langsung tanpa lewat cloud.</p>
+          <span class="flIcon flIconTerm"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7.5 9.5 12 5 16.5" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 16.5h7" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg></span>
+          <h3 class="fastlaneCardTitle">Perintah untuk terminal</h3>
           <div class="copybox">
             <pre><code id="fastlane-terminal">opencode mcp add opera-agent --url https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp &amp;&amp; opencode mcp list</code></pre>
             <button type="button" data-copy="fastlane-terminal" data-i18n="copy">Salin</button>
           </div>
-          <p class="fastlaneNote">Harness lain mungkin punya perintah serupa; lihat <a href="./docs.html">Docs → Tools MCP</a>.</p>
         </div>
       </div>
 
@@ -143,7 +138,6 @@
     
     <section data-reveal>
       <h2 id="hosted">Cloud MCP (hosted) — wajib untuk Web, Desktop, CLI</h2>
-      <p class="muted">Satu endpoint ke server hosted Opera Agent. Semua AI harness terhubung melalui URL yang sama — sign in satu kali via OAuth, lalu 35 tool langsung tersedia.</p>
 
       <div class="copybox">
         <pre><code id="endpoint">https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp</code></pre>
@@ -1208,7 +1202,6 @@ opencode mcp auth opera-agent</code></pre>
 
     <section data-reveal>
       <h2 id="local">Local MCP (npm) — wajib untuk Desktop dan CLI</h2>
-      <p class="muted">Bridge loopback di mesin Anda — akses langsung ke browser tanpa cloud. Wajib untuk desktop dan CLI; Web tidak membutuhkannya.</p>
 
       <div class="copybox">
         <pre><code id="local-bridge">npx opera-agent-mcp</code></pre>
