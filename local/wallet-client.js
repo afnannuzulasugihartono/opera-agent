@@ -18,7 +18,7 @@ import { randomBytes } from 'node:crypto';
 
 import { BILLING_URL, DEFAULT_BRIDGE_URL } from './lib/endpoints.js';
 
-export const DEVICE_FILE = path.join(os.homedir(), '.opera-agent', 'device.json');
+const DEVICE_FILE = path.join(os.homedir(), '.opera-agent', 'device.json');
 
 function devicePath(home) {
   return home ? path.join(home, '.opera-agent', 'device.json') : DEVICE_FILE;

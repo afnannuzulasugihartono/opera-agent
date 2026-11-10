@@ -13,7 +13,7 @@
 // The bound that matters is not the estimate but the ten actions one job may take, and that bound is enforced where the money is: in the database, on the reservation.
 
 export const ACTION_CAP = 10;
-export const BATCH_SIZE = 10;
+const BATCH_SIZE = 10;
 export const HOLD_MS = 30 * 60 * 1000;
 export const DEPOSIT_KIND = 'wallet.deposit';
 

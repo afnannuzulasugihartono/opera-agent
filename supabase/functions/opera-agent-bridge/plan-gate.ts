@@ -23,7 +23,7 @@ export function planIsActive(status) {
   return String(status || '') === 'active';
 }
 
-export function firmOnlyMethods() {
+function firmOnlyMethods() {
   return [{ prefix: 'statement.', feature: 'statements' }];
 }
 

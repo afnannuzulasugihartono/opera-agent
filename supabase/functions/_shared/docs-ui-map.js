@@ -46,7 +46,7 @@ const ENTRIES = {
   OK: { id: 'Oke', verify: DIALOG_SELECTOR },
 };
 
-export const MENU_MAP = Object.freeze(
+const MENU_MAP = Object.freeze(
   Object.fromEntries(Object.entries(ENTRIES).map(([en, entry]) => [en, Object.freeze({ ...entry })]))
 );
 

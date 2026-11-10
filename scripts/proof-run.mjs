@@ -58,7 +58,7 @@ const SHARED_PORT = 9222;
 // The extension cannot be configured after install, so the copy the proof loads is the copy the proof patches, and the bridge that copy dials belongs to the proof alone.
 // That means the everyday browser keeps its own bridge and the proof keeps a separate one: two extensions, two browsers, two loopback ports, and nobody drives the signed-in window by accident.
 
-export const PROOF_BRIDGE_PORT = 19451;
+const PROOF_BRIDGE_PORT = 19451;
 
 const EXTENSION_CANDIDATES = () => {
   const programFiles = process.env.ProgramFiles ? [process.env.ProgramFiles] : ['C:\\Program Files'];
@@ -95,7 +95,7 @@ function browserBinary(candidates) {
 // WHY THE EXTENSION IS PATCHED IN A COPY.
 // The proof proves the extension that would ship, so the only edit it makes is the address it dials; every line that decides what this product is remains the shipped line.
 
-export function extensionForProof(root, bridgePort) {
+function extensionForProof(root, bridgePort) {
   const target = fs.mkdtempSync(path.join(os.tmpdir(), 'opera-proof-extension-'));
   fs.cpSync(path.join(root, 'extension'), target, { recursive: true });
   const linkPath = path.join(target, 'worker', 'bridge-link.js');
@@ -106,7 +106,7 @@ export function extensionForProof(root, bridgePort) {
   return target;
 }
 
-export function findExtensionBrowser() {
+function findExtensionBrowser() {
   if (process.env.OPERA_PROOF_BROWSER) return process.env.OPERA_PROOF_BROWSER;
   return browserBinary(EXTENSION_CANDIDATES());
 }
@@ -260,7 +260,7 @@ const relative = (root, file) => path.relative(root, file).split(path.sep).join(
 // The builder says how many slides it was given, and the cover is added without a word in that answer.
 // The count that matters is what PowerPoint will show, so it is read from the archive's own directory.
 
-export function slideCount(bytes) {
+function slideCount(bytes) {
   const buffer = Buffer.from(bytes);
   let end = -1;
   for (let index = buffer.length - 22; index >= 0; index -= 1) {

@@ -12,7 +12,7 @@
 // The extension heartbeats every thirty seconds; a device that misses four beats in a row is gone for any purpose that involves waiting on it.
 // The same window already names a device "online" in the presence answer, so resolution and presence cannot disagree about what "now" means.
 
-export const LIVE_WINDOW_MS = 120_000;
+const LIVE_WINDOW_MS = 120_000;
 
 export type DeviceRow = {
   device_name?: unknown;

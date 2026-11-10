@@ -22,15 +22,15 @@ import os from 'node:os';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
 
-export const PROJECT_REF = 'nenmkmtvjremqphfqnfw';
+const PROJECT_REF = 'nenmkmtvjremqphfqnfw';
 export const HOSTED_MCP_URL = `https://${PROJECT_REF}.supabase.co/functions/v1/opera-agent-mcp`;
-export const AUTHZ_ENDPOINT = `https://${PROJECT_REF}.supabase.co/auth/v1/oauth/authorize`;
-export const TOKEN_ENDPOINT = `https://${PROJECT_REF}.supabase.co/auth/v1/oauth/token`;
-export const CLIENT_ID = 'bbc5eb76-f385-435b-8b13-8e339b45e633';
-export const REDIRECT_PORT = 19876;
-export const REDIRECT_PATH = '/mcp/oauth/callback';
-export const REDIRECT_URI = `http://127.0.0.1:${REDIRECT_PORT}${REDIRECT_PATH}`;
-export const SCOPE = 'openid email offline_access';
+const AUTHZ_ENDPOINT = `https://${PROJECT_REF}.supabase.co/auth/v1/oauth/authorize`;
+const TOKEN_ENDPOINT = `https://${PROJECT_REF}.supabase.co/auth/v1/oauth/token`;
+const CLIENT_ID = 'bbc5eb76-f385-435b-8b13-8e339b45e633';
+const REDIRECT_PORT = 19876;
+const REDIRECT_PATH = '/mcp/oauth/callback';
+const REDIRECT_URI = `http://127.0.0.1:${REDIRECT_PORT}${REDIRECT_PATH}`;
+const SCOPE = 'openid email offline_access';
 
 const CALLBACK_TIMEOUT_MS = 180000;
 const SKEW_MS = 60000;
