@@ -40,6 +40,16 @@
   --chrome: #a8c7fa;
   --chrome-on: #041e49;
   --yellow: #f2c94c;
+  --chrome-bg: #1f1f1f;
+  --chrome-card: #2d2e31;
+  --chrome-card-2: #35363a;
+  --chrome-line: #3c4043;
+  --chrome-text: #e3e3e3;
+  --chrome-text-dim: #a8a8a8;
+  --chrome-tone: #a8c7fa;
+  --chrome-tone-strong: #c6cbf1;
+  --chrome-tone-on: #041e49;
+  --chrome-avatar: #004a77;
   --radius: 6px;
   --radius-sm: 4px;
   --ease: cubic-bezier(.25, .46, .45, .94);

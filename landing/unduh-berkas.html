@@ -187,51 +187,127 @@
             </div>
 
             <div class="scene s3">
-              <div class="osWin chromeWin extReal">
-                <div class="tabStrip"><span class="tabItem"><span class="tabMark accent"></span>Extensions<i class="tabClose"></i></span><i class="tabNew"></i><span class="winGlyphs"><i class="wgMin"></i><i class="wgMax"></i><i class="wgClose"></i></span></div>
-                <div class="chromeNav"><svg viewBox="0 0 24 24" class="navArrow"><path d="M14.5 6 9 12l5.5 6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg><svg viewBox="0 0 24 24" class="navArrow"><path d="M9.5 6 15 12l-5.5 6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg><svg viewBox="0 0 24 24" class="navArrow"><path d="M19 9a8 8 0 1 0 .5 7" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg><span class="addrPill"><svg viewBox="0 0 24 24" class="extPuzzle"><path d="M11.7 2.6a1.3 1.3 0 0 1 1.3-1.3 1.3 1.3 0 0 1 1.3 1.3c0 .6-.4 1-.4 1.7a1.3 1.3 0 0 0 1.3 1.3h1.5a1.3 1.3 0 0 1 1.3 1.3v1.5c0 .6.4 1-.4 1.7a1.3 1.3 0 0 1 0 1.8c.8.7.4 1.1.4 1.7v1.5a1.3 1.3 0 0 1-1.3 1.3H13c-.6 0-1 .4-1.7 1.3a1.3 1.3 0 0 1-1.8 0c-.7-.9-1.1-1.3-1.7-1.3H6.3A1.3 1.3 0 0 1 5 17.6v-1.5c0-.6-.4-1-.4-1.7a1.3 1.3 0 0 1 1.2-1.3c.6 0 1-.4 1.7-1.3a1.3 1.3 0 0 1 0-1.8c-.3-.3-.5-.7-.5-.9z" fill="currentColor"/></svg><span class="typeUrl">chrome://extensions</span><span class="typeCaret"></span></span></div>
-                <div class="extPage">
-                  <div class="extTitleRow"><svg viewBox="0 0 24 24" class="extHeadPuzzle"><path d="M11.7 2.6a1.3 1.3 0 0 1 1.3-1.3 1.3 1.3 0 0 1 1.3 1.3c0 .6-.4 1-.4 1.7a1.3 1.3 0 0 0 1.3 1.3h1.5a1.3 1.3 0 0 1 1.3 1.3v1.5c0 .6.4 1-.4 1.7a1.3 1.3 0 0 1 0 1.8c.8.7.4 1.1.4 1.7v1.5a1.3 1.3 0 0 1-1.3 1.3H13c-.6 0-1 .4-1.7 1.3a1.3 1.3 0 0 1-1.8 0c-.7-.9-1.1-1.3-1.7-1.3H6.3A1.3 1.3 0 0 1 5 17.6v-1.5c0-.6-.4-1-.4-1.7a1.3 1.3 0 0 1 1.2-1.3c.6 0 1-.4 1.7-1.3a1.3 1.3 0 0 1 0-1.8c-.3-.3-.5-.7-.5-.9z" fill="currentColor"/></svg><span class="extHeading">Extensions</span><span class="extSearch"><svg viewBox="0 0 24 24" class="searchIcon"><circle cx="10.5" cy="10.5" r="6" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M15.5 15.5 21 21" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>Search extensions</span><span class="devMode"><span class="devLabel">Developer mode</span><span class="toggle chromeToggle"><span class="knob"></span></span></span></div>
-                  <div class="extActions"><span class="extBtn loadReady">Load unpacked</span><span class="extBtn">Pack extension</span><span class="extBtn">Update</span></div>
-                  <div class="extSplit">
-                    <div class="extSide"><span class="sideItem sel"><svg viewBox="0 0 24 24" class="kbdIcon"><path d="M7 8h10a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M7 11h.01M11 11h.01M15 11h.01M7 13.5h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>My extensions</span><span class="sideItem"><svg viewBox="0 0 24 24" class="kbdIcon"><path d="M7 8h10a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M7 11h.01M11 11h.01M15 11h.01M7 13.5h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>Keyboard shortcuts</span></div>
-                    <div class="extMain"><span class="extAllRow"><span class="extAllLabel">All Extensions</span><span class="pinNewRow"><span class="pinNewLabel">Pin new extensions to Toolbar</span><span class="toggle chromeToggle on small"><span class="knob knobOn"></span></span></span></span><span class="extEmpty">Ekstensi yang dimuat tampil di sini</span></div>
+              <div class="osWin chromeWin extRealChrome">
+                <div class="chromeTabStrip">
+                  <span class="chromeTab chromeTabActive"><svg viewBox="0 0 24 24" class="chromeTabIcon"><path d="M11.7 2.6a1.3 1.3 0 0 1 1.3-1.3 1.3 1.3 0 0 1 1.3 1.3c0 .6-.4 1-.4 1.7a1.3 1.3 0 0 0 1.3 1.3h1.5a1.3 1.3 0 0 1 1.3 1.3v1.5c0 .6.4 1-.4 1.7a1.3 1.3 0 0 1 0 1.8c.8.7.4 1.1.4 1.7v1.5a1.3 1.3 0 0 1-1.3 1.3H13c-.6 0-1 .4-1.7 1.3a1.3 1.3 0 0 1-1.8 0c-.7-.9-1.1-1.3-1.7-1.3H6.3A1.3 1.3 0 0 1 5 17.6v-1.5c0-.6-.4-1-.4-1.7a1.3 1.3 0 0 1 1.2-1.3c.6 0 1-.4 1.7-1.3a1.3 1.3 0 0 1 0-1.8c-.3-.3-.5-.7-.5-.9z" fill="var(--chrome-tone)"/></svg>Extensions<i class="chromeTabClose"></i></span>
+                  <span class="tabNew"></span>
+                  <span class="chromeWinGlyphs"><i class="wgMin"></i><i class="wgMax"></i><i class="wgClose"></i></span>
+                </div>
+                <div class="chromeToolbar">
+                  <svg viewBox="0 0 24 24" class="chromeNavIcon dim"><path d="M14.5 6 9 12l5.5 6" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  <svg viewBox="0 0 24 24" class="chromeNavIcon"><path d="M9.5 6 15 12l-5.5 6" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  <svg viewBox="0 0 24 24" class="chromeNavIcon"><path d="M19 9a8 8 0 1 0 .5 7" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+                  <span class="chromeOmnibox"><svg viewBox="0 0 24 24" class="chromeOmniIcon"><circle cx="9" cy="9" r="5.4" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M13 13.5 21 21" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg><span class="typeUrl chromeOmniText typingExt">chrome://extensions</span><span class="typeCaret"></span></span>
+                  <svg viewBox="0 0 24 24" class="chromeNavIcon"><path d="M9 3v3M15 3v3M3.5 9h17M5 7.5h14A1.5 1.5 0 0 1 20.5 9v9.5A1.5 1.5 0 0 1 19 20H5a1.5 1.5 0 0 1-1.5-1.5V9A1.5 1.5 0 0 1 5 7.5z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  <svg viewBox="0 0 24 24" class="chromeNavIcon"><path d="M11.7 2.6a1.3 1.3 0 0 1 1.3-1.3 1.3 1.3 0 0 1 1.3 1.3c0 .6-.4 1-.4 1.7a1.3 1.3 0 0 0 1.3 1.3h1.5a1.3 1.3 0 0 1 1.3 1.3v1.5c0 .6.4 1-.4 1.7a1.3 1.3 0 0 1 0 1.8c.8.7.4 1.1.4 1.7v1.5a1.3 1.3 0 0 1-1.3 1.3H13c-.6 0-1 .4-1.7 1.3a1.3 1.3 0 0 1-1.8 0c-.7-.9-1.1-1.3-1.7-1.3H6.3A1.3 1.3 0 0 1 5 17.6v-1.5c0-.6-.4-1-.4-1.7a1.3 1.3 0 0 1 1.2-1.3c.6 0 1-.4 1.7-1.3a1.3 1.3 0 0 1 0-1.8c-.3-.3-.5-.7-.5-.9z" fill="var(--chrome-tone)"/></svg>
+                  <span class="chromeAvatar">A</span>
+                  <svg viewBox="0 0 24 24" class="chromeNavIcon"><path d="M5 7h14M5 12h14M5 17h14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+                </div>
+                <div class="extPageChrome">
+                  <div class="extTopRow">
+                    <svg viewBox="0 0 24 24" class="extTopPuzzle"><path d="M11.7 2.6a1.3 1.3 0 0 1 1.3-1.3 1.3 1.3 0 0 1 1.3 1.3c0 .6-.4 1-.4 1.7a1.3 1.3 0 0 0 1.3 1.3h1.5a1.3 1.3 0 0 1 1.3 1.3v1.5c0 .6.4 1-.4 1.7a1.3 1.3 0 0 1 0 1.8c.8.7.4 1.1.4 1.7v1.5a1.3 1.3 0 0 1-1.3 1.3H13c-.6 0-1 .4-1.7 1.3a1.3 1.3 0 0 1-1.8 0c-.7-.9-1.1-1.3-1.7-1.3H6.3A1.3 1.3 0 0 1 5 17.6v-1.5c0-.6-.4-1-.4-1.7a1.3 1.3 0 0 1 1.2-1.3c.6 0 1-.4 1.7-1.3a1.3 1.3 0 0 1 0-1.8c-.3-.3-.5-.7-.5-.9z" fill="var(--chrome-tone)"/></svg>
+                    <span class="extTopTitle">Extensions</span>
+                    <span class="extSearchPill"><svg viewBox="0 0 24 24" class="extSearchIcon"><circle cx="10.5" cy="10.5" r="6" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M15.5 15.5 21 21" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>Search extensions</span>
+                    <span class="extTopRight"><span class="extTopRightLabel">Developer mode</span><span class="chromeToggle on"><span class="chromeToggleKnob"></span></span></span>
+                  </div>
+                  <div class="extActionRow">
+                    <span class="chromePillBtn blue">Load unpacked</span>
+                    <span class="chromePillBtn">Pack extension</span>
+                    <span class="chromePillBtn">Update</span>
+                  </div>
+                  <div class="extBody">
+                    <div class="extSide">
+                      <span class="sidePill sel"><svg viewBox="0 0 24 24" class="sideIcon"><path d="M11.7 2.6a1.3 1.3 0 0 1 1.3-1.3 1.3 1.3 0 0 1 1.3 1.3c0 .6-.4 1-.4 1.7a1.3 1.3 0 0 0 1.3 1.3h1.5a1.3 1.3 0 0 1 1.3 1.3v1.5c0 .6.4 1-.4 1.7a1.3 1.3 0 0 1 0 1.8c.8.7.4 1.1.4 1.7v1.5a1.3 1.3 0 0 1-1.3 1.3H13c-.6 0-1 .4-1.7 1.3a1.3 1.3 0 0 1-1.8 0c-.7-.9-1.1-1.3-1.7-1.3H6.3A1.3 1.3 0 0 1 5 17.6v-1.5c0-.6-.4-1-.4-1.7a1.3 1.3 0 0 1 1.2-1.3c.6 0 1-.4 1.7-1.3a1.3 1.3 0 0 1 0-1.8c-.3-.3-.5-.7-.5-.9z" fill="currentColor"/></svg>My extensions</span>
+                      <span class="sideRow"><svg viewBox="0 0 24 24" class="sideIcon"><path d="M7 8h10a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2Z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M7 11h.01M11 11h.01M15 11h.01M7 13.5h10" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>Keyboard shortcuts</span>
+                      <span class="sideNote">Discover more extensions and themes on the<br><u>Chrome Web Store</u></span>
+                    </div>
+                    <div class="extMain">
+                      <div class="extMainHead">
+                        <span class="extMainTitle">All Extensions</span>
+                        <span class="extMainRight"><span class="extMainRightLabel">Pin new extensions to Toolbar</span><span class="chromeToggle on small"><span class="chromeToggleKnob"></span></span></span>
+                      </div>
+                      <div class="extEmpty">Belum ada ekstensi lokal</div>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
 
             <div class="scene s4">
-              <div class="osWin chromeWin extReal">
-                <div class="tabStrip"><span class="tabItem"><span class="tabMark accent"></span>Extensions<i class="tabClose"></i></span><i class="tabNew"></i><span class="winGlyphs"><i class="wgMin"></i><i class="wgMax"></i><i class="wgClose"></i></span></div>
-                <div class="chromeNav"><svg viewBox="0 0 24 24" class="navArrow"><path d="M14.5 6 9 12l5.5 6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg><svg viewBox="0 0 24 24" class="navArrow"><path d="M9.5 6 15 12l-5.5 6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg><svg viewBox="0 0 24 24" class="navArrow"><path d="M19 9a8 8 0 1 0 .5 7" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg><span class="addrPill"><svg viewBox="0 0 24 24" class="extPuzzle"><path d="M11.7 2.6a1.3 1.3 0 0 1 1.3-1.3 1.3 1.3 0 0 1 1.3 1.3c0 .6-.4 1-.4 1.7a1.3 1.3 0 0 0 1.3 1.3h1.5a1.3 1.3 0 0 1 1.3 1.3v1.5c0 .6.4 1-.4 1.7a1.3 1.3 0 0 1 0 1.8c.8.7.4 1.1.4 1.7v1.5a1.3 1.3 0 0 1-1.3 1.3H13c-.6 0-1 .4-1.7 1.3a1.3 1.3 0 0 1-1.8 0c-.7-.9-1.1-1.3-1.7-1.3H6.3A1.3 1.3 0 0 1 5 17.6v-1.5c0-.6-.4-1-.4-1.7a1.3 1.3 0 0 1 1.2-1.3c.6 0 1-.4 1.7-1.3a1.3 1.3 0 0 1 0-1.8c-.3-.3-.5-.7-.5-.9z" fill="currentColor"/></svg>chrome://extensions</span></div>
-                <div class="extPage">
-                  <div class="extTitleRow"><svg viewBox="0 0 24 24" class="extHeadPuzzle"><path d="M11.7 2.6a1.3 1.3 0 0 1 1.3-1.3 1.3 1.3 0 0 1 1.3 1.3c0 .6-.4 1-.4 1.7a1.3 1.3 0 0 0 1.3 1.3h1.5a1.3 1.3 0 0 1 1.3 1.3v1.5c0 .6.4 1-.4 1.7a1.3 1.3 0 0 1 0 1.8c.8.7.4 1.1.4 1.7v1.5a1.3 1.3 0 0 1-1.3 1.3H13c-.6 0-1 .4-1.7 1.3a1.3 1.3 0 0 1-1.8 0c-.7-.9-1.1-1.3-1.7-1.3H6.3A1.3 1.3 0 0 1 5 17.6v-1.5c0-.6-.4-1-.4-1.7a1.3 1.3 0 0 1 1.2-1.3c.6 0 1-.4 1.7-1.3a1.3 1.3 0 0 1 0-1.8c-.3-.3-.5-.7-.5-.9z" fill="currentColor"/></svg><span class="extHeading">Extensions</span><span class="extSearch"><svg viewBox="0 0 24 24" class="searchIcon"><circle cx="10.5" cy="10.5" r="6" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M15.5 15.5 21 21" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>Search extensions</span><span class="devMode"><span class="devLabel">Developer mode</span><span class="toggle chromeToggle on"><span class="knob knobOn"></span></span></span></div>
-                  <div class="extActions"><span class="extBtn pressed">Load unpacked</span><span class="extBtn">Pack extension</span><span class="extBtn">Update</span></div>
-                  <div class="extSplit">
-                    <div class="extSide"><span class="sideItem sel"><svg viewBox="0 0 24 24" class="kbdIcon"><path d="M7 8h10a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M7 11h.01M11 11h.01M15 11h.01M7 13.5h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>My extensions</span><span class="sideItem"><svg viewBox="0 0 24 24" class="kbdIcon"><path d="M7 8h10a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M7 11h.01M11 11h.01M15 11h.01M7 13.5h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>Keyboard shortcuts</span></div>
-                    <div class="extMain"><span class="extAllRow"><span class="extAllLabel">All Extensions</span><span class="pinNewRow"><span class="pinNewLabel">Pin new extensions to Toolbar</span><span class="toggle chromeToggle on small"><span class="knob knobOn"></span></span></span></span>
-                      <div class="extCard">
-                        <span class="extCardIcon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="6.2" fill="none" stroke="var(--ink)" stroke-width="3.4"/></svg></span>
-                        <div class="extCardMeta"><span class="extCardName">Opera Agent</span><span class="extCardSub">Private local Opera bridge for secure browser control through Supabase workflows.</span><span class="extIdLine">ID: ofgemipoobcnbjkfanmofjbdonjapmgl</span><span class="extSwLink">Inspect views service worker</span></div>
-                        <div class="extCardFooter"><div class="extCardBtns"><span class="extMiniBtn">Details</span><span class="extMiniBtn">Remove</span></div><span class="toggle chromeToggle on small"><span class="knob knobOn"></span></span></div>
+              <div class="osWin chromeWin extRealChrome">
+                <div class="chromeTabStrip">
+                  <span class="chromeTab chromeTabActive"><svg viewBox="0 0 24 24" class="chromeTabIcon"><path d="M11.7 2.6a1.3 1.3 0 0 1 1.3-1.3 1.3 1.3 0 0 1 1.3 1.3c0 .6-.4 1-.4 1.7a1.3 1.3 0 0 0 1.3 1.3h1.5a1.3 1.3 0 0 1 1.3 1.3v1.5c0 .6.4 1-.4 1.7a1.3 1.3 0 0 1 0 1.8c.8.7.4 1.1.4 1.7v1.5a1.3 1.3 0 0 1-1.3 1.3H13c-.6 0-1 .4-1.7 1.3a1.3 1.3 0 0 1-1.8 0c-.7-.9-1.1-1.3-1.7-1.3H6.3A1.3 1.3 0 0 1 5 17.6v-1.5c0-.6-.4-1-.4-1.7a1.3 1.3 0 0 1 1.2-1.3c.6 0 1-.4 1.7-1.3a1.3 1.3 0 0 1 0-1.8c-.3-.3-.5-.7-.5-.9z" fill="var(--chrome-tone)"/></svg>Extensions<i class="chromeTabClose"></i></span>
+                  <span class="tabNew"></span>
+                  <span class="chromeWinGlyphs"><i class="wgMin"></i><i class="wgMax"></i><i class="wgClose"></i></span>
+                </div>
+                <div class="chromeToolbar">
+                  <svg viewBox="0 0 24 24" class="chromeNavIcon dim"><path d="M14.5 6 9 12l5.5 6" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  <svg viewBox="0 0 24 24" class="chromeNavIcon"><path d="M9.5 6 15 12l-5.5 6" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  <svg viewBox="0 0 24 24" class="chromeNavIcon"><path d="M19 9a8 8 0 1 0 .5 7" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+                  <span class="chromeOmnibox"><svg viewBox="0 0 24 24" class="chromeOmniIcon"><circle cx="9" cy="9" r="5.4" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M13 13.5 21 21" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg><span class="chromeOmniText">chrome://extensions</span></span>
+                  <svg viewBox="0 0 24 24" class="chromeNavIcon"><path d="M9 3v3M15 3v3M3.5 9h17M5 7.5h14A1.5 1.5 0 0 1 20.5 9v9.5A1.5 1.5 0 0 1 19 20H5a1.5 1.5 0 0 1-1.5-1.5V9A1.5 1.5 0 0 1 5 7.5z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  <svg viewBox="0 0 24 24" class="chromeNavIcon"><path d="M11.7 2.6a1.3 1.3 0 0 1 1.3-1.3 1.3 1.3 0 0 1 1.3 1.3c0 .6-.4 1-.4 1.7a1.3 1.3 0 0 0 1.3 1.3h1.5a1.3 1.3 0 0 1 1.3 1.3v1.5c0 .6.4 1-.4 1.7a1.3 1.3 0 0 1 0 1.8c.8.7.4 1.1.4 1.7v1.5a1.3 1.3 0 0 1-1.3 1.3H13c-.6 0-1 .4-1.7 1.3a1.3 1.3 0 0 1-1.8 0c-.7-.9-1.1-1.3-1.7-1.3H6.3A1.3 1.3 0 0 1 5 17.6v-1.5c0-.6-.4-1-.4-1.7a1.3 1.3 0 0 1 1.2-1.3c.6 0 1-.4 1.7-1.3a1.3 1.3 0 0 1 0-1.8c-.3-.3-.5-.7-.5-.9z" fill="var(--chrome-tone)"/></svg>
+                  <span class="chromeAvatar">A</span>
+                  <svg viewBox="0 0 24 24" class="chromeNavIcon"><path d="M5 7h14M5 12h14M5 17h14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+                </div>
+                <div class="extPageChrome">
+                  <div class="extTopRow">
+                    <svg viewBox="0 0 24 24" class="extTopPuzzle"><path d="M11.7 2.6a1.3 1.3 0 0 1 1.3-1.3 1.3 1.3 0 0 1 1.3 1.3c0 .6-.4 1-.4 1.7a1.3 1.3 0 0 0 1.3 1.3h1.5a1.3 1.3 0 0 1 1.3 1.3v1.5c0 .6.4 1-.4 1.7a1.3 1.3 0 0 1 0 1.8c.8.7.4 1.1.4 1.7v1.5a1.3 1.3 0 0 1-1.3 1.3H13c-.6 0-1 .4-1.7 1.3a1.3 1.3 0 0 1-1.8 0c-.7-.9-1.1-1.3-1.7-1.3H6.3A1.3 1.3 0 0 1 5 17.6v-1.5c0-.6-.4-1-.4-1.7a1.3 1.3 0 0 1 1.2-1.3c.6 0 1-.4 1.7-1.3a1.3 1.3 0 0 1 0-1.8c-.3-.3-.5-.7-.5-.9z" fill="var(--chrome-tone)"/></svg>
+                    <span class="extTopTitle">Extensions</span>
+                    <span class="extSearchPill"><svg viewBox="0 0 24 24" class="extSearchIcon"><circle cx="10.5" cy="10.5" r="6" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M15.5 15.5 21 21" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>Search extensions</span>
+                    <span class="extTopRight"><span class="extTopRightLabel">Developer mode</span><span class="chromeToggle on"><span class="chromeToggleKnob"></span></span></span>
+                  </div>
+                  <div class="extActionRow">
+                    <span class="chromePillBtn blue pressed">Load unpacked</span>
+                    <span class="chromePillBtn">Pack extension</span>
+                    <span class="chromePillBtn">Update</span>
+                  </div>
+                  <div class="extBody">
+                    <div class="extSide">
+                      <span class="sidePill sel"><svg viewBox="0 0 24 24" class="sideIcon"><path d="M11.7 2.6a1.3 1.3 0 0 1 1.3-1.3 1.3 1.3 0 0 1 1.3 1.3c0 .6-.4 1-.4 1.7a1.3 1.3 0 0 0 1.3 1.3h1.5a1.3 1.3 0 0 1 1.3 1.3v1.5c0 .6.4 1-.4 1.7a1.3 1.3 0 0 1 0 1.8c.8.7.4 1.1.4 1.7v1.5a1.3 1.3 0 0 1-1.3 1.3H13c-.6 0-1 .4-1.7 1.3a1.3 1.3 0 0 1-1.8 0c-.7-.9-1.1-1.3-1.7-1.3H6.3A1.3 1.3 0 0 1 5 17.6v-1.5c0-.6-.4-1-.4-1.7a1.3 1.3 0 0 1 1.2-1.3c.6 0 1-.4 1.7-1.3a1.3 1.3 0 0 1 0-1.8c-.3-.3-.5-.7-.5-.9z" fill="currentColor"/></svg>My extensions</span>
+                      <span class="sideRow"><svg viewBox="0 0 24 24" class="sideIcon"><path d="M7 8h10a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2Z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M7 11h.01M11 11h.01M15 11h.01M7 13.5h10" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>Keyboard shortcuts</span>
+                      <span class="sideNote">Discover more extensions and themes on the<br><u>Chrome Web Store</u></span>
+                    </div>
+                    <div class="extMain">
+                      <div class="extMainHead">
+                        <span class="extMainTitle">All Extensions</span>
+                        <span class="extMainRight"><span class="extMainRightLabel">Pin new extensions to Toolbar</span><span class="chromeToggle on small"><span class="chromeToggleKnob"></span></span></span>
+                      </div>
+                      <div class="extCardChrome">
+                        <div class="extCardTile"><svg viewBox="0 0 24 24"><path d="M11.3 2 6.2 12.4h4.6L9.3 22l7.4-10.9h-4.7L14.4 2z" style="fill:var(--accent)"/></svg></div>
+                        <div class="extCardContent">
+                          <div class="extCardNameRow"><span class="extCardName">Opera Agent</span></div>
+                          <div class="extCardDesc">Private local Opera bridge for secure browser control through Supabase workflows.</div>
+                          <div class="extCardId">ID: ofgemipoobcnbjkfanmofjbdonjapmgl</div>
+                          <div class="extCardSw">Inspect views service worker</div>
+                          <div class="extCardActions"><span class="chromePillBtn">Details</span><span class="chromePillBtn">Remove</span></div>
+                        </div>
+                        <span class="chromeToggle on"><span class="chromeToggleKnob"></span></span>
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
-              <div class="folderPick">
-                <div class="pickHead"><svg viewBox="0 0 24 24" class="pickHeadIcon"><path d="M3 8.5A2 2 0 0 1 5 6.5h4.5l2 2H19a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-8Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>Browse For Folder<span class="wgCloseSm"></span></div>
-                <div class="pickCrumb"><svg viewBox="0 0 24 24" class="crumbIcon"><rect x="3" y="5" width="18" height="12" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M9 21h6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>This PC<span class="pickSep">›</span>OS (C:)<span class="pickSep">›</span><b>OperaAgent</b></div>
-                <div class="pickList"><span class="pickColRow"><span>Name</span><span>Date modified</span><span>Type</span></span><span class="pickRow"><span class="fileIconSm">JS</span>background.js<span class="pickDim">11/9/2026 6:05 PM</span><span class="pickDim">12 KB</span></span><span class="pickRow"><svg viewBox="0 0 24 24" class="folderIconSm"><path d="M2 7.5A2 2 0 0 1 4 5.5h5.2l2.3 2h8.5a2 2 0 0 1 2 2v8.5a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-10Z" style="fill:var(--yellow)"/></svg>icons<span class="pickDim">11/9/2026 6:05 PM</span><span class="pickDim">File folder</span></span><span class="pickRow pickTarget"><span class="fileIconSm manifest">M</span>manifest.json<span class="pickDim">11/9/2026 6:05 PM</span><span class="pickDim">2 KB</span></span></div>
-                <div class="pickFoot"><span class="pickBtn">Select Folder</span></div>
-              </div>
+              <div class="folderPick"><div class="pickHead"><svg viewBox="0 0 24 24" class="pickHeadIcon"><path d="M3 8.5A2 2 0 0 1 5 6.5h4.5l2 2H19a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-8Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>Browse For Folder<span class="wgCloseSm"></span></div><div class="pickCrumb"><svg viewBox="0 0 24 24" class="crumbIcon"><rect x="3" y="5" width="18" height="12" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M9 21h6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>This PC<span class="pickSep">›</span>OS (C:)<span class="pickSep">›</span><b>OperaAgent</b></div><div class="pickList"><span class="pickColRow"><span>Name</span><span>Date modified</span><span>Type</span></span><span class="pickRow"><span class="fileIconSm">JS</span>background.js<span class="pickDim">11/9/2026 6:05 PM</span><span class="pickDim">12 KB</span></span><span class="pickRow"><svg viewBox="0 0 24 24" class="folderIconSm"><path d="M2 7.5A2 2 0 0 1 4 5.5h5.2l2.3 2h8.5a2 2 0 0 1 2 2v8.5a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-10Z" style="fill:var(--yellow)"/></svg>icons<span class="pickDim">11/9/2026 6:05 PM</span><span class="pickDim">File folder</span></span><span class="pickRow pickTarget"><span class="fileIconSm manifest">M</span>manifest.json<span class="pickDim">11/9/2026 6:05 PM</span><span class="pickDim">2 KB</span></span></div><div class="pickFoot"><span class="pickBtn">Select Folder</span></div></div>
             </div>
 
             <div class="scene s5">
-              <div class="osWin chromeWin dashReal">
-                <div class="tabStrip"><span class="tabItem"><span class="tabMark accent"></span>Manual pairing - Opera Agent<i class="tabClose"></i></span><i class="tabNew"></i><span class="winGlyphs"><i class="wgMin"></i><i class="wgMax"></i><i class="wgClose"></i></span></div>
-                <div class="chromeNav"><svg viewBox="0 0 24 24" class="navArrow"><path d="M14.5 6 9 12l5.5 6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg><svg viewBox="0 0 24 24" class="navArrow"><path d="M9.5 6 15 12l-5.5 6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg><svg viewBox="0 0 24 24" class="navArrow"><path d="M19 9a8 8 0 1 0 .5 7" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg><span class="addrPill"><span class="typeUrl">opera-agent.pages.dev/dashboard#pairing</span><span class="typeCaret"></span></span><span class="navIcons"><span class="extTrigger" title="Opera Agent"><svg viewBox="0 0 24 24" class="extTriggerIcon"><path d="M11.3 2 6.2 12.4h4.6L9.3 22l7.4-10.9h-4.7L14.4 2z" style="fill:var(--on-fill)"/></svg></span><span class="navIconDot"></span><span class="navIconDot"></span></span></div>
+              <div class="osWin chromeWin extRealChrome dashReal">
+                <div class="chromeTabStrip">
+                  <span class="chromeTab chromeTabActive"><svg viewBox="0 0 24 24" class="chromeTabIcon"><path d="M11.3 2 6.2 12.4h4.6L9.3 22l7.4-10.9h-4.7L14.4 2z" style="fill:var(--accent)"/></svg>Manual pairing - Opera Agent<i class="chromeTabClose"></i></span>
+                  <span class="tabNew"></span>
+                  <span class="chromeWinGlyphs"><i class="wgMin"></i><i class="wgMax"></i><i class="wgClose"></i></span>
+                </div>
+                <div class="chromeToolbar">
+                  <svg viewBox="0 0 24 24" class="chromeNavIcon dim"><path d="M14.5 6 9 12l5.5 6" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  <svg viewBox="0 0 24 24" class="chromeNavIcon"><path d="M9.5 6 15 12l-5.5 6" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  <svg viewBox="0 0 24 24" class="chromeNavIcon"><path d="M19 9a8 8 0 1 0 .5 7" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+                  <span class="chromeOmnibox"><svg viewBox="0 0 24 24" class="chromeOmniIcon"><rect width="24" height="24" rx="6" fill="var(--bg)"/><path d="M8 5.6v12.8l3.1-2.9 1.9 4.5 2.4-1-2-4.5h3.9L8 5.6Z" fill="var(--accent)"/></svg><span class="typeUrl typingDash">opera-agent.pages.dev/dashboard#pairing</span><span class="typeCaret"></span></span>
+                  <svg viewBox="0 0 24 24" class="chromeNavIcon"><path d="M9 3v3M15 3v3M3.5 9h17M5 7.5h14A1.5 1.5 0 0 1 20.5 9v9.5A1.5 1.5 0 0 1 19 20H5a1.5 1.5 0 0 1-1.5-1.5V9A1.5 1.5 0 0 1 5 7.5z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  <span class="extTrigger extTriggerDark" title="Opera Agent"><svg viewBox="0 0 24 24" class="chromeNavIcon"><rect x="3" y="3" width="18" height="18" rx="5" fill="var(--bg)"/><path d="M8 5.6v12.8l3.1-2.9 1.9 4.5 2.4-1-2-4.5h3.9L8 5.6Z" fill="var(--accent)"/></svg></span>
+                  <span class="chromeAvatar">A</span>
+                  <svg viewBox="0 0 24 24" class="chromeNavIcon"><path d="M5 7h14M5 12h14M5 17h14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+                </div>
                 <div class="dashSplit">
                   <div class="dashSide"><span class="dashSideItem">Overview</span><span class="dashSideItem">Device (7)</span><span class="dashSideItem">History</span><span class="dashSideItem">Action</span><span class="dashSideItem">Balance</span><span class="dashSideItem sel">Pairing</span><span class="dashSideItem">Account</span></div>
                   <div class="dashMain">

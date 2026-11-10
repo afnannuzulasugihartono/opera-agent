@@ -851,65 +851,6 @@ pre {
 .expStatusBar { display: flex; justify-content: space-between; padding: 5px 11px; border-top: 1px solid var(--line); background: var(--surface); font: 8.5px/1.5 var(--mono); color: var(--muted); }
 .expState { opacity: .6; }
 
-/* scenes 3-4 — the real extensions page */
-
-.extPage { background: var(--surface); display: flex; flex-direction: column; flex: 1; }
-
-.extTitleRow { display: flex; align-items: center; gap: 12px; padding: 13px 16px; }
-.extHeadPuzzle { width: 21px; height: 21px; color: var(--ink); flex: none; }
-.extHeading { font: 600 16.5px/1 var(--mono); letter-spacing: -.03em; color: var(--ink); }
-.extSearch { display: flex; align-items: center; gap: 7px; flex: 1; min-width: 0; max-width: 210px; margin-inline: auto; padding: 7px 13px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 999px; font: 10px/1 var(--mono); color: var(--muted); white-space: nowrap; }
-
-.devMode { display: flex; align-items: center; gap: 9px; }
-.devLabel { font: 10.5px/1 var(--mono); color: var(--muted); white-space: nowrap; }
-
-.toggle { position: relative; width: 34px; height: 19px; border-radius: 10px; background: var(--line); flex: none; }
-.knob { position: absolute; top: 3px; left: 3px; width: 13px; height: 13px; border-radius: 50%; background: var(--on-fill); }
-.toggle.on { background: var(--accent); }
-.toggle.on .knob, .toggle .knob.knobOn { transform: translateX(15px); }
-.toggle.small { width: 29px; height: 17px; }
-.toggle.small .knob { width: 11px; height: 11px; }
-.toggle.small .knob.knobOn { transform: translateX(12px); }
-.s3 .toggle { animation: trackOn 22s linear infinite; }
-@keyframes trackOn { 0%, 41% { background: var(--line) } 44.5%, 100% { background: var(--accent) } }
-.s3 .knob { animation: knobOn 22s linear infinite; }
-@keyframes knobOn { 0%, 41% { transform: translateX(0) } 44.5%, 100% { transform: translateX(15px) } }
-
-.extActions { display: flex; gap: 9px; padding: 2px 16px 13px; }
-.extBtn { padding: 6px 15px; border: 1px solid var(--accent); border-radius: 999px; font: 10.5px/1 var(--mono); color: var(--accent); background: transparent; }
-.s3 .extBtn.loadReady { animation: loadReadyPress 22s linear infinite; }
-@keyframes loadReadyPress { 0%, 46.5% { transform: scale(1) } 48% { transform: scale(.93) } 49.5%, 100% { transform: scale(1) } }
-
-
-.extBtn.pressed { background: var(--accent); color: var(--on-fill); animation: loadPulse 22s linear infinite; }
-@keyframes loadPulse { 0%, 54% { transform: scale(1) } 57.5% { transform: scale(.93) } 61%, 100% { transform: scale(1) } }
-
-.extSplit { display: grid; grid-template-columns: 132px 1fr; border-top: 1px solid var(--line); flex: 1; }
-.extSide { display: grid; align-content: start; gap: 3px; padding: 12px 8px; border-right: 1px solid var(--line); background: var(--surface); }
-.sideItem { font: 10px/1.4 var(--mono); color: var(--muted); padding: 6px 9px; border-radius: 14px; }
-.sideItem.sel { background: color-mix(in srgb, var(--accent) 26%, transparent); color: var(--accent); }
-
-.extMain { display: grid; align-content: start; gap: 10px; min-height: 128px; padding: 12px 14px; background: var(--surface); }
-.extAllRow { display: flex; align-items: center; justify-content: space-between; }
-.extAllLabel { font: 600 10.5px/1 var(--mono); color: var(--ink); }
-.extEmpty { padding: 13px 10px; border: 1px dashed var(--line-strong); border-radius: 10px; font: 9.5px/1.5 var(--mono); color: var(--muted); text-align: center; }
-
-.extCard { display: grid; grid-template-columns: auto 1fr; gap: 12px 12px; padding: 12px 13px; border: 1px solid var(--line-strong); border-radius: 10px; background: var(--surface-2); animation: extCardIn 22s linear infinite; }
-@keyframes extCardIn { 0%, 60% { opacity: 0; transform: translateY(12px) } 64.5%, 100% { opacity: 1; transform: none } }
-
-.extCardIcon { width: 42px; height: 42px; border-radius: 9px; background: var(--accent); display: grid; place-items: center; }
-.extCardIcon svg { width: 24px; height: 24px; }
-.extCardIcon.mini { width: 26px; height: 26px; border-radius: 7px; }
-.extCardIcon.mini svg { width: 14px; height: 14px; }
-
-.extCardMeta { display: grid; gap: 5px; align-content: center; }
-.extCardName { font: 600 12px/1 var(--mono); color: var(--ink); }
-.extCardSub { font: 8.5px/1.55 var(--mono); color: var(--muted); max-width: 52ch; }
-
-.extCardFooter { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding-top: 10px; border-top: 1px solid var(--line); }
-.extCardBtns { display: flex; gap: 8px; }
-.extMiniBtn { padding: 5px 13px; border: 1px solid var(--accent); border-radius: 999px; font: 9.5px/1 var(--mono); color: var(--accent); }
-
 /* scene 5 — the real dashboard, exactly as the owner sees it */
 
 
@@ -1403,9 +1344,9 @@ pre {
 .typeCaret { display: inline-block; width: 2px; height: .85em; margin-left: 1px; background: var(--ink); vertical-align: middle; animation: caret 1.1s steps(1) infinite; }
 @keyframes caret { 0%, 49% { opacity: 1 } 50%, 100% { opacity: 0 } }
 
-.extReal .typeUrl { animation: typeExt 22s linear infinite; }
+.extRealChrome .typeUrl { animation: typeExt 22s linear infinite; }
 @keyframes typeExt { 0%, 34% { max-width: 0 } 46.5%, 100% { max-width: 240px } }
-.dashReal .typeUrl { animation: typeDash 22s linear infinite; }
+.extRealChrome.dashReal .typeUrl { animation: typeDash 22s linear infinite; }
 @keyframes typeDash { 0%, 65% { max-width: 0 } 76%, 100% { max-width: 280px } }
 
 /* windows rise from behind the taskbar, like every real window does */
@@ -1423,7 +1364,153 @@ pre {
 .s6 .osWin { animation: winRiseF 22s var(--ease-out) infinite; }
 @keyframes winRiseF { 0%, 83% { opacity: 0; transform: translateY(-20px) scale(.95) } 87.5%, 100% { opacity: 1; transform: none } }
 
-.extReal .typeCaret { animation: caret 1.1s steps(1) infinite, caretHide 22s linear infinite; }
+.extRealChrome .typeCaret { animation: caret 1.1s steps(1) infinite, caretHide 22s linear infinite; }
 @keyframes caretHide { 0%, 46.5% { opacity: 1 } 47.5%, 100% { opacity: 0 } }
-.dashReal .typeCaret { animation: caret 1.1s steps(1) infinite, caretHide2 22s linear infinite; }
+.extRealChrome.dashReal .typeCaret { animation: caret 1.1s steps(1) infinite, caretHide2 22s linear infinite; }
 @keyframes caretHide2 { 0%, 76% { opacity: 1 } 77%, 100% { opacity: 0 } }
+
+/* Chrome dark UI — same palette as the real Extensions page */
+
+.osWin.chromeWin.extRealChrome {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  grid-template-rows: auto auto 1fr;
+  background: var(--chrome-bg);
+  color: var(--chrome-text);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-size: 13px;
+  border: 0;
+  border-radius: 0;
+}
+
+.chromeTabStrip {
+  display: flex;
+  align-items: flex-end;
+  padding: 6px 6px 0;
+  background: var(--chrome-bg);
+  gap: 2px;
+}
+
+.chromeTab { display: flex; align-items: center; gap: 8px; padding: 7px 14px 9px; border-radius: 9px 9px 0 0; color: var(--chrome-text-dim); font-size: 12.5px; line-height: 1; }
+.chromeTabActive { background: var(--chrome-card); color: var(--chrome-text); position: relative; z-index: 1; }
+.chromeTabIcon { width: 14px; height: 14px; }
+.chromeTabClose { width: 16px; height: 16px; position: relative; opacity: .85; }
+.chromeTabClose::before, .chromeTabClose::after { content: ""; position: absolute; left: 7.5px; top: 3px; width: 1.3px; height: 10px; background: var(--chrome-text-dim); }
+.chromeTabClose::before { transform: rotate(45deg); }
+.chromeTabClose::after { transform: rotate(-45deg); }
+
+.tabNew { position: relative; width: 26px; height: 26px; margin-bottom: 6px; border-radius: 13px; }
+.tabNew::before, .tabNew::after { content: ""; position: absolute; background: var(--chrome-text-dim); }
+.tabNew::before { left: 7px; right: 7px; top: 12.3px; height: 1.3px; }
+.tabNew::after { top: 7px; bottom: 7px; left: 12.3px; width: 1.3px; }
+
+.chromeWinGlyphs { margin-left: auto; display: flex; align-items: center; gap: 18px; padding: 0 12px 7px; }
+.wgMin { width: 11px; height: 1.3px; background: var(--chrome-text-dim); }
+.wgMax { width: 11px; height: 10px; border: 1.3px solid var(--chrome-text-dim); border-radius: 1.5px; }
+.wgClose { position: relative; width: 13px; height: 13px; }
+.wgClose::before, .wgClose::after { content: ""; position: absolute; left: 5.8px; top: 0; width: 1.4px; height: 13px; background: var(--chrome-text); }
+.wgClose::before { transform: rotate(45deg); }
+.wgClose::after { transform: rotate(-45deg); }
+
+.chromeToolbar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 12px;
+  background: var(--chrome-card);
+}
+
+.chromeNavIcon { width: 17px; height: 17px; color: var(--chrome-text); }
+.chromeNavIcon.dim { color: var(--chrome-text-dim); }
+
+.chromeOmnibox {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  height: 36px;
+  padding: 0 16px;
+  border-radius: 18px;
+  background: var(--chrome-bg);
+  border: 1.4px solid var(--chrome-line);
+}
+
+.chromeOmniIcon { width: 16px; height: 16px; color: var(--chrome-text); }
+.chromeOmniText { font-size: 13.5px; color: var(--chrome-text); letter-spacing: -.01em; }
+
+.chromeAvatar { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 13px; background: var(--chrome-avatar); color: var(--chrome-text); font-size: 12px; font-weight: 600; }
+
+/* the Extensions page itself */
+
+.extPageChrome { background: var(--chrome-bg); }
+
+.extTopRow {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 22px 46px 20px;
+}
+
+.extTopPuzzle { width: 28px; height: 28px; }
+.extTopTitle { font-size: 22px; font-weight: 500; letter-spacing: -.02em; color: var(--chrome-text); }
+
+.extSearchPill { display: flex; align-items: center; gap: 11px; height: 46px; width: 380px; padding: 0 18px; border-radius: 23px; background: var(--chrome-card); border: 1.4px solid var(--chrome-line); color: var(--chrome-text-dim); font-size: 13.5px; margin-left: auto; }
+.extSearchIcon { width: 17px; height: 17px; }
+
+.extTopRight { display: flex; align-items: center; gap: 12px; margin-left: 16px; }
+.extTopRightLabel { font-size: 13.5px; color: var(--chrome-text); }
+
+.chromeToggle { position: relative; width: 34px; height: 18px; border-radius: 9px; background: var(--chrome-line); }
+.chromeToggle.on { background: var(--chrome-tone); }
+.chromeToggle.small { width: 28px; height: 16px; border-radius: 8px; }
+
+.chromeToggleKnob { position: absolute; top: 2.5px; left: 2.5px; width: 13px; height: 13px; border-radius: 6.5px; background: var(--chrome-text); transition: transform .18s var(--ease); }
+.chromeToggle.on .chromeToggleKnob { background: var(--chrome-tone-on); transform: translateX(16px); }
+.chromeToggle.small .chromeToggleKnob { width: 11px; height: 11px; top: 2.5px; left: 2.5px; border-radius: 5.5px; }
+.chromeToggle.small.on .chromeToggleKnob { transform: translateX(12px); }
+
+.extActionRow {
+  display: flex;
+  gap: 14px;
+  padding: 10px 46px 20px;
+  border-bottom: 1px solid var(--chrome-line);
+}
+
+.chromePillBtn { display: inline-flex; align-items: center; gap: 0; height: 44px; padding: 0 22px; border-radius: 22px; border: 1.3px solid var(--chrome-tone); color: var(--chrome-tone); font-size: 13.5px; background: transparent; }
+.chromePillBtn.blue { background: transparent; }
+.chromePillBtn.blue.pressed { background: color-mix(in srgb, var(--chrome-tone) 35%, var(--chrome-bg)); border-color: transparent; }
+
+.extBody { display: grid; grid-template-columns: 330px 1fr; min-height: 320px; }
+
+.extSide { display: flex; flex-direction: column; gap: 8px; padding: 20px 0 20px 20px; position: relative; }
+.extSide::after { content: ""; position: absolute; right: 0; top: 20px; bottom: 16px; width: 1px; background: var(--chrome-line); }
+
+.sidePill { display: inline-flex; align-items: center; gap: 12px; height: 46px; padding: 0 18px; border-radius: 23px; font-size: 14px; color: var(--chrome-tone); }
+.sidePill.sel { background: var(--chrome-tone-strong); color: var(--chrome-tone-on); }
+.sidePill.sel .sideIcon { color: var(--chrome-tone-on); }
+.sideIcon { width: 19px; height: 19px; color: var(--chrome-text); }
+
+.sideRow { display: inline-flex; align-items: center; gap: 12px; height: 46px; padding: 0 18px; font-size: 14px; color: var(--chrome-text); }
+
+.sideNote { margin-top: 28px; padding: 10px 18px 0; font-size: 12.5px; line-height: 1.65; color: var(--chrome-text-dim); border-top: 1px solid var(--chrome-line); padding-top: 22px; }
+.sideNote u { color: var(--chrome-tone-strong); }
+
+.extMain { display: flex; flex-direction: column; gap: 16px; padding: 18px 30px; background: var(--chrome-bg); }
+
+.extMainHead { display: flex; justify-content: space-between; align-items: center; }
+.extMainTitle { font-size: 14.5px; font-weight: 600; color: var(--chrome-text); letter-spacing: -.01em; }
+.extMainRight { display: flex; align-items: center; gap: 11px; font-size: 13.5px; color: var(--chrome-text); }
+
+.extEmpty { display: grid; place-items: center; flex: 1; min-height: 220px; color: var(--chrome-text-dim); font-size: 14px; }
+
+.extCardChrome { display: grid; grid-template-columns: 72px 1fr auto; align-items: start; gap: 16px; padding: 18px; border-radius: 14px; background: var(--chrome-card); }
+.extCardTile { display: grid; place-items: center; width: 72px; height: 72px; border-radius: 12px; background: var(--chrome-card-2); }
+.extCardTile svg { width: 40px; height: 40px; }
+.extCardContent { display: grid; gap: 4px; min-width: 0; }
+.extCardNameRow { display: flex; gap: 10px; align-items: baseline; }
+.extCardName { font-size: 16.5px; font-weight: 600; color: var(--chrome-text); letter-spacing: -.02em; }
+.extCardDesc { font-size: 13px; color: var(--chrome-text-dim); line-height: 1.45; }
+.extCardId { font-size: 12px; color: var(--chrome-text-dim); }
+.extCardSw { font-size: 13px; color: var(--chrome-tone); }
+.extCardActions { display: flex; gap: 12px; margin-top: 6px; }
