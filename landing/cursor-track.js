@@ -41,6 +41,12 @@
       document.documentElement.style.setProperty('--c-' + name + '-x', x);
       document.documentElement.style.setProperty('--c-' + name + '-y', y);
     }
+    // WHY: the CSS animations start from document parse, but these variables only exist after layout - a restart pins the animation to the measured values instead of whatever half-set state it was caught in.
+    const animated = document.querySelectorAll('.desktop, .desktop *');
+    for (const el of animated) el.style.animation = 'none';
+    const reflow = stage.offsetHeight;
+    for (const el of animated) el.style.animation = '';
+    return reflow;
   };
 
   measure();
