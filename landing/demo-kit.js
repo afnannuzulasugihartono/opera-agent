@@ -563,6 +563,68 @@
           await wait(1600, token);
           break;
         }
+        case 'opencode': {
+          const big = demo.querySelector('.ocComposerBig');
+          const hero = demo.querySelector('#deskComposerTyped');
+          await press(big, token);
+          await wait(140, token);
+          await typeText(hero, token, '/terminal', TYPE_PACE + 8);
+          await wait(320, token);
+          demo.classList.add('is-slash-terminal');
+          await wait(340, token);
+          await press(demo.querySelector('#slashTerminal'), token);
+          hero.textContent = '';
+          demo.classList.remove('is-slash-terminal');
+          const terminal = demo.querySelector('#ocTerminal');
+          terminal.style.display = 'flex';
+          const splitRow = demo.querySelector('#ocSplitRow');
+          if (splitRow) splitRow.classList.add('has-terminal');
+          const termType = demo.querySelector('#ocTermType');
+          await wait(200, token);
+          await press(terminal, token);
+          await typeText(termType, token, 'opencode mcp add opera-agent --url https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp', TYPE_PACE);
+          await wait(280, token);
+          demo.querySelector('#ocTermDim').classList.add('is-on');
+          await wait(320, token);
+          demo.querySelector('#ocTermOk').classList.add('is-on');
+          await wait(320, token);
+          await press(big, token);
+          await typeText(hero, token, '/mcp', TYPE_PACE + 8);
+          await wait(300, token);
+          demo.classList.add('is-slash-mcp');
+          await wait(340, token);
+          await press(demo.querySelector('#slashMcp'), token);
+          hero.textContent = '';
+          demo.classList.remove('is-slash-mcp');
+          demo.classList.add('is-mcps');
+          await wait(720, token);
+          await press(demo.querySelector('#mcpSignIn'), token);
+          await wait(340, token);
+          demo.classList.add('is-browser');
+          await wait(1100, token);
+          await press(demo.querySelector('#consentAllow'), token);
+          demo.classList.add('is-authed');
+          await wait(1000, token);
+          demo.classList.remove('is-browser');
+          demo.classList.add('is-connected');
+          await wait(1600, token);
+          break;
+        }
+        case 'terminal': {
+          const [installLine, addedLine, doctorLine, verdictLine] = lines;
+          await press(installLine, token);
+          await typeLine(installLine, token, TYPE_PACE);
+          await wait(420, token);
+          reveal(addedLine, token);
+          await wait(420, token);
+          await typeLine(doctorLine, token, TYPE_PACE);
+          await wait(420, token);
+          reveal(verdictLine, token);
+          await wait(700, token);
+          demo.classList.add('is-connected');
+          await wait(1600, token);
+          break;
+        }
         case 'fastlane': {
           const composer = demo.querySelector('.ocComposer');
           await press(composer, token);

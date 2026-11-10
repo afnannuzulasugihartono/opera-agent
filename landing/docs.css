@@ -1101,13 +1101,17 @@ html.js .quickStart.in .quickDoor:nth-child(3) { animation-delay: .19s; }
 .docBody > section[data-reveal] + section[data-reveal] { margin-top: 40px; }
 .mcpCats { display: grid; gap: 22px; margin-top: 22px; }
 .mcpCat { display: grid; gap: 10px; padding: 16px 18px 14px; border: 1px solid var(--line-strong); border-radius: 14px; background: var(--surface); }
-.mcpCatHead { display: flex; align-items: baseline; gap: 14px; }
+.mcpCatHead { display: flex; align-items: center; gap: 12px; }
+.mcpCatMark { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 8px; background: color-mix(in srgb, var(--ink) 6%, transparent); flex: 0 0 auto; color: var(--ink); }
+.mcpCatMark svg { width: 18px; height: 18px; display: block; }
 .mcpCatTitle { margin: 0; }
 
-.mcpTrack { display: grid; grid-auto-flow: column; grid-auto-columns: min(88vw, 640px); gap: 12px; overflow-x: auto; scroll-snap-type: x mandatory; scroll-padding-inline: 18px; scrollbar-width: none; -webkit-overflow-scrolling: touch; padding-bottom: 2px; }
+.mcpTrack { display: grid; grid-auto-flow: column; grid-auto-columns: min(94vw, 1024px); gap: 14px; overflow-x: auto; scroll-snap-type: x mandatory; scroll-padding-inline: 14px; scrollbar-width: none; -webkit-overflow-scrolling: touch; padding-bottom: 2px; }
 .mcpTrack::-webkit-scrollbar { display: none; }
 .mcpCard { display: grid; gap: 12px; align-content: start; scroll-snap-align: start; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); padding: 14px; min-width: 0; }
-.mcpCardHead { display: flex; align-items: baseline; gap: 12px; }
+.mcpCardHead { display: flex; align-items: center; gap: 10px; }
+.mcpBrand { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 8px; background: color-mix(in srgb, var(--ink) 6%, transparent); flex: 0 0 auto; }
+.mcpBrand svg { width: 17px; height: 17px; display: block; color: var(--ink); }
 .mcpCardTitle { margin: 0; }
 .mcpCard .mcpDemo { margin: 0; width: 100%; }
 
@@ -1120,7 +1124,6 @@ html.js .quickStart.in .quickDoor:nth-child(3) { animation-delay: .19s; }
 .prose .stepsDropBody p code, .prose .stepsDropBody li code { font-size: 11px; }
 .stepsDropBody .steps, .stepsDropBody .copybox, .stepsDropBody p { margin: 0; }
 
-.mcpIndex { flex: 0 0 auto; color: var(--accent); font-family: var(--mono); font-size: 11px; font-weight: 500; letter-spacing: .06em; }
 
 @media (max-width: 640px) { .mcpTrack { grid-auto-columns: 86vw; scroll-padding-inline: 12px; } .mcpCat { padding: 14px 12px 12px; } .mcpCard { padding: 12px; } }
 @media (prefers-reduced-motion: no-preference) { .mcpTrack { scroll-behavior: smooth; } }
