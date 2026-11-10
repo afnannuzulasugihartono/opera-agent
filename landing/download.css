@@ -1211,3 +1211,31 @@ pre {
   58.5%, 64% { background: color-mix(in srgb, var(--accent) 16%, transparent); outline: 1px solid var(--accent) }
   66.5%, 100% { background: color-mix(in srgb, var(--accent) 16%, transparent); outline: 1px solid var(--accent) }
 }
+
+/* scene 1 — the download page, and the one click that starts everything */
+
+.dlPageBody { display: grid; justify-items: center; align-content: center; gap: 8px; align-items: center; padding: 22px 18px 20px; background: var(--surface-2); }
+
+.dlPageKicker { font: 500 9.5px/1 var(--mono); letter-spacing: .14em; color: var(--accent); }
+.dlPageTitle { font: 600 15px/1.25 var(--mono); letter-spacing: -.02em; color: var(--ink); }
+
+.dlBigBtn {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-top: 6px;
+  padding: 13px 24px;
+  border-radius: var(--radius);
+  background: var(--accent);
+  color: var(--on-fill);
+  font: 600 14px/1 var(--mono);
+  animation: dlBigPress 22s linear infinite;
+}
+
+.dlBigBtnIcon { width: 17px; height: 17px; }
+
+@keyframes dlBigPress {
+  0%, 5.9% { transform: scale(1) }
+  7.1% { transform: scale(.9) }
+  8.4%, 100% { transform: scale(1) }
+}
