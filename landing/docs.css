@@ -1149,3 +1149,17 @@ html.js .quickStart.in .quickDoor:nth-child(3) { animation-delay: .19s; }
 
 @media (max-width: 640px) { .harnessCard { flex: 0 0 90vw; } .harnessTrack { gap: 14px; scroll-padding-inline: 5vw; } }
 @media (prefers-reduced-motion: reduce) { .harnessDot, .harnessTab { transition: none; } }
+
+/* HARNESS INSTALL GRIDS — separated Web / Desktop / CLI for hosted; Desktop and CLI for local */
+
+.harnessGridThree { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 18px 0 0; }
+.harnessGridTwo { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin: 18px 0 0; }
+
+.harnessCol { display: grid; gap: 8px; padding: 16px 16px 14px; border: 1px solid var(--line-strong); border-radius: 14px; background: var(--surface); align-content: start; }
+.harnessColTag { width: max-content; padding: 4px 10px 3px; border-radius: 999px; background: color-mix(in srgb, var(--accent) 20%, transparent); color: var(--accent); font: 650 9.5px/1.3 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; letter-spacing: .09em; text-transform: uppercase; }
+.harnessColTitle { margin: 0; font: 600 14px/1.3 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--ink); letter-spacing: -.01em; }
+
+@media (max-width: 960px) {
+  .harnessGridThree { grid-template-columns: 1fr; }
+  .harnessGridTwo { grid-template-columns: 1fr; }
+}
