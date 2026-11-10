@@ -320,10 +320,10 @@
   const loop = async () => {
     const token = ++generation;
     try {
-      await play(token);
-      while (token === generation) {
-        await wait(1500, token);
+      for (;;) {
         await play(token);
+        if (token !== generation) return;
+        await wait(1500, token);
       }
     } catch (error) {
       if (!(error instanceof Restart)) throw error;
@@ -336,7 +336,7 @@
     generation++;
     cursor.getAnimations().forEach((animation) => animation.cancel());
     window.setTimeout(() => {
-      if (visible) loop();
+      if (visible) void loop();
     }, 220);
   };
 
@@ -344,7 +344,7 @@
     const next = entry.isIntersecting;
     if (next === visible) return;
     visible = next;
-    if (visible) loop();
+    if (visible) void loop();
     else {
       generation++;
       cursor.getAnimations().forEach((animation) => animation.cancel());
