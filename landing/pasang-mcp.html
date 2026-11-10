@@ -44,6 +44,7 @@
     <h1>Pasang MCP</h1>
     <p class="updated">Cloud dulu, selalu. Local khusus desktop dan CLI.</p>
 
+    
     <section data-reveal>
       <h2 id="hosted">Cloud MCP (hosted) — wajib untuk Web, Desktop, CLI</h2>
       <p class="muted">Satu endpoint ke server hosted Opera Agent. Semua AI harness terhubung melalui URL yang sama — sign in satu kali via OAuth, lalu 35 tool langsung tersedia.</p>
@@ -53,19 +54,23 @@
         <button type="button" data-copy="endpoint" data-i18n="copy">Salin</button>
       </div>
 
-      <div class="harnessGridThree">
-        <div class="harnessCol">
-          <span class="harnessColTag">Web</span>
-          <h3 class="harnessColTitle">ChatGPT · Claude</h3>
+      <div class="mcpCats">
+      <details class="mcpCat">
+        <summary><span class="mcpIndex" aria-hidden="true">01</span><span>Web — ChatGPT &amp; Claude</span></summary>
+        <div class="mcpCatBody">
+        <details class="mcpProvider" id="chatgpt">
+          <summary><span class="mcpIndex" aria-hidden="true">01</span><span>ChatGPT</span></summary>
+          <div class="mcpProviderBody">
           <ol class="steps">
-            <li><strong>URL.</strong> Tempel endpoint ke connector (ChatGPT / Claude).</li>
-            <li><strong>Sign in.</strong> Klik Sign in dan ikuti OAuth Opera Agent di browser.</li>
-            <li><strong>Izinkan tool.</strong> Pilih Allow all tools; 35 tool langsung aktif.</li>
-          </ol>
-
-          <div class="harnessCard" id="chatgpt">
-        <h2>ChatGPT (web)</h2>
-<div class="mcpDemo" data-agent="chatgpt" aria-hidden="true">
+                <li><strong>Buka chat kosong.</strong> Klik avatar <code>Afnan</code> di kiri bawah, lalu <em>Settings</em>.</li>
+                <li><strong>Apps → Advanced settings.</strong> Aktifkan <em>Developer mode</em> (ELEVATED RISK), lalu klik <em>Create app</em>.</li>
+                <li><strong>Isi New App.</strong> <em>Name</em> = <code>Opera Agent</code>, <em>Connection</em> = Server URL, <em>URL</em> = endpoint di atas, <em>Authentication</em> = OAuth. Centang “I understand and want to continue”, lalu klik <em>Create</em>.</li>
+                <li><strong>Sign in to Opera Agent.</strong> Klik <em>Authorize</em> — Opera Agent muncul di <em>Enabled apps</em> sebagai aplikasi <code>DEV</code>.</li>
+                <li><strong>Kembali ke chat.</strong> Klik <em>+</em> di composer → <em>Developer mode</em>, aktifkan <em>Opera Agent</em> — bar input jadi oranye.</li>
+                <li><strong>Ketik tugas dan kirim.</strong> Coba <em>“Summarize the Q3 sales sheet and post it to Slack”</em> — Opera Agent menjawab lewat tool <code>read_sheet</code>.</li>
+              </ol>
+          <p class="muted">Opera Agent belum terdaftar di direktori ChatGPT, jadi pemasangannya lewat Developer mode sebagai aplikasi <code>DEV</code>. Setelah OAuth selesai, tool dipanggil dari menu <em>Developer mode</em> di composer; kartu tool tampil di atas jawaban.</p>
+          <div class="mcpDemo" data-agent="chatgpt" aria-hidden="true">
               <div class="ddCanvas">
                 <div class="ddIcons" aria-hidden="true">
                   <span class="ddIcon"><svg viewBox="0 0 24 24" class="ddPct"><rect x="3" y="5" width="18" height="12" rx="1.6" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M9 21h6M12 17v4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg><em>This PC</em></span>
@@ -217,20 +222,22 @@
                 <li>Ketik tugas dan kirim; Opera Agent menjawab lewat tool read_sheet.</li>
               </ol>
             </div>
-
-              <ol class="steps">
-                <li><strong>Buka chat kosong.</strong> Klik avatar <code>Afnan</code> di kiri bawah, lalu <em>Settings</em>.</li>
-                <li><strong>Apps → Advanced settings.</strong> Aktifkan <em>Developer mode</em> (ELEVATED RISK), lalu klik <em>Create app</em>.</li>
-                <li><strong>Isi New App.</strong> <em>Name</em> = <code>Opera Agent</code>, <em>Connection</em> = Server URL, <em>URL</em> = endpoint di atas, <em>Authentication</em> = OAuth. Centang “I understand and want to continue”, lalu klik <em>Create</em>.</li>
-                <li><strong>Sign in to Opera Agent.</strong> Klik <em>Authorize</em> — Opera Agent muncul di <em>Enabled apps</em> sebagai aplikasi <code>DEV</code>.</li>
-                <li><strong>Kembali ke chat.</strong> Klik <em>+</em> di composer → <em>Developer mode</em>, aktifkan <em>Opera Agent</em> — bar input jadi oranye.</li>
-                <li><strong>Ketik tugas dan kirim.</strong> Coba <em>“Summarize the Q3 sales sheet and post it to Slack”</em> — Opera Agent menjawab lewat tool <code>read_sheet</code>.</li>
+          </div>
+        </details>
+        <details class="mcpProvider" id="claude-web">
+          <summary><span class="mcpIndex" aria-hidden="true">02</span><span>Claude</span></summary>
+          <div class="mcpProviderBody">
+          <ol class="steps">
+                <li><strong>Buka chat kosong.</strong> Klik briefcase di rail kiri → <em>Customize</em>.</li>
+                <li><strong>Connect apps.</strong> Klik kartu <em>Connect apps</em> untuk membuka layar <em>Connectors</em>, lalu klik <strong>+</strong> di kanan atas.</li>
+                <li><strong>Add custom connector.</strong> <em>Name</em> = <code>Opera Agent</code>, <em>Remote MCP server URL</em> = endpoint di atas → <em>Add</em>.</li>
+                <li><strong>Klik Connect.</strong> Klik <em>Authorize</em> — Opera Agent tampil di grup <em>Web</em> dengan centang hijau <em>Connected</em>.</li>
+                <li><strong>Kembali ke chat.</strong> Klik <em>+</em> di composer → <em>Connectors</em>, aktifkan <em>Opera Agent</em>.</li>
+                <li><strong>Ketik tugas dan kirim.</strong> coba <em>“Summarize the Q3 sales sheet and post it to Slack”</em> — Opera Agent menjawab lewat tool <code>read_sheet</code>.</li>
               </ol>
-              <p class="muted">Opera Agent belum terdaftar di direktori ChatGPT, jadi pemasangannya lewat Developer mode sebagai aplikasi <code>DEV</code>. Setelah OAuth selesai, tool dipanggil dari menu <em>Developer mode</em> di composer; kartu tool tampil di atas jawaban.</p>
-
-        <div class="harnessCard" id="claude-web">
-        <h2>Claude web</h2>
-<div class="mcpDemo ccDemo" data-agent="claude" aria-hidden="true">
+          <p class="muted">Connector dipakai per-percakapan — matikan dan hidupkan di menu <em>+</em> yang sama kapan pun.</p>
+          <p class="muted"><strong>Desktop = Cloud + Local.</strong> Cloud untuk akses jauh, Local untuk loopback ke browser di mesin ini.</p>
+          <div class="mcpDemo ccDemo" data-agent="claude" aria-hidden="true">
               <div class="ddCanvas">
                 <div class="ddIcons" aria-hidden="true">
                   <span class="ddIcon"><svg viewBox="0 0 24 24" class="ddPct"><rect x="3" y="5" width="18" height="12" rx="1.6" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M9 21h6M12 17v4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg><em>This PC</em></span>
@@ -371,50 +378,37 @@
                 <span class="ddRipple"></span>
                 <span class="ddChip">35 tools · connected</span>
               </div>
-              <ol class="steps srOnly">
-                <li>Klik briefcase di sidebar kiri untuk membuka Customize.</li>
-                <li>Klik kartu Connect apps untuk membuka layar Connectors.</li>
-                <li>Klik plus di kanan atas, pilih Add custom connector.</li>
-                <li>Name Opera Agent, isi URL endpoint, Add.</li>
-                <li>Klik Connect di baris Opera Agent, klik Authorize; Opera Agent tampil Connected.</li>
-                <li>Kembali ke chat, klik +, aktifkan Opera Agent di Connectors.</li>
-                <li>Ketik tugas dan kirim; Opera Agent menjawab lewat tool read_sheet.</li>
-              </ol>
-            </div>
-
-              <ol class="steps">
-                <li><strong>Buka chat kosong.</strong> Klik briefcase di rail kiri → <em>Customize</em>.</li>
-                <li><strong>Connect apps.</strong> Klik kartu <em>Connect apps</em> untuk membuka layar <em>Connectors</em>, lalu klik <strong>+</strong> di kanan atas.</li>
-                <li><strong>Add custom connector.</strong> <em>Name</em> = <code>Opera Agent</code>, <em>Remote MCP server URL</em> = endpoint di atas → <em>Add</em>.</li>
-                <li><strong>Klik Connect.</strong> Klik <em>Authorize</em> — Opera Agent tampil di grup <em>Web</em> dengan centang hijau <em>Connected</em>.</li>
-                <li><strong>Kembali ke chat.</strong> Klik <em>+</em> di composer → <em>Connectors</em>, aktifkan <em>Opera Agent</em>.</li>
-                <li><strong>Ketik tugas dan kirim.</strong> coba <em>“Summarize the Q3 sales sheet and post it to Slack”</em> — Opera Agent menjawab lewat tool <code>read_sheet</code>.</li>
-              </ol>
-              <p class="muted">Connector dipakai per-percakapan — matikan dan hidupkan di menu <em>+</em> yang sama kapan pun.</p>
-      </div>
-      </div>
-      <div class="harnessDots" role="tablist" aria-label="Geser antara harness">
-        <button class="harnessDot is-active" type="button" data-dot="0" aria-label="ChatGPT (web)" aria-selected="true"></button>
-        <button class="harnessDot" type="button" data-dot="1" aria-label="Claude web" aria-selected="false"></button>
-      </div>
-    </div>
-    <div class="harnessPanel" id="panelDesktop" role="tabpanel" aria-labelledby="tabDesktop" data-harness-panel="desktop" hidden>
-      <p class="muted"><strong>Desktop = Cloud + Local.</strong> Cloud untuk akses jauh, Local untuk loopback ke browser di mesin ini.</p>
-      <div class="harnessTrack" data-harness-track="desktop">
+          </div>
+        </details>
         </div>
-
-        <div class="harnessCol">
-          <span class="harnessColTag">Desktop</span>
-          <h3 class="harnessColTitle">OpenCode · VS Code · Kilo · Cursor</h3>
-          <ol class="steps">
-            <li><strong>URL.</strong> Jalankan <code>opencode mcp add opera-agent --url https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp</code> atau masukkan URL di config harness.</li>
-            <li><strong>Sign in.</strong> Jalankan <code>opencode mcp auth opera-agent</code> atau buka OAuth di browser.</li>
-            <li><strong>Izinkan tool.</strong> Pilih Allow all tools; 35 tool langsung aktif.</li>
-          </ol>
-
-          <div class="harnessCard" id="opencode">
-        <h2>OpenCode</h2>
-<div class="mcpDemo" data-agent="opencode" aria-hidden="true">
+      </details>
+      <details class="mcpCat">
+        <summary><span class="mcpIndex" aria-hidden="true">02</span><span>Desktop — OpenCode &middot; VS Code &middot; Kilo &middot; Cursor</span></summary>
+        <div class="mcpCatBody">
+        <details class="mcpProvider" id="opencode">
+          <summary><span class="mcpIndex" aria-hidden="true">01</span><span>OpenCode</span></summary>
+          <div class="mcpProviderBody">
+          <p>Tambah ke <code>opencode.json</code>, ganti <code>opera</code> dengan nama device Anda:</p>
+          <div class="copybox">
+                <pre><code id="cfg-opencode">{
+          "mcp": {
+            "opera-agent": {
+              "type": "remote",
+              "url": "https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp",
+              "oauth": { "clientId": "bbc5eb76-f385-435b-8b13-8e339b45e633" },
+              "headers": {
+                "X-Opera-Device": "opera",
+                "X-Opera-Provider": "opencode",
+                "x-region": "ap-southeast-1"
+              }
+            }
+          }
+        }</code></pre>
+                <button type="button" data-copy="cfg-opencode" data-i18n="copy">Salin</button>
+              </div>
+          <p>Mulai ulang OpenCode; tool muncul sebagai <code>opera-agent.*</code>.</p>
+          <p>Mode lokal (npm): tambahkan server <code>command</code> <code>npx -y opera-agent-mcp local</code> dengan tipe <code>local</code> di <code>opencode.json</code>.</p>
+          <div class="mcpDemo" data-agent="opencode" aria-hidden="true">
               <div class="ddCanvas">
                 <div class="ddIcons" aria-hidden="true">
                   <span class="ddIcon"><svg viewBox="0 0 24 24" class="ddPct"><rect x="3" y="5" width="18" height="12" rx="1.6" fill="none" stroke="var(--ink)" stroke-width="1.6"/><path d="M9 21h6M12 17v4" stroke="var(--ink)" stroke-width="1.6" stroke-linecap="round"/></svg><em>This PC</em></span>
@@ -449,31 +443,30 @@
                 <li>Restart harness; tool load saat mulai.</li>
               </ol>
             </div>
-
-              <p>Tambah ke <code>opencode.json</code>, ganti <code>opera</code> dengan nama device Anda:</p>
-              <div class="copybox">
-                <pre><code id="cfg-opencode">{
-          "mcp": {
+          </div>
+        </details>
+        <details class="mcpProvider" id="vscode">
+          <summary><span class="mcpIndex" aria-hidden="true">02</span><span>VS Code</span></summary>
+          <div class="mcpProviderBody">
+          <p>Buat <code>.vscode/mcp.json</code> di workspace, ganti <code>opera</code> dengan nama device Anda:</p>
+          <div class="copybox">
+                <pre><code id="cfg-vscode">{
+          "servers": {
             "opera-agent": {
-              "type": "remote",
+              "type": "http",
               "url": "https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp",
-              "oauth": { "clientId": "bbc5eb76-f385-435b-8b13-8e339b45e633" },
               "headers": {
                 "X-Opera-Device": "opera",
-                "X-Opera-Provider": "opencode",
+                "X-Opera-Provider": "vscode",
                 "x-region": "ap-southeast-1"
               }
             }
           }
         }</code></pre>
-                <button type="button" data-copy="cfg-opencode" data-i18n="copy">Salin</button>
+                <button type="button" data-copy="cfg-vscode" data-i18n="copy">Salin</button>
               </div>
-              <p>Mulai ulang OpenCode; tool muncul sebagai <code>opera-agent.*</code>.</p>
-              <p>Mode lokal (npm): tambahkan server <code>command</code> <code>npx -y opera-agent-mcp local</code> dengan tipe <code>local</code> di <code>opencode.json</code>.</p>
-
-        <div class="harnessCard" id="vscode">
-        <h2>VS Code (Copilot)</h2>
-<div class="mcpDemo" data-agent="vscode" aria-hidden="true">
+          <p>Buka Copilot agent mode (ikon chat → Agent). VS Code akan menandatangani OAuth-nya; tool muncul di daftar alat. Command Palette <code>MCP: List Servers</code> untuk verifikasi.</p>
+          <div class="mcpDemo" data-agent="vscode" aria-hidden="true">
               <div class="ddCanvas">
                 <div class="ddIcons" aria-hidden="true">
                   <span class="ddIcon"><svg viewBox="0 0 24 24" class="ddPct"><rect x="3" y="5" width="18" height="12" rx="1.6" fill="none" stroke="var(--ink)" stroke-width="1.6"/><path d="M9 21h6M12 17v4" stroke="var(--ink)" stroke-width="1.6" stroke-linecap="round"/></svg><em>This PC</em></span>
@@ -510,29 +503,28 @@
                 <li>Restart harness; tool load saat mulai.</li>
               </ol>
             </div>
-
-              <p>Buat <code>.vscode/mcp.json</code> di workspace, ganti <code>opera</code> dengan nama device Anda:</p>
-              <div class="copybox">
-                <pre><code id="cfg-vscode">{
-          "servers": {
+          </div>
+        </details>
+        <details class="mcpProvider" id="kilo">
+          <summary><span class="mcpIndex" aria-hidden="true">03</span><span>Kilo Code</span></summary>
+          <div class="mcpProviderBody">
+          <p>Tambah ke MCP settings (JSON), ganti <code>opera</code> dengan nama device Anda:</p>
+          <div class="copybox">
+                <pre><code id="cfg-kilo">{
+          "mcpServers": {
             "opera-agent": {
-              "type": "http",
               "url": "https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp",
               "headers": {
                 "X-Opera-Device": "opera",
-                "X-Opera-Provider": "vscode",
+                "X-Opera-Provider": "kilo",
                 "x-region": "ap-southeast-1"
               }
             }
           }
         }</code></pre>
-                <button type="button" data-copy="cfg-vscode" data-i18n="copy">Salin</button>
+                <button type="button" data-copy="cfg-kilo" data-i18n="copy">Salin</button>
               </div>
-              <p>Buka Copilot agent mode (ikon chat → Agent). VS Code akan menandatangani OAuth-nya; tool muncul di daftar alat. Command Palette <code>MCP: List Servers</code> untuk verifikasi.</p>
-
-        <div class="harnessCard" id="kilo">
-        <h2>Kilo Code</h2>
-<div class="mcpDemo" data-agent="kilo" aria-hidden="true">
+          <div class="mcpDemo" data-agent="kilo" aria-hidden="true">
               <div class="ddCanvas">
                 <div class="ddIcons" aria-hidden="true">
                   <span class="ddIcon"><svg viewBox="0 0 24 24" class="ddPct"><rect x="3" y="5" width="18" height="12" rx="1.6" fill="none" stroke="var(--ink)" stroke-width="1.6"/><path d="M9 21h6M12 17v4" stroke="var(--ink)" stroke-width="1.6" stroke-linecap="round"/></svg><em>This PC</em></span>
@@ -569,27 +561,35 @@
                 <li>Restart harness; tool load saat mulai.</li>
               </ol>
             </div>
-
-              <p>Tambah ke MCP settings (JSON), ganti <code>opera</code> dengan nama device Anda:</p>
-              <div class="copybox">
-                <pre><code id="cfg-kilo">{
+          </div>
+        </details>
+        <details class="mcpProvider" id="cursor">
+          <summary><span class="mcpIndex" aria-hidden="true">04</span><span>Cursor</span></summary>
+          <div class="mcpProviderBody">
+          <ol class="steps">
+            <li><strong>URL.</strong> Jalankan <code>opencode mcp add opera-agent --url https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp</code> atau tambahkan URL ke <code>.codex/config.toml</code>.</li>
+            <li><strong>Sign in.</strong> Jalankan <code>opencode mcp auth opera-agent</code>; OAuth akan terbuka di browser default Anda.</li>
+            <li><strong>Izinkan tool.</strong> Pilih Allow all tools; 35 tool langsung aktif.</li>
+          </ol>
+          <p>Tambah ke <code>~/.cursor/mcp.json</code>, ganti <code>opera</code> dengan nama device Anda:</p>
+          <div class="copybox">
+                <pre><code id="cfg-cursor">{
           "mcpServers": {
             "opera-agent": {
               "url": "https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp",
               "headers": {
                 "X-Opera-Device": "opera",
-                "X-Opera-Provider": "kilo",
+                "X-Opera-Provider": "cursor",
                 "x-region": "ap-southeast-1"
               }
             }
           }
         }</code></pre>
-                <button type="button" data-copy="cfg-kilo" data-i18n="copy">Salin</button>
+                <button type="button" data-copy="cfg-cursor" data-i18n="copy">Salin</button>
               </div>
-
-        <div class="harnessCard" id="cursor">
-        <h2>Cursor</h2>
-<div class="mcpDemo" data-agent="cursor" aria-hidden="true">
+          <p>Mode lokal (npm): ganti isi <code>opera-agent</code> menjadi <code>{ "command": "npx", "args": ["-y", "opera-agent-mcp", "local"] }</code>.</p>
+          <p class="muted"><strong>CLI = Cloud + Local.</strong> Cloud untuk akses jauh, Local untuk loopback ke browser di mesin ini.</p>
+          <div class="mcpDemo" data-agent="cursor" aria-hidden="true">
               <div class="ddCanvas">
                 <div class="ddIcons" aria-hidden="true">
                   <span class="ddIcon"><svg viewBox="0 0 24 24" class="ddPct"><rect x="3" y="5" width="18" height="12" rx="1.6" fill="none" stroke="var(--ink)" stroke-width="1.6"/><path d="M9 21h6M12 17v4" stroke="var(--ink)" stroke-width="1.6" stroke-linecap="round"/></svg><em>This PC</em></span>
@@ -625,50 +625,26 @@
                 <li>Restart harness; tool load saat mulai.</li>
               </ol>
             </div>
-
-              <p>Tambah ke <code>~/.cursor/mcp.json</code>, ganti <code>opera</code> dengan nama device Anda:</p>
-              <div class="copybox">
-                <pre><code id="cfg-cursor">{
-          "mcpServers": {
-            "opera-agent": {
-              "url": "https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp",
-              "headers": {
-                "X-Opera-Device": "opera",
-                "X-Opera-Provider": "cursor",
-                "x-region": "ap-southeast-1"
-              }
-            }
-          }
-        }</code></pre>
-                <button type="button" data-copy="cfg-cursor" data-i18n="copy">Salin</button>
-              </div>
-              <p>Mode lokal (npm): ganti isi <code>opera-agent</code> menjadi <code>{ "command": "npx", "args": ["-y", "opera-agent-mcp", "local"] }</code>.</p>
-      </div>
-      </div>
-      <div class="harnessDots" role="tablist" aria-label="Geser antara harness">
-        <button class="harnessDot is-active" type="button" data-dot="0" aria-label="OpenCode" aria-selected="true"></button>
-        <button class="harnessDot" type="button" data-dot="1" aria-label="VS Code (Copilot)" aria-selected="false"></button>
-        <button class="harnessDot" type="button" data-dot="2" aria-label="Kilo Code" aria-selected="false"></button>
-        <button class="harnessDot" type="button" data-dot="3" aria-label="Cursor" aria-selected="false"></button>
-      </div>
-    </div>
-    <div class="harnessPanel" id="panelCli" role="tabpanel" aria-labelledby="tabCli" data-harness-panel="cli" hidden>
-      <p class="muted"><strong>CLI = Cloud + Local.</strong> Cloud untuk akses jauh, Local untuk loopback ke browser di mesin ini.</p>
-      <div class="harnessTrack" data-harness-track="cli">
+          </div>
+        </details>
         </div>
-
-        <div class="harnessCol">
-          <span class="harnessColTag">CLI</span>
-          <h3 class="harnessColTitle">Codex · Claude Code · Terminal</h3>
-          <ol class="steps">
-            <li><strong>URL.</strong> Jalankan <code>opencode mcp add opera-agent --url https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp</code> atau tambahkan URL ke <code>.codex/config.toml</code>.</li>
-            <li><strong>Sign in.</strong> Jalankan <code>opencode mcp auth opera-agent</code>; OAuth akan terbuka di browser default Anda.</li>
-            <li><strong>Izinkan tool.</strong> Pilih Allow all tools; 35 tool langsung aktif.</li>
-          </ol>
-
-          <div class="harnessCard" id="codex">
-        <h2>Codex CLI</h2>
-<div class="mcpDemo" data-agent="codex" aria-hidden="true">
+      </details>
+      <details class="mcpCat">
+        <summary><span class="mcpIndex" aria-hidden="true">03</span><span>CLI — Codex &middot; Claude Code</span></summary>
+        <div class="mcpCatBody">
+        <details class="mcpProvider" id="codex">
+          <summary><span class="mcpIndex" aria-hidden="true">01</span><span>Codex</span></summary>
+          <div class="mcpProviderBody">
+          <p>Tambahkan ke <code>~/.codex/config.toml</code>, ganti <code>opera</code> dengan nama device Anda:</p>
+          <div class="copybox">
+                <pre><code id="cfg-codex">[mcp_servers.opera-agent]
+        url = "https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp"
+        headers = { "X-Opera-Device" = "opera", "X-Opera-Provider" = "codex", "x-region" = "ap-southeast-1" }
+        startup_timeout_sec = 30</code></pre>
+                <button type="button" data-copy="cfg-codex" data-i18n="copy">Salin</button>
+              </div>
+          <p>Codex akan menandatangani OAuth-nya sendiri. Verifikasi dengan menanyakan status, atau ketik <code>/mcp</code> di Codex dan lihat <code>opera-agent</code> di daftar.</p>
+          <div class="mcpDemo" data-agent="codex" aria-hidden="true">
               <div class="ddCanvas">
                 <div class="ddIcons" aria-hidden="true">
                   <span class="ddIcon"><svg viewBox="0 0 24 24" class="ddPct"><rect x="3" y="5" width="18" height="12" rx="1.6" fill="none" stroke="var(--ink)" stroke-width="1.6"/><path d="M9 21h6M12 17v4" stroke="var(--ink)" stroke-width="1.6" stroke-linecap="round"/></svg><em>This PC</em></span>
@@ -688,20 +664,23 @@
               </div>
               <ol class="steps srOnly"><li>Baca konfigurasi di ~/.codex/config.toml.</li><li>Jalankan /mcp dan lihat opera-agent.</li></ol>
             </div>
-
-              <p>Tambahkan ke <code>~/.codex/config.toml</code>, ganti <code>opera</code> dengan nama device Anda:</p>
-              <div class="copybox">
-                <pre><code id="cfg-codex">[mcp_servers.opera-agent]
-        url = "https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp"
-        headers = { "X-Opera-Device" = "opera", "X-Opera-Provider" = "codex", "x-region" = "ap-southeast-1" }
-        startup_timeout_sec = 30</code></pre>
-                <button type="button" data-copy="cfg-codex" data-i18n="copy">Salin</button>
+          </div>
+        </details>
+        <details class="mcpProvider" id="claude-code">
+          <summary><span class="mcpIndex" aria-hidden="true">02</span><span>Claude Code</span></summary>
+          <div class="mcpProviderBody">
+          <p>Di terminal, ganti <code>opera</code> dengan nama device Anda:</p>
+          <div class="copybox">
+                <pre><code id="cfg-claude-code">claude mcp add --transport http opera-agent https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp --header "X-Opera-Device: opera" --header "X-Opera-Provider: claude" --header "x-region: ap-southeast-1"</code></pre>
+                <button type="button" data-copy="cfg-claude-code" data-i18n="copy">Salin</button>
               </div>
-              <p>Codex akan menandatangani OAuth-nya sendiri. Verifikasi dengan menanyakan status, atau ketik <code>/mcp</code> di Codex dan lihat <code>opera-agent</code> di daftar.</p>
-
-        <div class="harnessCard" id="claude-code">
-        <h2>Claude Code</h2>
-<div class="mcpDemo" data-agent="claude-code" aria-hidden="true">
+          <p>Verifikasi: <code>claude mcp list</code> harus menampilkan <code>opera-agent</code>.</p>
+          <p>Mode lokal (npm), untuk mesin yang sama:</p>
+          <div class="copybox">
+                <pre><code id="cfg-claude-code-stdio">claude mcp add opera-agent -- npx -y opera-agent-mcp local</code></pre>
+                <button type="button" data-copy="cfg-claude-code-stdio" data-i18n="copy">Salin</button>
+              </div>
+          <div class="mcpDemo" data-agent="claude-code" aria-hidden="true">
               <div class="ddCanvas">
                 <div class="ddIcons" aria-hidden="true">
                   <span class="ddIcon"><svg viewBox="0 0 24 24" class="ddPct"><rect x="3" y="5" width="18" height="12" rx="1.6" fill="none" stroke="var(--ink)" stroke-width="1.6"/><path d="M9 21h6M12 17v4" stroke="var(--ink)" stroke-width="1.6" stroke-linecap="round"/></svg><em>This PC</em></span>
@@ -718,67 +697,15 @@
               </div>
               <ol class="steps srOnly"><li>Tambahkan server via claude mcp add.</li><li>Claude akan menautkan OAuth dan memuat tool.</li></ol>
             </div>
-
-              <p>Di terminal, ganti <code>opera</code> dengan nama device Anda:</p>
-              <div class="copybox">
-                <pre><code id="cfg-claude-code">claude mcp add --transport http opera-agent https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp --header "X-Opera-Device: opera" --header "X-Opera-Provider: claude" --header "x-region: ap-southeast-1"</code></pre>
-                <button type="button" data-copy="cfg-claude-code" data-i18n="copy">Salin</button>
-              </div>
-              <p>Verifikasi: <code>claude mcp list</code> harus menampilkan <code>opera-agent</code>.</p>
-              <p>Mode lokal (npm), untuk mesin yang sama:</p>
-              <div class="copybox">
-                <pre><code id="cfg-claude-code-stdio">claude mcp add opera-agent -- npx -y opera-agent-mcp local</code></pre>
-                <button type="button" data-copy="cfg-claude-code-stdio" data-i18n="copy">Salin</button>
-              </div>
-
-        <div class="harnessCard" id="terminal">
-        <h2>Terminal (npm)</h2>
-<div class="mcpDemo" data-agent="terminal" aria-hidden="true">
-              <div class="ddCanvas">
-                <div class="ddIcons" aria-hidden="true">
-                  <span class="ddIcon"><svg viewBox="0 0 24 24" class="ddPct"><rect x="3" y="5" width="18" height="12" rx="1.6" fill="none" stroke="var(--ink)" stroke-width="1.6"/><path d="M9 21h6M12 17v4" stroke="var(--ink)" stroke-width="1.6" stroke-linecap="round"/></svg><em>This PC</em></span>
-                  <span class="ddIcon"><svg viewBox="0 0 24 24" class="ddPct"><path d="M11.3 2 6.2 12.4h4.6L9.3 22l7.4-10.9h-4.7L14.4 2z" style="fill:var(--accent)"/></svg><em>Opera Agent</em></span>
-                </div>
-                <div class="ddWin">
-                  <div class="ddTitleBar"><span class="ddBrand npm"><svg viewBox="0 0 24 24" class="brandMark" aria-hidden="true"><text x="12" y="15.4" font-size="8.4" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-weight="700" text-anchor="middle" fill="var(--surface)">npm</text></svg></span><span class="ddTitle">PowerShell</span><span class="ddGlyphs"><i class="ddMin"></i><i class="ddMax"></i><i class="ddClose"></i></span></div>
-                  <div class="ddTermBody"><span class="ddLine " data-line="0" data-raw='npm install -g opera-agent-mcp'><span class="ddPrompt">PS C:\></span> <span class="ddLineText"></span></span><span class="ddLine dim" data-line="1">added 23 packages in 2s</span><span class="ddLine " data-line="2" data-raw='opera-agent-mcp doctor'><span class="ddPrompt">PS C:\></span> <span class="ddLineText"></span></span><span class="ddLine ok" data-line="3">local  OK  paired  version matches</span></div>
-                </div>
-                <span class="ddTaskbar"><span class="ddTb"><svg viewBox="0 0 22 22" aria-hidden="true"><path fill="#00adef" d="M3 4.5h7.4v7.4H3zM11.6 4.5H19v7.4h-7.4zM3 12.6h7.4v7.4H3zM11.6 12.6H19v7.4h-7.4z"/></svg></span><span class="ddTb"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6" fill="none" stroke="var(--ink)" stroke-width="1.7"/><path d="M15.5 15.5 21 21" stroke="var(--ink)" stroke-width="1.7" stroke-linecap="round"/></svg></span><span class="ddTb"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8" fill="none" stroke="var(--ink)" stroke-width="1.9"/><circle cx="12" cy="12" r="3.6" fill="none" stroke="var(--ink)" stroke-width="1.3"/></svg></span><span class="ddTb"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8A2 2 0 0 1 5 6h4.6l2 2H19a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8z" fill="var(--yellow)"/></svg></span><span class="ddTb ddTbAgent"><span class="ddBrand npm"><svg viewBox="0 0 24 24" class="brandMark" aria-hidden="true"><text x="12" y="15.4" font-size="8.4" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-weight="700" text-anchor="middle" fill="var(--surface)">npm</text></svg></span></span></span>
-                <span class="demoCursor ddCursor"><svg viewBox="0 0 24 24" class="cursorArrow"><path d="M5 3 19 12.5l-6.5 1.4L9 20z" style="fill:var(--ink);stroke:var(--surface);stroke-width:1.3;stroke-linejoin:round"/></svg></span>
-                <span class="ddRipple"></span>
-                <span class="ddChip">35 tools · connected</span>
-              </div>
-              <ol class="steps srOnly"><li>npm install -g opera-agent-mcp.</li><li>Verifikasi dengan opera-agent-mcp doctor.</li></ol>
-            </div>
-
-              <p>Satu perintah, satu mesin. Untuk harness yang berjalan di mesin ini:</p>
-              <div class="copybox">
-                <pre><code id="cfg-npm">npm install -g opera-agent-mcp</code></pre>
-                <button type="button" data-copy="cfg-npm" data-i18n="copy">Salin</button>
-              </div>
-              <p>Empat mode:</p>
-              <div class="copybox">
-                <pre><code id="cfg-modes">opera-agent-mcp local    stdio, drives the open browser on this machine
-        opera-agent-mcp cloud    stdio, drives it through the hosted server
-        opera-agent-mcp auth     OAuth sign-in; token stored beside this install
-        opera-agent-mcp doctor   prints what is connected, the plan, and what the plan allows</code></pre>
-                <button type="button" data-copy="cfg-modes" data-i18n="copy">Salin</button>
-              </div>
-              <p>Verifikasi koneksi: <code>opera-agent-mcp doctor</code>.</p>
-      </div>
-      </div>
-      <div class="harnessDots" role="tablist" aria-label="Geser antara harness">
-        <button class="harnessDot is-active" type="button" data-dot="0" aria-label="Codex CLI" aria-selected="true"></button>
-        <button class="harnessDot" type="button" data-dot="1" aria-label="Claude Code" aria-selected="false"></button>
-        <button class="harnessDot" type="button" data-dot="2" aria-label="Terminal (npm)" aria-selected="false"></button>
-      </div>
-    </div>
-    </section>
+          </div>
+        </details>
+        
         </div>
+      </details>
       </div>
     </section>
 
-<section data-reveal>
+    <section data-reveal>
       <h2 id="local">Local MCP (npm) — wajib untuk Desktop dan CLI</h2>
       <p class="muted">Bridge loopback di mesin Anda — akses langsung ke browser tanpa cloud. Wajib untuk desktop dan CLI; Web tidak membutuhkannya.</p>
 
@@ -786,338 +713,37 @@
         <pre><code id="local-bridge">npx opera-agent-mcp</code></pre>
         <button type="button" data-copy="local-bridge" data-i18n="copy">Salin</button>
       </div>
-      <p class="muted">Syarat: extension Opera Agent terpasang dan sudah di-pair di Chromium.</p>
 
-      <ol class="steps">
+      <div class="mcpCats">
+      <details class="mcpCat">
+        <summary><span class="mcpIndex" aria-hidden="true">01</span><span>Sebelum mulai</span></summary>
+        <div class="mcpCatBody">
+          <ol class="steps">
         <li><strong>Extension terpasang.</strong> Opera Agent dimuat di Chromium (<a href="./unduh.html">Unduh</a>).</li>
         <li><strong>Sudah di-pair.</strong> Buka <a href="./dashboard.html">Dashboard</a> → Pairing → buat kode → tempel di extension.</li>
         <li><strong>Jalankan bridge.</strong> <code>npx opera-agent-mcp</code> mendengarkan di loopback; harness lokal bisa memakainya langsung.</li>
         <li><strong>Nama device.</strong> Nama yang Anda pilih saat pairing akan dipakai di semua konfigurasi local.</li>
       </ol>
-
-      <div class="harnessGridTwo">
-        <div class="harnessCol">
-          <span class="harnessColTag">Desktop</span>
-          <h3 class="harnessColTitle">OpenCode · VS Code · Kilo · Cursor</h3>
-          <p class="muted">Local bridge menyediakan akses loopback; editor akan menulis config ke <code>~/.config/opencode/opencode.json</code> (OpenCode) atau <code>.vscode/mcp.json</code> (VS Code).</p>
-
-          <div class="harnessCard" id="opencode">
-        <h2>OpenCode</h2>
-<div class="mcpDemo" data-agent="opencode" aria-hidden="true">
-              <div class="ddCanvas">
-                <div class="ddIcons" aria-hidden="true">
-                  <span class="ddIcon"><svg viewBox="0 0 24 24" class="ddPct"><rect x="3" y="5" width="18" height="12" rx="1.6" fill="none" stroke="var(--ink)" stroke-width="1.6"/><path d="M9 21h6M12 17v4" stroke="var(--ink)" stroke-width="1.6" stroke-linecap="round"/></svg><em>This PC</em></span>
-                  <span class="ddIcon"><svg viewBox="0 0 24 24" class="ddPct"><path d="M11.3 2 6.2 12.4h4.6L9.3 22l7.4-10.9h-4.7L14.4 2z" style="fill:var(--accent)"/></svg><em>Opera Agent</em></span>
-                </div>
-                <div class="ddWin">
-                  <div class="ddTitleBar"><span class="ddBrand oc"><svg viewBox="0 0 24 24" class="brandMark" aria-hidden="true"><path d="M7.5 7l4.5 5-4.5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M13.5 16h3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span><span class="ddTitle">OpenCode</span><span class="ddGlyphs"><i class="ddMin"></i><i class="ddMax"></i><i class="ddClose"></i></span></div>
-                  <div class="ddFileTab">opencode.json<span class="x">×</span></div>
-                  <div class="ddEditorBody">
-                    <div class="ddIconRail"><span class="ddRailDot sel"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M8 4 5 12l3 8M16 4l3 8-3 8M13 4l-2 16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="ddRailDot"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M5 7h14M5 12h14M5 17h9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span><span class="ddRailDot"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="12" cy="12" r="6" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M12 4v3M12 17v3M4 12h3M17 12h3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></span></div>
-                    <div class="ddCode"><span class="k">{</span>
-          <span class="s">"mcp"</span>: <span class="k">{</span>
-            <span class="s">"opera-agent"</span>: <span class="k">{</span>
-              <span class="s">"type"</span>: <span class="s">"remote"</span>,
-              <span class="s">"url"</span>: <span class="s">"https://nenmkmtvjremqphfqnfw.supabase.co/functions/v<span class="a">1</span>/opera-agent-mcp"</span>,
-              <span class="s">"oauth"</span>: <span class="k">{</span> <span class="s">"clientId"</span>: <span class="s">"bbc<span class="a">5</span>eb<span class="a">76</span>-…"</span> <span class="k">}</span>
-            <span class="k">}</span>
-          <span class="k">}</span>
-        <span class="k">}</span>
         </div>
-                  </div>
-                  <div class="ddStatus"><span class="dim">UTF-8  Ln 6, Col 2</span><span class="dim ddStatusRight">opera-agent · 35 tools</span></div>
-                </div>
-                <span class="ddTaskbar"><span class="ddTb"><svg viewBox="0 0 22 22" aria-hidden="true"><path fill="#00adef" d="M3 4.5h7.4v7.4H3zM11.6 4.5H19v7.4h-7.4zM3 12.6h7.4v7.4H3zM11.6 12.6H19v7.4h-7.4z"/></svg></span><span class="ddTb"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6" fill="none" stroke="var(--ink)" stroke-width="1.7"/><path d="M15.5 15.5 21 21" stroke="var(--ink)" stroke-width="1.7" stroke-linecap="round"/></svg></span><span class="ddTb"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8" fill="none" stroke="var(--ink)" stroke-width="1.9"/><circle cx="12" cy="12" r="3.6" fill="none" stroke="var(--ink)" stroke-width="1.3"/></svg></span><span class="ddTb"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8A2 2 0 0 1 5 6h4.6l2 2H19a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8z" fill="var(--yellow)"/></svg></span><span class="ddTb ddTbAgent"><span class="ddBrand oc"><svg viewBox="0 0 24 24" class="brandMark" aria-hidden="true"><path d="M7.5 7l4.5 5-4.5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M13.5 16h3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span></span></span>
-                <span class="demoCursor ddCursor"><svg viewBox="0 0 24 24" class="cursorArrow"><path d="M5 3 19 12.5l-6.5 1.4L9 20z" style="fill:var(--ink);stroke:var(--surface);stroke-width:1.3;stroke-linejoin:round"/></svg></span>
-                <span class="ddRipple"></span>
-                <span class="ddChip">35 tools · connected</span>
+      </details>
+      <details class="mcpCat">
+        <summary><span class="mcpIndex" aria-hidden="true">02</span><span>Contoh — npm di Terminal</span></summary>
+        <div class="mcpCatBody">
+          <p>Satu perintah, satu mesin. Untuk harness yang berjalan di mesin ini:</p>
+          <div class="copybox">
+                <pre><code id="cfg-npm">npm install -g opera-agent-mcp</code></pre>
+                <button type="button" data-copy="cfg-npm" data-i18n="copy">Salin</button>
               </div>
-              <ol class="steps srOnly">
-                <li>Buka berkas konfigurasi MCP Anda.</li>
-                <li>Tempel server Opera Agent, selesaikan OAuth.</li>
-                <li>Restart harness; tool load saat mulai.</li>
-              </ol>
-            </div>
-
-              <p>Tambah ke <code>opencode.json</code>, ganti <code>opera</code> dengan nama device Anda:</p>
-              <div class="copybox">
-                <pre><code id="cfg-opencode">{
-          "mcp": {
-            "opera-agent": {
-              "type": "remote",
-              "url": "https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp",
-              "oauth": { "clientId": "bbc5eb76-f385-435b-8b13-8e339b45e633" },
-              "headers": {
-                "X-Opera-Device": "opera",
-                "X-Opera-Provider": "opencode",
-                "x-region": "ap-southeast-1"
-              }
-            }
-          }
-        }</code></pre>
-                <button type="button" data-copy="cfg-opencode" data-i18n="copy">Salin</button>
+          <p>Empat mode:</p>
+          <div class="copybox">
+                <pre><code id="cfg-modes">opera-agent-mcp local    stdio, drives the open browser on this machine
+        opera-agent-mcp cloud    stdio, drives it through the hosted server
+        opera-agent-mcp auth     OAuth sign-in; token stored beside this install
+        opera-agent-mcp doctor   prints what is connected, the plan, and what the plan allows</code></pre>
+                <button type="button" data-copy="cfg-modes" data-i18n="copy">Salin</button>
               </div>
-              <p>Mulai ulang OpenCode; tool muncul sebagai <code>opera-agent.*</code>.</p>
-              <p>Mode lokal (npm): tambahkan server <code>command</code> <code>npx -y opera-agent-mcp local</code> dengan tipe <code>local</code> di <code>opencode.json</code>.</p>
-
-        <div class="harnessCard" id="vscode">
-        <h2>VS Code (Copilot)</h2>
-<div class="mcpDemo" data-agent="vscode" aria-hidden="true">
-              <div class="ddCanvas">
-                <div class="ddIcons" aria-hidden="true">
-                  <span class="ddIcon"><svg viewBox="0 0 24 24" class="ddPct"><rect x="3" y="5" width="18" height="12" rx="1.6" fill="none" stroke="var(--ink)" stroke-width="1.6"/><path d="M9 21h6M12 17v4" stroke="var(--ink)" stroke-width="1.6" stroke-linecap="round"/></svg><em>This PC</em></span>
-                  <span class="ddIcon"><svg viewBox="0 0 24 24" class="ddPct"><path d="M11.3 2 6.2 12.4h4.6L9.3 22l7.4-10.9h-4.7L14.4 2z" style="fill:var(--accent)"/></svg><em>Opera Agent</em></span>
-                </div>
-                <div class="ddWin">
-                  <div class="ddTitleBar"><span class="ddBrand vsc"><svg viewBox="0 0 24 24" class="brandMark" aria-hidden="true"><path d="M6 4.5 16 12 6 19.5l4-7.5z" fill="currentColor"/><path d="M16 12 9.5 19.6 6 19.6 12.5 12 6 4.4 9.5 4.4z" fill="currentColor" opacity=".35"/></svg></span><span class="ddTitle">Visual Studio Code</span><span class="ddGlyphs"><i class="ddMin"></i><i class="ddMax"></i><i class="ddClose"></i></span></div>
-                  <div class="ddFileTab">mcp.json — .vscode<span class="x">×</span></div>
-                  <div class="ddEditorBody">
-                    <div class="ddIconRail"><span class="ddRailDot sel"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M8 4 5 12l3 8M16 4l3 8-3 8M13 4l-2 16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="ddRailDot"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M5 7h14M5 12h14M5 17h9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span><span class="ddRailDot"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="12" cy="12" r="6" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M12 4v3M12 17v3M4 12h3M17 12h3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></span></div>
-                    <div class="ddCode"><span class="k">{</span>
-          <span class="s">"servers"</span>: <span class="k">{</span>
-            <span class="s">"opera-agent"</span>: <span class="k">{</span>
-              <span class="s">"type"</span>: <span class="s">"http"</span>,
-              <span class="s">"url"</span>: <span class="s">"https://nenmkmtvjremqphfqnfw.supabase.co/functions/v<span class="a">1</span>/opera-agent-mcp"</span>,
-              <span class="s">"headers"</span>: <span class="k">{</span>
-                <span class="s">"X-Opera-Device"</span>: <span class="s">"opera"</span>
-              <span class="k">}</span>
-            <span class="k">}</span>
-          <span class="k">}</span>
-        <span class="k">}</span>
-        </div>
-                  </div>
-                  <div class="ddStatus"><span class="dim">UTF-8  Ln 6, Col 2</span><span class="dim ddStatusRight">opera-agent · 35 tools</span></div>
-                </div>
-                <span class="ddTaskbar"><span class="ddTb"><svg viewBox="0 0 22 22" aria-hidden="true"><path fill="#00adef" d="M3 4.5h7.4v7.4H3zM11.6 4.5H19v7.4h-7.4zM3 12.6h7.4v7.4H3zM11.6 12.6H19v7.4h-7.4z"/></svg></span><span class="ddTb"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6" fill="none" stroke="var(--ink)" stroke-width="1.7"/><path d="M15.5 15.5 21 21" stroke="var(--ink)" stroke-width="1.7" stroke-linecap="round"/></svg></span><span class="ddTb"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8" fill="none" stroke="var(--ink)" stroke-width="1.9"/><circle cx="12" cy="12" r="3.6" fill="none" stroke="var(--ink)" stroke-width="1.3"/></svg></span><span class="ddTb"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8A2 2 0 0 1 5 6h4.6l2 2H19a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8z" fill="var(--yellow)"/></svg></span><span class="ddTb ddTbAgent"><span class="ddBrand vsc"><svg viewBox="0 0 24 24" class="brandMark" aria-hidden="true"><path d="M6 4.5 16 12 6 19.5l4-7.5z" fill="currentColor"/><path d="M16 12 9.5 19.6 6 19.6 12.5 12 6 4.4 9.5 4.4z" fill="currentColor" opacity=".35"/></svg></span></span></span>
-                <span class="demoCursor ddCursor"><svg viewBox="0 0 24 24" class="cursorArrow"><path d="M5 3 19 12.5l-6.5 1.4L9 20z" style="fill:var(--ink);stroke:var(--surface);stroke-width:1.3;stroke-linejoin:round"/></svg></span>
-                <span class="ddRipple"></span>
-                <span class="ddChip">35 tools · connected</span>
-              </div>
-              <ol class="steps srOnly">
-                <li>Buka berkas konfigurasi MCP Anda.</li>
-                <li>Tempel server Opera Agent, selesaikan OAuth.</li>
-                <li>Restart harness; tool load saat mulai.</li>
-              </ol>
-            </div>
-
-              <p>Buat <code>.vscode/mcp.json</code> di workspace, ganti <code>opera</code> dengan nama device Anda:</p>
-              <div class="copybox">
-                <pre><code id="cfg-vscode">{
-          "servers": {
-            "opera-agent": {
-              "type": "http",
-              "url": "https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp",
-              "headers": {
-                "X-Opera-Device": "opera",
-                "X-Opera-Provider": "vscode",
-                "x-region": "ap-southeast-1"
-              }
-            }
-          }
-        }</code></pre>
-                <button type="button" data-copy="cfg-vscode" data-i18n="copy">Salin</button>
-              </div>
-              <p>Buka Copilot agent mode (ikon chat → Agent). VS Code akan menandatangani OAuth-nya; tool muncul di daftar alat. Command Palette <code>MCP: List Servers</code> untuk verifikasi.</p>
-
-        <div class="harnessCard" id="kilo">
-        <h2>Kilo Code</h2>
-<div class="mcpDemo" data-agent="kilo" aria-hidden="true">
-              <div class="ddCanvas">
-                <div class="ddIcons" aria-hidden="true">
-                  <span class="ddIcon"><svg viewBox="0 0 24 24" class="ddPct"><rect x="3" y="5" width="18" height="12" rx="1.6" fill="none" stroke="var(--ink)" stroke-width="1.6"/><path d="M9 21h6M12 17v4" stroke="var(--ink)" stroke-width="1.6" stroke-linecap="round"/></svg><em>This PC</em></span>
-                  <span class="ddIcon"><svg viewBox="0 0 24 24" class="ddPct"><path d="M11.3 2 6.2 12.4h4.6L9.3 22l7.4-10.9h-4.7L14.4 2z" style="fill:var(--accent)"/></svg><em>Opera Agent</em></span>
-                </div>
-                <div class="ddWin">
-                  <div class="ddTitleBar"><span class="ddBrand kai"><svg viewBox="0 0 24 24" class="brandMark" aria-hidden="true"><path d="M6 5h3v14H6zM10 9h3l2-3.5h3.5L15 12.5l3.5 6.5H15l-2-3.5h-3z" fill="currentColor"/></svg></span><span class="ddTitle">Kilo Code</span><span class="ddGlyphs"><i class="ddMin"></i><i class="ddMax"></i><i class="ddClose"></i></span></div>
-                  <div class="ddFileTab">Kilo Code<span class="x">×</span></div>
-                  <div class="ddEditorBody">
-                    <div class="ddIconRail"><span class="ddRailDot sel"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M8 4 5 12l3 8M16 4l3 8-3 8M13 4l-2 16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="ddRailDot"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M5 7h14M5 12h14M5 17h9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span><span class="ddRailDot"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="12" cy="12" r="6" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M12 4v3M12 17v3M4 12h3M17 12h3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></span></div>
-                    <div class="ddCode"><span class="k">{</span>
-          <span class="s">"mcpServers"</span>: <span class="k">{</span>
-            <span class="s">"opera-agent"</span>: <span class="k">{</span>
-              <span class="s">"url"</span>: <span class="s">"https://nenmkmtvjremqphfqnfw.supabase.co/functions/v<span class="a">1</span>/opera-agent-mcp"</span>,
-              <span class="s">"headers"</span>: <span class="k">{</span>
-                <span class="s">"X-Opera-Device"</span>: <span class="s">"opera"</span>,
-                <span class="s">"X-Opera-Provider"</span>: <span class="s">"kilo"</span>
-              <span class="k">}</span>
-            <span class="k">}</span>
-          <span class="k">}</span>
-        <span class="k">}</span>
-        </div>
-                  </div>
-                  <div class="ddStatus"><span class="dim">UTF-8  Ln 6, Col 2</span><span class="dim ddStatusRight">opera-agent · 35 tools</span></div>
-                </div>
-                <span class="ddTaskbar"><span class="ddTb"><svg viewBox="0 0 22 22" aria-hidden="true"><path fill="#00adef" d="M3 4.5h7.4v7.4H3zM11.6 4.5H19v7.4h-7.4zM3 12.6h7.4v7.4H3zM11.6 12.6H19v7.4h-7.4z"/></svg></span><span class="ddTb"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6" fill="none" stroke="var(--ink)" stroke-width="1.7"/><path d="M15.5 15.5 21 21" stroke="var(--ink)" stroke-width="1.7" stroke-linecap="round"/></svg></span><span class="ddTb"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8" fill="none" stroke="var(--ink)" stroke-width="1.9"/><circle cx="12" cy="12" r="3.6" fill="none" stroke="var(--ink)" stroke-width="1.3"/></svg></span><span class="ddTb"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8A2 2 0 0 1 5 6h4.6l2 2H19a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8z" fill="var(--yellow)"/></svg></span><span class="ddTb ddTbAgent"><span class="ddBrand kai"><svg viewBox="0 0 24 24" class="brandMark" aria-hidden="true"><path d="M6 5h3v14H6zM10 9h3l2-3.5h3.5L15 12.5l3.5 6.5H15l-2-3.5h-3z" fill="currentColor"/></svg></span></span></span>
-                <span class="demoCursor ddCursor"><svg viewBox="0 0 24 24" class="cursorArrow"><path d="M5 3 19 12.5l-6.5 1.4L9 20z" style="fill:var(--ink);stroke:var(--surface);stroke-width:1.3;stroke-linejoin:round"/></svg></span>
-                <span class="ddRipple"></span>
-                <span class="ddChip">35 tools · connected</span>
-              </div>
-              <ol class="steps srOnly">
-                <li>Buka berkas konfigurasi MCP Anda.</li>
-                <li>Tempel server Opera Agent, selesaikan OAuth.</li>
-                <li>Restart harness; tool load saat mulai.</li>
-              </ol>
-            </div>
-
-              <p>Tambah ke MCP settings (JSON), ganti <code>opera</code> dengan nama device Anda:</p>
-              <div class="copybox">
-                <pre><code id="cfg-kilo">{
-          "mcpServers": {
-            "opera-agent": {
-              "url": "https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp",
-              "headers": {
-                "X-Opera-Device": "opera",
-                "X-Opera-Provider": "kilo",
-                "x-region": "ap-southeast-1"
-              }
-            }
-          }
-        }</code></pre>
-                <button type="button" data-copy="cfg-kilo" data-i18n="copy">Salin</button>
-              </div>
-
-        <div class="harnessCard" id="cursor">
-        <h2>Cursor</h2>
-<div class="mcpDemo" data-agent="cursor" aria-hidden="true">
-              <div class="ddCanvas">
-                <div class="ddIcons" aria-hidden="true">
-                  <span class="ddIcon"><svg viewBox="0 0 24 24" class="ddPct"><rect x="3" y="5" width="18" height="12" rx="1.6" fill="none" stroke="var(--ink)" stroke-width="1.6"/><path d="M9 21h6M12 17v4" stroke="var(--ink)" stroke-width="1.6" stroke-linecap="round"/></svg><em>This PC</em></span>
-                  <span class="ddIcon"><svg viewBox="0 0 24 24" class="ddPct"><path d="M11.3 2 6.2 12.4h4.6L9.3 22l7.4-10.9h-4.7L14.4 2z" style="fill:var(--accent)"/></svg><em>Opera Agent</em></span>
-                </div>
-                <div class="ddWin">
-                  <div class="ddTitleBar"><span class="ddBrand cur"><svg viewBox="0 0 24 24" class="brandMark" aria-hidden="true"><path d="M6.4 5.4v13.2L16.6 12z" fill="currentColor"/></svg></span><span class="ddTitle">Cursor</span><span class="ddGlyphs"><i class="ddMin"></i><i class="ddMax"></i><i class="ddClose"></i></span></div>
-                  <div class="ddFileTab">mcp.json<span class="x">×</span></div>
-                  <div class="ddEditorBody">
-                    <div class="ddIconRail"><span class="ddRailDot sel"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M8 4 5 12l3 8M16 4l3 8-3 8M13 4l-2 16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="ddRailDot"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M5 7h14M5 12h14M5 17h9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span><span class="ddRailDot"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="12" cy="12" r="6" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M12 4v3M12 17v3M4 12h3M17 12h3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></span></div>
-                    <div class="ddCode"><span class="k">{</span>
-          <span class="s">"mcpServers"</span>: <span class="k">{</span>
-            <span class="s">"opera-agent"</span>: <span class="k">{</span>
-              <span class="s">"url"</span>: <span class="s">"https://nenmkmtvjremqphfqnfw.supabase.co/functions/v<span class="a">1</span>/opera-agent-mcp"</span>,
-              <span class="s">"headers"</span>: <span class="k">{</span>
-                <span class="s">"X-Opera-Device"</span>: <span class="s">"opera"</span>
-              <span class="k">}</span>
-            <span class="k">}</span>
-          <span class="k">}</span>
-        <span class="k">}</span>
-        </div>
-                  </div>
-                  <div class="ddStatus"><span class="dim">UTF-8  Ln 6, Col 2</span><span class="dim ddStatusRight">opera-agent · 35 tools</span></div>
-                </div>
-                <span class="ddTaskbar"><span class="ddTb"><svg viewBox="0 0 22 22" aria-hidden="true"><path fill="#00adef" d="M3 4.5h7.4v7.4H3zM11.6 4.5H19v7.4h-7.4zM3 12.6h7.4v7.4H3zM11.6 12.6H19v7.4h-7.4z"/></svg></span><span class="ddTb"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6" fill="none" stroke="var(--ink)" stroke-width="1.7"/><path d="M15.5 15.5 21 21" stroke="var(--ink)" stroke-width="1.7" stroke-linecap="round"/></svg></span><span class="ddTb"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8" fill="none" stroke="var(--ink)" stroke-width="1.9"/><circle cx="12" cy="12" r="3.6" fill="none" stroke="var(--ink)" stroke-width="1.3"/></svg></span><span class="ddTb"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8A2 2 0 0 1 5 6h4.6l2 2H19a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8z" fill="var(--yellow)"/></svg></span><span class="ddTb ddTbAgent"><span class="ddBrand cur"><svg viewBox="0 0 24 24" class="brandMark" aria-hidden="true"><path d="M6.4 5.4v13.2L16.6 12z" fill="currentColor"/></svg></span></span></span>
-                <span class="demoCursor ddCursor"><svg viewBox="0 0 24 24" class="cursorArrow"><path d="M5 3 19 12.5l-6.5 1.4L9 20z" style="fill:var(--ink);stroke:var(--surface);stroke-width:1.3;stroke-linejoin:round"/></svg></span>
-                <span class="ddRipple"></span>
-                <span class="ddChip">35 tools · connected</span>
-              </div>
-              <ol class="steps srOnly">
-                <li>Buka berkas konfigurasi MCP Anda.</li>
-                <li>Tempel server Opera Agent, selesaikan OAuth.</li>
-                <li>Restart harness; tool load saat mulai.</li>
-              </ol>
-            </div>
-
-              <p>Tambah ke <code>~/.cursor/mcp.json</code>, ganti <code>opera</code> dengan nama device Anda:</p>
-              <div class="copybox">
-                <pre><code id="cfg-cursor">{
-          "mcpServers": {
-            "opera-agent": {
-              "url": "https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp",
-              "headers": {
-                "X-Opera-Device": "opera",
-                "X-Opera-Provider": "cursor",
-                "x-region": "ap-southeast-1"
-              }
-            }
-          }
-        }</code></pre>
-                <button type="button" data-copy="cfg-cursor" data-i18n="copy">Salin</button>
-              </div>
-              <p>Mode lokal (npm): ganti isi <code>opera-agent</code> menjadi <code>{ "command": "npx", "args": ["-y", "opera-agent-mcp", "local"] }</code>.</p>
-      </div>
-      </div>
-      <div class="harnessDots" role="tablist" aria-label="Geser antara harness">
-        <button class="harnessDot is-active" type="button" data-dot="0" aria-label="OpenCode" aria-selected="true"></button>
-        <button class="harnessDot" type="button" data-dot="1" aria-label="VS Code (Copilot)" aria-selected="false"></button>
-        <button class="harnessDot" type="button" data-dot="2" aria-label="Kilo Code" aria-selected="false"></button>
-        <button class="harnessDot" type="button" data-dot="3" aria-label="Cursor" aria-selected="false"></button>
-      </div>
-    </div>
-    <div class="harnessPanel" id="panelCli" role="tabpanel" aria-labelledby="tabCli" data-harness-panel="cli" hidden>
-      <p class="muted"><strong>CLI = Cloud + Local.</strong> Cloud untuk akses jauh, Local untuk loopback ke browser di mesin ini.</p>
-      <div class="harnessTrack" data-harness-track="cli">
-        </div>
-        <div class="harnessCol">
-          <span class="harnessColTag">CLI</span>
-          <h3 class="harnessColTitle">Codex · Claude Code · Terminal</h3>
-          <p class="muted">Loopback bridge mendengarkan di port lokal; harness CLI memanggil browser di mesin yang sama melalui loopback.</p>
-
-          <div class="harnessCard" id="codex">
-        <h2>Codex CLI</h2>
-<div class="mcpDemo" data-agent="codex" aria-hidden="true">
-              <div class="ddCanvas">
-                <div class="ddIcons" aria-hidden="true">
-                  <span class="ddIcon"><svg viewBox="0 0 24 24" class="ddPct"><rect x="3" y="5" width="18" height="12" rx="1.6" fill="none" stroke="var(--ink)" stroke-width="1.6"/><path d="M9 21h6M12 17v4" stroke="var(--ink)" stroke-width="1.6" stroke-linecap="round"/></svg><em>This PC</em></span>
-                  <span class="ddIcon"><svg viewBox="0 0 24 24" class="ddPct"><path d="M11.3 2 6.2 12.4h4.6L9.3 22l7.4-10.9h-4.7L14.4 2z" style="fill:var(--accent)"/></svg><em>Opera Agent</em></span>
-                </div>
-                <div class="ddWin">
-                  <div class="ddTitleBar"><span class="ddBrand codex"><svg viewBox="0 0 24 24" class="brandMark" aria-hidden="true"><path d="M7 8l4 4-4 4M13 16h4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="ddTitle">Codex CLI</span><span class="ddGlyphs"><i class="ddMin"></i><i class="ddMax"></i><i class="ddClose"></i></span></div>
-                  <div class="ddTermBody"><span class="ddLine " data-line="0" data-raw='cat ~/.codex/config.toml'><span class="ddPrompt">$ </span><span class="ddLineText"></span></span><span class="ddLine dim" data-line="1">[mcp_servers.opera-agent]
-        url = "https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp"
-        headers = { "X-Opera-Device" = "opera", "X-Opera-Provider" = "codex", "x-region" = "ap-southeast-1" }
-        startup_timeout_sec = 30</span><span class="ddLine " data-line="2" data-raw='codex'><span class="ddPrompt">$ </span><span class="ddLineText"></span></span><span class="ddLine dim" data-line="3" data-raw='/mcp'><span class="ddPrompt">$ </span><span class="ddLineText"></span></span><span class="ddLine ok" data-line="4">opera-agent   35 tools · connected</span></div>
-                </div>
-                <span class="ddTaskbar"><span class="ddTb"><svg viewBox="0 0 22 22" aria-hidden="true"><path fill="#00adef" d="M3 4.5h7.4v7.4H3zM11.6 4.5H19v7.4h-7.4zM3 12.6h7.4v7.4H3zM11.6 12.6H19v7.4h-7.4z"/></svg></span><span class="ddTb"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6" fill="none" stroke="var(--ink)" stroke-width="1.7"/><path d="M15.5 15.5 21 21" stroke="var(--ink)" stroke-width="1.7" stroke-linecap="round"/></svg></span><span class="ddTb"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8" fill="none" stroke="var(--ink)" stroke-width="1.9"/><circle cx="12" cy="12" r="3.6" fill="none" stroke="var(--ink)" stroke-width="1.3"/></svg></span><span class="ddTb"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8A2 2 0 0 1 5 6h4.6l2 2H19a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8z" fill="var(--yellow)"/></svg></span><span class="ddTb ddTbAgent"><span class="ddBrand codex"><svg viewBox="0 0 24 24" class="brandMark" aria-hidden="true"><path d="M7 8l4 4-4 4M13 16h4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span></span></span>
-                <span class="demoCursor ddCursor"><svg viewBox="0 0 24 24" class="cursorArrow"><path d="M5 3 19 12.5l-6.5 1.4L9 20z" style="fill:var(--ink);stroke:var(--surface);stroke-width:1.3;stroke-linejoin:round"/></svg></span>
-                <span class="ddRipple"></span>
-                <span class="ddChip">35 tools · connected</span>
-              </div>
-              <ol class="steps srOnly"><li>Baca konfigurasi di ~/.codex/config.toml.</li><li>Jalankan /mcp dan lihat opera-agent.</li></ol>
-            </div>
-
-              <p>Tambahkan ke <code>~/.codex/config.toml</code>, ganti <code>opera</code> dengan nama device Anda:</p>
-              <div class="copybox">
-                <pre><code id="cfg-codex">[mcp_servers.opera-agent]
-        url = "https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp"
-        headers = { "X-Opera-Device" = "opera", "X-Opera-Provider" = "codex", "x-region" = "ap-southeast-1" }
-        startup_timeout_sec = 30</code></pre>
-                <button type="button" data-copy="cfg-codex" data-i18n="copy">Salin</button>
-              </div>
-              <p>Codex akan menandatangani OAuth-nya sendiri. Verifikasi dengan menanyakan status, atau ketik <code>/mcp</code> di Codex dan lihat <code>opera-agent</code> di daftar.</p>
-
-        <div class="harnessCard" id="claude-code">
-        <h2>Claude Code</h2>
-<div class="mcpDemo" data-agent="claude-code" aria-hidden="true">
-              <div class="ddCanvas">
-                <div class="ddIcons" aria-hidden="true">
-                  <span class="ddIcon"><svg viewBox="0 0 24 24" class="ddPct"><rect x="3" y="5" width="18" height="12" rx="1.6" fill="none" stroke="var(--ink)" stroke-width="1.6"/><path d="M9 21h6M12 17v4" stroke="var(--ink)" stroke-width="1.6" stroke-linecap="round"/></svg><em>This PC</em></span>
-                  <span class="ddIcon"><svg viewBox="0 0 24 24" class="ddPct"><path d="M11.3 2 6.2 12.4h4.6L9.3 22l7.4-10.9h-4.7L14.4 2z" style="fill:var(--accent)"/></svg><em>Opera Agent</em></span>
-                </div>
-                <div class="ddWin">
-                  <div class="ddTitleBar"><span class="ddBrand cc"><svg viewBox="0 0 24 24" class="brandMark" aria-hidden="true"><path d="M12 3a1.4 1.4 0 0 1 1.2.8l.9 2.5 2.2-1.4-1.2 2 2.2 1.2-2.4 1 2.4 1.1-2.2 1.3 1.3 2-2.2-1.4-.9 2.5-1.3-2.3H8l-1.3 2.3-.9-2.5-2.2 1.3 1.3-2-2.4-1.1 2.4-1-2.4-1 2.2-1.2-1.2-2 2.2 1.4.9-2.5a1.4 1.4 0 0 1 1.3-.9h2.4z" fill="currentColor"/><circle cx="12" cy="12" r="2.3" fill="var(--surface)"/></svg></span><span class="ddTitle">Claude Code</span><span class="ddGlyphs"><i class="ddMin"></i><i class="ddMax"></i><i class="ddClose"></i></span></div>
-                  <div class="ddTermBody"><span class="ddLine " data-line="0" data-raw='claude mcp add --transport http opera-agent https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp --header "X-Opera-Device: opera" --header "X-Opera-Provider: claude" --header "x-region: ap-southeast-1"'><span class="ddPrompt">$ </span><span class="ddLineText"></span></span><span class="ddLine ok" data-line="1">Added opera-agent · 35 tools</span><span class="ddLine " data-line="2" data-raw='claude'><span class="ddPrompt">$ </span><span class="ddLineText"></span></span><span class="ddLine dim" data-line="3">Loading opera-agent… 35 tools ready</span></div>
-                </div>
-                <span class="ddTaskbar"><span class="ddTb"><svg viewBox="0 0 22 22" aria-hidden="true"><path fill="#00adef" d="M3 4.5h7.4v7.4H3zM11.6 4.5H19v7.4h-7.4zM3 12.6h7.4v7.4H3zM11.6 12.6H19v7.4h-7.4z"/></svg></span><span class="ddTb"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6" fill="none" stroke="var(--ink)" stroke-width="1.7"/><path d="M15.5 15.5 21 21" stroke="var(--ink)" stroke-width="1.7" stroke-linecap="round"/></svg></span><span class="ddTb"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8" fill="none" stroke="var(--ink)" stroke-width="1.9"/><circle cx="12" cy="12" r="3.6" fill="none" stroke="var(--ink)" stroke-width="1.3"/></svg></span><span class="ddTb"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8A2 2 0 0 1 5 6h4.6l2 2H19a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8z" fill="var(--yellow)"/></svg></span><span class="ddTb ddTbAgent"><span class="ddBrand cc"><svg viewBox="0 0 24 24" class="brandMark" aria-hidden="true"><path d="M12 3a1.4 1.4 0 0 1 1.2.8l.9 2.5 2.2-1.4-1.2 2 2.2 1.2-2.4 1 2.4 1.1-2.2 1.3 1.3 2-2.2-1.4-.9 2.5-1.3-2.3H8l-1.3 2.3-.9-2.5-2.2 1.3 1.3-2-2.4-1.1 2.4-1-2.4-1 2.2-1.2-1.2-2 2.2 1.4.9-2.5a1.4 1.4 0 0 1 1.3-.9h2.4z" fill="currentColor"/><circle cx="12" cy="12" r="2.3" fill="var(--surface)"/></svg></span></span></span>
-                <span class="demoCursor ddCursor"><svg viewBox="0 0 24 24" class="cursorArrow"><path d="M5 3 19 12.5l-6.5 1.4L9 20z" style="fill:var(--ink);stroke:var(--surface);stroke-width:1.3;stroke-linejoin:round"/></svg></span>
-                <span class="ddRipple"></span>
-                <span class="ddChip">35 tools · connected</span>
-              </div>
-              <ol class="steps srOnly"><li>Tambahkan server via claude mcp add.</li><li>Claude akan menautkan OAuth dan memuat tool.</li></ol>
-            </div>
-
-              <p>Di terminal, ganti <code>opera</code> dengan nama device Anda:</p>
-              <div class="copybox">
-                <pre><code id="cfg-claude-code">claude mcp add --transport http opera-agent https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp --header "X-Opera-Device: opera" --header "X-Opera-Provider: claude" --header "x-region: ap-southeast-1"</code></pre>
-                <button type="button" data-copy="cfg-claude-code" data-i18n="copy">Salin</button>
-              </div>
-              <p>Verifikasi: <code>claude mcp list</code> harus menampilkan <code>opera-agent</code>.</p>
-              <p>Mode lokal (npm), untuk mesin yang sama:</p>
-              <div class="copybox">
-                <pre><code id="cfg-claude-code-stdio">claude mcp add opera-agent -- npx -y opera-agent-mcp local</code></pre>
-                <button type="button" data-copy="cfg-claude-code-stdio" data-i18n="copy">Salin</button>
-              </div>
-
-        <div class="harnessCard" id="terminal">
-        <h2>Terminal (npm)</h2>
-<div class="mcpDemo" data-agent="terminal" aria-hidden="true">
+          <p>Verifikasi koneksi: <code>opera-agent-mcp doctor</code>.</p>
+          <div class="mcpDemo" data-agent="terminal" aria-hidden="true">
               <div class="ddCanvas">
                 <div class="ddIcons" aria-hidden="true">
                   <span class="ddIcon"><svg viewBox="0 0 24 24" class="ddPct"><rect x="3" y="5" width="18" height="12" rx="1.6" fill="none" stroke="var(--ink)" stroke-width="1.6"/><path d="M9 21h6M12 17v4" stroke="var(--ink)" stroke-width="1.6" stroke-linecap="round"/></svg><em>This PC</em></span>
@@ -1134,34 +760,10 @@
               </div>
               <ol class="steps srOnly"><li>npm install -g opera-agent-mcp.</li><li>Verifikasi dengan opera-agent-mcp doctor.</li></ol>
             </div>
-
-              <p>Satu perintah, satu mesin. Untuk harness yang berjalan di mesin ini:</p>
-              <div class="copybox">
-                <pre><code id="cfg-npm">npm install -g opera-agent-mcp</code></pre>
-                <button type="button" data-copy="cfg-npm" data-i18n="copy">Salin</button>
-              </div>
-              <p>Empat mode:</p>
-              <div class="copybox">
-                <pre><code id="cfg-modes">opera-agent-mcp local    stdio, drives the open browser on this machine
-        opera-agent-mcp cloud    stdio, drives it through the hosted server
-        opera-agent-mcp auth     OAuth sign-in; token stored beside this install
-        opera-agent-mcp doctor   prints what is connected, the plan, and what the plan allows</code></pre>
-                <button type="button" data-copy="cfg-modes" data-i18n="copy">Salin</button>
-              </div>
-              <p>Verifikasi koneksi: <code>opera-agent-mcp doctor</code>.</p>
-      </div>
-      </div>
-      <div class="harnessDots" role="tablist" aria-label="Geser antara harness">
-        <button class="harnessDot is-active" type="button" data-dot="0" aria-label="Codex CLI" aria-selected="true"></button>
-        <button class="harnessDot" type="button" data-dot="1" aria-label="Claude Code" aria-selected="false"></button>
-        <button class="harnessDot" type="button" data-dot="2" aria-label="Terminal (npm)" aria-selected="false"></button>
-      </div>
-    </div>
-    </section>
         </div>
+      </details>
       </div>
     </section>
-
 
 
     <section data-reveal>
@@ -1265,7 +867,6 @@ The server controls my own logged-in browser, so treat it as part of my machine:
   <script src="/palette.js"></script>
   <script src="/reveal.js"></script>
   <script src="/markdown.js"></script>
-  <script src="./harness-tabs.js" defer></script>
   <script src="./demo-kit.js" defer></script>
 </body>
 </html>

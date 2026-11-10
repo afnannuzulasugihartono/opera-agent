@@ -27,7 +27,7 @@ try {
         entry.target.classList.add('in');
         seen.unobserve(entry.target);
       }
-    }, { threshold: 0.12 });
+    }, { threshold: 0 });
 
     for (const block of blocks) seen.observe(block);
   };
