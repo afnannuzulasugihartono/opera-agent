@@ -149,6 +149,21 @@
       "rank": 1
     },
     {
+      "id": "tools-output-shape",
+      "kind": "local",
+      "where": "local/mcp-server.js:48",
+      "states": [
+        "envelope-nested",
+        "flat-tidy"
+      ],
+      "writers": "asText - previously printed raw JSON envelopes; now runs every payload through tidyForAi",
+      "readers": "every local MCP client, every agent reading locally",
+      "wrongIfConfused": "a local tool answers with an envelope - { action: {..}, window: .., page: .. } - where the hosted wire answers with { ..page facts }; a model that learned one shape fails on the other and re-reads every answer",
+      "decision": "model",
+      "why": "one shape both wires, already what tidy.ts pins on the hosted side - this is local-to-hosted convergence with no new state, only deletion of the divergence",
+      "rank": 1
+    },
+    {
       "id": "watcher-lifecycle",
       "kind": "extension",
       "where": "extension/worker/watch-registry.js:23",
@@ -323,6 +338,21 @@
       "wrongIfConfused": "an attached session whose tab closed never reaps → the 'started debugging this browser' bar stays pinned on a tab that is gone; DevTools-open silently invalidates attach and every later call pays a detach/attach churn",
       "decision": "model",
       "why": "the flag, the registry and the alarm-reap are one lifecycle with three clocks; one declared model with one release path — UX of the always-on bar wins",
+      "rank": 2
+    },
+    {
+      "id": "hosted-tab-ownership-rank",
+      "kind": "edge",
+      "where": "supabase/functions/opera-agent-mcp/index.ts:1031",
+      "states": [
+        "owner-known",
+        "routed-to-freshest-wrong-device"
+      ],
+      "writers": "resolveDeviceFresh - freshness beats ownership per call",
+      "readers": "every page tool: open_url, read_page, find_elements, fill_element, click_element, capture_page, activate_tab, navigate_tab",
+      "wrongIfConfused": "find_elements succeeded for a tab, fill_element one call later returned \"No tab with id\" because routing picked the other browser on the same everyday profile; the tab id is device-local and the call doesn't carry the device that minted it",
+      "decision": "model",
+      "why": "the relay answers one call against whichever browser is freshest at that millisecond; tab ids are minted on one browser, so the call before fill succeeded and the call after fail were routed to different everyday browsers wearing identical profiles - the user sees a healthy tool that dies for no reason and can only retry",
       "rank": 2
     },
     {

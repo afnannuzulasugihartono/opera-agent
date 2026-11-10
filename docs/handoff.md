@@ -1,4 +1,4 @@
-@last-edited: 2026-11-09 UTC+7.
+@last-edited: 2026-11-10 UTC+7.
 @related: [AGENTS.md](../AGENTS.md)
 
 # handoff
@@ -85,14 +85,12 @@ What is true now, and what to do next. Cap 150 lines. Spent detail: git history.
 
 ## Measured, not assumed
 
-- **A publish step must fail loudly.** The CRX base64 exceeds the Linux 131,072-byte
-  argument limit, so `node` died and curl sent no body; the run went green having published
-  nothing. `publish-crx.yml` now fails unless the status is 2xx.
-- **Every MCP caller drives the one device named by `DEVICE_NAME`, and sign-up is open**, so
-  the function admits the static token or a named account and nobody else, and a test bars
-  any wider rule.
+- **A publish step must fail loudly.** The CRX base64 exceeds the Linux 131,072-byte argument limit, so `node` died and curl sent no body; the run went green having published nothing. `publish-crx.yml` now fails unless the status is 2xx.
+- **Every MCP caller drives the one device named by `DEVICE_NAME`, and sign-up is open**, so the function admits the static token or a named account and nobody else, and a test bars any wider rule.
 
 ## Still open
+
+0. **Both wires print the same K&R shape** (`{ ok, ...facts }`): the local stdio surface was migrated to `tidyForAi`; both surfaces answer one shape (`local/mcp-server.js`, gate `tests/code-standard.test.mjs`). **Local dialog tools now work** - `local/primitives.js` never exported `dialogState`/`dialogType`/`dialogPress` (was `session.dialogState is not a function` on a live browser). Two machines added to `docs/state-machines.json`: `hosted-tab-ownership-rank` (the relay picks freshest per call; tab ids are device-local - the intermittent `No tab with id` seen between calls; model, rank 2) and `tools-output-shape` (envelopes diverged; now flat on both wires; rank 1). Cloud relay flakiness itself is unfixed (fix lives in the route or a caller `X-Opera-Device` pin; owner's call). `npm test`, `check ok`, `comment format ok: 557 files`.
 
 1. **The Cloudflare API token pasted into a chat is still live** and carries
    `Account API Tokens Write`. The owner has chosen to leave it for now.
