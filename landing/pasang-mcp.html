@@ -55,22 +55,12 @@
       </div>
 
       <div class="mcpCats">
-      <details class="mcpCat">
-        <summary><span class="mcpIndex" aria-hidden="true">01</span><span>Web — ChatGPT &amp; Claude</span></summary>
-        <div class="mcpCatBody">
-        <details class="mcpProvider" id="chatgpt">
-          <summary><span class="mcpIndex" aria-hidden="true">01</span><span>ChatGPT</span></summary>
-          <div class="mcpProviderBody">
-          <ol class="steps">
-                <li><strong>Buka chat kosong.</strong> Klik avatar <code>Afnan</code> di kiri bawah, lalu <em>Settings</em>.</li>
-                <li><strong>Apps → Advanced settings.</strong> Aktifkan <em>Developer mode</em> (ELEVATED RISK), lalu klik <em>Create app</em>.</li>
-                <li><strong>Isi New App.</strong> <em>Name</em> = <code>Opera Agent</code>, <em>Connection</em> = Server URL, <em>URL</em> = endpoint di atas, <em>Authentication</em> = OAuth. Centang “I understand and want to continue”, lalu klik <em>Create</em>.</li>
-                <li><strong>Sign in to Opera Agent.</strong> Klik <em>Authorize</em> — Opera Agent muncul di <em>Enabled apps</em> sebagai aplikasi <code>DEV</code>.</li>
-                <li><strong>Kembali ke chat.</strong> Klik <em>+</em> di composer → <em>Developer mode</em>, aktifkan <em>Opera Agent</em> — bar input jadi oranye.</li>
-                <li><strong>Ketik tugas dan kirim.</strong> Coba <em>“Summarize the Q3 sales sheet and post it to Slack”</em> — Opera Agent menjawab lewat tool <code>read_sheet</code>.</li>
-              </ol>
-          <p class="muted">Opera Agent belum terdaftar di direktori ChatGPT, jadi pemasangannya lewat Developer mode sebagai aplikasi <code>DEV</code>. Setelah OAuth selesai, tool dipanggil dari menu <em>Developer mode</em> di composer; kartu tool tampil di atas jawaban.</p>
-          <div class="mcpDemo" data-agent="chatgpt" aria-hidden="true">
+          <div class="mcpCat">
+      <div class="mcpCatHead"><span class="mcpIndex" aria-hidden="true">01</span><h3 class="mcpCatTitle">Web — ChatGPT &amp; Claude</h3></div>
+      <div class="mcpTrack">
+        <article class="mcpCard" id="chatgpt">
+          <div class="mcpCardHead"><span class="mcpIndex" aria-hidden="true">01</span><h3 class="mcpCardTitle">ChatGPT</h3></div>
+<div class="mcpDemo" data-agent="chatgpt" aria-hidden="true">
               <div class="ddCanvas">
                 <div class="ddIcons" aria-hidden="true">
                   <span class="ddIcon"><svg viewBox="0 0 24 24" class="ddPct"><rect x="3" y="5" width="18" height="12" rx="1.6" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M9 21h6M12 17v4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg><em>This PC</em></span>
@@ -222,22 +212,24 @@
                 <li>Ketik tugas dan kirim; Opera Agent menjawab lewat tool read_sheet.</li>
               </ol>
             </div>
-          </div>
-        </details>
-        <details class="mcpProvider" id="claude-web">
-          <summary><span class="mcpIndex" aria-hidden="true">02</span><span>Claude</span></summary>
-          <div class="mcpProviderBody">
-          <ol class="steps">
-                <li><strong>Buka chat kosong.</strong> Klik briefcase di rail kiri → <em>Customize</em>.</li>
-                <li><strong>Connect apps.</strong> Klik kartu <em>Connect apps</em> untuk membuka layar <em>Connectors</em>, lalu klik <strong>+</strong> di kanan atas.</li>
-                <li><strong>Add custom connector.</strong> <em>Name</em> = <code>Opera Agent</code>, <em>Remote MCP server URL</em> = endpoint di atas → <em>Add</em>.</li>
-                <li><strong>Klik Connect.</strong> Klik <em>Authorize</em> — Opera Agent tampil di grup <em>Web</em> dengan centang hijau <em>Connected</em>.</li>
-                <li><strong>Kembali ke chat.</strong> Klik <em>+</em> di composer → <em>Connectors</em>, aktifkan <em>Opera Agent</em>.</li>
-                <li><strong>Ketik tugas dan kirim.</strong> coba <em>“Summarize the Q3 sales sheet and post it to Slack”</em> — Opera Agent menjawab lewat tool <code>read_sheet</code>.</li>
+          <details class="stepsDrop">
+            <summary>Langkah-langkah</summary>
+            <div class="stepsDropBody">
+<ol class="steps">
+                <li><strong>Buka chat kosong.</strong> Klik avatar <code>Afnan</code> di kiri bawah, lalu <em>Settings</em>.</li>
+                <li><strong>Apps → Advanced settings.</strong> Aktifkan <em>Developer mode</em> (ELEVATED RISK), lalu klik <em>Create app</em>.</li>
+                <li><strong>Isi New App.</strong> <em>Name</em> = <code>Opera Agent</code>, <em>Connection</em> = Server URL, <em>URL</em> = endpoint di atas, <em>Authentication</em> = OAuth. Centang “I understand and want to continue”, lalu klik <em>Create</em>.</li>
+                <li><strong>Sign in to Opera Agent.</strong> Klik <em>Authorize</em> — Opera Agent muncul di <em>Enabled apps</em> sebagai aplikasi <code>DEV</code>.</li>
+                <li><strong>Kembali ke chat.</strong> Klik <em>+</em> di composer → <em>Developer mode</em>, aktifkan <em>Opera Agent</em> — bar input jadi oranye.</li>
+                <li><strong>Ketik tugas dan kirim.</strong> Coba <em>“Summarize the Q3 sales sheet and post it to Slack”</em> — Opera Agent menjawab lewat tool <code>read_sheet</code>.</li>
               </ol>
-          <p class="muted">Connector dipakai per-percakapan — matikan dan hidupkan di menu <em>+</em> yang sama kapan pun.</p>
-          <p class="muted"><strong>Desktop = Cloud + Local.</strong> Cloud untuk akses jauh, Local untuk loopback ke browser di mesin ini.</p>
-          <div class="mcpDemo ccDemo" data-agent="claude" aria-hidden="true">
+            <p class="muted">Opera Agent belum terdaftar di direktori ChatGPT, jadi pemasangannya lewat Developer mode sebagai aplikasi <code>DEV</code>. Setelah OAuth selesai, tool dipanggil dari menu <em>Developer mode</em> di composer; kartu tool tampil di atas jawaban.</p>
+            </div>
+          </details>
+        </article>
+        <article class="mcpCard" id="claude-web">
+          <div class="mcpCardHead"><span class="mcpIndex" aria-hidden="true">02</span><h3 class="mcpCardTitle">Claude</h3></div>
+<div class="mcpDemo ccDemo" data-agent="claude" aria-hidden="true">
               <div class="ddCanvas">
                 <div class="ddIcons" aria-hidden="true">
                   <span class="ddIcon"><svg viewBox="0 0 24 24" class="ddPct"><rect x="3" y="5" width="18" height="12" rx="1.6" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M9 21h6M12 17v4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg><em>This PC</em></span>
@@ -379,36 +371,30 @@
                 <span class="ddChip">35 tools · connected</span>
               </div>
           </div>
-        </details>
-        </div>
-      </details>
-      <details class="mcpCat">
-        <summary><span class="mcpIndex" aria-hidden="true">02</span><span>Desktop — OpenCode &middot; VS Code &middot; Kilo &middot; Cursor</span></summary>
-        <div class="mcpCatBody">
-        <details class="mcpProvider" id="opencode">
-          <summary><span class="mcpIndex" aria-hidden="true">01</span><span>OpenCode</span></summary>
-          <div class="mcpProviderBody">
-          <p>Tambah ke <code>opencode.json</code>, ganti <code>opera</code> dengan nama device Anda:</p>
-          <div class="copybox">
-                <pre><code id="cfg-opencode">{
-          "mcp": {
-            "opera-agent": {
-              "type": "remote",
-              "url": "https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp",
-              "oauth": { "clientId": "bbc5eb76-f385-435b-8b13-8e339b45e633" },
-              "headers": {
-                "X-Opera-Device": "opera",
-                "X-Opera-Provider": "opencode",
-                "x-region": "ap-southeast-1"
-              }
-            }
-          }
-        }</code></pre>
-                <button type="button" data-copy="cfg-opencode" data-i18n="copy">Salin</button>
-              </div>
-          <p>Mulai ulang OpenCode; tool muncul sebagai <code>opera-agent.*</code>.</p>
-          <p>Mode lokal (npm): tambahkan server <code>command</code> <code>npx -y opera-agent-mcp local</code> dengan tipe <code>local</code> di <code>opencode.json</code>.</p>
-          <div class="mcpDemo" data-agent="opencode" aria-hidden="true">
+          <details class="stepsDrop">
+            <summary>Langkah-langkah</summary>
+            <div class="stepsDropBody">
+<ol class="steps">
+                <li><strong>Buka chat kosong.</strong> Klik briefcase di rail kiri → <em>Customize</em>.</li>
+                <li><strong>Connect apps.</strong> Klik kartu <em>Connect apps</em> untuk membuka layar <em>Connectors</em>, lalu klik <strong>+</strong> di kanan atas.</li>
+                <li><strong>Add custom connector.</strong> <em>Name</em> = <code>Opera Agent</code>, <em>Remote MCP server URL</em> = endpoint di atas → <em>Add</em>.</li>
+                <li><strong>Klik Connect.</strong> Klik <em>Authorize</em> — Opera Agent tampil di grup <em>Web</em> dengan centang hijau <em>Connected</em>.</li>
+                <li><strong>Kembali ke chat.</strong> Klik <em>+</em> di composer → <em>Connectors</em>, aktifkan <em>Opera Agent</em>.</li>
+                <li><strong>Ketik tugas dan kirim.</strong> coba <em>“Summarize the Q3 sales sheet and post it to Slack”</em> — Opera Agent menjawab lewat tool <code>read_sheet</code>.</li>
+              </ol>
+            <p class="muted">Connector dipakai per-percakapan — matikan dan hidupkan di menu <em>+</em> yang sama kapan pun.</p>
+            <p class="muted"><strong>Desktop = Cloud + Local.</strong> Cloud untuk akses jauh, Local untuk loopback ke browser di mesin ini.</p>
+            </div>
+          </details>
+        </article>
+      </div>
+    </div>
+          <div class="mcpCat">
+      <div class="mcpCatHead"><span class="mcpIndex" aria-hidden="true">02</span><h3 class="mcpCatTitle">Desktop — OpenCode &middot; VS Code &middot; Kilo &middot; Cursor</h3></div>
+      <div class="mcpTrack">
+        <article class="mcpCard" id="opencode">
+          <div class="mcpCardHead"><span class="mcpIndex" aria-hidden="true">01</span><h3 class="mcpCardTitle">OpenCode</h3></div>
+<div class="mcpDemo" data-agent="opencode" aria-hidden="true">
               <div class="ddCanvas">
                 <div class="ddIcons" aria-hidden="true">
                   <span class="ddIcon"><svg viewBox="0 0 24 24" class="ddPct"><rect x="3" y="5" width="18" height="12" rx="1.6" fill="none" stroke="var(--ink)" stroke-width="1.6"/><path d="M9 21h6M12 17v4" stroke="var(--ink)" stroke-width="1.6" stroke-linecap="round"/></svg><em>This PC</em></span>
@@ -443,30 +429,35 @@
                 <li>Restart harness; tool load saat mulai.</li>
               </ol>
             </div>
-          </div>
-        </details>
-        <details class="mcpProvider" id="vscode">
-          <summary><span class="mcpIndex" aria-hidden="true">02</span><span>VS Code</span></summary>
-          <div class="mcpProviderBody">
-          <p>Buat <code>.vscode/mcp.json</code> di workspace, ganti <code>opera</code> dengan nama device Anda:</p>
-          <div class="copybox">
-                <pre><code id="cfg-vscode">{
-          "servers": {
+          <details class="stepsDrop">
+            <summary>Langkah-langkah</summary>
+            <div class="stepsDropBody">
+<p>Tambah ke <code>opencode.json</code>, ganti <code>opera</code> dengan nama device Anda:</p>
+            <div class="copybox">
+                <pre><code id="cfg-opencode">{
+          "mcp": {
             "opera-agent": {
-              "type": "http",
+              "type": "remote",
               "url": "https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp",
+              "oauth": { "clientId": "bbc5eb76-f385-435b-8b13-8e339b45e633" },
               "headers": {
                 "X-Opera-Device": "opera",
-                "X-Opera-Provider": "vscode",
+                "X-Opera-Provider": "opencode",
                 "x-region": "ap-southeast-1"
               }
             }
           }
         }</code></pre>
-                <button type="button" data-copy="cfg-vscode" data-i18n="copy">Salin</button>
+                <button type="button" data-copy="cfg-opencode" data-i18n="copy">Salin</button>
               </div>
-          <p>Buka Copilot agent mode (ikon chat → Agent). VS Code akan menandatangani OAuth-nya; tool muncul di daftar alat. Command Palette <code>MCP: List Servers</code> untuk verifikasi.</p>
-          <div class="mcpDemo" data-agent="vscode" aria-hidden="true">
+            <p>Mulai ulang OpenCode; tool muncul sebagai <code>opera-agent.*</code>.</p>
+            <p>Mode lokal (npm): tambahkan server <code>command</code> <code>npx -y opera-agent-mcp local</code> dengan tipe <code>local</code> di <code>opencode.json</code>.</p>
+            </div>
+          </details>
+        </article>
+        <article class="mcpCard" id="vscode">
+          <div class="mcpCardHead"><span class="mcpIndex" aria-hidden="true">02</span><h3 class="mcpCardTitle">VS Code</h3></div>
+<div class="mcpDemo" data-agent="vscode" aria-hidden="true">
               <div class="ddCanvas">
                 <div class="ddIcons" aria-hidden="true">
                   <span class="ddIcon"><svg viewBox="0 0 24 24" class="ddPct"><rect x="3" y="5" width="18" height="12" rx="1.6" fill="none" stroke="var(--ink)" stroke-width="1.6"/><path d="M9 21h6M12 17v4" stroke="var(--ink)" stroke-width="1.6" stroke-linecap="round"/></svg><em>This PC</em></span>
@@ -503,28 +494,33 @@
                 <li>Restart harness; tool load saat mulai.</li>
               </ol>
             </div>
-          </div>
-        </details>
-        <details class="mcpProvider" id="kilo">
-          <summary><span class="mcpIndex" aria-hidden="true">03</span><span>Kilo Code</span></summary>
-          <div class="mcpProviderBody">
-          <p>Tambah ke MCP settings (JSON), ganti <code>opera</code> dengan nama device Anda:</p>
-          <div class="copybox">
-                <pre><code id="cfg-kilo">{
-          "mcpServers": {
+          <details class="stepsDrop">
+            <summary>Langkah-langkah</summary>
+            <div class="stepsDropBody">
+<p>Buat <code>.vscode/mcp.json</code> di workspace, ganti <code>opera</code> dengan nama device Anda:</p>
+            <div class="copybox">
+                <pre><code id="cfg-vscode">{
+          "servers": {
             "opera-agent": {
+              "type": "http",
               "url": "https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp",
               "headers": {
                 "X-Opera-Device": "opera",
-                "X-Opera-Provider": "kilo",
+                "X-Opera-Provider": "vscode",
                 "x-region": "ap-southeast-1"
               }
             }
           }
         }</code></pre>
-                <button type="button" data-copy="cfg-kilo" data-i18n="copy">Salin</button>
+                <button type="button" data-copy="cfg-vscode" data-i18n="copy">Salin</button>
               </div>
-          <div class="mcpDemo" data-agent="kilo" aria-hidden="true">
+            <p>Buka Copilot agent mode (ikon chat → Agent). VS Code akan menandatangani OAuth-nya; tool muncul di daftar alat. Command Palette <code>MCP: List Servers</code> untuk verifikasi.</p>
+            </div>
+          </details>
+        </article>
+        <article class="mcpCard" id="kilo">
+          <div class="mcpCardHead"><span class="mcpIndex" aria-hidden="true">03</span><h3 class="mcpCardTitle">Kilo Code</h3></div>
+<div class="mcpDemo" data-agent="kilo" aria-hidden="true">
               <div class="ddCanvas">
                 <div class="ddIcons" aria-hidden="true">
                   <span class="ddIcon"><svg viewBox="0 0 24 24" class="ddPct"><rect x="3" y="5" width="18" height="12" rx="1.6" fill="none" stroke="var(--ink)" stroke-width="1.6"/><path d="M9 21h6M12 17v4" stroke="var(--ink)" stroke-width="1.6" stroke-linecap="round"/></svg><em>This PC</em></span>
@@ -561,35 +557,31 @@
                 <li>Restart harness; tool load saat mulai.</li>
               </ol>
             </div>
-          </div>
-        </details>
-        <details class="mcpProvider" id="cursor">
-          <summary><span class="mcpIndex" aria-hidden="true">04</span><span>Cursor</span></summary>
-          <div class="mcpProviderBody">
-          <ol class="steps">
-            <li><strong>URL.</strong> Jalankan <code>opencode mcp add opera-agent --url https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp</code> atau tambahkan URL ke <code>.codex/config.toml</code>.</li>
-            <li><strong>Sign in.</strong> Jalankan <code>opencode mcp auth opera-agent</code>; OAuth akan terbuka di browser default Anda.</li>
-            <li><strong>Izinkan tool.</strong> Pilih Allow all tools; 35 tool langsung aktif.</li>
-          </ol>
-          <p>Tambah ke <code>~/.cursor/mcp.json</code>, ganti <code>opera</code> dengan nama device Anda:</p>
-          <div class="copybox">
-                <pre><code id="cfg-cursor">{
+          <details class="stepsDrop">
+            <summary>Langkah-langkah</summary>
+            <div class="stepsDropBody">
+<p>Tambah ke MCP settings (JSON), ganti <code>opera</code> dengan nama device Anda:</p>
+            <div class="copybox">
+                <pre><code id="cfg-kilo">{
           "mcpServers": {
             "opera-agent": {
               "url": "https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp",
               "headers": {
                 "X-Opera-Device": "opera",
-                "X-Opera-Provider": "cursor",
+                "X-Opera-Provider": "kilo",
                 "x-region": "ap-southeast-1"
               }
             }
           }
         }</code></pre>
-                <button type="button" data-copy="cfg-cursor" data-i18n="copy">Salin</button>
+                <button type="button" data-copy="cfg-kilo" data-i18n="copy">Salin</button>
               </div>
-          <p>Mode lokal (npm): ganti isi <code>opera-agent</code> menjadi <code>{ "command": "npx", "args": ["-y", "opera-agent-mcp", "local"] }</code>.</p>
-          <p class="muted"><strong>CLI = Cloud + Local.</strong> Cloud untuk akses jauh, Local untuk loopback ke browser di mesin ini.</p>
-          <div class="mcpDemo" data-agent="cursor" aria-hidden="true">
+            </div>
+          </details>
+        </article>
+        <article class="mcpCard" id="cursor">
+          <div class="mcpCardHead"><span class="mcpIndex" aria-hidden="true">04</span><h3 class="mcpCardTitle">Cursor</h3></div>
+<div class="mcpDemo" data-agent="cursor" aria-hidden="true">
               <div class="ddCanvas">
                 <div class="ddIcons" aria-hidden="true">
                   <span class="ddIcon"><svg viewBox="0 0 24 24" class="ddPct"><rect x="3" y="5" width="18" height="12" rx="1.6" fill="none" stroke="var(--ink)" stroke-width="1.6"/><path d="M9 21h6M12 17v4" stroke="var(--ink)" stroke-width="1.6" stroke-linecap="round"/></svg><em>This PC</em></span>
@@ -625,26 +617,43 @@
                 <li>Restart harness; tool load saat mulai.</li>
               </ol>
             </div>
-          </div>
-        </details>
-        </div>
-      </details>
-      <details class="mcpCat">
-        <summary><span class="mcpIndex" aria-hidden="true">03</span><span>CLI — Codex &middot; Claude Code</span></summary>
-        <div class="mcpCatBody">
-        <details class="mcpProvider" id="codex">
-          <summary><span class="mcpIndex" aria-hidden="true">01</span><span>Codex</span></summary>
-          <div class="mcpProviderBody">
-          <p>Tambahkan ke <code>~/.codex/config.toml</code>, ganti <code>opera</code> dengan nama device Anda:</p>
-          <div class="copybox">
-                <pre><code id="cfg-codex">[mcp_servers.opera-agent]
-        url = "https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp"
-        headers = { "X-Opera-Device" = "opera", "X-Opera-Provider" = "codex", "x-region" = "ap-southeast-1" }
-        startup_timeout_sec = 30</code></pre>
-                <button type="button" data-copy="cfg-codex" data-i18n="copy">Salin</button>
+          <details class="stepsDrop">
+            <summary>Langkah-langkah</summary>
+            <div class="stepsDropBody">
+<ol class="steps">
+            <li><strong>URL.</strong> Jalankan <code>opencode mcp add opera-agent --url https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp</code> atau tambahkan URL ke <code>.codex/config.toml</code>.</li>
+            <li><strong>Sign in.</strong> Jalankan <code>opencode mcp auth opera-agent</code>; OAuth akan terbuka di browser default Anda.</li>
+            <li><strong>Izinkan tool.</strong> Pilih Allow all tools; 35 tool langsung aktif.</li>
+          </ol>
+            <p>Tambah ke <code>~/.cursor/mcp.json</code>, ganti <code>opera</code> dengan nama device Anda:</p>
+            <div class="copybox">
+                <pre><code id="cfg-cursor">{
+          "mcpServers": {
+            "opera-agent": {
+              "url": "https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp",
+              "headers": {
+                "X-Opera-Device": "opera",
+                "X-Opera-Provider": "cursor",
+                "x-region": "ap-southeast-1"
+              }
+            }
+          }
+        }</code></pre>
+                <button type="button" data-copy="cfg-cursor" data-i18n="copy">Salin</button>
               </div>
-          <p>Codex akan menandatangani OAuth-nya sendiri. Verifikasi dengan menanyakan status, atau ketik <code>/mcp</code> di Codex dan lihat <code>opera-agent</code> di daftar.</p>
-          <div class="mcpDemo" data-agent="codex" aria-hidden="true">
+            <p>Mode lokal (npm): ganti isi <code>opera-agent</code> menjadi <code>{ "command": "npx", "args": ["-y", "opera-agent-mcp", "local"] }</code>.</p>
+            <p class="muted"><strong>CLI = Cloud + Local.</strong> Cloud untuk akses jauh, Local untuk loopback ke browser di mesin ini.</p>
+            </div>
+          </details>
+        </article>
+      </div>
+    </div>
+          <div class="mcpCat">
+      <div class="mcpCatHead"><span class="mcpIndex" aria-hidden="true">03</span><h3 class="mcpCatTitle">CLI — Codex &middot; Claude Code</h3></div>
+      <div class="mcpTrack">
+        <article class="mcpCard" id="codex">
+          <div class="mcpCardHead"><span class="mcpIndex" aria-hidden="true">01</span><h3 class="mcpCardTitle">Codex</h3></div>
+<div class="mcpDemo" data-agent="codex" aria-hidden="true">
               <div class="ddCanvas">
                 <div class="ddIcons" aria-hidden="true">
                   <span class="ddIcon"><svg viewBox="0 0 24 24" class="ddPct"><rect x="3" y="5" width="18" height="12" rx="1.6" fill="none" stroke="var(--ink)" stroke-width="1.6"/><path d="M9 21h6M12 17v4" stroke="var(--ink)" stroke-width="1.6" stroke-linecap="round"/></svg><em>This PC</em></span>
@@ -664,23 +673,24 @@
               </div>
               <ol class="steps srOnly"><li>Baca konfigurasi di ~/.codex/config.toml.</li><li>Jalankan /mcp dan lihat opera-agent.</li></ol>
             </div>
-          </div>
-        </details>
-        <details class="mcpProvider" id="claude-code">
-          <summary><span class="mcpIndex" aria-hidden="true">02</span><span>Claude Code</span></summary>
-          <div class="mcpProviderBody">
-          <p>Di terminal, ganti <code>opera</code> dengan nama device Anda:</p>
-          <div class="copybox">
-                <pre><code id="cfg-claude-code">claude mcp add --transport http opera-agent https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp --header "X-Opera-Device: opera" --header "X-Opera-Provider: claude" --header "x-region: ap-southeast-1"</code></pre>
-                <button type="button" data-copy="cfg-claude-code" data-i18n="copy">Salin</button>
+          <details class="stepsDrop">
+            <summary>Langkah-langkah</summary>
+            <div class="stepsDropBody">
+<p>Tambahkan ke <code>~/.codex/config.toml</code>, ganti <code>opera</code> dengan nama device Anda:</p>
+            <div class="copybox">
+                <pre><code id="cfg-codex">[mcp_servers.opera-agent]
+        url = "https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp"
+        headers = { "X-Opera-Device" = "opera", "X-Opera-Provider" = "codex", "x-region" = "ap-southeast-1" }
+        startup_timeout_sec = 30</code></pre>
+                <button type="button" data-copy="cfg-codex" data-i18n="copy">Salin</button>
               </div>
-          <p>Verifikasi: <code>claude mcp list</code> harus menampilkan <code>opera-agent</code>.</p>
-          <p>Mode lokal (npm), untuk mesin yang sama:</p>
-          <div class="copybox">
-                <pre><code id="cfg-claude-code-stdio">claude mcp add opera-agent -- npx -y opera-agent-mcp local</code></pre>
-                <button type="button" data-copy="cfg-claude-code-stdio" data-i18n="copy">Salin</button>
-              </div>
-          <div class="mcpDemo" data-agent="claude-code" aria-hidden="true">
+            <p>Codex akan menandatangani OAuth-nya sendiri. Verifikasi dengan menanyakan status, atau ketik <code>/mcp</code> di Codex dan lihat <code>opera-agent</code> di daftar.</p>
+            </div>
+          </details>
+        </article>
+        <article class="mcpCard" id="claude-code">
+          <div class="mcpCardHead"><span class="mcpIndex" aria-hidden="true">02</span><h3 class="mcpCardTitle">Claude Code</h3></div>
+<div class="mcpDemo" data-agent="claude-code" aria-hidden="true">
               <div class="ddCanvas">
                 <div class="ddIcons" aria-hidden="true">
                   <span class="ddIcon"><svg viewBox="0 0 24 24" class="ddPct"><rect x="3" y="5" width="18" height="12" rx="1.6" fill="none" stroke="var(--ink)" stroke-width="1.6"/><path d="M9 21h6M12 17v4" stroke="var(--ink)" stroke-width="1.6" stroke-linecap="round"/></svg><em>This PC</em></span>
@@ -697,11 +707,25 @@
               </div>
               <ol class="steps srOnly"><li>Tambahkan server via claude mcp add.</li><li>Claude akan menautkan OAuth dan memuat tool.</li></ol>
             </div>
-          </div>
-        </details>
-        
-        </div>
-      </details>
+          <details class="stepsDrop">
+            <summary>Langkah-langkah</summary>
+            <div class="stepsDropBody">
+<p>Di terminal, ganti <code>opera</code> dengan nama device Anda:</p>
+            <div class="copybox">
+                <pre><code id="cfg-claude-code">claude mcp add --transport http opera-agent https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp --header "X-Opera-Device: opera" --header "X-Opera-Provider: claude" --header "x-region: ap-southeast-1"</code></pre>
+                <button type="button" data-copy="cfg-claude-code" data-i18n="copy">Salin</button>
+              </div>
+            <p>Verifikasi: <code>claude mcp list</code> harus menampilkan <code>opera-agent</code>.</p>
+            <p>Mode lokal (npm), untuk mesin yang sama:</p>
+            <div class="copybox">
+                <pre><code id="cfg-claude-code-stdio">claude mcp add opera-agent -- npx -y opera-agent-mcp local</code></pre>
+                <button type="button" data-copy="cfg-claude-code-stdio" data-i18n="copy">Salin</button>
+              </div>
+            </div>
+          </details>
+        </article>
+      </div>
+    </div>
       </div>
     </section>
 
@@ -715,10 +739,10 @@
       </div>
 
       <div class="mcpCats">
-      <details class="mcpCat">
-        <summary><span class="mcpIndex" aria-hidden="true">01</span><span>Sebelum mulai</span></summary>
-        <div class="mcpCatBody">
-          <ol class="steps">
+      <details class="stepsDrop stepsDropLead">
+        <summary>Sebelum mulai</summary>
+        <div class="stepsDropBody">
+<ol class="steps">
         <li><strong>Extension terpasang.</strong> Opera Agent dimuat di Chromium (<a href="./unduh.html">Unduh</a>).</li>
         <li><strong>Sudah di-pair.</strong> Buka <a href="./dashboard.html">Dashboard</a> → Pairing → buat kode → tempel di extension.</li>
         <li><strong>Jalankan bridge.</strong> <code>npx opera-agent-mcp</code> mendengarkan di loopback; harness lokal bisa memakainya langsung.</li>
@@ -726,24 +750,12 @@
       </ol>
         </div>
       </details>
-      <details class="mcpCat">
-        <summary><span class="mcpIndex" aria-hidden="true">02</span><span>Contoh — npm di Terminal</span></summary>
-        <div class="mcpCatBody">
-          <p>Satu perintah, satu mesin. Untuk harness yang berjalan di mesin ini:</p>
-          <div class="copybox">
-                <pre><code id="cfg-npm">npm install -g opera-agent-mcp</code></pre>
-                <button type="button" data-copy="cfg-npm" data-i18n="copy">Salin</button>
-              </div>
-          <p>Empat mode:</p>
-          <div class="copybox">
-                <pre><code id="cfg-modes">opera-agent-mcp local    stdio, drives the open browser on this machine
-        opera-agent-mcp cloud    stdio, drives it through the hosted server
-        opera-agent-mcp auth     OAuth sign-in; token stored beside this install
-        opera-agent-mcp doctor   prints what is connected, the plan, and what the plan allows</code></pre>
-                <button type="button" data-copy="cfg-modes" data-i18n="copy">Salin</button>
-              </div>
-          <p>Verifikasi koneksi: <code>opera-agent-mcp doctor</code>.</p>
-          <div class="mcpDemo" data-agent="terminal" aria-hidden="true">
+      <div class="mcpCat">
+      <div class="mcpCatHead"><span class="mcpIndex" aria-hidden="true">02</span><h3 class="mcpCatTitle">Contoh — npm di Terminal</h3></div>
+      <div class="mcpTrack">
+        <article class="mcpCard" id="npm-demo">
+          <div class="mcpCardHead"><span class="mcpIndex" aria-hidden="true">01</span><h3 class="mcpCardTitle">Terminal — npm</h3></div>
+<div class="mcpDemo" data-agent="terminal" aria-hidden="true">
               <div class="ddCanvas">
                 <div class="ddIcons" aria-hidden="true">
                   <span class="ddIcon"><svg viewBox="0 0 24 24" class="ddPct"><rect x="3" y="5" width="18" height="12" rx="1.6" fill="none" stroke="var(--ink)" stroke-width="1.6"/><path d="M9 21h6M12 17v4" stroke="var(--ink)" stroke-width="1.6" stroke-linecap="round"/></svg><em>This PC</em></span>
@@ -760,8 +772,28 @@
               </div>
               <ol class="steps srOnly"><li>npm install -g opera-agent-mcp.</li><li>Verifikasi dengan opera-agent-mcp doctor.</li></ol>
             </div>
-        </div>
-      </details>
+          <details class="stepsDrop">
+            <summary>Langkah-langkah</summary>
+            <div class="stepsDropBody">
+<p>Satu perintah, satu mesin. Untuk harness yang berjalan di mesin ini:</p>
+            <div class="copybox">
+                <pre><code id="cfg-npm">npm install -g opera-agent-mcp</code></pre>
+                <button type="button" data-copy="cfg-npm" data-i18n="copy">Salin</button>
+              </div>
+            <p>Empat mode:</p>
+            <div class="copybox">
+                <pre><code id="cfg-modes">opera-agent-mcp local    stdio, drives the open browser on this machine
+        opera-agent-mcp cloud    stdio, drives it through the hosted server
+        opera-agent-mcp auth     OAuth sign-in; token stored beside this install
+        opera-agent-mcp doctor   prints what is connected, the plan, and what the plan allows</code></pre>
+                <button type="button" data-copy="cfg-modes" data-i18n="copy">Salin</button>
+              </div>
+            <p>Verifikasi koneksi: <code>opera-agent-mcp doctor</code>.</p>
+            </div>
+          </details>
+        </article>
+      </div>
+    </div>
       </div>
     </section>
 

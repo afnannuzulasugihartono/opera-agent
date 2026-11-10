@@ -1126,26 +1126,28 @@ html.js .quickStart.in .quickDoor:nth-child(3) { animation-delay: .19s; }
 }
 
 /*
- * MCP CATS - nested install cards: cangkang Hosted/Local, di dalamnya Web/Desktop/CLI, di dalamnya tiap provider.
- * Semua dropdown, pola dukungan.
+ * MCP CATS - hosted/local cangkang: kategori Web/Desktop/CLI sebagai kartu terbuka; isi kartu adalah deretan provider yang digeser (scroll-snap); langkah-langkah hidup di dalam dropdown tiap kartu.
  */
 
-.mcpCats { display: grid; gap: 14px; margin-top: 18px; max-width: none; border-top: 0; }
-.prose details.mcpCat { border: 1px solid var(--line-strong); border-radius: 14px; background: var(--surface); padding: 0 18px; }
-.prose details.mcpCat > summary { padding: 15px 0; font-size: 15px; font-weight: 650; letter-spacing: -.01em; gap: 14px; }
-.prose details.mcpCat > summary::after { margin-left: auto; }
-.prose details.mcpCat[open] { background: color-mix(in srgb, var(--surface) 80%, var(--accent) 6%); }
-.mcpCatBody { display: grid; gap: 12px; padding: 2px 0 16px; }
+.mcpCats { display: grid; gap: 14px; margin-top: 18px; }
+.mcpCat { display: grid; gap: 10px; padding: 16px 18px 14px; border: 1px solid var(--line-strong); border-radius: 14px; background: var(--surface); }
+.mcpCatHead { display: flex; align-items: baseline; gap: 14px; }
+.mcpCatTitle { margin: 0; color: var(--ink); font: 650 15px/1.35 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; letter-spacing: -.01em; }
 
-.prose details.mcpProvider { border: 1px solid var(--line); border-radius: 12px; background: var(--surface); padding: 0 16px; }
-.prose details.mcpProvider > summary { padding: 12px 0; font-size: 14px; font-weight: 600; gap: 12px; }
-.prose details.mcpProvider > summary::after { margin-left: auto; font-size: 14px; }
-.mcpProviderBody { display: grid; gap: 12px; padding: 0 0 14px; }
-.mcpProviderBody .mcpDemo { margin: 0; width: 100%; }
-.mcpProviderBody .steps { margin: 0; }
-.mcpProviderBody .copybox { margin: 0; }
-.mcpProviderBody p { margin: 0; }
+.mcpTrack { display: grid; grid-auto-flow: column; grid-auto-columns: min(88vw, 640px); gap: 12px; overflow-x: auto; scroll-snap-type: x mandatory; scroll-padding-inline: 18px; scrollbar-width: none; -webkit-overflow-scrolling: touch; padding-bottom: 2px; }
+.mcpTrack::-webkit-scrollbar { display: none; }
+.mcpCard { display: grid; gap: 12px; align-content: start; scroll-snap-align: start; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); padding: 14px; min-width: 0; }
+.mcpCardHead { display: flex; align-items: baseline; gap: 12px; }
+.mcpCardTitle { margin: 0; color: var(--ink); font: 600 13px/1.35 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; letter-spacing: -.01em; }
+.mcpCard .mcpDemo { margin: 0; width: 100%; }
+
+.stepsDrop { border-top: 1px solid var(--line); }
+.prose .stepsDrop > summary { padding: 12px 0; font-size: 13px; font-weight: 600; color: var(--ink); }
+.prose .stepsDrop > summary::after { margin-left: auto; font-size: 13px; }
+.stepsDropBody { display: grid; gap: 12px; padding: 0 0 4px; }
+.stepsDropBody .steps, .stepsDropBody .copybox, .stepsDropBody p { margin: 0; }
 
 .mcpIndex { flex: 0 0 auto; color: var(--accent); font-family: var(--mono); font-size: 11px; font-weight: 500; letter-spacing: .06em; }
 
-@media (max-width: 640px) { .prose details.mcpCat { padding: 0 12px; } .prose details.mcpProvider { padding: 0 12px; } }
+@media (max-width: 640px) { .mcpTrack { grid-auto-columns: 86vw; scroll-padding-inline: 12px; } .mcpCat { padding: 14px 12px 12px; } .mcpCard { padding: 12px; } }
+@media (prefers-reduced-motion: no-preference) { .mcpTrack { scroll-behavior: smooth; } }
