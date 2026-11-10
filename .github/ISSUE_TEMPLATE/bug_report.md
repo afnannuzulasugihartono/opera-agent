@@ -9,10 +9,10 @@ What the person did, and what they saw instead. The exact steps, in order.
 
 ## Where
 
-- The site or application: 
-- The extension version: 
-- The browser and its version: 
-- The operating system: 
+- The site or application:
+- The extension version:
+- The browser and its version:
+- The operating system:
 
 ## What was expected
 
