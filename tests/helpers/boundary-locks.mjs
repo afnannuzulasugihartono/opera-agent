@@ -17,6 +17,12 @@
 // WHY background.js changes more often than anything else here: the worker split moved dispatch out of it while keeping the bytes, so its extraction tasks re-pin it in the same commit.
 // That is expected, not a smell.
 
+// WHY the MCP function was re-pinned on 2026-11-11: the device contract moved, and it moved on purpose.
+// The pin used to be honoured only while the pinned browser was live, and a sleeping pin was quietly replaced by whichever browser was freshest.
+// Tab ids live inside one browser, so a chain of calls that started on the pinned browser and continued on another left the agent holding a tab id that existed on neither, and the failure read as a broken tool.
+// Now the pin decides: a live pin answers every call, a sleeping pin is a named refusal that names the awake browsers and the header that reaches one, and X-Opera-Device: any opts into the old fallback on purpose.
+// The tool schemas did not move, so tools.ts keeps its pin - except for the one line that names device.alternatives in the browser_status answer, which is the output fact the new refusal needs the agent to see.
+
 // WHY CRLF does not cause false failures: a Windows checkout rewrites line endings, so the test normalizes CRLF to LF before hashing.
 // Otherwise every developer on Windows would see all nine pins fail for a reason that is not a contract change.
 
@@ -24,8 +30,8 @@ export const PUBLIC_SURFACE_LOCKS = Object.freeze([
   ['../extension/content.js', 'be462c9e32536137c94714185cdee227828538a1'],
   ['../extension/background.js', '556585d7a2d3e72c8f73af54523759da259527b6'],
   ['../extension/manifest.json', 'b2d1d6730954ae2cf3bf740bb779926ccd06fdad'],
-  ['../supabase/functions/opera-agent-mcp/index.ts', 'a9b95f6acfc0b7efe4fa3d95aac77b576398253f'],
-  ['../supabase/functions/opera-agent-mcp/tools.ts', '966dd04e7b6f87536fe6999e4a72d1c7eac0d2cb'],
+  ['../supabase/functions/opera-agent-mcp/index.ts', '43a6c460f10059a61d30e0d20c7e667337de00d4'],
+  ['../supabase/functions/opera-agent-mcp/tools.ts', '2d58d8177c38bdf947af1a725058f60a04b70ff4'],
 ]);
 
 export const OBSERVATION_STACK_LOCKS = Object.freeze([

@@ -81,6 +81,14 @@ answers with the plan, the quota and the remaining count; a call past the
 quota is answered `PLAN_LIMIT_REACHED` with the plan named, and the local
 road shares the same daily count.
 
+The named device answers every call while it is awake, because a tab id lives
+inside one browser: a call that lands on your everyday profile and the next call
+that lands on another profile leaves the agent holding a tab id that exists on
+neither. When the named device is asleep the server refuses by name instead of
+switching - `pinned_device_not_live`, naming how long it has been silent, which
+browsers are awake, and the header to send. Send `X-Opera-Device: any` when you
+want the freshest awake browser and do not care which one it is.
+
 ### What a call answers
 
 A hosted call answers with the answer, not with the transport. The envelope the

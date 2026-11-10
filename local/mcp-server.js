@@ -62,6 +62,29 @@ function isObject(value) {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
+// WHY THE COST RIDES INSIDE THE ANSWER AND NOT IN A BLOCK OF ITS OWN.
+// An answer is one document: a cost that sits beside it has to be read as a second document, and the hosted wire carries no such block.
+// So the cost is a fact of the answer, under elapsedMs, and both wires read facts the same way.
+
+function withCost(out, elapsedMs) {
+  const blocks = Array.isArray(out?.content) ? out.content : [];
+  for (let index = blocks.length - 1; index >= 0; index -= 1) {
+    const block = blocks[index];
+    if (block?.type !== 'text') continue;
+    let payload;
+    try {
+      payload = JSON.parse(block.text);
+    } catch {
+      continue;
+    }
+    if (!isObject(payload)) continue;
+    const content = blocks.slice();
+    content[index] = { type: 'text', text: JSON.stringify({ ...payload, elapsedMs }) };
+    return { ...out, content };
+  }
+  return out;
+}
+
 // WHY A PLAN IS BUILT FIELD BY FIELD.
 // The server prices what it is told the job will produce, so an object passed straight through is an object a caller could widen with a price or an owner the server would then read.
 // Three named fields are the whole vocabulary of a quote, and a fourth is refused by not being read.
@@ -637,7 +660,7 @@ const windowMatch = async (tab, driver) => (tab ? String(tab.title ?? '') : page
         }));
       }
       case 'ax_snapshot':
-        return asText(await driver.snapshot(args.limit));
+        return asText({ rows: await driver.snapshot(args.limit) });
       case 'caret_line':
         return asText(await driver.caretLine());
       case 'upload': {
@@ -758,8 +781,7 @@ const windowMatch = async (tab, driver) => (tab ? String(tab.title ?? '') : page
         if (method === 'tools/call') {
           const started = Date.now();
           const out = await run(params?.name, params?.arguments ?? {});
-          out.content.push({ type: 'text', text: `${Date.now() - started} ms` });
-          return reply(out);
+          return reply(withCost(out, Date.now() - started));
         }
 
         if (method?.startsWith('notifications/')) return undefined;

@@ -298,7 +298,7 @@ test('an empty allowlist admits nobody, because every caller drives the same dev
 
 // WHY THIS TEST MOVED AND NOT ITS INTENT.
 // The pin used to be honored forever: one stale pairing blackholed every hosted command to AWAIT_OUTCOME_UNKNOWN behind a 401 that read as a broken credential.
-// The contract is now: the pin serves only while the browser heartbeats, ownership is always checked against the caller's user_id, a silent browser falls back to the freshest fresh one the caller owns, and no fresh browser at all is a named 503 refusal, never a 401 and never an invented name.
+// The contract is now: the pin decides while the browser heartbeats, ownership is always checked against the caller's user_id, a sleeping pin is a named 503 refusal that names the awake browsers instead of a silent switch to another browser, and no fresh browser at all is a named refusal too, never a 401 and never an invented name.
 
 test('resolveDeviceFresh never hands out a device the caller does not own', () => {
 
@@ -306,8 +306,10 @@ test('resolveDeviceFresh never hands out a device the caller does not own', () =
   assert.doesNotMatch(fn, /return deviceFromHeader/);
   assert.match(fn, /\.eq\("user_id", auth\.userId\)/);
   assert.match(fn, /return resolveDevice\(\{ pin:/);
-  assert.match(source, /if \(!resolution\.name\) return noLiveDevice\(req\);/);
+  assert.match(source, /if \(!resolution\.name\)/);
   assert.match(source, /function noLiveDevice\(req: Request\)/);
+  assert.match(source, /function pinnedDeviceNotLive\(req: Request, resolution: DeviceResolution\)/);
+  assert.match(source, /pinned_device_not_live/);
 });
 
 test('wait_events exposes only the caller-owned device events', () => {

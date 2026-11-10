@@ -686,8 +686,8 @@ test('a capture comes back as image content a model can see, not base64 text', a
   });
 
   assert.deepEqual(res.result.content[0], { type: 'image', data: 'BASE64JPEG', mimeType: 'image/jpeg' });
-  assert.match(res.result.content.at(-1).text, /^[0-9]+ ms$/);
-  const geometry = JSON.parse(res.result.content.at(-2).text);
+  const geometry = JSON.parse(res.result.content.at(-1).text);
+  assert.equal(typeof geometry.elapsedMs, 'number', 'the answer carries the cost of the call');
   assert.deepEqual(geometry.viewport, { width: 1186, height: 670 });
   assert.equal(geometry.dpr, 1.25);
   assert.deepEqual(geometry.image, { width: 1483, height: 838 });
@@ -703,7 +703,8 @@ test('a full-page capture reaches the driver as a flag, not a second tool', asyn
 
   assert.deepEqual(c.driver.calls[0], ['capture', { fullPage: true }]);
   assert.deepEqual(res.result.content[0], { type: 'image', data: 'BASE64JPEG', mimeType: 'image/jpeg' });
-  assert.match(res.result.content.at(-1).text, /^[0-9]+ ms$/);
+  const geometry = JSON.parse(res.result.content.at(-1).text);
+  assert.equal(typeof geometry.elapsedMs, 'number', 'the answer carries the cost of the call');
 });
 
 test('a row click resolves and clicks in one call', async () => {
@@ -982,9 +983,11 @@ test('every call reports how long the browser took', async () => {
   const server = createMcpServer(ctx());
 
   const res = await server.handle({ jsonrpc: '2.0', id: 23, method: 'tools/call', params: { name: 'ax_snapshot', arguments: {} } });
-  const last = res.result.content.at(-1);
+  const payload = JSON.parse(res.result.content.at(-1).text);
 
-  assert.match(last.text, /^[0-9]+ ms$/, 'the final block names the cost');
+  assert.equal(typeof payload.elapsedMs, 'number', 'the answer names the cost as a fact');
+  assert.ok(payload.elapsedMs >= 0, 'and the number is a time');
+  assert.equal(res.result.content.length, 1, 'the answer is one document, not a cost line beside it');
 });
 
 test('key vocabularies are enumerated so a misspelling fails before the browser', async () => {
@@ -1225,7 +1228,11 @@ test('caret_line reports the line without moving past it', async () => {
 
   const res = await server.handle({ jsonrpc: '2.0', id: 32, method: 'tools/call', params: { name: 'caret_line', arguments: {} } });
 
-  assert.deepEqual(JSON.parse(res.result.content[0].text), {
+  const payload = JSON.parse(res.result.content[0].text);
+  const { elapsedMs, ...facts } = payload;
+
+  assert.equal(typeof elapsedMs, 'number', 'the answer carries the cost of the call');
+  assert.deepEqual(facts, {
     line: 'Kajian pustaka mencakup',
     caretMoved: true,
     caretRestored: true,
@@ -1272,7 +1279,11 @@ test('intercept_file_chooser toggles without touching the page', async () => {
 
   const res = await server.handle({ jsonrpc: '2.0', id: 34, method: 'tools/call', params: { name: 'intercept_file_chooser', arguments: { enabled: true } } });
 
-  assert.deepEqual(JSON.parse(res.result.content[0].text), { intercepting: true, ok: true });
+  const payload = JSON.parse(res.result.content[0].text);
+  const { elapsedMs, ...facts } = payload;
+
+  assert.equal(typeof elapsedMs, 'number', 'the answer carries the cost of the call');
+  assert.deepEqual(facts, { intercepting: true, ok: true });
 });
 
 // WHY THE STRAY TAB IS CLOSED AND NAMED, NOT LEFT.
@@ -1341,8 +1352,10 @@ test('ask_page returns a raw read and hands the method its own params', async ()
     params: { name: 'ask_page', arguments: { tabId: 't1', method: 'Page.getFrameTree' } }
   });
   const payload = JSON.parse(res.result.content[0].text);
+  const { elapsedMs, ...facts } = payload;
 
-  assert.deepEqual(payload, { method: 'Page.getFrameTree', asked: 'Page.getFrameTree', params: {}, ok: true });
+  assert.equal(typeof elapsedMs, 'number', 'the answer carries the cost of the call');
+  assert.deepEqual(facts, { method: 'Page.getFrameTree', asked: 'Page.getFrameTree', params: {}, ok: true });
 });
 
 test('ask_page defaults a screenshot to png, which is how a test image is made', async () => {

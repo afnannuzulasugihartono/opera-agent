@@ -16,7 +16,7 @@ import { CommandFailure, sealVmProgram } from "../_shared/seal-vm-program.js";
 import { compileAdhocGraph } from "../_shared/adhoc-compile.js";
 import { registerTools } from "./tools.ts";
 import { tidyForAi } from "./tidy.ts";
-import { resolveDevice } from "./device.ts";
+import { resolveDevice, type DeviceResolution } from "./device.ts";
 
 // WHY THE DEPS ARE TYPED FROM THE FUNCTIONS THEMSELVES.
 // A hand-written type beside a function is a second version of that function, and the two drift.
@@ -92,14 +92,18 @@ function corsHeadersFor(req: Request): Record<string, string> {
 
 type AuthContext = { type: "static" } | { type: "user"; userId: string };
 export type VmCaller = { userId: string; token: string };
-export type DeviceResolution = { name: string | null; source: "pin" | "freshest" | null; pinned: string | null; ageMs: number | null };
 
-// WHY THE PIN NEVER WINS FOREVER.
-// A paired device is remembered for a week of heartbeats; a device that fell silent is not a browser that answers.
-// The pin wins only while it is fresh; otherwise the browser the person actually has open wins, and the answer names which one it drove.
+// WHY THE PIN DECIDES AND NEVER GOES QUIETLY TO ANOTHER BROWSER.
+// A pin names one browser, and a tab id lives inside one browser: a tab id minted on the everyday profile is unknown to the test profile.
+// A relay that answers one call on the pinned browser and the next on another hands the agent a tab id that exists on neither, and the failure reads as a broken tool rather than a wrong route.
+// So the pin answers every call while that browser is live.
+// When it is not live the answer names the pin, the silence and the live alternatives, and the caller can ask for one with X-Opera-Device: any.
+// The judgement itself lives in device.ts, where it is a pure function a test can pin.
 
 async function resolveDeviceFresh(auth: AuthContext, req?: Request): Promise<DeviceResolution> {
-  if (auth.type === "static") return { name: DEVICE_NAME, source: "pin", pinned: DEVICE_NAME, ageMs: null };
+  if (auth.type === "static") {
+    return { name: DEVICE_NAME, source: "pin", pinned: DEVICE_NAME, ageMs: null, alternatives: [], pinState: "live" };
+  }
   const deviceFromHeader = req?.headers.get("x-opera-device")?.trim() || "";
   const supabase = await db();
   const { data } = await supabase
@@ -119,6 +123,25 @@ function noLiveDevice(req: Request) {
   return json(req, {
     error: "no_live_browser",
     error_description: "No Opera Agent browser answered for this account right now. Open Chrome or Brave with Opera Agent installed and paired, then try again; the command was not sent."
+  }, 503);
+}
+
+// WHY A SLEEPING PIN IS REFUSED BY NAME INSTEAD OF REPLACED BY A LIVE BROWSER.
+// The caller pinned one browser, and tab ids live inside one browser.
+// Driving a different browser would answer the call and lose the tab: the agent would hold a tab id from the pinned profile and the next call would come from another profile, which reads as a broken tool.
+// So the relay says what it found, names the browsers that are awake, and gives the one header that reaches them; the caller chooses, and the command is not sent while the pin sleeps.
+
+function pinnedDeviceNotLive(req: Request, resolution: DeviceResolution) {
+  const pinned = resolution.pinned || "the pinned device";
+  const silentFor = resolution.ageMs === null
+    ? "it has never reported in"
+    : `it has been silent for ${Math.round(resolution.ageMs / 1000)}s`;
+  const alternatives = resolution.alternatives.length
+    ? ` Browsers awake for this account: ${resolution.alternatives.join(", ")}. Send X-Opera-Device: ${resolution.alternatives[0]} to drive one, or X-Opera-Device: any to let the relay pick the freshest.`
+    : " No browser for this account is awake right now: open one with Opera Agent installed and paired, then try again.";
+  return json(req, {
+    error: "pinned_device_not_live",
+    error_description: `This account pinned the device "${pinned}" and ${silentFor}, so no command was sent.${alternatives}`
   }, 503);
 }
 
@@ -526,7 +549,17 @@ async function executeStatus(method: string, params: Record<string, unknown>, ti
   const merging = Promise.all([devicePresence(userId), planInfo(await db(), userId)]);
   const answer = await execute(method, params, timeoutMs, deviceName, provider);
   const [presence, plan] = await merging;
-  const device = resolution ? { device: { name: resolution.name, source: resolution.source, pinned: resolution.pinned, ageMs: resolution.ageMs } } : {};
+  const device = resolution
+    ? {
+      device: {
+        name: resolution.name,
+        source: resolution.source,
+        pinned: resolution.pinned,
+        ageMs: resolution.ageMs,
+        ...(resolution.alternatives.length ? { alternatives: resolution.alternatives } : {})
+      }
+    }
+    : {};
   if (answer.isError) {
     const merged = { ...(answer.structuredContent ?? {}), ...(plan ?? {}), ...(presence ?? {}), ...device };
     return {
@@ -925,6 +958,10 @@ function serveMcpSocket(req: Request) {
         }
         const resolution = await resolveDeviceFresh(authContext, fake);
         if (!resolution.name) {
+          if (resolution.pinState === "stale" || resolution.pinState === "missing") {
+            socket.close(4401, `pinned device "${resolution.pinned}" is not live`);
+            return;
+          }
           socket.close(4401, "no live browser");
           return;
         }
@@ -1027,7 +1064,10 @@ Deno.serve(async (req: Request) => {
   const authContext = await authenticate(req);
   if (!authContext) return unauthorized(req);
   const resolution = await resolveDeviceFresh(authContext, req);
-  if (!resolution.name) return noLiveDevice(req);
+  if (!resolution.name) {
+    if (resolution.pinState === "stale" || resolution.pinState === "missing") return pinnedDeviceNotLive(req, resolution);
+    return noLiveDevice(req);
+  }
   const provider = await resolveProvider(req, authContext);
   const caller: VmCaller | null = authContext.type === "user"
     ? { userId: authContext.userId, token: bearerToken(req) }
