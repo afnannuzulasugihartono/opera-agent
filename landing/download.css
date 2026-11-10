@@ -1239,3 +1239,45 @@ pre {
   7.1% { transform: scale(.9) }
   8.4%, 100% { transform: scale(1) }
 }
+
+.expRowNew { opacity: 0; animation: newFolderSpawn 22s linear infinite; }
+
+@keyframes newFolderSpawn {
+  0%, 22% { opacity: 0; transform: translateY(-10px) }
+  25.5%, 100% { opacity: 1; transform: none }
+}
+
+.taskIcon.folder { animation: taskFolderOn 22s linear infinite; }
+
+@keyframes taskFolderOn {
+  0% { opacity: .35 }
+  16% { opacity: .35 }
+  19% { opacity: 1 }
+  32% { opacity: 1 }
+  35%, 100% { opacity: .35 }
+}
+
+.taskIcon.chromeTask { animation: taskChromeOn 22s linear infinite; }
+
+@keyframes taskChromeOn {
+  0% { background: var(--line-strong) }
+  3% { background: var(--accent) }
+  16% { background: var(--accent) }
+  19% { background: var(--line-strong) }
+  29% { background: var(--line-strong) }
+  32% { background: var(--accent) }
+  46.5% { background: var(--accent) }
+  49.5% { background: var(--line-strong) }
+  62% { background: var(--line-strong) }
+  65% { background: var(--accent) }
+  84% { background: var(--accent) }
+  87% { background: var(--line-strong) }
+  100% { background: var(--line-strong) }
+}
+
+.taskIcon.termTask { animation: taskTermOn 22s linear infinite; }
+
+@keyframes taskTermOn {
+  0%, 84% { background: var(--line-strong) }
+  87%, 100% { background: var(--accent) }
+}
