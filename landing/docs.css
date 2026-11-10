@@ -1129,6 +1129,7 @@ html.js .quickStart.in .quickDoor:nth-child(3) { animation-delay: .19s; }
  * MCP CATS - hosted/local cangkang: kategori Web/Desktop/CLI sebagai kartu terbuka; isi kartu adalah deretan provider yang digeser (scroll-snap); langkah-langkah hidup di dalam dropdown tiap kartu.
  */
 
+.docBody > section[data-reveal] + section[data-reveal] { margin-top: 40px; }
 .mcpCats { display: grid; gap: 14px; margin-top: 18px; }
 .mcpCat { display: grid; gap: 10px; padding: 16px 18px 14px; border: 1px solid var(--line-strong); border-radius: 14px; background: var(--surface); }
 .mcpCatHead { display: flex; align-items: baseline; gap: 14px; }
