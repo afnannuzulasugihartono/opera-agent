@@ -8,17 +8,41 @@
 // WHY a classic script and not a module: the manifest loads this file into both the module service worker and a classic content script, and a classic script cannot import.
 // Hence the IIFE and the globalThis publish, and hence the guard below.
 
+// WHY the browser is named here and not imported: this file cannot import, so the page's copy of the detection lives inline.
+// The worker's copy lives in lib/browser-id.js, and tests/browser-identity.test.mjs runs both over the same browsers and fails when they answer differently.
+// The order is the one that does not lie: what the browser publishes about itself, then the brand list, then the string.
+
 (() => {
   'use strict';
 
   if (!globalThis.OperaAgentBrowserId) {
-    const ua = navigator.userAgent || '';
+    const ua = String(navigator?.userAgent || '');
+    let brands = [];
+    try {
+      brands = (navigator?.userAgentData?.brands ?? []).map((brand) => String(brand?.brand ?? ''));
+    } catch {
+      brands = [];
+    }
+    let brave = false;
+    try {
+      brave = navigator?.brave?.isBrave?.() === true;
+    } catch {
+      brave = false;
+    }
+    const branded = brands.find((brand) => /brave|edge|opera|vivaldi|chromium|chrome/i.test(brand)) || '';
     let browserName = 'Unknown';
-    if (/Brave/i.test(ua)) browserName = 'Brave';
-    else if (/Edg/i.test(ua)) browserName = 'Edge';
-    else if (/OPR/i.test(ua) || /Opera/i.test(ua)) browserName = 'Opera';
-    else if (/Chrome/i.test(ua)) browserName = 'Chrome';
+    if (brave) browserName = 'Brave';
+    else if (/brave/i.test(branded)) browserName = 'Brave';
+    else if (/edge/i.test(branded)) browserName = 'Edge';
+    else if (/opera/i.test(branded)) browserName = 'Opera';
+    else if (/vivaldi/i.test(branded)) browserName = 'Vivaldi';
+    else if (/chromium/i.test(branded)) browserName = 'Chromium';
+    else if (/Brave/i.test(ua)) browserName = 'Brave';
+    else if (/Edg\//i.test(ua)) browserName = 'Edge';
+    else if (/OPR\//i.test(ua)) browserName = 'Opera';
+    else if (/Vivaldi/i.test(ua)) browserName = 'Vivaldi';
     else if (/Firefox/i.test(ua)) browserName = 'Firefox';
+    else if (/Chrome/i.test(ua)) browserName = 'Chrome';
     globalThis.OperaAgentBrowserId = { browserName };
   }
 

@@ -23,6 +23,10 @@
 // Now the pin decides: a live pin answers every call, a sleeping pin is a named refusal that names the awake browsers and the header that reaches one, and X-Opera-Device: any opts into the old fallback on purpose.
 // The tool schemas did not move, so tools.ts keeps its pin - except for the one line that names device.alternatives in the browser_status answer, which is the output fact the new refusal needs the agent to see.
 
+// WHY the MCP function was re-pinned again on 2026-11-11: the device contract moved a second time, in the same direction.
+// A device the owner revoked is not a device, so the resolver must never pick it and the query must never bring it in.
+// The criterion did not change; it got stricter: the surface that names the browser to drive now also refuses the ones that were cut off.
+
 // WHY CRLF does not cause false failures: a Windows checkout rewrites line endings, so the test normalizes CRLF to LF before hashing.
 // Otherwise every developer on Windows would see all nine pins fail for a reason that is not a contract change.
 
@@ -30,7 +34,7 @@ export const PUBLIC_SURFACE_LOCKS = Object.freeze([
   ['../extension/content.js', 'be462c9e32536137c94714185cdee227828538a1'],
   ['../extension/background.js', '556585d7a2d3e72c8f73af54523759da259527b6'],
   ['../extension/manifest.json', 'b2d1d6730954ae2cf3bf740bb779926ccd06fdad'],
-  ['../supabase/functions/opera-agent-mcp/index.ts', '43a6c460f10059a61d30e0d20c7e667337de00d4'],
+  ['../supabase/functions/opera-agent-mcp/index.ts', '6ac80e183dfa8f73e79d4aced6e483dc66912bf2'],
   ['../supabase/functions/opera-agent-mcp/tools.ts', '2d58d8177c38bdf947af1a725058f60a04b70ff4'],
 ]);
 

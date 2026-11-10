@@ -1,9 +1,10 @@
-// @last-edited: 2026-11-09 UTC+7.
+// @last-edited: 2026-11-11 UTC+7.
 // @title: execute-pull — command execution, pairing and the device socket.
 // @state: owns WAKE_ALARM and socketClient; every statement here that runs at load time is listed in tests/background-load.test.mjs.
-// @dependencies: utils, tab-content, private-tabs, listen, action-focus, watch-registry, capture, serialize, background, log, protocol, options-store, model-client, external-origins, deadline-race, socket-client, socket-protocol.
+// @dependencies: utils, tab-content, private-tabs, listen, action-focus, watch-registry, capture, serialize, background, log, protocol, options-store, model-client, external-origins, deadline-race, socket-client, socket-protocol, browser-id.
 
 import { log } from '../lib/log.js';
+import { browserFamily, deviceNameFor } from '../lib/browser-id.js';
 import { socketUrl } from '../lib/endpoints.js';
 import {
   PRODUCT_VERSION,
@@ -87,15 +88,17 @@ async function pair(code) {
   const cfg = await getConfig();
   const token = randomToken();
   const identity = await pairIdentity();
+  const family = browserFamily();
+  // WHY A NEW DEVICE TAKES THE BROWSER'S NAME: a list of devices is how a person tells two browsers apart, and "opera-4" names none of them.
   const data = await fetchJson(cfg.bridgeUrl, {
     action: 'pair',
     code: pairCode,
     token,
-    deviceName: cfg.deviceName || 'opera',
+    deviceName: cfg.deviceName || deviceNameFor(family),
     extensionVersion: PRODUCT_VERSION,
     protocolVersion: PROTOCOL_VERSION,
     capabilities: Object.keys(METHOD_SPECS),
-    browserName: globalThis.OperaAgentBrowserId?.browserName || 'Unknown',
+    browserName: family,
     instanceId: identity.legacy,
     cookieInstanceId: identity.cookie
   }, 15000);
@@ -220,13 +223,16 @@ async function heartbeat() {
   if (!cfg.paired || !cfg.deviceToken) return;
 
   try {
+    // WHY THE HEARTBEAT NAMES THE BROWSER: the chip on the dashboard was written once, at pairing, and a browser that changed since then kept the old name.
+    // The heartbeat already comes every thirty seconds, so it is the honest place to say which browser this is.
     await fetchJson(cfg.bridgeUrl, {
       action: 'heartbeat',
       deviceName: cfg.deviceName,
       token: cfg.deviceToken,
       extensionVersion: PRODUCT_VERSION,
       protocolVersion: PROTOCOL_VERSION,
-      capabilities: Object.keys(METHOD_SPECS)
+      capabilities: Object.keys(METHOD_SPECS),
+      browserName: browserFamily()
     }, 8000);
   } catch (error) {
     log.debug('HEARTBEAT_FAILED', String(error?.message || error));

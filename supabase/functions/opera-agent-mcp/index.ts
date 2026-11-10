@@ -111,6 +111,7 @@ async function resolveDeviceFresh(auth: AuthContext, req?: Request): Promise<Dev
     .select("device_name, last_seen_at, status")
     .eq("user_id", auth.userId)
     .neq("status", "disabled")
+    .neq("status", "revoked")
     .limit(25);
   return resolveDevice({ pin: deviceFromHeader || null, devices: data ?? [] });
 }
