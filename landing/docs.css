@@ -296,7 +296,7 @@ html.js .quickStart.in .quickDoor:nth-child(3) { animation-delay: .19s; }
 .mcpDemo {
   position: relative;
   margin: 18px auto 20px;
-  width: min(100%, 680px);
+  width: min(100%, 46vh * 1024 / 574, 560px);
   aspect-ratio: 1024 / 574;
   border: 1px solid var(--line-strong);
   border-radius: 14px;
