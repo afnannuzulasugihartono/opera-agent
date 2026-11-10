@@ -187,9 +187,29 @@
     };
 
     const reset = (token) => {
-      demo.classList.remove('is-open', 'is-modal', 'is-row', 'is-done', 'is-appform', 'is-menu', 'is-settings', 'is-advanced', 'is-toolsmenu', 'is-toggled', 'is-authing', 'is-writing', 'is-sent', 'is-ready', 'is-usermsg', 'is-solid');
+      demo.classList.remove('is-open', 'is-modal', 'is-row', 'is-done', 'is-appform', 'is-menu', 'is-settings', 'is-advanced', 'is-toolsmenu', 'is-toggled', 'is-authing', 'is-writing', 'is-sent', 'is-ready', 'is-usermsg', 'is-solid', 'is-wizard', 'is-review', 'is-added', 'is-connected', 'is-customize', 'is-connectors', 'is-addpopover', 'is-adddialog');
       const typedReset = demo.querySelector('#composerTyped');
       if (typedReset) typedReset.textContent = '';
+      const ccTypedReset = demo.querySelector('#ccComposerTyped');
+      if (ccTypedReset) ccTypedReset.textContent = '';
+      const ccNameText = demo.querySelector('#ccNameText');
+      const ccNameField = demo.querySelector('#ccFieldName');
+      if (ccNameText) ccNameText.textContent = '';
+      if (ccNameField) ccNameField.classList.remove('is-on', 'has-value');
+      const ccUrlText = demo.querySelector('#ccUrlText');
+      const ccUrlField = demo.querySelector('#ccFieldUrl');
+      if (ccUrlText) ccUrlText.textContent = '';
+      if (ccUrlField) ccUrlField.classList.remove('is-on', 'has-value');
+      const ccAdd = demo.querySelector('#ccDialogAddBtn');
+      if (ccAdd) {
+        ccAdd.disabled = true;
+        ccAdd.classList.remove('is-enabled');
+      }
+      const ccToggle = demo.querySelector('#ccOaMenuToggle');
+      if (ccToggle) {
+        ccToggle.classList.remove('is-on');
+        ccToggle.setAttribute('aria-checked', 'false');
+      }
       for (const line of lines) {
         line.classList.remove('is-on');
         if (line.dataset.raw) {
@@ -338,25 +358,86 @@
           break;
         }
         case 'claude': {
-          await press(demo.querySelector('.ddBtnCreate'), token);
-          demo.classList.add('is-modal');
-          await wait(430, token);
-          const field = demo.querySelector('.ddModalFieldText');
-          field.textContent = '';
-          field.classList.add('is-on');
-          for (const char of url) {
-            field.textContent += char;
-            await wait(TYPE_PACE, token);
-          }
-          await wait(240, token);
-          await press(demo.querySelector('.ddModalConfirm'), token);
-          demo.classList.remove('is-modal');
-          await wait(430, token);
-          demo.classList.add('is-row');
+          await press(demo.querySelector('.ccRailBriefcase'), token);
+          demo.classList.add('is-customize');
           await wait(380, token);
-          const rowToggle = demo.querySelector('.ddRowToggle');
-          await press(rowToggle, token);
-          rowToggle.classList.add('on');
+          await press(demo.querySelector('#ccConnectAppsBtn'), token);
+          demo.classList.remove('is-customize');
+          demo.classList.add('is-connectors');
+          await wait(400, token);
+          await press(demo.querySelector('#ccAddBtn'), token);
+          demo.classList.add('is-addpopover');
+          await wait(300, token);
+          await press(demo.querySelector('#ccAddCustomBtn'), token);
+          demo.classList.remove('is-addpopover');
+          demo.classList.add('is-adddialog');
+          await wait(430, token);
+          const nameField = demo.querySelector('#ccFieldName');
+          const nameText = demo.querySelector('#ccNameText');
+          await press(nameField, token);
+          nameField.classList.add('is-on', 'has-value');
+          for (const char of 'Opera Agent') {
+            nameText.textContent += char;
+            await wait(TYPE_PACE + 6, token);
+          }
+          nameField.classList.remove('is-on');
+          const urlField = demo.querySelector('#ccFieldUrl');
+          const urlText = demo.querySelector('#ccUrlText');
+          await press(urlField, token);
+          urlField.classList.add('is-on', 'has-value');
+          urlText.textContent = url;
+          await wait(650, token);
+          urlField.classList.remove('is-on');
+          const addBtn = demo.querySelector('#ccDialogAddBtn');
+          addBtn.disabled = false;
+          addBtn.classList.add('is-enabled');
+          await wait(220, token);
+          await press(addBtn, token);
+          demo.classList.remove('is-adddialog');
+          demo.classList.add('is-added');
+          await wait(560, token);
+          await press(demo.querySelector('#ccConnectBtn'), token);
+          demo.classList.add('is-authing');
+          await wait(560, token);
+          await press(demo.querySelector('#ccOauthAuthorize'), token);
+          demo.classList.remove('is-authing', 'is-added');
+          demo.classList.add('is-connected');
+          await wait(900, token);
+          await press(demo.querySelector('.ccBackRow'), token);
+          demo.classList.remove('is-connectors');
+          demo.classList.add('is-customize');
+          await wait(300, token);
+          await press(demo.querySelector('.ccBackRow'), token);
+          demo.classList.remove('is-customize', 'is-connected');
+          await wait(380, token);
+          await press(demo.querySelector('.ccPlus'), token);
+          demo.classList.add('is-menu');
+          await wait(320, token);
+          const oaToggle = demo.querySelector('#ccOaMenuToggle');
+          await press(oaToggle, token);
+          oaToggle.classList.add('is-on');
+          oaToggle.setAttribute('aria-checked', 'true');
+          demo.classList.add('is-toggled');
+          await wait(650, token);
+          await press(demo.querySelector('.composerPh'), token);
+          demo.classList.remove('is-menu');
+          await wait(240, token);
+          demo.classList.add('is-writing');
+          const typed = demo.querySelector('#ccComposerTyped');
+          typed.textContent = '';
+          for (const char of 'Summarize the Q3 sales sheet and post it to Slack') {
+            typed.textContent += char;
+            await wait(TYPE_PACE + 12, token);
+          }
+          demo.classList.add('is-ready');
+          await wait(280, token);
+          await press(demo.querySelector('.ccSend'), token);
+          typed.textContent = '';
+          demo.classList.remove('is-writing', 'is-ready');
+          demo.classList.add('is-sent', 'is-usermsg');
+          await wait(950, token);
+          demo.classList.add('is-solid');
+          await wait(2300, token);
           break;
         }
         case 'codex': {

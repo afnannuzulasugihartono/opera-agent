@@ -705,7 +705,7 @@ html.js .quickStart.in .quickDoor:nth-child(3) { animation-delay: .19s; }
 .mcpDemo.is-toggled .composer { border-color: #f97316; box-shadow: 0 0 0 1.5px rgba(249, 115, 22, .5); }
 
 .toolsMenu { position: absolute; left: 0; bottom: calc(100% + 10px); z-index: 18; width: 268px; padding: 6px; border: 1px solid rgba(255, 255, 255, .12); border-radius: 14px; background: #242424; box-shadow: 0 18px 44px rgba(0, 0, 0, .55); opacity: 0; visibility: hidden; transform: translateY(8px); transition: opacity .22s var(--ease), transform .28s var(--spring), visibility 0s .28s; }
-.mcpDemo.is-toolsmenu .toolsMenu { opacity: 1; visibility: visible; transform: none; transition-delay: 0s; }
+.mcpDemo.is-toolsmenu .toolsMenu, .mcpDemo.is-menu .toolsMenu { opacity: 1; visibility: visible; transform: none; transition-delay: 0s; }
 
 .toolRow { display: flex; align-items: center; gap: 10px; height: 32px; padding: 0 10px; border-radius: 8px; font: 400 12px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #e8e8e8; white-space: nowrap; }
 .toolRow svg { flex: none; width: 16px; height: 16px; stroke: #a8a8a8; fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
@@ -856,3 +856,197 @@ html.js .quickStart.in .quickDoor:nth-child(3) { animation-delay: .19s; }
 .oauthAuth:hover { background: #d8d8d8; }
 .oauthCancel { font: 400 11px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #8a8a8a; }.mcpDemo .is-hover { outline: 1.5px solid color-mix(in srgb, var(--accent) 65%, transparent); outline-offset: 2px; border-radius: 8px; }
 
+/* Claude web — asli sesuai Claude (claude.ai, Sept–Nov 2026, terang-hangat): rail ikon, greeting serif, composer pill, Customize → Connectors, Add custom connector, OAuth page, tools dipakai dari chat */
+
+.ccDemo .browserBar { background: #202124; }
+.ccDemo .browserTabs { background: #181a1d; }
+.ccDemo .browserTab { background: #202124; }
+.ccDemo .browserFavicon { background: transparent; }
+.ccDemo .browserAvatar { background: #CC785C; }
+
+.ccLight { position: absolute; left: 0; right: 0; top: 78px; bottom: 0; z-index: 4; display: flex; background: #f7f6f1; overflow: hidden; }
+
+.ccIconRail { display: flex; flex-direction: column; align-items: center; gap: 2px; width: 56px; padding: 9px 0 10px; border-right: 1px solid #e4e2da; flex: none; }
+.ccRailBtn { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 9px; color: #4a4944; }
+.ccRailBtn svg { stroke: currentColor; fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+.ccRailBtn:hover { background: #ecebe6; }
+.ccRailChat.sel { background: #ecebe6; color: #1a1a1a; }
+.ccRailBriefcase { cursor: pointer; }
+.ccRailSpacer { flex: 1; }
+.ccRailAvatar { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: #CC785C; color: #f7f6f1; font: 650 13px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; margin-top: 4px; }
+
+.ccPanel { display: none; flex-direction: column; gap: 2px; width: 216px; padding: 14px 10px 12px; border-right: 1px solid #e4e2da; flex: none; }
+.ccBackRow { display: flex; align-items: center; gap: 6px; padding: 0 8px 12px 6px; font: 500 11px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #6f6d64; }
+.ccBackRow svg { stroke: currentColor; }
+.ccPanelTitle { padding: 0 8px 12px; font: 600 20px/1.2 Georgia, "Times New Roman", serif; color: #1a1a1a; letter-spacing: -.01em; }
+.ccPanelItem { display: flex; align-items: center; gap: 10px; height: 33px; padding: 0 10px; border-radius: 8px; font: 500 11.5px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #4a4944; }
+.ccPanelItem svg { stroke: currentColor; fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+.ccPanelItem.sel { background: #ecebe6; color: #1a1a1a; }
+.ccPanelPill { margin-left: auto; padding: 2px 6px 1.6px; border-radius: 4px; background: #ecebe6; color: #6f6d64; font: 650 8.5px/1 system-ui; letter-spacing: .04em; }
+.ccPanelFoot { margin-top: auto; display: flex; align-items: center; gap: 9px; height: 33px; padding: 0 10px; border: 1px solid #e4e2da; border-radius: 8px; font: 600 10.5px/1 system-ui; color: #4a4944; }
+.ccPanelFoot svg { stroke: currentColor; fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+.mcpDemo.is-customize .ccIconRail, .mcpDemo.is-connectors .ccIconRail { display: none; }
+.mcpDemo.is-customize .ccPanel, .mcpDemo.is-connectors .ccPanel { display: flex; }
+.mcpDemo.is-authing .ccIconRail, .mcpDemo.is-authing .ccPanel { display: none; }
+
+.ccMain { position: relative; display: flex; flex: 1; flex-direction: column; justify-content: center; min-width: 0; padding: 18px 80px 30px; }
+
+.ccGreetingPage { display: flex; flex-direction: column; align-items: center; gap: 16px; }
+.mcpDemo.is-customize .ccGreetingPage, .mcpDemo.is-connectors .ccGreetingPage, .mcpDemo.is-authing .ccGreetingPage { display: none; }
+
+.ccGreeting { display: flex; align-items: center; gap: 10px; margin: 0; font: 500 26px/1.25 Georgia, "Times New Roman", serif; letter-spacing: -.01em; color: #1a1a1a; }
+.ccStar { width: 24px; height: 24px; }
+
+.ccComposer { display: flex; align-items: center; gap: 10px; height: 46px; width: min(560px, 100%); padding: 0 10px; border: 1px solid #e4e2da; border-radius: 18px; background: #ffffff; box-shadow: 0 1px 3px rgba(26, 26, 26, .07); transition: border-color .25s var(--ease), box-shadow .25s var(--ease); }
+.ccComposer .composerAdd { width: 30px; height: 30px; display: grid; place-items: center; border: 0; border-radius: 8px; background: transparent; color: #4a4944; cursor: pointer; flex: none; }
+.ccComposer .composerAdd:hover { background: #f0efec; }
+.ccComposer .composerPh { flex: 1; min-width: 0; font: 400 13px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #a5a39a; white-space: nowrap; overflow: hidden; }
+.ccComposer .composerTyped { display: none; flex: 1; min-width: 0; font: 400 13px/1 system-ui; color: #1a1a1a; white-space: nowrap; overflow: hidden; }
+.mcpDemo.is-writing .ccComposer .composerPh, .mcpDemo.is-sent .ccComposer .composerPh { display: none; }
+.mcpDemo.is-writing .ccComposer .composerTyped, .mcpDemo.is-sent .ccComposer .composerTyped { display: block; }
+.ccModel { display: flex; align-items: center; gap: 4px; padding: 5px 9px; border-radius: 7px; font: 500 10px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #4a4944; flex: none; }
+.ccModel svg { stroke: currentColor; }
+.ccSend { flex: none; width: 30px; height: 30px; display: grid; place-items: center; border: 0; border-radius: 50%; background: #ecebe6; cursor: pointer; transition: background .25s var(--ease); }
+.ccSend svg { stroke: #8f8d82; fill: none; transition: stroke .25s var(--ease); }
+.mcpDemo.is-ready .ccSend { background: #1a1a1a; }
+.mcpDemo.is-ready .ccSend svg { stroke: #f7f6f1; }
+.mcpDemo.is-toggled .ccComposer { border-color: #CC785C; box-shadow: 0 0 0 1.5px rgba(204, 120, 92, .5); }
+
+.devModeFlag.ccLive { background: #CC785C; color: #f7f6f1; }
+.devModeFlag.ccLive::before { background: #f7f6f1; }
+
+.mcpDemo[data-agent="claude"] .chatUser { background: #e4e2da; color: #1a1a1a; border-radius: 14px 14px 3px 14px; }
+.mcpDemo[data-agent="claude"] .toolCard { border-color: #e4e2da; background: #ffffff; color: #4a4944; box-shadow: 0 1px 2px rgba(26, 26, 26, .06); }
+.mcpDemo[data-agent="claude"] .toolCard b, .mcpDemo[data-agent="claude"] .answerText b { color: #1a1a1a; }
+.mcpDemo[data-agent="claude"] .answerText { color: #1a1a1a; }
+.ccLoadedTools { display: block; font: 400 10px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #8f8d82; }
+.mcpDemo[data-agent="claude"] .toolsMenu { background: #ffffff; border-color: #e4e2da; box-shadow: 0 16px 40px rgba(26, 26, 26, .18); }
+.mcpDemo[data-agent="claude"] .toolRow { color: #1a1a1a; }
+.mcpDemo[data-agent="claude"] .toolRow svg { stroke: #6f6d64; }
+.mcpDemo[data-agent="claude"] .toolLabel { color: #a5a39a; }
+.mcpDemo[data-agent="claude"] .toolDiv { background: #e4e2da; }
+.mcpDemo[data-agent="claude"] .oaRow { background: #f7f6f1; }
+.mcpDemo[data-agent="claude"] .oaRowName { color: #1a1a1a; }
+.mcpDemo[data-agent="claude"] .oaRowDot { background: #CC785C; }
+.mcpDemo[data-agent="claude"] .oaMenuToggle.is-on { background: #CC785C; }
+
+.ccShortcuts { display: flex; gap: 7px; }
+.ccShot { display: flex; align-items: center; gap: 5px; height: 27px; padding: 0 12px; border: 1px solid #e4e2da; border-radius: 14px; background: transparent; font: 500 10px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #4a4944; }
+.ccShot svg { stroke: currentColor; fill: none; }
+
+.ccConnectorsPage, .ccCustomizePage, .ccOauthPage { display: none; flex-direction: column; gap: 9px; height: 100%; padding: 4px 2px; }
+.ccConnectorsHead { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.ccConnectorsTitle { font: 600 17px/1.2 Georgia, "Times New Roman", serif; color: #1a1a1a; }
+.ccConnectorsTools { display: flex; align-items: center; gap: 8px; color: #4a4944; }
+.ccConnectorsTools > svg { stroke: currentColor; fill: none; stroke-width: 1.6; }
+.ccAddBtn { display: grid; place-items: center; width: 30px; height: 30px; border: 0; border-radius: 8px; background: transparent; color: #1a1a1a; cursor: pointer; }
+.ccAddBtn:hover { background: #ecebe6; }
+.ccAddBtn svg { stroke: currentColor; }
+.ccConnectorsSub { margin: 0; font: 400 10px/1.4 system-ui; color: #6f6d64; }
+.ccSearchRow { display: flex; align-items: center; gap: 8px; height: 27px; padding: 0 10px; border: 1px solid #e4e2da; border-radius: 7px; background: #ffffff; font: 400 10.5px/1 system-ui; color: #a5a39a; }
+.ccSearchRow svg { stroke: currentColor; fill: none; stroke-width: 1.6; }
+
+.ccGroupLabel { font: 600 9px/1.3 system-ui; letter-spacing: .1em; text-transform: uppercase; color: #a5a39a; }
+
+.ccRow { display: flex; align-items: center; gap: 11px; min-width: 0; padding: 6px 4px; border-bottom: 1px solid #ecebe6; }
+.ccRow:last-child { border-bottom: 0; }
+.ccTile { flex: none; width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; font: 650 12.5px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+.ccTile.ccGh { background: #2d2c28; color: #f7f6f1; }
+.ccTile.ccGh svg { width: 16px; height: 16px; }
+.ccTile.ccOaTile { background: #ffffff; border: 1px solid #e4e2da; color: #1a1a1a; }
+.ccRowText { display: grid; gap: 2px; min-width: 0; }
+.ccRowName { display: flex; align-items: center; gap: 7px; font: 600 11px/1.25 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #1a1a1a; white-space: nowrap; }
+.ccRowMeta { font: 400 9.5px/1.25 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #6f6d64; white-space: nowrap; }
+.ccCustomPill { padding: 2px 5px 1.5px; border-radius: 4px; background: #ecebe6; color: #6f6d64; font: 650 8px/1.3 system-ui; letter-spacing: .05em; }
+.ccConnectedMark { flex: none; margin-left: auto; display: flex; align-items: center; gap: 5px; font: 600 10px/1 system-ui; color: #19c37d; }
+
+.ccWebOaRow, .ccAddedRow, .ccEmptyLine { display: none; }
+.mcpDemo.is-added:not(.is-connected) .ccAddedRow { display: flex; }
+.mcpDemo.is-connected .ccWebOaRow { display: flex; }
+.mcpDemo.is-added .ccEmptyLine, .mcpDemo.is-connected .ccEmptyLine { display: none; }
+.ccEmptyLine { margin: 0; padding: 2px 4px 8px; font: 400 10px/1.4 system-ui; color: #a5a39a; border-bottom: 1px solid #ecebe6; }
+
+.ccConnectBtn { flex: none; margin-left: auto; border: 1px solid #CC785C; border-radius: 999px; padding: 6px 13px; background: #CC785C; color: #f7f6f1; font: 600 10.5px/1 system-ui; cursor: pointer; white-space: nowrap; }
+.ccConnectBtn:hover { background: #e08b6d; }
+
+.ccCustomizeHead { display: flex; align-items: center; gap: 12px; padding: 4px 2px 2px; color: #1a1a1a; }
+.ccCustomizeHead svg { stroke: #1a1a1a; fill: none; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+.ccCustomizeTitle { margin: 0; font: 600 17px/1.25 Georgia, "Times New Roman", serif; color: #1a1a1a; }
+.ccCustomizeSub { margin: 2px 0 0; font: 400 10px/1.4 system-ui; color: #6f6d64; }
+.ccCardBtn { display: flex; align-items: center; gap: 12px; text-align: left; border: 1px solid #e4e2da; border-radius: 12px; background: #ffffff; padding: 13px 14px; cursor: pointer; transition: border-color .2s var(--ease), box-shadow .2s var(--ease); }
+.ccCardBtn:hover { border-color: rgba(204, 120, 92, .55); box-shadow: 0 2px 10px rgba(204, 120, 92, .12); }
+.ccCardBtn > svg { stroke: #CC785C; fill: none; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+.ccCardBtn > svg:last-child { stroke: #a5a39a; margin-left: auto; }
+.ccCardText { display: grid; gap: 3px; min-width: 0; }
+.ccCardTitle { font: 600 11.5px/1.25 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #1a1a1a; }
+.ccCardSub { font: 400 9.5px/1.4 system-ui; color: #6f6d64; }
+
+.ccAddPopover { position: absolute; z-index: 30; top: 34px; right: 4px; width: 236px; padding: 5px; background: #ffffff; border: 1px solid #e4e2da; border-radius: 12px; box-shadow: 0 18px 44px rgba(26, 26, 26, .2); opacity: 0; visibility: hidden; transform: translateY(-6px); transition: opacity .22s var(--ease), transform .3s var(--spring), visibility 0s .3s; }
+.mcpDemo.is-addpopover .ccAddPopover { opacity: 1; visibility: visible; transform: none; transition-delay: 0s; }
+.ccPopoverItem { display: flex; align-items: center; gap: 10px; height: 31px; padding: 0 10px; border-radius: 8px; font: 500 11px/1 system-ui; color: #1a1a1a; }
+.ccPopoverItem svg { stroke: #6f6d64; fill: none; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.ccPopoverItem:hover { background: #f7f6f1; }
+.ccPopoverFoot { display: block; padding: 5px 10px 3px; border-top: 1px solid #ecebe6; font: 400 9px/1.35 system-ui; color: #a5a39a; }
+
+.ccAddDialog { position: absolute; z-index: 40; left: 50%; top: 50%; width: 468px; transform: translate(-50%, -48%) scale(.96); background: #ffffff; border: 1px solid #e4e2da; border-radius: 14px; box-shadow: 0 30px 70px rgba(26, 26, 26, .4); display: none; }
+.mcpDemo.is-adddialog .ccAddDialog { display: block; }
+.ccAddDialogHead { display: flex; align-items: center; justify-content: space-between; padding: 13px 16px 0 18px; }
+.ccAddDialogTitle { display: flex; align-items: center; gap: 8px; font: 600 13px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #1a1a1a; }
+.ccBetaPill { padding: 3px 6px 2px; border-radius: 4px; background: #ecebe6; color: #6f6d64; font: 650 8px/1.3 system-ui; letter-spacing: .08em; }
+.ccDialogClose { display: grid; place-items: center; width: 24px; height: 24px; border: 0; border-radius: 6px; background: transparent; color: #6f6d64; cursor: pointer; }
+.ccDialogClose:hover { background: #f0efec; }
+.ccAddDialogBody { display: grid; gap: 6px; padding: 10px 16px 12px; }
+.ccDialogIntro { margin: 0 0 2px; font: 400 9.5px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #4a4944; }
+.ccDialogIntro u { text-decoration: underline; color: #1a1a1a; }
+.ccDialogLabel { margin-bottom: -2px; font: 600 9.5px/1.2 system-ui; color: #1a1a1a; }
+.ccDialogField { display: flex; align-items: center; height: 30px; padding: 0 11px; border: 1px solid #e4e2da; border-radius: 7px; background: #ffffff; font: 400 12px/1 system-ui; color: #1a1a1a; overflow: hidden; white-space: nowrap; }
+.ccDialogField.mono { font: 400 10.5px/1 var(--mono); }
+.ccDialogField.slim { height: 26px; font-size: 10px; }
+.ccDialogField.is-on { border-color: #1a1a1a; box-shadow: 0 0 0 2.5px rgba(26, 26, 26, .08); }
+.ccDialogField .dpPlaceholder { color: #b8b6ac; }
+.ccDialogField.has-value .dpPlaceholder { display: none; }
+.ccAdvanced { display: flex; align-items: center; gap: 6px; font: 600 9.5px/1 system-ui; color: #4a4944; margin-top: 2px; }
+.ccAdvanced svg { stroke: currentColor; }
+.ccAdvancedFields { display: grid; gap: 5px; padding: 2px 0 0; }
+.ccAdvancedRow { display: grid; gap: 3px; }
+.ccAdvancedLabel { font: 600 9px/1.2 system-ui; color: #4a4944; }
+.ccAdvancedLabel em { font-weight: 400; font-style: italic; color: #8f8d82; }
+.ccDialogWarn { display: flex; align-items: flex-start; gap: 9px; padding: 7px 11px; border-radius: 8px; background: #fdf3e7; font: 400 9px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #8a4b1f; }
+.ccAddDialogFoot { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 11px 16px 13px; border-top: 1px solid #ecebe6; }
+.ccDialogFootGuide { font: 400 9px/1.45 system-ui; color: #6f6d64; }
+.ccDialogFootGuide u { color: #4a4944; text-decoration: underline; }
+.ccDialogFootBtns { display: flex; align-items: center; gap: 9px; }
+.ccDialogCancel { font: 500 10.5px/1 system-ui; color: #4a4944; cursor: pointer; }
+.ccDialogAdd { border: 0; border-radius: 999px; padding: 8px 18px; background: #ecebe6; color: #a5a39a; font: 600 11px/1 system-ui; cursor: not-allowed; transition: background .25s var(--ease), color .25s var(--ease); }
+.ccDialogAdd.is-enabled { background: #1a1a1a; color: #f7f6f1; cursor: pointer; }
+
+.ccOauthPage { display: none; position: absolute; inset: 0; z-index: 45; align-items: center; justify-content: center; background: #f2f0e9; }
+.mcpDemo.is-authing .ccOauthPage { display: flex; }
+.ccOauthCard { display: grid; justify-items: center; gap: 8px; width: 372px; padding: 24px 22px 18px; background: #ffffff; border: 1px solid #e4e2da; border-radius: 16px; box-shadow: 0 24px 54px rgba(26, 26, 26, .22); }
+.ccOauthBigTile { width: 50px; height: 50px; border-radius: 12px; background: #CC785C; display: grid; place-items: center; }
+.ccOauthBigTile svg { width: 27px; height: 27px; }
+.ccOauthTitle { margin: 2px 0 0; font: 600 14px/1.35 Georgia, "Times New Roman", serif; color: #1a1a1a; text-align: center; }
+.ccOauthHost { font: 400 9px/1.5 var(--mono); color: #8f8d82; text-align: center; }
+.ccOauthAccount { display: grid; gap: 3px; width: 100%; padding: 9px 11px; border: 1px solid #e4e2da; border-radius: 9px; background: #fbfaf7; margin-top: 2px; }
+.ccOauthAccountLabel { font: 600 8px/1 system-ui; letter-spacing: .09em; text-transform: uppercase; color: #a5a39a; }
+.ccOauthAccountValue { display: flex; align-items: center; gap: 8px; font: 600 11px/1.3 system-ui; color: #1a1a1a; }
+.ccOauthAccountValue svg { color: #4a4944; }
+.ccOauthScopes { width: 100%; margin: 2px 0 0; padding: 0; list-style: none; display: grid; gap: 6px; }
+.ccOauthScopes li { display: flex; align-items: flex-start; gap: 8px; font: 400 9.5px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #4a4944; }
+.ccOauthAuthorize { width: 100%; height: 34px; border: 0; border-radius: 8px; background: #CC785C; color: #f7f6f1; font: 650 12px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; cursor: pointer; transition: background .2s var(--ease); }
+.ccOauthAuthorize:hover { background: #e08b6d; }
+.ccOauthDeny { font: 500 10px/1 system-ui; color: #a5a39a; cursor: pointer; }
+
+.ccAddedRow, .ccWebOaRow { display: none; }
+.ccConnectorsPage, .ccCustomizePage, .ccOauthPage { display: none; }
+.mcpDemo.is-connectors .ccConnectorsPage { display: flex; }
+.mcpDemo.is-customize .ccCustomizePage { display: flex; }
+.mcpDemo.is-authing .ccOauthPage { display: flex; position: absolute; inset: 0; z-index: 45; background: #f2f0e9; align-items: center; justify-content: center; }
+.mcpDemo.is-authing .ccConnectorsPage, .mcpDemo.is-authing .ccCustomizePage, .mcpDemo.is-authing .ccGreetingPage { display: none; }
+.ccOauthPage .ccOauthBigTile, .ccOauthPage .ccOauthTitle, .ccOauthPage .ccOauthHost, .ccOauthPage .ccOauthAccount, .ccOauthPage .ccOauthScopes, .ccOauthPage .ccOauthAuthorize, .ccOauthPage .ccOauthDeny { flex: none; }
+.mcpDemo.is-added:not(.is-connected) .ccAddedRow { display: flex; }
+.mcpDemo.is-connected .ccWebOaRow { display: flex; }
+
+.ccConnectorsPage, .ccCustomizePage, .ccOauthPage { width: min(560px, 100%); margin-inline: auto; }
+.ccOauthPage .ccOauthCard { width: min(400px, 100%); }
+.ccGitHubRow svg, .ccTile.ccGh svg { fill: #f7f6f1; }
