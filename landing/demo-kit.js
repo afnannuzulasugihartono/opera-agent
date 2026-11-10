@@ -154,14 +154,14 @@
 
     const reset = (token) => {
       demo.classList.remove('is-open', 'is-modal', 'is-row', 'is-done', 'is-appform', 'is-menu', 'is-settings', 'is-advanced', 'is-toolsmenu', 'is-toggled', 'is-authing', 'is-writing', 'is-sent', 'is-ready', 'is-usermsg', 'is-solid', 'is-wizard', 'is-review', 'is-added', 'is-connected', 'is-customize', 'is-connectors', 'is-addpopover', 'is-adddialog', 'is-mcps');
-      const ocAuthDone = demo.querySelector('.ocAuthCard');
-      if (ocAuthDone) ocAuthDone.classList.remove('is-done');
+      const ocAuthPanel = demo.querySelector('#ocAuthPanel');
+      if (ocAuthPanel) ocAuthPanel.classList.remove('is-done');
       const mcpRow = demo.querySelector('#mcpRow');
       if (mcpRow) mcpRow.classList.remove('is-ok');
-      const mcpState = demo.querySelector('#mcpRow .mcpRowState');
-      if (mcpState) mcpState.innerHTML = '<span class="mcpRowDot"></span>needs authentication';
-      const mcpsTypedReset = demo.querySelector('#mcpsComposerTyped');
-      if (mcpsTypedReset) mcpsTypedReset.textContent = '';
+      const mcpState = demo.querySelector('#mcpStateText');
+      if (mcpState) mcpState.textContent = 'needs authentication';
+      const deskTypedReset = demo.querySelector('#deskComposerTyped');
+      if (deskTypedReset) deskTypedReset.textContent = '';
       const typedReset = demo.querySelector('#composerTyped');
       if (typedReset) typedReset.textContent = '';
       const ccTypedReset = demo.querySelector('#ccComposerTyped');
@@ -465,7 +465,7 @@
           await press(composer, token);
           await wait(120, token);
           demo.classList.add('is-writing');
-          const typed = demo.querySelector('#mcpsComposerTyped');
+          const typed = demo.querySelector('#deskComposerTyped');
           typed.textContent = '';
           const slash = '/mcps';
           for (const char of slash) {
@@ -478,18 +478,18 @@
           typed.textContent = '';
           demo.classList.remove('is-writing', 'is-ready');
           demo.classList.add('is-mcps');
-          await wait(500, token);
-          await press(demo.querySelector('.mcpSignIn'), token);
+          await wait(520, token);
+          await press(demo.querySelector('#mcpSignIn'), token);
           demo.classList.add('is-authing');
           await wait(2600, token);
-          const authCard = demo.querySelector('.ocAuthCard');
-          if (authCard) authCard.classList.add('is-done');
+          const doneMark = demo.querySelector('#ocAuthDone');
+          if (doneMark) doneMark.parentNode.classList.add('is-done');
           await wait(1300, token);
           demo.classList.remove('is-authing');
           const row = demo.querySelector('#mcpRow');
           if (row) row.classList.add('is-ok');
-          const state = demo.querySelector('#mcpRow .mcpRowState');
-          if (state) state.innerHTML = '<span class="mcpRowDot"></span>connected · 35 tools';
+          const stateText = demo.querySelector('#mcpStateText');
+          if (stateText) stateText.textContent = 'connected · 35 tools';
           await wait(1500, token);
           break;
         }

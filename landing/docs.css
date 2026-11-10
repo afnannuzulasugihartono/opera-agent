@@ -1122,34 +1122,51 @@ html.js .quickStart.in .quickDoor:nth-child(3) { animation-delay: .19s; }
 @media (max-width: 640px) { .mcpTrack { grid-auto-columns: 86vw; scroll-padding-inline: 12px; } .mcpCat { padding: 14px 12px 12px; } .mcpCard { padding: 12px; } }
 @media (prefers-reduced-motion: no-preference) { .mcpTrack { scroll-behavior: smooth; } }
 
-/* OPENCODE DESKTOP — terminal stage, then the in-app sign-in card while the browser handles OAuth */
+/* OPENCODE DESKTOP - window chrome like the real app: activity rail, file tree, editor, composer at the very bottom */
 
-.mcpPanel { position: absolute; z-index: 34; left: 50%; top: 46%; width: 460px; transform: translate(-50%, -50%); display: grid; gap: 12px; padding: 15px 16px 13px; background: #1a1a1a; border: 1px solid rgba(255, 255, 255, .09); border-radius: 13px; box-shadow: 0 30px 70px rgba(0, 0, 0, .55); opacity: 0; visibility: hidden; transition: opacity .24s var(--ease), visibility 0s .32s; }
-.mcpDemo.is-mcps .mcpPanel { opacity: 1; visibility: visible; transition-delay: 0s; }
-.mcpPanelHead { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
-.mcpPanelTitle { font: 600 12px/1 system-ui, -apple-system, Segoe UI, Roboto, sans-serif; color: #f7f6f1; letter-spacing: -.01em; }
-.mcpPanelHint { font: 500 9px/1 var(--mono); color: #6f6d64; }
+.ocDeskWin { display: flex; flex-direction: column; width: 78%; height: 400px; background: #0c0c0c; overflow: hidden; }
+.ocDeskBody { flex: 1; min-height: 0; display: flex; }
+.ocDeskRail { width: 40px; flex: none; display: grid; align-content: start; justify-items: center; gap: 14px; padding: 10px 0; border-right: 1px solid rgba(255, 255, 255, .06); }
+.ocDeskRail .ddRailDot.sel { color: #f7f6f1; background: rgba(255, 255, 255, .07); }
+.ocDeskRail .ddRailDot { color: #6f6d64; }
 
-.mcpRow { display: grid; grid-template-columns: 38px 1fr auto; gap: 11px; align-items: center; padding: 10px 12px; border: 1px solid rgba(255, 255, 255, .08); border-radius: 10px; background: #141414; }
-.mcpRowIcon { display: grid; place-items: center; width: 38px; height: 38px; border-radius: 9px; background: color-mix(in srgb, var(--accent) 20%, #141414); }
-.mcpRowIcon svg { width: 19px; height: 19px; }
-.mcpRowText { display: grid; gap: 4px; min-width: 0; }
-.mcpRowName { font: 500 11.5px/1.2 var(--mono); color: #f7f6f1; }
-.mcpRowState { display: flex; align-items: center; gap: 6px; font: 450 9.5px/1 system-ui, -apple-system, Segoe UI, Roboto, sans-serif; color: #d6b36a; }
-.mcpRowDot { width: 6px; height: 6px; border-radius: 50%; background: #d6b36a; flex: none; }
-.mcpRow.is-ok .mcpRowState { color: #19c37d; }
-.mcpRow.is-ok .mcpRowDot { background: #19c37d; }
-.mcpSignIn { padding: 7px 13px; border-radius: 8px; border: 1px solid color-mix(in srgb, var(--accent) 62%, transparent); background: transparent; color: var(--accent); font: 600 10.5px/1 system-ui, -apple-system, Segoe UI, Roboto, sans-serif; cursor: pointer; transition: background .2s var(--ease); }
-.mcpSignIn:hover { background: color-mix(in srgb, var(--accent) 14%, transparent); }
-.mcpRow.is-ok .mcpSignIn { visibility: hidden; }
-.mcpDoneMark { display: none; grid-column: 3; color: #19c37d; align-items: center; justify-self: end; }
-.mcpRow.is-ok .mcpDoneMark { display: inline-flex; }
+.ocTree { width: 168px; flex: none; display: grid; align-content: start; gap: 2px; padding: 10px 8px; border-right: 1px solid rgba(255, 255, 255, .06); background: #101010; font: 10px/1.45 var(--mono); }
+.ocTreeItem { display: flex; align-items: center; gap: 6px; padding: 4px 6px; border-radius: 6px; color: #a5a397; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ocTreeFolder { color: #8f8d82; }
+.ocTreeItem.sel { color: #f7f6f1; background: color-mix(in srgb, var(--accent) 14%, transparent); }
 
-.ocAuthCard { position: absolute; z-index: 40; left: 50%; top: 46%; width: 320px; display: grid; justify-items: center; gap: 9px; padding: 20px 22px 17px; background: #212121; border: 1px solid rgba(255, 255, 255, .09); border-radius: 14px; box-shadow: 0 32px 80px rgba(0, 0, 0, .65); text-align: center; opacity: 0; visibility: hidden; transform: translate(-50%, -50%) scale(.96); transition: opacity .24s var(--ease), transform .3s var(--spring), visibility 0s .3s; pointer-events: none; }
-.mcpDemo.is-authing .ocAuthCard { opacity: 1; visibility: visible; transform: translate(-50%, -50%); transition-delay: 0s; }
-.ocAuthLogo { display: grid; place-items: center; width: 46px; height: 46px; border-radius: 50%; background: var(--accent); }
-.ocAuthLogo svg { width: 23px; height: 23px; }
-.ocAuthTitle { font: 600 13px/1.3 system-ui, -apple-system, Segoe UI, Roboto, sans-serif; color: #ffffff; letter-spacing: -.01em; }
+.ocMain { position: relative; flex: 1; min-width: 0; display: flex; flex-direction: column; background: #0c0c0c; }
+.ocMain .ddFileTab { background: #111111; border-bottom: 1px solid rgba(255, 255, 255, .06); }
+
+.ocJson { flex: 1; min-height: 0; padding: 16px 18px; font: 10.5px/1.72 var(--mono); color: #d8d6cb; white-space: pre; overflow: hidden; }
+.mcpDemo.is-mcps .ocJson { display: none; }
+
+.ocMcpsPanel { display: none; flex: 1; min-height: 0; align-content: start; gap: 10px; padding: 20px 22px; background: #0c0c0c; }
+.mcpDemo.is-mcps .ocMcpsPanel { display: grid; }
+.ocPanelHead { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; padding-bottom: 10px; border-bottom: 1px solid rgba(255, 255, 255, .08); }
+.ocPanelTitle { font: 600 12.5px/1 system-ui, -apple-system, Segoe UI, Roboto, sans-serif; color: #f7f6f1; letter-spacing: -.01em; }
+.ocPanelHint { font: 500 9px/1 var(--mono); color: #6f6d64; }
+
+.ocMcpsRow { display: grid; grid-template-columns: 40px 1fr auto; gap: 12px; align-items: center; padding: 12px 14px; border: 1px solid rgba(255, 255, 255, .08); border-radius: 10px; background: #141414; }
+.ocMcpsIcon { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 9px; background: color-mix(in srgb, var(--accent) 20%, #141414); }
+.ocMcpsIcon svg { width: 20px; height: 20px; }
+.ocMcpsText { display: grid; gap: 5px; min-width: 0; }
+.ocMcpsName { font: 500 12px/1.2 var(--mono); color: #f7f6f1; }
+.ocMcpsState { display: flex; align-items: center; gap: 6px; font: 450 9.5px/1 system-ui, -apple-system, Segoe UI, Roboto, sans-serif; color: #d6b36a; }
+.ocMcpsDot { width: 6px; height: 6px; border-radius: 50%; background: #d6b36a; flex: none; }
+.ocMcpsRow.is-ok .ocMcpsState { color: #19c37d; }
+.ocMcpsRow.is-ok .ocMcpsDot { background: #19c37d; }
+.ocMcpsSignIn { padding: 8px 16px; border-radius: 8px; border: 1px solid color-mix(in srgb, var(--accent) 62%, transparent); background: transparent; color: var(--accent); font: 600 10.5px/1 system-ui, -apple-system, Segoe UI, Roboto, sans-serif; cursor: pointer; transition: background .2s var(--ease); }
+.ocMcpsSignIn:hover { background: color-mix(in srgb, var(--accent) 14%, transparent); }
+.ocMcpsRow.is-ok .ocMcpsSignIn { visibility: hidden; }
+.ocMcpsDone { display: none; justify-self: end; color: #19c37d; }
+.ocMcpsRow.is-ok .ocMcpsDone { display: inline-flex; }
+
+.ocAuthPanel { position: absolute; z-index: 40; left: 14px; right: 14px; bottom: 14px; display: grid; justify-items: center; gap: 8px; padding: 16px 20px 14px; background: #212121; border: 1px solid rgba(255, 255, 255, .09); border-radius: 13px; box-shadow: 0 24px 60px rgba(0, 0, 0, .6); text-align: center; opacity: 0; visibility: hidden; transform: translateY(14px); transition: opacity .24s var(--ease), transform .3s var(--spring), visibility 0s .3s; pointer-events: none; }
+.mcpDemo.is-authing .ocAuthPanel { opacity: 1; visibility: visible; transform: none; transition-delay: 0s; }
+.ocAuthLogo { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; background: var(--accent); }
+.ocAuthLogo svg { width: 22px; height: 22px; }
+.ocAuthTitle { font: 600 12.5px/1.3 system-ui, -apple-system, Segoe UI, Roboto, sans-serif; color: #ffffff; letter-spacing: -.01em; }
 .ocAuthHost { font: 500 9px/1 var(--mono); color: #8a8a8a; }
 .ocAuthStatus { display: inline-flex; align-items: center; gap: 8px; font: 450 11px/1.4 system-ui, -apple-system, Segoe UI, Roboto, sans-serif; color: #b7b5aa; }
 .ocAuthSpin { width: 12px; height: 12px; border-radius: 50%; border: 2px solid rgba(255, 255, 255, .18); border-top-color: #f7f6f1; animation: ocSpin 1s linear infinite; }
@@ -1158,7 +1175,7 @@ html.js .quickStart.in .quickDoor:nth-child(3) { animation-delay: .19s; }
 .ocAuthPasteLabel { font: 450 8px/1 system-ui, -apple-system, Segoe UI, Roboto, sans-serif; color: #8a8a8a; letter-spacing: .07em; text-transform: uppercase; text-align: left; }
 .ocAuthPasteField { display: block; padding: 7px 9px; border-radius: 7px; border: 1px solid rgba(255, 255, 255, .1); background: #161616; color: #6f6d64; font: 9px/1.35 var(--mono); text-align: left; overflow: hidden; white-space: nowrap; }
 .ocAuthDone { display: none; align-items: center; gap: 7px; color: var(--accent); font: 600 11.5px/1 system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
-.ocAuthCard.is-done .ocAuthDone { display: inline-flex; }
-.ocAuthCard.is-done .ocAuthStatus { display: none; }
-.ocAuthCard.is-done .ocAuthPaste { display: none; }
+.ocAuthPanel.is-done .ocAuthDone { display: inline-flex; }
+.ocAuthPanel.is-done .ocAuthStatus { display: none; }
+.ocAuthPanel.is-done .ocAuthPaste { display: none; }
 @media (prefers-reduced-motion: reduce) { .ocAuthSpin { animation: none; } }
