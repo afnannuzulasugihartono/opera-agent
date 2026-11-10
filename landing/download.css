@@ -717,6 +717,8 @@ pre {
 
 .demoStage {
   position: relative;
+  width: min(100%, calc(70vh * 16 / 9.75));
+  margin-inline: auto;
   aspect-ratio: 16 / 9.75;
   background: color-mix(in srgb, var(--surface) 82%, var(--accent) 18%);
   overflow: hidden;
@@ -970,8 +972,8 @@ pre {
 }
 
 @keyframes cursorPath {
-  0% { left: 112%; top: 36%; opacity: 0 }
-  2.5% { left: 112%; top: 36%; opacity: 0 }
+  0% { left: 96%; top: 44%; opacity: 0 }
+  2.5% { left: 96%; top: 44%; opacity: 0 }
   4.5% { left: 96%; top: 60%; opacity: 1 }
   5.6% { left: var(--c-dockChrome-x); top: var(--c-dockChrome-y) }
   6.3% { left: var(--c-dockChrome-x); top: var(--c-dockChrome-y) }

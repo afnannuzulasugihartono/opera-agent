@@ -38,8 +38,8 @@
       const r = el.getBoundingClientRect();
       const x = (((r.left + r.width / 2 - box.left) / box.width) * 100).toFixed(2) + '%';
       const y = (((r.top + r.height / 2 - box.top) / box.height) * 100).toFixed(2) + '%';
-      stage.style.setProperty('--c-' + name + '-x', x);
-      stage.style.setProperty('--c-' + name + '-y', y);
+      document.documentElement.style.setProperty('--c-' + name + '-x', x);
+      document.documentElement.style.setProperty('--c-' + name + '-y', y);
     }
   };
 
