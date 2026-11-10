@@ -290,3 +290,235 @@ html.js .quickStart.in .quickDoor:nth-child(3) { animation-delay: .19s; }
   .toolList dd { padding-bottom: 10px; border-bottom: 1px solid var(--line); }
   .toolList dt:last-of-type dd:last-child { border-bottom: 0; }
 }
+
+/* PASKING-MCP DEMO KIT — Windows 11 desktop reused per harness; target names follow the unduh demo names where they match */
+
+.mcpDemo {
+  position: relative;
+  margin: 18px 0 20px;
+  width: 100%;
+  aspect-ratio: 16 / 9.2;
+  border: 1px solid var(--line-strong);
+  border-radius: 14px;
+  overflow: hidden;
+  background:
+    radial-gradient(120% 100% at 50% 118%, color-mix(in srgb, var(--accent) 26%, transparent) 0%, transparent 60%),
+    linear-gradient(155deg, var(--surface) 12%, color-mix(in srgb, var(--surface) 70%, var(--accent) 30%) 100%);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --dd-k: 1;
+}
+
+.ddCanvas { position: absolute; left: 0; top: 0; width: 1024px; height: 574px; transform: scale(var(--dd-k)); transform-origin: top left; }
+
+.ddIcons { position: absolute; left: 18px; top: 16px; display: grid; gap: 18px; align-content: start; z-index: 1; transition: opacity .3s var(--ease); }
+.ddIcon { display: grid; justify-items: center; gap: 5px; }
+.ddIcon em { font: 500 10px/1.3 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; font-style: normal; color: var(--ink); text-align: center; text-shadow: 0 1px 2px var(--bg); }
+.ddPct { width: 38px; height: 38px; }
+.mcpDemo.is-open .ddIcons { opacity: 0; }
+
+.ddWin {
+  position: absolute;
+  left: 50%;
+  top: 46%;
+  width: 86%;
+  height: 76%;
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--surface-2);
+  box-shadow: 0 30px 70px color-mix(in srgb, var(--bg) 80%, transparent);
+  opacity: 0;
+  visibility: hidden;
+  transform: translate(-50%, calc(-50% + 20px)) scale(.92);
+  transition: opacity .3s var(--ease), transform .48s var(--spring), visibility 0s .4s;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+}
+
+.mcpDemo.is-open .ddWin { opacity: 1; visibility: visible; transform: translate(-50%, -50%); transition-delay: 0s; }
+
+.ddTitleBar {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 7px 8px 7px 10px;
+  background: color-mix(in srgb, var(--surface) 76%, var(--accent) 24%);
+  border-bottom: 1px solid var(--line-strong);
+  flex: none;
+}
+
+.ddBrand { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 6px; font: 700 12px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--bg); background: var(--accent); flex: none; }
+.ddBrand.gpt { background: #10a37f; }
+.ddBrand.claude { background: #d97757; }
+.ddBrand.codex { background: var(--ink); color: var(--accent); }
+.ddBrand.cc { background: #da7756; }
+.ddBrand.oc { background: #3b82f6; }
+.ddBrand.vsc { background: #007acc; }
+.ddBrand.kai { background: #7c3aed; }
+.ddBrand.cur { background: var(--ink); color: var(--accent); }
+.ddBrand.npm { background: #cb3837; }
+
+.ddTitle { font: 600 12px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--ink); letter-spacing: -.01em; }
+.ddGlyphs { margin-left: auto; display: flex; align-items: center; gap: 12px; }
+.ddMin { width: 10px; border-bottom: 1.4px solid var(--muted); }
+.ddMax { width: 9px; height: 9px; border: 1.3px solid var(--muted); border-radius: 1px; }
+.ddClose { position: relative; width: 11px; height: 11px; }
+.ddClose::before, .ddClose::after { content: ""; position: absolute; left: 4.8px; top: .5px; width: 1.3px; height: 10px; background: var(--muted); }
+.ddClose::before { transform: rotate(45deg); }
+.ddClose::after { transform: rotate(-45deg); }
+
+/* chat archetype */
+
+.ddChatBody { display: grid; grid-template-columns: 74px 1fr; flex: 1; min-height: 0; background: var(--bg); }
+.ddRail { display: grid; align-content: start; gap: 12px; padding: 14px 10px; border-right: 1px solid var(--line); background: color-mix(in srgb, var(--surface) 82%, var(--bg)); }
+.ddRailDot { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 8px; color: var(--muted); }
+.ddRailDot.sel { background: var(--surface-2); color: var(--ink); }
+.ddChatNav { display: grid; grid-template-columns: auto auto 1fr auto; align-items: center; gap: 10px; padding: 12px 16px; border-bottom: 1px solid var(--line); }
+.ddPageTitle { font: 600 15px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--ink); }
+.ddBtn { padding: 7px 13px; border: 1px solid var(--line-strong); border-radius: 8px; background: var(--surface-2); font: 600 12px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--ink); }
+.ddBtn.accent { background: var(--accent); border-color: var(--accent); color: var(--on-fill); }
+.ddBody { position: relative; padding: 14px 16px; display: grid; align-content: start; gap: 8px; }
+.ddExisting { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 11px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: color-mix(in srgb, var(--surface) 78%, transparent); }
+.ddExistingIcon { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 8px; background: color-mix(in srgb, var(--accent) 28%, var(--surface-2)); color: var(--accent); font: 600 13px/1 system-ui, sans-serif; }
+.ddExistingName { font: 600 12px/1 system-ui, sans-serif; color: var(--ink); }
+.ddExistingMeta { font: 10px/1.3 system-ui, sans-serif; color: var(--muted); }
+.ddToggle { position: relative; width: 26px; height: 15px; border-radius: 999px; background: var(--line-strong); justify-self: end; transition: background .18s var(--ease); }
+.ddToggle::after { content: ""; position: absolute; left: 2px; top: 2px; width: 11px; height: 11px; border-radius: 50%; background: var(--muted); transition: transform .18s var(--ease), background .18s var(--ease); }
+.ddToggle.on { background: var(--accent); }
+.ddToggle.on::after { transform: translateX(11px); background: var(--on-fill); }
+
+.ddModal {
+  position: absolute;
+  left: 50%;
+  top: 44%;
+  width: 62%;
+  transform: translate(-50%, -50%) scale(.94);
+  border: 1px solid var(--line-strong);
+  border-radius: 12px;
+  background: var(--surface-2);
+  opacity: 0;
+  visibility: hidden;
+  z-index: 8;
+  transition: opacity .22s var(--ease), transform .3s var(--spring), visibility 0s .3s;
+}
+.mcpDemo.is-modal .ddModal { opacity: 1; visibility: visible; transform: translate(-50%, -50%); transition-delay: 0s; }
+.ddModalHead { display: flex; align-items: center; justify-content: space-between; padding: 11px 14px; border-bottom: 1px solid var(--line); font: 600 13px/1 system-ui, sans-serif; color: var(--ink); }
+.ddModalBody { display: grid; gap: 9px; padding: 14px; }
+.ddModalLabel { font: 600 10px/1 system-ui, sans-serif; letter-spacing: .08em; color: var(--muted); text-transform: uppercase; }
+.ddModalField { padding: 11px 13px; border: 1px solid var(--line-strong); border-radius: 8px; background: var(--surface); color: var(--ink); font: 11.5px/1.4 var(--mono); white-space: nowrap; overflow: hidden; }
+.ddModalFoot { display: flex; justify-content: flex-end; gap: 8px; padding: 11px 14px 13px; border-top: 1px solid var(--line); }
+
+.ddRow { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 11px; padding: 10px 12px; border: 1px solid var(--accent); border-radius: 10px; background: color-mix(in srgb, var(--accent) 12%, var(--surface-2)); opacity: 0; transform: translateY(8px); transition: opacity .25s var(--ease), transform .32s var(--spring); }
+.mcpDemo.is-row .ddRow { opacity: 1; transform: none; }
+.ddRowToggle { position: relative; width: 28px; height: 16px; border-radius: 999px; background: var(--line-strong); justify-self: end; transition: background .2s var(--ease); }
+.ddRowToggle::after { content: ""; position: absolute; left: 2px; top: 2px; width: 12px; height: 12px; border-radius: 50%; background: var(--muted); transition: transform .2s var(--ease), background .2s var(--ease); }
+.ddRowToggle.on { background: var(--accent); }
+.ddRowToggle.on::after { transform: translateX(12px); background: var(--on-fill); }
+
+/* terminal archetype */
+
+.ddTermBody { flex: 1; min-height: 0; background: var(--bg); padding: 14px 16px; display: grid; align-content: start; gap: 8px; font: 12px/1.7 var(--mono); }
+.ddPrompt { color: var(--chrome-tone); }
+.ddLine { color: var(--ink); white-space: pre; min-height: 1.25em; }
+.ddLine.dim { color: var(--muted); }
+.ddLine.ok { color: var(--accent); }
+.ddCaret { display: none; width: 8px; height: 14px; background: var(--accent); vertical-align: -2px; animation: verify-blink 1.05s steps(1) infinite; }
+.ddCaret.is-on { display: inline-block; }
+
+/* editor archetype */
+
+.ddEditorBody { display: grid; grid-template-columns: 46px 1fr; flex: 1; min-height: 0; background: var(--bg); }
+.ddIconRail { display: grid; align-content: start; gap: 12px; padding: 10px 7px; border-right: 1px solid var(--line); background: color-mix(in srgb, var(--surface) 82%, var(--bg)); }
+.ddCode { display: block; white-space: pre; padding: 12px 16px; font: 11.5px/1.7 var(--mono); align-content: start; overflow: hidden; }
+.ddCode .k { color: #7cd0fd; }
+.ddCode .s { color: #c4a35a; }
+.ddCode .c { color: var(--muted); }
+.ddCode .a { color: #ce9184; }
+.ddStatus { display: flex; align-items: center; gap: 12px; padding: 5px 12px; background: var(--accent); color: var(--on-fill); font: 600 10.5px/1 var(--mono); flex: none; }
+.ddStatus .dim { color: color-mix(in srgb, var(--on-fill) 72%, transparent); }
+.ddFileTab { display: flex; align-items: center; gap: 8px; padding: 6px 12px; border-right: 1px solid var(--line-strong); background: var(--surface-2); font: 500 11.5px/1 var(--mono); color: var(--ink); width: max-content; }
+.ddFileTab .x { color: var(--muted); }
+
+/* taskbar */
+
+.ddTaskbar { position: absolute; bottom: 0; left: 0; right: 0; height: 40px; display: flex; align-items: center; justify-content: center; gap: 6px; background: color-mix(in srgb, var(--surface) 64%, transparent); border-top: 1px solid var(--line-strong); z-index: 40; -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); }
+.ddTb { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 7px; background: transparent; transition: background .15s var(--ease), transform .1s var(--ease); }
+.ddTb svg { width: 19px; height: 19px; }
+.ddTb.is-active { background: color-mix(in srgb, var(--ink) 14%, transparent); }
+
+.ddStart { position: relative; width: 22px; height: 22px; }
+.ddStart::before, .ddStart::after { content: ""; }
+.ddStartFill { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 2px; width: 16px; height: 16px; }
+.ddStartFill span { background: #00adef; }
+
+.demoCursor { position: absolute; z-index: 60; left: 0; top: 0; width: 22px; height: 22px; pointer-events: none; will-change: transform; }
+.ddCursor { filter: drop-shadow(0 1px 1px color-mix(in srgb, var(--bg) 60%, transparent)); }
+.demoCursor.is-pressed .cursorArrow { transform: scale(.86); }
+.cursorArrow { display: block; width: 22px; height: 22px; transition: transform .08s var(--ease); transform-origin: 4px 3px; }
+
+.ddRipple { position: absolute; z-index: 59; width: 44px; height: 44px; border-radius: 50%; border: 2px solid var(--accent); pointer-events: none; opacity: 0; transform: translate(-50%, -50%) scale(.3); }
+
+.ddChip {
+  position: absolute;
+  right: 16px;
+  bottom: 56px;
+  z-index: 50;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 13px;
+  border-radius: 999px;
+  border: 1px solid var(--accent);
+  background: color-mix(in srgb, var(--accent) 16%, var(--surface-2));
+  color: var(--accent);
+  font: 600 11.5px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity .25s var(--ease), transform .3s var(--spring);
+}
+.mcpDemo.is-done .ddChip { opacity: 1; transform: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .mcpDemo { display: none; }
+  .mcpDemo + .steps { position: static; width: auto; height: auto; margin: 0; overflow: visible; clip-path: none; white-space: normal; }
+}
+
+/* the typed lines hide until their action lands, and the taskbar presses the way the download demo's does */
+
+.ddLine { opacity: 0; transition: opacity .18s var(--ease); }
+.ddLine.is-on { opacity: 1; }
+.ddTb.is-pressed { transform: scale(.9); }
+/* srOnly para practicing-agent: the animated demos carry the install instructions visually; the identical text stays available for screen readers. */
+
+.steps.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* per-agent window chrome so each harness reads from the window alone, not the caption */
+
+.mcpDemo[data-agent="chatgpt"] .ddTitleBar { background: color-mix(in srgb, var(--surface) 70%, #10a37f 30%); }
+.mcpDemo[data-agent="claude"] .ddTitleBar { background: color-mix(in srgb, var(--surface) 70%, #d97757 30%); }
+.mcpDemo[data-agent="codex"] .ddTitleBar,
+.mcpDemo[data-agent="claude-code"] .ddTitleBar,
+.mcpDemo[data-agent="terminal"] .ddTitleBar { background: var(--bg); }
+.mcpDemo[data-agent="opencode"] .ddTitleBar { background: color-mix(in srgb, var(--surface) 78%, #3b82f6 22%); }
+.mcpDemo[data-agent="vscode"] .ddTitleBar { background: color-mix(in srgb, var(--surface) 78%, #007acc 22%); }
+.mcpDemo[data-agent="kilo"] .ddTitleBar { background: color-mix(in srgb, var(--surface) 78%, #7c3aed 22%); }
+.mcpDemo[data-agent="cursor"] .ddTitleBar { background: var(--ink); }
+
+.mcpDemo[data-agent="codex"] .ddTitle,
+.mcpDemo[data-agent="claude-code"] .ddTitle,
+.mcpDemo[data-agent="terminal"] .ddTitle { color: #ffffff; }
+
+.mcpDemo[data-agent="codex"] .ddMin, .mcpDemo[data-agent="claude-code"] .ddMin, .mcpDemo[data-agent="terminal"] .ddMin { border-color: #ffffff; }
+.mcpDemo[data-agent="codex"] .ddMax, .mcpDemo[data-agent="claude-code"] .ddMax, .mcpDemo[data-agent="terminal"] .ddMax { border-color: #ffffff; }
+.mcpDemo[data-agent="codex"] .ddClose::before, .mcpDemo[data-agent="codex"] .ddClose::after,
+.mcpDemo[data-agent="claude-code"] .ddClose::before, .mcpDemo[data-agent="claude-code"] .ddClose::after,
+.mcpDemo[data-agent="terminal"] .ddClose::before, .mcpDemo[data-agent="terminal"] .ddClose::after { background: #ffffff; }
