@@ -1,6 +1,6 @@
 // @last-edited: 2026-11-10 UTC+7.
 // @title: demo-kit - one engine behind every harness's install demo on the MCP install page.
-// @state: one runtime per .mcpDemo, started when it scrolls into view and restarted on resize; it owns the cursor, the taskbar dock, the zoom control and each step's timing, nothing else.
+// @state: one runtime per .mcpDemo, started when it scrolls into view and restarted on resize; it owns the cursor, the taskbar dock, and each step's timing, nothing else.
 // @dependencies: none.
 
 // WHY ONE ENGINE FOR NINE DEMOS: every harness follows the same rhythm - the taskbar icon is pressed, the window opens, the server is added, the harness says "connected".
@@ -42,7 +42,7 @@
       }, ms);
     });
 
-    // the canvas sits inside a scroller with an invisible sizer, so zooming enlarges the stage inside the demo's own box instead of cropping edges or widening the page
+    // the canvas sits inside a scroller with an invisible sizer, so the stage keeps its natural 1024px aspect inside the demo's own box instead of cropping edges or widening the page
     const scroller = document.createElement('div');
     scroller.className = 'ddScroll';
     canvas.replaceWith(scroller);
@@ -53,56 +53,22 @@
 
     const canvasFit = () => {
       const k = demo.clientWidth / 1024;
-      scale = k * zoomLevel;
+      scale = k;
       const sizerW = 1024 * scale;
       const sizerH = 574 * scale;
       sizer.style.width = sizerW + 'px';
       sizer.style.height = sizerH + 'px';
-      // canvas and sizer stay at the same origin; if zoomed out the pair recentres in the box, if zoomed in the scroller centres its scroll position
+      // canvas and sizer stay at the same origin; the pair recentres in the box when the demo is narrower than 1024px
       const dx = Math.max(0, (scroller.clientWidth - sizerW) / 2);
       const dy = Math.max(0, (scroller.clientHeight - sizerH) / 2);
       sizer.style.left = dx + 'px';
       sizer.style.top = dy + 'px';
       canvas.style.left = dx + 'px';
       canvas.style.top = dy + 'px';
-      if (zoomLevel !== 1) {
-        scroller.scrollLeft = (sizerW - scroller.clientWidth) / 2;
-        scroller.scrollTop = (sizerH - scroller.clientHeight) / 2;
-      }
       canvas.style.setProperty('--dd-k', String(scale));
-      demo.classList.toggle('is-zoomed', zoomLevel !== 1);
     };
 
     const fit = () => { canvasFit(); };
-
-    let zoomLevel = 1;
-
-    const applyZoom = (next) => {
-      zoomLevel = Math.min(1.6, Math.max(0.85, next));
-      fit();
-    };
-
-    const zoomButton = (markup, name, onClick) => {
-      const button = document.createElement('button');
-      button.type = 'button';
-      button.className = 'ddZoomBtn';
-      button.setAttribute('aria-label', name);
-      button.innerHTML = markup;
-      button.addEventListener('click', onClick);
-      return button;
-    };
-
-    const buildZoom = () => {
-      const bar = document.createElement('span');
-      bar.className = 'ddZoom';
-      bar.append(
-        zoomButton('<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 12h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>', 'Perkecil', () => applyZoom(zoomLevel / 1.18)),
-        zoomButton('<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 6v12M6 12h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>', 'Perbesar', () => applyZoom(zoomLevel * 1.18))
-      );
-      demo.appendChild(bar);
-    };
-
-    buildZoom();
 
     const measure = (el) => {
       const box = canvas.getBoundingClientRect();
