@@ -982,11 +982,13 @@ pre {
 }
 
 @keyframes cursorPath {
-  0% { left: 112%; top: 88%; opacity: 0 }
-  2.5% { left: 112%; top: 88%; opacity: 0 }
-  4.5% { left: 96%; top: 74%; opacity: 1 }
-  6.5% { left: 50%; top: 66.5% }
-  15% { left: 50%; top: 66.5% }
+  0% { left: 112%; top: 36%; opacity: 0 }
+  2.5% { left: 112%; top: 36%; opacity: 0 }
+  4.5% { left: 96%; top: 44%; opacity: 1 }
+  6% { left: 50%; top: 58.3% }
+  8.5% { left: 50%; top: 58.3% }
+  11% { left: 50%; top: 78.3% }
+  15.5% { left: 50%; top: 78.3% }
   20% { left: 39.7%; top: 27.7% }
   30.5% { left: 39.7%; top: 27.7% }
   37% { left: 78.5%; top: 39.9% }
@@ -994,17 +996,20 @@ pre {
   46.8% { left: 26.3%; top: 49% }
   53.5% { left: 26.3%; top: 49% }
   55.5% { left: 50%; top: 64.6% }
-  58% { left: 50%; top: 64.6% }
+  59% { left: 50%; top: 64.6% }
   61.5% { left: 68.7%; top: 75.7% }
   65% { left: 68.7%; top: 75.7% }
   69% { left: 58%; top: 64% }
-  70.8% { left: 38.7%; top: 62.9% }
-  76% { left: 38.7%; top: 62.9% }
-  79.5% { left: 73.5%; top: 27.2% }
-  82% { left: 86.5%; top: 35.7% }
-  84.5% { left: 86.5%; top: 35.7%; opacity: 1 }
-  87% { left: 97%; top: 20%; opacity: 0 }
-  100% { left: 112%; top: 88%; opacity: 0 }
+  70.8% { left: 38.7%; top: 61.5% }
+  75% { left: 38.7%; top: 61.5% }
+  78.6% { left: 76.7%; top: 75.2% }
+  80.2% { left: 76.7%; top: 75.2% }
+  82% { left: 73.5%; top: 25.8% }
+  83.4% { left: 73.5%; top: 25.8% }
+  85% { left: 86.5%; top: 35.7% }
+  86.8% { left: 86.5%; top: 35.7%; opacity: 1 }
+  89% { left: 96%; top: 18%; opacity: 0 }
+  100% { left: 112%; top: 36%; opacity: 0 }
 }
 
 .cursorArrow {
@@ -1014,30 +1019,36 @@ pre {
 }
 
 @keyframes cursorTipPress {
-  0%, 21.2% { transform: scale(1) }
-  21.9% { transform: scale(.76) }
-  23% { transform: scale(1) }
-  40% { transform: scale(1) }
+  0%, 5.9% { transform: scale(1) }
+  6.7% { transform: scale(.76) }
+  8.3% { transform: scale(1) }
+  20.5% { transform: scale(1) }
+  21.5% { transform: scale(.76) }
+  22.6% { transform: scale(1) }
+  39.8% { transform: scale(1) }
   40.8% { transform: scale(.76) }
-  42% { transform: scale(1) }
-  47% { transform: scale(1) }
-  47.8% { transform: scale(.76) }
-  49% { transform: scale(1) }
-  57.5% { transform: scale(1) }
+  41.9% { transform: scale(1) }
+  47.2% { transform: scale(1) }
+  48% { transform: scale(.76) }
+  49.2% { transform: scale(1) }
+  57.3% { transform: scale(1) }
   58.3% { transform: scale(.76) }
   59.4% { transform: scale(1) }
-  60.8% { transform: scale(1) }
+  60.9% { transform: scale(1) }
   61.6% { transform: scale(.76) }
   62.9% { transform: scale(1) }
-  71% { transform: scale(1) }
-  71.8% { transform: scale(.76) }
-  73% { transform: scale(1) }
-  79% { transform: scale(1) }
-  79.8% { transform: scale(.76) }
-  81% { transform: scale(1) }
-  81.3% { transform: scale(1) }
-  82.1% { transform: scale(.76) }
-  83.4% { transform: scale(1) }
+  71.2% { transform: scale(1) }
+  71.9% { transform: scale(.76) }
+  73.1% { transform: scale(1) }
+  79.2% { transform: scale(1) }
+  80% { transform: scale(.76) }
+  81.2% { transform: scale(1) }
+  81.6% { transform: scale(1) }
+  82.2% { transform: scale(.76) }
+  83.3% { transform: scale(1) }
+  84.5% { transform: scale(1) }
+  85.3% { transform: scale(.76) }
+  86.2% { transform: scale(1) }
   100% { transform: scale(1) }
 }
 
@@ -1176,9 +1187,9 @@ pre {
 }
 
 @keyframes pairCopyPress {
-  0%, 76% { transform: scale(1) }
-  77.3% { transform: scale(.88) }
-  78.8%, 100% { transform: scale(1) }
+  0%, 79% { transform: scale(1) }
+  79.8% { transform: scale(.88) }
+  81%, 100% { transform: scale(1) }
 }
 
 .copyIcon,
@@ -1186,15 +1197,15 @@ pre {
 
 .copyIcon { animation: copyIconOut 22s linear infinite; }
 @keyframes copyIconOut {
-  0%, 77.3% { opacity: 1 }
-  79%, 100% { opacity: 0 }
+  0%, 79.3% { opacity: 1 }
+  80.6%, 100% { opacity: 0 }
 }
 
 .copiedIcon { color: var(--accent); opacity: 0; animation: copiedIconIn 22s linear infinite; }
 @keyframes copiedIconIn {
-  0%, 77.3% { opacity: 0 }
-  79%, 88% { opacity: 1 }
-  90%, 100% { opacity: 0 }
+  0%, 79.3% { opacity: 0 }
+  80.8%, 89% { opacity: 1 }
+  90.5%, 100% { opacity: 0 }
 }
 
 .oaFieldEmpty { animation: pasteFieldFlash 22s linear infinite; }
@@ -1281,3 +1292,70 @@ pre {
   0%, 84% { background: var(--line-strong) }
   87%, 100% { background: var(--accent) }
 }
+
+/* the ripple that lands with every real click, and the taskbar that names the window in front */
+
+.taskTitle { position: relative; flex: 1 1 auto; min-width: 0; height: 14px; align-self: center; }
+
+.tt { position: absolute; left: 0; top: 0; width: 100%; opacity: 0; font: 500 10px/1.5 var(--mono); color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ttA { animation: ttA 22s steps(1) infinite }
+.ttB { animation: ttB 22s steps(1) infinite }
+.ttC { animation: ttC 22s steps(1) infinite }
+.ttD { animation: ttD 22s steps(1) infinite }
+
+@keyframes ttA { 0%, 32% { opacity: 1 } 33%, 100% { opacity: 0 } }
+@keyframes ttB { 0%, 31% { opacity: 0 } 33%, 63% { opacity: 1 } 64%, 100% { opacity: 0 } }
+@keyframes ttC { 0%, 63% { opacity: 0 } 65%, 85% { opacity: 1 } 86.5%, 100% { opacity: 0 } }
+@keyframes ttD { 0%, 85% { opacity: 0 } 87%, 100% { opacity: 1 } }
+
+.cursorRipple {
+  position: absolute;
+  z-index: 38;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  border: 2px solid var(--accent);
+  pointer-events: none;
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(.25);
+  animation: rippleBurst 22s var(--ease-out) infinite;
+}
+
+@keyframes rippleBurst {
+  0%, 5.9% { left: 50%; top: 58.3%; opacity: 0; transform: translate(-50%, -50%) scale(.25) }
+  7.1% { opacity: .95 }
+  9%, 20.5% { left: 50%; top: 58.3%; opacity: 0; transform: translate(-50%, -50%) scale(1.6) }
+  20.5% { left: 39.7%; top: 27.7%; opacity: 0; transform: translate(-50%, -50%) scale(.25) }
+  21.6% { opacity: .95 }
+  23.3%, 39.8% { left: 39.7%; top: 27.7%; opacity: 0; transform: translate(-50%, -50%) scale(1.6) }
+  39.8% { left: 78.5%; top: 39.9%; opacity: 0; transform: translate(-50%, -50%) scale(.25) }
+  40.9% { opacity: .95 }
+  42.6%, 47.2% { left: 78.5%; top: 39.9%; opacity: 0; transform: translate(-50%, -50%) scale(1.6) }
+  47.2% { left: 26.3%; top: 49%; opacity: 0; transform: translate(-50%, -50%) scale(.25) }
+  48.3% { opacity: .95 }
+  50.2%, 57.3% { left: 26.3%; top: 49%; opacity: 0; transform: translate(-50%, -50%) scale(1.6) }
+  57.3% { left: 50%; top: 64.6%; opacity: 0; transform: translate(-50%, -50%) scale(.25) }
+  58.4% { opacity: .95 }
+  60.1%, 60.9% { left: 50%; top: 64.6%; opacity: 0; transform: translate(-50%, -50%) scale(1.6) }
+  60.9% { left: 68.7%; top: 75.7%; opacity: 0; transform: translate(-50%, -50%) scale(.25) }
+  62% { opacity: .95 }
+  63.7%, 71.2% { left: 68.7%; top: 75.7%; opacity: 0; transform: translate(-50%, -50%) scale(1.6) }
+  71.2% { left: 38.7%; top: 61.5%; opacity: 0; transform: translate(-50%, -50%) scale(.25) }
+  72.3% { opacity: .95 }
+  74%, 79.2% { left: 38.7%; top: 61.5%; opacity: 0; transform: translate(-50%, -50%) scale(1.6) }
+  79.2% { left: 76.7%; top: 75.2%; opacity: 0; transform: translate(-50%, -50%) scale(.25) }
+  80.3% { opacity: .95 }
+  81.9%, 81.8% { left: 76.7%; top: 75.2%; opacity: 0; transform: translate(-50%, -50%) scale(1.6) }
+  81.8% { left: 73.5%; top: 25.8%; opacity: 0; transform: translate(-50%, -50%) scale(.25) }
+  82.6% { opacity: .95 }
+  83.9%, 84.5% { left: 73.5%; top: 25.8%; opacity: 0; transform: translate(-50%, -50%) scale(1.6) }
+  84.5% { left: 86.5%; top: 35.7%; opacity: 0; transform: translate(-50%, -50%) scale(.25) }
+  85.7% { opacity: .95 }
+  87.3%, 100% { left: 86.5%; top: 35.7%; opacity: 0; transform: translate(-50%, -50%) scale(1.6) }
+}
+
+.oaPopup { animation-timing-function: var(--spring); }
+.folderPick { animation-timing-function: var(--spring); }
+.extCard { animation-timing-function: var(--spring); }
+.pairCodeRow { animation-timing-function: var(--spring); }
+.popupFieldValue { animation-timing-function: var(--spring); }
