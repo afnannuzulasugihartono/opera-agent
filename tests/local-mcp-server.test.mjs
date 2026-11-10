@@ -1228,7 +1228,8 @@ test('caret_line reports the line without moving past it', async () => {
   assert.deepEqual(JSON.parse(res.result.content[0].text), {
     line: 'Kajian pustaka mencakup',
     caretMoved: true,
-    caretRestored: true
+    caretRestored: true,
+    ok: true
   });
 });
 
@@ -1271,7 +1272,7 @@ test('intercept_file_chooser toggles without touching the page', async () => {
 
   const res = await server.handle({ jsonrpc: '2.0', id: 34, method: 'tools/call', params: { name: 'intercept_file_chooser', arguments: { enabled: true } } });
 
-  assert.deepEqual(JSON.parse(res.result.content[0].text), { intercepting: true });
+  assert.deepEqual(JSON.parse(res.result.content[0].text), { intercepting: true, ok: true });
 });
 
 // WHY THE STRAY TAB IS CLOSED AND NAMED, NOT LEFT.
@@ -1341,7 +1342,7 @@ test('ask_page returns a raw read and hands the method its own params', async ()
   });
   const payload = JSON.parse(res.result.content[0].text);
 
-  assert.deepEqual(payload, { method: 'Page.getFrameTree', result: { asked: 'Page.getFrameTree', params: {} } });
+  assert.deepEqual(payload, { method: 'Page.getFrameTree', asked: 'Page.getFrameTree', params: {}, ok: true });
 });
 
 test('ask_page defaults a screenshot to png, which is how a test image is made', async () => {
@@ -1357,7 +1358,7 @@ test('ask_page defaults a screenshot to png, which is how a test image is made',
   });
   const payload = JSON.parse(res.result.content[0].text);
 
-  assert.equal(payload.result.params.format, 'png');
+  assert.equal(payload.params.format, 'png');
 });
 
 test('ask_page refuses anything that could act, and says what it may ask', async () => {

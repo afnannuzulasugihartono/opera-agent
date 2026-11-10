@@ -55,7 +55,11 @@ function requireArguments(args, required) {
 // A browser that closed mid-call must not take the server with it, because the next tool call is still worth trying.
 
 function asText(value) {
-  return { content: [{ type: 'text', text: typeof value === 'string' ? value : JSON.stringify(value, null, 1) }] };
+  return { content: [{ type: 'text', text: JSON.stringify(isObject(value) ? tidyForAi(value) : value, null, 1) }] };
+}
+
+function isObject(value) {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 // WHY A PLAN IS BUILT FIELD BY FIELD.
@@ -125,6 +129,16 @@ function diffElements(prev, curr) {
 }
 
 import { withAdvice } from './advice.js';
+import { readFileSync } from 'node:fs';
+import { stripTypeScriptTypes } from 'node:module';
+
+// WHY THE SAME TIDY FUNCTION THE HOSTED SURFACE USES.
+// The rejections that keep a model from wasting tokens on envelopes, transport keys and duplicated chain fields should apply to the local stdio surface too - a rule that lives in one place stays consistent and changes for one reason.
+
+const tidySource = stripTypeScriptTypes(
+  readFileSync(new URL('../supabase/functions/opera-agent-mcp/tidy.ts', import.meta.url), 'utf8')
+);
+const { tidyForAi } = await import(`data:text/javascript;base64,${Buffer.from(tidySource).toString('base64')}`);
 
 const lastAuto = new WeakMap();
 const lastPage = new WeakMap();
