@@ -346,7 +346,8 @@ test('the download page shows one archive fanning out to every browser', () => {
   const html = read('unduh.html');
   assert.match(html, /<aside class="pack"/, 'the hero carries the archive');
   assert.equal((html.match(/class="packTile"/g) || []).length, 5, 'and one tile per supported browser');
-  assert.match(html, /<code>opera-agent\.zip<\/code>/, 'the archive is the file the cards serve');
+  assert.doesNotMatch(html, /<code>opera-agent\.zip<\/code>/, 'the archive caption is gone; the five marks say it');
+  assert.match(html, /class="packRow" aria-hidden="true"/, 'and the fan itself is the picture');
   const css = read('download.css');
   assert.match(css, /\.packTile:nth-child\(3\) \{[^}]*animation-delay/s, 'the tiles light in turn');
   assert.match(css, /@keyframes pack-light/, 'the light is one shot');
@@ -404,11 +405,13 @@ test('the current door arrives by sliding, not by appearing', () => {
 
 test('the verification command types itself, with the whole line kept for no-script readers', () => {
   const html = read('unduh-berkas.html');
-  assert.match(html, /<span class="typewriter" data-type="/, 'the line carries the text it types');
-  assert.match(html, /<noscript>/, 'and a still copy stands where the script cannot run');
+  assert.match(html, /<span class="verifyPrompt">PS C:\\&gt;<\/span> <span class="verifyType" id="curlType">/, 'the line carries the text it types, prompt first');
+  assert.match(html, /<noscript><pre><code>curl\.exe -sI https:\/\//, 'and a still copy stands where the script cannot run');
+  const js = read('verify.js');
+  assert.match(js, /matchMedia\('\(prefers-reduced-motion: reduce\)'\)/, 'the reader who asked for stillness gets the two lines at once');
+  assert.match(js, /IntersectionObserver/, 'the commands type when the fold scrolls into view');
   const css = cssOf('unduh-berkas.html');
-  assert.match(css, /\.typewriter\.live \{[^}]*animation: type-ch [^;]*steps\(/s, 'one piece at a time');
-  assert.match(css, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.typewriter \{[^}]*animation: none/s, 'and instantly for motion-sensitive readers');
+  assert.match(css, /@keyframes verify-blink/, 'one cursor, blinking once the reader arrives');
 });
 
 test('the dev server serves the whitelist and nothing else, even on loopback', () => {

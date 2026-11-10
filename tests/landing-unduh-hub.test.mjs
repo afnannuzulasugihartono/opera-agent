@@ -63,7 +63,7 @@ test('the merged page carries one card per browser, each offering both files', (
     const filled = [...body.matchAll(/<a\b[^>]*class="btn"[^>]*>/g)];
     assert.equal(filled.length, 1, `${key} fills exactly one button`);
     assert.ok(filled[0][0].includes(ZIP), `${key} fills the archive, the file that installs everywhere`);
-    assert.match(body, /<details class="more">/, `${key} keeps its other downloads behind a closed list`);
+    assert.match(body, /<p class="otherBuilds">/, `${key} carries its other builds inline, like the benchmark download page`);
   }
 });
 
@@ -87,21 +87,46 @@ test('the hero states the value in one sentence, and the steps live on the merge
   assert.match(hub, /mesin enterprise/, 'enterprise named where the updates land');
   assert.doesNotMatch(hub.replace(/<!--[\s\S]*?-->/g, ''), /instan/i, 'no instant promise');
   assert.doesNotMatch(hub, /<ol class="steps">/, 'the hub itself keeps no steps beside the door');
-  const steps = /<h2\b[^>]*>Lima langkah memasang dari arsip<\/h2>\s*<ol class="steps">([\s\S]*?)<\/ol>/.exec(berkas)[1];
+  const fold = /<details class="sectionFold" open>\s*<summary><h2\b[^>]*>Cara memasang<\/h2><\/summary>\s*<div class="demo" aria-hidden="true">([\s\S]*?)<\/div>\s*<ol class="steps srOnly">([\s\S]*?)<\/ol>/.exec(berkas);
+  assert.ok(fold, 'the install fold opens to the animated walkthrough, with the text kept underneath');
+  const demo = fold[1];
+  assert.equal((demo.match(/data-app="/g) || []).length, 3, 'three persistent windows: Chrome, Explorer, PowerShell');
+  assert.match(demo, /data-app="chrome"/, 'the browser is one window across every page it visits');
+  assert.match(demo, /class="chromePage pageExt"/, 'the extensions page lives inside that window, not beside it');
+  assert.match(demo, /class="chromePage pageDash"/, 'and so does the dashboard');
+  const driver = fs.readFileSync(new URL('../landing/demo.js', import.meta.url), 'utf8');
+  const sequence = [
+    'press(docks.chrome', 'press(pageDl.querySelector', 'press(docks.explorer',
+    "goTo('.pageExt'", "picker.classList.add('is-open')", "goTo('.pageDash'",
+    'openPopup(', 'press(docks.terminal'
+  ];
+  let at = -1;
+  for (const step of sequence) {
+    const next = driver.indexOf(step, at + 1);
+    assert.ok(next > at, `${step} follows the step before it`);
+    at = next;
+  }
+  assert.match(demo, /class="taskbarWin"/, 'the walkthrough runs on a desktop, the way the owner lives in it');
+  assert.match(demo, /tChrome/, 'and the taskbar lights the app each beat lives in');
+  assert.match(demo, /Extract all/, 'the explorer names the button the reader must find');
+  assert.match(demo, /chrome:\/\/extensions/, 'and the extensions surface, named');
+  assert.match(demo, /Open|Browse|folderPick/i, 'the file picker is part of the flow');
+  assert.match(demo, /oaPopup/, 'and the extension popup opens under the toolbar icon');
+  const steps = fold[2];
   assert.match(steps, /Ekstrak arsip/, 'first the extract');
-  assert.match(steps, /mode pengembang/, 'then developer mode');
+  assert.match(steps, /Developer mode/i, 'then developer mode');
   assert.match(steps, /Load unpacked/, 'then the load');
 });
 
-test('the CRX section is framed enterprise-only, with the button untouched', () => {
+test('the enterprise block is retired; the .crx stays one click away in every card', () => {
 
-  assert.match(berkas, /enterprise-managed/, 'policy installs are the audience');
-  assert.match(berkas, /drag-and-drop/, 'manual installs are named as rejected');
-  assert.match(berkas, /BLOCKED/, 'the unmanaged status is stated');
-  assert.match(berkas, /pengguna rumahan pakai <a href="#berkas">arsip zip<\/a>/, 'home users are sent to the zip on this same page');
-  assert.doesNotMatch(berkas, /mengizinkan pemasangan/, 'no sentence implies a consumer browser allows it');
-  assert.match(berkas, new RegExp(`<a\\b[^>]*class="btn"[^>]*href="${escapeRe(CRX)}"[^>]*download[^>]*>Unduh berkas \\.crx terbaru</a>`), 'the button and its endpoint are unchanged');
-  assert.match(berkas, /namanya membawa versi build/, 'the filename note stays');
+  assert.doesNotMatch(berkas, /enterprise-managed/, 'the page carries no enterprise framing');
+  assert.doesNotMatch(berkas, /[Dd]rag-and-drop/, 'the page names no manual-install rejection');
+  assert.doesNotMatch(berkas, /BLOCKED/, 'the policy console copy is gone');
+  assert.doesNotMatch(berkas, /pengguna rumahan pakai/, 'the home-user pitch is gone');
+  assert.doesNotMatch(berkas, /namanya membawa versi build/, 'the filename note is gone');
+  assert.doesNotMatch(berkas, /Unduh berkas \\.crx terbaru/, 'the one big .crx button is gone');
+  assert.equal((berkas.match(new RegExp(escapeRe(CRX), 'g')) || []).length, 5, 'the version-less .crx stays one click away in every card');
 });
 
 test('the hub needs no script hash, and the shared policy still names the merged script', () => {

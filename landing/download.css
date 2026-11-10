@@ -14,14 +14,14 @@
   align-items: center;
   max-width: none;
   margin: 24px 0 0;
-  padding-bottom: clamp(28px, 4vh, 56px);
+  padding-bottom: 56px;
 }
 
 .hero-text h1 {
-  max-width: 15ch;
-  margin: 0 0 22px;
+  max-width: 13ch;
+  margin: 0 0 24px;
   text-align: left;
-  font-size: clamp(38px, 4.9vw, 72px);
+  font-size: clamp(44px, 6.6vw, 88px);
   line-height: .98;
   letter-spacing: -.042em;
 }
@@ -30,8 +30,8 @@
   max-width: 48ch;
   margin: 0 0 26px;
   color: var(--muted);
-  font-size: 18px;
-  line-height: 1.58;
+  font-size: 19px;
+  line-height: 1.6;
   text-align: left;
 }
 
@@ -112,14 +112,14 @@ html.js .btn.giant::after {
 
 .also a { text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; }
 
-/* WHY THE NUMBERS STAY OUT OF THE READING LINE: three counts in a row at caption weight are easier to skim than three sentences explaining the same numbers. */
+/* WHY THE NUMBERS STAY IN THE BACKGROUND: two counts at caption weight are easier to skim than three sentences explaining the same numbers. */
 
 .statBand {
   display: flex;
   flex-wrap: wrap;
   gap: 28px 44px;
-  margin: 26px 0 0;
-  padding: 18px 0 0;
+  margin: 24px 0 0;
+  padding: 16px 0 0;
   border-top: 1px solid var(--line);
 }
 
@@ -158,22 +158,12 @@ html.js .btn.giant::after {
   background: var(--surface);
 }
 
-.pack > code {
-  padding: 9px 14px;
-  border: 1px solid var(--line-strong);
-  border-radius: var(--radius-sm);
-  background: var(--surface-2);
-  color: var(--ink);
-  font-size: 12.5px;
-  letter-spacing: .02em;
-}
-
 .packRow {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 12px;
   width: 100%;
-  margin: 26px 0 0;
+  margin: 0;
   padding: 0;
   list-style: none;
 }
@@ -182,11 +172,11 @@ html.js .btn.giant::after {
   display: grid;
   place-items: center;
   aspect-ratio: 1;
-  border: 1px solid var(--line);
-  border-radius: 10px;
+  border: 0;
+  border-radius: 12px;
   background: var(--surface-2);
   color: var(--muted);
-  transition: transform .18s var(--ease), border-color .18s var(--ease);
+  transition: transform .18s var(--ease), background .18s var(--ease);
 }
 
 html.js .packTile {
@@ -213,34 +203,31 @@ html.js .packTile:nth-child(5) { animation-delay: .58s; }
 
 .packTile svg { display: block; }
 
-.packTile:hover { transform: translateY(-3px); border-color: var(--accent); }
+.packTile:hover { transform: translateY(-3px); background: var(--surface); }
 .packTile:hover svg { transform: scale(1.12); }
 .packTile svg { transition: transform .22s var(--ease); }
 
-.packCaption {
-  margin: 14px 0 0;
-  padding: 0;
-  text-align: center;
-  color: var(--muted);
-  font-size: 12px;
-}
 
 /* WHY THE SCREENSHOT IS THE ARGUMENT: a product picture of the product doing the product's job is the only image a software page needs; the caption says what the picture is, plainly. */
 
 .artifact {
-  margin: clamp(36px, 5vh, 60px) 0 0;
+  margin: 56px 0 0;
+  padding: 16px 16px 15px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
 }
 
 .artifact img {
   display: block;
   width: 100%;
   height: auto;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
+  border-radius: 10px;
   object-fit: cover;
 }
 
 .artifact figcaption {
+  padding: 0 4px;
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
@@ -261,7 +248,7 @@ html.js .packTile:nth-child(5) { animation-delay: .58s; }
   max-width: 720px;
   display: grid;
   gap: 0;
-  margin: clamp(36px, 5vh, 60px) 0 0;
+  margin: 56px 0 0;
 }
 
 .fold {
@@ -316,13 +303,13 @@ html.js .packTile:nth-child(5) { animation-delay: .58s; }
 .heroFiles {
   max-width: 760px;
   margin: 0 auto;
-  padding: clamp(24px, 3.5vh, 44px) 0 clamp(22px, 3vh, 36px);
+  padding: 26px 0 32px;
   text-align: center;
 }
 
 .heroFiles h1 {
   margin: 0 0 16px;
-  font-size: clamp(36px, 4.6vw, 56px);
+  font-size: clamp(40px, 5.4vw, 64px);
   letter-spacing: -.04em;
   line-height: 1.02;
 }
@@ -340,12 +327,15 @@ html.js .packTile:nth-child(5) { animation-delay: .58s; }
 .browsers {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 16px;
-  margin: 0 0 clamp(40px, 5vh, 60px);
+  gap: 20px;
+  margin: 0 0 64px;
 }
 
 @media (max-width: 1040px) {
-  .browsers { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .browsers { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+  .browsers .browser { grid-column: span 2; }
+  .browsers .browser:nth-child(4) { grid-column: 2 / span 2; }
+  .browsers .browser:nth-child(5) { grid-column: 4 / span 2; }
 }
 
 @media (max-width: 720px) {
@@ -361,7 +351,7 @@ html.js .packTile:nth-child(5) { animation-delay: .58s; }
   display: flex;
   flex-direction: column;
   gap: 2px;
-  padding: 24px 18px 18px;
+  padding: 26px 20px 20px;
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: var(--surface);
@@ -382,10 +372,10 @@ html.js .packTile:nth-child(5) { animation-delay: .58s; }
 .glyph {
   display: grid;
   place-items: center;
-  width: 52px;
-  height: 52px;
-  margin: 0 auto 10px;
-  border-radius: 14px;
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 12px;
+  border-radius: 15px;
   background: var(--surface-2);
   color: var(--ink);
 }
@@ -394,18 +384,10 @@ html.js .packTile:nth-child(5) { animation-delay: .58s; }
 
 .browser h2,
 .browser h3 {
-  margin: 0 0 8px;
+  margin: 0 0 12px;
   color: var(--ink);
   font-size: 19px;
   letter-spacing: -.02em;
-  text-align: center;
-}
-
-.cardHint {
-  margin: 0 0 14px;
-  color: var(--muted);
-  font-size: 12.5px;
-  line-height: 1.5;
   text-align: center;
 }
 
@@ -453,6 +435,7 @@ html.js .packTile:nth-child(5) { animation-delay: .58s; }
   border: 0;
   border-radius: var(--radius-sm);
   background: var(--accent);
+  z-index: 30;
   color: var(--on-fill);
   font-size: 11.5px;
   font-weight: 600;
@@ -460,68 +443,23 @@ html.js .packTile:nth-child(5) { animation-delay: .58s; }
   white-space: nowrap;
 }
 
-.browser .more {
-  margin-top: 12px;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  background: var(--surface-soft);
-}
+/* WHY THE OTHER BUILDS ARE TWO QUIET LINKS: the benchmark download page shows the signed file and the manifest as plain links under the button, never a menu, never a modal; two links is the whole contract. */
 
-.browser .more > summary {
-  padding: 9px 12px;
-  border-radius: 10px;
-  color: var(--ink);
+.otherBuilds {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: auto 0 0;
+  padding: 12px 2px 0;
   font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  list-style: none;
-}
-
-.browser .more > summary::-webkit-details-marker { display: none; }
-.browser .more > summary::after { content: "+"; float: right; color: var(--muted); }
-.browser .more[open] > summary::after { content: "−"; font-size: 15px; color: var(--accent); }
-
-.browser .more-list {
-  margin: 0;
-  padding: 0 8px 8px;
-  list-style: none;
-}
-
-.browser .more-list a {
-  display: block;
-  padding: 7px 8px;
-  border-radius: 8px;
-  color: var(--accent);
-  font-size: 12.5px;
-  text-decoration: none;
-}
-
-.browser .more-list a:hover { background: var(--surface); color: var(--accent-strong); }
-
-.req {
-  margin: 12px 0 0;
-  padding: 0 2px;
-  color: var(--muted);
-  font-size: 11px;
-  line-height: 1.55;
+  line-height: 1;
   text-align: left;
 }
 
-.req code {
-  font-size: 10px;
-  overflow-wrap: anywhere;
-}
-
-.cardPolicy {
-  margin: 8px 0 0;
-  padding: 0 2px;
-  color: var(--muted);
-  font-size: 10.5px;
-  line-height: 1.55;
-  text-align: left;
-}
-
-.cardPolicy strong { color: var(--ink); }
+.otherBuilds .otherLabel { color: var(--muted); font-weight: 500; }
+.otherBuilds .dot { color: var(--muted); }
+.otherBuilds a { color: var(--accent); text-decoration: none; font-weight: 550; }
+.otherBuilds a:hover { color: var(--accent-strong); text-decoration: underline; text-underline-offset: 3px; }
 
 /* WHY THE STEPS KEEP THE SITE'S OWN GRAMMAR: the site already ships an ordered-steps block with a leading-zero counter, accent ink and 44px of air; a second copy here incremented the counter twice and painted the steps in two designs at once. */
 
@@ -533,7 +471,7 @@ html.js .packTile:nth-child(5) { animation-delay: .58s; }
 
 
 
-h2 { margin: clamp(36px, 5vh, 56px) 0 10px; font-size: clamp(22px, 2.4vw, 28px); letter-spacing: -.028em; }
+h2 { margin: 48px 0 12px; font-size: clamp(22px, 2.4vw, 28px); letter-spacing: -.028em; }
 h2:first-child { margin-top: 0; }
 
 p, li { color: var(--muted); }
@@ -541,31 +479,142 @@ p strong, li strong { color: var(--ink); }
 
 code {
   font-family: var(--mono);
-  font-size: .84em;
-  padding: 2px 7px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
-  background: var(--surface-2);
+  font-size: .92em;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-decoration-break: slice;
+  -webkit-box-decoration-break: slice;
   color: var(--ink);
   overflow-wrap: anywhere;
-}
-
-pre + pre {
-  margin-top: 12px;
 }
 
 pre {
   margin: 0;
-  padding: 14px 16px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
-  background: var(--surface-2);
-  color: var(--ink);
   font: 13px/1.7 var(--mono);
+  color: var(--ink);
   overflow-wrap: anywhere;
   white-space: pre-wrap;
 }
 
+/* WHY THE VERIFY READS AS ONE STYLISED TERMINAL SESSION: the reader runs two commands, the page shows exactly those, and nothing else; the fold is a machine, not a form. */
+
+.verifyPanel {
+  margin: 18px 0 0;
+  border: 1px solid var(--line-strong);
+  border-radius: 14px;
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.verifyHead {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 18px;
+  border-bottom: 1px solid var(--line);
+  background: color-mix(in srgb, var(--accent) 4%, var(--surface-2));
+}
+
+.verifyShield {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  color: var(--accent);
+  flex: none;
+}
+
+.verifyHeadTitle { font: 600 15px/1 var(--font); letter-spacing: .02em; color: var(--ink); }
+.verifyHeadTag { margin-left: auto; font: 500 11px/1 var(--mono); color: var(--muted); letter-spacing: .05em; }
+
+.verifyBlock { display: grid; gap: 10px; padding: 16px 18px 16px; }
+
+.verifyBlock + .verifyBlock { border-top: 1px solid var(--line); }
+
+.verifyTag { display: flex; align-items: center; gap: 8px; color: var(--muted); font: 600 10px/1 var(--mono); letter-spacing: .15em; text-transform: uppercase; }
+
+.verifyCmdRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-left: 3px solid var(--line-strong);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  background: var(--surface-2);
+  overflow: hidden;
+}
+
+.verifyBlock:first-of-type .verifyCmdRow { border-left-color: var(--accent); }
+
+.verifyCmdRow pre {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  padding: 13px 16px;
+  border: 0;
+  background: none;
+  font: 12.5px/1.55 var(--mono);
+  white-space: pre;
+  overflow-x: auto;
+}
+
+.verifyPrompt { color: var(--accent); font-weight: 600; }
+.verifyType { color: var(--ink); }
+
+.verifyCaret {
+  display: none;
+  width: 8px;
+  height: 14px;
+  margin-left: 2px;
+  vertical-align: -2px;
+  background: var(--accent);
+  animation: verify-blink 1.05s steps(1) infinite;
+}
+.verifyCaret.is-on { display: inline-block; }
+
+@keyframes verify-blink { 0%, 49% { opacity: 1 } 50%, 100% { opacity: 0 } }
+
+.verifyCopy {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 48px;
+  padding: 0 17px;
+  border: 0;
+  border-left: 1px solid var(--line);
+  background: transparent;
+  color: var(--ink);
+  font: 600 12px/1 var(--mono);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color .15s var(--ease), transform .1s var(--ease);
+}
+
+.verifyCopy:hover { color: var(--accent); }
+.verifyCopy:active { transform: scale(.96); }
+.verifyCopy:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.verifyCopyIcon { width: 14px; height: 14px; }
+.verifyCopyCheck { display: none; width: 14px; height: 14px; color: var(--accent); }
+.verifyCopy.is-copied .verifyCopyIcon { display: none; }
+.verifyCopy.is-copied .verifyCopyCheck { display: block; }
+
+.verifyVerdict {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  margin: 0;
+  padding: 14px 18px;
+  border-top: 1px solid var(--line);
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+  font: 600 13.5px/1.45 var(--font);
+}
+
+.verifyVerdictIcon { width: 18px; height: 18px; flex: none; }
 
 /* WHY ONE COLUMN FOR EVERYTHING BELOW THE CARDS: the five cards answer the only question that matters at a glance; the prose after them is one narrow read, centered so the eye does not ping-pong. */
 
@@ -574,20 +623,71 @@ pre {
   margin: 0 auto;
 }
 
-.downloadBody.centered .fallbackBody {
-  margin: 0 0 22px;
-  text-align: left;
-  font-size: 13.5px;
+/* WHY THE SECTIONS FOLD: the two answers that take more than a sentence — the install steps and the digest check — open on demand instead of stacking their full height on the page. */
+
+.sectionFold {
+  border-top: 1px solid var(--line);
+  margin: 32px 0 0;
+  padding-top: 22px;
 }
+
+.sectionFold:first-child {
+  border-top: 0;
+  margin-top: 0;
+  padding-top: 0;
+}
+
+.sectionFold > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.sectionFold > summary::-webkit-details-marker { display: none; }
+
+.sectionFold > summary h2 {
+  margin: 0;
+  font-size: clamp(22px, 2.4vw, 28px);
+}
+
+.sectionFold > summary::after {
+  content: "+";
+  color: var(--muted);
+  font: 500 22px/1 var(--mono);
+  transition: transform .18s var(--ease), color .18s var(--ease);
+}
+
+.sectionFold > summary:hover::after { color: var(--ink); }
+.sectionFold[open] > summary::after { transform: rotate(45deg); }
+
+.sectionFold .steps { margin-top: 20px; }
+
+.foldBody { margin-top: 16px; }
 
 .btn-row {
   margin: 0;
 }
 
+/* WHY THE TABLE GETS A FRAME: the verdict grid is the one answer a reader scans for; framing it with the same border and radius as the verify panel gives the three sections one voice. */
+
+.tablePanel {
+  margin: 14px 0 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.tablePanel tbody tr { transition: background .15s var(--ease); }
+.tablePanel tbody tr:hover { background: var(--surface-2); }
+
 .support {
   width: 100%;
   border-collapse: collapse;
-  margin: 12px 0 10px;
+  margin: 0;
   font-size: 13.5px;
 }
 
@@ -610,63 +710,7 @@ pre {
 .support td.no { color: var(--muted); }
 .support tr:last-child td { border-bottom: 0; }
 
-.back {
-  margin-top: 28px;
-}
-
-
-.fallbackBody {
-  margin: clamp(32px, 4vh, 48px) auto clamp(8px, 2vh, 16px);
-  max-width: 760px;
-  color: var(--muted);
-  font-size: 14px;
-  line-height: 1.6;
-  text-align: center;
-}
-
-.fallbackBody a { color: var(--accent); text-decoration: underline; text-underline-offset: 3px; }
-
-/* WHY THE TYPEWRITER KEEPS ITS SCRIPT: a line of code fading in reads like a demo, and a demo that never moves feels worse than the same line at rest. */
-
-.typewriter {
-  display: inline-block;
-  overflow: hidden;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-  vertical-align: bottom;
-  max-width: 100%;
-}
-
-.typewriter.live {
-  animation: type-ch 2.4s steps(120) forwards;
-}
-
-@keyframes type-ch {
-  from { max-width: 0; }
-  to { max-width: 100%; }
-}
-
-.typewriter + .cursor {
-  display: inline-block;
-  width: 7px;
-  height: 13px;
-  background: var(--accent);
-  vertical-align: baseline;
-  animation: cursor-blink 1s steps(2, start) infinite;
-}
-
-@keyframes cursor-blink {
-  to { visibility: hidden; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .typewriter { animation: none; white-space: pre-wrap; }
-  .typewriter + .cursor { display: none; }
-}
-
 /* ==== footer-level pins kept ==== */
-
-details.more summary { cursor: pointer; }
 
 @media (prefers-reduced-motion: no-preference) {
   html.js .browser { animation: card-in .45s var(--ease) backwards; }
@@ -689,3 +733,819 @@ details.more summary { cursor: pointer; }
   .browser { transition: none; }
   .steps > li { transition: none; }
 }
+
+.steps.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* WHY THE DEMO IS ONE COMPUTER SESSION: three windows stay where a real desktop keeps them, the taskbar opens them, and a page changes inside the browser instead of the browser vanishing between beats. */
+/* WHY ONE CLOCK LIVES IN demo.js: a click, the window it opens and the typing that follows are one promise chain, so nothing can start before the thing before it has finished; this sheet only paints the states that chain sets. */
+
+/* one reference canvas at 1024x624; the whole screen scales as a unit, so every window, icon and type size keeps its proportion at any viewport */
+
+.desktop {
+  position: relative;
+  width: min(100vw, calc(70vh * 16 / 9.75));
+  margin: 20px 0 0 50%;
+  transform: translateX(-50%);
+  aspect-ratio: 16 / 9.75;
+  border: 1px solid var(--line-strong);
+  border-radius: 14px;
+  overflow: hidden;
+  background: var(--surface);
+}
+
+.demoCanvas {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 1024px;
+  height: 624px;
+  transform: scale(var(--demo-k, .96));
+  transform-origin: top left;
+  background:
+    radial-gradient(120% 100% at 50% 118%, color-mix(in srgb, var(--accent) 26%, transparent) 0%, transparent 62%),
+    radial-gradient(70% 60% at 82% 6%, color-mix(in srgb, var(--yellow) 7%, transparent) 0%, transparent 58%),
+    linear-gradient(155deg, var(--surface) 12%, color-mix(in srgb, var(--surface) 70%, var(--accent) 30%) 100%);
+}
+
+.demoStage {
+  position: absolute;
+  inset: 0 0 46px 0;
+  overflow: visible;
+}
+
+.demoStage.is-modal::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 45;
+  background: color-mix(in srgb, var(--bg) 52%, transparent);
+  opacity: 0;
+  transition: opacity .2s var(--ease);
+  pointer-events: none;
+}
+.demoStage.is-modal::after { opacity: 1; }
+
+/* one window at a time fills the screen above the taskbar, exactly as a maximized app does */
+
+.osWin {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface-2);
+  overflow: hidden;
+}
+
+.demoStage .appWin {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  border-radius: 0;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(18px) scale(.97);
+  transform-origin: 50% 100%;
+  transition: transform .46s var(--spring), opacity .26s var(--ease), visibility 0s .46s;
+  z-index: 20;
+}
+
+.demoStage .appWin.is-open {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+  transition-delay: 0s;
+}
+
+.demoStage .appWin.is-closing {
+  opacity: 0;
+  transform: translateY(10px) scale(.985);
+  transition: transform .14s var(--ease), opacity .14s var(--ease);
+}
+
+/* shared window chrome */
+
+.tabStrip { display: flex; align-items: flex-end; gap: 8px; padding: 6px 10px 0; background: var(--surface); border-bottom: 1px solid var(--line); }
+.tabItem { display: flex; align-items: center; gap: 8px; padding: 7px 10px; background: var(--surface-2); border: 1px solid var(--line-strong); border-bottom: 0; border-radius: 8px 8px 0 0; font: 500 10px/1 var(--mono); color: var(--muted); }
+.tabMark { width: 9px; height: 9px; border-radius: 2.5px; background: var(--muted); }
+.tabMark.accent { background: var(--accent); }
+.tabClose { position: relative; width: 10px; height: 10px; }
+.tabClose::before, .tabClose::after { content: ""; position: absolute; left: 4.4px; top: 0.5px; width: 1.2px; height: 9px; background: var(--muted); }
+.tabClose::before { transform: rotate(45deg); }
+.tabClose::after { transform: rotate(-45deg); }
+.tabNew { position: relative; width: 15px; height: 15px; margin: 0 2px 4px auto; border: 1px solid var(--line-strong); border-radius: 4px; }
+.tabNew::before, .tabNew::after { content: ""; position: absolute; background: var(--muted); }
+.tabNew::before { left: 3px; right: 3px; top: 6.5px; height: 1.2px; }
+.tabNew::after { top: 3px; bottom: 3px; left: 6.5px; width: 1.2px; }
+.winGlyphs { margin-left: auto; display: flex; align-items: center; gap: 13px; }
+.wgMin { width: 10px; border-bottom: 1.3px solid var(--muted); }
+.wgMax { width: 9px; height: 9px; border: 1.2px solid var(--muted); border-radius: 1px; }
+.wgClose { position: relative; width: 11px; height: 11px; }
+.wgClose::before, .wgClose::after { content: ""; position: absolute; left: 4.6px; top: 0.5px; width: 1.2px; height: 10px; background: var(--muted); }
+.wgClose::before { transform: rotate(45deg); }
+.wgClose::after { transform: rotate(-45deg); }
+
+/* the browser keeps one toolbar over three page layers */
+
+.chromeToolbar { position: relative; }
+
+.chromeLoad {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 2px;
+  width: 0;
+  background: var(--chrome-tone);
+  z-index: 5;
+}
+.chromeWin.is-loading .chromeLoad { width: 100%; transition: width .38s var(--ease-out); }
+.chromeWin.is-enter .chromeOmnibox { border-color: var(--chrome-tone); box-shadow: 0 0 0 2px color-mix(in srgb, var(--chrome-tone) 32%, transparent); }
+
+.chromePages { position: relative; min-height: 0; background: var(--chrome-bg); }
+.chromePage { position: absolute; inset: 0; opacity: 0; visibility: hidden; transition: opacity .24s var(--ease); }
+.chromePage.is-shown { opacity: 1; visibility: visible; }
+
+.pageDl { display: flex; flex-direction: column; }
+
+/* scene one - the download page, the click, the shelf */
+
+.dlPageBody { display: grid; justify-items: center; align-content: center; gap: 8px; padding: 20px 18px; background: var(--chrome-bg); flex: 1; }
+.dlPageKicker { font: 500 9.5px/1 var(--mono); letter-spacing: .14em; color: var(--chrome-tone); }
+.dlPageTitle { font: 600 16px/1.25 var(--mono); letter-spacing: -.02em; color: var(--chrome-text); }
+.dlBigBtn { display: flex; align-items: center; gap: 9px; margin-top: 6px; padding: 13px 24px; border-radius: var(--radius); background: var(--accent); color: var(--on-fill); font: 600 14px/1 var(--mono); transition: transform .1s var(--ease); }
+.dlBigBtnIcon { width: 17px; height: 17px; }
+.dlShelf { display: flex; align-items: center; gap: 11px; padding: 11px 13px; border-top: 1px solid var(--chrome-line); background: var(--chrome-card); transform: translateY(110%); opacity: 0; transition: transform .4s var(--spring), opacity .25s var(--ease); }
+.pageDl.is-downloading .dlShelf { transform: none; opacity: 1; }
+.dlIcon { padding: 8px 8px; border-radius: 8px; background: var(--accent); color: var(--on-fill); font: 600 10.5px/1 var(--mono); }
+.dlMeta { flex: 1; min-width: 0; display: grid; gap: 6px; }
+.dlName { font: 10.5px/1 var(--mono); color: var(--chrome-text); }
+.dlTrack { height: 4px; border-radius: 2px; background: var(--chrome-line); overflow: hidden; }
+.dlFill { display: block; height: 100%; width: 0; background: var(--accent); transition: width 1.35s linear; }
+.pageDl.is-downloading .dlFill { width: 100%; }
+.checkIcon { width: 16px; height: 16px; color: var(--accent); }
+.dlCheck { opacity: 0; transform: scale(.6); transition: opacity .2s var(--ease), transform .25s var(--spring); }
+.pageDl.is-done .dlCheck { opacity: 1; transform: none; }
+
+/* scene two - Explorer, selected zip, Extract all, the extraction dialog */
+
+.expWin { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+
+.expTabStrip { display: flex; align-items: center; gap: 6px; padding: 5px 8px 5px 6px; background: color-mix(in srgb, var(--accent) 10%, var(--surface)); border-bottom: 1px solid var(--line); }
+.expTab { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 9px 9px 0 0; font-size: 12px; color: var(--ink); }
+.expTabActive { background: var(--surface-2); border: 1px solid var(--line-strong); border-bottom: 0; position: relative; }
+.expTabIcon { width: 15px; height: 15px; }
+.expTabClose { position: relative; width: 11px; height: 11px; }
+.expTabClose::before, .expTabClose::after { content: ""; position: absolute; left: 5px; top: 1px; width: 1.3px; height: 9px; background: var(--muted); }
+.expTabClose::before { transform: rotate(45deg); }
+.expTabClose::after { transform: rotate(-45deg); }
+.expTabPlus { position: relative; width: 24px; height: 24px; margin-left: 2px; border: 1px solid var(--line-strong); border-radius: 6px; }
+.expTabPlus::before, .expTabPlus::after { content: ""; position: absolute; background: var(--muted); }
+.expTabPlus::before { left: 6.5px; right: 6.5px; top: 11px; height: 1.2px; }
+.expTabPlus::after { top: 6.5px; bottom: 6.5px; left: 11px; width: 1.2px; }
+
+.expNavRow { display: flex; align-items: center; gap: 8px; padding: 7px 10px; background: var(--surface-2); border-bottom: 1px solid var(--line); }
+.navArrow { width: 16px; height: 16px; color: var(--ink); flex: none; }
+.navArrow.dim { color: var(--muted); opacity: .55; }
+.crumbBar { display: flex; align-items: center; gap: 9px; flex: 1; min-width: 0; padding: 7px 12px; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; font: 11.5px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--muted); white-space: nowrap; overflow: hidden; }
+.crumbIcon { width: 15px; height: 15px; }
+.crumbHere { color: var(--ink); }
+.searchPill { display: flex; align-items: center; gap: 7px; padding: 7px 12px; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; font: 11.5px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--muted); white-space: nowrap; }
+.searchIcon { width: 14px; height: 14px; color: var(--muted); }
+
+.expToolbar { display: flex; align-items: center; gap: 14px; padding: 8px 12px; background: var(--surface); border-bottom: 1px solid var(--line); }
+.toolItem { display: flex; align-items: center; gap: 7px; font: 11.5px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--muted); transition: transform .1s var(--ease); }
+.toolItem.toolPrimary { color: var(--accent); }
+.toolCaret { width: 7px; height: 7px; margin-left: 1px; border-left: 1.4px solid var(--muted); border-bottom: 1.4px solid var(--muted); transform: rotate(-45deg); }
+.toolIcon { width: 16px; height: 16px; }
+.extractAll { color: var(--accent); }
+.toolItem.right, .sortView { margin-left: auto; }
+.sortView { display: flex; align-items: center; gap: 12px; }
+.sortItem, .viewItem, .rightDetails { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); }
+.rightDetails { color: var(--muted); }
+
+.expBody { display: grid; grid-template-columns: 152px 1fr 168px; flex: 1; min-height: 0; }
+.expNav { display: grid; align-content: start; gap: 4px; padding: 10px 8px; border-right: 1px solid var(--line); background: var(--surface); }
+.expNavItem { display: inline-flex; align-items: center; gap: 9px; font: 11px/1.3 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--muted); padding: 6px 8px; border-radius: 5px; white-space: nowrap; }
+.expNavItem.sel { background: var(--surface-2); color: var(--ink); }
+.expNavIcon { width: 15px; height: 15px; flex: none; color: var(--muted); }
+.expNavItem.sel .expNavIcon { color: var(--ink); }
+.expNavItem.dimmed { opacity: .55; }
+
+.expList { display: grid; align-content: start; gap: 2px; padding: 8px 10px; background: var(--surface-2); overflow: hidden; }
+.expColRow { display: grid; grid-template-columns: 1.55fr .95fr .85fr .5fr; gap: 10px; padding: 2px 8px 7px; border-bottom: 1px solid var(--line); font: 9.5px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--muted); margin-bottom: 4px; }
+.expRow { display: grid; grid-template-columns: 1.55fr .95fr .85fr .5fr; align-items: center; gap: 10px; padding: 6px 8px; border-radius: 5px; font: 10.5px/1.3 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--ink); white-space: nowrap; overflow: hidden; }
+.expRow svg { width: 15px; height: 15px; vertical-align: -3px; margin-right: 6px; }
+.expGroup { padding: 7px 8px 3px; font: 9.5px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--muted); border-bottom: 1px solid var(--line); }
+.expCell.dim { color: var(--muted); font-size: 9.5px; }
+.expRow.sel { background: var(--surface); outline: 1.4px solid var(--accent); outline-offset: -1px; }
+.fileIconSm { display: inline-grid; place-items: center; width: 15px; height: 15px; border-radius: 3px; background: var(--line); color: var(--muted); font-size: 8px; vertical-align: -3px; margin-right: 6px; }
+.folderIconSm { width: 15px; height: 15px; vertical-align: -3px; flex: none; }
+.expRowNew { opacity: 0; transform: translateY(-6px); transition: opacity .25s var(--ease), transform .3s var(--ease); }
+.expWin.is-extracted .expRowNew { opacity: 1; transform: none; }
+
+.expDetails { display: flex; flex-direction: column; gap: 9px; padding: 16px 15px 12px; border-left: 1px solid var(--line); background: var(--surface); align-items: center; }
+.expBigZip { width: 60px; height: 60px; }
+.expDetName { align-self: start; font: 600 12px/1.3 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--ink); word-break: break-all; }
+.expShareBtn { display: inline-flex; align-items: center; gap: 7px; align-self: start; padding: 5px 13px; border: 1px solid var(--line-strong); border-radius: 6px; font: 10.5px/1.3 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--muted); }
+.expDetHead { align-self: start; font: 600 10px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--muted); letter-spacing: .08em; text-transform: uppercase; }
+.expDetRow { align-self: stretch; display: grid; gap: 2px; }
+.expDetKey { font: 8.5px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--muted); letter-spacing: .05em; }
+.expDetVal { font: 10px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--ink); word-break: break-word; }
+
+/* the extraction dialog the Extract all button opens */
+
+.extractDlg {
+  position: absolute;
+  z-index: 35;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -46%) scale(.97);
+  width: min(80%, 470px);
+  border: 1px solid var(--line-strong);
+  border-radius: 9px;
+  background: var(--surface-2);
+  overflow: hidden;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity .18s var(--ease), transform .3s var(--spring), visibility 0s .3s;
+}
+.expWin.is-extracting .extractDlg { opacity: 1; visibility: visible; transform: translate(-50%, -50%); transition-delay: 0s; }
+.extractHead { display: flex; align-items: center; gap: 9px; padding: 10px 14px; background: var(--surface); border-bottom: 1px solid var(--line); font: 600 12px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--ink); white-space: nowrap; }
+.extractHeadIcon { width: 16px; height: 16px; color: var(--muted); }
+.wgCloseSm { position: relative; width: 13px; height: 13px; margin-left: auto; }
+.wgCloseSm::before, .wgCloseSm::after { content: ""; position: absolute; left: 5.8px; top: 0.5px; width: 1.5px; height: 12px; background: var(--muted); }
+.wgCloseSm::before { transform: rotate(45deg); }
+.wgCloseSm::after { transform: rotate(-45deg); }
+.extractBody { display: grid; gap: 9px; padding: 14px 16px 12px; }
+.extractLabel { font: 11px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--muted); }
+.extractPath { padding: 9px 12px; border: 1px solid var(--line-strong); background: var(--surface); font: 11px/1.3 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--ink); }
+.extractNote { font: 10px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--muted); }
+.extractFoot { display: flex; justify-content: flex-end; gap: 8px; padding: 6px 16px 14px; }
+.extractBtn { padding: 8px 24px; border: 1px solid var(--line-strong); background: var(--surface); border-radius: 4px; font: 600 11.5px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--ink); transition: transform .1s var(--ease); }
+.extractBtn.extractGo { background: var(--accent); border-color: var(--accent); color: var(--on-fill); }
+.expDetBtn { margin-top: auto; display: inline-flex; align-items: center; gap: 7px; padding: 7px 14px; border: 1px solid var(--line-strong); border-radius: 6px; font: 10.5px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--muted); }
+
+.expStatusBar { display: flex; justify-content: space-between; padding: 6px 13px; border-top: 1px solid var(--line); background: var(--surface); font: 9.5px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--muted); }
+.expState { opacity: .6; }
+
+/* the extensions page, revealed inside the same window */
+
+.pageExt .extPageChrome { display: flex; flex-direction: column; height: 100%; }
+.extActionRow { opacity: 0; visibility: hidden; transform: translateY(-5px); transition: opacity .18s var(--ease), transform .22s var(--ease), visibility 0s .22s; }
+.pageExt.is-dev .extActionRow { opacity: 1; visibility: visible; transform: none; transition-delay: 0s; }
+.pageExt .extLocal { display: none; }
+.pageExt.is-installed .extLocal { display: flex; animation: card-in .4s var(--spring) backwards; }
+
+/* scene four - the extension directory picker, anchored over the browser */
+
+.folderPick {
+  position: absolute;
+  z-index: 50;
+  left: 50%;
+  top: 50%;
+  width: 88%;
+  max-width: 620px;
+  height: 82%;
+  max-height: 420px;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--line-strong);
+  border-radius: 9px;
+  background: var(--surface-2);
+  overflow: hidden;
+  opacity: 0;
+  visibility: hidden;
+  transform: translate(-50%, -50%) scale(.96);
+  transition: opacity .2s var(--ease), transform .3s var(--spring), visibility 0s .3s;
+}
+.folderPick.is-open { opacity: 1; visibility: visible; transform: translate(-50%, -50%); transition-delay: 0s; }
+
+.pickTitleBar { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; background: var(--surface); border-bottom: 1px solid var(--line); }
+.pickTitleText { font: 600 12px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--ink); }
+.pickX { position: relative; width: 14px; height: 14px; }
+.pickX::before, .pickX::after { content: ""; position: absolute; left: 6px; top: 1px; width: 1.4px; height: 12px; background: var(--muted); }
+.pickX::before { transform: rotate(45deg); }
+.pickX::after { transform: rotate(-45deg); }
+
+.pickNavRow { display: flex; align-items: center; gap: 7px; padding: 7px 10px; background: var(--surface-2); border-bottom: 1px solid var(--line); }
+.pickCrumbBar { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; padding: 6px 11px; background: var(--surface); border: 1px solid var(--line); border-radius: 5px; font: 10.5px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--muted); white-space: nowrap; overflow: hidden; }
+.pickCrumbBar .crumbIcon { width: 14px; height: 14px; }
+.crumbHere { color: var(--ink); }
+.pickCrumbChevron { width: 12px; height: 12px; color: var(--muted); margin-left: auto; }
+.pickRefresh { margin-left: 2px; }
+.pickSearch { display: flex; align-items: center; gap: 7px; padding: 6px 11px; background: var(--surface); border: 1px solid var(--line); border-radius: 5px; font: 10.5px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--muted); white-space: nowrap; }
+.pickSep { opacity: .55; }
+
+.pickCmdRow { display: flex; align-items: center; gap: 18px; padding: 7px 12px; background: var(--surface); border-bottom: 1px solid var(--line); }
+.pickCmdItem { display: inline-flex; align-items: center; gap: 7px; font: 11px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--muted); }
+.pickCmdItem .pickCaret { width: 8px; height: 8px; }
+.pickCmdRight { display: inline-flex; align-items: center; gap: 10px; margin-left: auto; }
+.pickViewIcon { width: 16px; height: 16px; color: var(--muted); }
+.pickCaret { color: var(--muted); }
+.pickHelp { display: grid; place-items: center; width: 17px; height: 17px; border-radius: 50%; border: 1.5px solid var(--muted); font: 600 10px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--muted); }
+
+.pickBody { display: grid; grid-template-columns: 96px 1fr; flex: 1; min-height: 0; }
+.pickSide { display: grid; align-content: start; gap: 3px; padding: 10px 8px; border-right: 1px solid var(--line); background: var(--surface); }
+.pickHome { display: inline-flex; align-items: center; gap: 7px; padding: 6px 8px; border-radius: 5px; font: 11.5px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--ink); }
+.pickHome.sel { background: var(--surface-2); }
+.pickHomeIcon { width: 15px; height: 15px; color: var(--muted); }
+.pickSideRule { height: 1px; background: var(--line); margin: 4px 4px 2px; }
+.pickSideItem { display: inline-flex; align-items: center; gap: 7px; padding: 5px 8px; font: 11px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--muted); white-space: nowrap; }
+.pickSideItem.sel { background: var(--surface-2); color: var(--ink); border-radius: 5px; }
+.pickSideIcon { width: 15px; height: 15px; color: var(--muted); flex: none; }
+.pickSideItem.sel .pickSideIcon { color: var(--yellow); }
+
+.pickList { display: grid; align-content: start; gap: 2px; padding: 8px 9px; background: var(--surface-2); overflow: hidden; }
+.pickColRow { display: grid; grid-template-columns: 1.35fr 1fr .85fr .5fr; gap: 10px; padding: 2px 8px 6px; border-bottom: 1px solid var(--line); font: 9.5px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--muted); }
+.pickRow { display: grid; grid-template-columns: 1.35fr 1fr .85fr .5fr; align-items: center; gap: 10px; padding: 5px 8px; border-radius: 5px; font: 10px/1.3 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--ink); white-space: nowrap; overflow: hidden; }
+.pickDim { color: var(--muted); font-size: 9px; }
+
+.pickFootBar { display: flex; align-items: center; gap: 10px; padding: 9px 12px; background: var(--surface); border-top: 1px solid var(--line); }
+.pickFolderLabel { font: 10.5px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--muted); }
+.pickFolderField { flex: 1; min-width: 0; height: 24px; background: var(--surface-2); border: 1px solid var(--line-strong); border-radius: 4px; }
+.pickBtnRow { display: flex; align-items: center; justify-content: flex-end; gap: 8px; padding: 9px 12px 11px; background: var(--surface); }
+.pickGrip { width: 14px; height: 14px; margin-left: 6px; background: repeating-linear-gradient(135deg, var(--muted) 0 1px, transparent 1px 4px); clip-path: polygon(100% 0, 100% 100%, 0 100%); }
+.pickBtn { padding: 8px 22px; border-radius: 4px; border: 1px solid var(--line-strong); background: var(--surface-2); font: 600 11px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--ink); transition: transform .1s var(--ease); }
+.pickBtn.pickGo { border-color: var(--accent); color: var(--accent); }
+.pickBtn.quiet { color: var(--muted); }
+
+/* the dashboard, minted and accepted inside the same window */
+
+.pageDash .dashSplit { display: grid; grid-template-columns: 92px 1fr; height: 100%; background: var(--surface); }
+.dashSide { display: grid; align-content: start; gap: 2px; padding: 10px 7px; border-right: 1px solid var(--line); background: var(--surface); }
+.dashSideItem { font: 9px/1.2 var(--mono); color: var(--muted); padding: 5px 7px; border-radius: 8px; }
+.dashSideItem.sel { background: var(--accent); color: var(--on-fill); }
+.dashMain { display: grid; align-content: start; gap: 9px; padding: 12px 13px; background: var(--surface); }
+.dashHeading { font: 600 13.5px/1.2 var(--mono); letter-spacing: -.02em; color: var(--ink); }
+.pairPanel { display: grid; gap: 7px; padding: 10px; border: 1px solid var(--line-strong); border-radius: 10px; background: var(--surface-2); }
+.pairPanelText { font: 8px/1.55 var(--mono); color: var(--muted); }
+.deviceNameLabel { font: 9px/1 var(--mono); color: var(--muted); }
+.deviceNameField { display: block; padding: 8px 10px; border: 1px solid var(--line-strong); border-radius: 7px; background: var(--surface); font: 9.5px/1 var(--mono); color: var(--ink); }
+.pairCreateBtn { justify-self: start; padding: 6px 12px; border: 1px solid var(--line-strong); border-radius: 7px; background: var(--surface); font: 9px/1.3 var(--mono); color: var(--ink); transition: transform .1s var(--ease); }
+.pairCodeRow { display: grid; gap: 3px; padding: 9px 10px; border: 1px solid var(--accent); border-radius: 9px; background: color-mix(in srgb, var(--accent) 12%, transparent); opacity: 0; transform: translateY(6px); transition: opacity .2s var(--ease), transform .35s var(--spring); }
+.pageDash.is-created .pairCodeRow { opacity: 1; transform: none; }
+.pairCodeLabel { font: 8px/1 var(--mono); color: var(--muted); letter-spacing: .06em; }
+.pairCodeValue { font: 600 15px/1 var(--mono); letter-spacing: .12em; color: var(--accent); }
+.pairCodeHint { font: 7.5px/1 var(--mono); color: var(--muted); }
+.pairCodeLine { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+.pairCopyBtn { position: relative; display: grid; place-items: center; width: 28px; height: 28px; border: 1px solid var(--line-strong); border-radius: 7px; background: var(--surface); color: var(--muted); cursor: pointer; transition: transform .1s var(--ease); }
+.copyIcon,
+.copiedIcon { position: absolute; width: 14px; height: 14px; transition: opacity .15s var(--ease); }
+.copiedIcon { color: var(--accent); opacity: 0; }
+.pageDash.is-copied .copyIcon { opacity: 0; }
+.pageDash.is-copied .copiedIcon { opacity: 1; }
+
+/* the popup opens under the toolbar icon that was clicked */
+
+.extTrigger { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 6px; background: var(--surface-2); border: 1px solid var(--line-strong); }
+.extTriggerIcon { width: 13px; height: 13px; }
+
+.oaPopup {
+  position: absolute;
+  z-index: 55;
+  left: 12px;
+  top: 80px;
+  width: min(38%, 208px);
+  border: 1px solid var(--line-strong);
+  border-radius: 12px;
+  background: var(--surface-2);
+  overflow: hidden;
+  opacity: 0;
+  visibility: hidden;
+  transform: scale(.9) translateY(-10px);
+  transform-origin: 88% 0;
+  transition: opacity .18s var(--ease), transform .32s var(--spring), visibility 0s .32s;
+}
+.oaPopup.is-open { opacity: 1; visibility: visible; transform: none; transition-delay: 0s; }
+
+.oaPanelOut { display: grid; gap: 8px; padding: 12px; }
+.oaPanelIn { position: absolute; inset: 0; display: grid; gap: 8px; align-content: start; padding: 12px; opacity: 0; background: var(--surface-2); transition: opacity .22s var(--ease); }
+.oaPopup.is-connected .oaPanelIn { opacity: 1; }
+.oaHeader { display: flex; align-items: center; gap: 8px; }
+.oaName { font: 600 12px/1 var(--mono); color: var(--ink); }
+.extCardIcon { display: grid; place-items: center; width: 42px; height: 42px; border-radius: 9px; background: var(--accent); }
+.extCardIcon svg { width: 24px; height: 24px; }
+.extCardIcon.mini { width: 26px; height: 26px; border-radius: 7px; }
+.extCardIcon.mini svg { width: 14px; height: 14px; }
+.extCardIcon.outline { background: transparent; border: 1px solid var(--accent); }
+.oaPillOn,
+.oaPillOff { display: flex; align-items: center; gap: 7px; padding: 6px 11px; border-radius: 999px; font: 600 10px/1 var(--mono); letter-spacing: .02em; justify-self: start; }
+.oaPillOn { background: color-mix(in srgb, var(--accent) 14%, transparent); color: var(--accent); }
+.oaPillOff { background: var(--surface); color: var(--muted); border: 1px solid var(--line); }
+.oaDotOn { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
+.oaDotOff { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+.oaRows { display: grid; gap: 7px; padding: 10px 0 8px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.oaRow { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.oaKey { font: 7.5px/1.5 var(--mono); color: var(--muted); letter-spacing: .09em; }
+.oaVal { font: 10px/1.4 var(--mono); color: var(--ink); }
+.oaVal.dim { color: var(--muted); }
+.oaVal.ok { color: var(--accent); }
+.oaSection { font: 7px/1 var(--mono); color: var(--muted); letter-spacing: .12em; }
+.oaFieldLabel { font: 7.5px/1 var(--mono); color: var(--muted); letter-spacing: .09em; }
+.oaFieldEmpty { display: flex; align-items: center; min-height: 30px; padding: 8px 11px; border: 1px dashed var(--line-strong); border-radius: 9px; background: var(--surface); transition: border-color .15s var(--ease), border-style .15s; }
+.oaFieldEmpty.is-focused { border-color: var(--accent); border-style: solid; }
+.oaFieldValue { font: 600 13px/1 var(--mono); letter-spacing: .1em; color: var(--ink); opacity: 0; transition: opacity .12s var(--ease); }
+.oaPopup.is-pasted .oaFieldValue { opacity: 1; }
+.oaHint { font: 8px/1.4 var(--mono); color: var(--muted); }
+.oaBtns { display: grid; gap: 6px; }
+.oaBtn { padding: 7px 9px; border: 1px solid var(--line-strong); border-radius: 8px; background: var(--surface); font: 8.5px/1.3 var(--mono); color: var(--ink); text-align: center; }
+.oaBtn.danger { color: var(--danger); border-color: var(--danger-line); }
+
+/* scene six - the two digests must agree */
+
+.termBar { display: flex; align-items: center; gap: 8px; padding: 6px 8px 6px 6px; background: var(--surface); border-bottom: 1px solid var(--line); }
+.termTab { display: inline-flex; align-items: center; gap: 8px; padding: 7px 13px 7px 10px; border-radius: 8px 8px 0 0; background: var(--surface-2); border: 1px solid var(--line-strong); border-bottom: 0; font: 11.5px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--ink); position: relative; top: 1px; }
+.termTabIcon { width: 13px; height: 13px; }
+.termTabClose { position: relative; width: 11px; height: 11px; }
+.termTabClose::before, .termTabClose::after { content: ""; position: absolute; left: 5px; top: 1px; width: 1.3px; height: 9px; background: var(--muted); }
+.termTabClose::before { transform: rotate(45deg); }
+.termTabClose::after { transform: rotate(-45deg); }
+.termNewTab { position: relative; width: 17px; height: 17px; }
+.termNewTab::before, .termNewTab::after { content: ""; position: absolute; background: var(--muted); }
+.termNewTab::before { left: 3px; right: 3px; top: 8px; height: 1.3px; }
+.termNewTab::after { top: 3px; bottom: 3px; left: 8px; width: 1.3px; }
+.termProfiles { width: 15px; height: 15px; color: var(--muted); }
+.termBar .chromeWinGlyphs { align-self: center; }
+.termBody { display: grid; gap: 6px; align-content: start; padding: 16px 18px; background: var(--bg); font: 11px/1.75 var(--mono); flex: 1; min-height: 0; overflow: hidden; color: var(--muted); }
+.termLine { display: block; white-space: nowrap; overflow: hidden; color: var(--muted); }
+.termHead { color: var(--muted); }
+.termHead:first-child { color: var(--yellow); }
+.termLine .psPrompt { color: var(--chrome-text); }
+.hashLine { color: var(--ink); }
+.termLine.t2, .termLine.t3, .termLine.t4 { opacity: 0; transition: opacity .2s var(--ease); }
+.termWin.is-out1 .t2, .termWin.is-out1 .t3 { opacity: 1; }
+.termWin.is-out2 .t4 { opacity: 1; }
+.termCaret { display: none; width: 7px; height: 12px; background: var(--chrome-text); vertical-align: -1px; animation: caret-blink 1s steps(1) infinite; }
+.termLine.is-typing .termCaret { display: inline-block; }
+.checkIconBig { width: 30px; height: 30px; color: var(--accent); }
+.checkTerm { justify-self: center; opacity: 0; transform: scale(.7); transition: opacity .25s var(--ease), transform .3s var(--spring); }
+.termWin.is-verified .checkTerm { opacity: 1; transform: none; }
+
+/* the typed address, the click that selects it, and the page that waits for Enter */
+
+.typeUrl { display: inline-block; white-space: pre; }
+.typeUrl.is-selected { background: color-mix(in srgb, var(--chrome-tone) 42%, transparent); }
+.typeCaret { display: none; width: 2px; height: .85em; margin-left: 1px; background: var(--chrome-text); vertical-align: middle; animation: caret-blink 1.05s steps(1) infinite; }
+.chromeWin.is-focused .typeCaret { display: inline-block; }
+
+@keyframes caret-blink { 0%, 49% { opacity: 1 } 50%, 100% { opacity: 0 } }
+
+/* the ripple that lands with every real click, and the cursor that lands it */
+
+.demoCursor {
+  position: absolute;
+  z-index: 60;
+  left: 0;
+  top: 0;
+  width: 22px;
+  height: 22px;
+  pointer-events: none;
+  will-change: transform;
+}
+
+.cursorArrow { display: block; width: 22px; height: 22px; transition: transform .08s var(--ease); transform-origin: 5px 3px; }
+.demoCursor.is-pressed .cursorArrow { transform: scale(.86); }
+
+.demoRipple {
+  position: absolute;
+  z-index: 59;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 2px solid var(--accent);
+  pointer-events: none;
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(.3);
+}
+
+/* the desktop is the computer; nothing floats past its frame */
+
+.deskIcons { position: absolute; z-index: 1; left: 16px; top: 14px; display: grid; gap: 20px; align-content: start; transition: opacity .3s var(--ease); }
+.demoStage.hasWindow .deskIcons { opacity: 0; }
+.deskIcon { display: grid; justify-items: center; gap: 6px; }
+.deskIcon em { font: 500 9px/1.3 var(--mono); font-style: normal; color: var(--ink); text-align: center; }
+.deskPcIcon { width: 40px; height: 40px; }
+
+/* the taskbar names the app the session moves to, and marks the ones already running */
+
+.taskbarWin {
+  position: absolute;
+  z-index: 40;
+  bottom: 0; left: 0; right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  height: 46px;
+  padding: 0 12px;
+  background: color-mix(in srgb, var(--surface) 66%, transparent);
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+  border-top: 1px solid var(--line-strong);
+}
+
+.tbItem { position: relative; display: grid; place-items: center; width: 38px; height: 38px; border-radius: 8px; background: transparent; transition: background .15s var(--ease), transform .1s var(--ease); }
+.tbItem svg { width: 21px; height: 21px; }
+.tbItem.is-pressed { transform: scale(.9); }
+.tbItem.is-running::after { content: ""; position: absolute; bottom: 3px; left: 50%; width: 5px; height: 3px; border-radius: 2px; background: color-mix(in srgb, var(--ink) 48%, transparent); transform: translateX(-50%); }
+.tbItem.is-active { background: color-mix(in srgb, var(--ink) 14%, transparent); }
+.tbItem.is-active::after { width: 10px; background: var(--accent); }
+
+.tbTrayIcons { position: absolute; right: 10px; display: flex; align-items: center; gap: 11px; }
+.trayIcon { width: 16px; height: 16px; }
+.tbClock { position: absolute; right: 88px; display: grid; justify-items: end; font: 500 10.5px/1.3 var(--mono); color: var(--ink); }
+.tbClock time { display: block; }
+
+/* every control the cursor presses answers at once, the way Windows does */
+
+.demo .is-pressed:not(.demoCursor) { outline: 2px solid color-mix(in srgb, var(--accent) 82%, transparent); outline-offset: 2px; }
+
+.dlBigBtn.is-pressed,
+.extractBtn.is-pressed,
+.pickBtn.is-pressed,
+.pickRow.is-pressed,
+.pairCreateBtn.is-pressed,
+.pairCopyBtn.is-pressed,
+.toolItem.is-pressed,
+.chromePillBtn.is-pressed,
+.chromeToggle.is-pressed,
+.extTrigger.is-pressed,
+.oaFieldEmpty.is-pressed,
+.chromeOmnibox.is-pressed,
+.tbItem.is-pressed { transform: scale(.94); }
+
+.demoCursor .cursorArrow, .chromeToggleKnob, .dlFill, .dlShelf, .dlCheck, .typeUrl, .pairCodeRow, .oaPopup, .oaPanelIn, .oaFieldValue, .extActionRow, .expRowNew, .extractDlg, .folderPick, .termLine { will-change: transform, opacity; }
+
+/* Chrome dark UI — same palette as the real Extensions page */
+
+.osWin.chromeWin.extRealChrome {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  grid-template-rows: auto auto 1fr;
+  background: var(--chrome-bg);
+  color: var(--chrome-text);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-size: 13px;
+  border: 0;
+  border-radius: 0;
+}
+
+.chromeTabStrip {
+  display: flex;
+  align-items: flex-end;
+  padding: 6px 6px 0;
+  background: var(--chrome-bg);
+  gap: 2px;
+}
+
+.chromeTab { display: flex; align-items: center; gap: 8px; padding: 7px 14px 9px; border-radius: 9px 9px 0 0; color: var(--chrome-text-dim); font-size: 12.5px; line-height: 1; }
+.chromeTabActive { background: var(--chrome-card); color: var(--chrome-text); position: relative; z-index: 1; }
+.chromeTabIcon { width: 14px; height: 14px; }
+.chromeTabClose { width: 16px; height: 16px; position: relative; opacity: .85; }
+.chromeTabClose::before, .chromeTabClose::after { content: ""; position: absolute; left: 7.5px; top: 3px; width: 1.3px; height: 10px; background: var(--chrome-text-dim); }
+.chromeTabClose::before { transform: rotate(45deg); }
+.chromeTabClose::after { transform: rotate(-45deg); }
+
+.tabNew { position: relative; width: 26px; height: 26px; margin-bottom: 6px; border-radius: 13px; }
+.tabNew::before, .tabNew::after { content: ""; position: absolute; background: var(--chrome-text-dim); }
+.tabNew::before { left: 7px; right: 7px; top: 12.3px; height: 1.3px; }
+.tabNew::after { top: 7px; bottom: 7px; left: 12.3px; width: 1.3px; }
+
+.chromeWinGlyphs { margin-left: auto; display: flex; align-items: center; gap: 18px; padding: 0 12px 7px; }
+.wgMin { width: 11px; height: 1.3px; background: var(--chrome-text-dim); }
+.wgMax { width: 11px; height: 10px; border: 1.3px solid var(--chrome-text-dim); border-radius: 1.5px; }
+.wgClose { position: relative; width: 13px; height: 13px; }
+.wgClose::before, .wgClose::after { content: ""; position: absolute; left: 5.8px; top: 0; width: 1.4px; height: 13px; background: var(--chrome-text); }
+.wgClose::before { transform: rotate(45deg); }
+.wgClose::after { transform: rotate(-45deg); }
+
+.chromeToolbar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 12px;
+  background: var(--chrome-card);
+}
+
+.chromeNavIcon { width: 17px; height: 17px; color: var(--chrome-text); }
+.chromeNavIcon.dim { color: var(--chrome-text-dim); }
+
+.chromeOmnibox {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  height: 36px;
+  padding: 0 16px;
+  border-radius: 18px;
+  background: var(--chrome-bg);
+  border: 1.4px solid var(--chrome-line);
+}
+
+.chromeOmniIcon { width: 16px; height: 16px; color: var(--chrome-text); }
+.chromeOmniText { font-size: 13.5px; color: var(--chrome-text); letter-spacing: -.01em; }
+
+.chromeAvatar { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 13px; background: var(--chrome-avatar); color: var(--chrome-text); font-size: 12px; font-weight: 600; }
+
+/* the Extensions page itself */
+
+.extPageChrome { background: var(--chrome-bg); }
+
+.extTopRow {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 22px 46px 20px;
+}
+
+.extTopPuzzle { width: 28px; height: 28px; }
+.extTopTitle { font-size: 22px; font-weight: 500; letter-spacing: -.02em; color: var(--chrome-text); }
+
+.extSearchPill { display: flex; align-items: center; gap: 11px; height: 46px; width: 380px; padding: 0 18px; border-radius: 23px; background: var(--chrome-card); border: 1.4px solid var(--chrome-line); color: var(--chrome-text-dim); font-size: 13.5px; margin-left: auto; }
+.extSearchIcon { width: 17px; height: 17px; }
+
+.extTopRight { display: flex; align-items: center; gap: 12px; margin-left: 16px; }
+.extTopRightLabel { font-size: 13.5px; color: var(--chrome-text); }
+
+.chromeToggle { position: relative; width: 34px; height: 18px; border-radius: 9px; background: var(--chrome-line); }
+.chromeToggle.on { background: var(--chrome-tone); }
+.chromeToggle.small { width: 28px; height: 16px; border-radius: 8px; }
+
+.chromeToggleKnob { position: absolute; top: 2.5px; left: 2.5px; width: 13px; height: 13px; border-radius: 6.5px; background: var(--chrome-text); transition: transform .18s var(--ease); }
+.chromeToggle.on .chromeToggleKnob { background: var(--chrome-tone-on); transform: translateX(16px); }
+.chromeToggle.small .chromeToggleKnob { width: 11px; height: 11px; top: 2.5px; left: 2.5px; border-radius: 5.5px; }
+.chromeToggle.small.on .chromeToggleKnob { transform: translateX(12px); }
+
+.extActionRow {
+  display: flex;
+  gap: 14px;
+  padding: 10px 46px 20px;
+  border-bottom: 1px solid var(--chrome-line);
+}
+
+.chromePillBtn { display: inline-flex; align-items: center; gap: 0; height: 44px; padding: 0 22px; border-radius: 22px; border: 1.3px solid var(--chrome-tone); color: var(--chrome-tone); font-size: 13.5px; background: transparent; }
+.chromePillBtn.blue { background: transparent; }
+.chromePillBtn.blue.pressed { background: color-mix(in srgb, var(--chrome-tone) 35%, var(--chrome-bg)); border-color: transparent; }
+
+.extBody { display: grid; grid-template-columns: 330px 1fr; min-height: 320px; }
+
+.extSide { display: flex; flex-direction: column; gap: 8px; padding: 20px 0 20px 20px; position: relative; }
+.extSide::after { content: ""; position: absolute; right: 0; top: 20px; bottom: 16px; width: 1px; background: var(--chrome-line); }
+
+.sidePill { display: inline-flex; align-items: center; gap: 12px; height: 46px; padding: 0 18px; border-radius: 23px; font-size: 14px; color: var(--chrome-tone); }
+.sidePill.sel { background: var(--chrome-tone-strong); color: var(--chrome-tone-on); }
+.sidePill.sel .sideIcon { color: var(--chrome-tone-on); }
+.sideIcon { width: 19px; height: 19px; color: var(--chrome-text); }
+
+.sideRow { display: inline-flex; align-items: center; gap: 12px; height: 46px; padding: 0 18px; font-size: 14px; color: var(--chrome-text); }
+
+.sideNote { margin-top: 28px; padding: 10px 18px 0; font-size: 12.5px; line-height: 1.65; color: var(--chrome-text-dim); border-top: 1px solid var(--chrome-line); padding-top: 22px; }
+.sideNote u { color: var(--chrome-tone-strong); }
+
+.extMain { display: flex; flex-direction: column; gap: 16px; padding: 18px 30px; background: var(--chrome-bg); }
+
+.extMainHead { display: flex; justify-content: space-between; align-items: center; }
+.extMainTitle { font-size: 14.5px; font-weight: 600; color: var(--chrome-text); letter-spacing: -.01em; }
+.extMainRight { display: flex; align-items: center; gap: 11px; font-size: 13.5px; color: var(--chrome-text); }
+
+.extGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.extCardChrome { display: flex; flex-direction: column; gap: 9px; padding: 11px; border-radius: 14px; background: var(--chrome-card); }
+.extCardTop { display: flex; gap: 11px; min-width: 0; }
+.extCardTile { display: grid; place-items: center; width: 48px; height: 48px; flex: none; border-radius: 10px; background: var(--chrome-card-2); }
+.extCardTile svg { width: 26px; height: 26px; }
+.extCardTile.tileRed { background: color-mix(in srgb, var(--danger) 40%, var(--chrome-card-2)); }
+.extCardTile.tileAmber { background: color-mix(in srgb, var(--yellow) 42%, var(--chrome-card-2)); }
+.extCardContent { display: grid; gap: 3px; align-content: start; min-width: 0; }
+.extCardNameRow { display: flex; gap: 10px; align-items: baseline; }
+.extCardName { font-size: 13.5px; font-weight: 600; color: var(--chrome-text); letter-spacing: -.02em; white-space: nowrap; }
+.extCardVersion { font-size: 11px; color: var(--chrome-text-dim); }
+.extCardDesc { font-size: 11px; color: var(--chrome-text-dim); line-height: 1.4; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.extCardId { font-size: 10.5px; color: var(--chrome-text-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.extCardSw { font-size: 11px; color: var(--chrome-tone); white-space: nowrap; }
+.extCardFoot { display: flex; align-items: center; gap: 8px; }
+.extCardFoot .chromeToggle { margin-left: auto; }
+.extCardFoot .chromePillBtn { height: 28px; padding: 0 12px; font-size: 11.5px; }
+.chromePillBtn.danger { border-color: var(--danger-line); color: var(--danger); }
+.extReload { width: 17px; height: 17px; color: var(--chrome-text-dim); }
+
+/* the Chrome sheet draws a full-bleed page; inside the demo it is a window with a frame and a taskbar under it */
+
+.demoStage .appWin.chromeWin {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  border-radius: 0;
+}
+
+.demoStage .chromeWin .extTopRow { padding: 12px 30px 10px; gap: 14px; }
+.demoStage .chromeWin .extTopPuzzle { width: 24px; height: 24px; }
+.demoStage .chromeWin .extTopTitle { font-size: 19px; }
+.demoStage .chromeWin .extSearchPill { height: 38px; width: 300px; }
+.demoStage .chromeWin .extTopRight { margin-left: 8px; gap: 10px; }
+.demoStage .chromeWin .extTopRightLabel { font-size: 12.5px; }
+.demoStage .chromeWin .extActionRow { padding: 5px 30px 10px; gap: 11px; }
+.demoStage .chromeWin .chromePillBtn { height: 36px; padding: 0 17px; font-size: 12.5px; }
+.demoStage .chromeWin .extBody { grid-template-columns: 258px 1fr; min-height: 0; }
+.demoStage .chromeWin .extSide { padding: 12px 0 12px 14px; gap: 6px; }
+.demoStage .chromeWin .sidePill,
+.demoStage .chromeWin .sideRow { height: 38px; padding: 0 14px; font-size: 12.5px; gap: 10px; }
+.demoStage .chromeWin .sideIcon { width: 17px; height: 17px; }
+.demoStage .chromeWin .sideNote { margin-top: 14px; padding: 14px 14px 0; font-size: 11.5px; }
+.demoStage .chromeWin .extMain { padding: 12px 22px; gap: 10px; overflow: hidden; }
+.demoStage .chromeWin .extMainTitle { font-size: 13px; }
+.demoStage .chromeWin .extMainRight { font-size: 12px; }
+.demoStage .chromeWin .chromeOmnibox { height: 34px; }
+.demoStage .chromeWin .extSearchPill { width: 360px; }
+.chromeTabIdle { max-width: 165px; overflow: hidden; white-space: nowrap; }
+.tabFav { width: 12px; height: 12px; flex: none; border-radius: 3px; background: var(--chrome-card-2); }
+
+/* a maximized screen is 1024 wide, so its window chrome reads at real desktop sizes */
+
+.demoStage .expNavItem { font-size: 11px; padding: 6px 9px; }
+.demoStage .crumbText,
+.demoStage .searchPill,
+.demoStage .toolItem { font-size: 11px; }
+.demoStage .toolIcon { width: 17px; height: 17px; }
+.demoStage .expColRow { font-size: 9.5px; }
+.demoStage .expRow { font-size: 10.5px; padding: 7px 8px; }
+.demoStage .expCell.dim { font-size: 9.5px; }
+.demoStage .expDetails { gap: 8px; padding: 14px 13px; }
+.demoStage .expDetName { font-size: 12px; }
+.demoStage .expDetKey { font-size: 8.5px; }
+.demoStage .expDetVal { font-size: 10.5px; }
+.demoStage .expDetBtn { font-size: 10.5px; }
+.demoStage .expStatusBar { font-size: 9.5px; }
+
+.demoStage .dashSideItem { font-size: 11px; padding: 6px 8px; }
+.demoStage .dashHeading { font-size: 18px; }
+.demoStage .pairPanel { gap: 9px; padding: 14px; }
+.demoStage .pairPanelText { font-size: 10.5px; line-height: 1.6; }
+.demoStage .deviceNameLabel { font-size: 10px; }
+.demoStage .deviceNameField { font-size: 11.5px; padding: 9px 11px; }
+.demoStage .pairCreateBtn { font-size: 11px; padding: 8px 14px; }
+.demoStage .pairCodeValue { font-size: 19px; }
+.demoStage .pairCodeLabel { font-size: 9px; }
+.demoStage .pairCodeHint { font-size: 9px; }
+.demoStage .pairCopyBtn { width: 30px; height: 30px; }
+
+.demoStage .oaName { font-size: 13px; }
+.demoStage .oaPillOn,
+.demoStage .oaPillOff { font-size: 11px; }
+.demoStage .oaKey { font-size: 8.5px; }
+.demoStage .oaVal { font-size: 11px; }
+.demoStage .oaSection { font-size: 8px; }
+.demoStage .oaFieldLabel { font-size: 8.5px; }
+.demoStage .oaFieldValue { font-size: 14px; }
+.demoStage .oaHint { font-size: 9px; }
+.demoStage .oaBtn { font-size: 10px; padding: 8px 10px; }
+
+.demoStage .termBody { font-size: 11px; line-height: 1.8; padding: 18px 20px; gap: 10px; }
+.demoStage .checkIconBig { width: 32px; height: 32px; }
+
+.demoStage .tbItem { width: 40px; height: 40px; }
+.demoStage .tbItem svg { width: 22px; height: 22px; }
+.demoStage .tbClock { font-size: 11px; }
+.demoStage .trayIcon { width: 17px; height: 17px; }
+
+.demoStage .expName { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.demoStage .expName svg { margin-right: 0; flex: none; }
+
+/* the managed banner, exactly as Chrome draws it */
+
+.extManaged { display: flex; justify-content: center; align-items: center; gap: 10px; height: 31px; border-bottom: 1px solid var(--chrome-line); color: var(--chrome-text-dim); font-size: 12px; }
+.extManaged u { color: var(--chrome-text); }
+.extManagedIcon { width: 16px; height: 16px; }
+
+/* the dashboard's own header, the way the real site opens every page */
+
+.pageDash { display: flex; flex-direction: column; }
+.dashSiteHead { display: flex; align-items: center; gap: 22px; padding: 0 22px; height: 46px; border-bottom: 1px solid var(--line); background: var(--bg); flex: none; }
+.siteBrand { display: inline-flex; align-items: center; gap: 9px; font: 600 15px/1 var(--font); color: var(--ink); letter-spacing: -.02em; margin-right: 6px; }
+.siteBrandMark { width: 17px; height: 17px; }
+.siteNav { font: 12px/1 var(--font); color: var(--muted); }
+.siteLang { font: 11px/1 var(--mono); color: var(--muted); letter-spacing: .05em; margin-left: auto; }
+.siteSignIn { padding: 6px 15px; border-radius: 8px; background: var(--ink); color: var(--bg); font: 600 12px/1 var(--font); }
+.dashEmail { font: 11px/1 var(--mono); color: var(--muted); }
+.dashStats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.dashStat { display: grid; gap: 4px; padding: 10px 12px; border: 1px solid var(--line-strong); border-radius: 10px; background: var(--surface-2); }
+.dashStatLabel { font: 10.5px/1.3 var(--font); color: var(--muted); }
+.dashStatValue { font: 600 17px/1.1 var(--mono); color: var(--ink); }
+.pageDash .dashSplit { display: grid; grid-template-columns: 148px 1fr; flex: 1; min-height: 0; }
+.pageDash .dashSide { padding: 12px 10px; }
+.dashMain { padding: 12px 14px; gap: 8px; }
+
+/* the popup names its version the way the real one does */
+
+.oaHeaderText { display: grid; gap: 2px; }
+.oaProtocol { font: 8px/1 var(--mono); color: var(--muted); letter-spacing: .06em; }

@@ -52,7 +52,6 @@
       </div>
 
       <aside class="pack" data-reveal aria-label="Satu arsip untuk lima browser">
-        <code>opera-agent.zip</code>
         <ol class="packRow" aria-hidden="true">
           <li class="packTile" title="Chrome" data-logo="chrome">C</li>
           <li class="packTile" title="Edge" data-logo="edge">E</li>
@@ -60,14 +59,13 @@
           <li class="packTile" title="Opera" data-logo="opera">O</li>
           <li class="packTile" title="Vivaldi" data-logo="vivaldi">V</li>
         </ol>
-        <p class="packCaption" data-i18n="pack.caption">Satu arsip, lima browser, nol daftar putih.</p>
       </aside>
     </div>
 
     <figure class="artifact" data-reveal>
       <img src="/bukti/canvas-docs.jpg" alt="Dokumen Google Docs berisi laporan ringkasan yang ditulis seluruhnya oleh asisten AI lewat MCP, terlihat tabel Operasi dan Hasil serta tiga temuan" width="1920" height="877" loading="lazy" />
       <figcaption>
-        <span data-i18n="artifact.cap">Ini bukan mockup: dokumen itu ditulis seluruhnya dari endpoint MCP yang sama dengan yang Anda sambungkan.</span>
+        <span data-i18n="artifact.cap">Dokumen asli, ditulis seluruhnya lewat MCP.</span>
         <a href="./bukti.html" data-i18n="artifact.link">Lihat bukti</a>
       </figcaption>
     </figure>
@@ -76,18 +74,18 @@
       <details class="fold" id="izin">
         <summary><span data-i18n="perms.title">Izin, dengan alasan jelas.</span></summary>
         <dl class="foldFacts">
-          <dt><code>tabs</code></dt><dd data-i18n="perms.tabs">Membuka dan menavigasi tab.</dd>
-          <dt><code>scripting</code></dt><dd data-i18n="perms.scripting">Menjaga content script tetap hidup.</dd>
-          <dt><code>storage</code></dt><dd data-i18n="perms.storage">Menyimpan token dan setelan lokal di browser Anda.</dd>
-          <dt><code>alarms</code></dt><dd data-i18n="perms.alarms">Menjaga heartbeat tetap segar.</dd>
+          <dt><code>tabs</code></dt><dd data-i18n="perms.tabs">Buka dan navigasi tab.</dd>
+          <dt><code>scripting</code></dt><dd data-i18n="perms.scripting">Content script tetap hidup.</dd>
+          <dt><code>storage</code></dt><dd data-i18n="perms.storage">Token dan setelan lokal Anda.</dd>
+          <dt><code>alarms</code></dt><dd data-i18n="perms.alarms">Heartbeat tetap segar.</dd>
           <dt><code>debugger</code></dt><dd data-i18n="perms.debugger">Klik terpercaya, screenshot, dan aksesibilitas.</dd>
-          <dt><code>downloads</code></dt><dd data-i18n="perms.downloads">Menyimpan berkas dengan nama asli arsip, lalu membuktikannya.</dd>
+          <dt><code>downloads</code></dt><dd data-i18n="perms.downloads">Simpan berkas, buktikan hasilnya.</dd>
         </dl>
-        <p class="meta" data-i18n-html="perms.host">Host permission berlaku di semua asal — kamu yang menentukan halaman. Screenshot ditolak di tab private, dan field password, OTP, PIN, kartu, serta CVV diblokir.</p>
+        <p class="meta" data-i18n-html="perms.host">Host permission di semua asal — Anda tentukan halamannya. Screenshot ditolak di tab private; password, OTP, PIN, kartu, CVV diblokir.</p>
       </details>
       <details class="fold" id="review">
         <summary><span data-i18n="review.title">Kenapa belum ada tombol pasang sekali klik?</span></summary>
-        <p data-i18n-html="review.body">Extension dengan akses <code>debugger</code> harus lewat review Chrome Web Store. Sementara itu Anda memuat arsip yang sama sendiri, dan listing permanen menyusul setelah review.</p>
+        <p data-i18n-html="review.body">Ekstensi <code>debugger</code> perlu review Chrome Web Store. Sampai rilis, arsip yang sama Anda pasang manual — listing permanen menyusul.</p>
       </details>
       <details class="fold" id="riwayat">
         <summary><span data-i18n="side.title">Build lama &amp; riwayat</span></summary>
@@ -151,21 +149,18 @@
     "page.lede": "Storeless: one archive for every Chromium browser. The newest build, always.",
     "door": "Download Opera Agent",
     "also": "also available: <a href=\"./unduh-berkas.html\">Format guide</a> &middot; <a href=\"./dashboard.html\">Dashboard</a>",
-    "stat.tools": "MCP tools",
-    "stat.prims": "browser primitives",
-    "pack.caption": "One archive, five browsers, zero whitelist.",
-    "artifact.cap": "Not a mockup: this document was written entirely from the same MCP endpoint you would connect.",
+    "artifact.cap": "A real document, written entirely through MCP.",
     "artifact.link": "See the proof",
     "perms.title": "Permissions, clearly explained",
     "perms.tabs": "Open and navigate tabs.",
     "perms.scripting": "Keep the content script alive.",
-    "perms.storage": "Store local tokens and settings on this browser.",
+    "perms.storage": "Your local tokens and settings.",
     "perms.alarms": "Keep the heartbeat fresh.",
     "perms.debugger": "Trusted clicks, screenshots, and accessibility.",
-    "perms.downloads": "Save files with the archive's real name and verify them.",
-    "perms.host": "Screenshots are refused in private tabs, and password, OTP, PIN, card and CVV fields are never answered.",
+    "perms.downloads": "Save files and prove it.",
+    "perms.host": "Screenshots are refused in private tabs; password, OTP, PIN, card and CVV fields are never answered.",
     "review.title": "Why there is no one-click install button yet",
-    "review.body": "An extension with <code>debugger</code> access must pass Chrome Web Store review. Until then you load the same archive yourself, and the listing follows after review.",
+    "review.body": "A <code>debugger</code> extension needs Chrome Web Store review. Until then you load the same archive yourself; the listing follows after review.",
     "side.title": "Older builds &amp; releases",
     "side.body": "Every signed 1.6.x release stays on <a href=\"https://github.com/afnannuzulasugihartono/opera-agent/releases\">GitHub Releases</a> — .zip, .crx and SHA256SUMS — for enterprise machines.",
     "footer.rights": "c 2026 Opera Agent. All rights reserved.",
@@ -174,7 +169,9 @@
     "footer.terms": "Terms",
     "footer.account": "Account",
     "footer.features": "Features",
-    "footer.support": "Support"
+    "footer.support": "Support",
+    "stat.tools": "MCP tools",
+    "stat.prims": "browser primitives"
   }
 }
     </script>

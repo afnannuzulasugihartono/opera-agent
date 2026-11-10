@@ -189,7 +189,7 @@ test('the download page links the paths that never change', () => {
 
   assert.doesNotMatch(berkas, /Unduh opera-agent-/, 'the link text no longer claims to name a file');
 
-  assert.match(berkas, /namanya membawa versi build/, 'the page says the saved file is named with its version');
+  assert.doesNotMatch(berkas, /namanya membawa versi build/, 'the filename note is retired with the enterprise block');
 });
 
 test('both formats share one page, reached from the hub and back', () => {
@@ -199,7 +199,7 @@ test('both formats share one page, reached from the hub and back', () => {
   assert.ok(hub.includes(`href="./${page}"`), `the hub opens ${page}`);
   const html = read(page);
   assert.match(html, /class="btn" href="[^"]*opera-agent\.zip" download/, `${page} downloads the archive without scrolling elsewhere`);
-  assert.match(html, /class="btn" href="[^"]*opera-agent\.crx" download/, `${page} downloads the signed file without scrolling elsewhere`);
+  assert.equal((html.match(/href="[^"]*opera-agent\.crx"/g) || []).length, 5, `${page} offers the signed file from every card without scrolling elsewhere`);
   assert.ok(html.includes('href="./unduh.html"'), `${page} links back to the hub`);
 });
 
@@ -319,5 +319,5 @@ test('the download page has no typo where a stranger decides to trust it', () =>
   const html = read('unduh-berkas.html');
 
   assert.doesNotMatch(html, /polityvek/, 'kebijakan is spelled correctly');
-  assert.match(html, /Kalau kebijakan ditolak/, 'the sentence reads as written');
+  assert.match(html, /Cara memasang/, 'the install section reads plainly');
 });
