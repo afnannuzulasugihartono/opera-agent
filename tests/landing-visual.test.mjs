@@ -112,19 +112,18 @@ test('every section closes before the next one opens', () => {
   assert.match(index, /<\/section>\s*<section id="faq"[^>]*>/, 'the FAQ stands beside privacy, not inside it');
 });
 
-test('the nav answers a visitor in one row: five doors and one action', () => {
+test('the nav answers a visitor in one row: six doors and one action', () => {
   // WHY THE NAV IS COUNTED, NOT DESCRIBED.
-  // Measured on 2026-11-03 against opencode.ai: its nav is one short row with one filled action, while ours carried seven links beside a language toggle and the sign-in button.
-  // Seven items is not a choice a reader makes; it is a list they scroll past, and the price page we shipped was not in it at all.
-  // The doors are the five a visitor asks about; everything else belongs in the footer.
+  // Measured on 2026-11-03 against opencode.ai: its nav is one short row with one filled action, and ours followed suit with five doors.
+  // The doors grew to six on 2026-11-10 when the MCP install page graduated to being a door of its own beside Unduh, Harga and Docs - everything else still belongs in the footer.
 
-  const doors = ['/fitur.html', '/harga', '/unduh.html', '/dukungan.html', '/docs.html'];
+  const doors = ['/fitur.html', '/harga', '/unduh.html', '/pasang-mcp.html', '/dukungan.html', '/docs.html'];
   for (const page of pages) {
     const html = read(page);
     const nav = /<nav>([\s\S]*?)<\/nav>/.exec(html)?.[1] ?? '';
     assert.ok(nav, `${page} has a nav to count`);
     const internal = [...nav.matchAll(/<a (?![^>]*class="(?:brand|navCta)[^"]*")[^>]*>/g)].map((m) => m[0]);
-    assert.ok(internal.length <= 5, `${page} keeps the nav to five links, and carries ${internal.length}`);
+    assert.ok(internal.length <= 6, `${page} keeps the nav to six links, and carries ${internal.length}`);
     assert.equal((nav.match(/class="navCta"/g) || []).length, 1, `${page} offers exactly one filled action`);
     for (const door of doors) {
       assert.ok(nav.includes(`href="${door}"`), `${page} reaches ${door} from the nav`);

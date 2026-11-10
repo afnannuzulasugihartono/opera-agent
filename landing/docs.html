@@ -28,7 +28,7 @@
         <a class="brand" href="/beranda.html"><svg class="brandMark" viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="7"  /><path d="M8 5.6v12.8l3.1-2.9 1.9 4.5 2.4-1-2-4.5h3.9L8 5.6Z"  /></svg><span>Opera Agent</span></a>
         <a href="/fitur.html" data-i18n="nav.features">Fitur</a>
         <a href="/unduh.html" data-i18n="nav.download">Unduh</a>
-        <a href="/harga" data-i18n="nav.price">Harga</a>
+        <a href="/pasang-mcp.html" data-i18n="nav.mcp">MCP</a><a href="/harga" data-i18n="nav.price">Harga</a>
         <a href="/dukungan.html" data-i18n="nav.support">Dukungan</a>
         <a href="/docs.html" data-i18n="nav.docs" aria-current="page">Docs</a>
         <span class="lang" data-lang-toggle></span>
@@ -50,6 +50,7 @@
           <li><a href="#pairing">Masuk dan pair device</a></li>
           <li><a href="#tugas">Tugas pertama</a></li>
           <li><a href="#saldo">Saldo dan tagihan</a></li>
+          <li><a href="#tools">Tools MCP</a></li>
           <li><a href="#mcp">Hubungkan AI harness</a></li>
           <li><a href="#batas">Batas yang dijaga</a></li>
         </ul>
@@ -121,9 +122,76 @@
           <p>Isi saldo lewat QRIS dari Dashboard, tanpa langganan. Saldo yang kurang membuat pekerjaan ditolak sebelum mulai, dengan tautan isi ulang. Harga tetap, pengembalian, dan masa berlaku saldo ada di halaman <a href="/harga">Harga</a>.</p>
         </section>
 
+
+        <section data-reveal>
+          <h2 id="tools">Tools MCP</h2>
+          <p>35 tool di atas 31 primitive browser. Tugas masing-masing:</p>
+
+          <h3>Peramban</h3>
+          <dl class="toolList">
+            <dt><code>browser_status</code></dt><dd>Apakah ekstensi daring, device mana yang dipakai, dan kemampuannya.</dd>
+            <dt><code>list_tabs</code></dt><dd>Daftar tab yang terbuka, dengan id, judul, URL, dan status muatnya.</dd>
+            <dt><code>open_url</code></dt><dd>Buka URL di tab background; aktif hanya saat Anda minta.</dd>
+            <dt><code>activate_tab</code></dt><dd>Aktifkan sebuah tab; hanya saat Anda melihat atau mengizinkan.</dd>
+            <dt><code>navigate_tab</code></dt><dd>Navigasi tab tertentu ke URL, tanpa dipindah ke depan.</dd>
+            <dt><code>close_tab</code></dt><dd>Tutup tab berdasarkan ID, hanya bila Anda yang memintanya.</dd>
+          </dl>
+
+          <h3>Halaman (membaca)</h3>
+          <dl class="toolList">
+            <dt><code>read_page</code></dt><dd>Observasi padat tugas: teks, elemen interaktif dengan ref, dan fakta viewport.</dd>
+            <dt><code>read_page_map</code></dt><dd>Peta seluruh halaman dalam 17 kelas dengan koordinat dan ref yang bertahan saat scroll.</dd>
+            <dt><code>capture_page</code></dt><dd>JPEG terbatas dari tab tertentu; bisa satu halaman penuh lewat tile.</dd>
+            <dt><code>find_elements</code></dt><dd>Cari elemen interaktif lewat teks, peran ARIA, atau tag; hasilnya punya ref untuk klik dan isi.</dd>
+          </dl>
+
+          <h3>Aksi</h3>
+          <dl class="toolList">
+            <dt><code>click_element</code></dt><dd>Klik ref memakai input tepercaya; background secara default.</dd>
+            <dt><code>fill_element</code></dt><dd>Isi kolom teks lewat ref; ditolak di password, OTP, pembayaran, dan upload.</dd>
+            <dt><code>press_key</code></dt><dd>Kirim tombol (Ctrl+A, Ctrl+V, Enter…) atau ketik teks ke permukaan terfokus.</dd>
+            <dt><code>stream_keys</code></dt><dd>Rangkaian chord dan teks dalam satu panggilan, seperti melintasi menu.</dd>
+            <dt><code>scroll_page</code></dt><dd>Scroll relatif atau absolut di halaman tanpa memindah fokus.</dd>
+            <dt><code>pointer</code></dt><dd>Satu pointer untuk move, click, drag, wheel, dan hover untuk menu.</dd>
+            <dt><code>run_browser_burst</code></dt><dd>1–8 aksi bergantung dalam satu panggilan; tanpa JavaScript bebas; 12 detik.</dd>
+            <dt><code>run_workflow</code></dt><dd>Workflow situs tertentu yang terdaftar, misalnya youtube.skip_ads.</dd>
+            <dt><code>run_program</code></dt><dd>Program baca saja yang diverifikasi di dalam VM; tanpa langkah tulis.</dd>
+            <dt><code>run_adhoc</code></dt><dd>Workflow tulis sementara (cari → isi → klik → verifikasi), dihapus setelah jalan.</dd>
+          </dl>
+
+          <h3>Otomatisasi dan memori</h3>
+          <dl class="toolList">
+            <dt><code>start_watch</code></dt><dd>Pasang trigger lokal di tab; saat kondisi terpenuhi, aksi jalan lokal, tanpa bolak-balik model.</dd>
+            <dt><code>wait_events</code></dt><dd>Long-poll untuk event dari trigger; hasil terbaru pertama dengan cursor.</dd>
+            <dt><code>stop_watch</code></dt><dd>Matikan satu trigger berdasarkan id, atau semua trigger aktif.</dd>
+            <dt><code>skill_save</code></dt><dd>Simpan pelajaran tugas ke memori bersama lintas akun.</dd>
+            <dt><code>skill_recall</code></dt><dd>Cari pelajaran dari tugas yang mirip; tiap pelajaran punya tugas, situs, dan jebakan.</dd>
+          </dl>
+
+          <h3>Media</h3>
+          <dl class="toolList">
+            <dt><code>media_state</code></dt><dd>Laporan elemen audio/video di halaman: kehadiran, waktu, durasi, mute, volume.</dd>
+            <dt><code>media_play</code></dt><dd>Mulai pemutaran; jika diblokir browser, tekan Play lewat click_element.</dd>
+            <dt><code>media_pause</code></dt><dd>Jeda pemutaran.</dd>
+            <dt><code>media_seek</code></dt><dd>Lompat ke detik tertentu; nilai di luar durasi dikecilkan.</dd>
+            <dt><code>media_stream_start</code></dt><dd>Mulai sesi dengar: audio halaman disadap dan ditranskripsi per jendela.</dd>
+            <dt><code>media_stream_stop</code></dt><dd>Hentikan sesi dengar; ekor terakhir ikut ditranskripsi.</dd>
+            <dt><code>media_listen_read</code></dt><dd>Baca segmen transkrip dengan cursor; transkrip tidak pernah masuk dashboard.</dd>
+          </dl>
+
+          <h3>Kas</h3>
+          <dl class="toolList">
+            <dt><code>statement_deliver</code></dt><dd>Unduh statement klien untuk bulan tertentu ke disk Anda, di bawah nama yang Anda pilih; pengiriman kedua untuk bulan sama ditolak.</dd>
+            <dt><code>statement_manifest</code></dt><dd>Baca manifest yang disimpan device: satu baris per statement terkirim, beserta ukuran, jenis, jumlah halaman, dan saldo penutup.</dd>
+            <dt><code>invoice_create</code></dt><dd>Susun invoice dari baris manifest atau client-periodes; amount dari price list, bukan dari angka di panggilan.</dd>
+          </dl>
+          <p class="meta">Tiga di atas untuk paket tutup buku; sisanya untuk semua plan.</p>
+        </section>
+
         <section data-reveal>
           <h2 id="mcp">Hubungkan AI harness</h2>
-          <p>Server MCP untuk OpenCode, Kilo Code, Claude Code, dan konektor lain. Masuk dengan akun Anda (OAuth).</p>
+          <p>Satu server MCP untuk ChatGPT, Claude, Codex, Claude Code, OpenCode, VS Code (Copilot), Kilo Code, Cursor, dan konektor lain.</p>
+          <p><a href="./pasang-mcp.html">Pasang MCP</a> — panduan lengkap per harness, termasuk cara pasang dari terminal dan prompt yang bisa ditempel ke AI Anda.</p>
           <p>Server MCP:</p>
           <div class="copybox">
             <pre><code id="mcp-url">https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp</code></pre>
@@ -211,6 +279,7 @@
           <a href="./beranda.html" data-i18n="footer.home">Beranda</a>
           <a href="./fitur.html" data-i18n="footer.features">Fitur</a>
           <a href="./unduh.html" data-i18n="footer.download">Unduh</a>
+          <a href="./pasang-mcp.html">Pasang MCP</a>
           <a href="./bukti.html" data-i18n="footer.bukti">Bukti</a>
           <a href="./docs.html" data-i18n="footer.docs">Docs</a>
           <a href="./akun.html" data-i18n="footer.account">Akun</a>
@@ -241,6 +310,7 @@
     "nav.features": "Features",
     "nav.price": "Pricing",
     "nav.docs": "Docs",
+    "nav.mcp": "MCP",
     "nav.support": "Support",
     "copy": "Copy",
     "md.copy": "Copy as Markdown",
