@@ -22,7 +22,7 @@ const numberArg = (name) => ({ type: 'number', description: name });
 // It has a local burst for dependent moves on one tab, but no reusable element refs beyond a handle that a resolve step hands to a later step, and no cross-tab steps: those are the cloud server's affordances, and pretending a local stdio process has them would advertise something it cannot honour.
 // Coordinates and a fresh read per action stay honest; the burst is the one call that spends its page read once, at the end, instead of after every step.
 
-const tabArg = { type: 'string', description: 'which tab to drive, from list_tabs. Required for anything that writes. A chrome:// page (extensions, settings) refuses every move - name a tab the bridge can drive instead.' };
+const tabArg = { type: ['string', 'number'], description: 'which tab to drive, from list_tabs. Accepts the numeric tab id or its string form; both name the same tab. Required for anything that writes. A chrome:// page (extensions, settings) refuses every move - name a tab the bridge can drive instead.' };
 
 // WHY THIS SURFACE IS ALLOWLISTED AND READ-ONLY.
 // An agent's fastest route from confused to knowing is asking the browser a structured question: which frames exist, which node is behind a row, what is in a frame's document.

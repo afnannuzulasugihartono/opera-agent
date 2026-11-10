@@ -47,7 +47,7 @@ export { TOOLS };
 function requireArguments(args, required) {
   for (const name of required) {
     if (args?.[name] === undefined || args?.[name] === null || args?.[name] === '') {
-      throw new Error(`${name} is required`);
+      throw new Error(`missing argument "${name}" - required by the tool schema`);
     }
   }
 }
