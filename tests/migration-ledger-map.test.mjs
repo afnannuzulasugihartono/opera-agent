@@ -68,7 +68,7 @@ test('the counts the map states are the counts the map holds', () => {
   assert.equal(map.resolved, map.map.filter((entry) => entry.remote).length);
 });
 
-test('the six files applied outside the ledger are the ones the database proves', () => {
+test('the files applied outside the ledger are the ones the database proves', () => {
   const outside = map.map.filter((entry) => entry.evidence === 'applied-outside-ledger').map((entry) => entry.file).sort();
   assert.deepEqual(outside, [
     '20261015090000_opera_billing.sql',
@@ -76,6 +76,8 @@ test('the six files applied outside the ledger are the ones the database proves'
     '20261109090000_opera_account_plans.sql',
     '20261109110000_opera_device_plan.sql',
     '20261109120000_opera_device_instance.sql',
-    '20261109130000_opera_session_usage.sql'
-  ], 'opera_invoices and opera_price_list exist, opera_account_plans and opera_device_plan exist, the device identity column exists, the session meter exists, and no ledger row carries that SQL');
+    '20261109130000_opera_session_usage.sql',
+    '20261110210000_opera_device_revoked_state.sql',
+    '20261110220000_opera_heartbeat_browser_name.sql'
+  ], 'opera_invoices and opera_price_list exist, opera_account_plans and opera_device_plan exist, the device identity column exists, the session meter exists, the revoked state and the browser name on the beat exist, and no ledger row carries that SQL');
 });
