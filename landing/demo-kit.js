@@ -1,6 +1,7 @@
 // @last-edited: 2026-11-10 UTC+7.
 // @title: demo-kit - one engine behind every harness's install demo on the MCP install page.
-// @state: one runtime per .mcpDemo, started when it scrolls into view and restarted on resize; it owns the cursor, the taskbar dock, and each step's timing, nothing else.
+// @state: one runtime per .mcpDemo; it starts only when most of the demo is on screen, stops and restores the blank stage when the user scrolls away, and replays from the top when they return.
+// It owns the cursor, the taskbar dock, and each step's timing, nothing else.
 // @dependencies: none.
 
 // WHY ONE ENGINE FOR NINE DEMOS: every harness follows the same rhythm - the taskbar icon is pressed, the window opens, the server is added, the harness says "connected".
@@ -623,8 +624,9 @@
       } else {
         generation++;
         cursor.getAnimations().forEach((animation) => animation.cancel());
+        reset(generation);
       }
-    }, { threshold: 0.2 });
+    }, { threshold: 0.65 });
     observer.observe(demo);
 
     let resize;
