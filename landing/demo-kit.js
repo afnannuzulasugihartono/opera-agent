@@ -142,6 +142,16 @@
       }
     };
 
+    const typeText = async (el, token, text, pace) => {
+      guard(token);
+      if (!el) return;
+      el.textContent = '';
+      for (const char of text) {
+        el.textContent += char;
+        await wait(pace, token);
+      }
+    };
+
     const reveal = (el, token) => {
       if (!el) return;
       el.classList.add('is-on');
@@ -153,7 +163,7 @@
     };
 
     const reset = (token) => {
-      demo.classList.remove('is-open', 'is-modal', 'is-row', 'is-done', 'is-appform', 'is-menu', 'is-settings', 'is-advanced', 'is-toolsmenu', 'is-toggled', 'is-authing', 'is-writing', 'is-sent', 'is-ready', 'is-usermsg', 'is-solid', 'is-wizard', 'is-review', 'is-added', 'is-connected', 'is-customize', 'is-connectors', 'is-addpopover', 'is-adddialog', 'is-mcps', 'is-slash', 'is-authed', 'is-browser', 'is-slash-terminal', 'is-slash-mcp');
+      demo.classList.remove('is-open', 'is-modal', 'is-row', 'is-done', 'is-appform', 'is-menu', 'is-settings', 'is-advanced', 'is-toolsmenu', 'is-toggled', 'is-authing', 'is-writing', 'is-sent', 'is-ready', 'is-usermsg', 'is-solid', 'is-wizard', 'is-review', 'is-added', 'is-connected', 'is-customize', 'is-connectors', 'is-addpopover', 'is-adddialog', 'is-mcps', 'is-slash', 'is-authed', 'is-browser', 'is-slash-terminal', 'is-slash-mcp', 'is-tui', 'is-panel');
       const ocWelcome = demo.querySelector('#ocWelcome');
       if (ocWelcome) ocWelcome.style.display = '';
       const ocTerminal = demo.querySelector('#ocTerminal');
@@ -211,6 +221,10 @@
           if (target) target.textContent = '';
         }
       }
+      for (const scope of demo.querySelectorAll('.cliTui')) {
+        for (const el of scope.querySelectorAll('.is-on')) el.classList.remove('is-on');
+      }
+      for (const el of demo.querySelectorAll('.tuiTyped')) el.textContent = '';
       const toggle = demo.querySelector('.ddRowToggle');
       if (toggle) toggle.classList.remove('on');
       const nameField = demo.querySelector('#fieldName');
@@ -435,163 +449,96 @@
           break;
         }
         case 'codex': {
-          const cat = lines[0];
-          const block = lines[1];
-          const codex = lines[2];
-          const slash = lines[3];
-          const done = lines[4];
-          await typeLine(cat, token, TYPE_PACE);
-          await wait(320, token);
-          reveal(block, token);
-          await wait(340, token);
-          await typeLine(codex, token, TYPE_PACE + 4);
+          const [addLine, listLine, needsAuthLine, loginLine, okLine, codexCmd] = lines;
+          await press(addLine, token);
+          await typeLine(addLine, token, TYPE_PACE);
+          await wait(280, token);
+          await typeLine(listLine, token, TYPE_PACE);
           await wait(260, token);
-          await typeLine(slash, token, TYPE_PACE + 20);
+          reveal(needsAuthLine, token);
+          await wait(380, token);
+          await typeLine(loginLine, token, TYPE_PACE);
           await wait(300, token);
-          reveal(done, token);
+          demo.classList.add('is-browser');
+          await wait(1000, token);
+          await press(demo.querySelector('#codexConsentAllow'), token);
+          demo.classList.add('is-authed');
+          reveal(okLine, token);
+          await wait(1400, token);
+          demo.classList.remove('is-browser', 'is-authed');
+          await press(codexCmd, token);
+          await typeLine(codexCmd, token, TYPE_PACE);
+          await wait(520, token);
+          demo.classList.add('is-tui');
+          await wait(850, token);
+          demo.classList.add('is-connected');
+          await wait(1600, token);
           break;
         }
         case 'claude-code': {
-          const command = lines[0];
-          const added = lines[1];
-          const claude = lines[2];
-          const ready = lines[3];
-          await typeLine(command, token, TYPE_PACE);
-          await wait(340, token);
-          reveal(added, token);
-          await wait(260, token);
-          await typeLine(claude, token, TYPE_PACE + 4);
-          reveal(ready, token);
-          break;
-        }
-        case 'terminal': {
-          const npm = lines[0];
-          const added = lines[1];
-          const doctor = lines[2];
-          const verdict = lines[3];
-          await typeLine(npm, token, TYPE_PACE);
-          await wait(360, token);
-          reveal(added, token);
-          await wait(300, token);
-          await typeLine(doctor, token, TYPE_PACE);
-          await wait(340, token);
-          reveal(verdict, token);
-          break;
-        }
-        case 'opencode': {
-          const termCmd = demo.querySelector('#ocTermType');
-          const termDim = demo.querySelector('#ocTermDim');
-          const termOk = demo.querySelector('#ocTermOk');
-          const terminal = demo.querySelector('#ocTerminal');
-          const welcome = demo.querySelector('#ocWelcome');
-          const toolCard = demo.querySelector('#ocToolCard');
-          const metaRow = demo.querySelector('#ocMetaRow');
-          const working = demo.querySelector('#ocWorkingRow');
-          const shellCmd = demo.querySelector('#ocTermCmd');
-          const outDim = demo.querySelector('#ocOutDim');
-          const outOk = demo.querySelector('#ocOutOk');
-          const full = 'opencode mcp add opera-agent --url https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp';
-
-          termCmd.textContent = '';
-          shellCmd.textContent = '';
-          if (termDim) termDim.classList.remove('is-on');
-          if (termOk) termOk.classList.remove('is-on');
-          if (outDim) outDim.classList.remove('is-on');
-          if (outOk) outOk.classList.remove('is-on');
-          if (working) working.style.visibility = 'hidden';
-          if (terminal) terminal.style.display = 'none';
-          if (welcome) welcome.style.display = '';
-          if (toolCard) toolCard.style.display = 'none';
-          if (metaRow) metaRow.style.display = 'none';
-
-          const composer = demo.querySelector('.ocComposerBig');
-          await press(composer, token);
-          await wait(160, token);
-          demo.classList.add('is-writing');
-          const typed = demo.querySelector('#deskComposerTyped');
-          typed.textContent = '';
-          for (const char of '/terminal') {
-            typed.textContent += char;
-            await wait(TYPE_PACE + 8, token);
-          }
-          demo.classList.add('is-ready', 'is-slash-terminal');
-          await wait(560, token);
-          await press(demo.querySelector('.ocSlashTerminal'), token);
-          typed.textContent = '';
-          demo.classList.remove('is-writing', 'is-ready', 'is-slash-terminal');
-          if (welcome) welcome.style.display = 'none';
-          if (terminal) { terminal.style.display = ''; const row = demo.querySelector('#ocSplitRow'); if (row) row.classList.add('has-terminal'); }
-
-          await wait(200, token);
-          for (const char of full) {
-            termCmd.textContent += char;
-            await wait(4, token);
-          }
-          if (working) working.style.visibility = 'visible';
-          await wait(420, token);
-          if (termDim) termDim.classList.add('is-on');
+          const [addLine, addedLine, listLine, needsAuthLine, claudeCmd] = lines;
+          await press(addLine, token);
+          await typeLine(addLine, token, TYPE_PACE);
+          await wait(280, token);
+          reveal(addedLine, token);
+          await wait(280, token);
+          await typeLine(listLine, token, TYPE_PACE);
+          await wait(240, token);
+          reveal(needsAuthLine, token);
+          await wait(380, token);
+          await press(claudeCmd, token);
+          await typeLine(claudeCmd, token, TYPE_PACE);
+          await wait(480, token);
+          demo.classList.add('is-tui');
+          await wait(780, token);
+          await typeText(demo.querySelector('#claudeComposerTyped'), token, '/mcp', 80);
           await wait(430, token);
-          if (termOk) termOk.classList.add('is-on');
+          demo.querySelector('#claudeMcpAppLine').classList.add('is-on');
+          demo.querySelector('#claudeComposerTyped').textContent = '';
+          reveal(demo.querySelector('#claudeMcpPanel'), token);
+          await wait(880, token);
+          await press(demo.querySelector('#claudeOperaRow'), token);
           await wait(300, token);
-          if (working) working.style.visibility = 'hidden';
-          if (toolCard) toolCard.style.display = '';
-          if (metaRow) metaRow.style.display = '';
-          shellCmd.textContent = full;
-          await wait(160, token);
-          if (outDim) outDim.classList.add('is-on');
-          await wait(180, token);
-          if (outOk) outOk.classList.add('is-on');
-          await wait(420, token);
-
-          await press(composer, token);
-          await wait(150, token);
-          demo.classList.add('is-writing');
-          typed.textContent = '';
-          for (const char of '/mcp') {
-            typed.textContent += char;
-            await wait(TYPE_PACE + 9, token);
-          }
-          demo.classList.add('is-ready', 'is-slash-mcp');
-          await wait(540, token);
-          await press(demo.querySelector('.ocSlashMcp'), token);
-          typed.textContent = '';
-          demo.classList.remove('is-writing', 'is-ready', 'is-slash-mcp');
-          demo.classList.add('is-mcps');
-          await wait(750, token);
-
-          await press(demo.querySelector('#mcpSignIn'), token);
+          reveal(demo.querySelector('#claudeAuthRow'), token);
+          await wait(320, token);
+          await press(demo.querySelector('#claudeAuthRow'), token);
+          await wait(300, token);
           demo.classList.add('is-browser');
-          await wait(1100, token);
-          await press(demo.querySelector('#consentAllow'), token);
+          await wait(1000, token);
+          await press(demo.querySelector('#claudeConsentAllow'), token);
           demo.classList.add('is-authed');
-          await wait(1400, token);
-          demo.classList.remove('is-browser', 'is-authed');
-          demo.classList.add('is-connected');
+          reveal(demo.querySelector('#claudeTuiOkLine'), token);
           await wait(1500, token);
+          demo.classList.remove('is-browser');
+          demo.classList.add('is-connected');
+          await wait(1600, token);
           break;
         }
         case 'opencode-cli': {
-          const [addLine, needAuth, listLine, needAuth2, authLine, connectedLine] = lines;
+          const [addLine, listLine, needsAuthLine, authLine, okLine, opencodeCmd] = lines;
           await press(addLine, token);
           await typeLine(addLine, token, TYPE_PACE);
-          await wait(340, token);
-          reveal(needAuth, token);
-          await wait(300, token);
+          await wait(280, token);
           await typeLine(listLine, token, TYPE_PACE);
           await wait(260, token);
-          reveal(needAuth2, token);
+          reveal(needsAuthLine, token);
           await wait(380, token);
           await typeLine(authLine, token, TYPE_PACE);
-          await wait(240, token);
+          await wait(300, token);
           demo.classList.add('is-browser');
           await wait(1000, token);
           await press(demo.querySelector('#ocCliConsentAllow'), token);
           demo.classList.add('is-authed');
-          reveal(connectedLine, token);
-          await wait(1500, token);
+          reveal(okLine, token);
+          await wait(1400, token);
           demo.classList.remove('is-browser', 'is-authed');
+          await press(opencodeCmd, token);
+          await typeLine(opencodeCmd, token, TYPE_PACE);
+          await wait(520, token);
+          demo.classList.add('is-tui');
+          await wait(850, token);
           demo.classList.add('is-connected');
-          await wait(1500, token);
+          await wait(1600, token);
           break;
         }
         case 'vscode':

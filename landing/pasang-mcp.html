@@ -888,74 +888,209 @@
       <div class="mcpTrack">
         <article class="mcpCard" id="codex">
           <div class="mcpCardHead"><span class="mcpIndex" aria-hidden="true">01</span><h3 class="mcpCardTitle">Codex</h3></div>
-<div class="mcpDemo" data-agent="codex" aria-hidden="true">
+          <div class="mcpDemo" data-agent="codex" aria-hidden="true">
               <div class="ddCanvas">
                 <div class="ddIcons" aria-hidden="true">
                   <span class="ddIcon"><svg viewBox="0 0 24 24" class="ddPct"><rect x="3" y="5" width="18" height="12" rx="1.6" fill="none" stroke="var(--ink)" stroke-width="1.6"/><path d="M9 21h6M12 17v4" stroke="var(--ink)" stroke-width="1.6" stroke-linecap="round"/></svg><em>This PC</em></span>
                   <span class="ddIcon"><svg viewBox="0 0 24 24" class="ddPct"><path d="M11.3 2 6.2 12.4h4.6L9.3 22l7.4-10.9h-4.7L14.4 2z" style="fill:var(--accent)"/></svg><em>Opera Agent</em></span>
                 </div>
                 <div class="ddWin">
-                  <div class="ddTitleBar"><span class="ddBrand codex"><svg viewBox="0 0 24 24" class="brandMark" aria-hidden="true"><path d="M7 8l4 4-4 4M13 16h4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="ddTitle">Codex CLI</span><span class="ddGlyphs"><i class="ddMin"></i><i class="ddMax"></i><i class="ddClose"></i></span></div>
-                  <div class="ddTermBody"><span class="ddLine " data-line="0" data-raw='cat ~/.codex/config.toml'><span class="ddPrompt">$ </span><span class="ddLineText"></span></span><span class="ddLine dim" data-line="1">[mcp_servers.opera-agent]
-        url = "https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp"
-        headers = { "X-Opera-Device" = "opera", "X-Opera-Provider" = "codex", "x-region" = "ap-southeast-1" }
-        startup_timeout_sec = 30</span><span class="ddLine " data-line="2" data-raw='codex'><span class="ddPrompt">$ </span><span class="ddLineText"></span></span><span class="ddLine dim" data-line="3" data-raw='/mcp'><span class="ddPrompt">$ </span><span class="ddLineText"></span></span><span class="ddLine ok" data-line="4">opera-agent   35 tools · connected</span></div>
+                  <div class="ddTitleBar"><span class="ddBrand codex"><svg viewBox="0 0 24 24" class="brandMark" aria-hidden="true"><path d="M7 8l4 4-4 4M13 16h4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="ddTitle">PowerShell - Codex CLI</span><span class="ddGlyphs"><i class="ddMin"></i><i class="ddMax"></i><i class="ddClose"></i></span></div>
+                  <div class="ddTermBody"><span class="ddLine " data-line="0" data-raw='codex mcp add opera-agent --url https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp'><span class="ddPrompt">PS C:\proyek&gt;</span> <span class="ddLineText"></span></span><span class="ddLine " data-line="1" data-raw='codex mcp list'><span class="ddPrompt">PS C:\proyek&gt;</span> <span class="ddLineText"></span></span><span class="ddLine dim" data-line="2">opera-agent   needs authentication</span><span class="ddLine " data-line="3" data-raw='codex mcp login opera-agent'><span class="ddPrompt">PS C:\proyek&gt;</span> <span class="ddLineText"></span></span><span class="ddLine ok" data-line="4">opera-agent   ✓ connected · 35 tools</span><span class="ddLine " data-line="5" data-raw='codex'><span class="ddPrompt">PS C:\proyek&gt;</span> <span class="ddLineText"></span></span><span class="ddLine " data-line="6"><span class="ddPrompt">PS C:\proyek&gt;</span> <span class="ocTermCaret"></span></span></div>
+
+                <div class="cliTui tuiCodex">
+                  <div class="codexBox">
+                    <div class="codexLine cBrand"><span class="cPromptMark">&gt;_</span> OpenAI Codex</div>
+                    <div class="codexLine cDim"><span class="cKey">model:</span><span class="cVal">gpt-5.1-codex medium</span><span class="cFaint">&nbsp;&nbsp;/model to change</span></div>
+                    <div class="codexLine cDim"><span class="cKey">directory:</span><span class="cVal">~/proyek</span></div>
+                  </div>
+                  <p class="codexCaption">To get started, describe a task or try one of these commands:</p>
+                  <ul class="codexList">
+                    <li><span class="cCmd">/init</span><span class="cFaint"> - create an AGENTS.md file with instructions for Codex</span></li>
+                    <li><span class="cCmd">/status</span><span class="cFaint"> - show current session configuration</span></li>
+                    <li><span class="cCmd">/permissions</span><span class="cFaint"> - choose what Codex is allowed to do</span></li>
+                    <li><span class="cCmd">/model</span><span class="cFaint"> - choose what model and reasoning effort to use</span></li>
+                    <li><span class="cCmd">/review</span><span class="cFaint"> - review any changes and find issues</span></li>
+                  </ul>
+                  <div class="codexComposer"><span class="cComposerCaret">›</span><span class="tuiTyped" id="codexComposerTyped"></span><span class="tuiCaret"></span></div>
+                  <div class="codexFoot"><span class="cFoot">100% context left</span><span class="cFootSep">·</span><span class="cFootDim">? for shortcuts</span></div>
+                </div>
+                
+                </div>
+                <div class="ddWin ocBrowserWin">
+                  <div class="ocBowTitle" aria-hidden="true">
+                    <span class="ocBowTab"><svg viewBox="0 0 24 24" width="13" height="13" aria-hidden="true"><path d="M11.3 2 6.2 12.4h4.6L9.3 22l7.4-10.9h-4.7L14.4 2z" fill="var(--accent)"/></svg>Izin aplikasi — Opera Agent<span class="ocBowTabClose"><svg viewBox="0 0 24 24" width="10" height="10" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></span></span>
+                    <span class="ocBowGlyphs"><i class="ddMin"></i><i class="ddMax"></i><i class="ddClose"></i></span>
+                  </div>
+                  <div class="ocBowBar" aria-hidden="true">
+                    <span class="ocBowNavBtn"><svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path d="M15 6l-6 6 6 6" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                    <span class="ocBowNavBtn"><svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                    <span class="ocBowNavBtn"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.4-5.7M20 3.5v5h-5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                    <span class="ocBowUrl"><svg viewBox="0 0 24 24" width="12" height="12" aria-hidden="true"><rect x="5" y="10.5" width="14" height="9.5" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>opera-agent.pages.dev/oauth/consent<span class="ocBowUrlFaint">?authorization_id=auth_&#8230;</span></span>
+                  </div>
+                  <div class="ocConsent">
+                    <h1 class="ocConsentH1">Izin aplikasi</h1>
+                    <p class="ocConsentSub">Tinjau dan pilih izin.</p>
+                    <div class="ocConsentCard">
+                      <h2 class="ocConsentClient">Codex</h2>
+                      <dl class="ocConsentFacts">
+                        <dt>Aplikasi</dt><dd>Codex</dd>
+                        <dt>Kode dikirim ke</dt><dd>127.0.0.1:52817</dd>
+                        <dt>Yang diminta</dt>
+                        <dd><ul class="ocConsentScopes">
+                          <li><strong>openid</strong> - identitas dasar akun Anda</li>
+                          <li><strong>email</strong> - alamat email Anda</li>
+                          <li><strong>profile</strong> - nama dan foto profil Anda</li>
+                          <li><strong>offline_access</strong> - akses berkelanjutan</li>
+                        </ul></dd>
+                        <dt>Akun Anda</dt><dd>afnan@opera-agent.com</dd>
+                      </dl>
+                      <p class="ocConsentNote">Kode hanya dikirim ke 127.0.0.1. Opera Agent memblokir password, kode sekali pakai, dan pembayaran.</p>
+                      <div class="ocConsentRow">
+                        <button class="ocConsentAllow" id="codexConsentAllow" type="button">Izinkan</button>
+                        <button class="ocConsentDeny" type="button">Tolak</button>
+                      </div>
+                      <div class="ocConsentDecided"><svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M5 12.5 9.5 17 19 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>Izin diberikan - kembali ke terminal</div>
+                    </div>
+                  </div>
                 </div>
                 <span class="ddTaskbar"><span class="ddTb"><svg viewBox="0 0 22 22" aria-hidden="true"><path fill="#00adef" d="M3 4.5h7.4v7.4H3zM11.6 4.5H19v7.4h-7.4zM3 12.6h7.4v7.4H3zM11.6 12.6H19v7.4h-7.4z"/></svg></span><span class="ddTb"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6" fill="none" stroke="var(--ink)" stroke-width="1.7"/><path d="M15.5 15.5 21 21" stroke="var(--ink)" stroke-width="1.7" stroke-linecap="round"/></svg></span><span class="ddTb"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8" fill="none" stroke="var(--ink)" stroke-width="1.9"/><circle cx="12" cy="12" r="3.6" fill="none" stroke="var(--ink)" stroke-width="1.3"/></svg></span><span class="ddTb"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8A2 2 0 0 1 5 6h4.6l2 2H19a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8z" fill="var(--yellow)"/></svg></span><span class="ddTb ddTbAgent"><span class="ddBrand codex"><svg viewBox="0 0 24 24" class="brandMark" aria-hidden="true"><path d="M7 8l4 4-4 4M13 16h4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span></span></span>
                 <span class="demoCursor ddCursor"><svg viewBox="0 0 24 24" class="cursorArrow"><path d="M5 3 19 12.5l-6.5 1.4L9 20z" style="fill:var(--ink);stroke:var(--surface);stroke-width:1.3;stroke-linejoin:round"/></svg></span>
                 <span class="ddRipple"></span>
-                <span class="ddChip">35 tools · connected</span>
+                <span class="ddChip">35 tools &middot; connected</span>
               </div>
-              <ol class="steps srOnly"><li>Baca konfigurasi di ~/.codex/config.toml.</li><li>Jalankan /mcp dan lihat opera-agent.</li></ol>
+              <ol class="steps srOnly"><li>codex mcp add opera-agent --url https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp.</li><li>codex mcp list menampilkan "needs authentication"; jalankan codex mcp login opera-agent.</li><li>Browser terbuka ke halaman Izin aplikasi Opera Agent; klik Izinkan.</li><li>opera-agent langsung connected; tools muncul sebagai opera-agent_*.</li></ol>
             </div>
           <details class="stepsDrop">
             <summary>Langkah-langkah</summary>
             <div class="stepsDropBody">
-<p>Tambahkan ke <code>~/.codex/config.toml</code>, ganti <code>opera</code> dengan nama device Anda:</p>
+        <p>Satu perintah dari terminal:</p>
             <div class="copybox">
-                <pre><code id="cfg-codex">[mcp_servers.opera-agent]
-        url = "https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp"
-        headers = { "X-Opera-Device" = "opera", "X-Opera-Provider" = "codex", "x-region" = "ap-southeast-1" }
-        startup_timeout_sec = 30</code></pre>
+                <pre><code id="cfg-codex">codex mcp add opera-agent --url https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp</code></pre>
                 <button type="button" data-copy="cfg-codex" data-i18n="copy">Salin</button>
               </div>
-            <p>Codex akan menandatangani OAuth-nya sendiri. Verifikasi dengan menanyakan status, atau ketik <code>/mcp</code> di Codex dan lihat <code>opera-agent</code> di daftar.</p>
+        <p>Cek status; kalau <code>needs authentication</code>, jalankan login - browser terbuka ke halaman izin Opera Agent:</p>
+            <div class="copybox">
+                <pre><code id="cfg-codex-auth">codex mcp list
+codex mcp login opera-agent</code></pre>
+                <button type="button" data-copy="cfg-codex-auth" data-i18n="copy">Salin</button>
+              </div>
+        <p>Klik <strong>Izinkan</strong> di browser - terminal menampilkan connected. Remote server pakai OAuth, tidak perlu mengisi token. Di sesi codex, ketik <code>/mcp</code> untuk melihat server yang terhubung. Codex CLI, aplikasi desktop, dan IDE extension berbagi konfigurasi yang sama - tidak perlu diulang antar permukaan.</p>
+        <p>Atau edit <code>~/.codex/config.toml</code> langsung:</p>
+            <div class="copybox">
+                <pre><code id="cfg-codex-json">[mcp_servers.opera-agent]
+url = "https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp"</code></pre>
+                <button type="button" data-copy="cfg-codex-json" data-i18n="copy">Salin</button>
+              </div>
             </div>
           </details>
         </article>
         <article class="mcpCard" id="claude-code">
           <div class="mcpCardHead"><span class="mcpIndex" aria-hidden="true">02</span><h3 class="mcpCardTitle">Claude Code</h3></div>
-<div class="mcpDemo" data-agent="claude-code" aria-hidden="true">
+          <div class="mcpDemo" data-agent="claude-code" aria-hidden="true">
               <div class="ddCanvas">
                 <div class="ddIcons" aria-hidden="true">
                   <span class="ddIcon"><svg viewBox="0 0 24 24" class="ddPct"><rect x="3" y="5" width="18" height="12" rx="1.6" fill="none" stroke="var(--ink)" stroke-width="1.6"/><path d="M9 21h6M12 17v4" stroke="var(--ink)" stroke-width="1.6" stroke-linecap="round"/></svg><em>This PC</em></span>
                   <span class="ddIcon"><svg viewBox="0 0 24 24" class="ddPct"><path d="M11.3 2 6.2 12.4h4.6L9.3 22l7.4-10.9h-4.7L14.4 2z" style="fill:var(--accent)"/></svg><em>Opera Agent</em></span>
                 </div>
                 <div class="ddWin">
-                  <div class="ddTitleBar"><span class="ddBrand cc"><svg viewBox="0 0 24 24" class="brandMark" aria-hidden="true"><path d="M12 3a1.4 1.4 0 0 1 1.2.8l.9 2.5 2.2-1.4-1.2 2 2.2 1.2-2.4 1 2.4 1.1-2.2 1.3 1.3 2-2.2-1.4-.9 2.5-1.3-2.3H8l-1.3 2.3-.9-2.5-2.2 1.3 1.3-2-2.4-1.1 2.4-1-2.4-1 2.2-1.2-1.2-2 2.2 1.4.9-2.5a1.4 1.4 0 0 1 1.3-.9h2.4z" fill="currentColor"/><circle cx="12" cy="12" r="2.3" fill="var(--surface)"/></svg></span><span class="ddTitle">Claude Code</span><span class="ddGlyphs"><i class="ddMin"></i><i class="ddMax"></i><i class="ddClose"></i></span></div>
-                  <div class="ddTermBody"><span class="ddLine " data-line="0" data-raw='claude mcp add --transport http opera-agent https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp --header "X-Opera-Device: opera" --header "X-Opera-Provider: claude" --header "x-region: ap-southeast-1"'><span class="ddPrompt">$ </span><span class="ddLineText"></span></span><span class="ddLine ok" data-line="1">Added opera-agent · 35 tools</span><span class="ddLine " data-line="2" data-raw='claude'><span class="ddPrompt">$ </span><span class="ddLineText"></span></span><span class="ddLine dim" data-line="3">Loading opera-agent… 35 tools ready</span></div>
+                  <div class="ddTitleBar"><span class="ddBrand cc"><svg viewBox="0 0 24 24" class="brandMark" aria-hidden="true"><path d="M12 3a1.4 1.4 0 0 1 1.2.8l.9 2.5 2.2-1.4-1.2 2 2.2 1.2-2.4 1 2.4 1.1-2.2 1.3 1.3 2-2.2-1.4-.9 2.5-1.3-2.3H8l-1.3 2.3-.9-2.5-2.2 1.3 1.3-2-2.4-1.1 2.4-1-2.4-1 2.2-1.2-1.2-2 2.2 1.4.9-2.5a1.4 1.4 0 0 1 1.3-.9h2.4z" fill="currentColor"/><circle cx="12" cy="12" r="2.3" fill="var(--surface)"/></svg></span><span class="ddTitle">PowerShell - Claude Code</span><span class="ddGlyphs"><i class="ddMin"></i><i class="ddMax"></i><i class="ddClose"></i></span></div>
+                  <div class="ddTermBody"><span class="ddLine " data-line="0" data-raw='claude mcp add --transport http opera-agent https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp'><span class="ddPrompt">PS C:\proyek&gt;</span> <span class="ddLineText"></span></span><span class="ddLine ok clAddLine" data-line="1">Added HTTP MCP server opera-agent with URL: https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp to local config</span><span class="ddLine " data-line="2" data-raw='claude mcp list'><span class="ddPrompt">PS C:\proyek&gt;</span> <span class="ddLineText"></span></span><span class="ddLine dim" data-line="3">opera-agent   ! Needs authentication</span><span class="ddLine " data-line="4" data-raw='claude'><span class="ddPrompt">PS C:\proyek&gt;</span> <span class="ddLineText"></span></span><span class="ddLine " data-line="5"><span class="ddPrompt">PS C:\proyek&gt;</span> <span class="ocTermCaret"></span></span></div>
+
+                <div class="cliTui tuiClaude">
+                  <div class="claudeWelcome">
+                    <svg class="claudeCreature" viewBox="0 0 12 9" width="54" height="42" aria-hidden="true"><path d="M2 0h2v2H2zM8 0h2v2H8zM1 2h10v1H1zM0 3h12v3H0zM1 6h2v2H1zM5 6h2v2H5zM9 6h2v2H9z" fill="#d97757"/><rect x="3.3" y="3.5" width="1.5" height="1.7" fill="#112e33"/><rect x="7.2" y="3.5" width="1.5" height="1.7" fill="#112e33"/></svg>
+                    <div class="claudeWelcomeText">
+                      <div class="claudeHi">Claude Code <span class="claudeVersion">v2.0.44</span></div>
+                      <div class="claudeMeta">Sonnet 4.5 · Claude Pro</div>
+                      <div class="claudeMeta">~/proyek</div>
+                    </div>
+                  </div>
+                  <div class="claudeDivider"></div>
+                  <div class="claudeTranscript">
+                    <div class="claudeAppLine" id="claudeMcpAppLine"><span class="claudePrompt">&gt;</span> /mcp</div>
+                    <div class="claudeMcpPanel" id="claudeMcpPanel">
+                      <div class="claudePanelTitle">MCP Servers</div>
+                      <div class="claudeRow claudeRowOpera is-selected" id="claudeOperaRow"><span class="claudeDot need" id="claudeOperaDot"></span><span class="claudeTool">opera-agent</span><span class="claudeRowRight rNeed" id="claudeOperaNeed">! Needs authentication</span><span class="claudeRowRight rConn" id="claudeOperaConn">✔ Connected · 35 tools</span></div>
+                      <div class="claudeAuthRow" id="claudeAuthRow"><span class="kbd">Enter</span> Authenticate</div>
+                      <div class="claudeRow"><span class="claudeDot ok"></span><span class="claudeTool">github</span><span class="claudeRowRight claudeDimRow">✔ Connected</span></div>
+                      <div class="claudePanelHint"><span class="kbd">↑↓</span> pilih&nbsp;&nbsp;<span class="kbd">Enter</span> authenticate&nbsp;&nbsp;<span class="kbd">esc</span> batal</div>
+                    </div>
+                    <div class="claudeOkLine" id="claudeTuiOkLine"><span class="claudeOk">✔</span> opera-agent · Connected · <span class="claudeDimRow">35 tools</span></div>
+                  </div>
+                  <div class="claudeDivider"></div>
+                  <div class="claudeComposer"><span class="claudePrompt">&gt;</span><span class="tuiTyped" id="claudeComposerTyped"></span><span class="tuiCaret"></span></div>
+                  <div class="claudeDivider"></div>
+                  <div class="claudeFoot"><span>proyek&nbsp;<span class="claudeBranch">(main)</span></span><span class="claudeThinking">Thinking on <span class="claudeThinkingHint">(tab to toggle)</span></span></div>
+                </div>
+                
+                </div>
+                <div class="ddWin ocBrowserWin">
+                  <div class="ocBowTitle" aria-hidden="true">
+                    <span class="ocBowTab"><svg viewBox="0 0 24 24" width="13" height="13" aria-hidden="true"><path d="M11.3 2 6.2 12.4h4.6L9.3 22l7.4-10.9h-4.7L14.4 2z" fill="var(--accent)"/></svg>Izin aplikasi — Opera Agent<span class="ocBowTabClose"><svg viewBox="0 0 24 24" width="10" height="10" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></span></span>
+                    <span class="ocBowGlyphs"><i class="ddMin"></i><i class="ddMax"></i><i class="ddClose"></i></span>
+                  </div>
+                  <div class="ocBowBar" aria-hidden="true">
+                    <span class="ocBowNavBtn"><svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path d="M15 6l-6 6 6 6" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                    <span class="ocBowNavBtn"><svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                    <span class="ocBowNavBtn"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.4-5.7M20 3.5v5h-5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                    <span class="ocBowUrl"><svg viewBox="0 0 24 24" width="12" height="12" aria-hidden="true"><rect x="5" y="10.5" width="14" height="9.5" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>opera-agent.pages.dev/oauth/consent<span class="ocBowUrlFaint">?authorization_id=auth_&#8230;</span></span>
+                  </div>
+                  <div class="ocConsent">
+                    <h1 class="ocConsentH1">Izin aplikasi</h1>
+                    <p class="ocConsentSub">Tinjau dan pilih izin.</p>
+                    <div class="ocConsentCard">
+                      <h2 class="ocConsentClient">Claude Code</h2>
+                      <dl class="ocConsentFacts">
+                        <dt>Aplikasi</dt><dd>Claude Code</dd>
+                        <dt>Kode dikirim ke</dt><dd>127.0.0.1:52817</dd>
+                        <dt>Yang diminta</dt>
+                        <dd><ul class="ocConsentScopes">
+                          <li><strong>openid</strong> - identitas dasar akun Anda</li>
+                          <li><strong>email</strong> - alamat email Anda</li>
+                          <li><strong>profile</strong> - nama dan foto profil Anda</li>
+                          <li><strong>offline_access</strong> - akses berkelanjutan</li>
+                        </ul></dd>
+                        <dt>Akun Anda</dt><dd>afnan@opera-agent.com</dd>
+                      </dl>
+                      <p class="ocConsentNote">Kode hanya dikirim ke 127.0.0.1. Opera Agent memblokir password, kode sekali pakai, dan pembayaran.</p>
+                      <div class="ocConsentRow">
+                        <button class="ocConsentAllow" id="claudeConsentAllow" type="button">Izinkan</button>
+                        <button class="ocConsentDeny" type="button">Tolak</button>
+                      </div>
+                      <div class="ocConsentDecided"><svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M5 12.5 9.5 17 19 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>Izin diberikan - kembali ke terminal</div>
+                    </div>
+                  </div>
                 </div>
                 <span class="ddTaskbar"><span class="ddTb"><svg viewBox="0 0 22 22" aria-hidden="true"><path fill="#00adef" d="M3 4.5h7.4v7.4H3zM11.6 4.5H19v7.4h-7.4zM3 12.6h7.4v7.4H3zM11.6 12.6H19v7.4h-7.4z"/></svg></span><span class="ddTb"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6" fill="none" stroke="var(--ink)" stroke-width="1.7"/><path d="M15.5 15.5 21 21" stroke="var(--ink)" stroke-width="1.7" stroke-linecap="round"/></svg></span><span class="ddTb"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8" fill="none" stroke="var(--ink)" stroke-width="1.9"/><circle cx="12" cy="12" r="3.6" fill="none" stroke="var(--ink)" stroke-width="1.3"/></svg></span><span class="ddTb"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8A2 2 0 0 1 5 6h4.6l2 2H19a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8z" fill="var(--yellow)"/></svg></span><span class="ddTb ddTbAgent"><span class="ddBrand cc"><svg viewBox="0 0 24 24" class="brandMark" aria-hidden="true"><path d="M12 3a1.4 1.4 0 0 1 1.2.8l.9 2.5 2.2-1.4-1.2 2 2.2 1.2-2.4 1 2.4 1.1-2.2 1.3 1.3 2-2.2-1.4-.9 2.5-1.3-2.3H8l-1.3 2.3-.9-2.5-2.2 1.3 1.3-2-2.4-1.1 2.4-1-2.4-1 2.2-1.2-1.2-2 2.2 1.4.9-2.5a1.4 1.4 0 0 1 1.3-.9h2.4z" fill="currentColor"/><circle cx="12" cy="12" r="2.3" fill="var(--surface)"/></svg></span></span></span>
                 <span class="demoCursor ddCursor"><svg viewBox="0 0 24 24" class="cursorArrow"><path d="M5 3 19 12.5l-6.5 1.4L9 20z" style="fill:var(--ink);stroke:var(--surface);stroke-width:1.3;stroke-linejoin:round"/></svg></span>
                 <span class="ddRipple"></span>
-                <span class="ddChip">35 tools · connected</span>
+                <span class="ddChip">35 tools &middot; connected</span>
               </div>
-              <ol class="steps srOnly"><li>Tambahkan server via claude mcp add.</li><li>Claude akan menautkan OAuth dan memuat tool.</li></ol>
+              <ol class="steps srOnly"><li>claude mcp add --transport http opera-agent https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp.</li><li>claude mcp list menampilkan "! Needs authentication".</li><li>Ketik /mcp di sesi Claude Code, pilih opera-agent, tekan Enter (Authenticate); browser terbuka ke halaman Izin aplikasi Opera Agent.</li><li>klik Izinkan - opera-agent langsung connected; tools muncul sebagai opera-agent_*.</li></ol>
             </div>
           <details class="stepsDrop">
             <summary>Langkah-langkah</summary>
             <div class="stepsDropBody">
-<p>Di terminal, ganti <code>opera</code> dengan nama device Anda:</p>
+        <p>Satu perintah dari terminal (bukan di dalam sesi <code>claude</code>):</p>
             <div class="copybox">
-                <pre><code id="cfg-claude-code">claude mcp add --transport http opera-agent https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp --header "X-Opera-Device: opera" --header "X-Opera-Provider: claude" --header "x-region: ap-southeast-1"</code></pre>
+                <pre><code id="cfg-claude-code">claude mcp add --transport http opera-agent https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp</code></pre>
                 <button type="button" data-copy="cfg-claude-code" data-i18n="copy">Salin</button>
               </div>
-            <p>Verifikasi: <code>claude mcp list</code> harus menampilkan <code>opera-agent</code>.</p>
-            <p>Mode lokal (npm), untuk mesin yang sama:</p>
+        <p>Cek status; kalau muncul <code>! Needs authentication</code>, ketik <code>/mcp</code> di sesi Claude Code, pilih <code>opera-agent</code>, tekan Enter dan pilih <strong>Authenticate</strong> - browser terbuka ke halaman izin Opera Agent. <code>--scope user</code> untuk berlaku di semua proyek, atau biarkan bawaan (local project).</p>
+        <p>Untuk berlaku di satu project (dan bisa di-commit), tulis <code>.mcp.json</code> di root repo:</p>
             <div class="copybox">
-                <pre><code id="cfg-claude-code-stdio">claude mcp add opera-agent -- npx -y opera-agent-mcp local</code></pre>
-                <button type="button" data-copy="cfg-claude-code-stdio" data-i18n="copy">Salin</button>
+                <pre><code id="cfg-claude-code-json">{
+  "mcpServers": {
+    "opera-agent": {
+      "type": "http",
+      "url": "https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp"
+    }
+  }
+}</code></pre>
+                <button type="button" data-copy="cfg-claude-code-json" data-i18n="copy">Salin</button>
               </div>
+        <p>Remote server pakai OAuth otomatis - tidak perlu token. Setelah login, <code>claude mcp list</code> menampilkan <code>✔ Connected</code>. Mode lokal, untuk mesin yang sama: <code>claude mcp add opera-agent -- npx -y opera-agent-mcp local</code>.</p>
             </div>
           </details>
         </article>
@@ -969,7 +1104,25 @@
                 </div>
                 <div class="ddWin">
                   <div class="ddTitleBar"><span class="ddBrand"><svg viewBox="0 0 24 24" class="brandMark" aria-hidden="true"><path d="M10.6 3.5 4.5 12.5 10.6 21.5 13.5 19.7 8 12.5 13.5 5.3zM17.2 7 12.5 12 17.2 17z" fill="currentColor"/></svg></span><span class="ddTitle">PowerShell — OpenCode</span><span class="ddGlyphs"><i class="ddMin"></i><i class="ddMax"></i><i class="ddClose"></i></span></div>
-                  <div class="ddTermBody"><span class="ddLine " data-line="0" data-raw='opencode mcp add opera-agent --url https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp'><span class="ddPrompt">PS C:\proyek&gt;</span> <span class="ddLineText"></span></span><span class="ddLine dim" data-line="1">Status: needs authentication</span><span class="ddLine " data-line="2" data-raw='opencode mcp list'><span class="ddPrompt">PS C:\proyek&gt;</span> <span class="ddLineText"></span></span><span class="ddLine dim" data-line="3">opera-agent   needs authentication</span><span class="ddLine " data-line="4" data-raw='opencode mcp auth opera-agent'><span class="ddPrompt">PS C:\proyek&gt;</span> <span class="ddLineText"></span></span><span class="ddLine ok" data-line="5">opera-agent   ✓ connected · 35 tools</span><span class="ddLine " data-line="6"><span class="ddPrompt">PS C:\proyek&gt;</span> <span class="ocTermCaret"></span></span></div>
+                  <div class="ddTermBody"><span class="ddLine " data-line="0" data-raw='opencode mcp add opera-agent --url https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp'><span class="ddPrompt">PS C:\proyek&gt;</span> <span class="ddLineText"></span></span><span class="ddLine " data-line="1" data-raw='opencode mcp list'><span class="ddPrompt">PS C:\proyek&gt;</span> <span class="ddLineText"></span></span><span class="ddLine dim" data-line="2">opera-agent   needs authentication</span><span class="ddLine " data-line="3" data-raw='opencode mcp auth opera-agent'><span class="ddPrompt">PS C:\proyek&gt;</span> <span class="ddLineText"></span></span><span class="ddLine ok" data-line="4">✓ opera-agent connected · 35 tools</span><span class="ddLine " data-line="5" data-raw='opencode'><span class="ddPrompt">PS C:\proyek&gt;</span> <span class="ddLineText"></span></span><span class="ddLine " data-line="6"><span class="ddPrompt">PS C:\proyek&gt;</span> <span class="ocTermCaret"></span></span></div>
+
+                <div class="cliTui tuiOc">
+                  <div class="oc2Stage">
+                    <div class="oc2Logo">OPENCODE<span class="oc2Version">v2</span></div>
+                    <div class="oc2CmdTable">
+                      <div class="oc2CmdRow"><span class="oc2Cmd">/new</span><span class="oc2CmdDesc">new session</span><span class="oc2CmdKey">ctrl+x n</span></div>
+                      <div class="oc2CmdRow"><span class="oc2Cmd">/help</span><span class="oc2CmdDesc">show help</span><span class="oc2CmdKey"></span></div>
+                      <div class="oc2CmdRow"><span class="oc2Cmd">/models</span><span class="oc2CmdDesc">list models</span><span class="oc2CmdKey">ctrl+x m</span></div>
+                      <div class="oc2CmdRow"><span class="oc2Cmd">/themes</span><span class="oc2CmdDesc">list themes</span><span class="oc2CmdKey">ctrl+x t</span></div>
+                      <div class="oc2CmdRow"><span class="oc2Cmd">/sessions</span><span class="oc2CmdDesc">list sessions</span><span class="oc2CmdKey">ctrl+x l</span></div>
+                      <div class="oc2CmdRow"><span class="oc2Cmd">/exit</span><span class="oc2CmdDesc">exit</span><span class="oc2CmdKey">ctrl+x q</span></div>
+                    </div>
+                    <div class="oc2ComposerBox">
+                      <div class="oc2PromptRow"><span class="oc2Prompt">&gt;</span><span class="tuiTyped" id="opencodeComposerTyped"></span><span class="tuiCaret"></span><span class="oc2PromptHint">enter send</span></div>
+                    </div>
+                  </div>
+                  <div class="oc2StatusBar"><span class="oc2VersionLeft">opencode v2</span><span class="oc2BuildChip"><span class="oc2TabKey">tab</span><span class="oc2BuildChipText">BUILD AGENT</span></span></div>
+                </div>
                 </div>
                 <div class="ddWin ocBrowserWin">
                   <div class="ocBowTitle" aria-hidden="true">

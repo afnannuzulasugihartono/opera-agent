@@ -1319,3 +1319,98 @@ html.js .quickStart.in .quickDoor:nth-child(3) { animation-delay: .19s; }
 .kiloStatusLeft { display: flex; align-items: center; gap: 6px; }
 .kiloStatusDot { width: 6px; height: 6px; border-radius: 50%; background: #3fdd78; }
 .kiloStatusRight { font-family: var(--mono); color: #6f6d64; }
+.mcpDemo[data-agent="codex"] .ddTermBody,
+.mcpDemo[data-agent="claude-code"] .ddTermBody,
+.mcpDemo[data-agent="opencode-cli"] .ddTermBody { font-size: 10.5px; line-height: 1.65; padding: 14px 16px; display: flex; flex-direction: column; align-items: stretch; gap: 8px; }
+.mcpDemo[data-agent="codex"] .ddTermBody .ddLine,
+.mcpDemo[data-agent="claude-code"] .ddTermBody .ddLine,
+.mcpDemo[data-agent="opencode-cli"] .ddTermBody .ddLine { white-space: pre-wrap; word-break: break-word; }
+.ddPrompt.ddPromptIn { color: var(--accent); font-weight: 600; }
+.mcpDemo[data-agent="codex"] .cliTui,
+.mcpDemo[data-agent="claude-code"] .cliTui,
+.mcpDemo[data-agent="opencode-cli"] .cliTui { display: none; flex: 1; min-height: 0; flex-direction: column; }
+.mcpDemo.is-tui[data-agent="codex"] .cliTui,
+.mcpDemo.is-tui[data-agent="claude-code"] .cliTui,
+.mcpDemo.is-tui[data-agent="opencode-cli"] .cliTui { display: flex; }
+.mcpDemo.is-tui .ddTermBody { display: none; }
+.mcpDemo[data-agent="codex"] .cliTui { background: #0e0f12; color: #e8e6de; font: 10.5px/1.55 var(--mono); padding: 10px 12px; gap: 6px; }
+.mcpDemo[data-agent="claude-code"] .cliTui { background: #112e33; color: #e8e6dc; font: 10.5px/1.6 "Segoe UI", system-ui, sans-serif; padding: 10px 12px 11px; gap: 5px; }
+.mcpDemo[data-agent="opencode-cli"] .cliTui { background: #050505; color: #f0f0f0; font: 10.5px/1.6 var(--mono); }
+.tuiCaret { display: inline-block; width: 6px; height: 11px; background: #f2f2f2; vertical-align: -1px; animation: tuiBlink 1.15s steps(1) infinite; }
+@keyframes tuiBlink { 0%, 60% { opacity: 1; } 61%, 100% { opacity: 0; } }
+.cliTui .is-on { opacity: 1 !important; }
+.codexBox { border: 1px solid #2b2b30; border-radius: 14px; background: #141419; padding: 8px 14px; display: grid; gap: 2px; }
+.codexLine { display: flex; gap: 8px; align-items: baseline; }
+.cBrand { color: #eceae2; font-weight: 700; letter-spacing: .02em; }
+.cPromptMark { color: #10a37f; font-weight: 700; }
+.cKey { color: #6e6e78; width: 74px; flex: none; }
+.cVal { color: #eceae2; }
+.cFaint { color: #5a5a62; }
+.codexCaption { color: #9a9aa2; font-size: 9px; margin: 1px 2px; }
+.codexList { list-style: none; margin: 0 2px; padding: 0; display: grid; gap: 1px; font-size: 9.5px; }
+.codexList li { display: flex; gap: 8px; }
+.cCmd { color: #8f8f98; flex: none; }
+.codexTranscript { display: grid; gap: 4px; margin: 4px 2px 0; min-height: 0; }
+.codexAppLine, .codexOutLine { opacity: 0; transition: opacity .24s var(--ease); display: flex; align-items: center; gap: 6px; }
+.codexAppLine { color: #eceae2; }
+.codexOutLine { color: #9a9aa2; }
+.cDot { width: 6px; height: 6px; border-radius: 50%; background: #32d583; flex: none; }
+.codexComposer { margin-top: auto; display: flex; gap: 8px; border-top: 1px solid #232329; padding: 7px 2px 0; color: #eceae2; align-items: center; }
+.codexFoot { display: flex; gap: 6px; color: #6e6e78; font-size: 8.5px; padding: 1px 2px 0; }
+.cFootSep { color: #3c3c44; }
+.claudeWelcome { display: flex; gap: 12px; align-items: center; padding: 2px 2px 4px; }
+.claudeCreature { flex: none; }
+.claudeHi { font-size: 13px; font-weight: 700; color: #eceae0; letter-spacing: -.01em; }
+.claudeVersion { color: #8ba8a4; font-weight: 500; font-size: 10px; font-family: var(--mono); margin-left: 2px; }
+.claudeMeta { color: #a9b8b3; font-size: 9px; font-family: var(--mono); }
+.claudeDivider { height: 1px; background: #24454a; margin: 0 -2px; }
+.claudeTranscript { display: grid; gap: 4px; padding: 1px 2px; min-height: 0; align-content: start; }
+.claudeAppLine { background: #1d383e; color: #e8e6dc; font-family: var(--mono); font-size: 9.5px; padding: 3px 7px; border-radius: 3px; opacity: 0; transition: opacity .24s var(--ease); }
+.claudeMcpPanel { opacity: 0; transition: opacity .26s var(--ease); background: #16333a; border: 1px solid #24454a; border-radius: 8px; padding: 5px 7px; display: grid; gap: 3px; }
+.claudePanelTitle { color: #6f8a86; font-size: 7.5px; letter-spacing: .18em; text-transform: uppercase; font-family: var(--mono); }
+.claudeRow { display: flex; gap: 7px; align-items: center; padding: 2px 4px; border-radius: 4px; font-family: var(--mono); font-size: 9.5px; color: #cfe4dc; }
+.claudeRowOpera.is-selected { background: #21383e; outline: 1px solid #2d4a50; }
+.claudeDot { width: 7px; height: 7px; border-radius: 50%; flex: none; }
+.claudeDot.ok { background: #33dd99; }
+.claudeDot.need { background: #ffb454; }
+.claudeRowRight { margin-left: auto; font-size: 9px; }
+.claudeDimRow, .claudeDimRow * { color: #6f8a86; }
+.claudePanelHint { color: #6f8a86; font-size: 7.5px; margin-top: 1px; font-family: var(--mono); }
+.kbd { border: 1px solid #2d4a50; border-radius: 3px; padding: 0 3px; color: #b9ccc9; }
+.claudeOkLine { color: #35e0a1; font-family: var(--mono); font-size: 9px; opacity: 0; transition: opacity .26s var(--ease); padding: 1px 2px; }
+.claudeComposer { display: flex; gap: 8px; padding: 3px 6px; align-items: center; font-family: var(--mono); }
+.claudePrompt { color: #eceae0; font-weight: 800; }
+.claudeFoot { display: flex; justify-content: space-between; color: #7e9a96; font-size: 8.5px; font-family: var(--mono); padding: 0 6px; }
+.claudeBranch { color: #d06a5a; }
+.claudeThinking { color: #8a90ff; }
+.claudeThinkingHint { color: #556878; }
+.rNeed, .oc2RowRight.rNeed { color: #ffb454; }
+.rConn, .oc2RowRight.rConn { color: #32d583; display: none; }
+.claudeRow .claudeRowRight.rNeed, .oc2Row .oc2RowRight.rNeed { display: inline; }
+.claudeRow .claudeRowRight.rConn, .oc2Row .oc2RowRight.rConn { display: none; }
+.mcpDemo.is-authed .claudeRow .claudeRowRight.rNeed, .mcpDemo.is-authed .oc2Row .oc2RowRight.rNeed { display: none; }
+.mcpDemo.is-authed .claudeRow .claudeRowRight.rConn, .mcpDemo.is-authed .oc2Row .oc2RowRight.rConn { display: inline; }
+.oc2Stage { flex: 1; min-height: 0; display: grid; justify-items: center; align-content: space-between; gap: 6px; padding: 12px 12px 8px; }
+.oc2Logo { font: 900 28px/1 var(--mono); letter-spacing: .15em; color: #f5f5f5; justify-self: center; margin-top: 2px; padding-right: 26px; position: relative; }
+.oc2Version { position: absolute; right: -2px; bottom: -4px; font: 400 8.5px/1 var(--mono); color: #6f6f6f; letter-spacing: .03em; }
+.oc2CmdTable { display: grid; gap: 2px; font: 8px/1.55 var(--mono); width: 300px; }
+.oc2CmdRow { display: grid; grid-template-columns: 58px 1fr auto; gap: 10px; }
+.oc2Cmd { color: #ff8a66; }
+.oc2CmdDesc { color: #d8d8d0; }
+.oc2CmdKey { color: #6f6f6f; }
+.oc2ComposerBox { align-self: end; width: 100%; background: #111; border-radius: 6px; border-left: 2px solid #4dafff; padding: 6px 9px; display: grid; gap: 4px; }
+.oc2PromptRow { display: flex; gap: 7px; align-items: center; min-height: 14px; color: #d3d3cd; }
+.oc2Prompt { color: #cfcfcf; font-weight: 700; }
+.oc2PromptHint { margin-left: auto; color: #54544e; font-size: 7px; font-family: var(--mono); }
+.oc2ComposerFoot { display: flex; justify-content: space-between; font: 7px/1.4 var(--mono); }
+.oc2Model2 { color: #9a9a92; }
+.oc2StatusBar { display: flex; align-items: center; gap: 8px; padding: 4px 10px; border-top: 1px solid #141414; color: #6f6f6f; font: 7px/1.6 var(--mono); background: #050505; }
+.oc2VersionLeft { color: #565652; }
+.oc2BuildChip { margin-left: auto; display: inline-flex; gap: 5px; align-items: center; }
+.oc2TabKey { color: #6f6f6f; }
+.oc2BuildChipText { background: #4dafff; color: #04070c; font-weight: 700; border-radius: 3px; padding: 0 6px; letter-spacing: .05em; }
+.claudeAuthRow { opacity: 0; transition: opacity .22s var(--ease); display: flex; gap: 6px; align-items: center; background: #264047; color: #eceae0; font: 9px/1.5 var(--mono); padding: 3px 6px; border-radius: 4px; margin-top: 1px; }
+.claudeAuthRow.is-on { opacity: 1; }
+.mcpDemo.is-authed .claudeRowOpera .claudeDot { background:#33dd99; }
+.mcpDemo.is-authed .oc2RowOpera .oc2Dot { background:#32d583; }
+
