@@ -1105,8 +1105,6 @@ ol.steps strong { color: var(--ink); }
   line-height: 1.02;
 }
 
-.prose .updated { margin: 0 0 24px; }
-
 .prose h2 {
   margin: 44px 0 12px;
   font-size: 24px;

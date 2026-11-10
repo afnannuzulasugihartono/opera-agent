@@ -1025,7 +1025,7 @@ html.js .quickStart.in .quickDoor:nth-child(3) { animation-delay: .19s; }
 
 /* Fast lane — dua cara tercepat memasang, plus demo OpenCode Desktop memasang lewat prompt */
 
-.pageSub { margin: 4px 0 6px; font: 500 13.5px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--muted); }
+.pageSub { margin: 0 0 40px; font: 500 13.5px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--muted); }
 
 .fastlaneGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin: 18px 0 0; }
 
