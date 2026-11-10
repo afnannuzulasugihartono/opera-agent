@@ -1,6 +1,6 @@
 // @last-edited: 2026-11-10 UTC+7.
 // @title: demo-kit - one engine behind every harness's install demo on the MCP install page.
-// @state: one runtime per .mcpDemo, started when it scrolls into view and restarted on resize; it owns the cursor, the taskbar dock and each step's timing, nothing else.
+// @state: one runtime per .mcpDemo, started when it scrolls into view and restarted on resize; it owns the cursor, the taskbar dock, the zoom control and each step's timing, nothing else.
 // @dependencies: none.
 
 // WHY ONE ENGINE FOR NINE DEMOS: every harness follows the same rhythm - the taskbar icon is pressed, the window opens, the server is added, the harness says "connected".
@@ -42,17 +42,44 @@
       }, ms);
     });
 
-    const fit = () => {
-      const rect = canvas.getBoundingClientRect();
-      scale = rect.width / 1024;
+    // the canvas sits inside a scroller with an invisible sizer, so zooming enlarges the stage inside the demo's own box instead of cropping edges or widening the page
+    const scroller = document.createElement('div');
+    scroller.className = 'ddScroll';
+    canvas.replaceWith(scroller);
+    const sizer = document.createElement('span');
+    sizer.className = 'ddSizer';
+    scroller.appendChild(sizer);
+    scroller.appendChild(canvas);
+
+    const canvasFit = () => {
+      const k = demo.clientWidth / 1024;
+      scale = k * zoomLevel;
+      const sizerW = 1024 * scale;
+      const sizerH = 574 * scale;
+      sizer.style.width = sizerW + 'px';
+      sizer.style.height = sizerH + 'px';
+      // canvas and sizer stay at the same origin; if zoomed out the pair recentres in the box, if zoomed in the scroller centres its scroll position
+      const dx = Math.max(0, (scroller.clientWidth - sizerW) / 2);
+      const dy = Math.max(0, (scroller.clientHeight - sizerH) / 2);
+      sizer.style.left = dx + 'px';
+      sizer.style.top = dy + 'px';
+      canvas.style.left = dx + 'px';
+      canvas.style.top = dy + 'px';
+      if (zoomLevel !== 1) {
+        scroller.scrollLeft = (sizerW - scroller.clientWidth) / 2;
+        scroller.scrollTop = (sizerH - scroller.clientHeight) / 2;
+      }
       canvas.style.setProperty('--dd-k', String(scale));
+      demo.classList.toggle('is-zoomed', zoomLevel !== 1);
     };
+
+    const fit = () => { canvasFit(); };
 
     let zoomLevel = 1;
 
     const applyZoom = (next) => {
       zoomLevel = Math.min(1.6, Math.max(0.85, next));
-      demo.style.setProperty('zoom', String(zoomLevel));
+      fit();
     };
 
     const zoomButton = (markup, name, onClick) => {

@@ -295,9 +295,8 @@ html.js .quickStart.in .quickDoor:nth-child(3) { animation-delay: .19s; }
 
 .mcpDemo {
   position: relative;
-  margin: 18px 0 0 50%;
-  width: 100vw;
-  transform: translateX(-50%);
+  width: min(100%, calc(72vh * 1024 / 574));
+  margin: 18px auto 0;
   aspect-ratio: 1024 / 574;
   border: 1px solid var(--line-strong);
   border-radius: 14px;
@@ -309,7 +308,11 @@ html.js .quickStart.in .quickDoor:nth-child(3) { animation-delay: .19s; }
   --dd-k: 1;
 }
 
-.ddCanvas { position: absolute; left: 0; top: 0; width: 1024px; height: 574px; transform: scale(calc(var(--dd-k) * var(--dd-zoom, 1))); transform-origin: top left; }
+.ddScroll { position: absolute; inset: 0; overflow: hidden; }
+.mcpDemo.is-zoomed .ddScroll { overflow: auto; }
+.ddSizer { position: absolute; left: 0; top: 0; visibility: hidden; pointer-events: none; }
+
+.ddCanvas { position: absolute; left: 0; top: 0; width: 1024px; height: 574px; transform: scale(var(--dd-k)); transform-origin: top left; }
 
 .ddZoom {
   position: absolute;
