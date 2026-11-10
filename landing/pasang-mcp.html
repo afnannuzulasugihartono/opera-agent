@@ -76,30 +76,110 @@
     <section data-reveal>
       <h2 id="chatgpt">ChatGPT (web)</h2>
 
-    <div class="mcpDemo mcpLight" data-agent="chatgpt" aria-hidden="true">
+    <div class="mcpDemo" data-agent="chatgpt" aria-hidden="true">
       <div class="ddCanvas">
         <div class="ddIcons" aria-hidden="true">
           <span class="ddIcon"><svg viewBox="0 0 24 24" class="ddPct"><rect x="3" y="5" width="18" height="12" rx="1.6" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M9 21h6M12 17v4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg><em>This PC</em></span>
           <span class="ddIcon"><svg viewBox="0 0 24 24" class="ddPct"><path d="M11.3 2 6.2 12.4h4.6L9.3 22l7.4-10.9h-4.7L14.4 2z" style="fill:var(--accent)"/></svg><em>Opera Agent</em></span>
         </div>
-        <div class="ddWin pluginWin">
+        <div class="ddWin chatWin">
           <div class="ddTitleBar"><span class="ddBrand gpt"><svg viewBox="0 0 24 24" class="brandMark" aria-hidden="true"><circle cx="12" cy="12" r="9.4" fill="none" stroke="currentColor" stroke-width="1.6" opacity=".55"/><g transform="rotate(0 12 12)"><path d="M8.6 6.6c1.2-2.3 4-3 6-1.5l1.4 1.2c.7.9.4 2.4-.9 3.1-1.3.7-2.8-.3-3.6-2l-1-1.6z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" fill="none"/></g><g transform="rotate(60 12 12)"><path d="M8.6 6.6c1.2-2.3 4-3 6-1.5l1.4 1.2c.7.9.4 2.4-.9 3.1-1.3.7-2.8-.3-3.6-2l-1-1.6z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" fill="none"/></g><g transform="rotate(120 12 12)"><path d="M8.6 6.6c1.2-2.3 4-3 6-1.5l1.4 1.2c.7.9.4 2.4-.9 3.1-1.3.7-2.8-.3-3.6-2l-1-1.6z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" fill="none"/></g><g transform="rotate(180 12 12)"><path d="M8.6 6.6c1.2-2.3 4-3 6-1.5l1.4 1.2c.7.9.4 2.4-.9 3.1-1.3.7-2.8-.3-3.6-2l-1-1.6z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" fill="none"/></g><g transform="rotate(240 12 12)"><path d="M8.6 6.6c1.2-2.3 4-3 6-1.5l1.4 1.2c.7.9.4 2.4-.9 3.1-1.3.7-2.8-.3-3.6-2l-1-1.6z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" fill="none"/></g><g transform="rotate(300 12 12)"><path d="M8.6 6.6c1.2-2.3 4-3 6-1.5l1.4 1.2c.7.9.4 2.4-.9 3.1-1.3.7-2.8-.3-3.6-2l-1-1.6z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" fill="none"/></g><circle cx="12" cy="12" r="3.1" stroke="currentColor" stroke-width="1.6" fill="none"/></svg></span><span class="ddTitle">ChatGPT</span><span class="ddGlyphs"><i class="ddMin"></i><i class="ddMax"></i><i class="ddClose"></i></span></div>
-          <div class="ddChatBody">
-            <div class="ddRail">
-              <span class="ddRailDot"><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true"><path d="M5 7h14M5 12h14M5 17h14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></span>
-              <span class="ddRailDot"><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true"><path d="M4 17l4-9 4 6 4-8 4 11" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
-              <span class="ddRailDot sel"><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true"><path d="M12 4l2.3 5 5.5.9-4 3.8 1 5.4L12 17.3 7.2 19l1-5.4-4-3.9 5.5-.8L12 4z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg></span>
-              <span class="ddRailDot"><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true"><circle cx="12" cy="9" r="3.2" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M5 19.5c1.2-3.4 4-5 7-5s5.8 1.6 7 5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></span>
-              <span class="ddRailDot"><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="1.8" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 9h8M8 13h5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></span>
+          <div class="chatStage">
+            <div class="chatRail">
+              <span class="railBrand"><svg viewBox="0 0 24 24" class="brandMark" aria-hidden="true"><circle cx="12" cy="12" r="9.4" fill="none" stroke="currentColor" stroke-width="1.6" opacity=".55"/><circle cx="12" cy="12" r="3.1" stroke="currentColor" stroke-width="1.6" fill="none"/></svg><b>ChatGPT</b></span>
+              <span class="railItem railNewChat"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 4H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h7"/><path d="M18.5 2.5l3 3L13 14H10v-3z"/></svg>New chat</span>
+              <span class="railItem"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-3.4-3.4"/></svg>Search chats</span>
+              <span class="railItem"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6.5A2.5 2.5 0 0 1 6.5 4H20v15H6.5A2.5 2.5 0 0 0 4 21.5z"/><path d="M4 6.5v15"/><path d="M8 8.5h8M8 12h8"/></svg>Library</span>
+              <span class="railLabel">Recents</span>
+              <span class="railHist mid">Competitor pricing research</span>
+              <span class="railHist">Shop visit summary</span>
+              <span class="railHist">Customer email draft</span>
+              <span class="railHist">Q3 launch checklist</span>
+              <span class="railFoot"><span class="railAvatar">A</span><span class="railWho"><span class="railName">Afnan</span><span class="railSub">Personal</span></span></span>
             </div>
-            <div class="ddBody">
-              <div class="ddPluginsHead"><span class="ddPluginsTitle">Plugins</span><span class="ddPluginsSub">Work with ChatGPT across your favorite tools</span></div>
-              <span class="ddSearch"><svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M20 20l-3-3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg><span class="ddSearchText">Search plugins</span></span>
-              <span class="ddPluginsLabel">Installed</span>
-              <div class="ddExisting"><span class="ddExistingIcon">G</span><span><span class="ddExistingName">Google Workspace</span><span class="ddExistingMeta">Gmail, Calendar, Drive · installed</span></span><span class="ddToggle on"></span></div>
-              <span class="ddPluginsLabel">Available in this workspace</span>
-              <div class="ddRow ddPluginRow"><span class="ddExistingIcon">OA</span><span><span class="ddExistingName">Opera Agent</span><span class="ddExistingMeta">35 tools · drives your real browser · OAuth</span></span><button class="ddInstallBtn">Install</button></div>
-              <div class="ddRow ddRowDone"><span class="ddExistingIcon">OA</span><span><span class="ddExistingName">Opera Agent</span><span class="ddExistingMeta">35 tools · connected</span></span><span class="ddPill">Installed</span></div>
+            <div class="chatMain">
+              <div class="composerWrap">
+                <div class="composer">
+                  <button class="composerAdd" type="button" aria-label="Tools"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></button>
+                  <span class="composerPh">Ask anything</span>
+                  <span class="composerMeta">
+                    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><rect x="9.2" y="3.5" width="5.6" height="10.5" rx="2.8"/><path d="M6.5 11.5a5.5 5.5 0 0 0 11 0"/><path d="M12 17v3.5M9.4 20.5h5.2"/></svg>
+                    <span class="composerSend"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M12 19V5M6 11l6-6 6 6"/></svg></span>
+                  </span>
+                </div>
+                <span class="devModeFlag">Developer Mode</span>
+                <div class="toolsMenu" role="menu">
+                  <span class="toolRow"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V4M7.5 8.5 12 4l4.5 4.5"/><path d="M5 15v3.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V15"/></svg>Upload files</span>
+                  <span class="toolRow"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="14" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="M5 16.5l5-5 4 4 3.5-3.5 1.5 1.5"/></svg>Create image</span>
+                  <div class="toolDiv"></div>
+                  <span class="toolLabel">Developer mode</span>
+                  <span class="oaRow"><span class="oaRowDot">OA</span><span class="oaRowName">Opera Agent</span><button class="oaMenuToggle" id="oaMenuToggle" type="button" role="switch" aria-checked="false" aria-label="Opera Agent"></button></span>
+                </div>
+              </div>
+              <p class="chatHint">ChatGPT can make mistakes. Check important info.</p>
+            </div>
+            <div class="profileMenu">
+              <div class="profileHead"><span class="railAvatar">A</span><span class="profileWho"><span class="railName">Afnan</span><span class="profileMail">afnan@opera-agent.com</span></span></div>
+              <span class="profileRow"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.6"/><path d="M5 20c1.3-3.9 3.9-5.9 7-5.9s5.7 2 7 5.9"/></svg>Profile</span>
+              <span class="profileRow"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 17l4-9 4 6 4-8 4 11"/></svg>Personalization</span>
+              <button class="profileRow profileRowBtn" id="menuSettings" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="2.7"/><circle cx="12" cy="12" r="7.3" stroke-dasharray="2.4 3.2" stroke-dashoffset="1.1"/></svg>Settings</button>
+            </div>
+          </div>
+          <div class="settingsStage">
+            <div class="settingsCard">
+              <button class="settingsClose" type="button" aria-label="Tutup"><svg viewBox="0 0 24 24" width="13" height="13" aria-hidden="true"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button>
+              <div class="settingsRail">
+          <span class="settingsRailItem"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.1"/><circle cx="12" cy="12" r="7.6" stroke-dasharray="2.6 3.4" stroke-dashoffset="1.2"/></svg>General</span>
+          <span class="settingsRailItem"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>Notifications</span>
+          <span class="settingsRailItem"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.6"/><path d="M5 20c1.3-3.9 3.9-5.9 7-5.9s5.7 2 7 5.9"/></svg>Personalization</span>
+          <span class="settingsRailItem sel"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="6.7" height="6.7" rx="1.5"/><rect x="13.3" y="4" width="6.7" height="6.7" rx="1.5"/><rect x="4" y="13.3" width="6.7" height="6.7" rx="1.5"/><rect x="13.3" y="13.3" width="6.7" height="6.7" rx="1.5"/></svg>Apps</span>
+          <span class="settingsRailItem"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 10.5v3"/><path d="M9.5 7.5v9"/><path d="M14 4.5v15"/><path d="M18.5 9v6"/></svg>Voice</span>
+          <span class="settingsRailItem"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M3 10.5h18"/><path d="M7 15h4"/></svg>Billing</span>
+          <span class="settingsRailItem"><svg viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v12c0 1.66 3.6 3 8 3s8-1.34 8-3V6"/><path d="M4 12c0 1.66 3.6 3 8 3s8-1.34 8-3"/></svg>Data controls</span>
+          <span class="settingsRailItem"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="4.5" rx="1.2"/><path d="M5.2 8.5V18a2 2 0 0 0 2 2h9.6a2 2 0 0 0 2-2V8.5"/><path d="M10.2 12.5h3.6"/></svg>Storage</span>
+              </div>
+              <div class="settingsBody">
+                <div class="bodyMain">
+                <h3 class="settingsTitle">App Preferences</h3>
+                <div class="permRow">
+                  <span class="permText"><span class="secLabel">Permissions</span><span class="secSub">Choose when ChatGPT should ask for permission when using apps.</span></span>
+                  <span class="permSelect">Allow low-risk <svg viewBox="0 0 24 24" width="10" height="10" aria-hidden="true"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                </div>
+                <div class="appsLabelRow">
+                  <span class="permText"><span class="secLabel">Enabled apps</span><span class="secSub">Manage enabled apps ChatGPT can use in your chats.</span></span>
+                  <span class="appsAdd"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4.3" y="4.3" width="6.4" height="6.4" rx="1.6" fill="none" stroke="currentColor" stroke-width="1.6"/><rect x="13.4" y="4.3" width="6.4" height="6.4" rx="1.6" fill="none" stroke="currentColor" stroke-width="1.6"/><rect x="4.3" y="13.4" width="6.4" height="6.4" rx="1.6" fill="none" stroke="currentColor" stroke-width="1.6"/><rect x="13.4" y="13.4" width="6.4" height="6.4" rx="1.6" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>Add more</span>
+                </div>
+                <div class="appItem"><span class="appItemIcon gws"><svg viewBox="0 0 16 16" aria-hidden="true"><path fill="#4285F4" d="M15.5 8.2c0-.55-.05-1.08-.14-1.6H8v3.03h4.2a3.6 3.6 0 0 1-1.56 2.36v1.96h2.53c1.48-1.36 2.33-3.37 2.33-5.75z"/><path fill="#34A853" d="M8 16c2.1 0 3.87-.7 5.16-1.89l-2.53-1.96c-.7.47-1.6.75-2.63.75-2.02 0-3.73-1.36-4.34-3.2H1.08v2.03A8 8 0 0 0 8 16z"/><path fill="#FBBC05" d="M3.66 9.7a4.8 4.8 0 0 1 0-3.4V4.27H1.08a8 8 0 0 0 0 7.46l2.58-2.03z"/><path fill="#EA4335" d="M8 3.1c1.14 0 2.17.4 2.98 1.17l2.24-2.24A8 8 0 0 0 1.08 4.27l2.58 2.03C4.27 4.46 5.98 3.1 8 3.1z"/></svg></span><span class="appItemText"><span class="appItemName">Google Workspace</span><span class="appItemMeta">Gmail, Calendar, Drive · connected</span></span><span class="appItemChev"><svg viewBox="0 0 24 24" width="11" height="11" aria-hidden="true"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+                <div class="appItem appItemOA"><span class="appItemIcon oa">OA</span><span class="appItemText"><span class="appItemName">Opera Agent<span class="devPill">DEV</span></span><span class="appItemMeta">Custom · 35 tools · OAuth</span></span><span class="appItemChev"><svg viewBox="0 0 24 24" width="11" height="11" aria-hidden="true"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+                <div class="advRow">
+                  <span class="advLabel"><svg viewBox="0 0 24 24" class="advGearIcon" aria-hidden="true"><circle cx="12" cy="12" r="2.7"/><path d="M12 3.4v2.9" transform="rotate(0 12 12)"/><path d="M12 3.4v2.9" transform="rotate(45 12 12)"/><path d="M12 3.4v2.9" transform="rotate(90 12 12)"/><path d="M12 3.4v2.9" transform="rotate(135 12 12)"/><path d="M12 3.4v2.9" transform="rotate(180 12 12)"/><path d="M12 3.4v2.9" transform="rotate(225 12 12)"/><path d="M12 3.4v2.9" transform="rotate(270 12 12)"/><path d="M12 3.4v2.9" transform="rotate(315 12 12)"/></svg>Advanced settings</span>
+                  <button class="advCreate" type="button">Create app <svg viewBox="0 0 24 24" width="11" height="11" aria-hidden="true"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+                </div>
+                </div>
+                <div class="bodyAdvanced">
+                  <div class="advBackRow"><button class="advBack" type="button" aria-label="Kembali ke Apps"><svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path d="M15 6l-6 6 6 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button><span class="advTitle">Advanced settings</span></div>
+                  <div class="devRow">
+                    <span class="devText"><span class="devLabel">Developer mode <span class="elevPill">ELEVATED RISK</span></span><span class="devDesc">Allows you to add unverified connectors that could modify or erase data permanently. Use at your own risk. <u>Learn more</u></span></span>
+                    <span class="devModeToggle" role="switch" aria-checked="false" aria-label="Developer mode"></span>
+                  </div>
+                  <div class="advFootRow"><button class="newAppCreate advCreate2" id="advCreate2" type="button" disabled>Create app</button></div>
+                </div>
+              </div>
+            </div>
+            <div class="settingsVeil"></div>
+            <div class="newAppCard">
+              <div class="newAppHead"><span class="newAppTitle">New App</span><button class="newAppClose" type="button" aria-label="Tutup"><svg viewBox="0 0 24 24" width="13" height="13" aria-hidden="true"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button></div>
+              <div class="newAppBody">
+                <span class="newAppLabel">Name</span>
+                <span class="newAppField" id="fieldName"><span class="dpPlaceholder">Custom Tool</span><span class="dpText" id="dpNameText"></span></span>
+                <div class="connRow"><span class="newAppLabel">Connection</span><span class="connSeg"><span class="connSegItem sel">Server URL</span><span class="connSegItem">Tunnel<svg viewBox="0 0 24 24" width="11" height="11" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M10 9.6a2.1 2.1 0 0 1 4 .9c0 1.2-1.7 1.5-1.8 2.9M12 16.6h.01" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span></span></div>
+                <span class="newAppField mono" id="fieldUrl"><span class="dpPlaceholder">https://example.com/sse</span><span class="dpText" id="dpUrlText"></span></span>
+                <span class="newAppLabel">Authentication</span>
+                <span class="newAppSelect">OAuth <svg viewBox="0 0 24 24" width="10" height="10" aria-hidden="true"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                <div class="newAppWarn"><svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path d="M10.3 4.2 3.1 16.8A1.8 1.8 0 0 0 4.7 19.5h14.6a1.8 1.8 0 0 0 1.6-2.7L13.7 4.2a1.8 1.8 0 0 0-3.4 0z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M12 9.6v3.5M12 15.9h.01" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg><span>Custom MCP servers introduce risk. <u>Learn more</u></span></div>
+                <div class="newAppUnderstand"><span class="unCheckbox" id="dpUnderstand" role="checkbox" aria-checked="false"><svg viewBox="0 0 24 24" width="12" height="12" aria-hidden="true"><path d="M5 12.5 9.5 17 19 7" fill="none" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="unText"><strong>I understand and want to continue</strong>OpenAI hasn't reviewed this MCP server. Attackers may attempt to steal your data or trick the model into taking unintended actions, including destroying data.</span></div>
+              </div>
+              <div class="newAppFoot"><span class="guideLink"><svg viewBox="0 0 24 24" width="13" height="13" aria-hidden="true"><path d="M4 6.5h6a2 2 0 0 1 2 2v11a2 2 0 0 0-2-2H4z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M20 6.5h-6a2 2 0 0 0-2 2v11a2 2 0 0 1 2-2h6z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>Read the guide</span><button class="newAppCreate" id="newAppCreate" type="button" disabled>Create</button></div>
             </div>
           </div>
         </div>
@@ -109,18 +189,20 @@
         <span class="ddChip">Installed · 35 tools in chat</span>
       </div>
       <ol class="steps srOnly">
-        <li>Klik Plugins di sidebar ChatGPT.</li>
-        <li>Ketik di kotak pencarian: Opera Agent.</li>
-        <li>Klik Install pada baris Opera Agent.</li>
+        <li>Buka chat kosong, klik avatar kiri bawah, lalu Settings.</li>
+        <li>Apps, Advanced settings, aktifkan Developer mode, klik Create app.</li>
+        <li>Name Opera Agent, Connection Server URL, URL endpoint, Authentication OAuth, centang persetujuan, Create.</li>
+        <li>Kembali ke chat, klik +, pilih Developer mode, aktifkan Opera Agent.</li>
       </ol>
     </div>
 
       <ol class="steps">
-        <li><strong>Buka Plugins.</strong> Di sidebar, klik <em>Plugins</em>.</li>
-        <li><strong>Cari Opera Agent.</strong> Ketik di kotak pencarian.</li>
-        <li><strong>Klik Install.</strong> Setujui saat aplikasi meminta OAuth; tool langsung tersedia di chat baru.</li>
+        <li><strong>Buka chat kosong.</strong> Klik avatar <code>Afnan</code> di kiri bawah, lalu <em>Settings</em>.</li>
+        <li><strong>Apps → Advanced settings.</strong> Aktifkan <em>Developer mode</em> (ELEVATED RISK) agar custom MCP boleh dibuat, lalu klik <em>Create app</em>.</li>
+        <li><strong>Isi New App.</strong> <em>Name</em> = <code>Opera Agent</code>, <em>Connection</em> = Server URL, <em>URL</em> = endpoint di atas, <em>Authentication</em> = OAuth. Centang “I understand and want to continue”, lalu klik <em>Create</em>.</li>
+        <li><strong>Kembali ke chat.</strong> Klik <em>+</em> di composer → <em>Developer mode</em>, aktifkan <em>Opera Agent</em> — bar input jadi oranye saat aktif; tool tersedia sebagai <code>@Opera Agent</code>.</li>
       </ol>
-      <p class="muted">Setelah terpasang, tool tersedia sebagai Kiriman <code>@Opera Agent</code> di chat baru.</p>
+      <p class="muted">Opera Agent belum terdaftar di direktori ChatGPT, jadi pemasangannya lewat Developer mode sebagai aplikasi <code>DEV</code>. Setelah OAuth selesai, tool muncul di chat baru setelah daftar di-refresh.</p>
     </section>
 
     <section data-reveal>

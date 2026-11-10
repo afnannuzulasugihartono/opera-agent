@@ -182,7 +182,7 @@
     };
 
     const reset = (token) => {
-      demo.classList.remove('is-open', 'is-modal', 'is-row', 'is-done');
+      demo.classList.remove('is-open', 'is-modal', 'is-row', 'is-done', 'is-appform', 'is-menu', 'is-settings', 'is-advanced', 'is-toolsmenu', 'is-toggled');
       for (const line of lines) {
         line.classList.remove('is-on');
         if (line.dataset.raw) {
@@ -192,10 +192,39 @@
       }
       const toggle = demo.querySelector('.ddRowToggle');
       if (toggle) toggle.classList.remove('on');
-      const search = demo.querySelector('.ddSearch .ddSearchText');
-      if (search) search.textContent = 'Search plugins';
-      const install = demo.querySelector('.ddInstallBtn');
-      if (install) install.textContent = 'Install';
+      const nameField = demo.querySelector('#fieldName');
+      const nameText = demo.querySelector('#dpNameText');
+      if (nameText) nameText.textContent = '';
+      if (nameField) nameField.classList.remove('is-on', 'has-value');
+      const urlField = demo.querySelector('#fieldUrl');
+      const urlText = demo.querySelector('#dpUrlText');
+      if (urlText) urlText.textContent = '';
+      if (urlField) urlField.classList.remove('is-on', 'has-value');
+      const box = demo.querySelector('#dpUnderstand');
+      if (box) {
+        box.classList.remove('is-checked');
+        box.setAttribute('aria-checked', 'false');
+      }
+      const create = demo.querySelector('#newAppCreate');
+      if (create) {
+        create.disabled = true;
+        create.classList.remove('is-enabled');
+      }
+      const devToggle = demo.querySelector('.devModeToggle');
+      if (devToggle) {
+        devToggle.classList.remove('is-on');
+        devToggle.setAttribute('aria-checked', 'false');
+      }
+      const advCreate = demo.querySelector('#advCreate2');
+      if (advCreate) {
+        advCreate.disabled = true;
+        advCreate.classList.remove('is-enabled');
+      }
+      const oaToggle = demo.querySelector('#oaMenuToggle');
+      if (oaToggle) {
+        oaToggle.classList.remove('is-on');
+        oaToggle.setAttribute('aria-checked', 'false');
+      }
       replaceStatus('');
       pos = { x: 820, y: 470 };
       paint();
@@ -213,29 +242,68 @@
 
       switch (agent) {
         case 'chatgpt': {
-          const sel = demo.querySelector('.ddRailDot.sel');
-          if (sel) {
-            await press(sel, token);
-            await wait(240, token);
+          await press(demo.querySelector('.railFoot'), token);
+          demo.classList.add('is-menu');
+          await wait(260, token);
+          await press(demo.querySelector('#menuSettings'), token);
+          demo.classList.remove('is-menu');
+          demo.classList.add('is-settings');
+          await wait(430, token);
+          await press(demo.querySelector('.advRow'), token);
+          demo.classList.add('is-advanced');
+          await wait(430, token);
+          const devToggle = demo.querySelector('.devModeToggle');
+          await press(devToggle, token);
+          devToggle.classList.add('is-on');
+          devToggle.setAttribute('aria-checked', 'true');
+          const createBtn = demo.querySelector('#advCreate2');
+          createBtn.disabled = false;
+          createBtn.classList.add('is-enabled');
+          await wait(320, token);
+          await press(createBtn, token);
+          demo.classList.remove('is-advanced');
+          demo.classList.add('is-appform');
+          await wait(430, token);
+          const nameField = demo.querySelector('#fieldName');
+          const nameText = demo.querySelector('#dpNameText');
+          await press(nameField, token);
+          nameField.classList.add('is-on', 'has-value');
+          for (const char of 'Opera Agent') {
+            nameText.textContent += char;
+            await wait(TYPE_PACE + 6, token);
           }
-          const search = demo.querySelector('.ddSearch');
-          if (search) {
-            await press(search, token);
-            const text = search.querySelector('.ddSearchText');
-            text.textContent = '';
-            for (const char of 'Opera Agent') {
-              text.textContent += char;
-              await wait(TYPE_PACE + 10, token);
-            }
-            await wait(320, token);
-          }
-          const install = demo.querySelector('.ddInstallBtn');
-          if (install) {
-            await press(install, token);
-            install.textContent = 'Installing…';
-            await wait(620, token);
-            demo.classList.add('is-row', 'is-done');
-          }
+          nameField.classList.remove('is-on');
+          const urlField = demo.querySelector('#fieldUrl');
+          const urlText = demo.querySelector('#dpUrlText');
+          await press(urlField, token);
+          urlField.classList.add('is-on', 'has-value');
+          urlText.textContent = url;
+          await wait(650, token);
+          urlField.classList.remove('is-on');
+          const understand = demo.querySelector('#dpUnderstand');
+          await press(understand, token);
+          understand.classList.add('is-checked');
+          understand.setAttribute('aria-checked', 'true');
+          const finish = demo.querySelector('#newAppCreate');
+          finish.disabled = false;
+          finish.classList.add('is-enabled');
+          await wait(300, token);
+          await press(finish, token);
+          demo.classList.remove('is-appform');
+          await wait(200, token);
+          demo.classList.add('is-row');
+          await wait(900, token);
+          await press(demo.querySelector('.settingsClose'), token);
+          demo.classList.remove('is-settings', 'is-row');
+          await wait(360, token);
+          await press(demo.querySelector('.composerAdd'), token);
+          demo.classList.add('is-toolsmenu');
+          await wait(320, token);
+          const oaToggle = demo.querySelector('#oaMenuToggle');
+          await press(oaToggle, token);
+          oaToggle.classList.add('is-on');
+          oaToggle.setAttribute('aria-checked', 'true');
+          demo.classList.add('is-toggled');
           break;
         }
         case 'claude': {
