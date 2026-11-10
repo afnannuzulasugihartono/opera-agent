@@ -1099,7 +1099,7 @@ html.js .quickStart.in .quickDoor:nth-child(3) { animation-delay: .19s; }
  */
 
 .docBody > section[data-reveal] + section[data-reveal] { margin-top: 40px; }
-.mcpCats { display: grid; gap: 14px; margin-top: 18px; }
+.mcpCats { display: grid; gap: 22px; margin-top: 22px; }
 .mcpCat { display: grid; gap: 10px; padding: 16px 18px 14px; border: 1px solid var(--line-strong); border-radius: 14px; background: var(--surface); }
 .mcpCatHead { display: flex; align-items: baseline; gap: 14px; }
 .mcpCatTitle { margin: 0; }
@@ -1114,6 +1114,7 @@ html.js .quickStart.in .quickDoor:nth-child(3) { animation-delay: .19s; }
 .stepsDrop { border-top: 1px solid var(--line); }
 .prose .stepsDrop > summary { padding: 11px 0; font-size: 13px; font-weight: 600; color: var(--ink); letter-spacing: -.005em; }
 .prose .stepsDrop > summary::after { margin-left: auto; font-size: 11px; color: var(--muted); }
+.prose .stepsDrop + .stepsDrop { margin-top: 12px; }
 .prose .stepsDropBody { display: grid; gap: 12px; padding: 2px 0 6px; }
 .prose .stepsDropBody p { margin: 0; font-size: 12.5px; line-height: 1.62; }
 .prose .stepsDropBody p code, .prose .stepsDropBody li code { font-size: 11px; }
