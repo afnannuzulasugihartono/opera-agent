@@ -153,13 +153,15 @@
     };
 
     const reset = (token) => {
-      demo.classList.remove('is-open', 'is-modal', 'is-row', 'is-done', 'is-appform', 'is-menu', 'is-settings', 'is-advanced', 'is-toolsmenu', 'is-toggled', 'is-authing', 'is-writing', 'is-sent', 'is-ready', 'is-usermsg', 'is-solid', 'is-wizard', 'is-review', 'is-added', 'is-connected', 'is-customize', 'is-connectors', 'is-addpopover', 'is-adddialog', 'is-mcps');
-      const ocAuthPanel = demo.querySelector('#ocAuthPanel');
-      if (ocAuthPanel) ocAuthPanel.classList.remove('is-done');
-      const mcpRow = demo.querySelector('#mcpRow');
-      if (mcpRow) mcpRow.classList.remove('is-ok');
-      const mcpState = demo.querySelector('#mcpStateText');
-      if (mcpState) mcpState.textContent = 'needs authentication';
+      demo.classList.remove('is-open', 'is-modal', 'is-row', 'is-done', 'is-appform', 'is-menu', 'is-settings', 'is-advanced', 'is-toolsmenu', 'is-toggled', 'is-authing', 'is-writing', 'is-sent', 'is-ready', 'is-usermsg', 'is-solid', 'is-wizard', 'is-review', 'is-added', 'is-connected', 'is-customize', 'is-connectors', 'is-addpopover', 'is-adddialog', 'is-mcps', 'is-slash', 'is-authed', 'is-browser');
+      const ocTermCmd = demo.querySelector('#ocTermCmd');
+      if (ocTermCmd) ocTermCmd.textContent = '';
+      const ocTermDim = demo.querySelector('.ocOut.dim');
+      if (ocTermDim) ocTermDim.classList.remove('is-on');
+      const ocTermOk = demo.querySelector('.ocOut.ok');
+      if (ocTermOk) ocTermOk.classList.remove('is-on');
+      const ocWorking = demo.querySelector('#ocWorkingRow');
+      if (ocWorking) ocWorking.classList.remove('is-done');
       const deskTypedReset = demo.querySelector('#deskComposerTyped');
       if (deskTypedReset) deskTypedReset.textContent = '';
       const typedReset = demo.querySelector('#composerTyped');
@@ -461,36 +463,56 @@
           break;
         }
         case 'opencode': {
-          const composer = demo.querySelector('.ocComposer');
+          const full = 'opencode mcp add opera-agent --url https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp';
+          const cmd = demo.querySelector('#ocTermCmd');
+          const dim = demo.querySelector('.ocOut.dim');
+          const ok = demo.querySelector('.ocOut.ok');
+          const working = demo.querySelector('#ocWorkingRow');
+          cmd.textContent = '';
+          if (dim) dim.classList.remove('is-on');
+          if (ok) ok.classList.remove('is-on');
+
+          await press(demo.querySelector('.ocToolCard'), token);
+          await wait(180, token);
+          for (const char of full) {
+            cmd.textContent += char;
+            await wait(4, token);
+          }
+          await wait(340, token);
+          if (dim) dim.classList.add('is-on');
+          await wait(430, token);
+          if (ok) ok.classList.add('is-on');
+          await wait(520, token);
+
+          const composer = demo.querySelector('.ocComposerBig');
           await press(composer, token);
-          await wait(120, token);
+          await wait(150, token);
           demo.classList.add('is-writing');
           const typed = demo.querySelector('#deskComposerTyped');
           typed.textContent = '';
-          const slash = '/mcps';
+          const slash = '/mcp';
           for (const char of slash) {
             typed.textContent += char;
             await wait(TYPE_PACE + 9, token);
           }
-          demo.classList.add('is-ready');
-          await wait(280, token);
-          await press(demo.querySelector('.ocSendBtn'), token);
-          typed.textContent = '';
-          demo.classList.remove('is-writing', 'is-ready');
-          demo.classList.add('is-mcps');
+          demo.classList.add('is-ready', 'is-slash');
           await wait(520, token);
+          await press(demo.querySelector('.ocSlash'), token);
+          typed.textContent = '';
+          demo.classList.remove('is-writing', 'is-ready', 'is-slash');
+          demo.classList.add('is-mcps');
+          if (working) working.classList.add('is-done');
+          await wait(700, token);
           await press(demo.querySelector('#mcpSignIn'), token);
-          demo.classList.add('is-authing');
-          await wait(2600, token);
-          const doneMark = demo.querySelector('#ocAuthDone');
-          if (doneMark) doneMark.parentNode.classList.add('is-done');
-          await wait(1300, token);
-          demo.classList.remove('is-authing');
-          const row = demo.querySelector('#mcpRow');
-          if (row) row.classList.add('is-ok');
-          const stateText = demo.querySelector('#mcpStateText');
-          if (stateText) stateText.textContent = 'connected · 35 tools';
+          demo.classList.add('is-browser');
+          await wait(1100, token);
+          await press(demo.querySelector('#consentAllow'), token);
+          demo.classList.add('is-authed');
           await wait(1500, token);
+          demo.classList.remove('is-browser', 'is-authed');
+          demo.classList.add('is-connected');
+          await wait(1700, token);
+          demo.classList.remove('is-mcps');
           break;
         }
         case 'vscode':

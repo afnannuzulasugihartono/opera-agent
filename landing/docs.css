@@ -341,7 +341,7 @@ html.js .quickStart.in .quickDoor:nth-child(3) { animation-delay: .19s; }
   flex-direction: column;
 }
 
-.mcpDemo.is-open .ddWin { opacity: 1; visibility: visible; transform: translate(-50%, -50%); transition-delay: 0s; }
+.mcpDemo.is-open .ddWin:not(.ocBrowserWin) { opacity: 1; visibility: visible; transform: translate(-50%, -50%); transition-delay: 0s; }
 
 .ddTitleBar {
   display: flex;
@@ -1122,60 +1122,146 @@ html.js .quickStart.in .quickDoor:nth-child(3) { animation-delay: .19s; }
 @media (max-width: 640px) { .mcpTrack { grid-auto-columns: 86vw; scroll-padding-inline: 12px; } .mcpCat { padding: 14px 12px 12px; } .mcpCard { padding: 12px; } }
 @media (prefers-reduced-motion: no-preference) { .mcpTrack { scroll-behavior: smooth; } }
 
-/* OPENCODE DESKTOP - window chrome like the real app: activity rail, file tree, editor, composer at the very bottom */
+/* OPENCODE DESKTOP - replica of the real app: hamburger/grid/search title bar, session sidebar, shell tool card, @-context composer with model picker, Search MCPs dialog + OAuth browser window */
 
-.ocDeskWin { display: flex; flex-direction: column; width: 78%; height: 400px; background: #0c0c0c; overflow: hidden; }
+.ocDeskWin { display: flex; flex-direction: column; width: 82%; height: 400px; background: #0c0c0c; overflow: hidden; }
+
+.ocTitleBar { display: flex; align-items: center; justify-content: space-between; gap: 10px; height: 28px; padding: 0 10px; background: #0c0c0c; border-bottom: 1px solid rgba(255, 255, 255, .05); }
+.ocTitleLeft { display: flex; align-items: center; gap: 10px; color: #6f6d64; }
+.ocTitleRight { display: flex; align-items: center; gap: 10px; color: #6f6d64; }
+.ocGlyphs { display: flex; align-items: center; gap: 12px; color: #8f8d82; }
+.ocGlyphs .ddMin, .ocGlyphs .ddMax, .ocGlyphs .ddClose { position: relative; display: block; width: 9px; height: 9px; }
+.ocGlyphs .ddMin::after { content: ""; position: absolute; left: 0; right: 0; top: 4px; height: 1px; background: currentColor; }
+.ocGlyphs .ddMax::after { content: ""; position: absolute; inset: 1px; border: 1px solid currentColor; }
+.ocGlyphs .ddClose::before, .ocGlyphs .ddClose::after { content: ""; position: absolute; left: 4px; top: 0; bottom: 0; width: 1px; background: currentColor; }
+.ocGlyphs .ddClose::before { transform: rotate(45deg); }
+.ocGlyphs .ddClose::after { transform: rotate(-45deg); }
+.ocSessionPill { display: flex; align-items: center; gap: 8px; padding: 4px 10px; border-radius: 6px; background: #1a1a1c; color: #ececec; font: 450 10px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; white-space: nowrap; }
+.ocSessionClose { color: #6f6d64; }
+.ocTitleRight svg { color: #6f6d64; }
+
 .ocDeskBody { flex: 1; min-height: 0; display: flex; }
-.ocDeskRail { width: 40px; flex: none; display: grid; align-content: start; justify-items: center; gap: 14px; padding: 10px 0; border-right: 1px solid rgba(255, 255, 255, .06); }
-.ocDeskRail .ddRailDot.sel { color: #f7f6f1; background: rgba(255, 255, 255, .07); }
-.ocDeskRail .ddRailDot { color: #6f6d64; }
-
-.ocTree { width: 168px; flex: none; display: grid; align-content: start; gap: 2px; padding: 10px 8px; border-right: 1px solid rgba(255, 255, 255, .06); background: #101010; font: 10px/1.45 var(--mono); }
-.ocTreeItem { display: flex; align-items: center; gap: 6px; padding: 4px 6px; border-radius: 6px; color: #a5a397; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.ocTreeFolder { color: #8f8d82; }
-.ocTreeItem.sel { color: #f7f6f1; background: color-mix(in srgb, var(--accent) 14%, transparent); }
+.ocSide { width: 168px; flex: none; display: grid; grid-template-rows: auto 1fr auto; row-gap: 2px; padding: 10px 10px 10px 12px; border-right: 1px solid rgba(255, 255, 255, .06); background: #101010; }
+.ocSideHead { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 0 6px 8px; border-bottom: 1px solid rgba(255, 255, 255, .06); margin-bottom: 6px; }
+.ocSideName { font: 600 11px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #ececec; }
+.ocSideCount { font: 500 9px/1 var(--mono); color: #6f6d64; padding: 2px 6px; border-radius: 4px; background: #1a1a1c; }
+.ocSideList { display: grid; align-content: start; gap: 2px; }
+.ocSideItem { padding: 6px 8px; border-radius: 6px; color: #a5a397; font: 450 9.5px/1.35 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ocSideItem.sel { color: #f7f6f1; background: rgba(255, 255, 255, .05); }
+.ocSideFoot { display: flex; align-items: center; gap: 8px; padding: 8px 6px 2px; border-top: 1px solid rgba(255, 255, 255, .06); }
+.ocSideAvatar { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: #1f5c9e; color: #ffffff; font: 700 10px/1 system-ui, sans-serif; }
+.ocSideWho { display: grid; }
+.ocSideName2 { font: 530 9px/1.25 system-ui, sans-serif; color: #ececec; }
+.ocSidePlan { font: 400 7.5px/1.25 system-ui, sans-serif; color: #6f6d64; }
 
 .ocMain { position: relative; flex: 1; min-width: 0; display: flex; flex-direction: column; background: #0c0c0c; }
-.ocMain .ddFileTab { background: #111111; border-bottom: 1px solid rgba(255, 255, 255, .06); }
+.ocOutput { flex: 1; min-height: 0; display: grid; align-content: start; gap: 8px; padding: 12px 14px 4px; }
+.ocMetaRow { display: flex; align-items: center; gap: 6px; color: #6f6d64; font: 530 9px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+.ocMetaExit { color: #3ecf8e; font-family: var(--mono); }
 
-.ocJson { flex: 1; min-height: 0; padding: 16px 18px; font: 10.5px/1.72 var(--mono); color: #d8d6cb; white-space: pre; overflow: hidden; }
-.mcpDemo.is-mcps .ocJson { display: none; }
+.ocToolCard { display: grid; gap: 0; border: 1px solid rgba(255, 255, 255, .08); border-radius: 8px; background: #101010; overflow: hidden; }
+.ocToolHead { display: flex; align-items: center; gap: 8px; padding: 7px 10px; background: #101010; border-bottom: 1px solid rgba(255, 255, 255, .06); }
+.ocToolGlyph { display: grid; place-items: center; width: 18px; height: 18px; border-radius: 4px; background: rgba(255, 255, 255, .04); color: #b7b5aa; }
+.ocToolTitle { font: 600 9.5px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #e8e6dc; }
+.ocToolPath { font: 450 8.5px/1 var(--mono); color: #6f6d64; }
+.ocToolBody { padding: 9px 12px 10px; font: 10px/1.65 var(--mono); color: #d8d6cb; display: grid; gap: 1px; }
+.ocCmdLine { display: flex; gap: 6px; align-items: baseline; min-height: 1.6em; }
+.ocTermPrompt { color: #6f6d64; }
+.ocTermCmd { color: #f7f6f1; }
+.ocTermCaret { display: inline-block; width: 6px; height: 11px; background: #f7f6f1; vertical-align: -1px; animation: ocCaretBlink 1.05s steps(1) infinite; }
+@keyframes ocCaretBlink { 50% { opacity: 0; } }
+.ocOut { padding-left: 12px; color: #a5a397; font-size: 9.5px; opacity: 0; transition: opacity .22s var(--ease); }
+.ocOut.dim { color: #6f6d64; }
+.ocOut.ok { color: #3ecf8e; }
+.ocOut.is-on { opacity: 1; }
 
-.ocMcpsPanel { display: none; flex: 1; min-height: 0; align-content: start; gap: 10px; padding: 20px 22px; background: #0c0c0c; }
-.mcpDemo.is-mcps .ocMcpsPanel { display: grid; }
-.ocPanelHead { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; padding-bottom: 10px; border-bottom: 1px solid rgba(255, 255, 255, .08); }
-.ocPanelTitle { font: 600 12.5px/1 system-ui, -apple-system, Segoe UI, Roboto, sans-serif; color: #f7f6f1; letter-spacing: -.01em; }
-.ocPanelHint { font: 500 9px/1 var(--mono); color: #6f6d64; }
+.ocWorkingRow.is-done { opacity: 0; }
+.ocWorkingRow { display: flex; align-items: center; gap: 8px; color: #8f8d82; font: 450 9.5px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; transition: opacity .3s var(--ease); }
+.ocWorkingDot { width: 8px; height: 8px; border-radius: 50%; border: 1.5px solid rgba(255, 255, 255, .15); border-top-color: #f7f6f1; animation: ocWorkingPulse 1s linear infinite; }
+@keyframes ocWorkingPulse { to { transform: rotate(360deg); } }
+.ocWorkingPill { margin-left: auto; padding: 3px 8px; border-radius: 4px; background: #1a1a1c; font: 500 9px/1 var(--mono); color: #ececec; }
+.mcpDemo.is-mcps .ocWorkingRow, .mcpDemo.is-browser .ocWorkingRow { visibility: hidden; }
 
-.ocMcpsRow { display: grid; grid-template-columns: 40px 1fr auto; gap: 12px; align-items: center; padding: 12px 14px; border: 1px solid rgba(255, 255, 255, .08); border-radius: 10px; background: #141414; }
-.ocMcpsIcon { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 9px; background: color-mix(in srgb, var(--accent) 20%, #141414); }
-.ocMcpsIcon svg { width: 20px; height: 20px; }
-.ocMcpsText { display: grid; gap: 5px; min-width: 0; }
-.ocMcpsName { font: 500 12px/1.2 var(--mono); color: #f7f6f1; }
-.ocMcpsState { display: flex; align-items: center; gap: 6px; font: 450 9.5px/1 system-ui, -apple-system, Segoe UI, Roboto, sans-serif; color: #d6b36a; }
-.ocMcpsDot { width: 6px; height: 6px; border-radius: 50%; background: #d6b36a; flex: none; }
-.ocMcpsRow.is-ok .ocMcpsState { color: #19c37d; }
-.ocMcpsRow.is-ok .ocMcpsDot { background: #19c37d; }
-.ocMcpsSignIn { padding: 8px 16px; border-radius: 8px; border: 1px solid color-mix(in srgb, var(--accent) 62%, transparent); background: transparent; color: var(--accent); font: 600 10.5px/1 system-ui, -apple-system, Segoe UI, Roboto, sans-serif; cursor: pointer; transition: background .2s var(--ease); }
-.ocMcpsSignIn:hover { background: color-mix(in srgb, var(--accent) 14%, transparent); }
-.ocMcpsRow.is-ok .ocMcpsSignIn { visibility: hidden; }
-.ocMcpsDone { display: none; justify-self: end; color: #19c37d; }
-.ocMcpsRow.is-ok .ocMcpsDone { display: inline-flex; }
+.ocComposerWrap { flex: none; display: grid; place-items: center; padding: 6px 14px 10px; }
+.ocComposerBig { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 42px; padding: 0 8px 0 10px; border: 1px solid rgba(255, 255, 255, .14); border-radius: 21px; background: #1c1c1e; }
+.ocPlusBtn { flex: none; width: 26px; height: 26px; display: grid; place-items: center; border: 0; border-radius: 50%; background: transparent; color: #b7b5aa; cursor: pointer; }
+.ocPlusBtn:hover { background: rgba(255, 255, 255, .06); color: #ececec; }
+.ocModelBtn2, .ocBuildBtn, .ocMaxBtn { display: flex; align-items: center; gap: 5px; padding: 6px 8px; border-radius: 7px; color: #a5a397; font: 500 9.5px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; white-space: nowrap; }
+.ocModelBtn2 { color: #d8d6cb; }
+.ocBuildBtn, .ocMaxBtn { color: #8f8d82; }
+.ocStopBtn { flex: none; width: 26px; height: 26px; display: grid; place-items: center; border: 0; border-radius: 50%; background: #2b2b2e; color: #ececec; cursor: pointer; }
+.ocComposerRight { margin-left: auto; display: flex; align-items: center; gap: 3px; }
 
-.ocAuthPanel { position: absolute; z-index: 40; left: 14px; right: 14px; bottom: 14px; display: grid; justify-items: center; gap: 8px; padding: 16px 20px 14px; background: #212121; border: 1px solid rgba(255, 255, 255, .09); border-radius: 13px; box-shadow: 0 24px 60px rgba(0, 0, 0, .6); text-align: center; opacity: 0; visibility: hidden; transform: translateY(14px); transition: opacity .24s var(--ease), transform .3s var(--spring), visibility 0s .3s; pointer-events: none; }
-.mcpDemo.is-authing .ocAuthPanel { opacity: 1; visibility: visible; transform: none; transition-delay: 0s; }
-.ocAuthLogo { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; background: var(--accent); }
-.ocAuthLogo svg { width: 22px; height: 22px; }
-.ocAuthTitle { font: 600 12.5px/1.3 system-ui, -apple-system, Segoe UI, Roboto, sans-serif; color: #ffffff; letter-spacing: -.01em; }
-.ocAuthHost { font: 500 9px/1 var(--mono); color: #8a8a8a; }
-.ocAuthStatus { display: inline-flex; align-items: center; gap: 8px; font: 450 11px/1.4 system-ui, -apple-system, Segoe UI, Roboto, sans-serif; color: #b7b5aa; }
-.ocAuthSpin { width: 12px; height: 12px; border-radius: 50%; border: 2px solid rgba(255, 255, 255, .18); border-top-color: #f7f6f1; animation: ocSpin 1s linear infinite; }
-@keyframes ocSpin { to { transform: rotate(360deg); } }
-.ocAuthPaste { display: grid; gap: 5px; width: 100%; }
-.ocAuthPasteLabel { font: 450 8px/1 system-ui, -apple-system, Segoe UI, Roboto, sans-serif; color: #8a8a8a; letter-spacing: .07em; text-transform: uppercase; text-align: left; }
-.ocAuthPasteField { display: block; padding: 7px 9px; border-radius: 7px; border: 1px solid rgba(255, 255, 255, .1); background: #161616; color: #6f6d64; font: 9px/1.35 var(--mono); text-align: left; overflow: hidden; white-space: nowrap; }
-.ocAuthDone { display: none; align-items: center; gap: 7px; color: var(--accent); font: 600 11.5px/1 system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
-.ocAuthPanel.is-done .ocAuthDone { display: inline-flex; }
-.ocAuthPanel.is-done .ocAuthStatus { display: none; }
-.ocAuthPanel.is-done .ocAuthPaste { display: none; }
-@media (prefers-reduced-motion: reduce) { .ocAuthSpin { animation: none; } }
+.ocSlash { position: absolute; z-index: 30; left: 50%; transform: translateX(-50%); bottom: 66px; display: none; align-items: center; gap: 9px; padding: 7px 10px 7px 8px; border-radius: 9px; background: #1c1c1e; border: 1px solid rgba(255, 255, 255, .12); box-shadow: 0 10px 30px rgba(0, 0, 0, .5); font: 500 10.5px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #ececec; white-space: nowrap; }
+.mcpDemo.is-slash .ocSlash { display: flex; }
+.ocSlash svg { color: #8f8d82; }
+.ocSlashCmd { font-family: var(--mono); color: #f7f6f1; }
+.ocSlashLabel { color: #a5a397; font-weight: 450; }
+.ocSlashKbd { padding: 3px 6px; border-radius: 4px; border: 1px solid rgba(255, 255, 255, .16); background: #262626; color: #8f8d82; font: 500 9px/1 var(--mono); }
+
+.ocMcpDialog { position: absolute; z-index: 35; left: 50%; top: 40%; width: 350px; transform: translate(-50%, -50%); display: none; flex-direction: column; border-radius: 12px; background: #212121; border: 1px solid rgba(255, 255, 255, .07); box-shadow: 0 32px 80px rgba(0, 0, 0, .65), 0 0 0 0.5px rgba(255, 255, 255, .06) inset; overflow: hidden; }
+.mcpDemo.is-mcps .ocMcpDialog { display: flex; }
+.ocSearch { display: flex; align-items: center; gap: 8px; padding: 9px 14px 12px; border-bottom: 0.5px solid rgba(255, 255, 255, .12); }
+.ocSearch svg { color: #8f8d82; }
+.ocSearchPh { color: #e8e6dc; font: 450 12px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+
+.ocList { display: grid; gap: 0; padding: 6px; }
+.ocRow { display: grid; grid-template-columns: auto 1fr auto; gap: 9px; align-items: center; padding: 6px 10px; border-radius: 6px; }
+.ocRow:hover { background: rgba(255, 255, 255, .05); }
+.ocRowName { font: 500 12px/1.2 var(--mono); color: #ececec; }
+.ocDot { width: 6px; height: 6px; border-radius: 50%; flex: none; }
+.ocDotOn { background: #3fdd78; }
+.ocDotAuth { background: #ffd60a; }
+.ocDotErr { background: #ff453a; }
+.ocSwitch { position: relative; width: 30px; height: 18px; border-radius: 999px; background: #3a3a3c; transition: background .25s var(--ease); }
+.ocSwitch::after { content: ""; position: absolute; left: 2px; top: 2px; width: 14px; height: 14px; border-radius: 50%; background: #f5f5f5; transition: transform .25s var(--ease); }
+.ocSwitch.on { background: #2f6ff8; }
+.ocSwitch.on::after { transform: translateX(12px); }
+.ocGhost { padding: 4px 9px; border-radius: 6px; border: 0; background: transparent; color: #c9c7bc; font: 450 11px/1.3 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; cursor: pointer; }
+.ocGhost:hover { background: rgba(255, 255, 255, .08); color: #ececec; }
+.ocRowAuth .ocSwitchRowOk { display: none; }
+.mcpDemo.is-connected .ocRowAuth .ocSwitchRowOk { display: inline; }
+.mcpDemo.is-connected .ocRowAuth .ocGhost { visibility: hidden; }
+.mcpDemo.is-connected .ocRowAuth .ocDot { background: #3fdd78; }
+
+.ocBrowserWin { position: absolute; z-index: 46; left: 0; right: 0; top: 0; bottom: 46px; width: auto; height: auto; border-radius: 0; border: 0; background: #0c0c0c; display: flex; flex-direction: column; opacity: 0; visibility: hidden; transform: translateY(18px); }
+.mcpDemo.is-browser .ocBrowserWin { opacity: 1; visibility: visible; transform: translateY(0); transition-delay: 0s; }
+.ocBrowserWin .ocBowTitle { display: flex; align-items: center; justify-content: space-between; gap: 10px; height: 32px; padding: 0 10px 0 12px; background: #1c1c1e; border-bottom: 1px solid rgba(255, 255, 255, .07); }
+.ocBowTab { display: flex; align-items: center; gap: 7px; padding: 6px 12px 5px 10px; background: #0c0c0c; border-radius: 7px 7px 0 0; color: #ececec; font: 450 10px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; white-space: nowrap; }
+.ocBowTab svg { color: var(--accent); }
+.ocBowTabClose { display: grid; place-items: center; width: 17px; height: 17px; border-radius: 4px; color: #8f8d82; }
+.ocBowTabClose:hover { background: rgba(255, 255, 255, .08); color: #ececec; }
+.ocBowGlyphs { display: flex; align-items: center; gap: 13px; color: #8f8d82; }
+.ocBowGlyphs .ddMin, .ocBowGlyphs .ddMax, .ocBowGlyphs .ddClose { position: relative; display: block; width: 10px; height: 10px; }
+.ocBowGlyphs .ddMin::after { content: ""; position: absolute; left: 0; right: 0; top: 4.5px; height: 1px; background: currentColor; }
+.ocBowGlyphs .ddMax::after { content: ""; position: absolute; inset: 1px; border: 1px solid currentColor; }
+.ocBowGlyphs .ddClose::before, .ocBowGlyphs .ddClose::after { content: ""; position: absolute; left: 4.5px; top: 0; bottom: 0; width: 1px; background: currentColor; }
+.ocBowGlyphs .ddClose::before { transform: rotate(45deg); }
+.ocBowGlyphs .ddClose::after { transform: rotate(-45deg); }
+
+.ocBowBar { display: flex; align-items: center; gap: 7px; padding: 6px 10px; background: #0c0c0c; border-bottom: 1px solid rgba(255, 255, 255, .07); color: #a5a397; }
+.ocBowNavBtn { display: grid; place-items: center; width: 25px; height: 25px; border-radius: 50%; color: #8f8d82; }
+.ocBowNavBtn:hover { background: rgba(255, 255, 255, .07); color: #ececec; }
+.ocBowUrl { flex: 1; min-width: 0; display: flex; align-items: center; gap: 7px; padding: 6px 12px; border-radius: 999px; background: #1c1c1e; color: #ececec; font: 450 10.5px/1 var(--mono); white-space: nowrap; overflow: hidden; }
+.ocBowUrl svg { flex: none; color: #3ecf8e; }
+.ocBowUrlFaint { color: #6f6d64; }
+
+.ocConsent { flex: 1; min-height: 0; overflow: hidden; display: grid; align-content: center; justify-items: center; gap: 5px; padding: 8px 24px 12px; background: #000000; }
+.ocConsentH1 { margin: 0; color: #ffffff; font: 600 16px/1.2 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; letter-spacing: -.02em; }
+.ocConsentSub { margin: 0 0 5px; color: #8f8d82; font: 400 9px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+.ocConsentCard { width: min(100%, 420px); display: grid; gap: 7px; padding: 11px 14px 10px; border: 1px solid #262626; border-radius: 13px; background: #111111; }
+.ocConsentClient { margin: 0; color: #ffffff; font: 600 11px/1.2 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+.ocConsentFacts { display: grid; grid-template-columns: auto 1fr; gap: 1px 10px; margin: 0; font: 400 6.5px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+.ocConsentFacts dt { color: #6f6d64; }
+.ocConsentFacts dd { margin: 0; color: #d8d6cb; }
+.ocConsentScopes { display: grid; gap: 1px; margin: 0; padding: 0; list-style: none; }
+.ocConsentScopes strong { color: #f7f6f1; }
+.ocConsentNote { margin: 0; color: #6f6d64; font: 400 6.5px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+.ocConsentRow { display: flex; gap: 8px; }
+.ocConsentAllow { flex: 1; padding: 8px 0; border: 0; border-radius: 8px; background: #3ecf8e; color: #0c0c0c; font: 650 10.5px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; cursor: pointer; }
+.ocConsentAllow:hover { background: #57e09e; }
+.ocConsentDeny { padding: 8px 18px; border: 1px solid #333; border-radius: 8px; background: transparent; color: #8f8d82; font: 600 10.5px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; cursor: pointer; }
+.ocConsentDecided { display: none; align-items: center; justify-content: center; gap: 9px; color: #3ecf8e; font: 600 10.5px/1 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; padding: 6px 0; }
+.mcpDemo.is-authed .ocConsentDecided { display: inline-flex; }
+.mcpDemo.is-authed .ocConsentRow { display: none; }
+@media (prefers-reduced-motion: reduce) { .ocWorkingDot, .ocTermCaret { animation: none; } .ocTermCaret { opacity: 1; } }
