@@ -647,7 +647,7 @@
           <details class="stepsDrop">
             <summary>Langkah-langkah</summary>
             <div class="stepsDropBody">
-              <p>Satu perintah di terminal &mdash; berlaku di project ini (<code>--global</code> untuk semua):</p>
+              <p>Via terminal (paling cepat) &mdash; berlaku di project ini; <code>--global</code> untuk semua:</p>
               <div class="copybox">
                 <pre><code id="cfg-opencode">opencode mcp add opera-agent --url https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp</code></pre>
                 <button type="button" data-copy="cfg-opencode" data-i18n="copy">Salin</button>
@@ -655,10 +655,10 @@
               <ol class="steps">
                 <li><strong>Buka terminal.</strong> Ketik <code>/terminal</code> di composer, tekan Enter.</li>
                 <li><strong>Tempel perintah.</strong> Muncul <code>&#10003; opera-agent added</code>.</li>
-                <li><strong>Ketik /mcp.</strong> Composer, <code>/mcp</code> (atau <code>Ctrl+;</code>), Enter &mdash; dialog <em>Search MCPs</em> terbuka.</li>
-                <li><strong>Sign in.</strong> Klik <strong>Sign in</strong> pada baris <code>opera-agent</code> &mdash; browser terbuka, klik <strong>Izinkan</strong>.</li>
+                <li><strong>Ketik /mcp.</strong> Composer &rarr; <code>/mcp</code> (atau <code>Ctrl+;</code>) &rarr; Enter.</li>
+                <li><strong>Sign in.</strong> Klik <strong>Sign in</strong> pada baris <code>opera-agent</code> &mdash; klik <strong>Izinkan</strong>.</li>
               </ol>
-              <p>Atau daftarkan langsung di <code>opencode.jsonc</code>:</p>
+              <div class="stepsAlt">Atau manual &mdash; opencode.jsonc</div>
               <div class="copybox">
                 <pre><code id="cfg-opencode-json">{
   "mcp": {
@@ -778,11 +778,13 @@
           <details class="stepsDrop">
             <summary>Langkah-langkah</summary>
             <div class="stepsDropBody">
-              <p>Dua cara &mdash; lewat UI (rekomen) atau <code>kilo.jsonc</code>:</p>
+              <p>Via Settings (rekomen):</p>
               <ol class="steps">
-                <li><strong>Lewat UI.</strong> <em>Settings &rarr; Agent Behaviour &rarr; MCP Servers &rarr; Add Server &rarr; Remote (HTTP).</em> <em>Name</em> = <code>opera-agent</code>, <em>Server URL</em> = endpoint di atas. Klik <strong>Save</strong>.</li>
-                <li><strong>Config manual.</strong> Tulis <code>./.kilo/kilo.jsonc</code> (project) atau <code>~/.config/kilo/kilo.jsonc</code> (global):</li>
+                <li><strong>Buka MCP Servers.</strong> <em>Settings &rarr; Agent Behaviour &rarr; MCP Servers</em>.</li>
+                <li><strong>Add Server.</strong> Pilih <em>Remote (HTTP)</em>: <em>Name</em> = <code>opera-agent</code>, <em>Server URL</em> = endpoint di atas. Klik <strong>Save</strong>.</li>
+                <li><strong>Sign in.</strong> Klik <strong>Sign in</strong> pada baris <code>opera-agent</code> &mdash; klik <strong>Izinkan</strong>.</li>
               </ol>
+              <div class="stepsAlt">Atau manual &mdash; kilo.jsonc</div>
               <div class="copybox">
                 <pre><code id="cfg-kilo">{
   "mcp": {
@@ -800,7 +802,7 @@
 }</code></pre>
                 <button type="button" data-copy="cfg-kilo" data-i18n="copy">Salin</button>
               </div>
-              <p class="muted">Klik <strong>Sign in</strong> pada baris <code>opera-agent</code> &mdash; browser terbuka, klik <strong>Izinkan</strong>. Tools muncul sebagai <code>opera-agent_*</code>.</p>
+              <p class="muted"><code>./.kilo/kilo.jsonc</code> untuk project, <code>~/.config/kilo/kilo.jsonc</code> untuk global. Instal lewat UI dulu (<code>Settings &rarr; Extensions &rarr; Kilo Code</code>). Tools tampil sebagai <code>opera-agent_*</code>.</p>
             </div>
           </details>
         </article>
@@ -845,11 +847,13 @@
           <details class="stepsDrop">
             <summary>Langkah-langkah</summary>
             <div class="stepsDropBody">
-              <p>Dua cara &mdash; lewat Settings atau <code>~/.cursor/mcp.json</code>:</p>
+              <p>Via Settings (rekomen):</p>
               <ol class="steps">
-                <li><strong>Settings &rarr; MCP.</strong> <em>Cursor Settings &rarr; MCP &rarr; Add new MCP server.</em> <em>Name</em> = <code>opera-agent</code>, <em>Type</em> = <em>streamable-http</em>, <em>Server URL</em> = endpoint di atas.</li>
-                <li><strong>Connect.</strong> Klik <strong>Connect</strong> &mdash; browser terbuka, klik <strong>Izinkan</strong>.</li>
+                <li><strong>Buka Settings &rarr; MCP.</strong> <em>Cursor Settings &rarr; MCP &rarr; Add new MCP server</em>.</li>
+                <li><strong>Isi server.</strong> <em>Name</em> = <code>opera-agent</code>, <em>Type</em> = <em>streamable-http</em>, <em>Server URL</em> = endpoint di atas.</li>
+                <li><strong>Connect.</strong> Klik <strong>Connect</strong> &mdash; klik <strong>Izinkan</strong>.</li>
               </ol>
+              <div class="stepsAlt">Atau manual &mdash; ~/.cursor/mcp.json</div>
               <div class="copybox">
                 <pre><code id="cfg-cursor">{
   "mcpServers": {
@@ -865,7 +869,7 @@
 }</code></pre>
                 <button type="button" data-copy="cfg-cursor" data-i18n="copy">Salin</button>
               </div>
-              <p class="muted">Tools tampil sebagai <code>opera-agent_*</code>. Untuk bridge lokal, ganti isi objek <code>opera-agent</code> dengan <code>{ "command": "npx", "args": ["-y", "opera-agent-mcp", "local"] }</code>.</p>
+              <p class="muted">Tools tampil sebagai <code>opera-agent_*</code>. Bridge lokal: ganti isi objek <code>opera-agent</code> dengan <code>{ "command": "npx", "args": ["-y", "opera-agent-mcp", "local"] }</code>.</p>
             </div>
           </details>
         </article>
@@ -952,24 +956,23 @@
           <details class="stepsDrop">
             <summary>Langkah-langkah</summary>
             <div class="stepsDropBody">
-              <p>Satu perintah di terminal:</p>
+              <p>Via terminal (paling cepat):</p>
               <div class="copybox">
                 <pre><code id="cfg-codex">codex mcp add opera-agent --url https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp</code></pre>
                 <button type="button" data-copy="cfg-codex" data-i18n="copy">Salin</button>
               </div>
-              <p>Kalau <code>codex mcp list</code> menampilkan <code>needs authentication</code>:</p>
-              <div class="copybox">
-                <pre><code id="cfg-codex-auth">codex mcp list
-codex mcp login opera-agent</code></pre>
-                <button type="button" data-copy="cfg-codex-auth" data-i18n="copy">Salin</button>
-              </div>
-              <p class="muted">Klik <strong>Izinkan</strong> &mdash; selesai, ditandai <code>&#10003; connected</code>. CLI, desktop app, dan IDE extension berbagi config yang sama. Detail: <code>codex mcp get opera-agent</code>.</p>
-              <p>Atau edit <code>~/.codex/config.toml</code>:</p>
+              <ol class="steps">
+                <li><strong>Cek status.</strong> Jalankan <code>codex mcp list</code>.</li>
+                <li><strong>Login.</strong> Kalau muncul <code>needs authentication</code>: <code>codex mcp login opera-agent</code>.</li>
+                <li><strong>Izinkan.</strong> Browser terbuka &mdash; klik <strong>Izinkan</strong>. Selesai, <code>&#10003; connected</code>.</li>
+              </ol>
+              <div class="stepsAlt">Atau manual &mdash; ~/.codex/config.toml</div>
               <div class="copybox">
                 <pre><code id="cfg-codex-json">[mcp_servers.opera-agent]
 url = "https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp"</code></pre>
                 <button type="button" data-copy="cfg-codex-json" data-i18n="copy">Salin</button>
               </div>
+              <p class="muted">CLI, desktop app, dan IDE extension berbagi config yang sama. Detail: <code>codex mcp get opera-agent</code>.</p>
             </div>
           </details>
         </article>
@@ -1060,13 +1063,17 @@ url = "https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp"</c
           <details class="stepsDrop">
             <summary>Langkah-langkah</summary>
             <div class="stepsDropBody">
-              <p>Satu perintah dari terminal (bukan di dalam sesi <code>claude</code>):</p>
+              <p>Via terminal (paling cepat) &mdash; bukan di dalam sesi <code>claude</code>:</p>
               <div class="copybox">
                 <pre><code id="cfg-claude-code">claude mcp add --transport http opera-agent https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp</code></pre>
                 <button type="button" data-copy="cfg-claude-code" data-i18n="copy">Salin</button>
               </div>
-              <p>Cek <code>claude mcp list</code> &mdash; kalau muncul <code>! Needs authentication</code>, masuk sesi <code>claude</code>, ketik <code>/mcp</code>, pilih <code>opera-agent</code>, Enter, lalu <strong>Authenticate</strong>.</p>
-              <p><code>--scope user</code> berlaku di semua proyek; bawaan hanya project ini. Project yang dibagikan: tulis <code>.mcp.json</code> di root repo:</p>
+              <ol class="steps">
+                <li><strong>Cek status.</strong> Jalankan <code>claude mcp list</code>.</li>
+                <li><strong>Kalau</strong> <code>! Needs authentication</code>: masuk sesi <code>claude</code>, ketik <code>/mcp</code>, pilih <code>opera-agent</code>, Enter.</li>
+                <li><strong>Authenticate.</strong> Pilih <strong>Authenticate</strong> &mdash; browser terbuka &mdash; klik <strong>Izinkan</strong>. Selesai.</li>
+              </ol>
+              <div class="stepsAlt">Atau manual &mdash; .mcp.json</div>
               <div class="copybox">
                 <pre><code id="cfg-claude-code-json">{
   "mcpServers": {
@@ -1078,7 +1085,7 @@ url = "https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp"</c
 }</code></pre>
                 <button type="button" data-copy="cfg-claude-code-json" data-i18n="copy">Salin</button>
               </div>
-              <p class="muted">Klik <strong>Izinkan</strong> &mdash; OAuth otomatis, tanpa token. Setelah login, <code>claude mcp list</code> menampilkan <code>&#10003; Connected</code>.</p>
+              <p class="muted"><code>--scope user</code> berlaku di semua proyek. Setelah login, <code>claude mcp list</code> menampilkan <code>&#10003; Connected</code>.</p>
             </div>
           </details>
         </article>
@@ -1159,19 +1166,17 @@ url = "https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp"</c
           <details class="stepsDrop">
             <summary>Langkah-langkah</summary>
             <div class="stepsDropBody">
-              <p>Tiga perintah dari terminal (project ini; <code>--global</code> untuk semua):</p>
+              <p>Via terminal (paling cepat) &mdash; project ini; <code>--global</code> untuk semua:</p>
               <div class="copybox">
                 <pre><code id="cfg-opencode-cli">opencode mcp add opera-agent --url https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp</code></pre>
                 <button type="button" data-copy="cfg-opencode-cli" data-i18n="copy">Salin</button>
               </div>
-              <p>Kalau <code>opencode mcp list</code> menampilkan <code>needs authentication</code>:</p>
-              <div class="copybox">
-                <pre><code id="cfg-opencode-cli-auth">opencode mcp list
-opencode mcp auth opera-agent</code></pre>
-                <button type="button" data-copy="cfg-opencode-cli-auth" data-i18n="copy">Salin</button>
-              </div>
-              <p class="muted">Klik <strong>Izinkan</strong> &mdash; selesai. Atau di dalam sesi: <code>/mcps</code> &rarr; pilih opera-agent &rarr; sign in. Keluar dengan <code>opencode mcp logout opera-agent</code>.</p>
-              <p>Atau edit <code>opencode.jsonc</code> langsung:</p>
+              <ol class="steps">
+                <li><strong>Cek status.</strong> Jalankan <code>opencode mcp list</code>.</li>
+                <li><strong>Kalau</strong> <code>needs authentication</code>: <code>opencode mcp auth opera-agent</code>.</li>
+                <li><strong>Izinkan.</strong> Browser terbuka &mdash; klik <strong>Izinkan</strong>. Selesai.</li>
+              </ol>
+              <div class="stepsAlt">Atau manual &mdash; opencode.jsonc</div>
               <div class="copybox">
                 <pre><code id="cfg-opencode-cli-json">{
   "$schema": "https://opencode.ai/config.json",
@@ -1186,6 +1191,7 @@ opencode mcp auth opera-agent</code></pre>
 }</code></pre>
                 <button type="button" data-copy="cfg-opencode-cli-json" data-i18n="copy">Salin</button>
               </div>
+              <p class="muted">Di dalam sesi: <code>/mcps</code> &rarr; pilih <code>opera-agent</code> &rarr; sign in. Keluar dengan <code>opencode mcp logout opera-agent</code>.</p>
             </div>
           </details>
         </article>

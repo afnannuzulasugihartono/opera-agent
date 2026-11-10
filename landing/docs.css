@@ -1427,3 +1427,5 @@ html.js .quickStart.in .quickDoor:nth-child(3) { animation-delay: .19s; }
 .stepsDropBody > * { min-width: 0; }
 .prose p, .prose li { overflow-wrap: break-word; }
 .prose .copybox pre { white-space: pre-wrap; word-break: break-all; }
+.stepsAlt { display: flex; align-items: center; gap: 10px; font: 600 9px/1.4 var(--mono); letter-spacing: .18em; text-transform: uppercase; color: var(--muted); margin: 2px 0 0; }
+.stepsAlt::after { content: ''; flex: 1; height: 1px; background: var(--line); }
