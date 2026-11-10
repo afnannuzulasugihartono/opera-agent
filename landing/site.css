@@ -1073,12 +1073,14 @@ ol.steps {
   list-style: none;
   counter-reset: step;
   display: grid;
-  gap: 18px;
+  gap: 14px;
 }
 
 ol.steps li {
   position: relative;
-  padding-left: 44px;
+  padding-left: 40px;
+  font-size: 12.5px;
+  line-height: 1.62;
   color: var(--muted);
   counter-increment: step;
 }
@@ -1092,6 +1094,7 @@ ol.steps li::before {
   font-family: var(--mono);
   font-size: 12px;
   font-weight: 600;
+  top: 1px;
 }
 
 ol.steps strong { color: var(--ink); }

@@ -1112,9 +1112,11 @@ html.js .quickStart.in .quickDoor:nth-child(3) { animation-delay: .19s; }
 .mcpCard .mcpDemo { margin: 0; width: 100%; }
 
 .stepsDrop { border-top: 1px solid var(--line); }
-.prose .stepsDrop > summary { padding: 12px 0; font-size: 13px; font-weight: 600; color: var(--ink); }
-.prose .stepsDrop > summary::after { margin-left: auto; font-size: 13px; }
-.stepsDropBody { display: grid; gap: 12px; padding: 0 0 4px; }
+.prose .stepsDrop > summary { padding: 11px 0; font-size: 13px; font-weight: 600; color: var(--ink); letter-spacing: -.005em; }
+.prose .stepsDrop > summary::after { margin-left: auto; font-size: 11px; color: var(--muted); }
+.prose .stepsDropBody { display: grid; gap: 12px; padding: 2px 0 6px; }
+.prose .stepsDropBody p { margin: 0; font-size: 12.5px; line-height: 1.62; }
+.prose .stepsDropBody p code, .prose .stepsDropBody li code { font-size: 11px; }
 .stepsDropBody .steps, .stepsDropBody .copybox, .stepsDropBody p { margin: 0; }
 
 .mcpIndex { flex: 0 0 auto; color: var(--accent); font-family: var(--mono); font-size: 11px; font-weight: 500; letter-spacing: .06em; }

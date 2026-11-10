@@ -125,12 +125,12 @@
       <details class="stepsDrop">
         <summary>Langkah-langkah</summary>
         <div class="stepsDropBody">
-<ol class="steps">
-        <li><strong>Buka composer.</strong> Klik kotak input <em>Ask anything</em>.</li>
-        <li><strong>Tempel prompt.</strong> <code>Pasang MCP server Opera Agent dari https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp - verifikasi terhubung.</code></li>
-        <li><strong>Tekan Enter.</strong> OpenCode membaca prompt, menjalankan <code>opencode mcp add</code>, lalu 35 tool tersedia di sesi berikutnya.</li>
-      </ol>
-      <p class="muted">Prompt bekerja di OpenCode, Codex, Claude Code, Cursor - agen yang bisa menulis config atau memanggil perintah bisa memasang Opera Agent sendiri.</p>
+          <ol class="steps">
+            <li><strong>Buka composer.</strong> Klik boks <em>Ask anything</em>.</li>
+            <li><strong>Tempel prompt.</strong> <code>Pasang MCP server Opera Agent dari https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp &#8212; verifikasi terhubung.</code></li>
+            <li><strong>Tekan Enter.</strong> OpenCode menjalankan <code>opencode mcp add</code>; 35 tool langsung tersedia.</li>
+          </ol>
+          <p class="muted">Prompt ini bekerja di harness mana pun yang bisa menulis config atau memanggil perintah.</p>
         </div>
       </details>
     </section>
@@ -305,15 +305,15 @@
           <details class="stepsDrop">
             <summary>Langkah-langkah</summary>
             <div class="stepsDropBody">
-<ol class="steps">
-                <li><strong>Buka chat kosong.</strong> Klik avatar <code>Afnan</code> di kiri bawah, lalu <em>Settings</em>.</li>
-                <li><strong>Apps → Advanced settings.</strong> Aktifkan <em>Developer mode</em> (ELEVATED RISK), lalu klik <em>Create app</em>.</li>
-                <li><strong>Isi New App.</strong> <em>Name</em> = <code>Opera Agent</code>, <em>Connection</em> = Server URL, <em>URL</em> = endpoint di atas, <em>Authentication</em> = OAuth. Centang “I understand and want to continue”, lalu klik <em>Create</em>.</li>
-                <li><strong>Sign in to Opera Agent.</strong> Klik <em>Authorize</em> — Opera Agent muncul di <em>Enabled apps</em> sebagai aplikasi <code>DEV</code>.</li>
-                <li><strong>Kembali ke chat.</strong> Klik <em>+</em> di composer → <em>Developer mode</em>, aktifkan <em>Opera Agent</em> — bar input jadi oranye.</li>
-                <li><strong>Ketik tugas dan kirim.</strong> Coba <em>“Summarize the Q3 sales sheet and post it to Slack”</em> — Opera Agent menjawab lewat tool <code>read_sheet</code>.</li>
+              <ol class="steps">
+                <li><strong>Buka Settings.</strong> Klik avatar <code>Afnan</code> di kiri bawah &rarr; <em>Settings</em>.</li>
+                <li><strong>Apps &rarr; Advanced settings.</strong> Aktifkan <em>Developer mode</em>; klik <em>Create app</em>.</li>
+                <li><strong>Isi New App.</strong> <em>Name</em> = <code>Opera Agent</code>, <em>Connection</em> = Server URL, <em>URL</em> = endpoint di atas, <em>Authentication</em> = OAuth. Centang <em>&ldquo;I understand and want to continue&rdquo;</em>, lalu <em>Create</em>.</li>
+                <li><strong>Authorize.</strong> Opera Agent muncul di <em>Enabled apps</em> sebagai aplikasi <code>DEV</code>.</li>
+                <li><strong>Aktifkan di chat.</strong> Klik <code>+</code> pada composer &rarr; <em>Developer mode</em> &rarr; <em>Opera Agent</em>.</li>
+                <li><strong>Coba satu tugas.</strong> Tanya <em>&ldquo;Summarize the Q3 sales sheet&rdquo;</em> &mdash; jawaban lewat tool <code>read_sheet</code>.</li>
               </ol>
-            <p class="muted">Opera Agent belum terdaftar di direktori ChatGPT, jadi pemasangannya lewat Developer mode sebagai aplikasi <code>DEV</code>. Setelah OAuth selesai, tool dipanggil dari menu <em>Developer mode</em> di composer; kartu tool tampil di atas jawaban.</p>
+              <p class="muted">Opera Agent belum ada di direktori ChatGPT, jadi pemasangannya lewat Developer mode sebagai aplikasi <code>DEV</code>.</p>
             </div>
           </details>
         </article>
@@ -464,16 +464,13 @@
           <details class="stepsDrop">
             <summary>Langkah-langkah</summary>
             <div class="stepsDropBody">
-<ol class="steps">
-                <li><strong>Buka chat kosong.</strong> Klik briefcase di rail kiri → <em>Customize</em>.</li>
-                <li><strong>Connect apps.</strong> Klik kartu <em>Connect apps</em> untuk membuka layar <em>Connectors</em>, lalu klik <strong>+</strong> di kanan atas.</li>
-                <li><strong>Add custom connector.</strong> <em>Name</em> = <code>Opera Agent</code>, <em>Remote MCP server URL</em> = endpoint di atas → <em>Add</em>.</li>
-                <li><strong>Klik Connect.</strong> Klik <em>Authorize</em> — Opera Agent tampil di grup <em>Web</em> dengan centang hijau <em>Connected</em>.</li>
-                <li><strong>Kembali ke chat.</strong> Klik <em>+</em> di composer → <em>Connectors</em>, aktifkan <em>Opera Agent</em>.</li>
-                <li><strong>Ketik tugas dan kirim.</strong> coba <em>“Summarize the Q3 sales sheet and post it to Slack”</em> — Opera Agent menjawab lewat tool <code>read_sheet</code>.</li>
+              <ol class="steps">
+                <li><strong>Buka Connectors.</strong> Klik briefcase di rail kiri &rarr; <em>Customize &rarr; Connectors</em>.</li>
+                <li><strong>Add custom connector.</strong> <em>Name</em> = <code>Opera Agent</code>, <em>Remote MCP server URL</em> = endpoint di atas &rarr; <em>Add</em>.</li>
+                <li><strong>Connect.</strong> Klik <em>Authorize</em> &mdash; Opera Agent masuk grup <em>Web</em>, centang hijau <em>Connected</em>.</li>
+                <li><strong>Pakai di chat.</strong> Klik <code>+</code> &rarr; <em>Connectors</em> &rarr; <em>Opera Agent</em>.</li>
               </ol>
-            <p class="muted">Connector dipakai per-percakapan — matikan dan hidupkan di menu <em>+</em> yang sama kapan pun.</p>
-            <p class="muted"><strong>Desktop = Cloud + Local.</strong> Cloud untuk akses jauh, Local untuk loopback ke browser di mesin ini.</p>
+              <p class="muted">Connector aktif per percakapan &mdash; kelola dari menu <code>+</code> yang sama.</p>
             </div>
           </details>
         </article>
@@ -650,20 +647,19 @@
           <details class="stepsDrop">
             <summary>Langkah-langkah</summary>
             <div class="stepsDropBody">
-        <p>Satu kali di terminal - server ditambahkan ke daftar MCP (project ini; <code>--global</code> untuk semua proyek):</p>
-            <div class="copybox">
+              <p>Satu perintah di terminal &mdash; berlaku di project ini (<code>--global</code> untuk semua):</p>
+              <div class="copybox">
                 <pre><code id="cfg-opencode">opencode mcp add opera-agent --url https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp</code></pre>
                 <button type="button" data-copy="cfg-opencode" data-i18n="copy">Salin</button>
               </div>
-<ol class="steps">
-                <li><strong>Ketik /terminal.</strong> Klik kolom <em>Add follow-up</em> di OpenCode Desktop, ketik <code>/terminal</code>, tekan Enter - panel terminal terbuka di samping output.</li>
-                <li><strong>Tempel perintah.</strong> Di terminal tempel <code>opencode mcp add opera-agent --url https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp</code> lalu Enter - muncul <code>✓ opera-agent added</code>.</li>
-                <li><strong>Ketik /mcp.</strong> Kolom composer, ketik <code>/mcp</code> (atau tekan <code>Ctrl+;</code>), tekan Enter - dialog <em>Search MCPs</em> terbuka.</li>
-                <li><strong>Klik Sign in.</strong> Di baris <code>opera-agent</code> (dot oranye <em>Needs auth</em>) klik <strong>Sign in</strong>; browser terbuka ke halaman <em>Izin aplikasi</em>; klik <strong>Izinkan</strong> - kembali ke OpenCode, dot hijau dan toggle menyala.</li>
-                <li><strong>Pakai.</strong> Tool muncul sebagai <code>opera-agent_*</code>.</li>
+              <ol class="steps">
+                <li><strong>Buka terminal.</strong> Ketik <code>/terminal</code> di composer, tekan Enter.</li>
+                <li><strong>Tempel perintah.</strong> Muncul <code>&#10003; opera-agent added</code>.</li>
+                <li><strong>Ketik /mcp.</strong> Composer, <code>/mcp</code> (atau <code>Ctrl+;</code>), Enter &mdash; dialog <em>Search MCPs</em> terbuka.</li>
+                <li><strong>Sign in.</strong> Klik <strong>Sign in</strong> pada baris <code>opera-agent</code> &mdash; browser terbuka, klik <strong>Izinkan</strong>.</li>
               </ol>
-        <p>Atau mengedit manual — daftarkan di <code>mcp.servers</code> (skema V2; server tidak langsung di bawah <code>mcp</code>):</p>
-            <div class="copybox">
+              <p>Atau daftarkan langsung di <code>opencode.jsonc</code>:</p>
+              <div class="copybox">
                 <pre><code id="cfg-opencode-json">{
   "mcp": {
     "servers": {
@@ -676,7 +672,7 @@
 }</code></pre>
                 <button type="button" data-copy="cfg-opencode-json" data-i18n="copy">Salin</button>
               </div>
-        <p>Remote pakai Streamable HTTP + OAuth (PKCE otomatis) — tidak ada header atau clientId yang perlu diisi. Keluar: <code>opencode mcp logout opera-agent</code>.</p>
+              <p class="muted">Remote via Streamable HTTP + OAuth &mdash; tanpa header atau clientId. Keluar dengan <code>opencode mcp logout opera-agent</code>.</p>
             </div>
           </details>
         </article>
@@ -782,12 +778,12 @@
           <details class="stepsDrop">
             <summary>Langkah-langkah</summary>
             <div class="stepsDropBody">
-        <p>Buka Extensions (<code>Ctrl+Shift+X</code>), cari <em>Kilo Code</em>, Install. Dua cara menambah server:</p>
-        <ol class="steps">
-          <li><strong>Lewat UI (direkomen).</strong> Klik ikon gear di sidebar Kilo &gt; <em>Agent Behaviour</em> &gt; <em>MCP Servers</em> &gt; <strong>Add Server</strong> &gt; <em>Remote (HTTP)</em>. Isi <em>Name</em> = <code>opera-agent</code>, <em>Server URL</em> = <code>https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp</code>, biarkan <em>timeout</em> bawaan. Klik <strong>Save</strong>.</li>
-          <li><strong>Edit <code>kilo.jsonc</code> langsung.</strong> Letakkan di proyek (<code>./.kilo/kilo.jsonc</code>) atau global (<code>~/.config/kilo/kilo.jsonc</code>):</li>
-        </ol>
-            <div class="copybox">
+              <p>Dua cara &mdash; lewat UI (rekomen) atau <code>kilo.jsonc</code>:</p>
+              <ol class="steps">
+                <li><strong>Lewat UI.</strong> <em>Settings &rarr; Agent Behaviour &rarr; MCP Servers &rarr; Add Server &rarr; Remote (HTTP).</em> <em>Name</em> = <code>opera-agent</code>, <em>Server URL</em> = endpoint di atas. Klik <strong>Save</strong>.</li>
+                <li><strong>Config manual.</strong> Tulis <code>./.kilo/kilo.jsonc</code> (project) atau <code>~/.config/kilo/kilo.jsonc</code> (global):</li>
+              </ol>
+              <div class="copybox">
                 <pre><code id="cfg-kilo">{
   "mcp": {
     "opera-agent": {
@@ -804,7 +800,7 @@
 }</code></pre>
                 <button type="button" data-copy="cfg-kilo" data-i18n="copy">Salin</button>
               </div>
-        <p>Server remote memakai OAuth 2.0 &mdash; Kilo memulai flow otomatis saat Anda tersambung. Klik <strong>Sign in</strong> pada baris <code>opera-agent</code> (dot amber <em>Needs auth</em>); browser terbuka ke halaman <em>Izin aplikasi</em>; klik <strong>Izinkan</strong>. Dot jadi hijau, toggle menyala, tools tampil di composer sebagai <code>opera-agent_*</code> (mis. <code>opera-agent_read_sheet</code>).</p>
+              <p class="muted">Klik <strong>Sign in</strong> pada baris <code>opera-agent</code> &mdash; browser terbuka, klik <strong>Izinkan</strong>. Tools muncul sebagai <code>opera-agent_*</code>.</p>
             </div>
           </details>
         </article>
@@ -849,29 +845,27 @@
           <details class="stepsDrop">
             <summary>Langkah-langkah</summary>
             <div class="stepsDropBody">
-<ol class="steps">
-            <li><strong>URL.</strong> Jalankan <code>opencode mcp add opera-agent --url https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp</code> atau tambahkan URL ke <code>.codex/config.toml</code>.</li>
-            <li><strong>Sign in.</strong> Jalankan <code>opencode mcp auth opera-agent</code>; OAuth akan terbuka di browser default Anda.</li>
-            <li><strong>Izinkan tool.</strong> Pilih Allow all tools; 35 tool langsung aktif.</li>
-          </ol>
-            <p>Tambah ke <code>~/.cursor/mcp.json</code>, ganti <code>opera</code> dengan nama device Anda:</p>
-            <div class="copybox">
+              <p>Dua cara &mdash; lewat Settings atau <code>~/.cursor/mcp.json</code>:</p>
+              <ol class="steps">
+                <li><strong>Settings &rarr; MCP.</strong> <em>Cursor Settings &rarr; MCP &rarr; Add new MCP server.</em> <em>Name</em> = <code>opera-agent</code>, <em>Type</em> = <em>streamable-http</em>, <em>Server URL</em> = endpoint di atas.</li>
+                <li><strong>Connect.</strong> Klik <strong>Connect</strong> &mdash; browser terbuka, klik <strong>Izinkan</strong>.</li>
+              </ol>
+              <div class="copybox">
                 <pre><code id="cfg-cursor">{
-          "mcpServers": {
-            "opera-agent": {
-              "url": "https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp",
-              "headers": {
-                "X-Opera-Device": "opera",
-                "X-Opera-Provider": "cursor",
-                "x-region": "ap-southeast-1"
-              }
-            }
-          }
-        }</code></pre>
+  "mcpServers": {
+    "opera-agent": {
+      "url": "https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp",
+      "headers": {
+        "X-Opera-Device": "opera",
+        "X-Opera-Provider": "cursor",
+        "x-region": "ap-southeast-1"
+      }
+    }
+  }
+}</code></pre>
                 <button type="button" data-copy="cfg-cursor" data-i18n="copy">Salin</button>
               </div>
-            <p>Mode lokal (npm): ganti isi <code>opera-agent</code> menjadi <code>{ "command": "npx", "args": ["-y", "opera-agent-mcp", "local"] }</code>.</p>
-            <p class="muted"><strong>CLI = Cloud + Local.</strong> Cloud untuk akses jauh, Local untuk loopback ke browser di mesin ini.</p>
+              <p class="muted">Tools tampil sebagai <code>opera-agent_*</code>. Untuk bridge lokal, ganti isi objek <code>opera-agent</code> dengan <code>{ "command": "npx", "args": ["-y", "opera-agent-mcp", "local"] }</code>.</p>
             </div>
           </details>
         </article>
@@ -958,20 +952,20 @@
           <details class="stepsDrop">
             <summary>Langkah-langkah</summary>
             <div class="stepsDropBody">
-        <p>Satu perintah dari terminal:</p>
-            <div class="copybox">
+              <p>Satu perintah di terminal:</p>
+              <div class="copybox">
                 <pre><code id="cfg-codex">codex mcp add opera-agent --url https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp</code></pre>
                 <button type="button" data-copy="cfg-codex" data-i18n="copy">Salin</button>
               </div>
-        <p>Cek status; kalau <code>needs authentication</code>, jalankan login - browser terbuka ke halaman izin Opera Agent:</p>
-            <div class="copybox">
+              <p>Kalau <code>codex mcp list</code> menampilkan <code>needs authentication</code>:</p>
+              <div class="copybox">
                 <pre><code id="cfg-codex-auth">codex mcp list
 codex mcp login opera-agent</code></pre>
                 <button type="button" data-copy="cfg-codex-auth" data-i18n="copy">Salin</button>
               </div>
-        <p>Klik <strong>Izinkan</strong> di browser - terminal menampilkan connected. Remote server pakai OAuth, tidak perlu mengisi token. Di sesi codex, ketik <code>/mcp</code> untuk melihat server yang terhubung. Codex CLI, aplikasi desktop, dan IDE extension berbagi konfigurasi yang sama - tidak perlu diulang antar permukaan.</p>
-        <p>Atau edit <code>~/.codex/config.toml</code> langsung:</p>
-            <div class="copybox">
+              <p class="muted">Klik <strong>Izinkan</strong> &mdash; selesai, ditandai <code>&#10003; connected</code>. CLI, desktop app, dan IDE extension berbagi config yang sama. Detail: <code>codex mcp get opera-agent</code>.</p>
+              <p>Atau edit <code>~/.codex/config.toml</code>:</p>
+              <div class="copybox">
                 <pre><code id="cfg-codex-json">[mcp_servers.opera-agent]
 url = "https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp"</code></pre>
                 <button type="button" data-copy="cfg-codex-json" data-i18n="copy">Salin</button>
@@ -1066,14 +1060,14 @@ url = "https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp"</c
           <details class="stepsDrop">
             <summary>Langkah-langkah</summary>
             <div class="stepsDropBody">
-        <p>Satu perintah dari terminal (bukan di dalam sesi <code>claude</code>):</p>
-            <div class="copybox">
+              <p>Satu perintah dari terminal (bukan di dalam sesi <code>claude</code>):</p>
+              <div class="copybox">
                 <pre><code id="cfg-claude-code">claude mcp add --transport http opera-agent https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp</code></pre>
                 <button type="button" data-copy="cfg-claude-code" data-i18n="copy">Salin</button>
               </div>
-        <p>Cek status; kalau muncul <code>! Needs authentication</code>, ketik <code>/mcp</code> di sesi Claude Code, pilih <code>opera-agent</code>, tekan Enter dan pilih <strong>Authenticate</strong> - browser terbuka ke halaman izin Opera Agent. <code>--scope user</code> untuk berlaku di semua proyek, atau biarkan bawaan (local project).</p>
-        <p>Untuk berlaku di satu project (dan bisa di-commit), tulis <code>.mcp.json</code> di root repo:</p>
-            <div class="copybox">
+              <p>Cek <code>claude mcp list</code> &mdash; kalau muncul <code>! Needs authentication</code>, masuk sesi <code>claude</code>, ketik <code>/mcp</code>, pilih <code>opera-agent</code>, Enter, lalu <strong>Authenticate</strong>.</p>
+              <p><code>--scope user</code> berlaku di semua proyek; bawaan hanya project ini. Project yang dibagikan: tulis <code>.mcp.json</code> di root repo:</p>
+              <div class="copybox">
                 <pre><code id="cfg-claude-code-json">{
   "mcpServers": {
     "opera-agent": {
@@ -1084,7 +1078,7 @@ url = "https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp"</c
 }</code></pre>
                 <button type="button" data-copy="cfg-claude-code-json" data-i18n="copy">Salin</button>
               </div>
-        <p>Remote server pakai OAuth otomatis - tidak perlu token. Setelah login, <code>claude mcp list</code> menampilkan <code>✔ Connected</code>. Mode lokal, untuk mesin yang sama: <code>claude mcp add opera-agent -- npx -y opera-agent-mcp local</code>.</p>
+              <p class="muted">Klik <strong>Izinkan</strong> &mdash; OAuth otomatis, tanpa token. Setelah login, <code>claude mcp list</code> menampilkan <code>&#10003; Connected</code>.</p>
             </div>
           </details>
         </article>
@@ -1165,20 +1159,20 @@ url = "https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp"</c
           <details class="stepsDrop">
             <summary>Langkah-langkah</summary>
             <div class="stepsDropBody">
-        <p>Empat perintah, satu sesi terminal — ganti <code>opera</code> dengan nama device Anda:</p>
-            <div class="copybox">
+              <p>Tiga perintah dari terminal (project ini; <code>--global</code> untuk semua):</p>
+              <div class="copybox">
                 <pre><code id="cfg-opencode-cli">opencode mcp add opera-agent --url https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp</code></pre>
                 <button type="button" data-copy="cfg-opencode-cli" data-i18n="copy">Salin</button>
               </div>
-        <p>Cek status; kalau muncul <code>needs authentication</code>, jalankan auth — browser terbuka ke halaman izin:</p>
-            <div class="copybox">
+              <p>Kalau <code>opencode mcp list</code> menampilkan <code>needs authentication</code>:</p>
+              <div class="copybox">
                 <pre><code id="cfg-opencode-cli-auth">opencode mcp list
 opencode mcp auth opera-agent</code></pre>
                 <button type="button" data-copy="cfg-opencode-cli-auth" data-i18n="copy">Salin</button>
               </div>
-        <p>Remote server pakai OAuth otomatis (tidak perlu mengisi token). Klik <strong>Izinkan</strong> di browser — terminal menampilkan <code>opera-agent   ✓ connected · 35 tools</code>. Keluar dari sesi: <code>opencode mcp logout opera-agent</code>.</p>
-        <p>Atau edit langsung project <code>opencode.jsonc</code>:</p>
-            <div class="copybox">
+              <p class="muted">Klik <strong>Izinkan</strong> &mdash; selesai. Atau di dalam sesi: <code>/mcps</code> &rarr; pilih opera-agent &rarr; sign in. Keluar dengan <code>opencode mcp logout opera-agent</code>.</p>
+              <p>Atau edit <code>opencode.jsonc</code> langsung:</p>
+              <div class="copybox">
                 <pre><code id="cfg-opencode-cli-json">{
   "$schema": "https://opencode.ai/config.json",
   "mcp": {
@@ -1212,12 +1206,12 @@ opencode mcp auth opera-agent</code></pre>
       <details class="stepsDrop stepsDropLead">
         <summary>Sebelum mulai</summary>
         <div class="stepsDropBody">
-<ol class="steps">
-        <li><strong>Extension terpasang.</strong> Opera Agent dimuat di Chromium (<a href="./unduh.html">Unduh</a>).</li>
-        <li><strong>Sudah di-pair.</strong> Buka <a href="./dashboard.html">Dashboard</a> → Pairing → buat kode → tempel di extension.</li>
-        <li><strong>Jalankan bridge.</strong> <code>npx opera-agent-mcp</code> mendengarkan di loopback; harness lokal bisa memakainya langsung.</li>
-        <li><strong>Nama device.</strong> Nama yang Anda pilih saat pairing akan dipakai di semua konfigurasi local.</li>
-      </ol>
+          <ol class="steps">
+            <li><strong>Extension terpasang.</strong> Opera Agent dimuat di Chromium (<a href="./unduh.html">Unduh</a>).</li>
+            <li><strong>Sudah di-pair.</strong> <a href="./dashboard.html">Dashboard</a> &rarr; Pairing &rarr; buat kode &rarr; tempel di ekstensi.</li>
+            <li><strong>Bridge berjalan.</strong> <code>npx opera-agent-mcp</code> &mdash; harness di mesin ini membacanya langsung.</li>
+            <li><strong>Nama device.</strong> Nama saat pairing berlaku di semua konfigurasi lokal.</li>
+          </ol>
         </div>
       </details>
       <div class="mcpCat">
@@ -1245,20 +1239,20 @@ opencode mcp auth opera-agent</code></pre>
           <details class="stepsDrop">
             <summary>Langkah-langkah</summary>
             <div class="stepsDropBody">
-<p>Satu perintah, satu mesin. Untuk harness yang berjalan di mesin ini:</p>
-            <div class="copybox">
+              <p>Satu instalasi, satu mesin:</p>
+              <div class="copybox">
                 <pre><code id="cfg-npm">npm install -g opera-agent-mcp</code></pre>
                 <button type="button" data-copy="cfg-npm" data-i18n="copy">Salin</button>
               </div>
-            <p>Empat mode:</p>
-            <div class="copybox">
-                <pre><code id="cfg-modes">opera-agent-mcp local    stdio, drives the open browser on this machine
-        opera-agent-mcp cloud    stdio, drives it through the hosted server
-        opera-agent-mcp auth     OAuth sign-in; token stored beside this install
-        opera-agent-mcp doctor   prints what is connected, the plan, and what the plan allows</code></pre>
+              <p>Empat perintah yang tersedia:</p>
+              <div class="copybox">
+                <pre><code id="cfg-modes">opera-agent-mcp local    stdio ke browser di mesin ini
+opera-agent-mcp cloud    stdio lewat server hosted
+opera-agent-mcp auth     login OAuth (token tersimpan di mesin ini)
+opera-agent-mcp doctor   cek koneksi &amp; yang diizinkan rencana Anda</code></pre>
                 <button type="button" data-copy="cfg-modes" data-i18n="copy">Salin</button>
               </div>
-            <p>Verifikasi koneksi: <code>opera-agent-mcp doctor</code>.</p>
+              <p class="muted">Verifikasi dengan <code>opera-agent-mcp doctor</code>.</p>
             </div>
           </details>
         </article>
