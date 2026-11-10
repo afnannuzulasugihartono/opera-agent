@@ -96,7 +96,6 @@
 
 **Kenapa di `local/`, bukan di `extension/`:** extension belum punya batas task. Ia menjalankan perintah primitif satu per satu lewat bridge, jadi tidak ada titik yang bisa berkata "pekerjaan ini mulai" dan "pekerjaan ini selesai". Jalur lokal punya batas itu: satu percakapan dengan asisten, satu plan, satu artefak. Wiring extension menunggu batas task itu ada; sampai saat itu, menaruh reserve/settle di sana akan menagih per perintah, bukan per pekerjaan.
 
-
 ### Task 6: Dashboard — saldo + riwayat + isi ulang
 
 **Files:**

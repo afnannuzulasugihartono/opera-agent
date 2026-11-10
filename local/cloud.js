@@ -15,9 +15,14 @@
 // WHY PROTOCOL DETAILS ARE FORWARDED UNTOUCHED.
 // Tool outputs are a contract with callers; a proxy that renamed or reshaped a field would be a second protocol to keep in sync, and every clause in it would be a place the two could drift apart.
 
+// WHY THE DEVICE HEADER IS SENT.
+// A tab id lives inside one browser, so the hosted relay has to answer every call of one session on the same browser or the agent holds a tab id that exists on neither.
+// The paired device file already names the browser this machine drives, so the pin is sent from there; without it the relay is free to pick a different browser per call, which is the failure the pin exists to prevent.
+
 import readline from 'node:readline';
 
 import { HOSTED_MCP_URL, accessToken, loginInstructions } from './oauth.js';
+import { readDevice } from './wallet-client.js';
 
 const PROVIDER = process.env.OPERA_AGENT_MCP_PROVIDER || 'opera-agent-mcp';
 
@@ -25,7 +30,17 @@ export function hostedBase(env = process.env) {
   return String(env.OPERA_AGENT_MCP_BASE_URL || HOSTED_MCP_URL).trim();
 }
 
-async function postMcp(base, token, payload, fetchImpl = fetch) {
+export function pinnedDeviceName(env = process.env, { home = null } = {}) {
+  const named = String(env.OPERA_AGENT_MCP_DEVICE_NAME || '').trim();
+  if (named) return named;
+  try {
+    return String(readDevice({ home })?.deviceName || '').trim();
+  } catch {
+    return '';
+  }
+}
+
+async function postMcp(base, token, payload, fetchImpl = fetch, deviceName = '') {
   const response = await fetchImpl(base, {
     method: 'POST',
     headers: {
@@ -33,7 +48,8 @@ async function postMcp(base, token, payload, fetchImpl = fetch) {
       'accept': 'application/json, text/event-stream',
       'authorization': `Bearer ${token}`,
       'x-opera-provider': PROVIDER,
-      'x-region': 'ap-southeast-1'
+      'x-region': 'ap-southeast-1',
+      ...(deviceName ? { 'x-opera-device': deviceName } : {})
     },
     body: JSON.stringify(payload),
     signal: AbortSignal.timeout(120000)
@@ -80,7 +96,9 @@ export async function serveCloud({ env = process.env, input = process.stdin, out
     return 3;
   }
   const base = hostedBase(env);
+  const deviceName = pinnedDeviceName(env);
   stderr.write(`opera-agent-mcp cloud: ${base}\n`);
+  if (deviceName) stderr.write(`opera-agent-mcp cloud: driving the paired device "${deviceName}"\n`);
 
   const lines = readline.createInterface({ input, terminal: false });
   lines.on('line', (line) => {
@@ -98,7 +116,7 @@ export async function serveCloud({ env = process.env, input = process.stdin, out
     const isRequest = id !== undefined && id !== null;
     void (async () => {
       try {
-        const answer = await postMcp(base, token, message, fetchImpl);
+        const answer = await postMcp(base, token, message, fetchImpl, deviceName);
         if (isRequest) output.write(`${JSON.stringify(answer ?? { jsonrpc: '2.0', id, result: null })}\n`);
       } catch (error) {
         const status = Number(error?.status) || 0;

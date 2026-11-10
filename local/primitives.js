@@ -28,6 +28,7 @@ import { createObserveMethods } from './observe.js';
 import { createWaits } from './waits.js';
 import { createCanvasMethods } from './canvas.js';
 import { windowState as osWindowState, focusWindow as osFocusWindow } from './window-focus.js';
+import { dialogState as osDialogState, dialogType as osDialogType, dialogPress as osDialogPress } from './dialog.js';
 
 export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Promise((r) => setTimeout(r, ms)), fs = nodeFs, os = nodeOs, path = nodePath, now = Date.now, bridge = false } = {}) {
   const capped = (limit) => Math.min(Math.max(1, Number(limit) || 120), 500);
@@ -125,8 +126,10 @@ export function createPrimitives(cdp, { chunkSize = 2000, sleep = (ms) => new Pr
       } catch {
         return osFocusWindow(match);
       }
-    }
-
+    },
+    dialogState: () => osDialogState(),
+    dialogType: (text) => osDialogType(text),
+    dialogPress: (name) => osDialogPress(name)
   };
 
   const observe = createObserveMethods({ cdp, primitives, capped, sleep });

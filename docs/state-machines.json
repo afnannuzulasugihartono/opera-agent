@@ -149,6 +149,21 @@
       "rank": 1
     },
     {
+      "id": "tools-output-shape",
+      "kind": "local",
+      "where": "local/mcp-server.js:48",
+      "states": [
+        "envelope-nested",
+        "flat-tidy"
+      ],
+      "writers": "asText - previously printed raw JSON envelopes; now runs every payload through tidyForAi",
+      "readers": "every local MCP client, every agent reading locally",
+      "wrongIfConfused": "a local tool answers with an envelope - { action: {..}, window: .., page: .. } - where the hosted wire answers with { ..page facts }; a model that learned one shape fails on the other and re-reads every answer",
+      "decision": "model",
+      "why": "one shape both wires, already what tidy.ts pins on the hosted side - this is local-to-hosted convergence with no new state, only deletion of the divergence",
+      "rank": 1
+    },
+    {
       "id": "watcher-lifecycle",
       "kind": "extension",
       "where": "extension/worker/watch-registry.js:23",
@@ -323,6 +338,23 @@
       "wrongIfConfused": "an attached session whose tab closed never reaps → the 'started debugging this browser' bar stays pinned on a tab that is gone; DevTools-open silently invalidates attach and every later call pays a detach/attach churn",
       "decision": "model",
       "why": "the flag, the registry and the alarm-reap are one lifecycle with three clocks; one declared model with one release path — UX of the always-on bar wins",
+      "rank": 2
+    },
+    {
+      "id": "hosted-tab-ownership-rank",
+      "kind": "edge",
+      "where": "supabase/functions/opera-agent-mcp/device.ts:66",
+      "states": [
+        "pin-live",
+        "pin-asleep-refused",
+        "pin-unknown-refused",
+        "no-pin-freshest"
+      ],
+      "writers": "resolveDevice - the pin decides while that browser is live; a sleeping pin is refused by name and never replaced by another browser, and X-Opera-Device: any is the caller's own request for the freshest browser",
+      "readers": "every page tool: open_url, read_page, find_elements, fill_element, click_element, capture_page, activate_tab, navigate_tab",
+      "wrongIfConfused": "find_elements succeeded for a tab, fill_element one call later returned \"No tab with id\" because routing picked the other browser on the same everyday profile; the tab id is device-local and the call doesn't carry the device that minted it",
+      "decision": "model",
+      "why": "the relay answered one call against whichever browser was freshest at that millisecond; tab ids are minted on one browser, so the call before fill succeeded and the call after fail were routed to different everyday browsers wearing identical profiles - the user saw a healthy tool that died for no reason and could only retry; now the pin answers every call while it is live, a sleeping pin is a named 503 that names the awake browsers and the header that reaches one, and the fallback is only reachable when the caller asks for it",
       "rank": 2
     },
     {

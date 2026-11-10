@@ -40,6 +40,26 @@ function fakeSession() {
   };
 }
 
+// WHY THE DIALOG VERBS ARE SPOKEN HERE.
+// The MCP server calls driver.dialogState(), and the driver is this adapter: a primitive that exists but is not spoken here answers a tool call with "not a function" on a real browser, which is exactly what shipped.
+// Measured: dialog_state, dialog_type and dialog_press failed against a live browser while every unit test passed, because no test drove the adapter with a dialog call.
+// So the dialog verbs are driven through the adapter like every other verb, and the fake session has to carry the primitives for the calls to reach them.
+
+test('the adapter speaks the dialog verbs too', async () => {
+  const session = fakeSession();
+  session.dialogState = async () => { session.calls.push(['dialogState']); return { open: false }; };
+  session.dialogType = async (text) => { session.calls.push(['dialogType', text]); return { open: false }; };
+  session.dialogPress = async (name) => { session.calls.push(['dialogPress', name]); return { open: false }; };
+  const driver = asDriver(session);
+
+  await driver.dialogState();
+  await driver.dialogType('hello');
+  await driver.dialogPress('Open');
+
+  const verbs = session.calls.map((c) => c[0]);
+  assert.deepEqual(verbs, ['dialogState', 'dialogType', 'dialogPress']);
+});
+
 // WHY surfaceProfile IS DRIVEN HERE.
 // The MCP server calls driver.surfaceProfile(), and the driver is this adapter: a primitive that exists but is not spoken here answers a tool call with "not a function" on a real browser, which is exactly what shipped.
 // Measured: surface_profile failed against a live Google Doc while every unit test passed, because no test drove the adapter with a profile call.

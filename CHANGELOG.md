@@ -18,6 +18,8 @@ What each release contained, and why. The notes live in
 | 1.6.29 | 2026-11-08 | [a full-page capture that survives the whole document](docs/releases/1.6.29.md) |
 | 1.6.28 | 2026-11-08 | [the whole page in one answer, and a worker that says what broke](docs/releases/1.6.28.md) |
 | 1.6.27 | 2026-10-15 | [the local loop tells the truth about itself](docs/releases/1.6.27.md) |
+| 1.6.26 | 2026-10-25 | [the bridge link stops going silently deaf](docs/releases/1.6.26.md) |
+| 1.6.25 | 2026-10-25 | [the product stopped asking the network on the hot path](docs/releases/1.6.25.md) |
 | 1.6.24 | 2026-10-11 | [notes](docs/releases/1.6.24.md) |
 | 1.6.23 | 2026-10-11 | [notes](docs/releases/1.6.23.md) |
 | 1.6.22 | 2026-10-10 | [notes](docs/releases/1.6.22.md) |
@@ -26,7 +28,7 @@ The version in [`extension/manifest.json`](extension/manifest.json) is the sourc
 of truth, and `npm run check` fails if the extension, the MCP server, the store
 form and this file disagree about it.
 
-Two versions have no note here: **1.6.25** and **1.6.26** reached the update
-service but were never tagged and never got a GitHub Release. The gap is recorded
-in [`docs/handoff.md`](docs/handoff.md) under what is still open, and it is a
-real hole in the record rather than a formatting choice.
+Two versions in that table never reached the release page: **1.6.25** and **1.6.26**
+were tagged on 2026-10-25 and exist as draft releases, with their notes in
+[`docs/releases/`](docs/releases/). They were never published; the update service
+is what served them. That is a real gap in the record, not a formatting choice.

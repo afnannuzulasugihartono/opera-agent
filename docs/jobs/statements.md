@@ -122,4 +122,3 @@ the amount, and nothing is charged for a month that is not in the manifest. The 
 client-month twice is refused rather than billed twice, and a paid invoice cannot be
 reopened by a later call. The page, the signature and the drill that drove them are in
 [`docs/product/billing.md`](../product/billing.md).
-

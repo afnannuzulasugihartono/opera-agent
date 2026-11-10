@@ -108,7 +108,7 @@ async function waitForLink(port, { timeoutMs = 60000 } = {}) {
 // On a machine where the everyday browser already has the extension linked, this run therefore joins that bridge and drives the browser the extension already controls; on a quiet machine it starts the bridge itself and loads the extension from the tree.
 // Both roads are the extension's road, and the record says which one ran.
 
-export async function runExtensionProof({
+async function runExtensionProof({
   root = process.cwd(),
   bridgePort = BRIDGE_PORT,
   debugPort = DEBUG_PORT,

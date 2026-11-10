@@ -17,7 +17,7 @@ import {
   refreshAccessToken,
   loginInstructions,
 } from '../local/oauth.js';
-import { serveCloud, hostedBase } from '../local/cloud.js';
+import { serveCloud, hostedBase, pinnedDeviceName } from '../local/cloud.js';
 import { spawn } from 'node:child_process';
 import { createServer } from 'node:http';
 import os from 'node:os';
@@ -66,7 +66,7 @@ async function fakeHosted() {
     req.on('data', (chunk) => { body += chunk; });
     req.on('end', () => {
       const message = JSON.parse(body);
-      requests.push({ authorization: req.headers.authorization, provider: req.headers['x-opera-provider'], message });
+      requests.push({ authorization: req.headers.authorization, provider: req.headers['x-opera-provider'], device: req.headers['x-opera-device'], message });
       if (req.headers.authorization !== 'Bearer test-token') {
         res.writeHead(401, { 'content-type': 'application/json' });
         res.end(JSON.stringify({ error: 'unauthorized', error_description: 'A valid Opera Agent access token is required.' }));
@@ -96,7 +96,7 @@ test('a tool call round-trips through the cloud proxy to the hosted server', asy
   const host = await fakeHosted();
   const configHome = fs.mkdtempSync(path.join(os.tmpdir(), 'opera-cloud-config-'));
   const child = spawn(process.execPath, [bin, 'cloud'], {
-    env: { ...process.env, OPERA_AGENT_MCP_TOKEN: 'test-token', OPERA_AGENT_MCP_BASE_URL: host.url, OPERA_AGENT_MCP_CONFIG_HOME: configHome },
+    env: { ...process.env, OPERA_AGENT_MCP_TOKEN: 'test-token', OPERA_AGENT_MCP_BASE_URL: host.url, OPERA_AGENT_MCP_CONFIG_HOME: configHome, OPERA_AGENT_MCP_DEVICE_NAME: 'opera' },
     stdio: ['pipe', 'pipe', 'pipe']
   });
   const io = collect(child);
@@ -120,6 +120,7 @@ test('a tool call round-trips through the cloud proxy to the hosted server', asy
     for (const seen of host.requests) {
       assert.equal(seen.authorization, 'Bearer test-token', 'the proxy carried the account token');
       assert.equal(seen.provider, 'opera-agent-mcp', 'and said which client it was');
+      assert.equal(seen.device, 'opera', 'and named the browser it drives, so every call of one session lands on the same one');
     }
   } finally {
     child.stdin.end();
@@ -189,6 +190,19 @@ test('the exchange and the refresh speak to the token endpoint and keep what the
 test('the environment wins over the stored token, and the proxy honours a base override', async () => {
   assert.equal(await accessToken({ env: { OPERA_AGENT_MCP_TOKEN: 'env-token' } }), 'env-token');
   assert.equal(hostedBase({ OPERA_AGENT_MCP_BASE_URL: 'http://127.0.0.1:9/mcp' }), 'http://127.0.0.1:9/mcp');
+});
+
+test('the pin comes from the environment, then from the paired device file, and never from nothing', () => {
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'opera-pin-'));
+  try {
+    assert.equal(pinnedDeviceName({ OPERA_AGENT_MCP_DEVICE_NAME: 'from-env' }, { home }), 'from-env');
+    assert.equal(pinnedDeviceName({}, { home }), '', 'an unpaired machine names no browser');
+    fs.mkdirSync(path.join(home, '.opera-agent'), { recursive: true });
+    fs.writeFileSync(path.join(home, '.opera-agent', 'device.json'), JSON.stringify({ deviceName: 'opera-7', token: 'a'.repeat(64) }));
+    assert.equal(pinnedDeviceName({}, { home }), 'opera-7', 'the paired device file names the browser this machine drives');
+  } finally {
+    fs.rmSync(home, { recursive: true, force: true });
+  }
 });
 
 test('the browser is opened detached with an ignored stream and unreported errors', () => {

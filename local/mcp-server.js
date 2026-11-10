@@ -47,7 +47,7 @@ export { TOOLS };
 function requireArguments(args, required) {
   for (const name of required) {
     if (args?.[name] === undefined || args?.[name] === null || args?.[name] === '') {
-      throw new Error(`${name} is required`);
+      throw new Error(`missing argument "${name}" - required by the tool schema`);
     }
   }
 }
@@ -55,7 +55,49 @@ function requireArguments(args, required) {
 // A browser that closed mid-call must not take the server with it, because the next tool call is still worth trying.
 
 function asText(value) {
-  return { content: [{ type: 'text', text: typeof value === 'string' ? value : JSON.stringify(value, null, 1) }] };
+  return { content: [{ type: 'text', text: JSON.stringify(isObject(value) ? tidyForAi(value) : value) }] };
+}
+
+function isObject(value) {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+// WHY A FAILED TOOL ANSWERS THE WAY THE HOSTED WIRE ANSWERS.
+// Both roads tell a model the same thing: the call came back and it says what failed.
+// A JSON-RPC error reads as a broken protocol, and a client that treats it that way can end the session over a refusal the agent could act on.
+// So a tool that failed answers as a tool result that says so: ok false, an error with a code and a message, and the advice for the next move in the same message.
+
+function toolFailure(error, context) {
+  const message = withAdvice(error, context);
+  const code = typeof error?.code === 'string' && error.code ? error.code : 'MCP_EXECUTION_ERROR';
+  const payload = { ok: false, error: { code, message } };
+  return {
+    content: [{ type: 'text', text: JSON.stringify(tidyForAi(payload)) }],
+    isError: true
+  };
+}
+
+// WHY THE COST RIDES INSIDE THE ANSWER AND NOT IN A BLOCK OF ITS OWN.
+// An answer is one document: a cost that sits beside it has to be read as a second document, and the hosted wire carries no such block.
+// So the cost is a fact of the answer, under elapsedMs, and both wires read facts the same way.
+
+function withCost(out, elapsedMs) {
+  const blocks = Array.isArray(out?.content) ? out.content : [];
+  for (let index = blocks.length - 1; index >= 0; index -= 1) {
+    const block = blocks[index];
+    if (block?.type !== 'text') continue;
+    let payload;
+    try {
+      payload = JSON.parse(block.text);
+    } catch {
+      continue;
+    }
+    if (!isObject(payload)) continue;
+    const content = blocks.slice();
+    content[index] = { type: 'text', text: JSON.stringify({ ...payload, elapsedMs }) };
+    return { ...out, content };
+  }
+  return out;
 }
 
 // WHY A PLAN IS BUILT FIELD BY FIELD.
@@ -125,6 +167,16 @@ function diffElements(prev, curr) {
 }
 
 import { withAdvice } from './advice.js';
+import { readFileSync } from 'node:fs';
+import { stripTypeScriptTypes } from 'node:module';
+
+// WHY THE SAME TIDY FUNCTION THE HOSTED SURFACE USES.
+// The rejections that keep a model from wasting tokens on envelopes, transport keys and duplicated chain fields should apply to the local stdio surface too - a rule that lives in one place stays consistent and changes for one reason.
+
+const tidySource = stripTypeScriptTypes(
+  readFileSync(new URL('../supabase/functions/opera-agent-mcp/tidy.ts', import.meta.url), 'utf8')
+);
+const { tidyForAi } = await import(`data:text/javascript;base64,${Buffer.from(tidySource).toString('base64')}`);
 
 const lastAuto = new WeakMap();
 const lastPage = new WeakMap();
@@ -623,7 +675,7 @@ const windowMatch = async (tab, driver) => (tab ? String(tab.title ?? '') : page
         }));
       }
       case 'ax_snapshot':
-        return asText(await driver.snapshot(args.limit));
+        return asText({ rows: await driver.snapshot(args.limit) });
       case 'caret_line':
         return asText(await driver.caretLine());
       case 'upload': {
@@ -743,9 +795,12 @@ const windowMatch = async (tab, driver) => (tab ? String(tab.title ?? '') : page
         if (method === 'tools/list') return reply({ tools: TOOLS });
         if (method === 'tools/call') {
           const started = Date.now();
-          const out = await run(params?.name, params?.arguments ?? {});
-          out.content.push({ type: 'text', text: `${Date.now() - started} ms` });
-          return reply(out);
+          try {
+            const out = await run(params?.name, params?.arguments ?? {});
+            return reply(withCost(out, Date.now() - started));
+          } catch (error) {
+            return reply(toolFailure(error, { rows: lastSeen }));
+          }
         }
 
         if (method?.startsWith('notifications/')) return undefined;

@@ -39,7 +39,7 @@ Three lines, on every page:
 | --- | --- | --- |
 | `beranda.html` | Convince a first-time reader and steer them | Pasang Opera Agent |
 | `unduh.html` | Answer "where do I get it" with the least friction | Open `unduh-berkas.html` |
-| `unduh-berkas.html` | Hand over the file for this browser | Download the .zip |
+| `unduh-berkas.html` | Hand over the file for this browser | Download the zip file |
 | `fitur.html` | Prove the product works end to end | Unduh |
 | `bukti.html` | Show the measured numbers, nothing else | Unduh |
 | `studi.html` | Show finished work the reader can judge | Unduh |

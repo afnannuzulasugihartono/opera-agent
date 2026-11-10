@@ -1,4 +1,4 @@
-@last-edited: 2026-11-09 UTC+7.
+@last-edited: 2026-11-10 UTC+7.
 @related: [AGENTS.md](../AGENTS.md)
 
 # handoff
@@ -85,14 +85,12 @@ What is true now, and what to do next. Cap 150 lines. Spent detail: git history.
 
 ## Measured, not assumed
 
-- **A publish step must fail loudly.** The CRX base64 exceeds the Linux 131,072-byte
-  argument limit, so `node` died and curl sent no body; the run went green having published
-  nothing. `publish-crx.yml` now fails unless the status is 2xx.
-- **Every MCP caller drives the one device named by `DEVICE_NAME`, and sign-up is open**, so
-  the function admits the static token or a named account and nobody else, and a test bars
-  any wider rule.
+- **A publish step must fail loudly.** The CRX base64 exceeds the Linux 131,072-byte argument limit, so `node` died and curl sent no body; the run went green having published nothing. `publish-crx.yml` now fails unless the status is 2xx.
+- **Every MCP caller drives the one device named by `DEVICE_NAME`, and sign-up is open**, so the function admits the static token or a named account and nobody else, and a test bars any wider rule.
 
 ## Still open
+
+0. **Both wires print the same K&R shape** (`{ ok, ...facts }`): the local stdio surface was migrated to `tidyForAi`; both surfaces answer one shape (`local/mcp-server.js`, gate `tests/code-standard.test.mjs`); a refused tool answers the same way on both roads (`{ ok: false, error: { code, message } }`), and every local answer carries its cost as `elapsedMs`. **Local dialog tools now work** - `local/primitives.js` never exported `dialogState`/`dialogType`/`dialogPress` (was `session.dialogState is not a function` on a live browser). Two machines added to `docs/state-machines.json`: `hosted-tab-ownership-rank` (**fixed**: the pinned device answers every call while it is live, a sleeping pin is a named `503 pinned_device_not_live` that names the awake browsers and the header to send, and `X-Opera-Device: any` asks for the freshest one on purpose; the local cloud road sends the pin from the paired device file) and `tools-output-shape` (envelopes diverged; now flat on both wires; rank 1). **Every `.md` is tidied repo-wide** (spacing, punctuation, structure, mojibake; CHANGELOG's missing 1.6.25/1.6.26 rows added) and three unreferenced scripts plus 15 dead exports are deleted or unexported; a mojibake purge ran across watch.js, site.css and _headers; every tracked file was walked once with an input→output read (gates green). The relay fix ships with the next edge deploy - the owner dispatches it. `npm test`, `check ok`, `comment format ok: 554 files`.
 
 1. **The Cloudflare API token pasted into a chat is still live** and carries
    `Account API Tokens Write`. The owner has chosen to leave it for now.

@@ -38,7 +38,7 @@ jobs:
         run: |
           MANIFEST_VERSION="$(node -p "require('./extension/manifest.json').version")"
           if [ "$MANIFEST_VERSION" != "${{ inputs.version }}" ]; then
-            echo "::error::dispatched ${${{ inputs.version }}} but the manifest says ${MANIFEST_VERSION}"
+            echo "::error::dispatched ${{ inputs.version }} but the manifest says ${MANIFEST_VERSION}"
             exit 1
           fi
 

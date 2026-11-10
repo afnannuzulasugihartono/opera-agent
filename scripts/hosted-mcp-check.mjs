@@ -16,7 +16,7 @@ import { fileURLToPath } from 'node:url';
 
 export const SUPABASE_PROJECT_REF = 'nenmkmtvjremqphfqnfw';
 export const HOSTED_MCP_URL = `https://${SUPABASE_PROJECT_REF}.supabase.co/functions/v1/opera-agent-mcp`;
-export const AUTH_URL = `https://${SUPABASE_PROJECT_REF}.supabase.co/auth/v1`;
+const AUTH_URL = `https://${SUPABASE_PROJECT_REF}.supabase.co/auth/v1`;
 export const OAUTH_CLIENT_ID = 'bbc5eb76-f385-435b-8b13-8e339b45e633';
 export const OAUTH_REDIRECT_URI = 'http://127.0.0.1:19876/mcp/oauth/callback';
 
@@ -27,7 +27,7 @@ const TIMEOUT_MS = 15000;
 // The one credential this script must never write is one that arrives inside an answer, and an error body is an answer.
 // A JWT, a Supabase secret key and any run of forty-four opaque characters are all replaced, so a server that ever echoes a token into an error still leaves the tree clean.
 
-export const REDACTED = '[redacted]';
+const REDACTED = '[redacted]';
 
 const TOKEN_SHAPED = [
   /\beyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}/g,

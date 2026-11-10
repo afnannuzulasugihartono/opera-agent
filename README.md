@@ -5,7 +5,6 @@
 
 A private, local-browser control bridge.
 
-
 - Lets MCP clients drive the user's own browser session through a strict allowlist of
   generic browser primitives.
 - Returns structured results; the session never moves to a cloud browser.
@@ -65,6 +64,7 @@ Every number in that table is measured, not typed: `tests/readme.test.mjs` reads
 primitives from the protocol, the tools from the frozen contract and the local server,
 and the edge functions from the directories that hold an `index.ts`. A number that
 drifts fails the suite instead of ageing in the file.
+
 ## Layout
 
 | Directory | Role |

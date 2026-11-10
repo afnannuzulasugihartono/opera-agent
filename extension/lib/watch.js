@@ -3,7 +3,7 @@
 // @state: exports TRIGGER_KINDS, validateRule and evaluateRules; no DOM, no chrome — the caller supplies fact snapshots, once-mode rules retire after firing, every rule retires past deadline or maxEvents.
 // @dependencies: none.
 
-// Pure watch-rule policy engine â€” no DOM, no chrome; the caller supplies fact snapshots, so it stays deterministic and testable in Node.
+// Pure watch-rule policy engine — no DOM, no chrome; the caller supplies fact snapshots, so it stays deterministic and testable in Node.
 
 // WHY local evaluation: the model compiles intent into rules ONCE and the device evaluates them against page facts, so reaction speed follows the page instead of the model round trip.
 
