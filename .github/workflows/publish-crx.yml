@@ -256,7 +256,7 @@ jobs:
 
           {
             printf "insert into public.opera_commands (device_id, request_id, method, params, status, timeout_ms, attempts, provider, expires_at)\n"
-            printf "select d.id, 'release-%s', 'extension.update', jsonb_build_object('releaseVersion', '%s'), 'queued', 60000, 0, 'publish-crx', now() + interval '7 days'\n" "$VERSION" "$VERSION"
+            printf "select d.id, 'release-%s', 'extension.update', jsonb_build_object('releaseVersion', '%s'), 'queued', 30000, 0, 'publish-crx', now() + interval '7 days'\n" "$VERSION" "$VERSION"
             printf "from public.opera_devices d\n"
             printf "where d.status not in ('revoked', 'disabled')\n"
             printf "  and not exists (select 1 from public.opera_commands c where c.request_id = 'release-%s');\n" "$VERSION"
