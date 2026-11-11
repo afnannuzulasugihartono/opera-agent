@@ -59,6 +59,9 @@ export async function forgetFolderHandle() {
 }
 
 async function pickExtensionFolder() {
+  if (typeof showDirectoryPicker !== 'function') {
+    throw new Error('Browser ini menyembunyikan File System Access API. Brave menyembunyikannya di balik flag: brave://flags, cari file-system-access-api, pilih Enabled, lalu Relaunch. Chrome, Edge, Opera dan Vivaldi sudah punya.');
+  }
   const handle = await showDirectoryPicker({ mode: 'readwrite', id: 'opera-agent-extension-folder' });
   await saveFolderHandle(handle);
   return handle.name;
