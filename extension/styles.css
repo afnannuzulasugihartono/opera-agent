@@ -1,4 +1,4 @@
-html:has(> body.popup) { background: #262626; }
+html:has(> body.popup) { background: #242424; }
 
 /* @last-edited: 2026-10-04 18:25 UTC+7. */
 /* @title: styles — MV3 runtime. */

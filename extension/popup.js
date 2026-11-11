@@ -18,6 +18,15 @@ const $ = (id) => document.getElementById(id);
 let pairBoxPinned = false;
 let servedBuild = null;
 
+const setStatusLine = (line) => {
+  const statusEl = $('statusLine');
+  if (!statusEl) return;
+  statusEl.innerHTML = `${STATUS_ICONS[line.icon] ?? ''}<span>${line.text}</span>`;
+  statusEl.className = `statusLine ${line.tone}`;
+};
+
+setStatusLine({ icon: 'clock', text: t('status.starting'), tone: 'pending' });
+
 // WHY THE POPUP ASKS THE SERVER WHICH VERSION IS SERVED.
 // Chrome updates an installed extension on its own, but only when it was installed as a signed package; an extension loaded unpacked never asks the update service, and the person sees a version that simply stands still.
 // The popup therefore asks what the server serves and says so out loud, because a version that does not move is otherwise a mystery with no handle on it.
@@ -111,11 +120,7 @@ async function refresh() {
   const state = data.state || {};
   const status = String(state.status || (data.config.paired ? 'connecting' : 'unpaired'));
   const line = statusLine(status, !!data.config.paired);
-  const statusEl = $('statusLine');
-  if (statusEl) {
-    statusEl.innerHTML = `${STATUS_ICONS[line.icon] ?? ''}<span>${line.text}</span>`;
-    statusEl.className = `statusLine ${line.tone}`;
-  }
+  setStatusLine(line);
   const paired = !!data.config.paired;
   const pairSection = $('pairSection');
   pairSection.hidden = paired && !pairBoxPinned;
