@@ -8,6 +8,7 @@ What each release contained, and why. The notes live in
 
 | Release | Date | Notes |
 | --- | --- | --- |
+| 1.6.41 | 2026-11-11 | [the update can be pulled, and the page can close](docs/releases/1.6.41.md) |
 | 1.6.40 | 2026-11-11 | [the refusal names the flag that turns the feature on](docs/releases/1.6.40.md) |
 | 1.6.39 | 2026-11-11 | [the extension updates itself, once the reader has said where it may write](docs/releases/1.6.39.md) |
 | 1.6.38 | 2026-11-11 | [the extension says when it is behind, so a version that stands still is no longer a mystery](docs/releases/1.6.38.md) |
