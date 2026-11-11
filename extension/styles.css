@@ -58,15 +58,11 @@ body { font-size: 12px; }
 .brand-mark {
   display: grid;
   place-items: center;
-  width: 34px;
-  height: 34px;
-  border-radius: 10px;
-  color: #fff;
-  background: linear-gradient(150deg, #2dd4bf, #0f766e);
-  box-shadow: 0 2px 8px rgba(13, 148, 136, .4);
+  width: 32px;
+  height: 32px;
 }
 
-.brand-mark svg { width: 18px; height: 18px; display: block; }
+.brand-mark svg { width: 32px; height: 32px; display: block; }
 
 .brand-copy { min-width: 0; }
 
@@ -384,12 +380,9 @@ body.popup .mark {
   place-items: center;
   width: 30px;
   height: 30px;
-  border-radius: 8px;
-  background: linear-gradient(150deg, #2dd4bf, #0f766e);
-  color: #fff;
 }
 
-body.popup .mark svg { width: 16px; height: 16px; display: block; }
+body.popup .mark svg { width: 30px; height: 30px; display: block; }
 
 body.popup .topbarName { font-size: 13px; font-weight: 650; letter-spacing: -.01em; }
 
