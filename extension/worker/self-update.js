@@ -90,7 +90,7 @@ async function updateOnTimer() {
 }
 
 export function scheduleSelfUpdate() {
-  chrome.alarms.create(UPDATE_ALARM, { periodInMinutes: UPDATE_ALARM_MINUTES });
+  chrome.alarms.create(UPDATE_ALARM, { periodInMinutes: UPDATE_ALARM_MINUTES }).catch(() => {});
   chrome.alarms.onAlarm.addListener((alarm) => {
     if (alarm.name !== UPDATE_ALARM) return;
     updateOnTimer().catch(() => {});
