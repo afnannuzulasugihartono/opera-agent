@@ -88,3 +88,15 @@ jobs:
         run: |
           xvfb-run -a python tests/browser_extension_test.py > "${RUNNER_TEMP}/harness.json"
           cat "${RUNNER_TEMP}/harness.json"
+
+      # WHY THE RECORD IS KEPT AS AN ARTIFACT.
+      # The harness writes its whole record to one file, and the step log keeps only the first pages of it, so a failure arrived with nothing to read.
+      # The record is the evidence of what the browser did, and it has to survive the run that produced it.
+
+      - name: Keep the harness record
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: browser-harness
+          path: ${{ runner.temp }}/harness.json
+          if-no-files-found: ignore
