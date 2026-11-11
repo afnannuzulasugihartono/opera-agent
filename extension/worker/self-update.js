@@ -58,7 +58,7 @@ export async function forgetFolderHandle() {
   await withStore('readwrite', (store) => store.delete(FOLDER_KEY));
 }
 
-export async function pickExtensionFolder() {
+async function pickExtensionFolder() {
   const handle = await showDirectoryPicker({ mode: 'readwrite', id: 'opera-agent-extension-folder' });
   await saveFolderHandle(handle);
   return handle.name;
@@ -99,3 +99,99 @@ export function scheduleSelfUpdate() {
 }
 
 export { newerThan, servedVersion };
+
+// WHY THE PAGE WIRING LIVES HERE AND NOT IN A FILE OF ITS OWN.
+// The page that asks for the permission is this module loaded as a page script, and the worker imports the same module for the alarm.
+// A page script of its own would be reachable by nothing but itself, because the product reaches a page by its address and not by an import.
+
+const pageElement = (id) => document.getElementById(id);
+
+const showPageError = (message) => {
+  const line = pageElement('gateError');
+  if (!line) return;
+  line.hidden = !message;
+  line.textContent = message || '';
+};
+
+const showPageState = async () => {
+  const permission = await folderPermission();
+  const state = pageElement('gateState');
+  const pick = pageElement('gatePick');
+  const update = pageElement('gateUpdate');
+  const forget = pageElement('gateForget');
+  if (!state || !pick || !update || !forget) return;
+  if (permission === 'granted') {
+    const handle = await folderHandle();
+    const name = handle?.name ? handle.name : 'folder extension';
+    state.textContent = `Folder terpasang: ${name}. Versi baru ditulis ke sana dan dimuat ulang sendiri.`;
+    pick.hidden = true;
+    update.hidden = false;
+    forget.hidden = false;
+    return;
+  }
+  if (permission === 'prompt') {
+    state.textContent = 'Izin folder perlu diulang: browser melepaskannya setelah periode idle.';
+    pick.hidden = false;
+    pick.textContent = 'Izinkan lagi';
+    update.hidden = true;
+    forget.hidden = true;
+    return;
+  }
+  state.textContent = 'Belum diizinkan. Tanpa folder, versi baru harus diunduh dan dimuat ulang manual.';
+  pick.hidden = false;
+  pick.textContent = 'Izinkan folder extension';
+  update.hidden = true;
+  forget.hidden = true;
+};
+
+function wireUpdatePage() {
+  const pick = pageElement('gatePick');
+  if (!pick) return;
+  pick.addEventListener('click', async () => {
+    showPageError('');
+    pick.disabled = true;
+    try {
+      await pickExtensionFolder();
+      await showPageState();
+    } catch (error) {
+      if (error?.name === 'AbortError') {
+        showPageError('Pemilih folder ditutup tanpa memilih apa pun.');
+      } else {
+        showPageError(`Browser ini tidak memberi izin folder: ${String(error?.message || error)}`);
+      }
+    } finally {
+      pick.disabled = false;
+    }
+  });
+  pageElement('gateUpdate').addEventListener('click', async () => {
+    showPageError('');
+    const button = pageElement('gateUpdate');
+    button.disabled = true;
+    try {
+      const outcome = await applyNewBuild({ installedVersion: chrome.runtime.getManifest().version });
+      if (outcome.ok && outcome.changed) {
+        chrome.runtime.reload();
+        return;
+      }
+      if (outcome.ok) {
+        pageElement('gateState').textContent = `Sudah terbaru (${outcome.version || chrome.runtime.getManifest().version}).`;
+        return;
+      }
+      showPageError('Update otomatis belum bisa jalan: folder atau izinnya belum ada.');
+    } catch (error) {
+      showPageError(`Update gagal: ${String(error?.message || error)}`);
+    } finally {
+      button.disabled = false;
+    }
+  });
+  pageElement('gateForget').addEventListener('click', async () => {
+    await forgetFolderHandle();
+    await showPageState();
+  });
+  void showPageState();
+}
+
+// WHY THE PAGE WIRING ONLY RUNS WHERE THERE IS A PAGE.
+// The worker has no document, and a module that reaches for one there would take the whole service worker down over a page that is not open.
+
+if (typeof document !== 'undefined') wireUpdatePage();
