@@ -2613,9 +2613,7 @@ async def run(port, profile):
         await popup.reload()
         await popup.fill("#pairCode", PAIR_CODE)
         await popup.click("#pairButton")
-        await popup.locator("#pairToggleButton").wait_for(
-            state="visible", timeout=10000
-        )
+        await popup.locator("#pairSection").wait_for(state="hidden", timeout=10000)
         assert harness.STATE.paired
 
         ping = await drive("browser.ping")
