@@ -1,93 +1,87 @@
 <!-- @last-edited: 2026-11-11 UTC+7. -->
 <!-- @title: popup — MV3 runtime. -->
-<!-- @state: Indonesian copy; one firm status line, the facts of the device, and the doors out: Dashboard, docs, the signed package. -->
-<!-- @dependencies: none stated. -->
+<!-- @state: one flat list of rows; every word comes from lib/i18n.js; Tampermonkey's shape, twice the width. -->
+<!-- @dependencies: lib/i18n.js. -->
 
 <!doctype html>
 <html lang="id">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Opera Agent</title>
+  <title data-i18n="popup.title">Opera Agent</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body class="popup">
   <main class="shell">
-    <header class="app-header">
-      <div class="brand-mark" aria-hidden="true"><svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5.2 2.2v10.2l2.5-2.3 1.5 3.6 1.9-.8-1.6-3.6h3.1L5.2 2.2Z" fill="#fff" fill-opacity=".96"/></svg></div>
-      <div class="brand-copy">
-        <h1>Opera Agent</h1>
-        <p id="version">&nbsp;</p>
-      </div>
+    <header class="topbar">
+      <span class="mark" aria-hidden="true"><svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="16" height="16" rx="3" fill="#0b0d10"/><path d="M5.2 2.2v10.2l2.5-2.3 1.5 3.6 1.9-.8-1.6-3.6h3.1L5.2 2.2Z" fill="#3ecf8e"/></svg></span>
+      <h1 class="topbarName">Opera Agent</h1>
+      <span id="version" class="topbarVersion">&nbsp;</span>
     </header>
 
-    <p id="statusLine" class="statusLine starting" aria-live="polite">Memulai…</p>
+    <p id="statusLine" class="statusLine starting" aria-live="polite">Memulai&hellip;</p>
 
-    <p id="updateHint" class="updateHint" hidden>
-      <span id="updateText">Versi baru tersedia.</span>
-      <span class="updateActions">
-        <button id="updateButton" class="linkish" type="button">Unduh</button>
-        <button id="reloadButton" class="linkish ghost" type="button" hidden>Muat ulang</button>
-      </span>
-    </p>
-    <p id="updateHow" class="hint" hidden>Unduh build-nya, ekstrak di atas folder extension, lalu tekan <strong>Muat ulang</strong>.</p>
+    <div class="rows" id="doorsSection">
+      <p id="updateHint" class="updateHint" hidden>
+        <button id="updateButton" class="rowAmber" type="button">
+          <span class="rowIcon" aria-hidden="true"><svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M8 2v8m0 0 3-3m-3 3L5 7M3 13h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          <span class="rowBody"><span id="updateText">Versi baru tersedia.</span></span>
+        </button>
+        <button id="reloadButton" class="rowGhost" type="button" hidden data-i18n="reload.extension">Muat ulang ekstensi</button>
+      </p>
 
-    <dl class="facts">
-      <div class="row"><dt>Device</dt><dd id="deviceName">opera</dd></div>
-      <div class="row"><dt>Perintah terakhir</dt><dd id="lastCommand">&mdash;</dd></div>
-      <div class="row"><dt>Layar</dt><dd id="visionPrivacy" class="privacy allowed">Diizinkan</dd></div>
-    </dl>
+      <button id="dashboardButton" class="menuItem" type="button">
+        <span class="rowIcon" aria-hidden="true"><svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2 8a6 6 0 1 1 10.5 4M2 8 1.5 4.5M2 8h4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        <span class="rowBody"><span class="rowText" data-i18n="doors.dashboard">Buka Dashboard</span></span>
+        <span class="rowArrow" aria-hidden="true">&rsaquo;</span>
+      </button>
+      <button id="docsButton" class="menuItem" type="button">
+        <span class="rowIcon" aria-hidden="true"><svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3.5 2h6l3 3v9h-9zM9 2v3h3.5M6 8h4M6 11h4" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round"/></svg></span>
+        <span class="rowBody"><span class="rowText" data-i18n="doors.docs">Dokumentasi</span></span>
+        <span class="rowArrow" aria-hidden="true">&rsaquo;</span>
+      </button>
+    </div>
+
+    <div class="rows">
+      <button id="pairToggleButton" class="menuItem" type="button" aria-expanded="false" aria-controls="pairSection">
+        <span class="rowIcon" aria-hidden="true"><svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6.5 9.5 4 12a2.1 2.1 0 0 1-3-3l4.2-4.2a2.1 2.1 0 0 1 3 0M9.5 6.5l2.5-2.5a2.1 2.1 0 0 1 3 3l-4.2 4.2a2.1 2.1 0 0 1-3 0" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        <span class="rowBody"><span class="rowText" data-i18n="doors.pairing">Pairing</span></span>
+      </button>
+
+      <section id="pairSection" class="pairBox" role="group" aria-labelledby="pairTitle" hidden>
+        <h2 id="pairTitle" class="pairTitle" data-i18n="pair.title">Sambungkan device</h2>
+        <input id="pairCode" type="text" autocomplete="off" spellcheck="false" maxlength="64" data-i18n-placeholder="pair.placeholder" data-i18n-aria="pair.label" aria-label="Kode pairing" placeholder="Tempel kode dari dashboard" />
+        <button id="pairButton" class="primary block" type="button" data-i18n="pair.submit">Sambungkan</button>
+        <p class="hint"><span data-i18n="pair.hintBefore">Buat kode di </span><a id="pairHelp" href="https://opera-agent.pages.dev/dashboard.html#pairing" target="_blank" rel="noreferrer" data-i18n="pair.hintLink">Pairing</a><span data-i18n="pair.hintAfter">, lalu tempel sekali di sini.</span></p>
+      </section>
+    </div>
+
+    <div class="rows">
+      <button id="autoUpdateButton" class="menuItem" type="button">
+        <span class="rowIcon" aria-hidden="true"><svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1.5 5.5A1.5 1.5 0 0 1 3 4h3l1.5 2h5.5A1.5 1.5 0 0 1 14.5 7.5v5A1.5 1.5 0 0 1 13 14H3a1.5 1.5 0 0 1-1.5-1.5z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg></span>
+        <span class="rowBody"><span class="rowText" data-i18n="doors.updateAuto">Update otomatis</span></span>
+      </button>
+      <button id="updateNowButton" class="menuItem accentRow" type="button" hidden>
+        <span class="rowIcon" aria-hidden="true"><svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M8 1.5v8m0 0L5 6.8M8 9.5l3-2.7M3 13.5h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        <span class="rowBody"><span class="rowText" data-i18n="doors.updateNow">Perbarui sekarang</span></span>
+      </button>
+      <button id="forgetFolderButton" class="menuItem dangerRow" type="button" hidden>
+        <span class="rowIcon" aria-hidden="true"><svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2 4h12M6.5 4V2.5h3V4M4 4l.8 9.5A1.4 1.4 0 0 0 6.2 14.5h3.6a1.4 1.4 0 0 0 1.4-1.5L12 4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        <span class="rowBody"><span class="rowText" data-i18n="doors.forgetFolder">Lupakan folder</span></span>
+      </button>
+    </div>
 
     <p id="error" class="error" role="alert" hidden></p>
 
-    <section id="pairSection" class="card" aria-labelledby="pairTitle" hidden>
-      <h2 id="pairTitle" class="cardTitle">Sambungkan device</h2>
-      <label for="pairCode">Kode pairing sekali pakai</label>
-      <input id="pairCode" type="text" autocomplete="off" spellcheck="false" maxlength="64" placeholder="Masukkan kode pairing" />
-      <button id="pairButton" class="primary" type="button">Sambungkan</button>
-      <p class="hint">Buat kode di <a id="pairHelp" href="https://opera-agent.pages.dev/dashboard.html#pairing" target="_blank" rel="noreferrer">Dashboard &rarr; Pairing manual</a>, lalu tempel di sini sekali.</p>
-    </section>
-
-    <section id="pairedSection" class="card" aria-labelledby="controlsTitle" hidden>
-      <h2 id="controlsTitle" class="cardTitle">Kendali device</h2>
-      <div class="button-stack">
-        <button id="privateTabButton" class="secondary" type="button">Tandai tab ini privat</button>
-        <button id="selfTestButton" class="secondary" type="button">Jalankan uji mandiri</button>
-        <button id="unpairButton" class="danger" type="button">Lepas pairing</button>
-      </div>
-      <pre id="selfTestResult" aria-live="polite" hidden></pre>
-    </section>
-
-    <section id="autoUpdateSection" class="card" aria-labelledby="autoUpdateTitle">
-      <h2 id="autoUpdateTitle" class="cardTitle">Update otomatis</h2>
-      <p id="autoUpdateState" class="hint">Belum diizinkan.</p>
-      <div class="button-stack">
-        <button id="autoUpdateButton" class="secondary" type="button">Izinkan folder extension</button>
-        <button id="updateNowButton" class="secondary" type="button" hidden>Perbarui sekarang</button>
-        <button id="forgetFolderButton" class="secondary" type="button" hidden>Lupakan folder</button>
-      </div>
-      <p class="hint">Pilih folder extension-mu sekali. Versi baru ditulis ke sana dan dimuat ulang sendiri.</p>
-    </section>
-
-    <nav class="menu" aria-label="Menu">
-      <button id="dashboardButton" class="menuItem" type="button">
-        <span class="menuIcon" aria-hidden="true"><svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2 8a6 6 0 1 1 1.8 4.3M2 8V4m0 4h4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
-        <span class="menuText">Buka Dashboard</span>
-        <span class="menuHint">device, riwayat, saldo</span>
-      </button>
-      <button id="docsButton" class="menuItem" type="button">
-        <span class="menuIcon" aria-hidden="true"><svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 2h5l3 3v9H4zM9 2v3h3" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg></span>
-        <span class="menuText">Dokumentasi</span>
-        <span class="menuHint">cara pakai</span>
-      </button>
-      <button id="downloadButton" class="menuItem" type="button">
-        <span class="menuIcon" aria-hidden="true"><svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M8 2v8m0 0 3-3m-3 3L5 7M3 13h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
-        <span class="menuText">Paket bertanda tangan</span>
-        <span class="menuHint">update otomatis</span>
-      </button>
-    </nav>
-
-    <footer>Privasi sejak awal &middot; Berjalan di latar &middot; Eksekusi lokal</footer>
+    <footer class="footbar">
+      <span class="footBrand" data-i18n="footer.brand">Privasi sejak awal. Berjalan di latar.</span>
+      <span class="footText">
+        <a class="footLinkText" href="https://opera-agent.pages.dev/docs.html" target="_blank" rel="noreferrer" data-i18n="footer.help">Bantuan</a>
+        <span class="footSep" aria-hidden="true">|</span>
+        <a class="footLinkText" href="https://github.com/afnannuzulasugihartono/opera-agent/blob/main/CHANGELOG.md" target="_blank" rel="noreferrer" data-i18n="footer.changes">Perubahan</a>
+      </span>
+      <a class="footLink" href="https://github.com/afnannuzulasugihartono/opera-agent" target="_blank" rel="noreferrer" data-i18n-aria="footer.source" aria-label="Kode sumber di GitHub"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.11.79-.25.79-.56 0-.27-.01-1.17-.02-2.24-3.2.7-3.87-1.37-3.87-1.37-.52-1.33-1.27-1.69-1.27-1.69-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.18 1.76 1.18 1.02 1.76 2.68 1.25 3.34.96.1-.74.4-1.25.72-1.54-2.55-.29-5.23-1.28-5.23-5.68 0-1.26.45-2.28 1.18-3.09-.12-.29-.51-1.46.11-3.04 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.84 0c2.2-1.49 3.16-1.18 3.16-1.18.63 1.58.24 2.75.12 3.04.74.81 1.18 1.83 1.18 3.09 0 4.41-2.69 5.38-5.25 5.66.41.36.77 1.06.77 2.14 0 1.54-.01 2.79-.01 3.17 0 .31.21.68.8.56A10.5 10.5 0 0 0 23.5 12C23.5 5.65 18.35.5 12 .5Z"/></svg></a>
+    </footer>
   </main>
   <script type="module" src="popup.js"></script>
 </body>

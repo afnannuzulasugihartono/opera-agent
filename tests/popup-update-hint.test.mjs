@@ -34,7 +34,7 @@ test('a newer served version is shown, and the same version is not', () => {
   assert.match(popup, /newerThan/, 'the two versions are compared as numbers, not as strings');
   assert.match(popup, /line\.hidden = true/, 'and nothing is shown when the installed version is the newest');
   assert.match(popup, /line\.hidden = false/, 'while a note appears when the server serves a newer one');
-  assert.match(popup, /Versi \$\{served\} sudah tersedia/, 'the note names the version that is waiting');
+  assert.match(popup, /t\('update\.available', \{ v: served \}\)/, 'the note names the version that is waiting, in the reader\'s language');
 });
 
 test('the button does the work a browser cannot do from here', () => {
@@ -45,14 +45,14 @@ test('the button does the work a browser cannot do from here', () => {
   assert.match(popupHtml, /id="updateButton"/, 'the popup carries that button');
   assert.match(popupHtml, /id="reloadButton"/, 'and the reload that finishes it');
   assert.match(popupHtml, /id="updateText"/, 'and the line that names the version');
-  assert.match(popupHtml, /id="updateHow"/, 'and the one line that says how the update is done');
+  assert.doesNotMatch(popupHtml, /id="updateHow"/, 'the explanation line is gone; the amber row itself says what will happen');
 });
 
 test('the popup has the doors out of it, the dashboard among them', () => {
   assert.match(popupHtml, /id="dashboardButton"/, 'the dashboard door exists');
   assert.match(popup, /dashboardButton.*dashboard\.html/s, 'and it opens the dashboard');
   assert.match(popupHtml, /id="docsButton"/, 'the documentation door exists');
-  assert.match(popupHtml, /id="downloadButton"/, 'and the package door exists');
+  assert.match(popupHtml, /id="pairToggleButton"/, 'and the pairing door exists');
 });
 
 test('the status is one firm line, and the popup is a dark surface', () => {

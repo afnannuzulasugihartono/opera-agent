@@ -23,9 +23,18 @@ REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SIZES = (16, 32, 48, 128)
 
 BG = (0x0B, 0x0D, 0x10)
-SURFACE = (0x14, 0x18, 0x1D)
-LINE = (0x26, 0x2C, 0x34)
-ACCENT = (0x14, 0xB8, 0xA6)
+ACCENT = (0x3E, 0xCF, 0x8E)
+
+CURSOR_16 = [
+    (5.2, 2.2),
+    (5.2, 12.4),
+    (7.7, 10.1),
+    (9.2, 13.7),
+    (11.1, 12.9),
+    (9.5, 9.3),
+    (12.6, 9.3),
+]
+
 
 def rounded_square(x, y, size, inset, radius):
     """Coverage of a rounded square inset from the edge, as 0.0 or 1.0."""
@@ -36,65 +45,52 @@ def rounded_square(x, y, size, inset, radius):
     cy = min(max(y, low + radius), high - radius)
     return 1.0 if math.hypot(x - cx, y - cy) <= radius + 0.5 else 0.0
 
-def disc(x, y, cx, cy, radius):
-    return 1.0 if math.hypot(x - cx, y - cy) <= radius + 0.5 else 0.0
 
-def triangle(x, y, points):
-    def edge(a, b):
-        ax, ay = a
-        bx, by = b
-        return (bx - ax) * (y - ay) - (by - ay) * (x - ax)
+def polygon(x, y, points):
+    """Even-odd coverage test for a simple closed polygon, as 0.0 or 1.0."""
+    crossings = 0
+    j = len(points) - 1
+    for i, (xi, yi) in enumerate(points):
+        xj, yj = points[j]
+        if (yi > y) != (yj > y):
+            x_at = xi + (xj - xi) * (y - yi) / (yj - yi)
+            if x < x_at:
+                crossings += 1
+        j = i
+    return 1.0 if crossings % 2 == 1 else 0.0
 
-    signs = [edge(points[0], points[1]), edge(points[1], points[2]), edge(points[2], points[0])]
-    straddles = any(v < 0 for v in signs) and any(v > 0 for v in signs)
-    return 0.0 if straddles else 1.0
 
 def blend(base, colour, alpha):
     return tuple(round(b + (c - b) * alpha) for b, c in zip(base, colour))
 
+
 def render(size):
-    """One RGBA scanline per row, as bytes."""
-    centre = (size - 1) / 2.0
-    inset = size * 0.031
-    radius = size * 0.172
-    dot = size * 0.039
-    halo = size * 0.102
-    caret = [
-        (size * 0.359, size * 0.484),
-        (size * 0.469, size * 0.594),
-        (size * 0.469, size * 0.484),
-    ]
+    """One RGBA scanline per row, as bytes. The drawing is the site icon, exactly: the dark rounded tile and the green cursor, and nothing else."""
+    radius = size * 3.0 / 16.0
+    scale = size / 16.0
+    caret = [(px * scale, py * scale) for px, py in CURSOR_16]
 
     rows = []
     for y in range(size):
         row = bytearray()
         for x in range(size):
-            pixel = BG
+            pixel = (0x00, 0x00, 0x00)
+            alpha = 0
 
-            card = rounded_square(x, y, size, inset, radius)
-            if card:
-                pixel = blend(pixel, SURFACE, card)
-                edge = rounded_square(x, y, size, inset + 2, radius + 2) - card
-                if 0 < edge < 1:
-                    pixel = blend(pixel, LINE, edge * 0.9)
+            tile = rounded_square(x, y, size, 0, radius)
+            if tile:
+                pixel = blend(pixel, BG, 1.0)
+                alpha = 255
 
-            hit = triangle(x, y, caret)
+            hit = polygon(x, y, caret)
             if hit:
-                pixel = blend(pixel, ACCENT, 0.92)
+                pixel = blend(pixel, ACCENT, 1.0)
+                alpha = 255
 
-            ring = disc(x, y, centre, centre, halo) - disc(
-                x, y, centre, centre, halo - size * 0.026
-            )
-            if ring > 0:
-                pixel = blend(pixel, ACCENT, 0.30 * ring)
-
-            core = disc(x, y, centre, centre, dot)
-            if core:
-                pixel = blend(pixel, ACCENT, core)
-
-            row += bytes(pixel) + b"\xff"
+            row += bytes(pixel) + bytes([alpha])
         rows.append(bytes(row))
     return rows
+
 
 def box_filter(rows, size):
     """Average the master down, so a small icon is a reduction of the real thing."""
@@ -109,13 +105,14 @@ def box_filter(rows, size):
             for dy in range(factor):
                 for dx in range(factor):
                     source = (x * factor + dx) * 4
-                    pixel = rows[y * factor + dy][source:source + 4]
+                    pixel = rows[y * factor + dy][source : source + 4]
                     for channel in range(4):
                         totals[channel] += pixel[channel]
             count = factor * factor
             row += bytes(v // count for v in totals)
         out.append(bytes(row))
     return out
+
 
 def write_png(path, rows):
     size = len(rows)
@@ -124,7 +121,9 @@ def write_png(path, rows):
 
     def chunk(tag, payload):
         body = tag + payload
-        return struct.pack(">I", len(payload)) + body + struct.pack(">I", zlib.crc32(body))
+        return (
+            struct.pack(">I", len(payload)) + body + struct.pack(">I", zlib.crc32(body))
+        )
 
     png = b"\x89PNG\r\n\x1a\n"
     png += chunk(b"IHDR", struct.pack(">IIBBBBB", size, size, 8, 6, 0, 0, 0))
@@ -134,10 +133,10 @@ def write_png(path, rows):
     with open(path, "wb") as handle:
         handle.write(png)
 
+
 def main():
     master = render(128)
     for size in SIZES:
-
         targets = [os.path.join(REPO, "extension", "icons", f"icon{size}.png")]
         if size == 128:
             targets.append(os.path.join(REPO, "store", "icon128.png"))
@@ -147,6 +146,7 @@ def main():
                 f"  {os.path.relpath(path, REPO)}"
                 f"  {size}px  {os.path.getsize(path)} bytes"
             )
+
 
 if __name__ == "__main__":
     main()

@@ -15,25 +15,26 @@ import { userErrorMessage } from '../extension/lib/error-messages.js';
 
 const root = new URL('..', import.meta.url);
 const read = (name) => fs.readFileSync(new URL(`extension/${name}`, root), 'utf8');
+const i18n = read('lib/i18n.js');
 
 test('the popup speaks Indonesian and names where the code comes from', () => {
   const html = read('popup.html');
   assert.match(html, /<html lang="id"/, 'the document language is declared Indonesian');
-  assert.match(html, /Sambungkan device/, 'the pairing section says what it does');
-  assert.match(html, /Masukkan kode pairing/, 'the field says what to type');
+  assert.match(i18n, /Sambungkan device/, 'the pairing section says what it does');
+  assert.match(i18n, /Kode pairing/, 'the field says what to type');
+  assert.match(i18n, /Pairing/, 'the link names the same door the dashboard does');
 
   assert.match(html, /dashboard\.html#pairing/, 'the hint links the exact section that makes the code');
 });
 
-test('the popup status answers in Indonesian, every state of it', () => {
-  const script = read('popup.js');
+test('the popup status answers in every state of it, in both languages', () => {
   for (const label of ['Terhubung', 'Menghubungkan', 'Menyambung ulang', 'Memulai', 'Belum dipair']) {
-    assert.ok(script.includes(label), `the status names ${label}`);
+    assert.ok(i18n.includes(label), `the status names ${label}`);
   }
-  assert.match(script, /'Diizinkan'/, 'an allowed tab says so');
-  assert.match(script, /'Diblokir \(privat\)'/, 'a private tab says why it is blocked');
+  assert.match(i18n, /Connected/, 'and English is carried everywhere an Indonesian word is');
+  assert.match(i18n, /Not paired/, 'including the not-paired refusal');
 
-  assert.match(script, /SITE_ORIGIN/, 'the dashboard link follows the single source of truth');
+  assert.match(read('popup.js'), /SITE_ORIGIN/, 'the dashboard link follows the single source of truth');
 });
 
 test('the options page speaks Indonesian too', () => {

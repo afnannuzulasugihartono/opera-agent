@@ -229,24 +229,20 @@ const styles = fs.readFileSync(new URL('../extension/styles.css', import.meta.ur
 
 test('popup keeps its controls accessible and responsive in narrow Opera panels', () => {
   for (const id of [
-    'statusLine', 'deviceName', 'lastCommand', 'visionPrivacy',
-    'pairSection', 'pairCode', 'pairButton', 'pairedSection', 'privateTabButton',
-    'selfTestButton', 'selfTestResult', 'unpairButton',
-    'updateHint', 'updateButton', 'dashboardButton', 'docsButton', 'downloadButton'
+    'statusLine',
+    'pairSection', 'pairCode', 'pairButton', 'pairToggleButton',
+    'updateHint', 'updateButton', 'dashboardButton', 'docsButton', 'autoUpdateButton'
   ]) {
     assert.match(popup, new RegExp(`id="${id}"`));
   }
 
-  assert.match(popup, /<dl class="facts">/);
+  assert.match(popup, /<h1[^>]*>Opera Agent<\/h1>/);
   assert.match(popup, /role="alert"/);
-  assert.match(styles, /width:\s*352px/);
-  assert.match(styles, /min-width:\s*148px/);
-  assert.match(styles, /max-width:\s*100vw/);
-  assert.doesNotMatch(styles, /width:\s*min\(/);
+  assert.match(styles, /width:\s*392px/);
   assert.match(styles, /@media \(max-width: 239px\)/);
-  assert.doesNotMatch(styles, /min-width:\s*340px/);
-  assert.match(script, /'ready'[\s\S]{0,120}Terhubung/);
-  assert.match(script, /currentTabPrivate \? 'blocked' : 'allowed'/);
+  assert.match(styles, /body\.popup \.menuItem/, 'the rows are still styled as rows');
+  assert.match(script, /statusLine\(status, paired\)/, 'the status passes through the one status function');
+  assert.match(script, /applyI18n\(document\)/, 'and the words are applied from the language table');
 });
 
 const read = (relative) => fs.readFileSync(new URL(relative, import.meta.url), 'utf8');
