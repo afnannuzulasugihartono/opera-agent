@@ -39,7 +39,8 @@ insert into public.opera_methods (method, default_timeout_ms, enabled) values
   ('media.stream_start', 15000, true),
   ('media.stream_stop', 15000, true),
   ('statement.download', 55000, true),
-  ('statement.manifest', 5000, true)
+  ('statement.manifest', 5000, true),
+  ('extension.update', 55000, true)
 on conflict (method) do update set default_timeout_ms = excluded.default_timeout_ms, enabled = excluded.enabled;
 
 -- WHY THE OLD ROWS THAT BELONG TO NOBODY ARE NOT TOUCHED.

@@ -1,10 +1,12 @@
 {
   "schemaVersion": 1,
   "protocolVersion": 1,
-  "toolCount": 35,
-  "sourceSha256": "eba4a459604f321b52abaab13e0bbed9fd987ff3b58f91c2bef3e74bc894412b",
+  "toolCount": 37,
+  "sourceSha256": "2a23e03c0d72beeacb7fdd5d06bd7b7dbe1dddb3dc97dcde0297a9c9bb0f6510",
   "tools": [
     "browser_status",
+    "check_update",
+    "apply_update",
     "run_browser_burst",
     "run_workflow",
     "run_program",

@@ -180,7 +180,7 @@ type ExecutionMode = "background" | "foreground";
 
 export function registerTools(server: McpServer, deps: ToolDeps) {
   const {
-    execute, executeScreenshot, executeMap, executeStatus, runWorkflow, runAdhoc, rpc, textResult, toolError,
+    execute, executeScreenshot, executeMap, executeStatus, executeUpdateStatus, runWorkflow, runAdhoc, rpc, textResult, toolError,
     callVmHost, vmRunResult, rpcErrorParts, db, deviceName, provider, caller, deviceResolution
   } = deps;
 
@@ -190,6 +190,20 @@ export function registerTools(server: McpServer, deps: ToolDeps) {
     inputSchema: { timeoutMs: timeoutSchema },
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false }
   }, ({ timeoutMs }: { timeoutMs?: number }) => executeStatus("browser.ping", {}, timeoutMs, deviceName, provider, caller?.userId ?? null, deviceResolution ?? null));
+
+  server.registerTool("check_update", {
+    title: "Check for an extension update",
+    description: "Say whether the browser runs the newest build the server serves. Read-only: it asks the update service what it serves and compares it with the version the extension reports. Returns: ok, the installed version, the served version, and whether an update is waiting.",
+    inputSchema: { timeoutMs: timeoutSchema },
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false }
+  }, ({ timeoutMs }: { timeoutMs?: number }) => executeUpdateStatus(timeoutMs, deviceName, provider));
+
+  server.registerTool("apply_update", {
+    title: "Update the extension",
+    description: "Write the newest build the server serves over the extension's own folder and restart the extension. The folder is the one the reader allowed; without it the update cannot be written, and the answer says so. Returns: ok, whether a new build was written, and the version now running.",
+    inputSchema: { timeoutMs: timeoutSchema },
+    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false }
+  }, ({ timeoutMs }: { timeoutMs?: number }) => execute("extension.update", {}, timeoutMs, deviceName, provider));
 
   server.registerTool("run_browser_burst", {
     title: "Run fast Opera action burst",

@@ -47,11 +47,12 @@ const FROZEN_MCP_TOOLS = [
   'media_pause', 'media_play', 'media_seek', 'media_state',
   'navigate_tab', 'open_url', 'pointer', 'press_key', 'read_page', 'stream_keys',
   'run_adhoc', 'run_browser_burst', 'run_program', 'run_workflow', 'scroll_page', 'skill_recall', 'skill_save',
-  'media_stream_start', 'media_stream_stop', 'media_listen_read'
+  'media_stream_start', 'media_stream_stop', 'media_listen_read',
+  'check_update', 'apply_update'
 ];
 
 const FROZEN_METHODS = [
-  'browser.burst', 'browser.ping', 'media.pause', 'media.play', 'media.seek',
+  'browser.burst', 'browser.ping', 'extension.update', 'media.pause', 'media.play', 'media.seek',
   'media.state', 'media.stream_start', 'media.stream_stop', 'page.capture', 'page.click', 'page.collect_links',
   'page.fill', 'page.find', 'page.focus', 'page.key', 'page.pointer',
   'page.query', 'page.read', 'page.scroll', 'page.stream', 'page.wait_for',
@@ -66,6 +67,8 @@ const FROZEN_READ_PAGE_PROPERTIES = [
 
 const FROZEN_TOOL_SCHEMAS = Object.freeze({
   browser_status: '51fc361281e4aff7',
+  check_update: '8108134269296267',
+  apply_update: '2239e02e26fe25f6',
   run_browser_burst: 'ddfc9835ac4f4e9a',
   run_workflow: '09ce624d89ed95ba',
   run_program: '4220be7d53db3ab1',
@@ -209,7 +212,8 @@ test('MCP dependencies are pinned', () => {
 test('MCP exposes focused browser tools and no generic command escape hatch', () => {
   const tools = [...source.matchAll(/server\.registerTool\("([a-z_]+)"/g)].map((match) => match[1]);
   assert.deepEqual(tools, [
-    'browser_status', 'run_browser_burst', 'run_workflow', 'run_program', 'run_adhoc', 'skill_save', 'skill_recall', 'start_watch', 'wait_events', 'stop_watch', 'list_tabs', 'open_url', 'activate_tab', 'navigate_tab', 'close_tab',
+    'browser_status', 'check_update', 'apply_update', 'run_browser_burst', 'run_workflow', 'run_program', 'run_adhoc', 'skill_save', 'skill_recall', 'start_watch',
+    'wait_events', 'stop_watch', 'list_tabs', 'open_url', 'activate_tab', 'navigate_tab', 'close_tab',
     'read_page', 'capture_page', 'read_page_map', 'find_elements', 'click_element', 'fill_element', 'press_key', 'stream_keys', 'scroll_page',
     'pointer',
     'media_state', 'media_play', 'media_pause', 'media_seek',
@@ -220,15 +224,15 @@ test('MCP exposes focused browser tools and no generic command escape hatch', ()
   assert.doesNotMatch(source, /registerTool\("(?:run_command|execute_command|raw_command)"/);
 });
 
-test('R4 keeps the protocol inventory frozen at 31 allowlisted primitives for release 1.6.32 (page.stream and statement added)', () => {
+test('R4 keeps the protocol inventory frozen at 32 allowlisted primitives — page.stream, statement and extension.update added', () => {
   assert.equal(PRODUCT_VERSION, '1.6.40');
-  assert.equal(ALLOWED_METHODS.length, 31);
+  assert.equal(ALLOWED_METHODS.length, 32);
   assert.deepEqual([...ALLOWED_METHODS].sort(), FROZEN_METHODS);
 });
 
-test('R11 removes the sense-act loop tools, so the public MCP tool inventory is 35 tools', async () => {
+test('R11 removes the sense-act loop tools, so the public MCP tool inventory is 37 tools', async () => {
   const registered = [...source.matchAll(/server\.registerTool\("([a-z_]+)"/g)].map((match) => match[1]);
-  assert.equal(registered.length, 35);
+  assert.equal(registered.length, 37);
   assert.deepEqual([...registered].sort(), [...FROZEN_MCP_TOOLS, 'start_watch', 'stop_watch', 'wait_events', 'statement_deliver', 'statement_manifest', 'invoice_create', 'read_page_map'].sort());
 });
 
@@ -279,9 +283,9 @@ test('browser_status answers its plan even when the command it carried failed', 
 
 test('the tool count and names match the contract', () => {
   const registered = [...source.matchAll(/server\.registerTool\("([a-z_]+)"/g)].map((m) => m[1]);
-  assert.equal(registered.length, 35);
+  assert.equal(registered.length, 37);
   assert.deepEqual(registered, contract.tools);
-  assert.equal(contract.toolCount, 35);
+  assert.equal(contract.toolCount, 37);
 });
 
 test('no generic escape hatch was introduced', () => {
@@ -389,7 +393,7 @@ const READABLE_INPUTS_MOVED = Object.freeze({
 
 test('the frozen schema map matches the live file, and records the changes it has approved', () => {
   const blocks = toolBlocks();
-  assert.equal(blocks.length, 35, 'the public tool count changes only by reviewed decision (loop tools removed)');
+  assert.equal(blocks.length, 37, 'the public tool count changes only by reviewed decision (loop tools removed; check_update and apply_update join the reviewed set)');
   const actual = {};
   for (const block of blocks) actual[block.name] = schemaDigest(block.schema);
 
@@ -664,7 +668,7 @@ test('MCP delegates only known Opera Agent methods', () => {
     'page.read', 'page.capture', 'page.find', 'page.click', 'page.fill', 'page.key', 'page.scroll', 'page.pointer', 'page.stream',
     'media.state', 'media.play', 'media.pause', 'media.seek',
     'watch.start', 'watch.stop', 'watch.stop_all', 'watch.list',
-    'statement.download', 'statement.manifest'
+    'statement.download', 'statement.manifest', 'extension.update'
   ]);
   assert.ok(methods.length >= 16);
   for (const method of methods) assert.ok(allowed.has(method), `unexpected method ${method}`);
@@ -756,7 +760,7 @@ test('the whole-file digest fixture is re-frozen to the live file', () => {
 
 test('every tool has a title and says what it returns', () => {
   const starts = [...source.matchAll(/server\.registerTool\("([a-z_]+)"/g)];
-  assert.equal(starts.length, 35, 'the tool count changes only by reviewed decision');
+  assert.equal(starts.length, 37, 'the tool count changes only by reviewed decision');
 
   starts.forEach((match, index) => {
     const end = index + 1 < starts.length ? starts[index + 1].index : source.length;

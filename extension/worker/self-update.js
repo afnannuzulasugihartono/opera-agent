@@ -85,6 +85,26 @@ export async function applyNewBuild({ installedVersion } = {}) {
   return applyBuild({ folder: handle, installedVersion });
 }
 
+// WHY THE AGENT CAN PULL AN UPDATE WITHOUT THE READER'S HANDS.
+// The reader may close the update page and never open it again, and the agent still has to be able to bring the newest build down.
+// So the device can be asked to apply it: the write is the same write the page does, and the restart follows it.
+
+export async function applyNewestBuild() {
+  const manifest = chrome.runtime.getManifest();
+  const outcome = await applyNewBuild({ installedVersion: manifest.version });
+  if (outcome.ok && outcome.changed) {
+    setTimeout(() => {
+      try {
+        chrome.runtime.reload();
+      } catch (error) {
+        void error;
+      }
+    }, 500);
+    return { ok: true, updated: true, version: outcome.version };
+  }
+  return { ok: outcome.ok !== false, updated: false, version: outcome.version ?? manifest.version, reason: outcome.reason ?? null };
+}
+
 async function updateOnTimer() {
   const manifest = chrome.runtime.getManifest();
   const outcome = await applyNewBuild({ installedVersion: manifest.version });
