@@ -445,6 +445,15 @@ html.js .packTile:nth-child(5) { animation-delay: .58s; }
 
 /* WHY THE OTHER BUILDS ARE TWO QUIET LINKS: the benchmark download page shows the signed file and the manifest as plain links under the button, never a menu, never a modal; two links is the whole contract. */
 
+/* WHY THE ANIMATION SAYS WHICH ROUTE IT SHOWS: the demo walks the archive route, and a page whose button leads with the signed package must not teach the other one without saying so. */
+
+.demoNote {
+  margin: 0 0 18px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
 .otherBuilds {
   display: flex;
   align-items: center;
@@ -453,6 +462,16 @@ html.js .packTile:nth-child(5) { animation-delay: .58s; }
   padding: 12px 2px 0;
   font-size: 12px;
   line-height: 1;
+  text-align: left;
+}
+
+/* WHY THE CARD SAYS WHY IT IS THE MAIN BUTTON: a person who installs the archive never sees a new version, and the reason is one line, not a support answer. */
+
+.cardNote {
+  margin: 10px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
   text-align: left;
 }
 
