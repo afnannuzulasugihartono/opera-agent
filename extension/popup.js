@@ -1,16 +1,57 @@
-// @last-edited: 2026-10-06 09:58 UTC+7.
+// @last-edited: 2026-11-11 UTC+7.
 // @title: popup — MV3 runtime.
-// @state: Indonesian copy; pairing help follows SITE_ORIGIN, errors mapped to Indonesian.
+// @state: Indonesian copy; pairing help follows SITE_ORIGIN, errors mapped to Indonesian, and the version the server serves next to the one installed.
 // @dependencies: agent-log, error-messages, endpoints.
 
 import './lib/agent-log.js';
 import { userErrorMessage } from './lib/error-messages.js';
-import { SITE_ORIGIN } from './lib/endpoints.js';
+import { SITE_ORIGIN, UPDATE_BASE_URL } from './lib/endpoints.js';
 const log = globalThis.OperaAgentLog || {};
 if (typeof log.warn !== 'function') throw new Error('Agent log runtime is unavailable.');
 const $ = (id) => document.getElementById(id);
 let currentTabId = null;
 let currentTabPrivate = false;
+
+// WHY THE POPUP ASKS THE SERVER WHICH VERSION IS SERVED.
+// Chrome updates an installed extension on its own, but only when it was installed as a signed package; an extension loaded unpacked never asks the update service, and the person sees a version that simply stands still.
+// The popup therefore asks what the server serves and says so out loud, because a version that does not move is otherwise a mystery with no handle on it.
+
+async function servedVersion() {
+  try {
+    const response = await fetch(`${UPDATE_BASE_URL}/health`, { cache: 'no-store' });
+    if (!response.ok) return null;
+    const body = await response.json();
+    const version = String(body?.version ?? '').trim();
+    return /^\d+\.\d+\.\d+$/.test(version) ? version : null;
+  } catch (error) {
+    log.debug('UPDATE_CHECK_FAILED', error?.message || String(error));
+    return null;
+  }
+}
+
+function newerThan(installed, served) {
+  const a = String(installed || '').split('.').map((part) => Number(part) || 0);
+  const b = String(served || '').split('.').map((part) => Number(part) || 0);
+  for (let index = 0; index < 3; index += 1) {
+    if ((b[index] || 0) !== (a[index] || 0)) return (b[index] || 0) > (a[index] || 0);
+  }
+  return false;
+}
+
+async function showServedVersion(installed) {
+  const served = await servedVersion();
+  const line = $('updateHint');
+  if (!line) return;
+  if (!served || !newerThan(installed, served)) {
+    line.hidden = true;
+    line.textContent = '';
+    return;
+  }
+  line.hidden = false;
+  line.textContent = `Versi ${served} sudah tersedia. Pasang paket bertanda tangan dari halaman unduh agar browser memperbaruinya sendiri.`;
+  const link = $('updateLink');
+  if (link) link.href = `${SITE_ORIGIN}/unduh.html`;
+}
 
 async function call(action, extra = {}) {
   return chrome.runtime.sendMessage({ scope: 'opera-agent-popup', action, ...extra });
@@ -54,6 +95,7 @@ async function refresh() {
   }
   if (!data?.ok) return;
   $('version').textContent = `${data.version} \u00b7 Protocol ${data.protocolVersion}`;
+  showServedVersion(data.version);
   $('deviceName').textContent = data.config.deviceName || 'opera';
   const state = data.state || {};
   const status = String(state.status || (data.config.paired ? 'connecting' : 'unpaired'));
