@@ -48,6 +48,9 @@
 // The edge function reaches the database through PostgREST, so a wait that held a connection for the whole command filled PostgREST's pool and every later call queued behind it - ten seconds for work the device did in four hundred milliseconds.
 // The adaptive wait is now asked in short slices; the capture wait is still asked once, because it consumes its result.
 
+// WHY manifest.json and index.ts were re-pinned on 2026-11-11 a fifth time: the 1.6.43 release bump.
+// 1.6.42 to 1.6.43; the icons, the dispatch case and the wait slices are the reviewed parts.
+
 // WHY manifest.json and index.ts were re-pinned a second time on 2026-11-11: the release bump again.
 // 1.6.41 to 1.6.42; the icons and the update-dispatch case are the reviewed parts, nothing else moved.
 
@@ -57,8 +60,8 @@
 export const PUBLIC_SURFACE_LOCKS = Object.freeze([
   ['../extension/content.js', 'be462c9e32536137c94714185cdee227828538a1'],
   ['../extension/background.js', '8a0ed718b4820f6f2b19907232a667f4ede3d67d'],
-  ['../extension/manifest.json', '0998a754be5db3ce8b628a6704334a3a38d3773e'],
-  ['../supabase/functions/opera-agent-mcp/index.ts', '8c5b1ef4b3e9d4d85d407d185cc265c66156281b'],
+  ['../extension/manifest.json', 'c17f1d00e3a4948b81e0515db0f0d42653ae9889'],
+  ['../supabase/functions/opera-agent-mcp/index.ts', '256be7a05d150a48660a108354748c7dea1faf36'],
   ['../supabase/functions/opera-agent-mcp/tools.ts', 'a3336416664f49af19507c3e18a45e9871c64087'],
 ]);
 
