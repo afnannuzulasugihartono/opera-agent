@@ -1,6 +1,6 @@
 # @last-edited: 2026-11-11 UTC+7.
 # @title: publish-npm - publishes the local MCP package with the runner's own identity.
-# @state: the version it publishes, the dry run, and the registry answer it waits for.
+# @state: the version it publishes, the gates it waits for, and the registry answer it confirms.
 # @dependencies: npm trusted publishing (OIDC), the package in local/.
 
 # WHY THIS PUBLISHES WITHOUT A TOKEN.
@@ -14,14 +14,9 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: The version to publish; it must be the version in local/package.json.
+        description: The version to publish, matching local/package.json.
         required: true
         type: string
-      dry_run:
-        description: Pack and show what would be published, without publishing it.
-        required: false
-        default: false
-        type: boolean
 
 permissions:
   contents: read
@@ -49,7 +44,7 @@ jobs:
           VERSION="$(node -p "require('./local/package.json').version")"
           echo "package version: ${VERSION}"
           if [ "${VERSION}" != "${{ inputs.version }}" ]; then
-            echo "::error::the package says ${VERSION} and the dispatch asked for ${{ inputs.version }}"
+            echo "the package says ${VERSION} and the dispatch asked for ${{ inputs.version }}"
             exit 1
           fi
 
@@ -62,22 +57,16 @@ jobs:
         working-directory: local
         run: npm pack --dry-run
 
-      - name: Nothing is published on a dry run
-        if: ${{ inputs.dry_run }}
-        run: echo "dry run: the tarball was built and nothing was published"
-
       - name: Publish with provenance
-        if: ${{ !inputs.dry_run }}
         working-directory: local
         run: npm publish --provenance --access public
 
       - name: The registry answers with the version
-        if: ${{ !inputs.dry_run }}
         run: |
           VERSION="$(node -p "require('./local/package.json').version")"
           PUBLISHED="$(npm view opera-agent-mcp@${VERSION} version 2>/dev/null || true)"
           echo "registry says: ${PUBLISHED:-nothing}"
           if [ "${PUBLISHED}" != "${VERSION}" ]; then
-            echo "::error::the registry does not answer ${VERSION} yet"
+            echo "the registry does not answer ${VERSION} yet"
             exit 1
           fi
