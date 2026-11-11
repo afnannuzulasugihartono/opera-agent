@@ -6,6 +6,7 @@
 import './lib/agent-log.js';
 import { userErrorMessage } from './lib/error-messages.js';
 import { SITE_ORIGIN, UPDATE_BASE_URL } from './lib/endpoints.js';
+import { applyNewBuild, forgetFolderHandle, folderHandle, folderPermission, pickExtensionFolder } from './worker/self-update.js';
 const log = globalThis.OperaAgentLog || {};
 if (typeof log.warn !== 'function') throw new Error('Agent log runtime is unavailable.');
 const $ = (id) => document.getElementById(id);
@@ -162,6 +163,40 @@ async function refresh() {
   $('pairedSection').hidden = !data.config.paired;
   $('error').hidden = !state.lastError;
   $('error').textContent = state.lastError ? userErrorMessage(state.lastError) : '';
+  void showAutoUpdateState();
+}
+
+// WHY THE POPUP SHOWS WHETHER THE FOLDER IS ALLOWED.
+// The automatic update is a permission the reader gave once; the popup says whether it is still there, so a version that does not move is never a mystery again.
+
+async function showAutoUpdateState() {
+  const line = $('autoUpdateState');
+  const allow = $('autoUpdateButton');
+  const now = $('updateNowButton');
+  const forget = $('forgetFolderButton');
+  if (!line || !allow || !now) return;
+  const permission = await folderPermission();
+  if (permission === 'granted') {
+    const handle = await folderHandle();
+    const name = handle?.name ? handle.name : 'folder extension';
+    line.textContent = `Folder terpasang: ${name}. Versi baru ditulis sendiri dan dimuat ulang sendiri.`;
+    allow.hidden = true;
+    now.hidden = false;
+    if (forget) forget.hidden = false;
+    return;
+  }
+  if (permission === 'prompt') {
+    line.textContent = 'Izin folder perlu diulang: browser melepaskannya setelah periode idle.';
+    allow.hidden = false;
+    allow.textContent = 'Izinkan lagi';
+    now.hidden = true;
+    return;
+  }
+  line.textContent = 'Belum diizinkan. Tanpa folder, versi baru harus diunduh dan dimuat ulang manual.';
+  allow.hidden = false;
+  allow.textContent = 'Izinkan folder extension';
+  now.hidden = true;
+  if (forget) forget.hidden = true;
 }
 
 $('pairButton').addEventListener('click', async () => {
@@ -239,6 +274,44 @@ $('docsButton').addEventListener('click', () => { void openTab(`${SITE_ORIGIN}/d
 $('downloadButton').addEventListener('click', () => { void openTab(`${SITE_ORIGIN}/unduh-berkas.html`); });
 $('updateButton').addEventListener('click', () => { void fetchNewBuild(); });
 $('reloadButton').addEventListener('click', () => { void reloadExtension(); });
+
+$('autoUpdateButton').addEventListener('click', async () => {
+  const button = $('autoUpdateButton');
+  button.disabled = true;
+  try {
+    await pickExtensionFolder();
+    await showAutoUpdateState();
+  } catch (error) {
+    if (error?.name !== 'AbortError') log.warn('FOLDER_PICK_FAILED', error?.message || String(error));
+  } finally {
+    button.disabled = false;
+  }
+});
+
+$('forgetFolderButton').addEventListener('click', async () => {
+  await forgetFolderHandle();
+  await showAutoUpdateState();
+});
+
+$('updateNowButton').addEventListener('click', async () => {
+  const button = $('updateNowButton');
+  button.disabled = true;
+  try {
+    const outcome = await applyNewBuild({ installedVersion: chrome.runtime.getManifest().version });
+    if (outcome.ok && outcome.changed) {
+      chrome.runtime.reload();
+      return;
+    }
+    $('autoUpdateState').textContent = outcome.ok
+      ? `Sudah terbaru (${outcome.version || chrome.runtime.getManifest().version}).`
+      : 'Update otomatis belum bisa jalan: folder atau izinnya belum ada.';
+    await showAutoUpdateState();
+  } catch (error) {
+    log.warn('AUTO_UPDATE_FAILED', error?.message || String(error));
+  } finally {
+    button.disabled = false;
+  }
+});
 
 const refreshQuietly = () => { refresh().catch(() => {}) };
 

@@ -28,6 +28,7 @@ import { completionFrame } from '../lib/socket-protocol.js';
 import { loadWatchers, armWatchersForTab, handleWatchFacts, commandTimeoutError } from './watch-registry.js';
 import { screenshotCache } from './capture.js';
 import { clearSerializedResult, boundedResult } from '../lib/serialize.js';
+import { scheduleSelfUpdate } from './self-update.js';
 import { dispatch } from '../background.js';
 
 const WAKE_ALARM = 'opera-agent-wake';
@@ -329,6 +330,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
 chrome.runtime.onInstalled.addListener(async () => {
   await chrome.alarms.create(WAKE_ALARM, { periodInMinutes: 0.5 });
+  scheduleSelfUpdate();
 
   await listenStop().catch(() => {});
   ensureSocket().catch(() => { });
@@ -336,6 +338,7 @@ chrome.runtime.onInstalled.addListener(async () => {
 
 chrome.runtime.onStartup.addListener(async () => {
   await chrome.alarms.create(WAKE_ALARM, { periodInMinutes: 0.5 });
+  scheduleSelfUpdate();
   await listenStop().catch(() => {});
   ensureSocket().catch(() => { });
 });
@@ -376,4 +379,5 @@ chrome.tabs.onRemoved.addListener((tabId) => {
 });
 
 chrome.alarms.create(WAKE_ALARM, { periodInMinutes: 0.5 }).catch((error) => { log.warn('WAKE_ALARM_CREATE_FAILED', error?.message || String(error)); });
+scheduleSelfUpdate();
 ensureSocket().catch(() => { });
