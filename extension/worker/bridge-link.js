@@ -53,9 +53,15 @@ const CANDIDATE_PORTS = [9451, 19451, 9333, 9222];
 // A fetch to the same port proves something is listening without joining the conversation - the bridge answers 404 to a plain GET, which is exactly the fact being looked for.
 
 export const probePort = async (port) => {
+  // WHY THE PROBE ASKS WHETHER THE ANSWER IS A BRIDGE AND NOT WHETHER SOMETHING ANSWERED.
+  // A Chrome started with a remote debugging port answers on 9222, and a probe that only asked "did anything answer" took that port for a bridge - the extension then dialled a debugging endpoint forever and the local road was dead while it believed it was connected.
+  // Measured on this machine: the extension reported "port 9222 discovered" and never linked, while the real bridge sat one candidate away.
+  // So the probe asks the bridge's own question, and a responder that cannot answer it is not a bridge.
   try {
-    await fetch(`http://127.0.0.1:${port}/`, { method: 'GET', cache: 'no-store' });
-    return true;
+    const response = await fetch(`http://127.0.0.1:${port}/health`, { method: 'GET', cache: 'no-store' });
+    if (!response.ok) return false;
+    const body = await response.json();
+    return body?.ok === true && Array.isArray(body?.devices);
   } catch {
     return false;
   }

@@ -41,6 +41,9 @@
 // WHY index.ts was re-pinned on 2026-11-11: the release bump rode in it.
 // The server version constant moved 1.6.40 to 1.6.41; the surface did not move with it.
 
+// WHY index.ts was re-pinned on 2026-11-11 a third time: the hosted answer stopped being a stream.
+// The transport answers one JSON body now, because a client that waits for an SSE stream to close waited ten seconds for work the device had done in four hundred milliseconds.
+
 // WHY manifest.json and index.ts were re-pinned a second time on 2026-11-11: the release bump again.
 // 1.6.41 to 1.6.42; the icons and the update-dispatch case are the reviewed parts, nothing else moved.
 
@@ -51,7 +54,7 @@ export const PUBLIC_SURFACE_LOCKS = Object.freeze([
   ['../extension/content.js', 'be462c9e32536137c94714185cdee227828538a1'],
   ['../extension/background.js', '8a0ed718b4820f6f2b19907232a667f4ede3d67d'],
   ['../extension/manifest.json', '0998a754be5db3ce8b628a6704334a3a38d3773e'],
-  ['../supabase/functions/opera-agent-mcp/index.ts', '6dffbde6b8b046c45d4a2a3ecb5a9b032a51ed5a'],
+  ['../supabase/functions/opera-agent-mcp/index.ts', 'e2475556c37f0b2040098e4ad3eef2801bd5d3cb'],
   ['../supabase/functions/opera-agent-mcp/tools.ts', 'a3336416664f49af19507c3e18a45e9871c64087'],
 ]);
 
