@@ -129,7 +129,11 @@ class BridgeState:
             if device in self.sockets:
                 self.sockets.remove(device)
 
-    def push(self, method, params=None, timeout=12000, benchmark=None):
+    def push(self, method, params=None, timeout=30000, benchmark=None):
+        # WHY THE COMMAND BUDGET IS THE PRODUCT'S OWN CEILING.
+        # The relay clamps a command to thirty seconds, so a harness that asks for less is not stricter than the product - it is different from it, and it fails a slow command the product would have carried.
+        # Measured on a loaded CI runner: a trusted click that opens a tab took longer than twelve seconds and the build went red for it, while the same run passed minutes earlier.
+        # The budget is the ceiling the product uses, and the wait below is longer than it, so the harness fails only when the product would have failed too.
         cid = str(uuid.uuid4())
         command = {
             "id": cid,
@@ -166,7 +170,7 @@ class BridgeState:
                 )
             self.cv.notify_all()
 
-    def wait(self, cid, timeout=20):
+    def wait(self, cid, timeout=40):
         deadline = time.time() + timeout
         with self.cv:
             while cid not in self.completed and time.time() < deadline:
