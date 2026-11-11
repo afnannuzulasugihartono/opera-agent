@@ -5,6 +5,10 @@
 
 name: CI
 
+# WHY THE BROWSER JOB KEEPS ITS RECORD.
+# The harness writes its whole record to one file, and the step log keeps only the first pages of it, so a failure arrived with nothing to read.
+# The record is the evidence of what the browser did, and it has to survive the run that produced it.
+
 # Every pull request, whatever branch it targets.
 # The stack in this repository is a chain of branches, and a gate that only runs against main runs for none of them: the pull requests that carry the work would show no gate at all, and the owner would be the only check.
 
@@ -88,10 +92,6 @@ jobs:
         run: |
           xvfb-run -a python tests/browser_extension_test.py > "${RUNNER_TEMP}/harness.json"
           cat "${RUNNER_TEMP}/harness.json"
-
-      # WHY THE RECORD IS KEPT AS AN ARTIFACT.
-      # The harness writes its whole record to one file, and the step log keeps only the first pages of it, so a failure arrived with nothing to read.
-      # The record is the evidence of what the browser did, and it has to survive the run that produced it.
 
       - name: Keep the harness record
         if: always()
