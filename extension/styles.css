@@ -32,9 +32,9 @@ html:has(> body.popup) { background: #242424; }
 html,
 body {
   margin: 0;
-  width: 352px;
-  min-width: 148px;
-  max-width: 100vw;
+  width: 400px;
+  min-width: 400px;
+  max-width: 400px;
   overflow-x: hidden;
   background: var(--bg);
   color: var(--text);
@@ -358,7 +358,7 @@ body.popup {
   --pop-amber: #c07a12;
   --pop-amber-hover: #a96807;
   --pop-danger: #f26d5f;
-  width: 392px;
+  width: 400px;
   background: var(--pop-bg);
   color: var(--pop-text);
 }

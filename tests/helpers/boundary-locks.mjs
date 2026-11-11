@@ -41,14 +41,17 @@
 // WHY index.ts was re-pinned on 2026-11-11: the release bump rode in it.
 // The server version constant moved 1.6.40 to 1.6.41; the surface did not move with it.
 
+// WHY manifest.json and index.ts were re-pinned a second time on 2026-11-11: the release bump again.
+// 1.6.41 to 1.6.42; the icons and the update-dispatch case are the reviewed parts, nothing else moved.
+
 // WHY CRLF does not cause false failures: a Windows checkout rewrites line endings, so the test normalizes CRLF to LF before hashing.
 // Otherwise every developer on Windows would see all nine pins fail for a reason that is not a contract change.
 
 export const PUBLIC_SURFACE_LOCKS = Object.freeze([
   ['../extension/content.js', 'be462c9e32536137c94714185cdee227828538a1'],
   ['../extension/background.js', '8a0ed718b4820f6f2b19907232a667f4ede3d67d'],
-  ['../extension/manifest.json', 'c5c6bf1016447a7831080270f181c32c5d0175a2'],
-  ['../supabase/functions/opera-agent-mcp/index.ts', 'b62f9f475f0495d695c22a78a3e18b74c0f84298'],
+  ['../extension/manifest.json', '0998a754be5db3ce8b628a6704334a3a38d3773e'],
+  ['../supabase/functions/opera-agent-mcp/index.ts', '6dffbde6b8b046c45d4a2a3ecb5a9b032a51ed5a'],
   ['../supabase/functions/opera-agent-mcp/tools.ts', 'a3336416664f49af19507c3e18a45e9871c64087'],
 ]);
 

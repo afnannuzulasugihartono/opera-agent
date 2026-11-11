@@ -8,6 +8,7 @@ What each release contained, and why. The notes live in
 
 | Release | Date | Notes |
 | --- | --- | --- |
+| 1.6.42 | 2026-11-11 | [the panel sizes once, and the release pushes itself out](docs/releases/1.6.42.md) |
 | 1.6.41 | 2026-11-11 | [the update can be pulled, and the page can close](docs/releases/1.6.41.md) |
 | 1.6.40 | 2026-11-11 | [the refusal names the flag that turns the feature on](docs/releases/1.6.40.md) |
 | 1.6.39 | 2026-11-11 | [the extension updates itself, once the reader has said where it may write](docs/releases/1.6.39.md) |
