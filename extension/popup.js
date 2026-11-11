@@ -6,7 +6,7 @@
 import './lib/agent-log.js';
 import { userErrorMessage } from './lib/error-messages.js';
 import { SITE_ORIGIN, UPDATE_BASE_URL } from './lib/endpoints.js';
-import { applyNewBuild, forgetFolderHandle, folderHandle, folderPermission, pickExtensionFolder } from './worker/self-update.js';
+import { applyNewBuild, forgetFolderHandle, folderHandle, folderPermission } from './worker/self-update.js';
 const log = globalThis.OperaAgentLog || {};
 if (typeof log.warn !== 'function') throw new Error('Agent log runtime is unavailable.');
 const $ = (id) => document.getElementById(id);
@@ -275,17 +275,12 @@ $('downloadButton').addEventListener('click', () => { void openTab(`${SITE_ORIGI
 $('updateButton').addEventListener('click', () => { void fetchNewBuild(); });
 $('reloadButton').addEventListener('click', () => { void reloadExtension(); });
 
-$('autoUpdateButton').addEventListener('click', async () => {
-  const button = $('autoUpdateButton');
-  button.disabled = true;
-  try {
-    await pickExtensionFolder();
-    await showAutoUpdateState();
-  } catch (error) {
-    if (error?.name !== 'AbortError') log.warn('FOLDER_PICK_FAILED', error?.message || String(error));
-  } finally {
-    button.disabled = false;
-  }
+// WHY THE BUTTON OPENS A PAGE INSTEAD OF A PICKER.
+// The folder picker takes the focus from the extension, and a popup that loses the focus closes with it, so the reader presses the button and sees nothing happen.
+// A tab stays open, holds the picker, and can say what went wrong in words.
+
+$('autoUpdateButton').addEventListener('click', () => {
+  void chrome.tabs.create({ url: chrome.runtime.getURL('update.html') });
 });
 
 $('forgetFolderButton').addEventListener('click', async () => {

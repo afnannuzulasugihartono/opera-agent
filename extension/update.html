@@ -1,0 +1,64 @@
+<!-- @last-edited: 2026-11-11 UTC+7. -->
+<!-- @title: update - the page where the reader allows the extension to write its own folder. -->
+<!-- @state: the permission, the version it may write, and the button that writes it. -->
+<!-- @dependencies: worker/self-update.js. -->
+
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Update otomatis — Opera Agent</title>
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    /*
+     * WHY THE PERMISSION GETS ITS OWN PAGE: the folder picker takes the focus away from the extension, and a popup that loses the focus closes with it - so the reader presses the button and sees nothing happen.
+     * A tab stays open and holds the answer.
+     */
+    body.gate {
+      width: auto;
+      max-width: 560px;
+      margin: 0 auto;
+      padding: 32px 20px 48px;
+      background: var(--bg);
+      color: var(--text);
+    }
+    .gateCard {
+      margin-top: 18px;
+      padding: 16px 18px 18px;
+      border-radius: 12px;
+      background: var(--surface);
+      box-shadow: var(--shadow-card);
+    }
+    .gateTitle { margin: 0 0 6px; font-size: 15px; font-weight: 650; }
+    .gateLine { margin: 0 0 10px; color: var(--muted); font-size: 12.5px; line-height: 1.55; }
+    .gateActions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+    .gateError {
+      margin: 12px 0 0;
+      padding: 9px 11px;
+      border-radius: 9px;
+      color: var(--danger);
+      background: rgba(244, 112, 103, .1);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body class="gate">
+  <h1 class="gateTitle">Update otomatis</h1>
+  <p class="gateLine">Browser tidak pernah memperbarui extension yang dipasang dari folder. Beri izin sekali untuk folder extension-mu, lalu setiap versi baru ditulis ke sana dan dimuat ulang sendiri.</p>
+
+  <div class="gateCard">
+    <p id="gateState" class="gateLine">Memeriksa…</p>
+    <div class="gateActions">
+      <button id="gatePick" class="primary" type="button">Izinkan folder extension</button>
+      <button id="gateUpdate" class="secondary" type="button" hidden>Perbarui sekarang</button>
+      <button id="gateForget" class="secondary" type="button" hidden>Lupakan folder</button>
+    </div>
+    <p id="gateError" class="gateError" hidden></p>
+    <p class="gateLine" style="margin-top: 14px;">Folder yang dipilih adalah folder tempat <code>manifest.json</code> extension-mu berada.</p>
+  </div>
+
+  <script type="module" src="worker/self-update.js"></script>
+</body>
+</html>
