@@ -17,16 +17,24 @@ const popupHtml = fs.readFileSync(new URL('extension/popup.html', root), 'utf8')
 const css = fs.readFileSync(new URL('extension/styles.css', root), 'utf8');
 
 test('the popup asks the update service which version is served', () => {
-  assert.match(popup, /UPDATE_BASE_URL/, 'it knows where the update service lives');
-  assert.match(popup, /fetch\(`\$\{UPDATE_BASE_URL\}\//, 'and it asks that service');
+  assert.match(popup, /import \{ servedVersion, newerThan \} from '\.\/lib\/self-update\.js'/, 'it asks, through the one served-version check the product owns');
+  assert.match(popup, /UPDATE_BASE_URL/, 'and it knows where the update service lives');
   assert.match(popup, /showServedVersion\(data\.version\)/, 'the answer is compared with the version that is running');
+});
+
+test('the one served-version check asks the archive, not the legacy health page', () => {
+  const lib = fs.readFileSync(new URL('extension/lib/self-update.js', root), 'utf8');
+  assert.match(lib, /method: 'HEAD'/, 'the version is asked cheaply, carrying nothing');
+  assert.match(lib, /download\/opera-agent\.zip/, 'from the archive this extension is updated from');
+  assert.match(lib, /x-opera-version/, 'and the answer is the version the build carries');
+  assert.doesNotMatch(lib, /fetch\([^)]*health/, 'not the health page, which answers for another extension by design');
 });
 
 test('a newer served version is shown, and the same version is not', () => {
   assert.match(popup, /newerThan/, 'the two versions are compared as numbers, not as strings');
   assert.match(popup, /line\.hidden = true/, 'and nothing is shown when the installed version is the newest');
   assert.match(popup, /line\.hidden = false/, 'while a note appears when the server serves a newer one');
-  assert.match(popup, /Versi \$\{served\} sudah tersedia/, 'the note names the version that is waiting');
+  assert.match(popup, /t\('update\.available', \{ v: served \}\)/, 'the note names the version that is waiting, in the reader\'s language');
 });
 
 test('the button does the work a browser cannot do from here', () => {
@@ -37,14 +45,14 @@ test('the button does the work a browser cannot do from here', () => {
   assert.match(popupHtml, /id="updateButton"/, 'the popup carries that button');
   assert.match(popupHtml, /id="reloadButton"/, 'and the reload that finishes it');
   assert.match(popupHtml, /id="updateText"/, 'and the line that names the version');
-  assert.match(popupHtml, /id="updateHow"/, 'and the one line that says how the update is done');
+  assert.doesNotMatch(popupHtml, /id="updateHow"/, 'the explanation line is gone; the amber row itself says what will happen');
 });
 
 test('the popup has the doors out of it, the dashboard among them', () => {
   assert.match(popupHtml, /id="dashboardButton"/, 'the dashboard door exists');
   assert.match(popup, /dashboardButton.*dashboard\.html/s, 'and it opens the dashboard');
   assert.match(popupHtml, /id="docsButton"/, 'the documentation door exists');
-  assert.match(popupHtml, /id="downloadButton"/, 'and the package door exists');
+  assert.match(popupHtml, /id="pairToggleButton"/, 'and the pairing door exists');
 });
 
 test('the status is one firm line, and the popup is a dark surface', () => {

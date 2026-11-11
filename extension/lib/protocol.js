@@ -78,7 +78,8 @@ export const METHOD_SPECS = Object.freeze({
   'media.stream_start': { timeoutMs: 15000 },
   'media.stream_stop': { timeoutMs: 15000 },
   'statement.download': { timeoutMs: 55000 },
-  'statement.manifest': { timeoutMs: 5000 }
+  'statement.manifest': { timeoutMs: 5000 },
+  'extension.update': { timeoutMs: 55000 }
 });
 
 export const ALLOWED_METHODS = Object.freeze(Object.keys(METHOD_SPECS));

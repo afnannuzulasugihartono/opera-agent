@@ -1,4 +1,4 @@
-// @last-edited: 2026-10-21 UTC+7.
+// @last-edited: 2026-11-11 UTC+7.
 // @title: opera-agent-update — the update service: the manifest, the signed CRX and the newest build.
 // @state: the two extension ids it answers, the update.xml it writes, and the CRX it serves.
 // @dependencies: edge-runtime, supabase-js, cors.
@@ -125,9 +125,11 @@ Deno.serve(async (req: Request) => {
       const wanted = String(url.searchParams.get("for") ?? "").trim().toLowerCase();
       const browser = /^[a-z][a-z0-9]{1,11}$/.test(wanted) ? wanted : "";
       const filename = `opera-agent${browser ? `-${browser}` : ""}-${current.version}${wantsZip ? ".zip" : ".crx"}`;
+      // WHY THE VERSION IS READABLE FROM ANOTHER ORIGIN: the extension's self-update decides from this one header, and a browser hides headers the server did not name as visible - so the version it carries may not land in the caller's hands without saying so here.
       return response(req, req.method === "HEAD" ? null : new Uint8Array(bytes).buffer, 200, {
         "Content-Type": wantsZip ? "application/zip" : "application/x-chrome-extension",
         "Content-Length": String(bytes.byteLength),
+        "Access-Control-Expose-Headers": "X-Opera-Version",
 
         "Cache-Control": "no-store, max-age=0",
 

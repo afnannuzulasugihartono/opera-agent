@@ -32,7 +32,7 @@ What is true now, and what to do next. Cap 150 lines. Spent detail: git history.
   fails a missing standard file, a pull request that skips CI, a CRLF file, or a dead path.
 - **The browser drive depends on nothing but the page it drives.** A ref dies with its
   document, its route or the extension epoch, so the drive re-finds what it clicks.
-- Gates: `npm test`, `npm run check` - 31 primitives, 203 runtime safety files, 1972 unit tests, green.
+- Gates: `npm test`, `npm run check` - 32 primitives, 203 runtime safety files, 1972 unit tests, green.
 - **The local drive is metered where it happens.** The hello carries the paired credentials (1.6.32, published);
   the loopback bridge verifies the session once, enforces the allowance with the plan named in the refusal, and reports usage into the shared count;
   `opera-agent-mcp doctor` prints what is linked and the one fix when it is not.
@@ -76,7 +76,7 @@ What is true now, and what to do next. Cap 150 lines. Spent detail: git history.
   device runs it locally; [`goal-plan.js`](../extension/lib/goal-plan.js) shares the allowlist.
 - **Cloudflare Pages at `opera-agent.pages.dev` is the only host that serves the site**, and
   the Vercel deploy path is gone: no `vercel.json`, no `vercel.app` in CORS, no Vercel check on a pull request. Every `style-src` allows `'self'`, and the features page counts
-  35 tools, 31 primitives and six permissions, against the code.
+  37 tools, 32 primitives and six permissions, against the code.
 - **A deploy is a dispatch, not a push.** [`deploy-site.yml`](../.github/workflows/deploy-site.yml)
   publishes `landing/` with `wrangler pages deploy` after the unit and syntax gates; a push
   that does not deploy leaves CI green and the old build live.

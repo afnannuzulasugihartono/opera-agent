@@ -1,3 +1,5 @@
+html:has(> body.popup) { background: #242424; }
+
 /* @last-edited: 2026-10-04 18:25 UTC+7. */
 /* @title: styles — MV3 runtime. */
 /* @state: style(popup): v8 Warm Command redesign + Cursor mark + unprefixed version (1.6.10). */
@@ -56,15 +58,11 @@ body { font-size: 12px; }
 .brand-mark {
   display: grid;
   place-items: center;
-  width: 34px;
-  height: 34px;
-  border-radius: 10px;
-  color: #fff;
-  background: linear-gradient(150deg, #2dd4bf, #0f766e);
-  box-shadow: 0 2px 8px rgba(13, 148, 136, .4);
+  width: 32px;
+  height: 32px;
 }
 
-.brand-mark svg { width: 18px; height: 18px; display: block; }
+.brand-mark svg { width: 32px; height: 32px; display: block; }
 
 .brand-copy { min-width: 0; }
 
@@ -340,350 +338,247 @@ footer {
 
 [hidden] { display: none !important; }
 
+
 /*
- * WHY THE POPUP IS DARK AND FIRM.
- * The popup answers one question first - is it connected - and the person reads it in a second, while a browser is in front of them.
- * A pale card with soft shadows and small grey labels reads as a form; a dark surface with one firm status line and a short list of doors reads as a control panel, which is what it is.
- * The options page stays light: it is a page people sit down at, and a popup is a thing they glance at.
+ * WHY THE POPUP IS DARK, FLAT AND WIDE.
+ * Tampermonkey's popup is the shape a reader trusts for one panel of small truths: a dark panel, full-width rows with a line icon, hairline dividers, one highlighted row for the one action that matters, and a quiet footer of doors.
+ * We keep that shape at almost twice the width, because a label like "Update otomatis — izinkan folder extension" does not fit a 220-pixel column, and a wrapped label in a menu row breaks the one-glance read the shape exists for.
+ * The options page stays light: it is a page people sit down at; a popup is a thing they glance at.
  */
 
 body.popup {
-  --pop-bg: #14171c;
-  --pop-surface: #1b1f26;
-  --pop-surface-2: #222833;
-  --pop-text: #e9edf2;
-  --pop-muted: #97a1af;
-  --pop-faint: #6d7683;
-  --pop-border: #2b323d;
-  --pop-accent: #3ecf8e;
-  --pop-warning: #e8b64c;
-  --pop-danger: #f2705f;
+  --pop-bg: #242424;
+  --pop-surface: #242424;
+  --pop-hover: #2e2e2e;
+  --pop-text: #e8e8e8;
+  --pop-muted: #b3b3b3;
+  --pop-faint: #7d7d7d;
+  --pop-border: #383838;
+  --pop-ok: #3ecf8e;
+  --pop-amber: #c07a12;
+  --pop-amber-hover: #a96807;
+  --pop-danger: #f26d5f;
+  width: 392px;
   background: var(--pop-bg);
   color: var(--pop-text);
 }
 
-body.popup .shell { padding: 13px 14px 14px; }
+body.popup .shell { padding: 0 0 4px; }
 
-body.popup .app-header {
-  grid-template-columns: 34px minmax(0, 1fr);
-  margin-bottom: 10px;
+/* WHY THE TOP ROW IS BARE: a brand bar with a product word and a version, nothing else - the panel is a menu, not a page. */
+
+body.popup .topbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 12px;
+  border-bottom: 1px solid var(--pop-border);
 }
 
-body.popup h1 {
-  font-size: 14px;
-  letter-spacing: -.015em;
+body.popup .mark {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
 }
 
-body.popup #version { color: var(--pop-faint); }
+body.popup .mark svg { width: 30px; height: 30px; display: block; }
 
-/* WHY THE STATUS IS THE BIGGEST THING IN THE POPUP: it is the answer the reader came for, and everything below it is detail under that answer. */
+body.popup .topbarName { font-size: 13px; font-weight: 650; letter-spacing: -.01em; }
+
+body.popup .topbarVersion {
+  margin-left: auto;
+  color: var(--pop-faint);
+  font-size: 10.5px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* WHY THE STATUS IS ONE FLAT LINE: the reader came for the answer to one question - is it connected - and the flat list answers it the same way it answers everything else. */
 
 body.popup .statusLine {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin: 0 0 12px;
-  padding: 9px 11px;
-  border: 1px solid var(--pop-border);
-  border-radius: 10px;
-  background: var(--pop-surface);
+  gap: 12px;
+  margin: 0;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--pop-border);
   font-size: 13px;
-  font-weight: 650;
-  letter-spacing: -.01em;
-  line-height: 1.3;
+  font-weight: 500;
+  line-height: 1.35;
+  color: var(--pop-muted);
 }
 
-body.popup .statusLine::before {
-  content: "";
-  flex: 0 0 auto;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--pop-faint);
-}
+body.popup .statusLine svg { width: 18px; height: 18px; display: block; flex: 0 0 auto; }
 
-body.popup .statusLine.ready {
-  border-color: rgba(62, 207, 142, .35);
-  background: rgba(62, 207, 142, .1);
-  color: var(--pop-accent);
-}
-
-body.popup .statusLine.ready::before { background: var(--pop-accent); }
-
-body.popup .statusLine.pending {
-  border-color: rgba(232, 182, 76, .3);
-  background: rgba(232, 182, 76, .08);
-  color: var(--pop-warning);
-}
-
-body.popup .statusLine.pending::before { background: var(--pop-warning); }
-
+body.popup .statusLine.ready { color: var(--pop-ok); }
+body.popup .statusLine.pending { color: var(--pop-amber); }
 body.popup .statusLine.idle { color: var(--pop-muted); }
 
-/* WHY THE FACTS ARE A FLAT LIST AND NOT CARDS: the list is short and the reader scans it once, so it sits on the surface instead of asking for three boxes to be opened. */
+/* WHY EVERY ROW IS THE SAME ROW: the shape carries meaning only when each door is the same shape, so the eye never stops to re-learn the pattern. */
 
-body.popup .facts {
-  margin: 0;
-  padding: 2px 0 4px;
-  border-top: 1px solid var(--pop-border);
+body.popup .rows {
+  display: flex;
+  flex-direction: column;
+  border-bottom: 1px solid var(--pop-border);
 }
 
-body.popup .row {
-  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
-  padding: 6px 0;
-  border-top: 1px solid var(--pop-border);
-}
+body.popup .rows > * + * { border-top: 1px solid var(--pop-border); }
 
-body.popup .row:first-child { padding-top: 9px; }
-
-body.popup .row dt { color: var(--pop-muted); font-size: 10.5px; }
-
-body.popup .row dd { color: var(--pop-text); font-size: 11.5px; }
-
-body.popup .privacy { color: var(--pop-accent); }
-
-body.popup .privacy.blocked { color: var(--pop-warning); }
-
-body.popup .card {
-  margin-top: 11px;
-  padding: 12px 13px 13px;
-  border: 1px solid var(--pop-border);
-  border-radius: 11px;
-  background: var(--pop-surface);
-  box-shadow: none;
-}
-
-body.popup .cardTitle {
-  margin: 0 0 4px;
-  color: var(--pop-muted);
-  font-size: 9px;
-  font-weight: 600;
-  letter-spacing: .09em;
-  text-transform: uppercase;
-}
-
-body.popup label { color: var(--pop-muted); }
-
-body.popup input {
-  background: var(--pop-surface-2);
-  box-shadow: inset 0 0 0 1px var(--pop-border);
-  color: var(--pop-text);
-}
-
-body.popup input::placeholder { color: var(--pop-faint); }
-
-body.popup .hint { color: var(--pop-faint); }
-
-body.popup button {
-  background: var(--pop-surface-2);
-  color: var(--pop-text);
-}
-
-body.popup button.primary {
-  background: var(--pop-accent);
-  color: #06210f;
-}
-
-body.popup button.primary:hover:not(:disabled) { background: #56d99e; }
-
-body.popup button.secondary:hover:not(:disabled) { background: #2b323d; }
-
-body.popup button.danger {
-  background: var(--pop-surface-2);
-  color: var(--pop-danger);
-}
-
-body.popup button.danger:hover:not(:disabled) { background: rgba(242, 112, 95, .14); }
-
-body.popup pre {
-  background: var(--pop-surface-2);
-  color: var(--pop-text);
-}
-
-body.popup .error {
-  background: rgba(242, 112, 95, .12);
-  color: var(--pop-danger);
-}
-
-/* WHY THE UPDATE IS A ROW OF ITS OWN: a version that stands still is the one thing in the popup the person cannot explain, so it is announced and it carries the button that acts on it. */
-
-body.popup .updateHint {
+body.popup .menuItem,
+body.popup .rowAmber,
+body.popup .rowGhost {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  margin: 0 0 11px;
-  padding: 9px 11px;
-  border: 1px solid rgba(62, 207, 142, .35);
-  border-radius: 10px;
-  background: rgba(62, 207, 142, .1);
-  color: var(--pop-accent);
-  font-size: 11px;
-  font-weight: 550;
-  line-height: 1.35;
-}
-
-body.popup .linkish {
-  width: auto;
-  min-height: 24px;
-  padding: 3px 10px;
-  border-radius: 7px;
-  background: var(--pop-accent);
-  color: #06210f;
-  font-size: 10.5px;
-  font-weight: 650;
-  white-space: nowrap;
-}
-
-body.popup .linkish:hover:not(:disabled) { background: #56d99e; }
-
-/* WHY THE MENU LOOKS LIKE A MENU: the doors out of the popup are the same kind of thing in every row, so they are listed the way a browser lists them, with the icon first and the destination last. */
-
-body.popup .menu {
-  margin-top: 12px;
-  border: 1px solid var(--pop-border);
-  border-radius: 11px;
-  background: var(--pop-surface);
-  overflow: hidden;
-}
-
-body.popup .menuItem {
-  display: grid;
-  grid-template-columns: 18px minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 10px;
+  gap: 12px;
   width: 100%;
-  min-height: 38px;
-  padding: 8px 11px;
+  min-height: 42px;
+  padding: 7px 12px;
+  border: 0;
   border-radius: 0;
   background: transparent;
   color: var(--pop-text);
   text-align: left;
+  cursor: pointer;
+  transition: background .12s ease;
 }
 
-body.popup .menuItem + .menuItem { border-top: 1px solid var(--pop-border); }
+body.popup .menuItem:focus-visible,
+body.popup .rowAmber:focus-visible,
+body.popup .rowGhost:focus-visible,
+body.popup button.primary:focus-visible {
+  outline: 2px solid var(--pop-amber);
+  outline-offset: -2px;
+}
 
-body.popup .menuItem:hover:not(:disabled) { background: var(--pop-surface-2); }
+body.popup .menuItem:hover:not(:disabled) { background: var(--pop-hover); }
+body.popup .menuItem:disabled { opacity: .55; cursor: default; }
 
-body.popup .menuIcon { display: grid; place-items: center; color: var(--pop-muted); }
+body.popup .rowIcon { flex: 0 0 22px; display: grid; place-items: center; color: #c9c9c9; }
+body.popup .rowIcon svg { width: 18px; height: 18px; display: block; }
+body.popup .rowBody { min-width: 0; display: grid; gap: 1px; }
+body.popup .rowText { font-size: 13px; font-weight: 500; line-height: 1.25; letter-spacing: -.005em; }
+body.popup .rowArrow { margin-left: auto; color: var(--pop-faint); font-size: 15px; line-height: 1; }
 
-body.popup .menuIcon svg { width: 15px; height: 15px; display: block; }
+body.popup .dangerRow .rowIcon,
+body.popup .dangerRow .rowText { color: var(--pop-danger); }
 
-body.popup .menuText { font-size: 12px; font-weight: 550; }
+body.popup .accentRow .rowIcon,
+body.popup .accentRow .rowText { color: var(--pop-ok); }
 
-body.popup .menuHint {
-  color: var(--pop-faint);
+/* WHY THE UPDATE ROW IS THE ONE AMBER THING: Tampermonkey highlights exactly one row this way, and so do we - the one action that cannot wait. */
+
+body.popup .updateHint { margin: 0; }
+
+body.popup .rowAmber { background: var(--pop-amber); color: #fff6e8; }
+body.popup .rowAmber .rowIcon { color: #ffe9bd; }
+body.popup .rowAmber .rowArrow { color: #fff6e8; }
+body.popup .rowAmber:hover { background: var(--pop-amber-hover); }
+
+body.popup .rowGhost {
+  justify-content: center;
+  min-height: 34px;
+  padding: 5px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--pop-ok);
+  background: rgba(53, 208, 127, .07);
+}
+
+body.popup .rowGhost:hover { background: rgba(53, 208, 127, .13); }
+
+body.popup .hint { color: var(--pop-faint); font-size: 10.5px; line-height: 1.45; margin: 0; }
+body.popup .hint strong { color: var(--pop-muted); font-weight: 550; }
+body.popup .hint.explain { padding: 9px 12px; border-bottom: 1px solid var(--pop-border); }
+
+body.popup .error {
+  margin: 8px 12px 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: rgba(242, 109, 95, .12);
+  color: var(--pop-danger);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+body.popup .pairBox {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border-bottom: 1px solid var(--pop-border);
+}
+
+body.popup .pairTitle {
+  margin: 0;
+  color: var(--pop-muted);
   font-size: 9.5px;
-  font-weight: 400;
+  font-weight: 650;
+  letter-spacing: .09em;
+  text-transform: uppercase;
 }
 
-body.popup footer { color: var(--pop-faint); }
+body.popup label { color: var(--pop-muted); font-size: 10.5px; }
+
+body.popup input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 9px 11px;
+  border: 1px solid var(--pop-border);
+  border-radius: 8px;
+  background: #1f1f1f;
+  color: var(--pop-text);
+  font-size: 12px;
+}
+
+body.popup input::placeholder { color: var(--pop-faint); }
+
+body.popup button.primary.block {
+  display: block;
+  width: 100%;
+  min-height: 36px;
+  padding: 8px 12px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--pop-ok);
+  color: #04270f;
+  font-size: 12px;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+body.popup button.primary.block:hover:not(:disabled) { background: #4be093; }
+
+body.popup pre {
+  margin: 2px 12px;
+  padding: 8px 10px;
+  border: 1px solid var(--pop-border);
+  border-radius: 8px;
+  background: #1f1f1f;
+  color: var(--pop-text);
+  font-size: 10.5px;
+  white-space: pre-wrap;
+}
+
+/* WHY THE FOOTER IS A ROW TOO: the last line of the panel is still a row of doors, smaller, so the outline of the panel never changes weight. */
+
+body.popup footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 12px 7px;
+  color: var(--pop-faint);
+  font-size: 10px;
+  letter-spacing: .01em;
+}
+
+body.popup .footBrand { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+body.popup .footLinks { flex: 0 0 auto; display: flex; align-items: center; gap: 10px; }
+
+body.popup .footLink { display: grid; place-items: center; color: var(--pop-faint); transition: color .12s ease; }
+body.popup .footLink:hover { color: var(--pop-text); }
+body.popup .footLink svg { width: 14px; height: 14px; display: block; }
 
 @media (max-width: 239px) {
-  .shell { padding: 11px; }
-
-  .app-header {
-    grid-template-columns: 30px minmax(0, 1fr);
-    gap: 8px;
-  }
-
-  .brand-mark {
-    width: 30px;
-    height: 30px;
-    border-radius: 9px;
-  }
-
-  .brand-mark svg { width: 16px; height: 16px; }
-
-  .eyebrow { display: none; }
-  h1 {
-    font-size: 13px;
-    white-space: nowrap;
-  }
-
-  #version {
-    font-size: 9px;
-    white-space: nowrap;
-  }
-
-  .badge {
-    grid-column: 1 / -1;
-    justify-self: stretch;
-    justify-content: center;
-    max-width: none;
-  }
-
-  .card {
-    padding: 10px 11px 11px;
-    border-radius: 10px;
-  }
-
-  .section-heading { margin: 0 0 2px; }
-
-  .row {
-    display: block;
-    padding: 5px 0;
-  }
-
-  .row dt {
-    color: var(--faint);
-    font-size: 8.5px;
-    font-weight: 500;
-    letter-spacing: .09em;
-    text-transform: uppercase;
-    line-height: 1.4;
-  }
-
-  .row dd {
-    text-align: left;
-    font-size: 12.5px;
-    line-height: 1.4;
-  }
-
-  .button-stack { gap: 5px; }
-  button { min-height: 28px; padding: 4px 9px; font-size: 11.5px; }
-  footer { display: none; }
+  body.popup { width: 100vw; }
 }
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #16161a;
-    --surface: #1e1e24;
-    --surface-soft: #26262e;
-    --surface-raised: #232329;
-    --text: #ececf1;
-    --muted: #9b9ba4;
-    --faint: #6c6c76;
-    --border: #26262e;
-    --border-strong: #2e2e37;
-    --primary: #0d9488;
-    --primary-hover: #14b8a6;
-    --success: #34d399;
-    --warning: #e8b64c;
-    --danger: #f47067;
-    --danger-border: rgba(244, 112, 103, .3);
-    --focus-ring: 0 0 0 2px #16161a, 0 0 0 4px rgba(20, 184, 166, .5);
-    --shadow-card: 0 2px 8px rgba(0, 0, 0, .35);
-  }
-
-  .badge.ready { background: rgba(52, 211, 153, .1); }
-  .badge.connecting, .badge.reconnecting { background: rgba(232, 182, 76, .1); }
-
-  button.secondary { background: var(--surface-soft); }
-  button.secondary:hover:not(:disabled) { background: var(--surface-raised); }
-  button.danger:hover:not(:disabled) { background: rgba(244, 112, 103, .1); }
-}
-
-body.popup .updateActions {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-
-body.popup .linkish.ghost {
-  background: transparent;
-  color: var(--pop-accent);
-  box-shadow: inset 0 0 0 1px rgba(62, 207, 142, .45);
-}
-
-body.popup .linkish.ghost:hover:not(:disabled) { background: rgba(62, 207, 142, .12); }

@@ -1,4 +1,4 @@
-// @last-edited: 2026-11-09 UTC+7.
+// @last-edited: 2026-11-11 UTC+7.
 // @title: boundary-locks — the frozen locks on the public boundary, shared by the checkpoint tests.
 // @state: nine pins over four stacks; each line says why the current pin exists, and nothing else.
 // @dependencies: none.
@@ -27,15 +27,23 @@
 // A device the owner revoked is not a device, so the resolver must never pick it and the query must never bring it in.
 // The criterion did not change; it got stricter: the surface that names the browser to drive now also refuses the ones that were cut off.
 
+// WHY the public surface was re-pinned a third time on 2026-11-11: the device itself can now be asked to pull the newest build.
+// The extension answers extension.update by writing the served build over its own folder and restarting, and the hosted surface carries the two tools the reader and the agent have: check_update and apply_update.
+// The dispatch case, the tool schemas and the update-status helper are the reviewed changes; content.js and manifest.json did not move.
+
+// WHY manifest.json was re-pinned on 2026-11-11: it now names its icons.
+// The action carried a popup and no icon, so the toolbar showed the browser's generic extension glyph - the product had no face in the one place every reader sees.
+// The icon is the site icon, drawn by scripts/draw-icon.py from the same path the website uses; nothing else in the manifest moved.
+
 // WHY CRLF does not cause false failures: a Windows checkout rewrites line endings, so the test normalizes CRLF to LF before hashing.
 // Otherwise every developer on Windows would see all nine pins fail for a reason that is not a contract change.
 
 export const PUBLIC_SURFACE_LOCKS = Object.freeze([
   ['../extension/content.js', 'be462c9e32536137c94714185cdee227828538a1'],
-  ['../extension/background.js', '556585d7a2d3e72c8f73af54523759da259527b6'],
-  ['../extension/manifest.json', 'e021fa332d00e7fcc9b32487b5f277316b5b8274'],
-  ['../supabase/functions/opera-agent-mcp/index.ts', '5e30fef062321d440c080a6e8c81a58242fad35c'],
-  ['../supabase/functions/opera-agent-mcp/tools.ts', '2d58d8177c38bdf947af1a725058f60a04b70ff4'],
+  ['../extension/background.js', '8a0ed718b4820f6f2b19907232a667f4ede3d67d'],
+  ['../extension/manifest.json', '8e3b6d4d6715e18812a85aec69f51f74060aa7b3'],
+  ['../supabase/functions/opera-agent-mcp/index.ts', 'a6f8ee05db63caed497cf2c78ead30bc36bbee1d'],
+  ['../supabase/functions/opera-agent-mcp/tools.ts', 'a3336416664f49af19507c3e18a45e9871c64087'],
 ]);
 
 export const OBSERVATION_STACK_LOCKS = Object.freeze([

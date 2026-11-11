@@ -51,6 +51,7 @@ import {
 import './worker/execute-pull.js';
 import { bridgeLinkState, ensureBridgeLink } from './worker/bridge-link.js';
 import { statementDownload, statementManifest } from './worker/statement.js';
+import { applyNewestBuild } from './worker/self-update.js';
 import { captureWorkerErrors } from './lib/error-capture.js';
 
 captureWorkerErrors({ target: typeof self === 'undefined' ? null : self, log });
@@ -345,6 +346,8 @@ export async function dispatch(method, params = {}, context = {}) {
     }
     case 'statement.manifest':
       return statementManifest();
+    case 'extension.update':
+      return applyNewestBuild();
     default:
       throw new Error('Method is not implemented by this extension build.');
   }

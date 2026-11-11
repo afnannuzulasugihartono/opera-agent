@@ -13,6 +13,8 @@
 // The worker wakes on an alarm, asks the update service what it serves, and writes the build when it is newer and the permission is still there.
 
 import { applyBuild, newerThan, servedVersion } from '../lib/self-update.js';
+import { t, applyI18n } from '../lib/i18n.js';
+import { STATUS_ICONS } from '../lib/status-icons.js';
 
 const DB_NAME = 'opera-agent-self-update';
 const STORE_NAME = 'handles';
@@ -41,7 +43,7 @@ const withStore = async (mode, work) => {
   }
 };
 
-export async function folderHandle() {
+async function folderHandle() {
   try {
     return (await withStore('readonly', (store) => store.get(FOLDER_KEY))) ?? null;
   } catch (error) {
@@ -60,7 +62,7 @@ export async function forgetFolderHandle() {
 
 async function pickExtensionFolder() {
   if (typeof showDirectoryPicker !== 'function') {
-    throw new Error('Browser ini menyembunyikan File System Access API. Brave menyembunyikannya di balik flag: brave://flags, cari file-system-access-api, pilih Enabled, lalu Relaunch. Chrome, Edge, Opera dan Vivaldi sudah punya.');
+    throw new Error(t('update.braveFlag'));
   }
   const handle = await showDirectoryPicker({ mode: 'readwrite', id: 'opera-agent-extension-folder' });
   await saveFolderHandle(handle);
@@ -83,6 +85,26 @@ export async function applyNewBuild({ installedVersion } = {}) {
   const permission = await handle.queryPermission({ mode: 'readwrite' });
   if (permission !== 'granted') return { ok: false, reason: 'needs-permission' };
   return applyBuild({ folder: handle, installedVersion });
+}
+
+// WHY THE AGENT CAN PULL AN UPDATE WITHOUT THE READER'S HANDS.
+// The reader may close the update page and never open it again, and the agent still has to be able to bring the newest build down.
+// So the device can be asked to apply it: the write is the same write the page does, and the restart follows it.
+
+export async function applyNewestBuild() {
+  const manifest = chrome.runtime.getManifest();
+  const outcome = await applyNewBuild({ installedVersion: manifest.version });
+  if (outcome.ok && outcome.changed) {
+    setTimeout(() => {
+      try {
+        chrome.runtime.reload();
+      } catch (error) {
+        void error;
+      }
+    }, 500);
+    return { ok: true, updated: true, version: outcome.version };
+  }
+  return { ok: outcome.ok !== false, updated: false, version: outcome.version ?? manifest.version, reason: outcome.reason ?? null };
 }
 
 async function updateOnTimer() {
@@ -120,34 +142,42 @@ const showPageState = async () => {
   const permission = await folderPermission();
   const state = pageElement('gateState');
   const pick = pageElement('gatePick');
+  const pickLabel = pageElement('gatePickText');
   const update = pageElement('gateUpdate');
   const forget = pageElement('gateForget');
   if (!state || !pick || !update || !forget) return;
+  const setTone = (tone) => { state.className = `statusLine ${tone}`; };
+  const setLine = (tone, icon, text) => {
+    setTone(tone);
+    state.innerHTML = `${STATUS_ICONS[icon] ?? ''}<span>${text}</span>`;
+  };
+  const setPickLabel = (text) => { if (pickLabel) pickLabel.textContent = text; };
   if (permission === 'granted') {
     const handle = await folderHandle();
     const name = handle?.name ? handle.name : 'folder extension';
-    state.textContent = `Folder terpasang: ${name}. Versi baru ditulis ke sana dan dimuat ulang sendiri.`;
+    setLine('ready', 'check', t('update.state.granted', { name }));
     pick.hidden = true;
     update.hidden = false;
     forget.hidden = false;
     return;
   }
   if (permission === 'prompt') {
-    state.textContent = 'Izin folder perlu diulang: browser melepaskannya setelah periode idle.';
+    setLine('pending', 'clock', t('update.state.prompt'));
     pick.hidden = false;
-    pick.textContent = 'Izinkan lagi';
     update.hidden = true;
     forget.hidden = true;
+    setPickLabel(t('update.pickAgain'));
     return;
   }
-  state.textContent = 'Belum diizinkan. Tanpa folder, versi baru harus diunduh dan dimuat ulang manual.';
+  setLine('idle', 'power', t('update.state.none'));
   pick.hidden = false;
-  pick.textContent = 'Izinkan folder extension';
+  setPickLabel(t('update.pickLabel'));
   update.hidden = true;
   forget.hidden = true;
 };
 
 function wireUpdatePage() {
+  applyI18n(document);
   const pick = pageElement('gatePick');
   if (!pick) return;
   pick.addEventListener('click', async () => {
@@ -158,9 +188,9 @@ function wireUpdatePage() {
       await showPageState();
     } catch (error) {
       if (error?.name === 'AbortError') {
-        showPageError('Pemilih folder ditutup tanpa memilih apa pun.');
+        showPageError(t('update.pickAbort'));
       } else {
-        showPageError(`Browser ini tidak memberi izin folder: ${String(error?.message || error)}`);
+        showPageError(t('update.pickFailed', { message: String(error?.message || error) }));
       }
     } finally {
       pick.disabled = false;
@@ -177,12 +207,12 @@ function wireUpdatePage() {
         return;
       }
       if (outcome.ok) {
-        pageElement('gateState').textContent = `Sudah terbaru (${outcome.version || chrome.runtime.getManifest().version}).`;
+        pageElement('gateState').innerHTML = `${STATUS_ICONS.check}<span>${t('update.upToDate', { v: outcome.version || chrome.runtime.getManifest().version })}</span>`;
         return;
       }
-      showPageError('Update otomatis belum bisa jalan: folder atau izinnya belum ada.');
+      showPageError(t('update.needsFolder'));
     } catch (error) {
-      showPageError(`Update gagal: ${String(error?.message || error)}`);
+      showPageError(t('update.failed', { message: String(error?.message || error) }));
     } finally {
       button.disabled = false;
     }

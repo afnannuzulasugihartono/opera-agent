@@ -26,12 +26,16 @@ export const newerThan = (installed, served) => {
   return false;
 };
 
+// WHY THE VERSION COMES FROM THE BUILD, NOT FROM THE HEALTH PAGE.
+// The update service's /health answers for the legacy extension id by design, and a caller that reads its version as "what this extension should run" asks the wrong endpoint and is told 1.0.1 forever - which is why an update that looked wired up never happened.
+// The served version of this extension rides on the build itself: a HEAD on the archive carries it in a header, and the archive is one call away when the header cannot be read.
+// A caller that cannot learn the version therefore does the read that decides anyway, and the write stays refused unless the manifest inside the build says it is this product and it is newer.
+
 export async function servedVersion(fetchImpl = fetch) {
   try {
-    const response = await fetchImpl(`${UPDATE_BASE_URL}/health`, { cache: 'no-store' });
+    const response = await fetchImpl(`${UPDATE_BASE_URL}/download/opera-agent.zip`, { method: 'HEAD', cache: 'no-store' });
     if (!response.ok) return null;
-    const body = await response.json();
-    const version = String(body?.version ?? '').trim();
+    const version = String(response.headers?.get('x-opera-version') ?? '').trim();
     return /^\d+\.\d+\.\d+$/.test(version) ? version : null;
   } catch (error) {
     return null;
@@ -75,15 +79,18 @@ async function writeBuild(folder, entries) {
 export async function applyBuild({ folder, installedVersion, fetchImpl = fetch }) {
   if (!folder) return { ok: false, reason: 'no-folder' };
   const served = await servedVersion(fetchImpl);
-  if (!served) return { ok: false, reason: 'no-version' };
-  if (!newerThan(installedVersion, served)) return { ok: true, changed: false, version: served };
+  if (served && !newerThan(installedVersion, served)) {
+    return { ok: true, changed: false, version: served };
+  }
 
   const response = await fetchImpl(`${UPDATE_BASE_URL}/download/opera-agent.zip`, { cache: 'no-store' });
   if (!response.ok) return { ok: false, reason: 'download-failed' };
   const entries = await readZip(new Uint8Array(await response.arrayBuffer()));
   const manifest = manifestOf(entries);
   if (!manifest || manifest.name !== 'Opera Agent') return { ok: false, reason: 'not-ours' };
-  if (!newerThan(installedVersion, String(manifest.version ?? ''))) return { ok: true, changed: false, version: served };
+  if (!newerThan(installedVersion, String(manifest.version ?? ''))) {
+    return { ok: true, changed: false, version: manifest.version ?? installedVersion };
+  }
   await writeBuild(folder, entries);
   return { ok: true, changed: true, version: String(manifest.version) };
 }

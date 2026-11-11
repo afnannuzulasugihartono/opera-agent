@@ -27,6 +27,7 @@ export type ToolDeps = {
   executeScreenshot: typeof executeScreenshot;
   executeMap: typeof executeMap;
   executeStatus: typeof executeStatus;
+  executeUpdateStatus: typeof executeUpdateStatus;
   runWorkflow: typeof runWorkflow;
   runAdhoc: typeof runAdhoc;
   rpc: typeof rpc;
@@ -44,6 +45,7 @@ export type ToolDeps = {
 
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
+const UPDATE_BASE_URL = `${SUPABASE_URL.replace(/\/$/, "")}/functions/v1/opera-agent-update`;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
 const STATIC_TOKEN = Deno.env.get("OPERA_AGENT_MCP_TOKEN") || "";
 const DEVICE_NAME = Deno.env.get("OPERA_AGENT_MCP_DEVICE_NAME") || "opera";
@@ -546,6 +548,33 @@ async function latestPublishedVersion() {
 // The caller who most needs the plan is the one whose command just failed for want of it, and answering only the success path hides the limit from the exact moment the work stopped.
 // They are independent of the answer, so they are fired before the command runs; the merge after it is free.
 
+// WHY THE UPDATE STATE IS ITS OWN CALL.
+// The reader asks the same question GitHub answers on a pull: what do I run, and what is there to pull.
+// The served version comes from the archive itself - the one arm of the update service that serves this extension and carries the version in a header a HEAD can read - and the installed one from the device, so the answer is the two of them next to each other.
+
+async function executeUpdateStatus(timeoutMs: number | undefined, deviceName: string, provider: string) {
+  let served: string | null = null;
+  try {
+    const response = await fetch(`${UPDATE_BASE_URL}/download/opera-agent.zip`, { method: "HEAD" });
+    const version = String(response.headers.get("x-opera-version") ?? "").trim();
+    served = /^\d+\.\d+\.\d+$/.test(version) ? version : null;
+  } catch (error) {
+    served = null;
+  }
+  const answer = await execute("browser.ping", {}, timeoutMs, deviceName, provider);
+  const installed = String((answer.structuredContent as Record<string, unknown> | undefined)?.version ?? "").trim();
+  const facts = {
+    ok: answer.isError !== true,
+    installed: installed || null,
+    served,
+    available: !!served && !!installed && served !== installed
+  };
+  return {
+    content: [{ type: "text" as const, text: JSON.stringify(facts) }],
+    structuredContent: facts
+  };
+}
+
 async function executeStatus(method: string, params: Record<string, unknown>, timeoutMs: number | undefined, deviceName: string, provider: string, userId: string | null, resolution?: DeviceResolution | null) {
   const merging = Promise.all([devicePresence(userId), planInfo(await db(), userId)]);
   const answer = await execute(method, params, timeoutMs, deviceName, provider);
@@ -1020,6 +1049,7 @@ function createServer(deviceName: string = DEVICE_NAME, provider = "", caller: V
     executeScreenshot,
     executeMap,
     executeStatus,
+    executeUpdateStatus,
     runWorkflow,
     runAdhoc,
     rpc,
