@@ -6,6 +6,7 @@
 import './lib/agent-log.js';
 import { userErrorMessage } from './lib/error-messages.js';
 import { SITE_ORIGIN, UPDATE_BASE_URL } from './lib/endpoints.js';
+import { browserFamily } from './lib/browser-id.js';
 import { applyNewBuild, forgetFolderHandle, folderHandle, folderPermission } from './worker/self-update.js';
 const log = globalThis.OperaAgentLog || {};
 if (typeof log.warn !== 'function') throw new Error('Agent log runtime is unavailable.');
@@ -46,9 +47,10 @@ function newerThan(installed, served) {
 // The button fetches the build into the downloads folder and opens the extensions page where the reload button lives, and the page says in one line which way to go.
 
 async function fetchNewBuild() {
-  const url = `${UPDATE_BASE_URL}/download/opera-agent.zip`;
+  const browser = browserFamily().toLowerCase();
+  const url = `${UPDATE_BASE_URL}/download/opera-agent.zip${browser ? `?for=${browser}` : ''}`;
   try {
-    await chrome.downloads.download({ url, filename: `opera-agent-${servedBuild || 'latest'}.zip`, saveAs: false });
+    await chrome.downloads.download({ url, filename: `opera-agent-${browser || 'browser'}-${servedBuild || 'latest'}.zip`, saveAs: false });
   } catch (error) {
     log.warn('UPDATE_DOWNLOAD_FAILED', error?.message || String(error));
   }

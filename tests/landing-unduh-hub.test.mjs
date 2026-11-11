@@ -48,7 +48,7 @@ test('the hub also-available row names the other doors without leaving the page'
 test('the merged page carries one card per browser, each offering both files', () => {
 
   const mainButton = /class="btn" href="([^"]+)"/.exec(berkas)[1];
-  assert.equal(ZIP, mainButton, 'the archive leads, because it is the one a reader can install without a managed machine');
+  assert.equal(`${ZIP}?for=chrome`, mainButton, 'the archive leads, and it is named after the browser it belongs to');
   const cards = [...berkas.matchAll(/<article class="browser" data-browser="(\w+)">([\s\S]*?)<\/article>/g)];
   assert.deepEqual(cards.map((m) => m[1]), ['chrome', 'edge', 'brave', 'opera', 'vivaldi'], 'unduh-berkas.html names every browser once');
   const names = { chrome: 'Chrome', edge: 'Edge', brave: 'Brave', opera: 'Opera', vivaldi: 'Vivaldi' };
@@ -57,8 +57,8 @@ test('the merged page carries one card per browser, each offering both files', (
     assert.ok(body.includes('<span class="glyph"'), `${key} carries a text glyph, not an image asset`);
     assert.doesNotMatch(body, /<img/, `${key} loads no image`);
 
-    assert.match(body, new RegExp(`<a\\b[^>]*class="btn"[^>]*href="${escapeRe(ZIP)}"[^>]*download`), `${key} offers the archive as the button`);
-    assert.match(body, new RegExp(`<a\\b[^>]*href="${escapeRe(CRX)}"[^>]*download`), `${key} still offers the signed package one click away`);
+    assert.match(body, new RegExp(`<a\\b[^>]*class="btn"[^>]*href="${escapeRe(ZIP)}\\?for=${key}"[^>]*download`), `${key} offers the archive as the button, named after the browser it belongs to`);
+    assert.match(body, new RegExp(`<a\\b[^>]*href="${escapeRe(CRX)}\\?for=${key}"[^>]*download`), `${key} still offers the signed package one click away, named after the browser it belongs to`);
     assert.match(body, /<span\b[^>]*class="badge"[^>]*hidden[^>]*>Browser Anda<\/span>/, `${key} hides its badge until detected`);
 
     const filled = [...body.matchAll(/<a\b[^>]*class="btn"[^>]*>/g)];

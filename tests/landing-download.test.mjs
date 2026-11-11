@@ -164,6 +164,13 @@ test('the download page offers one archive and says how to verify it', () => {
   assert.match(html, /Load unpacked|unpacked/i, 'the reader is told what the archive is');
 });
 
+test('the file a reader downloads is named after the browser it belongs to', () => {
+  const src = fs.readFileSync(new URL('supabase/functions/opera-agent-update/index.ts', root), 'utf8');
+  assert.match(src, /url\.searchParams\.get\("for"\)/, 'the endpoint reads which browser the download came from');
+  assert.match(src, /opera-agent\$\{browser \? `-\$\{browser\}` : ""\}-\$\{current\.version\}/,
+    'and the name carries the browser and the version, so two browsers never leave two files with one name');
+});
+
 test('the endpoint serves the newest build, so a release needs no edit to the site', () => {
 
   const src = fs.readFileSync(new URL('supabase/functions/opera-agent-update/index.ts', root), 'utf8');
@@ -198,9 +205,9 @@ test('both formats share one page, reached from the hub and back', () => {
   const page = 'unduh-berkas.html';
   assert.ok(hub.includes(`href="./${page}"`), `the hub opens ${page}`);
   const html = read(page);
-  assert.match(html, /class="btn" href="[^"]*opera-agent\.zip" download/, `${page} leads with the archive, the one a reader can install today`);
-  assert.equal((html.match(/href="[^"]*opera-agent\.crx"/g) || []).length, 5, `${page} offers the signed file from every card without scrolling elsewhere`);
-  assert.equal((html.match(/href="[^"]*opera-agent\.zip"/g) || []).length, 5, `${page} keeps the archive on every card`);
+  assert.match(html, /class="btn" href="[^"]*opera-agent\.zip(?:\?for=\w+)?\" download/, `${page} leads with the archive, the one a reader can install today`);
+  assert.equal((html.match(/href="[^"]*opera-agent\.crx(?:\?for=\w+)?\"/g) || []).length, 5, `${page} offers the signed file from every card without scrolling elsewhere`);
+  assert.equal((html.match(/href="[^"]*opera-agent\.zip(?:\?for=\w+)?\"/g) || []).length, 5, `${page} keeps the archive on every card`);
   assert.match(html, /data-i18n="card\.why"/, 'and the card says what a folder install costs');
   assert.ok(html.includes('href="./unduh.html"'), `${page} links back to the hub`);
 });

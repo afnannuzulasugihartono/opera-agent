@@ -53,8 +53,8 @@ test('every merged card offers both builds, and the install steps name the surfa
     assert.ok(body.includes('<span class="glyph"'), `${key} carries a text glyph, not an image asset`);
     assert.doesNotMatch(body, /<img/, `${key} loads no image`);
 
-    assert.match(body, new RegExp(`<a\\b[^>]*class="btn"[^>]*href="${escapeRe(ZIP)}"[^>]*download`), `${key} leads with the archive`);
-    assert.match(body, new RegExp(`<a\\b[^>]*href="${escapeRe(CRX)}"[^>]*download`), `${key} still offers the signed package inline`);
+    assert.match(body, new RegExp(`<a\\b[^>]*class="btn"[^>]*href="${escapeRe(ZIP)}\\?for=${key}"[^>]*download`), `${key} leads with the archive, named after the browser`);
+    assert.match(body, new RegExp(`<a\\b[^>]*href="${escapeRe(CRX)}\\?for=${key}"[^>]*download`), `${key} still offers the signed package inline, named after the browser`);
     assert.doesNotMatch(body, /<p class="req"/, `${key} stays one glance short of prose; the steps below carry the requirement`);
     assert.match(body, /<span\b[^>]*class="badge"[^>]*hidden[^>]*>Browser Anda<\/span>/, `${key} hides its badge until detected`);
   }
@@ -75,8 +75,8 @@ test('every merged card carries the archive button and the signed file inline, w
   assert.deepEqual(cards.map((m) => m[1]), ['chrome', 'edge', 'brave', 'opera', 'vivaldi']);
   for (const [, key, body] of cards) {
 
-    assert.match(body, new RegExp(`<a\\b[^>]*class="btn"[^>]*href="${escapeRe(ZIP)}"[^>]*download`), `${key} gives the archive the button, because it is the one a reader can install today`);
-    assert.match(body, new RegExp(`<a\\b[^>]*href="${escapeRe(ZIP)}"[^>]*download`), `${key} still offers the archive inline`);
+    assert.match(body, new RegExp(`<a\\b[^>]*class="btn"[^>]*href="${escapeRe(ZIP)}\\?for=${key}"[^>]*download`), `${key} gives the archive the button, because it is the one a reader can install today`);
+    assert.match(body, new RegExp(`<a\\b[^>]*href="${escapeRe(CRX)}\\?for=${key}"[^>]*download`), `${key} still offers the signed package inline, named after the browser`);
     assert.doesNotMatch(body, /class="btn"[^>]*opera-agent\.crx/, `${key} gives the signed package no button weight`);
     assert.match(body, /update\.xml\?id=[a-p]{32}/, `${key} also offers the manifest the updater reads, pinned to this extension`);
     assert.doesNotMatch(body, /class="more"|moreWrap/, `${key} carries no disclosure widget; the other builds sit in plain sight`);
