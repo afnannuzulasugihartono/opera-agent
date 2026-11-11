@@ -1,0 +1,83 @@
+# @last-edited: 2026-11-11 UTC+7.
+# @title: publish-npm - publishes the local MCP package with the runner's own identity.
+# @state: the version it publishes, the dry run, and the registry answer it waits for.
+# @dependencies: npm trusted publishing (OIDC), the package in local/.
+
+# WHY THIS PUBLISHES WITHOUT A TOKEN.
+# npm is restricting the tokens that bypass two-factor authentication, and direct publishing with one ends in January 2027.
+# Trusted publishing replaces the token with the runner's own identity: the workflow asks GitHub for a signed token, npm reads the repository and the workflow out of it, and nothing is stored on any machine.
+# So the identity lives in the npm package settings (GitHub Actions: afnannuzulasugihartono / opera-agent / publish-npm.yml) and this file is the other half of that pair.
+
+name: Publish npm
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: The version to publish; it must be the version in local/package.json.
+        required: true
+        type: string
+      dry_run:
+        description: Pack and show what would be published, without publishing it.
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: publish-npm
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Publish the package with the runner identity
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22.20.0
+          registry-url: https://registry.npmjs.org
+
+      - name: The version in the tree is the version asked for
+        run: |
+          VERSION="$(node -p "require('./local/package.json').version")"
+          echo "package version: ${VERSION}"
+          if [ "${VERSION}" != "${{ inputs.version }}" ]; then
+            echo "::error::the package says ${VERSION} and the dispatch asked for ${{ inputs.version }}"
+            exit 1
+          fi
+
+      - name: The gates are green before anything is published
+        run: |
+          npm test
+          npm run check
+
+      - name: Pack the package and show what it carries
+        working-directory: local
+        run: npm pack --dry-run
+
+      - name: Nothing is published on a dry run
+        if: ${{ inputs.dry_run }}
+        run: echo "dry run: the tarball was built and nothing was published"
+
+      - name: Publish with provenance
+        if: ${{ !inputs.dry_run }}
+        working-directory: local
+        run: npm publish --provenance --access public
+
+      - name: The registry answers with the version
+        if: ${{ !inputs.dry_run }}
+        run: |
+          VERSION="$(node -p "require('./local/package.json').version")"
+          PUBLISHED="$(npm view opera-agent-mcp@${VERSION} version 2>/dev/null || true)"
+          echo "registry says: ${PUBLISHED:-nothing}"
+          if [ "${PUBLISHED}" != "${VERSION}" ]; then
+            echo "::error::the registry does not answer ${VERSION} yet"
+            exit 1
+          fi
