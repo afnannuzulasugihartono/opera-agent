@@ -119,7 +119,12 @@ Deno.serve(async (req: Request) => {
         ? zipPayloadOf(bytesFromBase64(current.crx_base64))
         : bytesFromBase64(current.crx_base64);
       if (!bytes) return response(req, "Release payload is not a zip", 500, { "Content-Type": "text/plain; charset=utf-8" });
-      const filename = `opera-agent-${current.version}${wantsZip ? ".zip" : ".crx"}`;
+      // WHY THE READER'S BROWSER IS IN THE FILE NAME.
+      // A person who drives two browsers downloads the build twice, and two files with the same name in the downloads folder are two files they cannot tell apart.
+      // The name carries the browser and the version, so the folder each one lands in says which browser it belongs to.
+      const wanted = String(url.searchParams.get("for") ?? "").trim().toLowerCase();
+      const browser = /^[a-z][a-z0-9]{1,11}$/.test(wanted) ? wanted : "";
+      const filename = `opera-agent${browser ? `-${browser}` : ""}-${current.version}${wantsZip ? ".zip" : ".crx"}`;
       return response(req, req.method === "HEAD" ? null : new Uint8Array(bytes).buffer, 200, {
         "Content-Type": wantsZip ? "application/zip" : "application/x-chrome-extension",
         "Content-Length": String(bytes.byteLength),
