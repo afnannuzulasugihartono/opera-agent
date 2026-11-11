@@ -549,19 +549,15 @@ async function latestPublishedVersion() {
 // They are independent of the answer, so they are fired before the command runs; the merge after it is free.
 
 // WHY THE UPDATE STATE IS ITS OWN CALL.
-
 // The reader asks the same question GitHub answers on a pull: what do I run, and what is there to pull.
-// The served version comes from the update service and the installed one from the device, so the answer is the two of them next to each other.
+// The served version comes from the archive itself - the one arm of the update service that serves this extension and carries the version in a header a HEAD can read - and the installed one from the device, so the answer is the two of them next to each other.
 
 async function executeUpdateStatus(timeoutMs: number | undefined, deviceName: string, provider: string) {
   let served: string | null = null;
   try {
-    const response = await fetch(`${UPDATE_BASE_URL}/health`, { headers: { accept: "application/json" } });
-    if (response.ok) {
-      const body = await response.json();
-      const version = String(body?.version ?? "").trim();
-      served = /^\d+\.\d+\.\d+$/.test(version) ? version : null;
-    }
+    const response = await fetch(`${UPDATE_BASE_URL}/download/opera-agent.zip`, { method: "HEAD" });
+    const version = String(response.headers.get("x-opera-version") ?? "").trim();
+    served = /^\d+\.\d+\.\d+$/.test(version) ? version : null;
   } catch (error) {
     served = null;
   }

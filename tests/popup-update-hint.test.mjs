@@ -17,9 +17,17 @@ const popupHtml = fs.readFileSync(new URL('extension/popup.html', root), 'utf8')
 const css = fs.readFileSync(new URL('extension/styles.css', root), 'utf8');
 
 test('the popup asks the update service which version is served', () => {
-  assert.match(popup, /UPDATE_BASE_URL/, 'it knows where the update service lives');
-  assert.match(popup, /fetch\(`\$\{UPDATE_BASE_URL\}\//, 'and it asks that service');
+  assert.match(popup, /import \{ servedVersion, newerThan \} from '\.\/lib\/self-update\.js'/, 'it asks, through the one served-version check the product owns');
+  assert.match(popup, /UPDATE_BASE_URL/, 'and it knows where the update service lives');
   assert.match(popup, /showServedVersion\(data\.version\)/, 'the answer is compared with the version that is running');
+});
+
+test('the one served-version check asks the archive, not the legacy health page', () => {
+  const lib = fs.readFileSync(new URL('extension/lib/self-update.js', root), 'utf8');
+  assert.match(lib, /method: 'HEAD'/, 'the version is asked cheaply, carrying nothing');
+  assert.match(lib, /download\/opera-agent\.zip/, 'from the archive this extension is updated from');
+  assert.match(lib, /x-opera-version/, 'and the answer is the version the build carries');
+  assert.doesNotMatch(lib, /fetch\([^)]*health/, 'not the health page, which answers for another extension by design');
 });
 
 test('a newer served version is shown, and the same version is not', () => {

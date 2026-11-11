@@ -8,6 +8,7 @@ import { userErrorMessage } from './lib/error-messages.js';
 import { SITE_ORIGIN, UPDATE_BASE_URL } from './lib/endpoints.js';
 import { browserFamily } from './lib/browser-id.js';
 import { applyNewBuild, forgetFolderHandle, folderHandle, folderPermission } from './worker/self-update.js';
+import { servedVersion, newerThan } from './lib/self-update.js';
 const log = globalThis.OperaAgentLog || {};
 if (typeof log.warn !== 'function') throw new Error('Agent log runtime is unavailable.');
 const $ = (id) => document.getElementById(id);
@@ -18,28 +19,6 @@ let servedBuild = null;
 // WHY THE POPUP ASKS THE SERVER WHICH VERSION IS SERVED.
 // Chrome updates an installed extension on its own, but only when it was installed as a signed package; an extension loaded unpacked never asks the update service, and the person sees a version that simply stands still.
 // The popup therefore asks what the server serves and says so out loud, because a version that does not move is otherwise a mystery with no handle on it.
-
-async function servedVersion() {
-  try {
-    const response = await fetch(`${UPDATE_BASE_URL}/health`, { cache: 'no-store' });
-    if (!response.ok) return null;
-    const body = await response.json();
-    const version = String(body?.version ?? '').trim();
-    return /^\d+\.\d+\.\d+$/.test(version) ? version : null;
-  } catch (error) {
-    log.debug('UPDATE_CHECK_FAILED', error?.message || String(error));
-    return null;
-  }
-}
-
-function newerThan(installed, served) {
-  const a = String(installed || '').split('.').map((part) => Number(part) || 0);
-  const b = String(served || '').split('.').map((part) => Number(part) || 0);
-  for (let index = 0; index < 3; index += 1) {
-    if ((b[index] || 0) !== (a[index] || 0)) return (b[index] || 0) > (a[index] || 0);
-  }
-  return false;
-}
 
 // WHY THE BUTTON FETCHES THE ARCHIVE AND NOT THE SIGNED PACKAGE.
 // Chromium refuses a hand-installed package that the Web Store did not sign - the reader sees CRX_REQUIRED_PROOF_MISSING and no extension at all - and an extension loaded from a folder is never asked about updates, so its version stands still.

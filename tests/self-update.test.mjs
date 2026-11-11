@@ -11,7 +11,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import zlib from 'node:zlib';
 
-import { applyBuild, newerThan } from '../extension/lib/self-update.js';
+import { applyBuild, newerThan, servedVersion } from '../extension/lib/self-update.js';
 import { readZip } from '../extension/lib/zip-read.js';
 
 const crcTable = (() => {
@@ -107,17 +107,21 @@ const fakeFolder = () => {
   return folder;
 };
 
-const buildResponse = (body) => ({
+const buildResponse = (body, headers = {}) => ({
   ok: true,
   status: 200,
+  headers: { get: (name) => headers[String(name).toLowerCase()] ?? null },
   json: async () => JSON.parse(body),
   arrayBuffer: async () => body.buffer.slice(body.byteOffset, body.byteOffset + body.byteLength)
 });
 
-const fetchImpl = (version, zip) => async (url) => {
-  if (String(url).includes('/health')) return buildResponse(JSON.stringify({ ok: true, version }));
-  if (String(url).includes('/download/opera-agent.zip')) return buildResponse(zip);
-  throw new Error(`unexpected url ${url}`);
+const fetchImpl = (version, zip) => async (url, options) => {
+  const u = String(url);
+  if (u.includes('/download/opera-agent.zip') && options?.method === 'HEAD') {
+    return { ok: true, status: 200, headers: { get: (name) => (String(name).toLowerCase() === 'x-opera-version' ? version : null) } };
+  }
+  if (u.includes('/download/opera-agent.zip')) return buildResponse(zip, { 'x-opera-version': version });
+  throw new Error(`unexpected url ${u}`);
 };
 
 test('the version comparison reads as numbers, not as text', () => {
@@ -167,4 +171,30 @@ test('a build that is not ours is refused', async () => {
   assert.equal(outcome.ok, false);
   assert.equal(outcome.reason, 'not-ours');
   assert.equal(folder.files.size, 0, 'and nothing is written');
+});
+
+test('the served version is the one the build carries, asked by a head on the archive', async () => {
+  const seen = [];
+  const probe = async (url, options) => {
+    seen.push({ url: String(url), method: options?.method ?? 'GET' });
+    return { ok: true, status: 200, headers: { get: (name) => (String(name).toLowerCase() === 'x-opera-version' ? '1.6.41' : null) } };
+  };
+  const version = await servedVersion(probe);
+  assert.equal(version, '1.6.41', 'the version the build carries is read, not the health page of the legacy extension');
+  assert.equal(seen.length, 1);
+  assert.equal(seen[0].method, 'HEAD', 'and it is asked for cheaply, without carrying the build');
+  assert.match(seen[0].url, /\/download\/opera-agent\.zip$/, 'and it is the archive this extension is updated from, not another surface');
+});
+
+test('a head that cannot say leaves the download to decide, and the write still happens', async () => {
+  const zip = buildZip([{ name: 'manifest.json', text: '{"name":"Opera Agent","version":"1.6.38"}' }]);
+  const folder = fakeFolder();
+  const blind = async (url, options) => {
+    if (options?.method === 'HEAD') return { ok: false, status: 503, headers: { get: () => null } };
+    return buildResponse(zip, { 'x-opera-version': '1.6.38' });
+  };
+  const outcome = await applyBuild({ folder, installedVersion: '1.6.37', fetchImpl: blind });
+  assert.equal(outcome.ok, true);
+  assert.equal(outcome.changed, true, 'the manifest inside the build still decides');
+  assert.equal(folder.files.has('manifest.json'), true, 'and the write happens');
 });
