@@ -30,8 +30,9 @@ const fakeCdp = ({ probe, ax = richAx, copy, domText = '', caret = null }) => {
       sent.push({ method, expression: params.expression });
       const expression = String(params.expression ?? '');
       // The probe is keyed on the canvas-coverage arithmetic, which no other expression in the driver contains, so readState is not mistaken for it.
+      // The page answers the surface signals, its own identity and its text in one body, which is what the read asks for now.
       if (method === 'Runtime.evaluate' && expression.includes('window.innerHeight')) {
-        return { result: { value: probe } };
+        return { result: { value: { ...probe, title: 'Fake', url: 'https://example.invalid/', text: domText, ready: 'complete' } } };
       }
       if (method === 'Accessibility.getFullAXTree') return axTree(ax);
       if (method === 'Runtime.evaluate' && expression.includes('innerText')) {
