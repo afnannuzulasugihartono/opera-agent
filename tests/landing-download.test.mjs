@@ -198,10 +198,10 @@ test('both formats share one page, reached from the hub and back', () => {
   const page = 'unduh-berkas.html';
   assert.ok(hub.includes(`href="./${page}"`), `the hub opens ${page}`);
   const html = read(page);
-  assert.match(html, /class="btn" href="[^"]*opera-agent\.crx" download/, `${page} leads with the signed package, the one that updates itself`);
+  assert.match(html, /class="btn" href="[^"]*opera-agent\.zip" download/, `${page} leads with the archive, the one a reader can install today`);
   assert.equal((html.match(/href="[^"]*opera-agent\.crx"/g) || []).length, 5, `${page} offers the signed file from every card without scrolling elsewhere`);
-  assert.equal((html.match(/href="[^"]*opera-agent\.zip"/g) || []).length, 5, `${page} keeps the archive one click away on every card too`);
-  assert.match(html, /data-i18n="card\.why"/, 'and the card says why the signed package is the main button');
+  assert.equal((html.match(/href="[^"]*opera-agent\.zip"/g) || []).length, 5, `${page} keeps the archive on every card`);
+  assert.match(html, /data-i18n="card\.why"/, 'and the card says what a folder install costs');
   assert.ok(html.includes('href="./unduh.html"'), `${page} links back to the hub`);
 });
 

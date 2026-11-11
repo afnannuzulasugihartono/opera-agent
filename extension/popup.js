@@ -39,18 +39,30 @@ function newerThan(installed, served) {
   return false;
 }
 
-// WHY THE UPDATE IS A BUTTON AND NOT ONLY A LINE.
-// A line that says a newer version exists leaves the reader to guess what to do about it.
-// The button does the whole job the browser cannot do from here: it fetches the signed package into the downloads folder and opens the page where it is dropped in, and every browser then keeps it fresh on its own.
+// WHY THE BUTTON FETCHES THE ARCHIVE AND NOT THE SIGNED PACKAGE.
+// Chromium refuses a hand-installed package that the Web Store did not sign - the reader sees CRX_REQUIRED_PROOF_MISSING and no extension at all - and an extension loaded from a folder is never asked about updates, so its version stands still.
+// The one update that works for that reader is the one the reader can do: take the new build, put it over the folder, and reload.
+// The button fetches the build into the downloads folder and opens the extensions page where the reload button lives, and the page says in one line which way to go.
 
-async function installSignedPackage() {
-  const url = `${UPDATE_BASE_URL}/download/opera-agent.crx`;
+async function fetchNewBuild() {
+  const url = `${UPDATE_BASE_URL}/download/opera-agent.zip`;
   try {
-    await chrome.downloads.download({ url, filename: `opera-agent-${servedBuild || 'latest'}.crx`, saveAs: false });
+    await chrome.downloads.download({ url, filename: `opera-agent-${servedBuild || 'latest'}.zip`, saveAs: false });
   } catch (error) {
     log.warn('UPDATE_DOWNLOAD_FAILED', error?.message || String(error));
   }
   await chrome.tabs.create({ url: 'chrome://extensions' });
+}
+
+// WHY THE RELOAD IS OURS TO DO.
+// A browser only reloads an unpacked extension when a person presses the button on the extensions page; the extension can restart itself, and that is the last click of the update.
+
+async function reloadExtension() {
+  try {
+    chrome.runtime.reload();
+  } catch (error) {
+    log.debug('RELOAD_FAILED', error?.message || String(error));
+  }
 }
 
 async function showServedVersion(installed) {
@@ -68,13 +80,21 @@ async function showServedVersion(installed) {
   if (newerThan(installed, served)) {
     line.hidden = false;
     if (text) text.textContent = `Versi ${served} sudah tersedia.`;
-    button.textContent = `Pasang ${served}`;
+    button.textContent = `Unduh ${served}`;
     button.classList.add('isNew');
+    const reload = $('reloadButton');
+    if (reload) reload.hidden = false;
+    const how = $('updateHow');
+    if (how) how.hidden = false;
     return;
   }
   line.hidden = true;
   button.textContent = 'Perbarui';
   button.classList.remove('isNew');
+  const reload = $('reloadButton');
+  if (reload) reload.hidden = true;
+  const how = $('updateHow');
+  if (how) how.hidden = true;
 }
 
 async function call(action, extra = {}) {
@@ -217,7 +237,8 @@ const openTab = async (url) => {
 $('dashboardButton').addEventListener('click', () => { void openTab(`${SITE_ORIGIN}/dashboard.html`); });
 $('docsButton').addEventListener('click', () => { void openTab(`${SITE_ORIGIN}/docs.html`); });
 $('downloadButton').addEventListener('click', () => { void openTab(`${SITE_ORIGIN}/unduh-berkas.html`); });
-$('updateButton').addEventListener('click', () => { void installSignedPackage(); });
+$('updateButton').addEventListener('click', () => { void fetchNewBuild(); });
+$('reloadButton').addEventListener('click', () => { void reloadExtension(); });
 
 const refreshQuietly = () => { refresh().catch(() => {}) };
 

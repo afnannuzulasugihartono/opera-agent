@@ -53,8 +53,8 @@ test('every merged card offers both builds, and the install steps name the surfa
     assert.ok(body.includes('<span class="glyph"'), `${key} carries a text glyph, not an image asset`);
     assert.doesNotMatch(body, /<img/, `${key} loads no image`);
 
-    assert.match(body, new RegExp(`<a\\b[^>]*class="btn"[^>]*href="${escapeRe(CRX)}"[^>]*download`), `${key} leads with the signed package`);
-    assert.match(body, new RegExp(`href="${escapeRe(ZIP)}"`), `${key} still offers the one archive`);
+    assert.match(body, new RegExp(`<a\\b[^>]*class="btn"[^>]*href="${escapeRe(ZIP)}"[^>]*download`), `${key} leads with the archive`);
+    assert.match(body, new RegExp(`<a\\b[^>]*href="${escapeRe(CRX)}"[^>]*download`), `${key} still offers the signed package inline`);
     assert.doesNotMatch(body, /<p class="req"/, `${key} stays one glance short of prose; the steps below carry the requirement`);
     assert.match(body, /<span\b[^>]*class="badge"[^>]*hidden[^>]*>Browser Anda<\/span>/, `${key} hides its badge until detected`);
   }
@@ -70,14 +70,14 @@ test('the other builds row sits under the button, the way the benchmark download
   assert.match(hubCss, /\.otherBuilds a \{[^}]*color: var\(--accent\)/s, 'as quiet accent links, not another button');
 });
 
-test('every merged card leads with the signed file and keeps the archive and manifest inline', () => {
+test('every merged card carries the archive button and the signed file inline, with the manifest', () => {
   const cards = [...berkas.matchAll(/<article class="browser" data-browser="(\w+)">([\s\S]*?)<\/article>/g)];
   assert.deepEqual(cards.map((m) => m[1]), ['chrome', 'edge', 'brave', 'opera', 'vivaldi']);
   for (const [, key, body] of cards) {
 
-    assert.match(body, new RegExp(`<a\\b[^>]*class="btn"[^>]*href="${escapeRe(CRX)}"[^>]*download`), `${key} gives the signed file the button, because it is the one that updates itself`);
+    assert.match(body, new RegExp(`<a\\b[^>]*class="btn"[^>]*href="${escapeRe(ZIP)}"[^>]*download`), `${key} gives the archive the button, because it is the one a reader can install today`);
     assert.match(body, new RegExp(`<a\\b[^>]*href="${escapeRe(ZIP)}"[^>]*download`), `${key} still offers the archive inline`);
-    assert.doesNotMatch(body, /class="btn"[^>]*opera-agent\.zip/, `${key} gives the archive no button weight`);
+    assert.doesNotMatch(body, /class="btn"[^>]*opera-agent\.crx/, `${key} gives the signed package no button weight`);
     assert.match(body, /update\.xml\?id=[a-p]{32}/, `${key} also offers the manifest the updater reads, pinned to this extension`);
     assert.doesNotMatch(body, /class="more"|moreWrap/, `${key} carries no disclosure widget; the other builds sit in plain sight`);
 

@@ -30,11 +30,14 @@ test('a newer served version is shown, and the same version is not', () => {
 });
 
 test('the button does the work a browser cannot do from here', () => {
-  assert.match(popup, /chrome\.downloads\.download\(/, 'it fetches the signed package into the downloads folder');
-  assert.match(popup, /download\/opera-agent\.crx/, 'and it is the signed package, the one that updates itself');
-  assert.match(popup, /chrome\.tabs\.create\(\{ url: 'chrome:\/\/extensions' \}\)/, 'then it opens the page where the package is dropped in');
+  assert.match(popup, /chrome\.downloads\.download\(/, 'it fetches the new build into the downloads folder');
+  assert.match(popup, /download\/opera-agent\.zip/, 'and it is the archive, because Chromium refuses a hand-installed package the Web Store did not sign');
+  assert.match(popup, /chrome\.tabs\.create\(\{ url: 'chrome:\/\/extensions' \}\)/, 'then it opens the page where the reload button lives');
+  assert.match(popup, /chrome\.runtime\.reload\(\)/, 'and the extension can restart itself, which is the last click of the update');
   assert.match(popupHtml, /id="updateButton"/, 'the popup carries that button');
+  assert.match(popupHtml, /id="reloadButton"/, 'and the reload that finishes it');
   assert.match(popupHtml, /id="updateText"/, 'and the line that names the version');
+  assert.match(popupHtml, /id="updateHow"/, 'and the one line that says how the update is done');
 });
 
 test('the popup has the doors out of it, the dashboard among them', () => {

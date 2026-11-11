@@ -48,7 +48,7 @@ test('the hub also-available row names the other doors without leaving the page'
 test('the merged page carries one card per browser, each offering both files', () => {
 
   const mainButton = /class="btn" href="([^"]+)"/.exec(berkas)[1];
-  assert.equal(CRX, mainButton, 'the signed package leads, because it is the one the browser updates by itself');
+  assert.equal(ZIP, mainButton, 'the archive leads, because it is the one a reader can install without a managed machine');
   const cards = [...berkas.matchAll(/<article class="browser" data-browser="(\w+)">([\s\S]*?)<\/article>/g)];
   assert.deepEqual(cards.map((m) => m[1]), ['chrome', 'edge', 'brave', 'opera', 'vivaldi'], 'unduh-berkas.html names every browser once');
   const names = { chrome: 'Chrome', edge: 'Edge', brave: 'Brave', opera: 'Opera', vivaldi: 'Vivaldi' };
@@ -57,13 +57,13 @@ test('the merged page carries one card per browser, each offering both files', (
     assert.ok(body.includes('<span class="glyph"'), `${key} carries a text glyph, not an image asset`);
     assert.doesNotMatch(body, /<img/, `${key} loads no image`);
 
-    assert.match(body, new RegExp(`<a\\b[^>]*class="btn"[^>]*href="${escapeRe(CRX)}"[^>]*download`), `${key} offers the signed package`);
-    assert.match(body, new RegExp(`href="${escapeRe(ZIP)}"`), `${key} still offers the archive one click away`);
+    assert.match(body, new RegExp(`<a\\b[^>]*class="btn"[^>]*href="${escapeRe(ZIP)}"[^>]*download`), `${key} offers the archive as the button`);
+    assert.match(body, new RegExp(`<a\\b[^>]*href="${escapeRe(CRX)}"[^>]*download`), `${key} still offers the signed package one click away`);
     assert.match(body, /<span\b[^>]*class="badge"[^>]*hidden[^>]*>Browser Anda<\/span>/, `${key} hides its badge until detected`);
 
     const filled = [...body.matchAll(/<a\b[^>]*class="btn"[^>]*>/g)];
     assert.equal(filled.length, 1, `${key} fills exactly one button`);
-    assert.ok(filled[0][0].includes(CRX), `${key} fills the signed package, the file that keeps itself current`);
+    assert.ok(filled[0][0].includes(ZIP), `${key} fills the archive, the file a reader can install today`);
     assert.match(body, /<p class="otherBuilds">/, `${key} carries its other builds inline, like the benchmark download page`);
   }
 });
@@ -114,10 +114,10 @@ test('the hero states the value in one sentence, and the steps live on the merge
   assert.match(demo, /Open|Browse|folderPick/i, 'the file picker is part of the flow');
   assert.match(demo, /oaPopup/, 'and the extension popup opens under the toolbar icon');
   const steps = fold[2];
-  assert.match(steps, /Unduh paket bertanda tangan/, 'first the signed package');
+  assert.match(steps, /Unduh arsip/, 'first the archive');
   assert.match(steps, /Developer mode/i, 'then developer mode');
-  assert.match(steps, /Seret berkas \.crx/, 'then the package onto the extensions page');
-  assert.match(steps, /Load unpacked/, 'and the archive route stays named for the reader who takes it');
+  assert.match(steps, /Load unpacked/, 'then the load');
+  assert.match(steps, /Reload/, 'and the way a new version reaches a folder install');
 });
 
 test('the enterprise block is retired; the .crx stays one click away in every card', () => {
