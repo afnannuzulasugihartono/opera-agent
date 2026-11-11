@@ -240,7 +240,7 @@ input:focus {
   line-height: 1.45;
 }
 
-// WHY THE UPDATE NOTE IS ITS OWN COLOUR: a version that does not move is the one thing in the popup the person cannot explain, and it must read as a fact to act on rather than as another grey hint.
+/* WHY THE UPDATE NOTE IS ITS OWN COLOUR: a version that does not move is the one thing in the popup the person cannot explain, and it must read as a fact to act on rather than as another grey hint. */
 
 .updateHint {
   color: var(--primary);
