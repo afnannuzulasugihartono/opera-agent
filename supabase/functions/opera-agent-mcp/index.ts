@@ -7,7 +7,7 @@ import "@supabase/edge-runtime";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
 import { AsyncLocalStorage } from "node:async_hooks";
-import { streamCommandEvents } from "../_shared/command-stream.ts";
+import { streamCommandEvents, TERMINAL_COMMAND_STATUSES } from "../_shared/command-stream.ts";
 import { cutStreamAtTheAnswer } from "../_shared/cut-stream.ts";
 import * as z from "zod/v4";
 import { planInfo } from "./plan-info.ts";
@@ -414,6 +414,34 @@ let awaitMs = 0;
 // Passing null skips that lookup without changing idempotency, because there was none to begin with: a retry arrives with a new id, not the old one.
 // The provider used to be stamped with a second write after the command finished, a full data-API crossing on the critical path after the answer was already known; it is now set by the enqueue itself, and the update that used to follow it is gone.
 
+// WHY THE COMMAND WAIT IS ASKED IN SLICES.
+// The edge function reaches the database through PostgREST, and one wait that parks a connection for the whole command holds one of PostgREST's connections for the whole command.
+// Measured on the hosted road: the device answered in 414 ms and the caller waited about ten seconds, because the parked waits filled PostgREST's pool and every later call queued behind them.
+// So each slice is short, the answer is taken when the command is terminal, and a connection is held for a slice rather than for a command.
+
+const COMMAND_WAIT_SLICE_MS = 250;
+
+async function awaitCommandInSlices(awaitFunction: string, commandId: string, deadlineMs: number) {
+  const deadline = Date.now() + deadlineMs;
+  let last: Record<string, unknown> | null = null;
+  for (;;) {
+    const remaining = deadline - Date.now();
+    if (remaining <= 0) break;
+    const answer = await rpc(awaitFunction, {
+      p_command_id: commandId,
+      p_timeout_ms: Math.max(50, Math.min(COMMAND_WAIT_SLICE_MS, remaining))
+    });
+    last = (answer ?? null) as Record<string, unknown> | null;
+    const status = String(last?.status ?? '');
+    if (last?.ok && TERMINAL_COMMAND_STATUSES.includes(status)) return last;
+    if (last && !last.ok) {
+      const code = String((last.error as { code?: unknown } | undefined)?.code ?? '');
+      if (code && code !== 'AWAIT_TIMEOUT') return last;
+    }
+  }
+  return last ?? { ok: false, error: { code: 'AWAIT_TIMEOUT', message: 'Timed out waiting for command result.' } };
+}
+
 async function runCommand(method: string, params: Record<string, unknown> = {}, timeoutMs = 12000, deviceName: string = DEVICE_NAME, provider = "", progress: (() => ProgressEmitter | null) | null = () => progressScope.getStore() ?? null) {
   const boundedTimeout = Math.max(500, Math.min(30000, timeoutMs));
   const beganAt = edgeClock();
@@ -432,13 +460,19 @@ async function runCommand(method: string, params: Record<string, unknown> = {}, 
 
   const awaitFunction = method === "page.capture" ? "opera_await_capture" : "opera_await_adaptive";
   const progressStartedAt = edgeClock();
+  const deadlineMs = Math.min(32000, boundedTimeout + 2000);
+  // WHY THE WAIT IS TAKEN IN SHORT SLICES, AND WHY THE CAPTURE IS NOT.
+  // The edge function does not talk to the database directly; it goes through PostgREST, and a wait that parks a connection for the whole command holds one of PostgREST's connections for the whole command.
+  // Measured on the hosted road: the device answered in 414 ms and the caller waited about ten seconds, because the parked waits filled PostgREST's pool and every later call queued behind them.
+  // So the adaptive wait is asked in short slices and the answer is taken when the command is terminal; a connection is held for a slice, not for the command.
+  // The capture wait is asked once, because it consumes the result it returns and cancels the command when its own deadline passes - asking it twice would cancel a capture that was about to finish.
+  const waitFor = method === "page.capture"
+    ? rpc(awaitFunction, { p_command_id: queued.commandId, p_timeout_ms: deadlineMs })
+    : awaitCommandInSlices(awaitFunction, queued.commandId, deadlineMs);
   const [, completed] = await Promise.all([
     forwardCommandProgress(queued.commandId, boundedTimeout, progress)
       .then((result) => { progressMs = edgeClock() - progressStartedAt; return result; }),
-    rpc(awaitFunction, {
-      p_command_id: queued.commandId,
-      p_timeout_ms: Math.min(32000, boundedTimeout + 2000)
-    }).then((result) => { awaitMs = edgeClock() - progressStartedAt; return result; })
+    waitFor.then((result) => { awaitMs = edgeClock() - progressStartedAt; return result; })
   ]);
   const finishedAt = edgeClock();
 
