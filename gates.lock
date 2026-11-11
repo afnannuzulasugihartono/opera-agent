@@ -181,4 +181,4 @@ supabase/functions/_shared/cors.js dead4552d786ef0fdbaf71ad5bfb3c99e647b575
 extension/manifest.json e021fa332d00e7fcc9b32487b5f277316b5b8274
 .gitleaks.toml 4cdb3f1b759def776beeb77df39ea4cd52513e64
 .github/CODEOWNERS 8b4d8f8bb18f931b9c6e4a15cd06dac9e4be3a20
-.github/workflows/ci.yml 80f930925516346c598531b8f6a027e39819dcd0
+.github/workflows/ci.yml bf241518b3aea12b4fbc49ab102552cea139c1e5
