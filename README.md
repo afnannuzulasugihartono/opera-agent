@@ -56,8 +56,8 @@ The local drive is metered where it happens: the bridge verifies the session
 against the account once, enforces the allowance locally, and reports the usage
 into the same daily count the hosted surface reads, so a command past the
 allowance answers `PLAN_LIMIT_REACHED` with the plan named. The gate lives in
-the bridge and in the hosted MCP, never in readable client code. The package
-is not on the registry yet; install it from a clone with
+the bridge and in the hosted MCP, never in readable client code. The package is
+on the registry: `npm i -g opera-agent-mcp`, or from a clone with
 `cd local && npm install -g .`. The full answer: [`docs/agent-call.md`](docs/agent-call.md).
 
 Every number in that table is measured, not typed: `tests/readme.test.mjs` reads the
