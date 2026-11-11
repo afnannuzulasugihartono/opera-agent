@@ -40,11 +40,13 @@ jobs:
           registry-url: https://registry.npmjs.org
 
       - name: The version in the tree is the version asked for
+        env:
+          ASKED: ${{ inputs.version }}
         run: |
           VERSION="$(node -p "require('./local/package.json').version")"
           echo "package version: ${VERSION}"
-          if [ "${VERSION}" != "${{ inputs.version }}" ]; then
-            echo "the package says ${VERSION} and the dispatch asked for ${{ inputs.version }}"
+          if [ "${VERSION}" != "${ASKED}" ]; then
+            echo "the package says ${VERSION} and the dispatch asked for ${ASKED}"
             exit 1
           fi
 
