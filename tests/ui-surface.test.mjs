@@ -229,14 +229,15 @@ const styles = fs.readFileSync(new URL('../extension/styles.css', import.meta.ur
 
 test('popup keeps its controls accessible and responsive in narrow Opera panels', () => {
   for (const id of [
-    'statusBadge', 'deviceName', 'connection', 'lastCommand', 'visionPrivacy',
+    'statusLine', 'deviceName', 'lastCommand', 'visionPrivacy',
     'pairSection', 'pairCode', 'pairButton', 'pairedSection', 'privateTabButton',
-    'selfTestButton', 'selfTestResult', 'unpairButton'
+    'selfTestButton', 'selfTestResult', 'unpairButton',
+    'updateHint', 'updateButton', 'dashboardButton', 'docsButton', 'downloadButton'
   ]) {
     assert.match(popup, new RegExp(`id="${id}"`));
   }
 
-  assert.match(popup, /<dl class="details">/);
+  assert.match(popup, /<dl class="facts">/);
   assert.match(popup, /role="alert"/);
   assert.match(styles, /width:\s*352px/);
   assert.match(styles, /min-width:\s*148px/);
@@ -244,7 +245,7 @@ test('popup keeps its controls accessible and responsive in narrow Opera panels'
   assert.doesNotMatch(styles, /width:\s*min\(/);
   assert.match(styles, /@media \(max-width: 239px\)/);
   assert.doesNotMatch(styles, /min-width:\s*340px/);
-  assert.match(script, /ready:\s*'Terhubung'/);
+  assert.match(script, /'ready'[\s\S]{0,120}Terhubung/);
   assert.match(script, /currentTabPrivate \? 'blocked' : 'allowed'/);
 });
 

@@ -27,8 +27,8 @@ test('the popup speaks Indonesian and names where the code comes from', () => {
 
 test('the popup status answers in Indonesian, every state of it', () => {
   const script = read('popup.js');
-  for (const label of ['Terhubung', 'Menghubungkan', 'Menyambung ulang', 'Memulai', 'Belum dipairing']) {
-    assert.ok(script.includes(`'${label}'`), `the status names ${label}`);
+  for (const label of ['Terhubung', 'Menghubungkan', 'Menyambung ulang', 'Memulai', 'Belum dipair']) {
+    assert.ok(script.includes(label), `the status names ${label}`);
   }
   assert.match(script, /'Diizinkan'/, 'an allowed tab says so');
   assert.match(script, /'Diblokir \(privat\)'/, 'a private tab says why it is blocked');

@@ -1,6 +1,6 @@
-<!-- @last-edited: 2026-10-06 09:58 UTC+7. -->
+<!-- @last-edited: 2026-11-11 UTC+7. -->
 <!-- @title: popup — MV3 runtime. -->
-<!-- @state: Indonesian copy; the pairing hint links Dashboard #pairing, set from SITE_ORIGIN at startup. -->
+<!-- @state: Indonesian copy; one firm status line, the facts of the device, and the doors out: Dashboard, docs, the signed package. -->
 <!-- @dependencies: none stated. -->
 
 <!doctype html>
@@ -11,52 +11,66 @@
   <title>Opera Agent</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
-<body>
+<body class="popup">
   <main class="shell">
     <header class="app-header">
       <div class="brand-mark" aria-hidden="true"><svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5.2 2.2v10.2l2.5-2.3 1.5 3.6 1.9-.8-1.6-3.6h3.1L5.2 2.2Z" fill="#fff" fill-opacity=".96"/></svg></div>
       <div class="brand-copy">
-        <p class="eyebrow">Jembatan browser lokal</p>
         <h1>Opera Agent</h1>
         <p id="version">&nbsp;</p>
-        <p id="updateHint" class="hint updateHint" hidden><a id="updateLink" href="https://opera-agent.pages.dev/unduh.html" target="_blank" rel="noreferrer">Pasang versi baru</a></p>
       </div>
-      <span id="statusBadge" class="badge starting" aria-live="polite">Memulai</span>
     </header>
 
-    <section class="card status-card" aria-labelledby="statusTitle">        <div class="section-heading">
-          <h2 id="statusTitle">Status</h2>
-          <span class="secure-label">Lokal saja</span>
-        </div>
-      <dl class="details">
-        <div class="row"><dt>Device</dt><dd id="deviceName">opera</dd></div>
-        <div class="row"><dt>Koneksi</dt><dd id="connection">&mdash;</dd></div>
-        <div class="row"><dt>Perintah terakhir</dt><dd id="lastCommand">&mdash;</dd></div>
-        <div class="row"><dt>Layar</dt><dd id="visionPrivacy" class="privacy allowed">Diizinkan</dd></div>
-      </dl>
-      <p id="error" class="error" role="alert" hidden></p>
-    </section>
+    <p id="statusLine" class="statusLine starting" aria-live="polite">Memulai…</p>
 
-    <section id="pairSection" class="card" aria-labelledby="pairTitle">
-      <div class="section-heading">
-        <h2 id="pairTitle">Sambungkan device</h2>
-      </div>
+    <p id="updateHint" class="updateHint" hidden>
+      <span id="updateText">Versi baru tersedia.</span>
+      <button id="updateButton" class="linkish" type="button">Pasang</button>
+    </p>
+
+    <dl class="facts">
+      <div class="row"><dt>Device</dt><dd id="deviceName">opera</dd></div>
+      <div class="row"><dt>Perintah terakhir</dt><dd id="lastCommand">&mdash;</dd></div>
+      <div class="row"><dt>Layar</dt><dd id="visionPrivacy" class="privacy allowed">Diizinkan</dd></div>
+    </dl>
+
+    <p id="error" class="error" role="alert" hidden></p>
+
+    <section id="pairSection" class="card" aria-labelledby="pairTitle" hidden>
+      <h2 id="pairTitle" class="cardTitle">Sambungkan device</h2>
       <label for="pairCode">Kode pairing sekali pakai</label>
       <input id="pairCode" type="text" autocomplete="off" spellcheck="false" maxlength="64" placeholder="Masukkan kode pairing" />
-      <button id="pairButton" class="primary">Sambungkan</button>
-      <p class="hint">Buat kode di <a id="pairHelp" href="https://opera-agent.pages.dev/dashboard.html#pairing" target="_blank" rel="noreferrer">Dashboard → Pairing manual</a>, lalu tempel di sini sekali.</p>
+      <button id="pairButton" class="primary" type="button">Sambungkan</button>
+      <p class="hint">Buat kode di <a id="pairHelp" href="https://opera-agent.pages.dev/dashboard.html#pairing" target="_blank" rel="noreferrer">Dashboard &rarr; Pairing manual</a>, lalu tempel di sini sekali.</p>
     </section>
 
-    <section id="pairedSection" class="card controls-card" aria-labelledby="controlsTitle" hidden>        <div class="section-heading">
-          <h2 id="controlsTitle">Kendali device</h2>
-        </div>
+    <section id="pairedSection" class="card" aria-labelledby="controlsTitle" hidden>
+      <h2 id="controlsTitle" class="cardTitle">Kendali device</h2>
       <div class="button-stack">
-        <button id="privateTabButton" class="secondary">Tandai tab ini privat</button>
-        <button id="selfTestButton" class="secondary">Jalankan uji mandiri</button>
-        <button id="unpairButton" class="danger">Lepas pairing</button>
+        <button id="privateTabButton" class="secondary" type="button">Tandai tab ini privat</button>
+        <button id="selfTestButton" class="secondary" type="button">Jalankan uji mandiri</button>
+        <button id="unpairButton" class="danger" type="button">Lepas pairing</button>
       </div>
       <pre id="selfTestResult" aria-live="polite" hidden></pre>
     </section>
+
+    <nav class="menu" aria-label="Menu">
+      <button id="dashboardButton" class="menuItem" type="button">
+        <span class="menuIcon" aria-hidden="true"><svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2 8a6 6 0 1 1 1.8 4.3M2 8V4m0 4h4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        <span class="menuText">Buka Dashboard</span>
+        <span class="menuHint">device, riwayat, saldo</span>
+      </button>
+      <button id="docsButton" class="menuItem" type="button">
+        <span class="menuIcon" aria-hidden="true"><svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 2h5l3 3v9H4zM9 2v3h3" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg></span>
+        <span class="menuText">Dokumentasi</span>
+        <span class="menuHint">cara pakai</span>
+      </button>
+      <button id="downloadButton" class="menuItem" type="button">
+        <span class="menuIcon" aria-hidden="true"><svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M8 2v8m0 0 3-3m-3 3L5 7M3 13h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        <span class="menuText">Paket bertanda tangan</span>
+        <span class="menuHint">update otomatis</span>
+      </button>
+    </nav>
 
     <footer>Privasi sejak awal &middot; Berjalan di latar &middot; Eksekusi lokal</footer>
   </main>
