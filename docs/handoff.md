@@ -35,6 +35,7 @@ What is true now, and what to do next. Cap 150 lines. Spent detail: git history.
 ## Still open
 
 0. **The 1.6.41 release shipped on 2026-11-11.** PR #254 merged, `opera-agent-update` and `opera-agent-mcp` are deployed, `publish-crx` signed and served it (update.xml advertises 1.6.41, `/health?id=` answers 1.6.41, the zip answers `X-Opera-Version: 1.6.41` and carries the flat TM popup and the site icon), and the site redeployed. The reader on 1.6.40 does one manual folder overwrite (the build could not pull itself before this) or presses Unduh once; after that it is hands-free.
+0a. **The 1.6.42 release is queued the same way.** Same chain with the nudge added: `publish-crx` now enqueues one `extension.update` command per non-revoked device after the release row lands and the service serves it, so the browser picks the update up within seconds instead of at the next 30-minute check. Layered releases stack the same way (`release-<version>` ids make the nudge idempotent).
 1. **The Cloudflare API token pasted into a chat is still live** and carries `Account API Tokens Write`. The owner has chosen to leave it for now.
 2. **The migration ledger is mapped.** 122 files, each with its evidence; `tests/migration-ledger-map.test.mjs` fails a file the map omits.
 3. **OAuth via OpenCode works end to end.** Google sign-in is unverified.

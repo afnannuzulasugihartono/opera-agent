@@ -238,7 +238,9 @@ test('popup keeps its controls accessible and responsive in narrow Opera panels'
 
   assert.match(popup, /<h1[^>]*>Opera Agent<\/h1>/);
   assert.match(popup, /role="alert"/);
-  assert.match(styles, /width:\s*392px/);
+  assert.match(styles, /width:\s*400px/);
+  assert.match(styles, /min-width:\s*400px/, 'the popup may not collapse below the design width, whatever the viewport reports');
+  assert.doesNotMatch(styles, /max-width:\s*100vw/, 'and no clamp may shrink an MV3 popup back onto a tiny initial viewport');
   assert.match(styles, /@media \(max-width: 239px\)/);
   assert.match(styles, /body\.popup \.menuItem/, 'the rows are still styled as rows');
   assert.match(script, /statusLine\(status, paired\)/, 'the status passes through the one status function');
