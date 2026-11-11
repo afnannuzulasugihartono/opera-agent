@@ -240,6 +240,12 @@ input:focus {
   line-height: 1.45;
 }
 
+/* WHY THE UPDATE NOTE IS ITS OWN COLOUR: a version that does not move is the one thing in the popup the person cannot explain, and it must read as a fact to act on rather than as another grey hint. */
+
+.updateHint {
+  color: var(--primary);
+}
+
 .button-stack {
   display: grid;
   gap: 6px;
@@ -333,6 +339,245 @@ footer {
 }
 
 [hidden] { display: none !important; }
+
+/*
+ * WHY THE POPUP IS DARK AND FIRM.
+ * The popup answers one question first - is it connected - and the person reads it in a second, while a browser is in front of them.
+ * A pale card with soft shadows and small grey labels reads as a form; a dark surface with one firm status line and a short list of doors reads as a control panel, which is what it is.
+ * The options page stays light: it is a page people sit down at, and a popup is a thing they glance at.
+ */
+
+body.popup {
+  --pop-bg: #14171c;
+  --pop-surface: #1b1f26;
+  --pop-surface-2: #222833;
+  --pop-text: #e9edf2;
+  --pop-muted: #97a1af;
+  --pop-faint: #6d7683;
+  --pop-border: #2b323d;
+  --pop-accent: #3ecf8e;
+  --pop-warning: #e8b64c;
+  --pop-danger: #f2705f;
+  background: var(--pop-bg);
+  color: var(--pop-text);
+}
+
+body.popup .shell { padding: 13px 14px 14px; }
+
+body.popup .app-header {
+  grid-template-columns: 34px minmax(0, 1fr);
+  margin-bottom: 10px;
+}
+
+body.popup h1 {
+  font-size: 14px;
+  letter-spacing: -.015em;
+}
+
+body.popup #version { color: var(--pop-faint); }
+
+/* WHY THE STATUS IS THE BIGGEST THING IN THE POPUP: it is the answer the reader came for, and everything below it is detail under that answer. */
+
+body.popup .statusLine {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 12px;
+  padding: 9px 11px;
+  border: 1px solid var(--pop-border);
+  border-radius: 10px;
+  background: var(--pop-surface);
+  font-size: 13px;
+  font-weight: 650;
+  letter-spacing: -.01em;
+  line-height: 1.3;
+}
+
+body.popup .statusLine::before {
+  content: "";
+  flex: 0 0 auto;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--pop-faint);
+}
+
+body.popup .statusLine.ready {
+  border-color: rgba(62, 207, 142, .35);
+  background: rgba(62, 207, 142, .1);
+  color: var(--pop-accent);
+}
+
+body.popup .statusLine.ready::before { background: var(--pop-accent); }
+
+body.popup .statusLine.pending {
+  border-color: rgba(232, 182, 76, .3);
+  background: rgba(232, 182, 76, .08);
+  color: var(--pop-warning);
+}
+
+body.popup .statusLine.pending::before { background: var(--pop-warning); }
+
+body.popup .statusLine.idle { color: var(--pop-muted); }
+
+/* WHY THE FACTS ARE A FLAT LIST AND NOT CARDS: the list is short and the reader scans it once, so it sits on the surface instead of asking for three boxes to be opened. */
+
+body.popup .facts {
+  margin: 0;
+  padding: 2px 0 4px;
+  border-top: 1px solid var(--pop-border);
+}
+
+body.popup .row {
+  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  padding: 6px 0;
+  border-top: 1px solid var(--pop-border);
+}
+
+body.popup .row:first-child { padding-top: 9px; }
+
+body.popup .row dt { color: var(--pop-muted); font-size: 10.5px; }
+
+body.popup .row dd { color: var(--pop-text); font-size: 11.5px; }
+
+body.popup .privacy { color: var(--pop-accent); }
+
+body.popup .privacy.blocked { color: var(--pop-warning); }
+
+body.popup .card {
+  margin-top: 11px;
+  padding: 12px 13px 13px;
+  border: 1px solid var(--pop-border);
+  border-radius: 11px;
+  background: var(--pop-surface);
+  box-shadow: none;
+}
+
+body.popup .cardTitle {
+  margin: 0 0 4px;
+  color: var(--pop-muted);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+}
+
+body.popup label { color: var(--pop-muted); }
+
+body.popup input {
+  background: var(--pop-surface-2);
+  box-shadow: inset 0 0 0 1px var(--pop-border);
+  color: var(--pop-text);
+}
+
+body.popup input::placeholder { color: var(--pop-faint); }
+
+body.popup .hint { color: var(--pop-faint); }
+
+body.popup button {
+  background: var(--pop-surface-2);
+  color: var(--pop-text);
+}
+
+body.popup button.primary {
+  background: var(--pop-accent);
+  color: #06210f;
+}
+
+body.popup button.primary:hover:not(:disabled) { background: #56d99e; }
+
+body.popup button.secondary:hover:not(:disabled) { background: #2b323d; }
+
+body.popup button.danger {
+  background: var(--pop-surface-2);
+  color: var(--pop-danger);
+}
+
+body.popup button.danger:hover:not(:disabled) { background: rgba(242, 112, 95, .14); }
+
+body.popup pre {
+  background: var(--pop-surface-2);
+  color: var(--pop-text);
+}
+
+body.popup .error {
+  background: rgba(242, 112, 95, .12);
+  color: var(--pop-danger);
+}
+
+/* WHY THE UPDATE IS A ROW OF ITS OWN: a version that stands still is the one thing in the popup the person cannot explain, so it is announced and it carries the button that acts on it. */
+
+body.popup .updateHint {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 0 0 11px;
+  padding: 9px 11px;
+  border: 1px solid rgba(62, 207, 142, .35);
+  border-radius: 10px;
+  background: rgba(62, 207, 142, .1);
+  color: var(--pop-accent);
+  font-size: 11px;
+  font-weight: 550;
+  line-height: 1.35;
+}
+
+body.popup .linkish {
+  width: auto;
+  min-height: 24px;
+  padding: 3px 10px;
+  border-radius: 7px;
+  background: var(--pop-accent);
+  color: #06210f;
+  font-size: 10.5px;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+body.popup .linkish:hover:not(:disabled) { background: #56d99e; }
+
+/* WHY THE MENU LOOKS LIKE A MENU: the doors out of the popup are the same kind of thing in every row, so they are listed the way a browser lists them, with the icon first and the destination last. */
+
+body.popup .menu {
+  margin-top: 12px;
+  border: 1px solid var(--pop-border);
+  border-radius: 11px;
+  background: var(--pop-surface);
+  overflow: hidden;
+}
+
+body.popup .menuItem {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 38px;
+  padding: 8px 11px;
+  border-radius: 0;
+  background: transparent;
+  color: var(--pop-text);
+  text-align: left;
+}
+
+body.popup .menuItem + .menuItem { border-top: 1px solid var(--pop-border); }
+
+body.popup .menuItem:hover:not(:disabled) { background: var(--pop-surface-2); }
+
+body.popup .menuIcon { display: grid; place-items: center; color: var(--pop-muted); }
+
+body.popup .menuIcon svg { width: 15px; height: 15px; display: block; }
+
+body.popup .menuText { font-size: 12px; font-weight: 550; }
+
+body.popup .menuHint {
+  color: var(--pop-faint);
+  font-size: 9.5px;
+  font-weight: 400;
+}
+
+body.popup footer { color: var(--pop-faint); }
 
 @media (max-width: 239px) {
   .shell { padding: 11px; }
