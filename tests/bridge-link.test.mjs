@@ -94,6 +94,25 @@ test('a port with nothing on it answers no, and one with the bridge answers yes'
   assert.equal(await probePort(PORT), true, 'and the port this suite is driving is found');
 });
 
+// WHY A RESPONDER THAT IS NOT A BRIDGE IS REFUSED.
+// Measured on this machine: a Chrome started with a remote debugging port answers on 9222, and the probe that only asked "did anything answer" took that port for a bridge.
+// The extension then dialled a debugging endpoint forever, reported "port 9222 discovered", and never linked - the local road was dead while it believed it was connected.
+
+test('a port that answers but is not a bridge is refused', async () => {
+  const { createServer } = await import('node:http');
+  const impostor = createServer((_req, res) => {
+    res.writeHead(200, { 'content-type': 'application/json' });
+    res.end(JSON.stringify({ Browser: 'Chrome/120.0', webSocketDebuggerUrl: 'ws://127.0.0.1/x' }));
+  });
+  await new Promise((resolve) => impostor.listen(0, '127.0.0.1', resolve));
+  const impostorPort = impostor.address().port;
+  try {
+    assert.equal(await probePort(impostorPort), false, 'something that answers is not enough; it has to answer as a bridge');
+  } finally {
+    await new Promise((resolve) => impostor.close(resolve));
+  }
+});
+
 // WHY THE WALK IS DRIVEN BY A PROBE THE TEST CONTROLS.
 // The first version walked the real candidate list and asserted a live port was found, which is only true on a machine running a bridge - on CI it found nothing and failed, and a test that passes on one machine and fails on another is testing the machine.
 // The claim worth pinning is the order: a dead configured address is stepped over and the first live port wins.

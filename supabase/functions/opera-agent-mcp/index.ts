@@ -8,6 +8,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
 import { AsyncLocalStorage } from "node:async_hooks";
 import { streamCommandEvents } from "../_shared/command-stream.ts";
+import { cutStreamAtTheAnswer } from "../_shared/cut-stream.ts";
 import * as z from "zod/v4";
 import { planInfo } from "./plan-info.ts";
 import { createEdgeLog } from "../_shared/edge-log.js";
@@ -1109,6 +1110,11 @@ Deno.serve(async (req: Request) => {
     const server = createServer(resolution.name, provider, caller, resolution);
     const serverBuiltAt = Date.now();
 
+    // WHY THE STREAM IS CUT AT THE ANSWER.
+    // The streamable HTTP transport answers a tool call on an event stream, and the stream stays open afterwards for server-to-client messages.
+    // A client that reads the body before it parses waits for that stream to end, and the edge ends it when the invocation is reaped - ten seconds after the device already answered.
+    // The measurement that started this: the device completed the command in 414 ms, the function's own leg cost about 950 ms, and the caller still waited about ten seconds.
+    // So the stream is kept - progress still reaches the model - and closed the moment the answer is written: the caller is done when the work is done.
     const transport = new WebStandardStreamableHTTPServerTransport({ enableJsonResponse: false });
     await server.connect(transport);
     const connectedAt = Date.now();
@@ -1122,7 +1128,7 @@ Deno.serve(async (req: Request) => {
     headers.set("x-opera-edge-build-ms", String(serverBuiltAt - identityDoneAt));
     headers.set("x-opera-edge-connect-ms", String(connectedAt - serverBuiltAt));
     headers.set("x-opera-edge-handle-ms", String(handledAt - connectedAt));
-    return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
+    return new Response(cutStreamAtTheAnswer(response.body), { status: response.status, statusText: response.statusText, headers });
   } catch (error) {
     createEdgeLog({}).error("opera-agent-mcp", errorMessage(error));
     return json(req, { jsonrpc: "2.0", error: { code: -32603, message: "Internal server error." }, id: null }, 500);
