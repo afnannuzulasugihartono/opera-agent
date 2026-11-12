@@ -38,8 +38,7 @@ Three lines, on every page:
 | Page | Job | One action |
 | --- | --- | --- |
 | `beranda.html` | Convince a first-time reader and steer them | Pasang Opera Agent |
-| `unduh.html` | Answer "where do I get it" with the least friction | Open `unduh-berkas.html` |
-| `unduh-berkas.html` | Hand over the file for this browser | Download the zip file |
+| `unduh.html` | Answer "where do I get it" with the least friction | Download the zip file |
 | `fitur.html` | Prove the product works end to end | Unduh |
 | `bukti.html` | Show the measured numbers, nothing else | Unduh |
 | `studi.html` | Show finished work the reader can judge | Unduh |
@@ -64,7 +63,7 @@ Three lines, on every page:
 
 ## Execution order
 
-1. `unduh.html` + `unduh-berkas.html` — done on branch `agent/download-redesign/download-redesign` (one door, quiet facts, two-column answers, logos, arrival motion).
+1. `unduh.html` - done on branch `agent/download-redesign/download-redesign`; the separate files page was merged into it (one door, quiet facts, two-column answers, logos, arrival motion).
 2. `fitur.html` — delete the page-intro, collapse each proof block to one claim + one artifact, remove the two duplicated counters.
 3. `studi.html` + `dukungan.html` — trim everything that narrates; keep the artifacts and the FAQs.
 4. `privasi.html` + `syarat.html` — read-only rhythm pass; no legal fact is cut; only framing sentences die.

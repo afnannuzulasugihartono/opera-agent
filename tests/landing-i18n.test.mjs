@@ -13,7 +13,7 @@ const read = (name) => fs.readFileSync(new URL(name, root), 'utf8');
 
 const TOGGLE = '<span class="lang" data-lang-toggle></span>';
 
-const DICT_PAGES = ['beranda.html', 'unduh.html', 'unduh-berkas.html', 'fitur.html', 'studi.html', 'bukti.html', 'dukungan.html', 'docs.html', '404.html', 'privasi.html', 'syarat.html', 'index.html', 'dashboard.html'];
+const DICT_PAGES = ['beranda.html', 'unduh.html', 'fitur.html', 'studi.html', 'bukti.html', 'dukungan.html', 'docs.html', '404.html', 'privasi.html', 'syarat.html', 'index.html', 'dashboard.html', 'mcp.html'];
 const TOGGLE_PAGES = [...DICT_PAGES, 'akun.html', 'oauth/consent.html'];
 
 function attrKeys(page) {
@@ -72,7 +72,7 @@ test('the pages without a dict mark nothing, so no toggle promises what is not t
 test('the toggle is one identical mount on every page that may carry it', () => {
   for (const page of TOGGLE_PAGES) {
     const html = read(`landing/${page}`);
-    const nav = html.match(/<nav>[\s\S]*?<\/nav>/)[0];
+    const nav = html.match(/<nav\b[^>]*>[\s\S]*?<\/nav>/)[0];
     assert.ok(nav.includes(TOGGLE), `${page} carries the mount inside its nav`);
 
     const count = html.split(TOGGLE).length - 1;
@@ -123,9 +123,9 @@ test('the authored Indonesian stands byte-for-byte where the pins read it', () =
 
   const sentinels = [
     ['landing/beranda.html', 'Hak cipta dilindungi'],
-    ['landing/beranda.html', 'Asisten AI di '],
+    ['landing/beranda.html', 'Asisten AI di'],
     ['landing/beranda.html', 'Pakai model sendiri'],
-    ['landing/unduh-berkas.html', 'Kedua sidik jari harus sama.'],
+    ['landing/unduh.html', 'Kedua sidik jari harus sama.'],
     ['landing/404.html', 'Lima jalan keluar'],
     ['landing/dukungan.html', 'Menghubungkan AI harness (OpenCode, Kilo, ChatGPT, Claude)'],
     ['landing/fitur.html', 'Companion dengan AI di belakangnya'],

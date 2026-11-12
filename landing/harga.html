@@ -8,7 +8,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="theme-color" content="#000000" />
+  <meta name="theme-color" content="#0000f2" />
   <title>Harga - Opera Agent</title>
   <meta name="description" content="Isi saldo Rp10.000 lewat QRIS atau Plan Firm Rp249.000 per bulan. Tidak ada yang terpotong sampai hasilnya ada." />
   <link rel="stylesheet" href="/site.css" />
@@ -24,20 +24,78 @@
 </head>
 <body>
   <header>
-    <div class="wrap">
-      <nav>
-        <a class="brand" href="/beranda.html" aria-current="page"><svg class="brandMark" viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="7" fill="#101512" /><path d="M8 5.6v12.8l3.1-2.9 1.9 4.5 2.4-1-2-4.5h3.9L8 5.6Z" fill="#3ecf8e" /></svg><span>Opera Agent</span></a>
-        <a href="/fitur.html" data-i18n="nav.features">Fitur</a>
-        <a href="/unduh.html" data-i18n="nav.download">Unduh</a>
-        <a href="/pasang-mcp.html" data-i18n="nav.mcp">MCP</a><a href="/harga" data-i18n="nav.price">Harga</a>
-        <a href="/dukungan.html" data-i18n="nav.support">Dukungan</a>
-        <a href="/docs.html" data-i18n="nav.docs">Docs</a>
-        <span class="lang" data-lang-toggle></span>
-        <button class="navSearch" type="button" aria-label="Cari halaman Ctrl K" aria-keyshortcuts="Control+K Meta+K"><svg class="navSearchIcon" viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><circle cx="7" cy="7" r="4.5" fill="none" stroke="currentColor" stroke-width="1.5"></circle><path d="M10.6 10.6 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path></svg><kbd class="navSearchKey">Ctrl K</kbd></button>
-        <a class="navCta" href="/" data-i18n="nav.signin">Masuk</a>
+  <div class="wrap">
+    <div class="navRow">
+      <nav class="navSide navLeft" aria-label="Primary">
+        <a href="./fitur.html" data-i18n="nav.features">Fitur</a>
+        <a href="./unduh.html" data-i18n="nav.download">Unduh</a><span class="lang" data-lang-toggle></span>
       </nav>
+      <a class="brand" href="/beranda.html" aria-current="page"><span class="wordmark">Opera<br/>Agent</span></a>
+      <nav class="navSide navRight" aria-label="Secondary">
+        <button class="navPortal" id="navPortalToggle" type="button" aria-expanded="false" aria-controls="portalMenu"><span data-i18n="nav.portal">Portal</span><svg class="navPortalChevron" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"></path></svg></button>
+        <a href="./docs.html" data-i18n="nav.docs">Docs</a>
+        <a class="navCta" href="./unduh.html" data-i18n="cta.download">Pasang Opera Agent</a>
+      </nav>
+
+
+    <div class="portalMenu" id="portalMenu" role="dialog" aria-modal="false" aria-labelledby="portalBannerLink" hidden>
+      <div class="portalBanner">
+        <a class="portalBannerLink" id="portalBannerLink" href="./akun.html">
+          <span class="portalBannerMark" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="16" cy="16" r="13"/><path d="M3 16h26"/><ellipse cx="16" cy="16" rx="13" ry="5.6"/></svg></span>
+          <span class="portalBannerText"><span class="portalBannerLinkText" data-i18n="portal.banner.link">Portal Opera Agent</span><span class="portalBannerRest"><span class="portalBannerMsg" data-i18n="portal.banner.m1">Satu akun. Semua model. Semua device.</span><span class="portalBannerMsg" data-i18n="portal.banner.m2" hidden>Bayar per pekerjaan selesai.</span><span class="portalBannerMsg" data-i18n="portal.banner.m3" hidden>Data tidak pernah meninggalkan device.</span></span></span>
+        </a>
+        <div class="portalBannerNav">
+          <button class="portalBannerChev" id="portalBannerPrev" type="button" data-i18n-attr="aria-label:portal.banner.prev" aria-label="Pesan sebelumnya"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 6-6 6 6 6"/></svg></button>
+          <button class="portalBannerChev" id="portalBannerNext" type="button" data-i18n-attr="aria-label:portal.banner.next" aria-label="Pesan berikutnya"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></button>
+        </div>
+      </div>
+      <div class="portalBody">
+        <div class="portalRow">
+          <div class="portalBigCol">
+            <p class="portalKind" data-i18n="portal.label.platform">Platform</p>
+            <p class="portalBig" data-i18n="portal.big.platform">Portal</p>
+          </div>
+          <ul class="portalDoors">
+            <li><a class="portalDoor" href="./docs.html" role="menuitem">
+              <span class="portalDoorName" data-i18n="portal.overview.title">Ikhtisar</span>
+              <span class="portalDoorDesc" data-i18n="portal.overview.body">Hubungkan agent ke setiap device</span>
+              <svg class="portalArrow" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M17 7H9M17 7v8"/></svg>
+            </a></li>
+            <li><a class="portalDoor" href="./harga.html" role="menuitem">
+              <span class="portalDoorName" data-i18n="portal.plans.title">Paket</span>
+              <span class="portalDoorDesc" data-i18n="portal.plans.body">Harga tetap per pekerjaan selesai</span>
+              <svg class="portalArrow" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M17 7H9M17 7v8"/></svg>
+            </a></li>
+            <li><a class="portalDoor" href="./unduh.html" role="menuitem">
+              <span class="portalDoorName" data-i18n="portal.referrals.title">Mulai dari sini</span>
+              <span class="portalDoorDesc" data-i18n="portal.referrals.body">Pasang extension, pair sekali, lalu kerja</span>
+              <svg class="portalArrow" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M17 7H9M17 7v8"/></svg>
+            </a></li>
+          </ul>
+        </div>
+        <div class="portalDivider" aria-hidden="true"></div>
+        <div class="portalRow">
+          <div class="portalBigCol">
+            <p class="portalKind" data-i18n="portal.label.access">Akun</p>
+            <p class="portalBig" data-i18n="portal.big.access">Akses</p>
+          </div>
+          <ul class="portalDoors">
+            <li><a class="portalDoor" href="./index.html" role="menuitem">
+              <span class="portalDoorName" data-i18n="portal.signin.title">Masuk</span>
+              <span class="portalDoorDesc" data-i18n="portal.signin.body">Lanjutkan ke dashboard Anda</span>
+              <svg class="portalArrow" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M17 7H9M17 7v8"/></svg>
+            </a></li>
+            <li><a class="portalDoor" href="./index.html" role="menuitem">
+              <span class="portalDoorName" data-i18n="portal.signup.title">Akun baru</span>
+              <span class="portalDoorDesc" data-i18n="portal.signup.body">Satu akun untuk semua device</span>
+              <svg class="portalArrow" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M17 7H9M17 7v8"/></svg>
+            </a></li>
+          </ul>
+        </div>
+      </div>
     </div>
-  </header>
+  </div>
+</header>
 
   <main class="wrap prose">
     <h1 data-i18n="price.title">Harga</h1>
@@ -140,9 +198,10 @@
           <a href="./beranda.html" data-i18n="footer.home">Beranda</a>
           <a href="./fitur.html" data-i18n="footer.features">Fitur</a>
           <a href="./unduh.html" data-i18n="footer.download">Unduh</a>
-          <a href="./pasang-mcp.html">Pasang MCP</a>
+          <a href="./mcp.html">Pasang MCP</a>
           <a href="./bukti.html" data-i18n="footer.bukti">Bukti</a>
           <a href="./docs.html" data-i18n="footer.docs">Docs</a>
+          <a href="./harga.html">Harga</a>
         </span>
       </div>
       <div class="footCol">
@@ -165,159 +224,195 @@
   </footer>
 
   <script type="application/json" id="i18n-dict">
-  {
+{
     "en": {
-      "footer.bukti": "Proof",
-      "footer.source": "Source code",
-      "footer.legal": "Legal",
-      "footer.docs": "Docs",
-      "footer.download": "Download",
-      "footer.product": "Product",
-      "nav.download": "Download",
-      "nav.signin": "Sign in",
-      "nav.features": "Features",
-      "nav.price": "Pricing",
-      "nav.docs": "Docs",
-    "nav.mcp": "MCP",
-      "nav.support": "Support",
-      "footer.rights": "c 2026 Opera Agent. All rights reserved.",
-      "footer.home": "Home",
-      "footer.privacy": "Privacy",
-      "footer.terms": "Terms",
-      "footer.signin": "Sign in",
-      "footer.account": "Account",
-      "footer.features": "Features",
-      "footer.support": "Support",
-      "price.title": "Pricing",
-      "price.lede": "Two ways to pay, one rule: <strong>nothing is charged until a result exists.</strong>",
-      "price.tocAria": "On this page",
-      "buy.wallet.title": "Top up",
-      "buy.wallet.unit": "minimum, one top-up",
-      "buy.wallet.one": "Pay per job that finishes — the price is shown before it starts.",
-      "buy.wallet.two": "Fail or stop mid-way: your balance is returned in full.",
-      "buy.wallet.three": "The balance never expires. No admin fees.",
-      "buy.wallet.cta": "Top up IDR 10,000",
-      "buy.firm.badge": "Most bought",
-      "buy.firm.title": "Plan Firm",
-      "buy.firm.unit": "per month, one payment",
-      "buy.firm.one": "5,000 commands per day — Pilot has 200.",
-      "buy.firm.two": "500 commands per drive session — Pilot has 50.",
-      "buy.firm.three": "Active for 30 days from payment. Then back to Pilot, free.",
-      "buy.firm.four": "Not auto-renewed — buy again before it runs out.",
-      "buy.firm.cta": "Buy Plan Firm IDR 249,000",
-      "buy.signedOut": "Purchases use your account. <a href=\"./index.html\">Sign in first</a>, then come back here.",
-      "buy.aside": "Payment by <strong>QRIS</strong>. Once the payment is confirmed, the balance or Plan Firm activates automatically — the balance grows, the Firm quota applies at once.",
-      "buy.empty": "Type into something first — the button follows your input.",
-      "buy.working": "Opening the payment page…",
-      "buy.success": "The payment page opened in a new tab. Finish paying there and your account activates automatically.",
-      "buy.error": "Could not open the payment page",
-      "glance.topup": "Minimum top-up",
-      "glance.plan": "Plan Firm",
-      "glance.planQuota": "Firm quota",
-      "glance.pilotQuota": "Pilot quota",
-      "glance.payment": "Payment",
-      "glance.unit": "Unit",
-      "glance.unitValue": "Per job",
-      "glance.limit": "One job, max",
-      "glance.failure": "Failure",
-      "glance.failureValue": "Refunded in full",
-      "price.toc1": "Top up, not a subscription",
-      "price.toc2": "Plan Firm, 30 days per payment",
-      "price.toc3": "Per finished job",
-      "price.toc4": "Job failed: balance returned",
-      "price.tocBatas": "One job, up to 10 actions",
-      "price.toc5": "Model cost is yours",
-      "price.q1t": "Top up, not a subscription",
-      "price.q1b": "Top up once by <strong>QRIS from IDR 10,000</strong>. The balance <strong>never expires</strong> and only drops when a job is finished.",
-      "price.q2t": "Plan Firm, 30 days per payment",
-      "price.q2b": "Plan Firm raises the daily quota from <strong>200 to 5,000 commands</strong> and the per-session limit from <strong>50 to 500</strong>. It is active <strong>30 days</strong> from payment and is <strong>not auto-renewed</strong> — buy again any time before or after it runs out and the days are added on top of what is left. After it ends the account returns to Pilot free of charge.",
-      "price.q3t": "Per finished job",
-      "price.q3b": "Before a job starts you see its <strong>fixed price</strong> and agree to it. When the job is done and the artifact exists, the balance is charged that price — never more. No other meter nibbles at your balance.",
-      "price.q4t": "Job failed: balance returned",
-      "price.q4b": "If a job fails — including stopping because a page asks for a password, an OTP, or a card — the amount held is <strong>returned in full</strong>. No proportional fees, no admin fee. Amounts held over <strong>30 minutes</strong> without completion are returned automatically.",
-      "price.q5t": "One job, up to 10 actions",
-      "price.q5b": "One job is one clear result: one page, one report, or one list broken into 10-item batches with their own price and refund each. A job estimated above 10 actions is refused up front with an offer to split it — not failed midway.",
-      "price.q6t": "Model cost is yours",
-      "price.q6b": "Opera Agent uses the model you bring: your endpoint, your model name, your API key. Model usage is billed by the model provider directly to you, not to Opera Agent."
+        "buy.aside": "Payment by <strong>QRIS</strong>. Once the payment is confirmed, the balance or Plan Firm activates automatically — the balance grows, the Firm quota applies at once.",
+        "buy.error": "The payment page could not be opened",
+        "buy.firm.badge": "Most bought",
+        "buy.firm.cta": "Buy Plan Firm IDR 249,000",
+        "buy.firm.four": "Not auto-renewed — buy again before it runs out.",
+        "buy.firm.one": "5,000 commands per day — Pilot has 200.",
+        "buy.firm.three": "Active for 30 days from payment. Then back to Pilot, free.",
+        "buy.firm.title": "Plan Firm",
+        "buy.firm.two": "500 commands per drive session — Pilot has 50.",
+        "buy.firm.unit": "per month, one payment",
+        "buy.signedOut": "Purchases use your account. <a href=\"./index.html\">Sign in first</a>, then come back here.",
+        "buy.success": "The payment page opened in a new tab. Finish paying there; your account activates automatically.",
+        "buy.wallet.cta": "Top up IDR 10,000",
+        "buy.wallet.one": "Pay per job that finishes — the price is shown before it starts.",
+        "buy.wallet.three": "The balance never expires. No admin fees.",
+        "buy.wallet.title": "Top up",
+        "buy.wallet.two": "Fail or stop mid-way: your balance is returned in full.",
+        "buy.wallet.unit": "minimum, one top-up",
+        "buy.working": "Opening the payment page.",
+        "cta.download": "Install Opera Agent",
+        "footer.account": "Account",
+        "footer.bukti": "Proof",
+        "footer.docs": "Docs",
+        "footer.download": "Download",
+        "footer.features": "Features",
+        "footer.home": "Home",
+        "footer.legal": "Legal",
+        "footer.privacy": "Privacy",
+        "footer.product": "Product",
+        "footer.rights": "c 2026 Opera Agent. All rights reserved.",
+        "footer.signin": "Sign in",
+        "footer.source": "Source code",
+        "footer.support": "Support",
+        "footer.terms": "Terms",
+        "glance.failure": "Failure",
+        "glance.failureValue": "Refunded in full",
+        "glance.limit": "One job, max",
+        "glance.payment": "Payment",
+        "glance.pilotQuota": "Pilot quota",
+        "glance.plan": "Plan Firm",
+        "glance.planQuota": "Firm quota",
+        "glance.topup": "Minimum top-up",
+        "glance.unit": "Unit",
+        "glance.unitValue": "Per job",
+        "nav.docs": "Docs",
+        "nav.download": "Download",
+        "nav.features": "Features",
+        "nav.portal": "Portal",
+        "portal.banner.link": "Opera Agent Portal",
+        "portal.banner.m1": "One account. Every model. Every device.",
+        "portal.banner.m2": "Pay per finished job.",
+        "portal.banner.m3": "Your data never leaves the device.",
+        "portal.banner.next": "Next message",
+        "portal.banner.prev": "Previous message",
+        "portal.big.access": "Akses",
+        "portal.big.platform": "Portal",
+        "portal.label.access": "Account",
+        "portal.label.platform": "Platform",
+        "portal.overview.body": "Connect your agent to every device",
+        "portal.overview.title": "Overview",
+        "portal.plans.body": "A flat price per finished job",
+        "portal.plans.title": "Plans",
+        "portal.referrals.body": "Install, pair once, start working",
+        "portal.referrals.title": "Start here",
+        "portal.signin.body": "Continue to your dashboard",
+        "portal.signin.title": "Sign in",
+        "portal.signup.body": "One account, every device",
+        "portal.signup.title": "New account",
+        "price.lede": "Two ways to pay, one rule: <strong>nothing is charged until a result exists.</strong>",
+        "price.q1b": "Top up once by <strong>QRIS from IDR 10,000</strong>. The balance <strong>never expires</strong> and only drops when a job is finished.",
+        "price.q1t": "Top up, not a subscription",
+        "price.q2b": "Plan Firm raises the daily quota from <strong>200 to 5,000 commands</strong> and the per-session limit from <strong>50 to 500</strong>. It is active <strong>30 days</strong> from payment and is <strong>not auto-renewed</strong> — buy again any time before or after it runs out and the days are added on top of what is left. After it ends the account returns to Pilot free of charge.",
+        "price.q2t": "Plan Firm, 30 days per payment",
+        "price.q3b": "Before a job starts you see its <strong>fixed price</strong> and agree to it. When the job is done and the artifact exists, the balance is charged that price — never more. No other meter nibbles at your balance.",
+        "price.q3t": "Per finished job",
+        "price.q4b": "If a job fails — including stopping because a page asks for a password, an OTP, or a card — the amount held is <strong>returned in full</strong>. No proportional fees, no admin fee. Amounts held over <strong>30 minutes</strong> without completion are returned automatically.",
+        "price.q4t": "Job failed: balance returned",
+        "price.q5b": "One job is one clear result: one page, one report, or one list broken into 10-item batches with their own price and refund each. A job estimated above 10 actions is refused up front with an offer to split it — not failed midway.",
+        "price.q5t": "One job, up to 10 actions",
+        "price.q6b": "Opera Agent uses the model you bring: your endpoint, your model name, your API key. Model usage is billed by the model provider directly to you, not to Opera Agent.",
+        "price.q6t": "Model cost is yours",
+        "price.title": "Pricing",
+        "price.toc1": "Top up, not a subscription",
+        "price.toc2": "Plan Firm, 30 days per payment",
+        "price.toc3": "Per finished job",
+        "price.toc4": "Job failed: balance returned",
+        "price.toc5": "Model cost is yours",
+        "price.tocAria": "On this page",
+        "price.tocBatas": "One job, up to 10 actions"
     },
     "id": {
-      "footer.bukti": "Bukti",
-      "footer.source": "Kode sumber",
-      "footer.legal": "Legal",
-      "footer.docs": "Docs",
-      "footer.download": "Unduh",
-      "footer.product": "Produk",
-      "nav.download": "Unduh",
-      "nav.signin": "Masuk",
-      "nav.features": "Fitur",
-      "nav.price": "Harga",
-      "nav.docs": "Docs",
-      "nav.support": "Dukungan",
-      "footer.rights": "c 2026 Opera Agent. Hak cipta dilindungi.",
-      "footer.home": "Beranda",
-      "footer.privacy": "Privasi",
-      "footer.terms": "Syarat",
-      "footer.signin": "Masuk",
-      "footer.account": "Akun",
-      "footer.features": "Fitur",
-      "footer.support": "Dukungan",
-      "price.title": "Harga",
-      "price.lede": "Dua cara membayar, satu aturan: <strong>tidak ada yang terpotong sampai hasilnya ada.</strong>",
-      "price.tocAria": "Di halaman ini",
-      "buy.wallet.title": "Isi saldo",
-      "buy.wallet.unit": "minimal, sekali isi",
-      "buy.wallet.one": "Bayar per pekerjaan yang benar-benar selesai — harga tampil sebelum mulai.",
-      "buy.wallet.two": "Gagal atau berhenti di tengah jalan: saldo kembali penuh.",
-      "buy.wallet.three": "Saldo tidak kedaluwarsa. Tidak ada biaya admin.",
-      "buy.wallet.cta": "Isi saldo Rp10.000",
-      "buy.firm.badge": "Paling dipakai",
-      "buy.firm.title": "Plan Firm",
-      "buy.firm.unit": "per bulan, sekali bayar",
-      "buy.firm.one": "Kuota 5000 perintah per hari — Pilot hanya 200.",
-      "buy.firm.two": "500 perintah per sesi drive — Pilot hanya 50.",
-      "buy.firm.three": "Berlaku 30 hari sejak pembayaran. Habis? Kembali ke Pilot.",
-      "buy.firm.four": "Tidak otomatis diperpanjang — beli lagi sebelum habis.",
-      "buy.firm.cta": "Beli Plan Firm Rp249.000",
-      "buy.signedOut": "Pembayaran memakai akun Anda. <a href=\"./index.html\">Masuk dulu</a>, lalu kembali ke halaman ini.",
-      "buy.aside": "Bayar lewat <strong>QRIS</strong>. Setelah pembayaran dikonfirmasi, saldo atau Plan Firm aktif otomatis — saldo bertambah, kuota Firm berlaku langsung.",
-      "buy.empty": "Masukkan sesuatu dulu — tombol mengikuti input Anda.",
-      "buy.working": "Membuka halaman pembayaran…",
-      "buy.success": "Halaman pembayaran terbuka di tab baru. Selesaikan pembayaran di sana; akun Anda aktif otomatis.",
-      "buy.error": "Halaman pembayaran tidak bisa dibuka",
-      "glance.topup": "Top-up minimum",
-      "glance.plan": "Plan Firm",
-      "glance.planQuota": "Kuota Firm",
-      "glance.pilotQuota": "Kuota Pilot",
-      "glance.payment": "Pembayaran",
-      "glance.unit": "Satuan",
-      "glance.unitValue": "Per pekerjaan",
-      "glance.limit": "Batas satu pekerjaan",
-      "glance.failure": "Kegagalan",
-      "glance.failureValue": "Dikembalikan penuh",
-      "price.toc1": "Isi saldo, bukan langganan",
-      "price.toc2": "Plan Firm, 30 hari sekali bayar",
-      "price.toc3": "Bayar per pekerjaan selesai",
-      "price.toc4": "Pekerjaan gagal: saldo kembali",
-      "price.tocBatas": "Satu pekerjaan maksimal 10 aksi",
-      "price.toc5": "Biaya model tetap urusan Anda",
-      "price.q1t": "Isi saldo, bukan langganan",
-      "price.q1b": "Anda mengisi saldo sekali lewat <strong>QRIS mulai Rp10.000</strong>. Saldo <strong>tidak kedaluwarsa</strong> dan hanya berkurang saat satu pekerjaan benar-benar selesai.",
-      "price.q2t": "Plan Firm, 30 hari sekali bayar",
-      "price.q2b": "Plan Firm menaikkan kuota harian dari <strong>200 menjadi 5000 perintah</strong> dan jatah per sesi dari <strong>50 menjadi 500</strong>. Pembelian berlaku <strong>30 hari</strong> sejak pembayaran dikonfirmasi, dan <strong>tidak diperpanjang otomatis</strong> — beli lagi kapan pun sebelum atau sesudah habis, dan hari yang tersisa tidak hangus: masa berlaku diperpanjang di atas sisa yang ada. Setelah habis, akun kembali ke Pilot tanpa biaya.",
-      "price.q3t": "Bayar per pekerjaan selesai",
-      "price.q3b": "Sebelum satu pekerjaan mulai, Anda melihat <strong>harga tetapnya</strong> dan menyetujuinya. Saat pekerjaan selesai dan artefaknya ada, saldo dipotong sebesar harga itu. Tidak ada meteran lain yang memotong saldo Anda.",
-      "price.q4t": "Pekerjaan gagal: saldo kembali",
-      "price.q4b": "Kalau pekerjaan gagal — termasuk berhenti karena halaman meminta kata sandi, OTP, atau data kartu — dana yang ditahan <strong>dikembalikan penuh</strong>. Tidak ada potongan proporsional, tidak ada biaya admin. Dana yang ditahan lebih dari <strong>30 menit</strong> tanpa penyelesaian dikembalikan otomatis.",
-      "price.q5t": "Satu pekerjaan maksimal 10 aksi",
-      "price.q5b": "Satu pekerjaan adalah satu hasil yang jelas: satu halaman, satu laporan, atau satu daftar yang dipecah otomatis menjadi kelompok 10 item, masing-masing dengan harga dan pengembalian sendiri. Pekerjaan yang diperkirakan lebih dari 10 aksi ditolak di depan dengan tawaran untuk dipecah — bukan gagal di tengah jalan.",
-      "price.q6t": "Biaya model tetap urusan Anda",
-      "price.q6b": "Opera Agent memakai model yang Anda bawa sendiri: endpoint, nama model, dan kunci API Anda. Biaya pemakaian model dibayar langsung ke penyedia model itu, bukan ke Opera Agent."
+        "buy.aside": "Bayar lewat <strong>QRIS</strong>. Setelah pembayaran dikonfirmasi, saldo atau Plan Firm aktif otomatis — saldo bertambah, kuota Firm berlaku langsung.",
+        "buy.error": "Halaman pembayaran tidak bisa dibuka",
+        "buy.firm.badge": "Paling dipakai",
+        "buy.firm.cta": "Beli Plan Firm Rp249.000",
+        "buy.firm.four": "Tidak otomatis diperpanjang — beli lagi sebelum habis.",
+        "buy.firm.one": "Kuota 5000 perintah per hari — Pilot hanya 200.",
+        "buy.firm.three": "Berlaku 30 hari sejak pembayaran. Habis? Kembali ke Pilot.",
+        "buy.firm.title": "Plan Firm",
+        "buy.firm.two": "500 perintah per sesi drive — Pilot hanya 50.",
+        "buy.firm.unit": "per bulan, sekali bayar",
+        "buy.signedOut": "Pembayaran memakai akun Anda. <a href=\"./index.html\">Masuk dulu</a>, lalu kembali ke halaman ini.",
+        "buy.success": "Halaman pembayaran terbuka di tab baru. Selesaikan pembayaran di sana; akun Anda aktif otomatis.",
+        "buy.wallet.cta": "Isi saldo Rp10.000",
+        "buy.wallet.one": "Bayar per pekerjaan yang benar-benar selesai — harga tampil sebelum mulai.",
+        "buy.wallet.three": "Saldo tidak kedaluwarsa. Tidak ada biaya admin.",
+        "buy.wallet.title": "Isi saldo",
+        "buy.wallet.two": "Gagal atau berhenti di tengah jalan: saldo kembali penuh.",
+        "buy.wallet.unit": "minimal, sekali isi",
+        "buy.working": "Membuka halaman pembayaran.",
+        "cta.download": "Pasang Opera Agent",
+        "footer.account": "Akun",
+        "footer.bukti": "Bukti",
+        "footer.docs": "Docs",
+        "footer.download": "Unduh",
+        "footer.features": "Fitur",
+        "footer.home": "Beranda",
+        "footer.legal": "Legal",
+        "footer.privacy": "Privasi",
+        "footer.product": "Produk",
+        "footer.rights": "c 2026 Opera Agent. Hak cipta dilindungi.",
+        "footer.signin": "Masuk",
+        "footer.source": "Kode sumber",
+        "footer.support": "Dukungan",
+        "footer.terms": "Syarat",
+        "glance.failure": "Kegagalan",
+        "glance.failureValue": "Dikembalikan penuh",
+        "glance.limit": "Batas satu pekerjaan",
+        "glance.payment": "Pembayaran",
+        "glance.pilotQuota": "Kuota Pilot",
+        "glance.plan": "Plan Firm",
+        "glance.planQuota": "Kuota Firm",
+        "glance.topup": "Top-up minimum",
+        "glance.unit": "Satuan",
+        "glance.unitValue": "Per pekerjaan",
+        "nav.docs": "Docs",
+        "nav.download": "Unduh",
+        "nav.features": "Fitur",
+        "nav.portal": "Portal",
+        "portal.banner.link": "Portal Opera Agent",
+        "portal.banner.m1": "Satu akun. Semua model. Semua device.",
+        "portal.banner.m2": "Bayar per pekerjaan selesai.",
+        "portal.banner.m3": "Data tidak pernah meninggalkan device.",
+        "portal.banner.next": "Pesan berikutnya",
+        "portal.banner.prev": "Pesan sebelumnya",
+        "portal.big.access": "Akses",
+        "portal.big.platform": "Portal",
+        "portal.label.access": "Akun",
+        "portal.label.platform": "Platform",
+        "portal.overview.body": "Hubungkan agent ke setiap device",
+        "portal.overview.title": "Ikhtisar",
+        "portal.plans.body": "Harga tetap per pekerjaan selesai",
+        "portal.plans.title": "Paket",
+        "portal.referrals.body": "Pasang extension, pair sekali, lalu kerja",
+        "portal.referrals.title": "Mulai dari sini",
+        "portal.signin.body": "Lanjutkan ke dashboard Anda",
+        "portal.signin.title": "Masuk",
+        "portal.signup.body": "Satu akun untuk semua device",
+        "portal.signup.title": "Akun baru",
+        "price.lede": "Dua cara membayar, satu aturan: <strong>tidak ada yang terpotong sampai hasilnya ada.</strong>",
+        "price.q1b": "Anda mengisi saldo sekali lewat <strong>QRIS mulai Rp10.000</strong>. Saldo <strong>tidak kedaluwarsa</strong> dan hanya berkurang saat satu pekerjaan benar-benar selesai.",
+        "price.q1t": "Isi saldo, bukan langganan",
+        "price.q2b": "Plan Firm menaikkan kuota harian dari <strong>200 menjadi 5000 perintah</strong> dan jatah per sesi dari <strong>50 menjadi 500</strong>. Pembelian berlaku <strong>30 hari</strong> sejak pembayaran dikonfirmasi, dan <strong>tidak diperpanjang otomatis</strong> — beli lagi kapan pun sebelum atau sesudah habis, dan hari yang tersisa tidak hangus: masa berlaku diperpanjang di atas sisa yang ada. Setelah habis, akun kembali ke Pilot tanpa biaya.",
+        "price.q2t": "Plan Firm, 30 hari sekali bayar",
+        "price.q3b": "Sebelum satu pekerjaan mulai, Anda melihat <strong>harga tetapnya</strong> dan menyetujuinya. Saat pekerjaan selesai dan artefaknya ada, saldo dipotong sebesar harga itu. Tidak ada meteran lain yang memotong saldo Anda.",
+        "price.q3t": "Bayar per pekerjaan selesai",
+        "price.q4b": "Kalau pekerjaan gagal — termasuk berhenti karena halaman meminta kata sandi, OTP, atau data kartu — dana yang ditahan <strong>dikembalikan penuh</strong>. Tidak ada potongan proporsional, tidak ada biaya admin. Dana yang ditahan lebih dari <strong>30 menit</strong> tanpa penyelesaian dikembalikan otomatis.",
+        "price.q4t": "Pekerjaan gagal: saldo kembali",
+        "price.q5b": "Satu pekerjaan adalah satu hasil yang jelas: satu halaman, satu laporan, atau satu daftar yang dipecah otomatis menjadi kelompok 10 item, masing-masing dengan harga dan pengembalian sendiri. Pekerjaan yang diperkirakan lebih dari 10 aksi ditolak di depan dengan tawaran untuk dipecah — bukan gagal di tengah jalan.",
+        "price.q5t": "Satu pekerjaan maksimal 10 aksi",
+        "price.q6b": "Opera Agent memakai model yang Anda bawa sendiri: endpoint, nama model, dan kunci API Anda. Biaya pemakaian model dibayar langsung ke penyedia model itu, bukan ke Opera Agent.",
+        "price.q6t": "Biaya model tetap urusan Anda",
+        "price.title": "Harga",
+        "price.toc1": "Isi saldo, bukan langganan",
+        "price.toc2": "Plan Firm, 30 hari sekali bayar",
+        "price.toc3": "Bayar per pekerjaan selesai",
+        "price.toc4": "Pekerjaan gagal: saldo kembali",
+        "price.toc5": "Biaya model tetap urusan Anda",
+        "price.tocAria": "Di halaman ini",
+        "price.tocBatas": "Satu pekerjaan maksimal 10 aksi"
     }
-  }
-  </script>
+}
+</script>
   <script src="./i18n.js"></script>
   <script src="/wayfind.js"></script>
   <script src="/palette.js"></script>
+  <script src="/portal.js" defer></script>
   <script src="/reveal.js"></script>
   <script src="/spotlight.js"></script>
   <script type="module">

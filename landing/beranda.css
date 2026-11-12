@@ -1,10 +1,233 @@
 /*
- * @last-edited: 2026-11-05 UTC+7.
- * @title: beranda.css — the home page: one hero, one product proof, one statement, and one short section per idea.
- * @state: a two-column hero with a browser mock, a statement band in large type, an editorial section rhythm, and the model form and FAQ panels.
+ * @last-edited: 2026-11-12 UTC+7.
+ * @title: beranda.css - the home page: mosaic backdrop, masthead hero, one product proof per idea.
+ * @state: fixed canvas background (Belisarius mosaic), single-column hero, terminal install bar, statement band, window-run proof, Faq.
+ * @dependencies: site.css.
+ */
+
+.hero {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: calc(100dvh - 66px);
+  padding: clamp(2rem, 6vh, 4rem) clamp(0.5rem, 4vw, 3.25rem);
+}
+
+.heroCopy {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: clamp(1rem, 2.2vh, 1.5rem);
+  max-width: 900px;
+}
+
+.heroCopy h1 {
+  margin: 0;
+  max-width: 12ch;
+  font-family: var(--display);
+  font-weight: 500;
+  font-size: clamp(54px, 11vw, 128px);
+  line-height: .93;
+  letter-spacing: -0.015em;
+  color: var(--ink);
+}
+
+.heroCopy h1 .accent {
+  color: var(--accent-strong);
+  font-style: normal;
+}
+
+.heroCtas {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.heroPrimary {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 54px;
+  padding: 0 26px;
+  border-radius: 999px;
+  background: var(--ink);
+  color: var(--on-fill);
+  font-size: 15px;
+  font-weight: 650;
+  letter-spacing: .01em;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.heroPrimary:hover {
+  background: var(--on-blue);
+}
+
+.heroGhost {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 54px;
+  padding: 0 24px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--ink) 8%, transparent);
+  border: 1px solid var(--line-strong);
+  color: var(--ink);
+  font-size: 15px;
+  font-weight: 550;
+  letter-spacing: .01em;
+  text-decoration: none;
+  white-space: nowrap;
+  backdrop-filter: blur(8px);
+}
+
+.heroGhost:hover {
+  background: color-mix(in srgb, var(--ink) 14%, transparent);
+  border-color: var(--ink);
+}
+
+.heroBtnIcon { flex: 0 0 auto; }
+
+.heroCaption {
+  margin: 2px 0 0;
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 11.5px;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+}
+
+.termBar {
+  width: min(100%, 520px);
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--blue);
+}
+
+.termTabs {
+  display: flex;
+  gap: 2px;
+  padding: 8px 10px 0;
+}
+
+.termTab {
+  border: 0;
+  background: transparent;
+  color: var(--on-blue-soft);
+  font-family: var(--mono);
+  font-size: 12px;
+  padding: 7px 16px 9px;
+  border-radius: 8px 8px 0 0;
+  cursor: pointer;
+}
+
+.termTab.is-on {
+  background: var(--surface);
+  color: var(--ink);
+}
+
+.termLine {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--surface);
+  border-top: 1px solid var(--on-blue-line);
+  padding: 12px 14px;
+}
+
+.termLine code {
+  flex: 1 1 auto;
+  min-width: 0;
+  color: var(--on-blue);
+  font-family: var(--mono);
+  font-size: 12.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.termCopy {
+  flex: 0 0 auto;
+  border: 0;
+  border-radius: 6px;
+  background: var(--blue);
+  color: var(--on-blue);
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .04em;
+  padding: 7px 13px;
+  cursor: pointer;
+}
+
+.termCopy:hover {
+  background: var(--blue-strong);
+}
+
+.heroStats {
+  display: flex;
+  gap: clamp(1.25rem, 3vw, 2.5rem);
+  margin: 0.25rem 0 0;
+  padding: 0;
+  border: 0;
+}
+
+.heroStats div {
+  margin: 0;
+}
+
+.heroStats dt {
+  color: var(--ink);
+  font-family: var(--display);
+  font-size: clamp(1.5rem, min(2.6vw, 3.6vh), 2rem);
+  font-weight: 500;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.heroStats dd {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+@media (max-width: 940px) {
+  .hero { min-height: 0; padding: 2.5rem .5rem 3rem; justify-content: flex-start; }
+  .heroCopy h1 { font-size: clamp(42px, 13vw, 64px); }
+}
+
+/*
+ * WHY THE INSTALL DOOR IS GREEN TOO: the closing action mirrors the hero's - one accent, one primary decision per screen, and it is the install.
+ */
+
+#install .btn.primary,
+#signin .btn.primary {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--on-fill);
+}
+
+#install .btn.primary:hover,
+#signin .btn.primary:hover {
+  border-color: var(--accent-strong);
+  background: var(--accent-strong);
+}
+
+.rowGap {
+  margin-top: 28px;
+}
+
+/*
+ * @last-edited: 2026-11-12 UTC+7.
+ * @title: beranda.css - the home page: one hero, one product proof, one statement, and one short section per idea.
+ * @state: one centered hero with the job running in its window, a statement band in large type, one fluid section rhythm, and the model form and FAQ panels.
  * @dependencies: site.css.
  *
- * WHY a page sheet: the home page carries the only product mock and the only FAQ, so its rules stay off the other pages.
+ * WHY a page sheet: the home page carries the only product window and the only FAQ, so its rules stay off the other pages.
  * Every value here reads a token from site.css; no page invents a palette.
  */
 
@@ -12,309 +235,184 @@
   max-width: var(--wrap);
 }
 
-/* ── announcement bar ───────────────────────────────────────────────────── */
-
-/*
- * WHY the bar sits above the hero and names one fact: it is the one line a reader who scrolls nothing else still gets.
- * It carries no number, because the price page owns the numbers.
- */
-
-.announce {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  margin: 0 0 8px;
-  padding: 9px 16px;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  background: var(--surface);
-  color: var(--muted);
-  font-size: 13px;
-}
-
-.announce a {
-  color: var(--accent);
-  text-decoration: none;
-}
-
-.announce a:hover {
-  text-decoration: underline;
-}
-
 /* ── hero ───────────────────────────────────────────────────────────────── */
 
-.hero {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  min-height: min(70dvh, 700px);
-  padding: 36px 0 76px;
-}
-
 /*
- * WHY the hero is one column: measured against opencode.ai on 2026-11-03, its hero is a single wide measure with the product visual below, and a two-column split at 1160px shrinks the headline to 15 characters a line, which breaks a sentence nobody chose to break.
+ * WHY THE WINDOW IS THE PROOF: the page no longer argues with a painting or a mock; it shows the job running to done, the artefact landing as a file.
+ * Quiet chrome, ink text, one accent for the thing that is alive; a reader with motion off gets the finished frame.
  */
 
-.heroGrid {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: clamp(32px, 4vw, 56px);
-  align-items: start;
-  max-width: 900px;
-}
-
-.heroCopy h1 {
-  max-width: 20ch;
-  margin: 0 0 18px;
-  font-size: clamp(40px, 6vw, 76px);
-  line-height: .98;
-  letter-spacing: -0.045em;
-  font-weight: 680;
-}
-
-.heroCopy .accent {
-  color: var(--accent);
-}
-
-.heroCopy .lede {
-  max-width: 48ch;
-  margin: 0 0 24px;
-  font-size: clamp(16px, 1.15vw, 18px);
-  line-height: 1.55;
-}
-
-.heroCopy .row {
-  margin: 0 0 8px;
-}
-
-.heroCopy .footnote {
-  margin: 0 0 24px;
-}
-
-.heroStats {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 14px 36px;
-  margin: 26px 0 0;
-  padding: 22px 0 0;
-  border-top: 1px solid var(--line);
-}
-.heroStats div {
-  margin: 0;
-}
-
-.heroStats dt {
-  color: var(--ink);
-  font-size: clamp(22px, 2vw, 28px);
-  font-weight: 640;
-  letter-spacing: -0.03em;
-  line-height: 1;
-  font-variant-numeric: tabular-nums;
-}
-
-.heroStats dd {
-  margin: 6px 0 0;
-  color: var(--muted);
-  font-size: 13px;
-  line-height: 1.35;
-}
-
-/* ── product mock ───────────────────────────────────────────────────────── */
-
-/* WHY min-width and a zero right inset: measured at 390px, the mock's min-content was 356px inside a 342px column, and the glow's -6% pushed the document 4px past the viewport. */
-
-.heroVisual {
-  position: relative;
-  min-width: 0;
-}
-
-/* WHY the blurred panel is gone: the audit listed it with the hero glow as the same brochure tell, and a mock that needs a halo to sit on the page is not carrying its own weight. */
-
-.demo {
-  position: relative;
+.runWindow {
+  width: min(100%, 60rem);
+  margin: clamp(2rem, 4vh, 3rem) auto 0;
+  border-radius: 14px;
   overflow: hidden;
-  border: 1px solid var(--line);
-  border-radius: 10px;
   background: var(--surface);
   color: var(--ink);
-    font-family: var(--font);
 }
 
-/*
- * WHY THE LIGHT WALKS THE FRAME: measured against firecrawl.dev on 2026-11-04, its product visual wears a slow rotating overlay, and a card that never moves reads as a picture of a product instead of a product at work.
- * The light is one pixel of accent walking the border once every half minute, so it reads as a light and not as motion.
- * The angle is a registered property, so the gradient turns smoothly instead of jumping once per second.
- */
-
-@property --sweep {
-  syntax: "<angle>";
-  inherits: false;
-  initial-value: 0deg;
-}
-
-.demo::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  padding: 1px;
-  background: conic-gradient(from var(--sweep), transparent 0 300deg, var(--accent) 330deg, transparent 360deg);
-  -webkit-mask: linear-gradient(var(--bg) 0 0) content-box, linear-gradient(var(--bg) 0 0);
-  -webkit-mask-composite: xor;
-  mask: linear-gradient(var(--bg) 0 0) content-box, linear-gradient(var(--bg) 0 0);
-  mask-composite: exclude;
-  animation: sweep 32s linear infinite;
-  pointer-events: none;
-}
-
-@keyframes sweep {
-  to { --sweep: 360deg; }
-}
-
-/*
- * WHY THE MOCK LAGS THE SCROLL: measured against firecrawl.dev on 2026-11-05, its product visual sits at its own depth, and a page where every part travels together reads flat.
- * The drift is scroll driven, so it moves only when the reader moves, and a browser without scroll timelines simply does not have it.
- */
-
-@supports (animation-timeline: scroll()) {
-  .demo {
-    animation: mock-drift linear both;
-    animation-timeline: scroll(root block);
-    animation-range: 0 100vh;
-  }
-}
-
-@keyframes mock-drift {
-  to { transform: translateY(64px); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .demo { animation: none !important; }
-}
-
-.demoBar {
+.windowChrome {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 12px 15px;
-  border-bottom: 1px solid var(--line);
-  background: var(--surface-2);
+  padding: 12px 16px;
+  border-bottom: 1px solid color-mix(in srgb, var(--ink) 8%, transparent);
 }
 
-.dots {
+.lights {
   display: inline-flex;
-  gap: 5px;
-  flex: 0 0 auto;
+  gap: 6px;
 }
 
-.dots span {
-  width: 8px;
-  height: 8px;
+.lights i {
+  width: 11px;
+  height: 11px;
   border-radius: 50%;
   background: var(--line-strong);
 }
 
-.dots span:first-child {
-  background: var(--danger);
-}
-.dots span:nth-child(2) {
-  background: var(--warn);
-}
-.dots span:nth-child(3) {
-  background: var(--brand);
-}
-
-.mockAddr {
-  flex: 1;
-  min-width: 0;
-  padding: 5px 10px;
-  overflow: hidden;
-  border: 1px solid var(--line);
-  border-radius: 7px;
-  background: var(--bg);
+.windowTitle {
+  font-size: 13px;
+  font-weight: 500;
   color: var(--muted);
-  font-family: var(--mono);
-  font-size: 10.5px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
-.mockBadge {
-  flex: 0 0 auto;
-  padding: 3px 8px;
-  border: 1px solid var(--line);
+.windowTab {
+  margin-left: auto;
+  padding: 3px 10px;
   border-radius: var(--radius-sm);
-  color: var(--muted);
+  font-family: var(--mono);
   font-size: 10px;
-  font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-}
-
-.demoTabs {
-  display: flex;
-  gap: 4px;
-  padding: 10px 12px 0;
-  border-bottom: 1px solid var(--line);
-  background: var(--surface-2);
-}
-
-.demoTab {
-  padding: 7px 12px;
-  border: 1px solid transparent;
-  border-bottom: 0;
-  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
-  background: none;
   color: var(--muted);
-  font-family: inherit;
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: .01em;
-  cursor: pointer;
-  transition: color .16s var(--ease), background-color .16s var(--ease), border-color .16s var(--ease);
 }
 
-.demoTab:hover {
-  color: var(--ink);
+.windowBody {
+  display: grid;
+  grid-template-columns: 172px minmax(0, 1fr);
+  min-height: 252px;
 }
 
-.demoTab.is-on {
-  border-color: var(--line);
-  background: var(--surface);
+.windowRail {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 14px;
+  border-right: 1px solid color-mix(in srgb, var(--ink) 8%, transparent);
+}
+
+.railItem {
+  padding: 9px 10px;
+  border-radius: 8px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.railItem.is-on {
+  background: var(--accent-soft);
   color: var(--accent);
 }
 
-.demoTab:focus-visible {
-  outline: 2px solid var(--focus);
-  outline-offset: -2px;
+.runPane {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 18px;
+  padding: 22px 26px 26px;
 }
 
-.demoPanel {
-  padding: 18px;
-  animation: panel-in .22s var(--ease) both;
+.runPrompt {
+  margin: 0;
+  color: var(--ink);
+  font-family: var(--mono);
+  font-size: 14.5px;
 }
 
-@keyframes panel-in {
-  from { opacity: 0; transform: translateY(6px); }
-  to { opacity: 1; transform: none; }
+.runPromptMark {
+  margin-right: 10px;
+  color: var(--accent);
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .demoPanel { animation: none; }
-  .mockTop .dot::after { animation: none; }
-  .demo::after { animation: none; }
+.runSteps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  font-size: 14.5px;
+}
+
+.runSteps li {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  color: var(--muted);
+}
+
+.runSteps li::before {
+  content: "·";
+  color: var(--line-strong);
+  width: 1ch;
+}
+
+.runSteps li.is-done {
+  color: var(--ink);
+}
+
+.runSteps li.is-done::before {
+  content: "✓";
+  color: var(--accent);
+}
+
+.runResult {
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--accent) 7%, transparent);
+  color: var(--accent-strong);
+  font-family: var(--mono);
+  font-size: 13px;
+  opacity: 0.35;
+}
+
+.runResult.is-done {
+  opacity: 1;
+  transition: opacity 0.3s var(--ease);
+}
+
+.runCheck {
+  margin-right: 8px;
+}
+
+
+/* ── product mock ───────────────────────────────────────────────────────── */
+
+/*
+ * WHY THE PANEL IS QUIET: the pairing card is where the reader meets their device, their code and the status trail - plain rows say it faster than a crowded mock does.
+ * One tone off the ground, one radius, ink on surface, one accent for live states; nothing shouts.
+ */
+
+.mockBadge {
+  justify-self: start;
+  padding: 4px 11px;
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
 }
 
 .mockTop {
   display: flex;
   align-items: center;
-  gap: 9px;
-  margin: 0 0 14px;
+  gap: 10px;
+  margin: 0 0 12px;
   color: var(--ink);
-  font-size: 12px;
+  font-size: 12.5px;
 }
 
 .mockTop .dot {
@@ -322,14 +420,7 @@
   width: 8px;
   height: 8px;
   background: var(--brand);
-  box-shadow: 0 0 0 3px var(--accent-soft);
 }
-
-/*
- * WHY THE LIVE DOT CARRIES A RING: measured against firecrawl.dev on 2026-11-04, its page breathes on its own, and a site that only answers a hover feels dead on arrival.
- * The ring turns once every half minute, so it reads as a device that is alive rather than as motion that wants attention.
- * It is one border and one transform, and it bows out when the reader asks for stillness.
- */
 
 .mockTop .dot::after {
   content: "";
@@ -352,364 +443,80 @@
 
 .mockTop .chip {
   margin-left: auto;
-  border-color: var(--line);
-  background: var(--accent-soft);
-  color: var(--accent);
-}
-
-.mockCmd {
-  --delay: 0s;
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  gap: 10px;
-  align-items: center;
-  padding: 9px 0;
-  border-top: 1px solid var(--line);
-  font-family: var(--mono);
-  font-size: 11.5px;
-  opacity: 0;
-  transform: translateY(6px);
-  animation: mock-in 0.4s var(--ease) both;
-  animation-delay: var(--delay);
-}
-
-/*
- * WHY EACH LINE WAITS ITS TURN: the mock is a session, and a session writes one command after another.
- * The delay lives in a custom property, so the line and the text inside it share one clock.
- */
-
-.mockCmd:nth-of-type(2) { --delay: 0s; }
-
-.mockCmd:nth-of-type(3) { --delay: 0.5s; }
-
-.mockCmd:nth-of-type(4) { --delay: 1s; }
-
-@keyframes mock-in {
-  to { opacity: 1; transform: none; }
-}
-
-.mockCmd .cursor {
-  width: 7px;
-  height: 13px;
-  background: var(--accent);
-  animation: cursor-blink 1s steps(2, start) infinite;
-}
-
-@keyframes cursor-blink {
-  to { visibility: hidden; }
-}
-
-.mockCmd:first-of-type {
-  border-top: 0;
-}
-
-/*
- * WHY THE COMMAND IS TYPED: measured against firecrawl.dev on 2026-11-04, its product visual writes itself, and a hero that only fades in reads like a slide.
- * The reveal is a clip in steps, so the whole command stays in the page for readers, for search engines, and for the copy button.
- */
-
-.mockCmd code {
-  justify-self: start;
-  max-width: 100%;
-  padding: 0;
-  overflow: hidden;
-  border: 0;
-  background: none;
-  color: var(--ink);
-  font-size: 11.5px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  clip-path: inset(0 100% 0 0);
-  animation: type-in 0.45s steps(26) both;
-  animation-delay: var(--delay);
-}
-
-@keyframes type-in {
-  from { clip-path: inset(0 100% 0 0); }
-  to { clip-path: inset(0 -1px 0 0); }
-}
-
-.mockCmd span {
-  color: var(--muted);
-  font-family: var(--font);
-  font-size: 11.5px;
-  white-space: nowrap;
-}
-
-.mockCmd span.ok {
-  color: var(--accent);
-}
-.mockCmd span.no {
-  color: var(--danger);
-}
-
-/*
- * WHY THE REFUSAL SITS BELOW THE RULES IT OVERRIDES: a reader who asks for stillness gets the whole command at once, and the typing stops.
- */
-
-@media (prefers-reduced-motion: reduce) {
-  .mockCmd { opacity: 1; animation: none; }
-  .mockCmd .cursor { display: none; }
-  .mockCmd code { clip-path: none; animation: none; }
-}
-
-.mockFoot {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  margin-top: 12px;
-  padding-top: 12px;
-  border-top: 1px solid var(--line);
-  color: var(--muted);
-  font-size: 10.5px;
-}
-
-.mockFoot code {
-  border: 0;
-  background: none;
-  color: var(--muted);
-}
-
-@media (max-width: 940px) {
-  .heroGrid {
-    grid-template-columns: 1fr;
-    gap: 44px;
-  }
-  .heroCopy h1 {
-    max-width: 14ch;
-  }
-  .heroVisual {
-    max-width: 620px;
-  }
-}
-
-@media (max-width: 560px) {
-  .hero {
-    padding: 28px 0 64px;
-    min-height: 0;
-  }
-  .demoBody {
-    padding: 15px;
-  }
-  .heroStats {
-    gap: 14px 26px;
-  }
-}
-
-/* ── site strip ─────────────────────────────────────────────────────────── */
-
-/*
- * WHY the strip moves on its own: it is the one thing on the page that answers "where does it work?" without a sentence.
- * It stops the moment the reader asks for stillness, and it pauses under the pointer so a name can be read.
- */
-
-.strip {
-  padding: 34px 0 30px;
-  border-top: 1px solid var(--line);
-}
-
-.stripLabel {
-  margin: 0 0 16px;
-  color: var(--muted);
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: .08em;
-  text-transform: uppercase;
-}
-
-.marquee {
-  overflow: hidden;
-  -webkit-mask-image: linear-gradient(90deg, transparent, var(--bg) 8%, var(--bg) 92%, transparent);
-  mask-image: linear-gradient(90deg, transparent, var(--bg) 8%, var(--bg) 92%, transparent);
-}
-
-.marqueeTrack {
-  display: flex;
-  width: max-content;
-  animation: marquee 42s linear infinite;
-}
-
-.marqueeTrack span {
-  margin-right: 42px;
-  color: var(--muted);
-  font-family: var(--mono);
-  font-size: 13px;
-  white-space: nowrap;
-}
-
-@keyframes marquee {
-  from { transform: translateX(0); }
-  to { transform: translateX(-50%); }
-}
-
-.marquee:hover .marqueeTrack {
-  animation-play-state: paused;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .marqueeTrack { animation: none; }
+  .mockTop .dot::after { animation: none; }
 }
 
-/* ── sections ───────────────────────────────────────────────────────────── */
+/* �� install and trust points ��������������������������������������������� */
 
-.section {
-  padding: 104px 0;
-  border-top: 1px solid var(--line);
-}
-
-.section > .sectionHead,
-.section > h2,
-.section > .sub {
-  margin-bottom: 40px;
-}
-
-.section > h2 {
-  max-width: 16ch;
-}
-
-.section > .sub {
-  margin-bottom: 38px;
-}
-
-/*
- * WHY THE PAGE NEEDS A SHOUT: measured against firecrawl.dev on 2026-11-05, its home page stops on one line of large type between the product blocks, and a page of equal sections reads like a list instead of a story.
- * Two lines say what the product is, the accent word carries the point, and the rule under it draws itself when the band lands.
- */
-
-.statementLine {
+.steps {
+  list-style: none;
   margin: 0;
-  font-family: var(--mono);
-  font-size: clamp(26px, 4.8vw, 58px);
-  line-height: 1.08;
-  letter-spacing: -.04em;
-  font-weight: 500;
-}
-
-.statementLine + .statementLine {
-  margin-top: 12px;
-}
-
-.statementAccent {
-  position: relative;
-  color: var(--accent);
-  white-space: nowrap;
-}
-
-.statementAccent::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: -.14em;
-  height: 2px;
-  background: var(--accent);
-  transform: scaleX(0);
-  transform-origin: left center;
-}
-
-html.js .statement.in .statementAccent::after {
-  animation: statement-rule .5s var(--ease) .35s both;
-}
-
-html.js .statement.in .statementLine {
-  animation: statement-in .4s var(--ease) both;
-}
-
-html.js .statement.in .statementLine:nth-child(2) {
-  animation-delay: .12s;
-}
-
-@keyframes statement-in {
-  from { opacity: 0; transform: translateY(14px); }
-  to { opacity: 1; transform: none; }
-}
-
-@keyframes statement-rule {
-  to { transform: scaleX(1); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .statementLine {
-    animation: none !important;
-    opacity: 1 !important;
-    transform: none !important;
-  }
-
-  .statementAccent::after {
-    animation: none !important;
-    transform: scaleX(1) !important;
-  }
-}
-
-.split {
+  padding: 0;
   display: grid;
-  grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
-  gap: clamp(32px, 5vw, 72px);
-  align-items: center;
+  gap: 18px;
 }
 
-.split.reverse {
-  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+.steps li {
+  display: grid;
+  gap: 3px;
+  color: var(--muted);
+  font-size: 16.5px;
+  line-height: 1.55;
 }
 
-.split.reverse > :first-child {
-  order: 2;
+.steps li strong {
+  color: var(--ink);
+  font-weight: 600;
 }
 
-@media (max-width: 860px) {
-  .section {
-    padding: 72px 0;
-  }
-  .split,
-  .split.reverse {
-    grid-template-columns: 1fr;
-    gap: 32px;
-  }
-  .split.reverse > :first-child {
-    order: 0;
-  }
+.steps code {
+  padding: 2px 7px;
+  border-radius: 6px;
+  background: var(--surface-2);
+  color: var(--ink);
+  font-family: var(--mono);
+  font-size: 12.5px;
 }
-
-/* ── install and trust points ───────────────────────────────────────────── */
 
 .installCard {
   position: relative;
-  padding: 26px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
+  display: grid;
+  gap: 2px;
+  padding: 24px 26px 26px;
+  border-radius: 14px;
   background: var(--surface);
-  }
+}
 
 .installCard .mockBadge {
-  border-color: var(--line);
-  color: var(--muted);
+  margin-bottom: 2px;
 }
 
 .installCard h3 {
-  position: relative;
-  margin: 18px 0 6px;
-  font-size: 20px;
+  margin: 12px 0 2px;
+  font-size: 19px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
 }
 
 .installCard p {
   color: var(--muted);
-  font-size: 14px;
+  font-size: 14.5px;
+  margin: 0 0 12px;
 }
-
-/*
- * WHY THE PANEL IS A MOCK: the pairing card is where the reader meets the device, the code, and the status trail, and a card of plain sentences says none of it as fast as a live row does.
- */
 
 .pairRow {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto auto;
-  gap: 10px;
+  gap: 12px;
   align-items: center;
   margin-top: 10px;
-  padding: 9px 0;
-  border-top: 1px solid var(--line);
-  font-size: 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--bg) 35%, transparent);
+  font-size: 12.5px;
 }
 
 .pairRow > span:first-child {
@@ -718,18 +525,16 @@ html.js .statement.in .statementLine:nth-child(2) {
 
 .pairCode,
 .pairTime {
-  padding: 3px 8px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
-  background: var(--surface-soft);
+  padding: 4px 9px;
+  border-radius: 6px;
+  background: var(--surface-2);
   color: var(--ink);
   font-family: var(--mono);
-  font-size: 11.5px;
-  letter-spacing: .06em;
+  font-size: 12px;
+  letter-spacing: .05em;
 }
 
 .pairTime {
-  border-color: var(--line-strong);
   color: var(--accent);
   font-variant-numeric: tabular-nums;
 }
@@ -740,8 +545,6 @@ html.js .statement.in .statementLine:nth-child(2) {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-
-/* ── model form ─────────────────────────────────────────────────────────── */
 
 .modelCard {
   padding: 28px;
@@ -760,50 +563,6 @@ html.js .statement.in .statementLine:nth-child(2) {
 
 .modelCard input {
   margin-bottom: 14px;
-}
-
-/* ── sign-in panel ──────────────────────────────────────────────────────── */
-
-.signinPanel {
-  padding: 30px;
-  border-radius: var(--radius);
-  background: var(--surface);
-  color: var(--ink);
-  }
-
-.signinPanel .mockFoot {
-  border-color: var(--line);
-}
-
-.signinPanel h3 {
-  margin: 0 0 10px;
-  color: var(--ink);
-  font-size: 20px;
-}
-
-.signinPanel p {
-  color: var(--muted);
-  font-size: 13.5px;
-}
-
-.signinPanel code {
-  display: inline-block;
-  margin: 0 0 6px;
-  border-color: var(--line);
-  background: var(--surface-2);
-  color: var(--accent);
-}
-
-.signinPanel .facts {
-  color: var(--muted);
-}
-
-.signinPanel .facts dt {
-  color: var(--muted);
-}
-
-.signinPanel .facts dd {
-  color: var(--ink);
 }
 
 /* ── privacy band and FAQ ───────────────────────────────────────────────── */
@@ -885,7 +644,153 @@ html.js .statement.in .statementLine:nth-child(2) {
   font-size: 15px;
 }
 
+/*
+ * WHY THE STRIP IS A MAP AND NOT A MARQUEE: it answers where it works without a sentence - twelve cells, one known site, one concrete task each.
+ * Quiet plates off the ground; the rail reads at a glance and says none of it with motion.
+ */
+
+.strip {
+  padding: clamp(2rem, 5vh, 3rem) 0;
+}
+
+.stripLabel {
+  margin: 0 0 20px;
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: clamp(16px, 1.6vw, 21px);
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+
+.logoGrid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.logoTile {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px 16px 18px;
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.logoMark {
+  width: 22px;
+  height: 22px;
+  color: var(--ink);
+}
+
+.logoName {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.logoDo {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+@media (max-width: 900px) {
+  .logoGrid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+
+@media (max-width: 560px) {
+  .logoGrid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  .logoTile { padding: 13px 12px 14px; }
+}
+
+/*
+ * WHY THE STATION: one line, big type, full stop - between the product blocks the reader catches their breath and hears the thesis whole.
+ * The accent clause draws its own rule when the band lands; the reveal carries the timing.
+ */
+
+.statementLine {
+  margin: 0;
+  font-family: var(--mono);
+  font-size: clamp(20px, min(4.8vw, 5.8vh), 54px);
+  line-height: 1.08;
+  letter-spacing: -0.04em;
+  font-weight: 500;
+  text-wrap: balance;
+}
+
+.statementLine + .statementLine {
+  margin-top: 6px;
+}
+
+.statementAccent {
+  position: relative;
+  color: var(--accent);
+  white-space: nowrap;
+}
+
+.statementAccent::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0.08em;
+  height: 0.09em;
+  background: var(--accent);
+  transform: scaleX(0);
+  transform-origin: left;
+}
+
+.statement.in .statementLine {
+  animation: statement-in .5s var(--ease) both;
+}
+
+.statement.in .statementLine + .statementLine {
+  animation-delay: .14s;
+}
+
+.statement.in .statementAccent::after {
+  animation: statement-rule .5s var(--ease) .35s both;
+}
+
 /* ── signed-in quick tiles and final band ───────────────────────────────── */
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+
+.heroStats {
+  display: flex;
+  gap: clamp(1.25rem, 3vw, 2.5rem);
+  margin: 0.25rem 0 0;
+  padding: 0;
+  border: 0;
+}
+
+.heroStats div {
+  margin: 0;
+}
+
+.heroStats dt {
+  color: var(--ink);
+  font-family: var(--display);
+  font-size: clamp(1.5rem, min(2.6vw, 3.6vh), 2rem);
+  font-weight: 500;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.heroStats dd {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+}
 
 #quickTiles {
   margin-top: 24px;
@@ -930,6 +835,38 @@ html.js .statement.in .statementLine:nth-child(2) {
   }
 }
 
+/*
+ * WHY ONE RHYTHM FOR EVERY SECTION: the page reads as one sheet, not a stack of unrelated blocks - the same rhythm, the same line between them, the same measure.
+ */
+
+.section {
+  padding: var(--section-y) 0;
+  border-top: 1px solid var(--line);
+}
+
+.section > .sectionHead,
+.section > h2,
+.section > .sub {
+  margin-bottom: 40px;
+}
+
+.section > h2 {
+  max-width: 16ch;
+}
+
+.section > .sub {
+  margin-bottom: 38px;
+}
+
+@keyframes statement-in {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes statement-rule {
+  to { transform: scaleX(1); }
+}
+
 /* ── entrance motion ────────────────────────────────────────────────────── */
 
 /*
@@ -942,5 +879,129 @@ html.js .statement.in .statementLine:nth-child(2) {
   }
   .finalBand {
     display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .statementLine { animation: none !important; }
+  .statementAccent::after { animation: none !important; transform: scaleX(1); }
+}
+
+/*
+ * WHY THE NUMBERED ROWS: the reference prints its feature list as six ink-on-cobalt entries with the number as the graphic - a card grid turns the list into a table of contents.
+ * WHY HAIRLINE RULES: one line per entry keeps the column honest; the reading order is the DOM order.
+ */
+
+.featureRows {
+  display: grid;
+  border-top: 1px solid var(--line);
+}
+
+.featureRows article {
+  display: grid;
+  grid-template-columns: clamp(72px, 9vw, 116px) 1fr;
+  gap: clamp(1.25rem, 4vw, 3.5rem);
+  align-items: start;
+  padding: clamp(1.4rem, 3vh, 2.1rem) 8px;
+  border-bottom: 1px solid var(--line);
+  border-radius: var(--radius);
+  transition: background .22s var(--ease);
+}
+
+.featureRows article:hover {
+  background: var(--surface);
+}
+
+.featureNum {
+  font-family: var(--condensed);
+  font-weight: 400;
+  font-size: clamp(2.5rem, 4.8vw, 3.5rem);
+  line-height: .95;
+  letter-spacing: .02em;
+  color: var(--ink);
+  transition: color .22s var(--ease);
+}
+
+.featureRows article:hover .featureNum {
+  color: var(--accent-strong);
+}
+
+.featureRows h3 {
+  margin: 0 0 .35rem;
+  font-size: clamp(1.08rem, 1.5vw, 1.3rem);
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+.featureRows p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.58;
+  max-width: 66ch;
+}
+
+/*
+ * WHY TWO CARDS ONLY: a price page with three tiers invites the reader to shop the wrong decision; the free door and the flat door are the only two, so both stand at a glance.
+ * WHY THE FILLED CARD IS INK-ON-PAPER: one white card on the cobalt canvas ties back to the filled ask in the masthead.
+ */
+
+.priceRows {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: clamp(.75rem, 1.6vw, 1.25rem);
+}
+
+.priceCol {
+  display: flex;
+  flex-direction: column;
+  gap: .6rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: clamp(1.4rem, 2.6vw, 2.1rem);
+  transition: transform .22s var(--ease), border-color .22s var(--ease);
+}
+
+.priceCol:hover {
+  transform: translateY(-2px);
+  border-color: var(--line-strong);
+}
+
+.priceCol h3 {
+  margin: 0;
+  font-size: clamp(1.15rem, 1.6vw, 1.4rem);
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+.priceCol p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.6;
+  max-width: 46ch;
+}
+
+.priceColAccent {
+  background: var(--ink);
+  border-color: transparent;
+}
+
+.priceColAccent h3 {
+  color: var(--on-fill);
+}
+
+.priceColAccent p {
+  color: color-mix(in srgb, var(--on-fill) 74%, transparent);
+}
+
+@media (max-width: 900px) {
+  .priceRows { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 620px) {
+  .featureRows article {
+    grid-template-columns: 52px 1fr;
+    gap: 16px;
+    padding-inline: 2px;
   }
 }

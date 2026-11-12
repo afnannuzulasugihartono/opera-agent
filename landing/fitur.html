@@ -8,7 +8,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="theme-color" content="#000000" />
+  <meta name="theme-color" content="#0000f2" />
   <title data-i18n="meta.title">Fitur — Opera Agent</title>
   <meta name="description" content="Fitur Opera Agent: 40 tool dan 35 primitive, enam izin yang dijelaskan satu per satu, model milik Anda berjalan di perangkat Anda, pairing device yang tetap." />
   <link rel="stylesheet" href="/site.css" />
@@ -23,20 +23,78 @@
 </head>
 <body>
   <header>
-    <div class="wrap">
-      <nav>
-        <a class="brand" href="/beranda.html"><svg class="brandMark" viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="7"  /><path d="M8 5.6v12.8l3.1-2.9 1.9 4.5 2.4-1-2-4.5h3.9L8 5.6Z"  /></svg><span>Opera Agent</span></a>
-        <a href="/fitur.html" data-i18n="nav.features" aria-current="page">Fitur</a>
-        <a href="/unduh.html" data-i18n="nav.download">Unduh</a>
-        <a href="/pasang-mcp.html" data-i18n="nav.mcp">MCP</a><a href="/harga" data-i18n="nav.price">Harga</a>
-        <a href="/dukungan.html" data-i18n="nav.support">Dukungan</a>
-        <a href="/docs.html" data-i18n="nav.docs">Docs</a>
-        <span class="lang" data-lang-toggle></span>
-        <button class="navSearch" type="button" aria-label="Cari halaman Ctrl K" aria-keyshortcuts="Control+K Meta+K"><svg class="navSearchIcon" viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><circle cx="7" cy="7" r="4.5" fill="none" stroke="currentColor" stroke-width="1.5"></circle><path d="M10.6 10.6 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path></svg><kbd class="navSearchKey">Ctrl K</kbd></button>
-        <a class="navCta" href="/" data-i18n="nav.signin">Masuk</a>
+  <div class="wrap">
+    <div class="navRow">
+      <nav class="navSide navLeft" aria-label="Primary">
+        <a href="./fitur.html" aria-current="page" data-i18n="nav.features">Fitur</a>
+        <a href="./unduh.html" data-i18n="nav.download">Unduh</a><span class="lang" data-lang-toggle></span>
       </nav>
+      <a class="brand" href="/beranda.html"><span class="wordmark">Opera<br/>Agent</span></a>
+      <nav class="navSide navRight" aria-label="Secondary">
+        <button class="navPortal" id="navPortalToggle" type="button" aria-expanded="false" aria-controls="portalMenu"><span data-i18n="nav.portal">Portal</span><svg class="navPortalChevron" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"></path></svg></button>
+        <a href="./docs.html" data-i18n="nav.docs">Docs</a>
+        <a class="navCta" href="./unduh.html" data-i18n="cta.download">Pasang Opera Agent</a>
+      </nav>
+
+
+    <div class="portalMenu" id="portalMenu" role="dialog" aria-modal="false" aria-labelledby="portalBannerLink" hidden>
+      <div class="portalBanner">
+        <a class="portalBannerLink" id="portalBannerLink" href="./akun.html">
+          <span class="portalBannerMark" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="16" cy="16" r="13"/><path d="M3 16h26"/><ellipse cx="16" cy="16" rx="13" ry="5.6"/></svg></span>
+          <span class="portalBannerText"><span class="portalBannerLinkText" data-i18n="portal.banner.link">Portal Opera Agent</span><span class="portalBannerRest"><span class="portalBannerMsg" data-i18n="portal.banner.m1">Satu akun. Semua model. Semua device.</span><span class="portalBannerMsg" data-i18n="portal.banner.m2" hidden>Bayar per pekerjaan selesai.</span><span class="portalBannerMsg" data-i18n="portal.banner.m3" hidden>Data tidak pernah meninggalkan device.</span></span></span>
+        </a>
+        <div class="portalBannerNav">
+          <button class="portalBannerChev" id="portalBannerPrev" type="button" data-i18n-attr="aria-label:portal.banner.prev" aria-label="Pesan sebelumnya"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 6-6 6 6 6"/></svg></button>
+          <button class="portalBannerChev" id="portalBannerNext" type="button" data-i18n-attr="aria-label:portal.banner.next" aria-label="Pesan berikutnya"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></button>
+        </div>
+      </div>
+      <div class="portalBody">
+        <div class="portalRow">
+          <div class="portalBigCol">
+            <p class="portalKind" data-i18n="portal.label.platform">Platform</p>
+            <p class="portalBig" data-i18n="portal.big.platform">Portal</p>
+          </div>
+          <ul class="portalDoors">
+            <li><a class="portalDoor" href="./docs.html" role="menuitem">
+              <span class="portalDoorName" data-i18n="portal.overview.title">Ikhtisar</span>
+              <span class="portalDoorDesc" data-i18n="portal.overview.body">Hubungkan agent ke setiap device</span>
+              <svg class="portalArrow" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M17 7H9M17 7v8"/></svg>
+            </a></li>
+            <li><a class="portalDoor" href="./harga.html" role="menuitem">
+              <span class="portalDoorName" data-i18n="portal.plans.title">Paket</span>
+              <span class="portalDoorDesc" data-i18n="portal.plans.body">Harga tetap per pekerjaan selesai</span>
+              <svg class="portalArrow" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M17 7H9M17 7v8"/></svg>
+            </a></li>
+            <li><a class="portalDoor" href="./unduh.html" role="menuitem">
+              <span class="portalDoorName" data-i18n="portal.referrals.title">Mulai dari sini</span>
+              <span class="portalDoorDesc" data-i18n="portal.referrals.body">Pasang extension, pair sekali, lalu kerja</span>
+              <svg class="portalArrow" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M17 7H9M17 7v8"/></svg>
+            </a></li>
+          </ul>
+        </div>
+        <div class="portalDivider" aria-hidden="true"></div>
+        <div class="portalRow">
+          <div class="portalBigCol">
+            <p class="portalKind" data-i18n="portal.label.access">Akun</p>
+            <p class="portalBig" data-i18n="portal.big.access">Akses</p>
+          </div>
+          <ul class="portalDoors">
+            <li><a class="portalDoor" href="./index.html" role="menuitem">
+              <span class="portalDoorName" data-i18n="portal.signin.title">Masuk</span>
+              <span class="portalDoorDesc" data-i18n="portal.signin.body">Lanjutkan ke dashboard Anda</span>
+              <svg class="portalArrow" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M17 7H9M17 7v8"/></svg>
+            </a></li>
+            <li><a class="portalDoor" href="./index.html" role="menuitem">
+              <span class="portalDoorName" data-i18n="portal.signup.title">Akun baru</span>
+              <span class="portalDoorDesc" data-i18n="portal.signup.body">Satu akun untuk semua device</span>
+              <svg class="portalArrow" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M17 7H9M17 7v8"/></svg>
+            </a></li>
+          </ul>
+        </div>
+      </div>
     </div>
-  </header>
+  </div>
+</header>
 
   <main class="wrap">
     <section class="featureHero" data-reveal>
@@ -132,7 +190,7 @@
 
     <section class="finalBand" data-reveal aria-labelledby="finalTitle">
       <h2 id="finalTitle" data-i18n="final.title">Satu extension. Browser Anda.</h2>
-      <p data-i18n-html="final.sub">Harga dan aturannya ada di halaman <a href="/harga">Harga</a>.</p>
+      <p data-i18n-html="final.sub">Harga dan aturannya ada di halaman <a href="/harga.html">Harga</a>.</p>
       <a class="btn primary" href="./unduh.html" data-i18n="cta.download">Unduh</a>
     </section>
   </main>
@@ -150,9 +208,10 @@
           <a href="./beranda.html" data-i18n="footer.home">Beranda</a>
           <a href="./fitur.html" data-i18n="footer.features">Fitur</a>
           <a href="./unduh.html" data-i18n="footer.download">Unduh</a>
-          <a href="./pasang-mcp.html">Pasang MCP</a>
+          <a href="./mcp.html">Pasang MCP</a>
           <a href="./bukti.html" data-i18n="footer.bukti">Bukti</a>
           <a href="./docs.html" data-i18n="footer.docs">Docs</a>
+          <a href="./harga.html">Harga</a>
           <a href="./akun.html" data-i18n="footer.account">Akun</a>
           <a href="./dashboard.html">Dashboard</a>
         </span>
@@ -168,71 +227,91 @@
     </div>
   </footer>
 
-  <script type="application/json" id="i18n-dict">{
+  <script type="application/json" id="i18n-dict">
+{
   "en": {
+    "cta.download": "Download",
+    "final.sub": "The price and its rules are on the <a href=\"/harga\">Pricing</a> page.",
+    "final.title": "One extension. Your browser.",
+    "footer.account": "Account",
     "footer.bukti": "Proof",
-    "footer.source": "Source code",
-    "footer.legal": "Legal",
     "footer.docs": "Docs",
     "footer.download": "Download",
+    "footer.features": "Features",
+    "footer.home": "Home",
+    "footer.legal": "Legal",
+    "footer.privacy": "Privacy",
     "footer.product": "Product",
-    "nav.download": "Download",
-    "nav.signin": "Sign in",
-    "nav.features": "Features",
-    "nav.price": "Pricing",
-    "nav.docs": "Docs",
-    "nav.mcp": "MCP",
-    "nav.support": "Support",
-    "meta.title": "Features — Opera Agent",
-    "page.title": "Your browser, as a work tool.",
+    "footer.rights": "© 2026 Opera Agent. All rights reserved.",
+    "footer.source": "Source code",
+    "footer.support": "Support",
+    "footer.terms": "Terms",
     "hero.how": "See how it works",
     "intro": "<strong>A companion with an AI behind it.</strong> You talk. The browser works. The result becomes a real artefact.",
-    "stat.tools": "tools",
-    "stat.prims": "primitives",
-    "stat.perms": "permissions",
-    "s1.title": "40 tools, 35 primitives",
+    "meta.title": "Features — Opera Agent",
+    "nav.docs": "Docs",
+    "nav.download": "Download",
+    "nav.features": "Features",
+    "nav.portal": "Portal",
+    "page.title": "Your browser, as a work tool.",
+    "perm.body": "No permission outside this list.",
+    "perm.title": "The permissions we ask for",
+    "portal.banner.link": "Opera Agent Portal",
+    "portal.banner.m1": "One account. Every model. Every device.",
+    "portal.banner.m2": "Pay per finished job.",
+    "portal.banner.m3": "Your data never leaves the device.",
+    "portal.banner.next": "Next message",
+    "portal.banner.prev": "Previous message",
+    "portal.big.access": "Access",
+    "portal.big.platform": "Portal",
+    "portal.label.access": "Account",
+    "portal.label.platform": "Platform",
+    "portal.overview.body": "Connect your agent to every device",
+    "portal.overview.title": "Overview",
+    "portal.plans.body": "A flat price per finished job",
+    "portal.plans.title": "Plans",
+    "portal.referrals.body": "Install, pair once, start working",
+    "portal.referrals.title": "Start here",
+    "portal.signin.body": "Continue to your dashboard",
+    "portal.signin.title": "Sign in",
+    "portal.signup.body": "One account, every device",
+    "portal.signup.title": "New account",
     "s1.body": "Read, fill, navigate, verify. Maps, YouTube, Docs are the first examples.",
-    "s2.title": "Six permissions, each explained",
+    "s1.title": "40 tools, 35 primitives",
     "s2.body": "Each permission has one reason you can read on the <a href=\"./unduh.html\">Download</a> page.",
-    "s3.title": "Your own model",
+    "s2.title": "Six permissions, each explained",
     "s3.body": "Your endpoint and key stay in your browser. Page content only goes to the model you choose. <a href=\"./privasi.html\">Privacy</a>.",
-    "s4.title": "Device pairing",
+    "s3.title": "Your own model",
     "s4.body": "A one-time code binds a device to your account. Manage from <a href=\"./dashboard.html\">Dashboard</a>.",
-    "s5.title": "Read pages without exploits",
+    "s4.title": "Device pairing",
     "s5.body": "Passwords, one-time codes, tokens, and payment fields are always refused.",
-    "s6.title": "MCP for any harness",
+    "s5.title": "Read pages without exploits",
     "s6.body": "OpenCode, Kilo Code, and Claude Code share one endpoint. <a href=\"./docs.html\">Docs</a>.",
-    "s7.title": "Four files from one conversation",
+    "s6.title": "MCP for any harness",
     "s7.body": "A financial report, a strategy deck, a research paper, and a marketing plan — written as files you can open right away: <a href=\"./contoh/laporan-keuangan-2026-09.xlsx\" download>Report (.xlsx)</a>, <a href=\"./contoh/rencana-strategis-2027.pptx\" download>Deck (.pptx)</a>, <a href=\"./contoh/riset-promo.docx\" download>Paper (.docx)</a>, <a href=\"./contoh/rencana-pemasaran-2027.docx\" download>Marketing (.docx)</a>. <a href=\"./studi.html\">The full case study</a>.",
-    "s8.title": "A portal that asks to sign in no longer freezes the work",
+    "s7.title": "Four files from one conversation",
     "s8.body": "Sign-in or captcha? The agent reads first, waits for you to complete it, and continues in the same tab. One-time codes are never answered by the agent.",
-    "task.title": "From one sentence to a file.",
-    "task.talk": "Talk",
-    "task.talk.body": "One sentence: summarise the Q4 onboarding check.",
+    "s8.title": "A portal that asks to sign in no longer freezes the work",
+    "stat.perms": "permissions",
+    "stat.prims": "primitives",
+    "stat.tools": "tools",
     "task.read": "Read",
     "task.read.body": "Pages, buttons, and rows are read.",
-    "task.write": "Write",
-    "task.write.body": "Forms and cells are filled, not clicked blindly.",
     "task.save": "Save",
     "task.save.body": "The file and the proof are saved.",
-    "perm.title": "The permissions we ask for",
-    "perm.body": "No permission outside this list.",
-    "final.title": "One extension. Your browser.",
-    "final.sub": "The price and its rules are on the <a href=\"/harga\">Pricing</a> page.",
-    "cta.download": "Download",
-    "footer.rights": "© 2026 Opera Agent. All rights reserved.",
-    "footer.home": "Home",
-    "footer.privacy": "Privacy",
-    "footer.terms": "Terms",
-    "footer.features": "Features",
-    "footer.support": "Support",
-    "footer.account": "Account"
+    "task.talk": "Talk",
+    "task.talk.body": "One sentence: summarise the Q4 onboarding check.",
+    "task.title": "From one sentence to a file.",
+    "task.write": "Write",
+    "task.write.body": "Forms and cells are filled, not clicked blindly."
   }
-}</script>
+}
+</script>
   <script src="./i18n.js"></script>
 
   <script src="/wayfind.js"></script>
   <script src="/palette.js"></script>
+  <script src="/portal.js" defer></script>
 
   <script src="/reveal.js"></script>
   <script src="/spotlight.js"></script>

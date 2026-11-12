@@ -148,15 +148,17 @@ function buildCrxAround(payload) {
 }
 
 test('the download page names no version, because a named version goes stale', () => {
+  // WHY THE SVGS ARE STRIPPED FIRST: SVG path data is packed decimal triplets ("8.7.4") that trip a version pattern no reader can see, so the visible-word scan only works once the decorative shapes are gone.
 
   const html = read('unduh.html');
-  assert.doesNotMatch(html.replace(/<!--[\s\S]*?-->/g, ''), /\b\d+\.\d+\.\d+\b/,
+  const copy = html.replace(/<!--[\s\S]*?-->/g, '').replace(/<svg[\s\S]*?<\/svg>/g, '');
+  assert.doesNotMatch(copy, /\b\d+\.\d+\.\d+\b/,
     'no version appears in the copy a reader sees');
   assert.match(html, /Build terbaru/, 'and the page says plainly that what it offers is the newest build');
 });
 
 test('the download page offers one archive and says how to verify it', () => {
-  const html = read('unduh-berkas.html');
+  const html = read('unduh.html');
   assert.match(html, /download\/opera-agent\.zip/, 'one archive link, on the path that never changes');
 
   assert.match(html, /findstr \/i x-opera-sha256/, 'the page gives the command that reads the served digest');
@@ -184,32 +186,26 @@ test('the endpoint serves the newest build, so a release needs no edit to the si
 });
 
 test('the download page links the paths that never change', () => {
-  const berkas = read('unduh-berkas.html');
-  const hub = read('unduh.html');
+  const html = read('unduh.html');
 
-  for (const [page, html] of [['unduh.html', hub], ['unduh-berkas.html', berkas]]) {
-    assert.doesNotMatch(html, /opera-agent-\d+\.\d+\.\d+\.(zip|crx)/,
-      `${page}: no download link carries a version, so no release can leave the page behind`);
-  }
-  assert.match(berkas, /\/download\/opera-agent\.crx/, 'the CRX link is the version-less path');
-  assert.match(berkas, /\/download\/opera-agent\.zip/, 'and so is the archive link');
+  assert.doesNotMatch(html, /opera-agent-\d+\.\d+\.\d+\.(zip|crx)/,
+    'no download link carries a version, so no release can leave the page behind');
+  assert.match(html, /\/download\/opera-agent\.crx/, 'the CRX link is the version-less path');
+  assert.match(html, /\/download\/opera-agent\.zip/, 'and so is the archive link');
 
-  assert.doesNotMatch(berkas, /Unduh opera-agent-/, 'the link text no longer claims to name a file');
+  assert.doesNotMatch(html, /Unduh opera-agent-/, 'the link text no longer claims to name a file');
 
-  assert.doesNotMatch(berkas, /namanya membawa versi build/, 'the filename note is retired with the enterprise block');
+  assert.doesNotMatch(html, /namanya membawa versi build/, 'the filename note is retired with the enterprise block');
 });
 
-test('both formats share one page, reached from the hub and back', () => {
-  const hub = read('unduh.html');
-
-  const page = 'unduh-berkas.html';
-  assert.ok(hub.includes(`href="./${page}"`), `the hub opens ${page}`);
+test('both formats share one page', () => {
+  const page = 'unduh.html';
   const html = read(page);
   assert.match(html, /class="btn" href="[^"]*opera-agent\.zip(?:\?for=\w+)?\" download/, `${page} leads with the archive, the one a reader can install today`);
   assert.equal((html.match(/href="[^"]*opera-agent\.crx(?:\?for=\w+)?\"/g) || []).length, 5, `${page} offers the signed file from every card without scrolling elsewhere`);
   assert.equal((html.match(/href="[^"]*opera-agent\.zip(?:\?for=\w+)?\"/g) || []).length, 5, `${page} keeps the archive on every card`);
   assert.match(html, /data-i18n="card\.why"/, 'and the card says what a folder install costs');
-  assert.ok(html.includes('href="./unduh.html"'), `${page} links back to the hub`);
+  assert.match(html, /class="btn" href="[^"]*opera-agent\.zip(?:\?for=\w+)?\" download/, `${page} leads with the archive`);
 });
 
 test('the payload of a CRX is already the tree, so the archive needs no second build', () => {
@@ -230,7 +226,7 @@ test('the payload of a CRX is already the tree, so the archive needs no second b
 });
 
 test('the download page names every browser it supports and why one is not', () => {
-  const html = read('unduh-berkas.html');
+  const html = read('unduh.html');
 
   for (const browser of ['Chrome', 'Edge', 'Brave', 'Opera', 'Vivaldi']) {
     assert.match(html, new RegExp(`<td>${browser}</td>`), `${browser} has a row saying what it can do`);
@@ -325,7 +321,7 @@ test('the download page shares the site navigation and floor', () => {
 });
 
 test('the download page has no typo where a stranger decides to trust it', () => {
-  const html = read('unduh-berkas.html');
+  const html = read('unduh.html');
 
   assert.doesNotMatch(html, /polityvek/, 'kebijakan is spelled correctly');
   assert.match(html, /Cara memasang/, 'the install section reads plainly');

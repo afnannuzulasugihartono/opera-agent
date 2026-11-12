@@ -20,7 +20,15 @@ const cssOf = (name) => {
   const links = [...html.matchAll(/<link[^>]+rel="stylesheet"[^>]+href="\/([^"]+)"/g)].map((match) => match[1]);
   return `${html}\n${links.map((file) => read(file)).join('\n')}`;
 };
-const pages = ['beranda.html', 'akun.html', 'index.html', 'dashboard.html', 'unduh.html', 'unduh-berkas.html', 'privasi.html', 'syarat.html', '404.html', 'oauth/consent.html', 'fitur.html', 'studi.html', 'bukti.html', 'dukungan.html', 'docs.html'];
+
+// WHY THE TWO ASSERTIONS READ THE PAGE SHEET ALONE: cssOf joins the shared sheet into every page, and the shared sheet is exactly where the one canvas and the one chrome rule live - a page restating them is the bug being caught.
+
+const pageSheetOf = (name) => {
+  const html = read(name);
+  const links = [...html.matchAll(/<link[^>]+rel="stylesheet"[^>]+href="\/([^"]+)"/g)].map((match) => match[1]).filter((file) => file !== 'site.css');
+  return links.map((file) => read(file)).join('\n');
+};
+const pages = ['beranda.html', 'akun.html', 'index.html', 'dashboard.html', 'unduh.html', 'privasi.html', 'syarat.html', '404.html', 'oauth/consent.html', 'fitur.html', 'studi.html', 'bukti.html', 'dukungan.html', 'docs.html'];
 
 const token = (name) => {
   const value = new RegExp(`^\\s*${name}:\\s*(#[0-9a-fA-F]{6})\\s*;`, 'm').exec(read('site.css'))?.[1];
@@ -41,12 +49,17 @@ const contrast = (a, b) => {
 };
 
 test('every page sits on one dark canvas', () => {
+  // WHY THE BLUE BRIGHTENS THE FLOOR, NOT THE CLAIM: the canvas moved from black to cobalt (luminance .064), which is still decisively dark for light ink and keeps the one fill (the ask) readable at a glance; the claim is "one dark canvas, everywhere", and cobalt meets it.
   const bg = token('--bg');
-  assert.ok(luminance(bg) < 0.05, `--bg is dark, and measures ${luminance(bg).toFixed(3)}`);
+  assert.ok(luminance(bg) < 0.09, `--bg is dark, and measures ${luminance(bg).toFixed(3)}`);
+  assert.ok(luminance(bg) > 0, 'and it carries colour, so it is the reference, not a void');
+  const [r, g, b] = [0, 2, 4].map((i) => parseInt(bg.slice(1 + i, 3 + i), 16));
+  assert.ok(b > r + 150, 'the canvas leans blue, like the house reference');
+  assert.match(read('site.css'), /html \{[^}]*background: var\(--bg\)/s, 'the shared sheet paints the canvas once');
   for (const page of pages) {
-    const css = cssOf(page);
-    assert.match(css, /body \{[^}]*background: var\(--bg\)/s, `${page} paints the shared canvas`);
+    const css = pageSheetOf(page);
     assert.doesNotMatch(css, /body \{[^}]*background: #f[0-9a-f]{5}/s, `${page} paints no light canvas of its own`);
+    assert.doesNotMatch(css, /html \{[^}]*background:/s, `${page} names no canvas of its own`);
   }
 });
 
@@ -59,28 +72,32 @@ test('every pair of text and ground clears its contrast floor', () => {
 });
 
 test('one accent, and every other surface is neutral', () => {
-  // WHY THE SPAN MOVED FROM 3 TO 12: opencode.ai's greys are blue-tinted neutrals (#23262f spans 12).
-  // The claim being kept is the one that matters: no surface competes with the accent for attention.
-  for (const name of ['--bg', '--surface', '--surface-2', '--ink', '--muted']) {
+  // WHY THE RULE MOVED FROM SPAN 12 TO BLUE-NEUTRAL: a cobalt ground and navy panels cannot pass a 12-span rule by design; the claim that matters is unchanged - no surface competes with the accent - so every surface must stay an unsaturated navy (span ≤ 45, blue-leaning) and the accent must out-saturate them all.
+  for (const name of ['--surface', '--surface-2', '--ink', '--muted']) {
     const [r, g, b] = token(name).replace('#', '').match(/../g).map((x) => parseInt(x, 16));
-    assert.ok(Math.max(r, g, b) - Math.min(r, g, b) <= 12, `${name} carries no hue worth naming, and spans ${Math.max(r, g, b) - Math.min(r, g, b)}`);
+    const span = Math.max(r, g, b) - Math.min(r, g, b);
+    assert.ok(span <= 45, `${name} stays an unsaturated navy, and spans ${span}`);
+    assert.ok(b >= r, `${name} leans blue, like the ground it sits on`);
   }
   const [r, g, b] = token('--accent').replace('#', '').match(/../g).map((x) => parseInt(x, 16));
-  assert.ok(Math.max(r, g, b) - Math.min(r, g, b) > 100, 'the accent is the only saturated colour');
+  const span = Math.max(r, g, b) - Math.min(r, g, b);
+  assert.ok(span > 45, 'the accent out-saturates every surface');
 });
 
-test('the canvas is opencode black, with opencode greys above it', () => {
-  assert.equal(token('--bg'), '#000000', 'the canvas is black, like opencode.ai');
-  assert.equal(token('--surface'), '#17181c', 'a panel is opencode gray-1');
-  assert.equal(token('--surface-2'), '#23262f', 'a raised panel is opencode gray-2');
-  assert.equal(token('--line-strong'), '#353841', 'and the strong edge is opencode gray-2');
+// WHY THE CANVAS MOVED: the site took the house reference (hermes-agent.nousresearch.com) - a cobalt ground (#0000f2) with two navy panels and a white ink - which still clears AAA for body copy and keeps the install ask the only filled thing on the page.
+
+test('the canvas is cobalt, with navy panels above it', () => {
+  assert.equal(token('--bg'), '#0000f2', 'the canvas is cobalt, like the house reference');
+  assert.equal(token('--surface'), '#19192f', 'a panel is the house navy-1');
+  assert.equal(token('--surface-2'), '#232344', 'a raised panel is the house navy-2');
+  assert.match(read('site.css'), /--line-strong:\s*rgba\(242, 242, 242, 0\.32\)/, 'and the strong edge is a light ink line, not a new grey');
 });
 
 test('the hero sells the product instead of apologizing for it', () => {
   const html = read('beranda.html');
   assert.doesNotMatch(html, /Sembilan dua/, 'the broken sentence is gone');
   assert.match(html, /<dt>\d+<\/dt><dd data-i18n="hero\.stat\.tools">tool MCP/, 'the tool count is stated as a number beside its name');
-  assert.match(html, /id="demo"/, 'a product visual answers what the words claim');
+  assert.match(html, /<div class="runWindow[^"]*" role="img" aria-label="[^"]+"[^>]*>/, 'a product window answers what the words claim');
   assert.match(html, /id="heroStats"/, 'numbers sit under the call to action, not in prose');
 });
 
@@ -112,23 +129,26 @@ test('every section closes before the next one opens', () => {
   assert.match(index, /<\/section>\s*<section id="faq"[^>]*>/, 'the FAQ stands beside privacy, not inside it');
 });
 
-test('the nav answers a visitor in one row: six doors and one action', () => {
-  // WHY THE NAV IS COUNTED, NOT DESCRIBED.
-  // Measured on 2026-11-03 against opencode.ai: its nav is one short row with one filled action, and ours followed suit with five doors.
-  // The doors grew to six on 2026-11-10 when the MCP install page graduated to being a door of its own beside Unduh, Harga and Docs - everything else still belongs in the footer.
-
-  const doors = ['/fitur.html', '/harga', '/unduh.html', '/pasang-mcp.html', '/dukungan.html', '/docs.html'];
+test('the nav faces the reader like a masthead: two doors each side, one ask', () => {
+  // WHY THE CHROME IS A MASTHEAD: the house reference for this page (the Hermes Agent masthead) is a centred wordmark flanked by one short list each side, two doors on the left and the portal door plus the ask on the right - everything else belongs to the footer.
+  // WHY THE DOORS ARE DECLARED ONCE: two on the left, the portal door and the ask on the right - measured against the house masthead, and Dukungan lives in the footer because a masthead carries only what a newcomer asks about.
   for (const page of pages) {
     const html = read(page);
-    const nav = /<nav>([\s\S]*?)<\/nav>/.exec(html)?.[1] ?? '';
-    assert.ok(nav, `${page} has a nav to count`);
-    const internal = [...nav.matchAll(/<a (?![^>]*class="(?:brand|navCta)[^"]*")[^>]*>/g)].map((m) => m[0]);
-    assert.ok(internal.length <= 6, `${page} keeps the nav to six links, and carries ${internal.length}`);
-    assert.equal((nav.match(/class="navCta"/g) || []).length, 1, `${page} offers exactly one filled action`);
-    for (const door of doors) {
-      assert.ok(nav.includes(`href="${door}"`), `${page} reaches ${door} from the nav`);
+    // WHY THE FOLD IS NOT PART OF THIS COUNT: the portal menu is hidden chrome, one click away; its doors belong to the fold, never to the two-doors-each-side rule.
+    // The fold is the last thing in the header, so the masthead is what stands before it.
+    const rawHeader = /<header>([\s\S]*?)<\/header>/.exec(html)?.[1] ?? '';
+    assert.ok(rawHeader, `${page} has a header to count`);
+    const header = rawHeader.replace(/<div class="portalMenu"[\s\S]*$/, '');
+    const internal = [...header.matchAll(/<a [^>]*>/g)].map((m) => m[0]).filter((tag) => !/class="brand"|class="navCta"/.test(tag));
+    assert.equal(internal.length, 3, `${page} keeps the nav to three text doors, and carries ${internal.length}`);
+    assert.equal((header.match(/class="navCta"/g) || []).length, 1, `${page} offers exactly one ask`);
+    assert.match(header, /<span class="wordmark">/, `${page} carries the wordmark`);
+    assert.match(header, /id="navPortalToggle"/, `${page} carries the portal door`);
+    const door = (name) => new RegExp(`href="(?:\\./|/)${name.replace('.', '\\.')}"`);
+    for (const name of ['fitur.html', 'unduh.html', 'docs.html']) {
+      assert.match(header, door(name), `${page} reaches ${name} from the nav`);
     }
-    assert.doesNotMatch(nav, /class="nav-sec"/, `${page} carries no secondary class the stylesheet hides on a laptop`);
+    assert.match(html, door('dukungan.html'), `${page} still reaches Dukungan from the rules below`);
   }
 });
 
@@ -138,22 +158,36 @@ test('the nav survives a 390px phone without wrapping ragged', () => {
     assert.match(css, /white-space:\s*nowrap/, `${page} keeps each nav item on one line`);
   }
   const index = cssOf('beranda.html');
-  assert.match(index, /overflow-x:\s*auto/, 'the row scrolls instead of wrapping');
+  assert.match(index, /@media \(max-width: 620px\)[\s\S]*?\.navSide a \{[^}]*display: none/s, 'the phone row folds the doors instead of scrolling them');
 });
 
-test('the header is never squeezed by a page that keeps a narrow column', () => {
+test('the shell is fluid, not stepped', () => {
+  // WHY ONE TOKEN EACH: a fixed 32px gutter or a fixed 104px band reads fine until the window is short or wide, and then the page legislates two windows at once.
+  const css = read('site.css');
+  assert.match(css, /--section-y:\s*clamp\(4rem,\s*9vh,\s*8rem\)/, 'one fluid section rhythm, vh-aware');
+  assert.match(css, /--gutter:\s*clamp\(1\.25rem,\s*5vw,\s*3\.5rem\)/, 'one fluid gutter, vw-aware');
+  assert.doesNotMatch(read('beranda.css'), /height:\s*calc\(100vh/, 'no page clamps itself to the viewport');
+});
 
-  // WHY THE HEADER HAS ITS OWN WIDTH.
-  // Measured live on 2026-10-26: index.html sets .wrap to 560px, and the header shares that wrap, so at a 912px window the last nav item ended at 936px and the document scrolled sideways by 24px.
-  // The nav row measures 747px, and the wrap spends 40px of padding inside the viewport margin, so the row needs 835px; the old 800px rule counted only the margin and left 801-835 overflowing.
-  // The header therefore keeps the widest content measure on the site, and the nav scrolls itself whenever even that is too tight.
+test('the window carries the run, and the reader can refuse it', () => {
+  // WHY THE WORK IS SHOWN, NOT SAID: a claim without the frame buys nothing - the reader watches the job finish and the artefact land, the same proof the product gives its own users.
+  const js = read('run.js');
+  const html = read('beranda.html');
+  assert.match(html, /<div class="runWindow[^"]*" role="img" aria-label="[^"]+"[^>]*>/, 'the window is announced, not just shown');
+  assert.match(html, /onboarding\.csv/, 'the artefact lands as a named file');
+  assert.match(html, /<noscript>/, 'a reader without script still reads the still frame');
+  assert.match(js, /prefers-reduced-motion: reduce/, 'a stillness-seeking reader never sees steps tick');
+  assert.match(js, /IntersectionObserver|is-done/, 'and the done frame is the default state');
+});
 
-  const index = cssOf('index.html');
-  assert.match(index, /--wrap:\s*(?:1160|1200)px/, 'the shell names a measure wide enough for the chrome and the page below it');
-  assert.match(index, /header \.wrap\s*\{[^}]*max-width:\s*var\(--wrap\)/, 'the chrome keeps that measure, whatever the column below does');
-  assert.match(index, /header nav\s*\{[^}]*overflow-x:\s*auto/, 'the row scrolls itself when the wrap is still too tight');
+test('the chrome keeps the window, never the column', () => {
+
+  // WHY THE PIN MOVED TO THE SHARED SHEET: the old mechanism (a --wrap measure, a max-width on header .wrap and an overflow-x auto) protected a fixed chrome from narrow page columns.
+  // The masthead is now fluid edge to edge (max-width: none), so no page column can squeeze it and no door list needs to scroll itself - the claim kept is the same one: the chrome is never squeezed by the page below it.
+  const sheet = read('site.css');
+  assert.match(sheet, /header \.wrap \{[^}]*max-width: none/, 'the shared chrome keeps the window, not a column measure');
   for (const page of pages) {
-    assert.match(cssOf(page), /header \.wrap\s*\{[^}]*max-width:\s*var\(--wrap\)/, `${page} gives the shared header the same rule`);
+    assert.doesNotMatch(pageSheetOf(page), /header \.wrap \{/, `${page} names no header measure of its own`);
   }
 });
 
@@ -170,41 +204,43 @@ test('the marked nav item is visible, not metadata only', () => {
   }
 });
 
-test('the phone nav hints that it scrolls instead of clipping mid-word', () => {
+test('the phone folds the doors, and never clips a word', () => {
 
-  for (const page of pages) {
-    const html = cssOf(page);
-    assert.match(html, /mask-image:\s*linear-gradient\(to right/, `${page} fades the nav edge on a phone`);
-  }
+  // WHY THE MASK DIED: the phone cut hides the doors entirely (display: none), so a scroll-fade hint would describe a scroll that does not exist; the claim kept is the honest one - on a phone the chrome keeps the wordmark and the ask, and no word is clipped mid-token.
+  const sheet = read('site.css');
+  const block = /@media \(max-width: 620px\) \{[\s\S]*?\n\}/.exec(sheet)?.[0] ?? '';
+  assert.match(block, /\.navSide a \{ display: none/, 'the doors fold away on a phone');
+  assert.doesNotMatch(block, /\.navCta \{ display: none/, 'and the ask survives the cut');
+  assert.doesNotMatch(block, /overflow-x: auto/, 'and no list pretends to scroll');
 });
 
 test('the hero carries exactly one filled action, and it is the download', () => {
 
+  // WHY THE PIN READS heroPrimary: the hero's filled pill is its own 54px variant of the shared .btn.primary (the masthead CTA is the global ask), so the one filled action a stranger sees is written in the same class the hero styles, not in a class the sheet never names.
   const hero = read('beranda.html').match(/<section class="hero[^"]*">[\s\S]*?<\/section>/)[0];
 
-  const row = (id) => new RegExp(`<div class="row" id="${id}"[^>]*>([\\s\\S]*?)</div>`).exec(hero)[1];
-  const filledIn = (id) => [...row(id).matchAll(/<a\b[^>]*class="btn primary"[^>]*href="([^"]*)"/g)].map((m) => m[1]);
+  const row = (id) => new RegExp(`<div class="row[^"]*" id="${id}"[^>]*>([\\s\\S]*?)</div>`).exec(hero)[1];
+  const filledIn = (id) => [...row(id).matchAll(/<a\b[^>]*class="[^"]*\bheroPrimary\b[^"]*"[^>]*href="([^"]*)"/g)].map((m) => m[1]);
   assert.deepEqual(filledIn('ctaOut'), ['./unduh.html'], 'a stranger is offered exactly one filled action, the download');
   assert.deepEqual(filledIn('ctaIn'), ['./dashboard.html'], 'a member is offered exactly one filled action, the dashboard');
 });
 
-test('the giant door answers the eye once, and keyboard visitors get the same answer', () => {
-  const sheet = read('download.css');
-  assert.match(sheet, /@keyframes giant-breathe/, 'the door breathes on arrival');
-  assert.match(sheet, /\.btn\.giant \{[^}]*animation: giant-breathe 0\.6s var\(--ease\) 0\.2s backwards/s, 'once, and backwards so it starts from still');
-  assert.match(sheet, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.btn\.giant \{[^}]*animation: none/s, 'and still for motion-sensitive readers');
-  assert.match(sheet, /\.btn\.giant:focus-visible \{[^}]*box-shadow: 0 0 0 3px var\(--accent-soft\)/s, 'while a keyboard ring names it');
+test('the five download doors answer the eye and the keyboard', () => {
+  const html = read('unduh.html');
+  const doors = html.match(/<a class="btn" href="https:\/\/nenmkmtvjremqphfqnfw\.supabase\.co\/functions\/v1\/opera-agent-update\/download\/opera-agent\.zip\?for=[a-z]+"[^>]*>Unduh \.zip/g) || [];
+  assert.equal(doors.length, 5, 'five cards, five honest doors, one archive');
+  assert.match(read('site.css'), /:focus-visible \{\s*outline: 2px solid var\(--focus\)/, 'keyboard visitors get the same ring on every door');
 });
+
+// WHY THE PROMISE LEFT THIS GATE: the user asked for the lede with its sentence to go; the safety story now lives where the page states it (permissions, privacy, FAQ), and this gate keeps the counting honest.
 
 test('the hero states each number once', () => {
 
   const hero = read('beranda.html').match(/<section class="hero[^"]*">[\s\S]*?<\/section>/)[0];
   const prose = hero
-    .replace(/<dl class="heroStats"[\s\S]*?<\/dl>/, '')
-    .replace(/<div class="demo"[\s\S]*?<\/div>\s*<\/div>/, '');
+    .replace(/<dl class="heroStats"[\s\S]*?<\/dl>/, '');
   assert.doesNotMatch(prose, /26 aksi/, 'no second 26 with another noun');
   assert.doesNotMatch(prose, /\d+\s+(tool|primitive|izin|aksi|permission)/i, 'the hero prose names no count at all');
-  assert.match(hero, /Tanpa eksekusi skrip bebas/, 'the prose keeps its promise');
 });
 
 test('no script renames a link that is not there', () => {
@@ -246,13 +282,12 @@ test('home after sign-in is a console door, not the sales pitch again', () => {
 
 test('display type sets the page apart from its own dashboard', () => {
 
-  // WHY 76px AND NOT 82px: the taste audit measured the old headline as a three-line slab at 1440px and cut it, so the hero now names the thing at a size the measure beneath it can hold.
-  // The rule keeps its subject — display type on the home page, a clear second rank under it, breathing room around both — and the size it pins is the one the sheet sets.
-
+  // WHY THE 128PX CEILING AND THE 11VW SWEEP: the headline names the product in the same register as the masthead wordmark; measured at 1280px the 11vw sweep holds "browser Anda." on its own line, and the fold never swallows the call to action.
+  // The rule keeps its subject - display type on the home page, a clear second rank under it, breathing room around both - and the size it pins is the one the sheet sets.
   const css = cssOf('beranda.html');
-  assert.match(css, /clamp\(40px, 6vw, 76px\)/, 'the headline spans display sizes');
-  assert.match(css, /h2 \{[^}]*font-size: clamp\(28px, 3\.2vw, 44px\)/, 'sections step down to a clear second rank');
-  assert.match(css, /\.section \{[^}]*padding: 104px 0/, 'and breathe around each idea');
+  assert.match(css, /clamp\(54px, 11vw, 128px\)/, 'the headline spans display sizes, held to the measure');
+  assert.match(css, /h2 \{[^}]*font-size: clamp\(22px, min\(3\.2vw, 5\.4vh\), 44px\)/, 'sections step down to a clear second rank');
+  assert.match(css, /\.section \{[^}]*padding: var\(--section-y\) 0/, 'and breathe in one fluid rhythm');
 });
 
 // The taste audit removed the pill from the marketing hero's own mock badge and its provider entries, and auth.css now rounds its controls with the same 10px/6px the signed-in shell uses.
@@ -274,11 +309,14 @@ test('no page separates two surfaces with a shadow', () => {
   }
 });
 
-test('the home hero speaks in one column, and the questions answer in place', () => {
+test('the home hero is one left-aligned column, and the mosaic is the backdrop', () => {
+  // WHY THE COLUMN IS LEFT AND THE PAINTING FILLS THE HERO: the reference (hermes-agent.nousresearch.com) prints its promise left of a full-bleed engraving; a centred exhibit reads as a brochure cover, not as the agent working.
   const css = cssOf('beranda.html');
-  assert.match(css, /\.heroGrid \{[^}]*grid-template-columns: minmax\(0, 1fr\)/s, 'the hero is one column, the way opencode.ai reads');
-  assert.match(css, /\.heroCopy h1 \{[^}]*max-width: 20ch/s, 'and the headline may run wider than a half column');
+  assert.match(css, /\.hero \{[^}]*display: flex;\s*flex-direction: column;\s*justify-content: center/s, 'the hero is one column, held to the fold');
+  assert.match(css, /\.hero \{[^}]*overflow: hidden/s, 'and the backdrop is clipped to it');
+  assert.match(css, /\.heroCopy \{[^}]*position: relative;\s*z-index: 2/s, 'and the words ride above the scrim');
   const html = read('beranda.html');
+  assert.match(html, /<canvas id="mosaicBg" class="bgCanvas"/, 'the painting is the backdrop, not a competing box');
   assert.match(html, /<details>\s*<summary data-i18n="faq\.cost\.dt">/, 'a question opens and closes without script');
   assert.equal((html.match(/<details>/g) || []).length, 3, 'the three questions are all there');
   assert.doesNotMatch(html, /<dl class="facts faq">/, 'and the old flat list is gone');
@@ -340,17 +378,15 @@ test('the guide opens with three doors to the first task', () => {
   assert.match(sheet, /@keyframes door-in/, 'and the arrival is one shot');
 });
 
-test('the download page shows one archive fanning out to every browser', () => {
-  // WHY THIS PAGE NEEDS A PICTURE: measured against firecrawl.dev on 2026-11-05, its blocks answer with a picture of the work, and this hub left half its hero empty while it asked the reader to believe "satu arsip, semua browser".
+test('the download page fans one archive out to every browser', () => {
   const html = read('unduh.html');
-  assert.match(html, /<aside class="pack"/, 'the hero carries the archive');
-  assert.equal((html.match(/class="packTile"/g) || []).length, 5, 'and one tile per supported browser');
-  assert.doesNotMatch(html, /<code>opera-agent\.zip<\/code>/, 'the archive caption is gone; the five marks say it');
-  assert.match(html, /class="packRow" aria-hidden="true"/, 'and the fan itself is the picture');
+  const zips = html.match(/download\/opera-agent\.zip\?for=[a-z]+/g) || [];
+  assert.equal(zips.length, 5, 'one archive, five doors');
+  for (const b of ['chrome', 'edge', 'brave', 'opera', 'vivaldi']) {
+    assert.match(html, new RegExp('zip\\?for=' + b), `${b} gets the same archive`);
+  }
   const css = read('download.css');
-  assert.match(css, /\.packTile:nth-child\(3\) \{[^}]*animation-delay/s, 'the tiles light in turn');
-  assert.match(css, /@keyframes pack-light/, 'the light is one shot');
-  assert.match(css, /\.hero \{[^}]*grid-template-columns: minmax\(0, 1fr\) minmax\(/s, 'and the picture fills the column the copy leaves');
+  assert.doesNotMatch(css, /packTile|pack-light/, 'the dead fan is gone from the stylesheet');
 });
 
 test('the home page pauses on one statement, and the accent word carries it', () => {
@@ -365,17 +401,15 @@ test('the home page pauses on one statement, and the accent word carries it', ()
   assert.match(css, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.statementAccent::after \{[^}]*animation: none/s, 'and the motion bows out when asked');
 });
 
-test('the install panel shows a live pairing code, and the hero mock drifts with the scroll', () => {
+test('the install panel shows a live pairing code', () => {
   // WHY THE PANEL MOVES: a pairing code that never changes is a picture, and the panel is where the reader learns that a code expires.
-  // WHY THE MOCK LAGS: measured against firecrawl.dev on 2026-11-05, its product visual sits at its own depth, and a page where every part travels together reads flat.
+  // WHY THE DRIFT IS GONE: the product visual that once lagged the scroll died with the mock it moved - the ad's motion lives in the canvas film, pinned by the animated-ad gates.
   const html = read('beranda.html');
   assert.match(html, /class="pairCode"/, 'the panel shows a pairing code');
   assert.match(html, /id="pairTime"/, 'and the time it has left');
   assert.match(html, /setInterval\(paint, 1000\)/, 'the clock ticks');
   const css = cssOf('beranda.html');
   assert.match(css, /\.pairRow \{[^}]*grid-template-columns/s, 'the panel rows line up');
-  assert.match(css, /@supports \(animation-timeline: scroll\(\)\) \{[\s\S]*?\.demo \{[^}]*animation-timeline: scroll\(root block\)/s, 'and the mock drifts where the browser can scroll a timeline');
-  assert.match(css, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.demo \{[^}]*animation: none/s, 'and the drift bows out when asked');
 });
 
 test('the shared spotlight script only paints what the pointer names', () => {
@@ -403,13 +437,13 @@ test('the current door arrives by sliding, not by appearing', () => {
 });
 
 test('the verification command types itself, with the whole line kept for no-script readers', () => {
-  const html = read('unduh-berkas.html');
+  const html = read('unduh.html');
   assert.match(html, /<span class="verifyPrompt">PS C:\\&gt;<\/span> <span class="verifyType" id="curlType">/, 'the line carries the text it types, prompt first');
   assert.match(html, /<noscript><pre><code>curl\.exe -sI https:\/\//, 'and a still copy stands where the script cannot run');
   const js = read('verify.js');
   assert.match(js, /matchMedia\('\(prefers-reduced-motion: reduce\)'\)/, 'the reader who asked for stillness gets the two lines at once');
   assert.match(js, /IntersectionObserver/, 'the commands type when the fold scrolls into view');
-  const css = cssOf('unduh-berkas.html');
+  const css = cssOf('unduh.html');
   assert.match(css, /@keyframes verify-blink/, 'one cursor, blinking once the reader arrives');
 });
 
@@ -419,19 +453,12 @@ test('the dev server serves the whitelist and nothing else, even on loopback', (
   assert.match(src, /!FILES\.has\(name\)/, 'a name outside the list is refused');
 });
 
-test('the download pages read as one column, and the file table says what is true', () => {
-  const hub = read('unduh.html');
-  assert.doesNotMatch(hub, /class="shot"/, 'the hub drops the mock file panel it already states in words');
-  assert.match(hub, /class="btn giant" href="\.\/unduh-berkas\.html"/, 'and keeps one giant door to the files page');
-  assert.match(hub, /<span class="stat-num">/, 'with the counts the code proves');
-
-  const css = cssOf('unduh.html');
-  assert.match(css, /\.hero \{[^}]*grid-template-columns: minmax\(0, 1fr\)/s, 'the hub hero is one column');
-
-  const files = read('unduh-berkas.html');
+test('the download page reads as one column, and the file table says what is true', () => {
+  const files = read('unduh.html');
+  assert.doesNotMatch(files, /class="shot"/, 'the page drops the mock file panel it already states in words');
   assert.match(files, /<table class="support">/, 'the browser support table is the file table, and it stays');
   assert.doesNotMatch(files, /SHA-256<\/th>|Ukuran<\/th>/, 'and it claims no size or checksum it cannot hold');
-  assert.match(cssOf('unduh-berkas.html'), /\.support th \{[^}]*border-bottom: 1px solid var\(--line-strong\)/s, 'its head rests on a line, not a shadow');
+  assert.match(cssOf('unduh.html'), /\.support th \{[^}]*border-bottom: 1px solid var\(--line-strong\)/s, 'its head rests on a line, not a shadow');
   assert.doesNotMatch(files, /<h3>/, 'no heading skips a level under the title');
 });
 
@@ -486,82 +513,47 @@ test('the reading pages keep their map beside the text', () => {
   assert.doesNotMatch(dukung, /<dl class="facts">/, 'and no flat list survives');
 });
 
-test('the brand mark reads on the dark canvas, on every page', () => {
+test('the brand reads on the dark canvas, on every page', () => {
+  // WHY THE WORDMARK IS THE MARK: the masthead is the Hermes fold, and the name is set in the display face in full ink - a page carrying a darker brand would read as a placeholder, not as the name.
   const sheet = read('site.css');
-  assert.match(sheet, /header nav \.brandMark rect \{[^}]*fill: var\(--accent\)/s, 'the mark is a filled square in the accent, not a dark one on a dark page');
-  assert.match(sheet, /header nav \.brandMark path \{[^}]*fill: var\(--bg\)/s, 'and its glyph is cut in the canvas colour');
+  assert.match(sheet, /\.wordmark \{[^}]*color: var\(--ink\)/s, 'the wordmark is set in the ink, never a faded grey');
+  assert.match(sheet, /\.wordmark \{[^}]*font-family: var\(--display\)/s, 'and set in the display face, so the name reads as the name');
   for (const page of pages) {
     const html = read(page);
-    assert.ok(html.includes('class="brandMark"'), `${page} carries the mark`);
-    assert.doesNotMatch(html, /brandMark[^>]*>\s*<rect[^>]*fill="#101512"/, `${page} paints no dark square on a dark page`);
+    assert.ok(html.includes('class="brand"'), `${page} carries the brand`);
+    assert.ok(html.includes('href="/beranda.html"'), `${page} points the brand home`);
   }
-});
-
-test('the demo types its proof one line at a time, and never without motion', () => {
-  const html = read('beranda.html');
-  assert.match(html, /class="mockCmd in"/, 'one line carries the live mark');
-  assert.doesNotMatch(html, /class="mockCmd in".*class="mockCmd in"/s, 'only the first line starts live');
-  const count = (html.match(/<span class="cursor" aria-hidden="true"><\/span>/g) || []).length;
-  assert.equal(count, 3, 'each line carries a cursor the styles animate');
-  const css = cssOf('beranda.html');
-  assert.match(css, /\.mockCmd \{[^}]*animation:/s, 'each line enters on its own delay');
-  assert.match(css, /@keyframes mock-in/, 'the entrance exists');
-  assert.match(css, /\.mockCmd \.cursor/, 'a block cursor marks the live line');
-  assert.match(css, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.mockCmd \{[^}]*animation: none/s, 'and the motion bows out when asked');
 });
 
 test('the home page shows more than it explains', () => {
   const html = read('beranda.html');
-  // WHY THE DECORATIVE BLOCKS ARE LEFT OUT: the strip repeats site names for the loop and the quick tiles only exist for a signed-in reader.
-  // Neither is prose a visitor reads, so neither is counted against the copy budget.
+  // WHY THE DECORATIVE BLOCKS ARE LEFT OUT: the quick tiles and the member actions only exist for a signed-in reader; the pairing panel and the run window are mock furniture (role="img", a scan target, not prose a visitor reads word by word); and the portal fold is one click of hidden chrome, not the page's copy - none of those is copy, so none is counted against the budget; the strip keeps its tiles counted on its own.
   const visible = html
     .replace(/<script[\s\S]*?<\/script>/g, ' ')
     .replace(/<!--[\s\S]*?-->/g, ' ')
-    .replace(/<div class="marquee" aria-hidden="true">[\s\S]*?<\/div>\s*<\/div>/g, ' ')
+    .replace(/<noscript>[\s\S]*?<\/noscript>/g, ' ')
     .replace(/<div class="grid" id="quickTiles" hidden>[\s\S]*?<\/div>\s*<\/div>/g, ' ')
+    .replace(/<div class="installCard">[\s\S]*?<\/div>\s*<\/div>\s*<\/div>/g, ' ')
     .replace(/<div class="row" id="ctaIn" hidden>[\s\S]*?<\/div>/g, ' ')
+    .replace(/<div class="runWindow[^"]*"[\s\S]*?<\/section>/g, ' ')
+    .replace(/<div class="portalMenu"[\s\S]*?<\/div>\s*<\/div>\s*<\/header>/g, ' ')
     .replace(/<[^>]+>/g, ' ')
     .replace(/&[a-z]+;/g, ' ');
   const words = visible.split(/\s+/).filter(Boolean).length;
   assert.ok(words <= 430, `the home page stays under 430 words, and carries ${words}`);
 });
 
-test('the hero shows three moments of the product, not one picture', () => {
-  const html = read('beranda.html');
-  assert.match(html, /role="tablist"/, 'the visual has tabs');
-  assert.ok((html.match(/role="tab"/g) || []).length >= 3, 'three tabs');
-  assert.ok((html.match(/role="tabpanel"/g) || []).length >= 3, 'three panels');
-  assert.match(html, /class="demoTab"/, 'the tabs carry the class the sheet paints');
-});
-
-test('the hero demo plays once and then waits for the reader', () => {
-  // WHY THIS EXISTS: measured against firecrawl.dev on 2026-11-05, its hero moves before a reader touches anything, and a still product picture reads as a picture.
-  // The sequence shows all three moments once and stops, so the page never loops on its own, and a reader who reaches for it ends the sequence at once.
-  const html = read('beranda.html');
-  assert.match(html, /const playDemo = \(\) => \{/, 'the demo runs by itself');
-  assert.match(html, /demoStep >= tabs\.length/, 'and it stops after the last moment');
-  assert.match(html, /demo\.addEventListener\('pointerenter', stopDemo\)/, 'a reader who reaches for it ends the sequence');
-  assert.match(html, /if \(demo && !reduceMotion\)/, 'and a reader who asked for stillness never sees it');
-});
-
-test('the strip of pages our users open moves once and stops when asked', () => {
+test('the strip of pages our users open sits still, and reads as a map', () => {
+  // WHY THE MARQUEE DIED: a running strip is wallpaper - it asks the eye to chase motion that carries no information, and it cannot be read at a glance on touch.
+  // A grid of logo plus one concrete thing the agent does per site is information; it does not move, so there is nothing to stop when the reader asks for stillness.
   const html = read('beranda.html');
   const css = read('beranda.css');
-  assert.match(html, /class="marquee"/, 'the strip is on the page');
-  const track = /class="marqueeTrack"[^>]*>([\s\S]*?)<\/div>\s*<\/div>/.exec(html)?.[1] ?? '';
-  assert.ok((track.match(/<span>/g) || []).length >= 20, 'the strip repeats so it can loop');
-  assert.match(css, /@keyframes marquee/, 'and it moves');
-  assert.match(css, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.marqueeTrack \{[^}]*animation: none/s, 'and it stops when the reader asks');
-});
-
-test('the mock types its commands instead of only fading them in', () => {
-  // WHY A TYPED REVEAL: measured against firecrawl.dev on 2026-11-04, its product visual writes itself, and a hero that only fades reads like a slide.
-  // The reveal is a clip in steps, so the text stays in the page for readers and for search engines.
-  const css = read('beranda.css');
-  assert.match(css, /\.mockCmd code \{[^}]*clip-path: inset\(0 100% 0 0\)/s, 'the command starts covered');
-  assert.match(css, /@keyframes type-in/, 'and it is uncovered by a keyframe');
-  assert.match(css, /\.mockCmd code \{[^}]*animation: type-in[^}]*steps\(/s, 'the uncover runs in steps, so it types');
-  assert.match(css, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.mockCmd code \{[^}]*clip-path: none/s, 'and the reader can refuse the typing');
+  assert.match(html, /class="strip"/, 'the strip is on the page');
+  assert.match(html, /class="logoGrid"/, 'and the grid replaces the marquee');
+  assert.ok((html.match(/class="logoTile"/g) || []).length >= 8, 'with a tile per site the reader recognises');
+  assert.match(html, /data-i18n="strip\.label"/, 'and the label carries its translation');
+  assert.doesNotMatch(html, /class="marquee/, 'and the wallpaper is gone');
+  assert.doesNotMatch(css, /@keyframes marquee/, 'with its loop');
 });
 
 test('the guide search shows where the keyboard is, and answers the slash key', () => {
@@ -600,24 +592,12 @@ test('the reader searches the site from anywhere: one door, one key, one dialog'
   assert.match(script, /aria-activedescendant/, 'the reader knows which destination is chosen');
   assert.match(sheet, /\.palette\[open\] \{[^}]*animation: palette-in \.18s var\(--ease\)/s, 'the dialog arrives in the site easing');
   assert.match(sheet, /\.palette::backdrop \{[^}]*background: var\(--scrim\)/s, 'and the page behind it dims');
-  assert.match(sheet, /\.navSearch \{[^}]*display: none/s, 'the door stays shut without the script that answers it');
-  assert.match(script, /query === '' \? DESTINATIONS\.length : 8/, 'an empty box lists every page, so the palette doubles as the phone menu');
-  assert.match(sheet, /@media \(max-width: 620px\)[\s\S]*?header nav a:not\(\.brand\):not\(\.navCta\) \{[^}]*display: none/s, 'and the phone row leaves the five doors to the palette');
   for (const page of pages) {
     assert.match(read(page), /<script src="\/palette\.js"><\/script>/, `${page} carries the palette`);
-    assert.match(read(page), /class="navSearch"/, `${page} carries the search door`);
   }
 });
 
-test('the product mock wears a travelling light, and the reader can refuse it', () => {
-  // WHY THIS EXISTS: measured against firecrawl.dev on 2026-11-04, its product visual wears a slow rotating overlay, and a card that never moves reads as a picture of a product instead of a product at work.
-  // The light is one pixel of accent walking the frame once every half minute, so it reads as a light and not as motion.
-  const css = read('beranda.css');
-  assert.match(css, /@property --sweep/, 'the angle the light walks is a registered property, so it can turn');
-  assert.match(css, /\.demo::after \{[^}]*background: conic-gradient\(/s, 'the light is a gradient around the frame');
-  assert.match(css, /\.demo::after \{[^}]*animation: sweep 32s linear infinite/s, 'and it turns once every half minute');
-  assert.match(css, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.demo::after \{[^}]*animation: none/s, 'and it stops dead when the reader asks');
-});
+// WHY THE PIN READS .brand ALONE: the brand is the centre of the masthead and sits between the two door lists now (the Hermes fold), not inside a nav element - the claim being kept is that the brand keeps its place across the move.
 
 test('one page moves into the next, and the brand keeps its place', () => {
   // WHY THIS EXISTS: measured against firecrawl.dev on 2026-11-05, moving between its pages is one motion, and a hard cut makes a site feel like a folder of documents.
@@ -625,9 +605,12 @@ test('one page moves into the next, and the brand keeps its place', () => {
   const sheet = read('site.css');
   assert.match(sheet, /@view-transition \{\s*navigation: auto;/s, 'the browser moves between pages on its own');
   assert.match(sheet, /::view-transition-old\(root\)[\s\S]*?animation-duration: \.18s/s, 'and the move lasts as long as a hover');
-  assert.match(sheet, /header nav \.brand \{[^}]*view-transition-name: brand/s, 'while the brand keeps its place');
+  assert.match(sheet, /\.brand \{[^}]*view-transition-name: brand/s, 'while the brand keeps its place');
   assert.match(sheet, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?::view-transition-new\(\*\)[\s\S]*?animation: none !important/s, 'and a reader who asks for stillness gets none of it');
 });
+
+// WHY THE JUMP IS ALWAYS INSTANT: the reader asked for the top, not the tour - on a long page even a glide the CSS chooses passes through every screen between here and home.
+// Stillness is the default behaviour, never a special branch, so the reader who asked for it is not a case the code remembers to honour.
 
 test('a long page offers its way back, and a phone guide folds its map away', () => {
   // WHY THIS EXISTS: measured against docs.firecrawl.dev on 2026-11-05, its rail carries a way back to the top, and a phone reader met six section doors before the first line of the guide.
@@ -637,20 +620,20 @@ test('a long page offers its way back, and a phone guide folds its map away', ()
   const guide = read('docs.css');
   assert.match(script, /className = 'toTop'/, 'the page builds a way back');
   assert.match(script, /scrollY > 600/, 'and it waits until the reader has scrolled far');
-  assert.match(script, /prefers-reduced-motion/, 'and it obeys the reader who asks for stillness');
+  assert.match(script, /scrollTo\(\{ top: 0, behavior: 'instant' \}\)/, 'and it obeys the reader who asks for stillness');
   assert.match(sheet, /\.toTop\[data-shown="true"\]/, 'the button shows itself only when it is wanted');
   assert.match(guide, /\.docNav\[data-map="open"\] \.toc/, 'the phone map opens on demand');
   assert.match(read('docs.html'), /class="docMapToggle"/, 'and the guide carries the door');
 });
 
-test('the capability cards answer the pointer', () => {
+test('the numbered rows answer the pointer', () => {
+  // WHY THE ROWS, NOT THE GRID: measured against hermes-agent.nousresearch.com, its abilities read as six numbered entries on the cobalt field, not as a card wall - the pointer still gets an answer, a raised field and an ink-to-accent numeral, not a spotlight that follows it.
   const html = read('beranda.html');
-  const css = read('site.css');
-  assert.match(html, /class="bento"/, 'the home carries a bento grid');
-  assert.ok((html.match(/class="bentoArticle"/g) || []).length >= 4, 'at least four cards');
-  assert.match(css, /\.bentoArticle \{[^}]*--mx/s, 'the card reads the pointer');
-  assert.match(css, /\.bentoArticle:nth-child\(2\)::after \{[^}]*animation-delay: 1s/s, 'and the cards light in turn instead of blinking together');
-  assert.match(read('spotlight.js'), /pointermove/, 'and the shared script feeds it');
+  const css = read('beranda.css');
+  assert.match(html, /<div class="featureRows">/, 'the home carries the numbered rows');
+  assert.ok((html.match(/<article>/g) || []).length >= 6, 'at least the six features stand as entries');
+  assert.match(css, /\.featureRows article:hover \{[^}]*background: var\(--surface\)/s, 'a row answers the pointer with a raised field');
+  assert.match(css, /\.featureRows article:hover \.featureNum \{[^}]*color: var\(--accent-strong\)/s, 'and the numeral takes the accent under the pointer');
 });
 
 test('the numbers count up once, when they arrive', () => {
@@ -659,10 +642,10 @@ test('the numbers count up once, when they arrive', () => {
   assert.match(html, /prefers-reduced-motion/, 'and the reader can refuse it');
 });
 
-// WHY THE SWEEP JOINS THE LIST: measured against firecrawl.dev on 2026-11-04, its product visual wears a slow rotating overlay, so the light walking the mock frame is the one new loop this goal buys.
+// WHY THE LIVE DOT IS THE ONLY LOOP LEFT: the walking light died with the mock it walked, the caret died with the kick, and the run's motion lives in the JS ticker - a loop must earn its place as light, never as ornament.
 // The lock still holds on the thing that matters: a loop must be slow enough to read as light, and nothing else moves on its own.
 
-test('a hover answers within 120ms, and only the strip, the cursor, the live dot and the walking light move on their own', () => {
+test('a hover answers within 120ms, and only the live dot breathes on its own', () => {
   const sheet = read('site.css');
   assert.match(sheet, /\.tile:hover \{[^}]*transform: translateY\(-1px\)/s, 'a tile lifts one pixel');
   assert.match(sheet, /\.exitList a:hover \{[^}]*color: var\(--accent\)/s, 'a link answers in the accent');
@@ -670,10 +653,9 @@ test('a hover answers within 120ms, and only the strip, the cursor, the live dot
   const loops = [...read('beranda.css').matchAll(/([^{}]+)\{([^}]*animation[^}]*)\}/g)]
     .filter((match) => /infinite/.test(match[2]))
     .map((match) => match[1].trim());
-  assert.ok(loops.every((selector) => /\.marqueeTrack|\.cursor|\.mockTop \.dot|\.demo::after/.test(selector)), `only the strip, the cursor, the live dot and the walking light loop, and ${loops.length} do`);
+  assert.ok(loops.every((selector) => /\.mockTop \.dot::after/.test(selector)), `only the live dot breathes, and ${loops.length} do`);
   for (const match of read('beranda.css').matchAll(/([^{}]+)\{([^}]*animation[^}]*infinite[^}]*)\}/g)) {
     const selector = match[1].trim();
-    if (/\.cursor/.test(selector)) continue;
     const seconds = Number(/([\d.]+)s/.exec(match[2])?.[1] ?? 0);
     assert.ok(seconds >= 30, `${selector} turns once every ${seconds}s, so it reads as light and not as motion`);
   }
@@ -702,11 +684,12 @@ test('the display type is mono, the way opencode sets its headings', () => {
   assert.match(sheet, /h1,\s*\n?h2 \{[^}]*font-weight:\s*500/s, 'and at the weight mono reads well');
 });
 
-test('the hero carries its footnote instead of hiding the catch', () => {
+// WHY THE CATCH MOVED INTO THE ANSWER: the user asked the footnote with its sentence to go; the cost fact now stands exactly where the reader asks the question, which is where the answer was already written.
 
+test('the page states what costs money where the question is asked', () => {
   const html = read('beranda.html');
-  assert.match(html, /class="footnote"/, 'the line has an element');
-  assert.match(html, /Biaya model ke penyedia Anda/, 'stating the only money that moves');
+  assert.match(html, /<summary data-i18n="faq\.cost\.dt">/, 'the cost question stands on the page');
+  assert.match(html, /Setiap pekerjaan dibayar dari saldo/, 'the answer states what a job costs, in the open');
 });
 
 test('motion is an enhancement, never the content', () => {
@@ -737,7 +720,7 @@ test('a block that arrives after the scripts still arrives', () => {
   // WHY THIS LOCK: measured on production on 2026-11-05, the archive page ran its scripts before the text under the browser cards was parsed, so that text stayed invisible for every reader who did not scroll.
   const script = read('reveal.js');
   assert.match(script, /document\.addEventListener\('DOMContentLoaded', start\)/, 'the observer waits for the whole page');
-  const page = read('unduh-berkas.html');
+  const page = read('unduh.html');
   assert.ok(page.indexOf('class="downloadBody centered"') < page.indexOf('<script src="./i18n.js">'), 'and the page keeps its content before its scripts');
 });
 

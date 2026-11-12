@@ -1,14 +1,14 @@
-<!-- @last-edited: 2026-11-05 UTC+7. -->
-<!-- @title: beranda — the public home: one product proof, one action per idea, and your own model. -->
-<!-- @state: static page with one statement band; the model form talks to the installed extension and to nothing else. -->
-<!-- @dependencies: site.css, beranda.css, i18n.js, reveal.js, wayfind.js, palette.js. -->
+<!-- @last-edited: 2026-11-12 UTC+7. -->
+<!-- @title: beranda - the public home: one product proof, one action per idea, and your own model. -->
+<!-- @state: static page, one centered hero with a running job in its window; the model form talks to the installed extension and to nothing else. -->
+<!-- @dependencies: site.css, beranda.css, i18n.js, reveal.js, wayfind.js, palette.js, run.js. -->
 
 <!doctype html>
 <html lang="id">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="theme-color" content="#000000" />
+  <meta name="theme-color" content="#0000f2" />
   <title>Opera Agent</title>
   <meta name="description" content="Opera Agent mengemudikan browser Anda sendiri dari asisten AI yang sudah Anda pakai. Anda membawa model sendiri; konten halaman hanya pergi ke endpoint model Anda." />
   <link rel="stylesheet" href="/site.css" />
@@ -24,165 +24,144 @@
 </head>
 <body>
   <header>
-    <div class="wrap">
-      <nav>
-        <a class="brand" href="/beranda.html" aria-current="page"><svg class="brandMark" viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="7"  /><path d="M8 5.6v12.8l3.1-2.9 1.9 4.5 2.4-1-2-4.5h3.9L8 5.6Z"  /></svg><span>Opera Agent</span></a>
-        <a href="/fitur.html" data-i18n="nav.features">Fitur</a>
-        <a href="/unduh.html" data-i18n="nav.download">Unduh</a>
-        <a href="/pasang-mcp.html" data-i18n="nav.mcp">MCP</a><a href="/harga" data-i18n="nav.price">Harga</a>
-        <a href="/dukungan.html" data-i18n="nav.support">Dukungan</a>
-        <a href="/docs.html" data-i18n="nav.docs">Docs</a>
-        <span class="lang" data-lang-toggle></span>
-        <button class="navSearch" type="button" aria-label="Cari halaman Ctrl K" aria-keyshortcuts="Control+K Meta+K"><svg class="navSearchIcon" viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><circle cx="7" cy="7" r="4.5" fill="none" stroke="currentColor" stroke-width="1.5"></circle><path d="M10.6 10.6 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path></svg><kbd class="navSearchKey">Ctrl K</kbd></button>
-        <a class="navCta" href="/" data-i18n="nav.signin">Masuk</a>
+  <div class="wrap">
+    <div class="navRow">
+      <nav class="navSide navLeft" aria-label="Primary">
+        <a href="./fitur.html" data-i18n="nav.features">Fitur</a>
+        <a href="./unduh.html" data-i18n="nav.download">Unduh</a><span class="lang" data-lang-toggle></span>
       </nav>
-    </div>
-  </header>
+      <a class="brand" href="/beranda.html" aria-current="page"><span class="wordmark">Opera<br/>Agent</span></a>
+      <nav class="navSide navRight" aria-label="Secondary">
+        <button class="navPortal" id="navPortalToggle" type="button" aria-expanded="false" aria-controls="portalMenu"><span data-i18n="nav.portal">Portal</span><svg class="navPortalChevron" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"></path></svg></button>
+        <a href="./docs.html" data-i18n="nav.docs">Docs</a>
+        <a class="navCta" href="./unduh.html" data-i18n="cta.download">Pasang Opera Agent</a>
+      </nav>
 
-  <main class="wrap">
-    <div class="announce">
-      <span data-i18n="announce.text">Harga tetap per pekerjaan selesai.</span>
-      <a href="/harga" data-i18n="announce.link">Lihat harga</a>
-    </div>
 
-    <section class="hero hero--full">
-      <div class="heroGrid">
-        <div class="heroCopy">
-          <h1 data-i18n-html="hero.title">Asisten AI di <span class="accent">browser Anda.</span></h1>
-          <p class="lede" data-i18n="hero.lede">Asisten AI yang menggerakkan browser Anda. Tanpa eksekusi skrip bebas.</p>
-          <div class="row" id="ctaOut">
-            <a class="btn primary" href="./unduh.html" data-i18n="cta.download">Pasang Opera Agent</a>
-            <a class="btn" href="#model" data-i18n="cta.model">Pakai model sendiri</a>
-          </div>
-          <p class="footnote" data-i18n="hero.note">Harga tetap per pekerjaan selesai. Biaya model ke penyedia Anda.</p>
-          <div class="row" id="ctaIn" hidden>
-            <a class="btn primary" href="./dashboard.html" data-i18n="cta.dashboard">Buka Dashboard</a>
-            <a class="btn" href="./dashboard.html#pairing" data-i18n="cta.pair">Pair device</a>
-          </div>
-          <div class="grid" id="quickTiles" hidden>
-            <div class="tile">
-              <h3 data-i18n="tiles.devices.title">Devices</h3>
-              <p data-i18n-html="tiles.devices.body">Status dan kendali device. <a href="./dashboard.html#device">Lihat</a>.</p>
-            </div>
-            <div class="tile">
-              <h3 data-i18n="tiles.pairing.title">Pairing</h3>
-              <p data-i18n-html="tiles.pairing.body">Kode sekali pakai untuk device baru. <a href="./dashboard.html#pairing">Buat</a>.</p>
-            </div>
-            <div class="tile">
-              <h3 data-i18n="tiles.model.title">Model Anda</h3>
-              <p data-i18n-html="tiles.model.body">Endpoint dan kunci tetap di browser. <a href="#model">Atur</a>.</p>
-            </div>
-          </div>
-          <dl class="heroStats" id="heroStats">
-            <div><dt>40</dt><dd data-i18n="hero.stat.tools">tool MCP</dd></div>
-            <div><dt>35</dt><dd data-i18n="hero.stat.prims">primitive browser</dd></div>
-            <div><dt>6</dt><dd data-i18n="hero.stat.perms">izin, semua dijelaskan</dd></div>
-          </dl>
-        </div>
-
-        <div class="heroVisual">
-          <div class="demo" id="demo">
-            <div class="demoBar">
-              <span class="dots" aria-hidden="true"><span></span><span></span><span></span></span>
-              <span class="mockAddr">opera-agent.pages.dev/dashboard</span>
-              <span class="mockBadge" data-i18n="demo.example">Contoh</span>
-            </div>
-            <div class="demoTabs" role="tablist" aria-label="Contoh pekerjaan">
-              <button class="demoTab is-on" type="button" role="tab" id="tab-chrome" aria-controls="panel-chrome" aria-selected="true" data-panel="chrome" data-i18n="demo.tab.chrome">Chrome</button>
-              <button class="demoTab" type="button" role="tab" id="tab-docs" aria-controls="panel-docs" aria-selected="false" data-panel="docs" data-i18n="demo.tab.docs">Docs</button>
-              <button class="demoTab" type="button" role="tab" id="tab-maps" aria-controls="panel-maps" aria-selected="false" data-panel="maps" data-i18n="demo.tab.maps">Maps</button>
-            </div>
-
-            <div class="demoPanel" role="tabpanel" id="panel-chrome" aria-labelledby="tab-chrome">
-              <div class="mockTop">
-                <span class="dot" aria-hidden="true"></span>
-                <strong>opera</strong>
-                <span>·</span>
-                <span>Chrome</span>
-                <span class="chip">online</span>
-              </div>
-                            <div class="mockCmd in"><span class="cursor" aria-hidden="true"></span>
-                <code>tabs.list</code>
-                <span class="ok" data-i18n="demo.tabs">3 tab terbuka</span>
-              </div>
-                            <div class="mockCmd"><span class="cursor" aria-hidden="true"></span>
-                <code>page.read</code>
-                <span class="ok" data-i18n="demo.read">ringkasan + 12 aksi</span>
-              </div>
-                            <div class="mockCmd"><span class="cursor" aria-hidden="true"></span>
-                <code>page.click “Bayar”</code>
-                <span class="no" data-i18n="demo.deny">ditolak: kolom pembayaran</span>
-              </div>
-              <div class="mockFoot">
-                <span data-i18n="demo.control">Kontrol manusia aktif</span>
-                <code>read-only</code>
-              </div>
-            </div>
-
-            <div class="demoPanel" role="tabpanel" id="panel-docs" aria-labelledby="tab-docs" hidden>
-              <div class="mockTop">
-                <span class="dot" aria-hidden="true"></span>
-                <strong>opera</strong>
-                <span>·</span>
-                <span>Docs</span>
-                <span class="chip">online</span>
-              </div>
-              <div class="mockCmd">
-                <code>docs.open “Cek onboarding Q4”</code>
-                <span class="ok" data-i18n="demo.docs.read">48 baris terbaca</span>
-              </div>
-              <div class="mockCmd">
-                <code>docs.write “Ringkasan”</code>
-                <span class="ok" data-i18n="demo.docs.write">3 baris ditambahkan</span>
-              </div>
-              <div class="mockCmd">
-                <code>artifact.save</code>
-                <span class="ok" data-i18n="demo.docs.artifact">ringkasan.md</span>
-              </div>
-              <div class="mockFoot">
-                <span data-i18n="demo.docs.foot">Hasil jadi berkas</span>
-                <code>saved</code>
-              </div>
-            </div>
-
-            <div class="demoPanel" role="tabpanel" id="panel-maps" aria-labelledby="tab-maps" hidden>
-              <div class="mockTop">
-                <span class="dot" aria-hidden="true"></span>
-                <strong>opera</strong>
-                <span>·</span>
-                <span>Maps</span>
-                <span class="chip">online</span>
-              </div>
-              <div class="mockCmd">
-                <code>maps.search “kopi dekat Monas”</code>
-                <span class="ok" data-i18n="demo.maps.find">3 hasil</span>
-              </div>
-              <div class="mockCmd">
-                <code>maps.pick “Kopi,proto”</code>
-                <span class="ok" data-i18n="demo.maps.pick">alamat lengkap</span>
-              </div>
-              <div class="mockCmd">
-                <code>artifact.save</code>
-                <span class="ok" data-i18n="demo.maps.artifact">daftar.md</span>
-              </div>
-              <div class="mockFoot">
-                <span data-i18n="demo.maps.foot">Tugas selesai</span>
-                <code>done</code>
-              </div>
-            </div>
-          </div>
+    <div class="portalMenu" id="portalMenu" role="dialog" aria-modal="false" aria-labelledby="portalBannerLink" hidden>
+      <div class="portalBanner">
+        <a class="portalBannerLink" id="portalBannerLink" href="./akun.html">
+          <span class="portalBannerMark" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="16" cy="16" r="13"/><path d="M3 16h26"/><ellipse cx="16" cy="16" rx="13" ry="5.6"/></svg></span>
+          <span class="portalBannerText"><span class="portalBannerLinkText" data-i18n="portal.banner.link">Portal Opera Agent</span><span class="portalBannerRest"><span class="portalBannerMsg" data-i18n="portal.banner.m1">Satu akun. Semua model. Semua device.</span><span class="portalBannerMsg" data-i18n="portal.banner.m2" hidden>Bayar per pekerjaan selesai.</span><span class="portalBannerMsg" data-i18n="portal.banner.m3" hidden>Data tidak pernah meninggalkan device.</span></span></span>
+        </a>
+        <div class="portalBannerNav">
+          <button class="portalBannerChev" id="portalBannerPrev" type="button" data-i18n-attr="aria-label:portal.banner.prev" aria-label="Pesan sebelumnya"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 6-6 6 6 6"/></svg></button>
+          <button class="portalBannerChev" id="portalBannerNext" type="button" data-i18n-attr="aria-label:portal.banner.next" aria-label="Pesan berikutnya"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></button>
         </div>
       </div>
+      <div class="portalBody">
+        <div class="portalRow">
+          <div class="portalBigCol">
+            <p class="portalKind" data-i18n="portal.label.platform">Platform</p>
+            <p class="portalBig" data-i18n="portal.big.platform">Portal</p>
+          </div>
+          <ul class="portalDoors">
+            <li><a class="portalDoor" href="./docs.html" role="menuitem">
+              <span class="portalDoorName" data-i18n="portal.overview.title">Ikhtisar</span>
+              <span class="portalDoorDesc" data-i18n="portal.overview.body">Hubungkan agent ke setiap device</span>
+              <svg class="portalArrow" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M17 7H9M17 7v8"/></svg>
+            </a></li>
+            <li><a class="portalDoor" href="./harga.html" role="menuitem">
+              <span class="portalDoorName" data-i18n="portal.plans.title">Paket</span>
+              <span class="portalDoorDesc" data-i18n="portal.plans.body">Harga tetap per pekerjaan selesai</span>
+              <svg class="portalArrow" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M17 7H9M17 7v8"/></svg>
+            </a></li>
+            <li><a class="portalDoor" href="./unduh.html" role="menuitem">
+              <span class="portalDoorName" data-i18n="portal.referrals.title">Mulai dari sini</span>
+              <span class="portalDoorDesc" data-i18n="portal.referrals.body">Pasang extension, pair sekali, lalu kerja</span>
+              <svg class="portalArrow" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M17 7H9M17 7v8"/></svg>
+            </a></li>
+          </ul>
+        </div>
+        <div class="portalDivider" aria-hidden="true"></div>
+        <div class="portalRow">
+          <div class="portalBigCol">
+            <p class="portalKind" data-i18n="portal.label.access">Akun</p>
+            <p class="portalBig" data-i18n="portal.big.access">Akses</p>
+          </div>
+          <ul class="portalDoors">
+            <li><a class="portalDoor" href="./index.html" role="menuitem">
+              <span class="portalDoorName" data-i18n="portal.signin.title">Masuk</span>
+              <span class="portalDoorDesc" data-i18n="portal.signin.body">Lanjutkan ke dashboard Anda</span>
+              <svg class="portalArrow" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M17 7H9M17 7v8"/></svg>
+            </a></li>
+            <li><a class="portalDoor" href="./index.html" role="menuitem">
+              <span class="portalDoorName" data-i18n="portal.signup.title">Akun baru</span>
+              <span class="portalDoorDesc" data-i18n="portal.signup.body">Satu akun untuk semua device</span>
+              <svg class="portalArrow" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M17 7H9M17 7v8"/></svg>
+            </a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+  <main class="wrap">
+    <section class="hero">
+      <canvas id="mosaicBg" class="bgCanvas" aria-hidden="true"></canvas>
+      <div class="bgScrim" aria-hidden="true"></div>
+      <div class="heroCopy">
+        <h1 data-i18n-html="hero.title">Asisten AI di<br/><span class="accent">browser Anda.</span></h1>
+        <div class="row heroCtas" id="ctaOut">
+          <a class="btn heroPrimary" href="./unduh.html"><svg class="heroBtnIcon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg><span data-i18n="cta.download">Pasang Opera Agent</span></a>
+          <a class="btn heroGhost" href="#model"><svg class="heroBtnIcon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2"></rect><path d="M9 9h6v6H9z"></path><path d="M9 1v3M15 1v3M9 20v3M15 20v3M1 9h3M1 15h3M20 9h3M20 15h3"></path></svg><span data-i18n="cta.model">Pakai model sendiri</span></a>
+        </div>
+        <p class="heroCaption" data-i18n="hero.caption">Pasang lewat terminal</p>
+        <div class="termBar" role="group" aria-label="Perintah terminal">
+          <div class="termTabs" role="tablist">
+            <button class="termTab is-on" type="button" role="tab" aria-selected="true" data-os="mac">macOS</button>
+            <button class="termTab" type="button" role="tab" aria-selected="false" data-os="linux">Linux</button>
+            <button class="termTab" type="button" role="tab" aria-selected="false" data-os="win">Windows</button>
+          </div>
+          <div class="termLine">
+            <code id="termCmd">curl -fsSL https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/download/opera-agent.zip -o opera-agent.zip &amp;&amp; unzip opera-agent.zip</code>
+            <button class="termCopy" type="button" data-copy="termCmd" data-i18n="hero.copy">Salin</button>
+          </div>
+        </div>
+        <div class="row" id="ctaIn" hidden>
+          <a class="btn heroPrimary" href="./dashboard.html" data-i18n="cta.dashboard">Buka Dashboard</a>
+          <a class="btn heroGhost" href="./dashboard.html#pairing" data-i18n="cta.pair">Pair device</a>
+        </div>
+        <div class="grid" id="quickTiles" hidden>
+          <div class="tile">
+            <h3 data-i18n="tiles.devices.title">Devices</h3>
+            <p data-i18n-html="tiles.devices.body">Status dan kendali device. <a href="./dashboard.html#device">Lihat</a>.</p>
+          </div>
+          <div class="tile">
+            <h3 data-i18n="tiles.pairing.title">Pairing</h3>
+            <p data-i18n-html="tiles.pairing.body">Kode sekali pakai untuk device baru. <a href="./dashboard.html#pairing">Buat</a>.</p>
+          </div>
+          <div class="tile">
+            <h3 data-i18n="tiles.model.title">Model Anda</h3>
+            <p data-i18n-html="tiles.model.body">Endpoint dan kunci tetap di browser. <a href="#model">Atur</a>.</p>
+          </div>
+        </div>
+        <dl class="heroStats" id="heroStats">
+          <div><dt>40</dt><dd data-i18n="hero.stat.tools">tool MCP</dd></div>
+          <div><dt>35</dt><dd data-i18n="hero.stat.prims">primitive browser</dd></div>
+          <div><dt>6</dt><dd data-i18n="hero.stat.perms">izin</dd></div>
+        </dl>
+      </div>
+
     </section>
 
     <section class="strip" data-reveal aria-label="Halaman yang bisa dikerjakan">
-      <p class="stripLabel" data-i18n="strip.label">Halaman mana pun. Bukan daftar putih.</p>
-      <div class="marquee" aria-hidden="true">
-        <div class="marqueeTrack">
-          <span>Google Docs</span><span>Google Sheets</span><span>Google Maps</span><span>YouTube</span><span>Gmail</span><span>Notion</span><span>Figma</span><span>GitHub</span><span>Linear</span><span>Jira</span><span>Shopee</span><span>Traveloka</span>
-          <span>Google Docs</span><span>Google Sheets</span><span>Google Maps</span><span>YouTube</span><span>Gmail</span><span>Notion</span><span>Figma</span><span>GitHub</span><span>Linear</span><span>Jira</span><span>Shopee</span><span>Traveloka</span>
-        </div>
-      </div>
+      <p class="stripLabel" data-i18n="strip.label">Semua halaman. Bukan daftar putih.</p>
+      <ul class="logoGrid">
+        <li class="logoTile"><svg class="logoMark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="2.5"/><path d="M3.5 9h17M3.5 15h17M9.7 3.5v17M15.3 3.5v17"/></svg><span class="logoName">Google Sheets</span><span class="logoDo" data-i18n="tile.sheets">isi sheet dari web</span></li>
+        <li class="logoTile"><svg class="logoMark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6.5 2.5H14l4.5 4.5V20a1.5 1.5 0 0 1-1.5 1.5H7A1.5 1.5 0 0 1 5.5 20V4a1 1 0 0 1 1-1.5Z"/><path d="M9 12h6M9 16h6M9 8h3"/></svg><span class="logoName">Google Docs</span><span class="logoDo" data-i18n="tile.docs">tulis dokumen dari prompt</span></li>
+        <li class="logoTile"><svg class="logoMark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-6.8-5.4-6.8-10.3a6.8 6.8 0 0 1 13.6 0C18.8 15.6 12 21 12 21Z"/><circle cx="12" cy="10.8" r="2.4"/></svg><span class="logoName">Google Maps</span><span class="logoDo" data-i18n="tile.maps">cari &amp; bandingkan lokasi</span></li>
+        <li class="logoTile"><svg class="logoMark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="6" width="19" height="12" rx="3"/><path d="M10.4 9.7v4.6l4.2-2.3z" fill="currentColor" stroke="none"/></svg><span class="logoName">YouTube</span><span class="logoDo" data-i18n="tile.youtube">ambil poin dari video</span></li>
+        <li class="logoTile"><svg class="logoMark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="5" width="19" height="14" rx="2"/><path d="m3.5 6.5 8.5 6.3 8.5-6.3"/></svg><span class="logoName">Gmail</span><span class="logoDo" data-i18n="tile.gmail">tulis &amp; kirim balasan</span></li>
+        <li class="logoTile"><svg class="logoMark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="2"/><path d="M9 15V9l6 6V9"/></svg><span class="logoName">Notion</span><span class="logoDo" data-i18n="tile.notion">buat &amp; rapikan halaman</span></li>
+        <li class="logoTile"><svg class="logoMark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="7" y="3" width="10" height="6" rx="3"/><rect x="7" y="9.5" width="10" height="6" rx="3"/><circle cx="10" cy="19" r="2.3" fill="currentColor" stroke="none"/></svg><span class="logoName">Figma</span><span class="logoDo" data-i18n="tile.figma">baca &amp; mutasi desain</span></li>
+        <li class="logoTile"><svg class="logoMark" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2C6.5 2 2 6.5 2 12c0 4.4 2.9 8.1 6.8 9.4c.5.1.7-.2.7-.5v-1.7c-2.8.6-3.4-1.2-3.4-1.2c-.4-1.1-1.1-1.4-1.1-1.4c-.9-.6.1-.6.1-.6c1 .1 1.5 1 1.5 1c.9 1.6 2.4 1.1 3 .9c.1-.7.3-1.2.6-1.4c-2.2-.3-4.6-1.1-4.6-5.1c0-1.1.4-2 1-2.7c-.1-.2-.4-1.3.1-2.7c0 0 .8-.3 2.7 1c.8-.2 1.6-.3 2.4-.3c.8 0 1.6.1 2.4.3c1.9-1.3 2.7-1 2.7-1c.5 1.4.2 2.5.1 2.7c.6.7 1 1.6 1 2.7c0 4-2.3 4.8-4.6 5.1c.4.3.7.9.7 1.9v2.8c0 .3.2.6.7.4A10 10 0 0 0 22 12C22 6.5 17.5 2 12 2Z"/></svg><span class="logoName">GitHub</span><span class="logoDo" data-i18n="tile.github">ringkas PR &amp; buka issue</span></li>
+        <li class="logoTile"><svg class="logoMark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.8"/><path d="M5.6 13.6 13.6 5.6M7.8 17.4 17.4 7.8M10.2 19.4 19.4 10.2"/></svg><span class="logoName">Linear</span><span class="logoDo" data-i18n="tile.linear">buat issue dari catatan</span></li>
+        <li class="logoTile"><svg class="logoMark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m4 13 6-6M4 13l6 6M10 13l6-6M10 13l6 6"/></svg><span class="logoName">Jira</span><span class="logoDo" data-i18n="tile.jira">triage &amp; update tiket</span></li>
+        <li class="logoTile"><svg class="logoMark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6.2 9.5h11.6l-1.3 9.3a2.2 2.2 0 0 1-2.2 2H9.7a2.2 2.2 0 0 1-2.2-2l-1.3-9.3Z"/><path d="M9.5 9.5V7.8a2.5 2.5 0 0 1 5 0v1.7"/></svg><span class="logoName">Shopee</span><span class="logoDo" data-i18n="tile.shopee">pantau harga &amp; stok</span></li>
+        <li class="logoTile"><svg class="logoMark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 11.2 21 4.5 14.4 20l-2.6-6.2-6.3.7z"/><path d="M21 4.5 11.8 13.8"/></svg><span class="logoName">Traveloka</span><span class="logoDo" data-i18n="tile.traveloka">cari penerbangan murah</span></li>
+      </ul>
     </section>
 
     <section class="section statement" data-reveal aria-label="Inti produk">
@@ -195,16 +174,16 @@
         <div>
           <h2 data-i18n="install.title">Dari prompt ke hasil.</h2>
         </div>
-        <p data-i18n-html="install.sub">Unduh. Masuk. Pair. <a href="./unduh.html">Lihat panduan instalasi</a> bila perlu.</p>
+        <p data-i18n-html="install.sub">Unduh. Masuk. Pair. <a href="./unduh.html">Panduan bila perlu</a>.</p>
       </div>
       <div class="split">
         <div>
           <ol class="steps">
-            <li><strong>Unduh.</strong> Muat arsip di <code>opera://extensions</code> atau browser Chromium Anda.</li>
+            <li><strong>Unduh.</strong> Muat arsip di <code>opera://extensions</code> atau browser Chromium.</li>
             <li><strong>Masuk.</strong> Gunakan magic link atau OAuth.</li>
-            <li><strong>Pair.</strong> Hubungkan device dari <a href="./dashboard.html">Dashboard</a>.</li>
+            <li><strong>Pair.</strong> Hubungkan dari <a href="./dashboard.html">Dashboard</a>.</li>
           </ol>
-          <div class="row" style="margin-top: 28px;">
+          <div class="row rowGap">
             <a class="btn primary" href="./unduh.html" data-i18n="install.start">Mulai instalasi</a>
             <a class="btn" href="./dashboard.html" data-i18n="install.checklist">Buka checklist</a>
           </div>
@@ -233,13 +212,38 @@
           </div>
         </div>
       </div>
+      <div class="runWindow howResult" role="img" aria-label="Pekerjaan berjalan di Opera Agent: mengisi spreadsheet onboarding dari web, lalu onboarding.csv tersimpan sebagai berkas" data-i18n-attr="aria-label:run.window.aria">
+        <div class="windowChrome">
+          <span class="lights" aria-hidden="true"><i></i><i></i><i></i></span>
+          <span class="windowTitle">Opera Agent</span>
+          <span class="windowTab" data-i18n="run.rail.work">Pekerjaan</span>
+        </div>
+        <div class="windowBody">
+          <nav class="windowRail" aria-hidden="true">
+            <span class="railItem is-on" data-i18n="run.rail.work">Pekerjaan</span>
+            <span class="railItem" data-i18n="run.rail.devices">Perangkat</span>
+            <span class="railItem" data-i18n="run.rail.settings">Pengaturan</span>
+          </nav>
+          <div class="runPane">
+            <p class="runPrompt"><span class="runPromptMark" aria-hidden="true">$</span> <span data-i18n="run.prompt">Isi spreadsheet onboarding dari web</span></p>
+            <ol class="runSteps">
+              <li data-i18n="run.step.1">Mengantrekan pekerjaan</li>
+              <li data-i18n="run.step.2">Membuka tab dan membaca ringkasan</li>
+              <li data-i18n="run.step.3">Mencocokkan 12 baris dengan sumber</li>
+              <li data-i18n="run.step.4">Menyimpan onboarding.csv sebagai berkas</li>
+            </ol>
+            <p class="runResult"><span class="runCheck" aria-hidden="true">✓</span> <span data-i18n="run.done">onboarding.csv — tersimpan sebagai berkas</span></p>
+          </div>
+        </div>
+      </div>
+      <noscript><p class="runStill" data-i18n="run.still">Pekerjaan berjalan: agent membaca halaman, hasilnya tersimpan sebagai onboarding.csv.</p></noscript>
     </section>
 
     <section id="model" class="section" data-reveal>
       <div class="split reverse">
         <div>
           <h2 data-i18n="model.title">Pakai model sendiri.</h2>
-          <p class="sub" data-i18n="model.sub">Endpoint dan kunci disimpan di browser Anda, bukan di server kami.</p>
+          <p class="sub" data-i18n="model.sub">Endpoint dan kunci ada di browser Anda.</p>
         </div>
         <div class="card modelCard">
           <form id="modelForm">
@@ -273,34 +277,82 @@
       </div>
     </section>
 
-    <section id="signin" class="section" data-reveal aria-labelledby="abilityTitle">
+    <section id="fitur" class="section" data-reveal aria-labelledby="featuresTitle">
       <div class="sectionHead">
         <div>
-          <h2 id="abilityTitle" data-i18n="ability.title">Setelah pair, browser yang bekerja.</h2>
+          <h2 id="featuresTitle" data-i18n="features.title">Apa yang ia kerjakan.</h2>
         </div>
-        <p data-i18n="ability.sub">Empat hal yang selalu benar.</p>
+        <p data-i18n="features.sub">Enam hal. Satu arah: selesai.</p>
       </div>
-      <div class="bento">
-        <article class="bentoArticle">
-          <h3 data-i18n="ability.one.title">Satu device, satu akun</h3>
-          <p data-i18n="ability.one.body">Kode sekali pakai mengikat device. Cabut kapan saja.</p>
+      <div class="featureRows">
+        <article>
+          <span class="featureNum" aria-hidden="true">#1</span>
+          <div>
+            <h3 data-i18n="feature.one.title">Satu endpoint, setiap halaman</h3>
+            <p data-i18n="feature.one.body">OpenCode, Kilo, Claude: satu pintu. Tidak ada API per situs.</p>
+          </div>
         </article>
-        <article class="bentoArticle">
-          <h3 data-i18n="ability.two.title">MCP untuk harness apa pun</h3>
-          <p data-i18n-html="ability.two.body">OpenCode, Kilo, Claude: satu endpoint. <a href="./docs.html">Docs</a>.</p>
+        <article>
+          <span class="featureNum" aria-hidden="true">#2</span>
+          <div>
+            <h3 data-i18n="feature.two.title">Membaca web, menjawab</h3>
+            <p data-i18n="feature.two.body">Mencari, membandingkan, merangkum di halaman yang sedang Anda buka.</p>
+          </div>
         </article>
-        <article class="bentoArticle">
-          <h3 data-i18n="ability.three.title">Manusi memegang kendali</h3>
-          <p data-i18n="ability.three.body">Password, OTP, dan pembayaran selalu ditolak.</p>
+        <article>
+          <span class="featureNum" aria-hidden="true">#3</span>
+          <div>
+            <h3 data-i18n="feature.three.title">Mengisi lembar kerja</h3>
+            <p data-i18n="feature.three.body">Dari web ke spreadsheet. Dari prompt ke dokumen.</p>
+          </div>
         </article>
-        <article class="bentoArticle">
-          <h3 data-i18n="ability.four.title">Jejak setiap perintah</h3>
-          <p data-i18n-html="ability.four.body">Status dan artefak tersimpan di <a href="./dashboard.html">Dashboard</a>.</p>
+        <article>
+          <span class="featureNum" aria-hidden="true">#4</span>
+          <div>
+            <h3 data-i18n="feature.four.title">Ingat pairing Anda</h3>
+            <p data-i18n="feature.four.body">Satu kode sekali pakai per device. Cabut kapan pun.</p>
+          </div>
+        </article>
+        <article>
+          <span class="featureNum" aria-hidden="true">#5</span>
+          <div>
+            <h3 data-i18n="feature.five.title">Artefak, bukan hanya teks</h3>
+            <p data-i18n="feature.five.body">Pekerjaan selesai berarti berkas: CSV, dokumen, halaman.</p>
+          </div>
+        </article>
+        <article>
+          <span class="featureNum" aria-hidden="true">#6</span>
+          <div>
+            <h3 data-i18n="feature.six.title">Kamu yang memegang kendali</h3>
+            <p data-i18n="feature.six.body">Password, OTP, pembayaran: selalu ditolak. Kamu di kendali.</p>
+          </div>
         </article>
       </div>
-      <div class="row" style="margin-top: 28px;">
+      <div class="row rowGap" id="signin">
         <a class="btn primary" href="./index.html" data-i18n="signin.cta">Masuk / Daftar</a>
         <a class="btn" href="./docs.html" data-i18n="ability.docs">Baca Docs</a>
+      </div>
+    </section>
+
+    <section id="harga" class="section priceSection" data-reveal aria-labelledby="pricingTitle">
+      <div class="sectionHead">
+        <div>
+          <h2 id="pricingTitle" data-i18n="pricing.title">Harga tetap. Tanpa kejutan.</h2>
+        </div>
+        <p data-i18n="pricing.sub">Satu harga per pekerjaan selesai. Biaya model dari saldo Anda.</p>
+      </div>
+      <div class="priceRows">
+        <div class="priceCol">
+          <h3 data-i18n="pricing.self.title">Extension gratis</h3>
+          <p data-i18n="pricing.self.body">Pasang, pair, jalankan. Bayar hanya untuk model ke penyedia Anda.</p>
+        </div>
+        <div class="priceCol priceColAccent">
+          <h3 data-i18n="pricing.wallet.title">Tanpa kunci</h3>
+          <p data-i18n="pricing.wallet.body">Kami sangga biayanya; Anda bayar per pekerjaan selesai.</p>
+        </div>
+      </div>
+      <div class="row rowGap">
+        <a class="btn" href="./harga.html" data-i18n="pricing.link">Rincian harga</a>
       </div>
     </section>
 
@@ -314,7 +366,7 @@
       <div class="factGrid">
         <article>
           <h3 data-i18n="privacy.content.dt">Konten</h3>
-          <p data-i18n="privacy.content.dd">Hanya pergi ke endpoint model Anda; riwayat antrean disimpan di database project.</p>
+          <p data-i18n="privacy.content.dd">Hanya ke endpoint model Anda; riwayat antrean disimpan di database project.</p>
         </article>
         <article>
           <h3 data-i18n="privacy.key.dt">Kunci API</h3>
@@ -332,12 +384,11 @@
         <div>
           <h2 data-i18n="faq.title">Pertanyaan umum.</h2>
         </div>
-        <p data-i18n="faq.sub">Jawaban singkat.</p>
       </div>
       <div class="faqList">
         <details>
           <summary data-i18n="faq.cost.dt">Biaya</summary>
-          <p data-i18n="faq.cost.dd">Extension gratis dipasang. Setiap pekerjaan dibayar dari saldo.</p>
+          <p data-i18n="faq.cost.dd">Pasang gratis. Setiap pekerjaan dibayar dari saldo.</p>
         </details>
         <details>
           <summary data-i18n="faq.data.dt">Data</summary>
@@ -357,7 +408,7 @@
     </section>
   </main>
 
-        <footer>
+        <footer data-reveal>
     <div class="wrap footGrid simplified">
       <div class="footCol">
         <span class="footBrand">Opera Agent</span>
@@ -370,9 +421,10 @@
           <a href="./beranda.html" data-i18n="footer.home">Beranda</a>
           <a href="./fitur.html" data-i18n="footer.features">Fitur</a>
           <a href="./unduh.html" data-i18n="footer.download">Unduh</a>
-          <a href="./pasang-mcp.html">Pasang MCP</a>
+          <a href="./mcp.html">Pasang MCP</a>
           <a href="./bukti.html" data-i18n="footer.bukti">Bukti</a>
           <a href="./docs.html" data-i18n="footer.docs">Docs</a>
+          <a href="./harga.html">Harga</a>
           <a href="./akun.html" data-i18n="footer.account">Akun</a>
           <a href="./dashboard.html">Dashboard</a>
         </span>
@@ -388,127 +440,167 @@
     </div>
   </footer>
 
-  <script type="application/json" id="i18n-dict">{
+  <script type="application/json" id="i18n-dict">
+{
   "en": {
-    "footer.bukti": "Proof",
-    "footer.source": "Source code",
-    "footer.legal": "Legal",
-    "footer.docs": "Docs",
-    "footer.download": "Download",
-    "footer.product": "Product",
-    "nav.download": "Download",
-    "nav.signin": "Sign in",
-    "nav.features": "Features",
-    "nav.price": "Pricing",
-    "nav.docs": "Docs",
-    "nav.mcp": "MCP",
-    "announce.text": "A flat price per finished job.",
-    "announce.link": "See the price",
-    "strip.label": "Any page. Not a whitelist.",
-    "statement.one": "No API per site.",
-    "statement.two": "One endpoint,",
-    "statement.three": "every page",
-    "demo.tab.chrome": "Chrome",
-    "ability.title": "After pairing, the browser works.",
-    "ability.sub": "Four things that stay true.",
-    "ability.one.title": "One device, one account",
-    "ability.one.body": "A one-time code binds the device. Revoke it any time.",
-    "ability.two.title": "MCP for any harness",
-    "ability.two.body": "OpenCode, Kilo, Claude: one endpoint. <a href=\"./docs.html\">Docs</a>.",
-    "ability.three.title": "The human holds control",
-    "ability.three.body": "Passwords, one-time codes, and payments are always refused.",
-    "ability.four.title": "A trail for every command",
-    "ability.four.body": "Status and artefacts live in the <a href=\"./dashboard.html\">Dashboard</a>.",
     "ability.docs": "Read the Docs",
-    "nav.support": "Support",
-    "hero.title": "An AI assistant in <span class=\"accent\">your browser.</span>",
-    "hero.lede": "An AI assistant that drives your browser. No free-running scripts.",
+    "cta.dashboard": "Open the dashboard",
     "cta.download": "Install Opera Agent",
     "cta.model": "Connect any model",
-    "hero.note": "A flat price per finished job. The model bill goes to your provider.",
-    "cta.dashboard": "Open the dashboard",
     "cta.pair": "Pair a device",
-    "tiles.devices.title": "Devices",
-    "tiles.pairing.title": "Pairing",
-    "tiles.model.title": "Model Anda",
-    "demo.tabs": "3 tabs open",
-    "demo.read": "summary + 12 actions",
-    "demo.deny": "refused: payment field",
-    "install.title": "From prompt to outcome.",
-    "install.start": "Start installing",
-    "install.checklist": "Open the checklist",
-    "model.title": "Bring your model.",
-    "model.sub": "Your endpoint and key stay in your browser, not on our server.",
-    "model.provider": "Provider",
-    "model.endpoint": "API endpoint",
-    "model.name": "Model name",
-    "model.key": "API key",
-    "model.save": "Save to the extension",
-    "model.copy": "Just copy",
-    "signin.cta": "Sign in / Sign up",
-    "privacy.title": "Your data stays yours.",
-    "privacy.content.dt": "Content",
-    "privacy.content.dd": "Only goes to your model endpoint; queue history is stored in the project database.",
-    "privacy.key.dt": "API key",
-    "privacy.key.dd": "Stored locally. Never uploaded.",
-    "privacy.shot.dt": "Screenshot",
-    "privacy.shot.dd": "Sensitive and private pages are refused and never shared with third parties.",
-    "faq.title": "Good to know.",
-    "faq.sub": "Short answers.",
-    "faq.cost.dt": "Cost",
-    "faq.cost.dd": "Installing the extension is free. Every job is paid from your balance.",
-    "faq.data.dt": "Data",
-    "faq.data.dd": "Content goes to your model endpoint.",
-    "faq.stop.dt": "Stop",
-    "faq.stop.dd": "Sign out or revoke pairing at any time.",
-    "hero.stat.tools": "MCP tools",
-    "hero.stat.prims": "browser primitives",
-    "hero.stat.perms": "permissions, each explained",
-    "tiles.devices.body": "Status and control. <a href=\"./dashboard.html#device\">View</a>.",
-    "tiles.pairing.body": "A one-time code. <a href=\"./dashboard.html#pairing\">Create</a>.",
-    "tiles.model.body": "Keys stay in your browser. <a href=\"#model\">Set up</a>.",
-    "install.sub": "Download. Sign in. Pair. <a href=\"./unduh.html\">See the install guide</a> if needed.",
-    "model.custom": "Custom…",
-    "model.note": "HTTPS and local models on 127.0.0.1 are supported. Use <em>Just copy</em> before installing the extension.",
-    "privacy.sub": "Your model, keys, and approvals stay under your control. <a href=\"./privasi.html\">Read the privacy policy</a>.",
-    "footer.rights": "© 2026 Opera Agent. All rights reserved.",
-    "footer.home": "Home",
-    "footer.privacy": "Privacy",
-    "footer.terms": "Terms",
-    "footer.features": "Features",
-    "footer.support": "Support",
     "demo.example": "Example",
-    "demo.control": "Human control active",
-    "install.panel.title": "Extension panel",
+    "faq.cost.dd": "Free to install. Every job paid from your balance.",
+    "faq.cost.dt": "Cost",
+    "faq.data.dd": "Content goes to your model endpoint.",
+    "faq.data.dt": "Data",
+    "faq.stop.dd": "Sign out or revoke pairing at any time.",
+    "faq.stop.dt": "Stop",
+    "faq.title": "Good to know.",
+    "feature.five.body": "A finished job means a file: CSV, document, page.",
+    "feature.five.title": "Artifacts, not just text",
+    "feature.four.body": "One single-use code per device. Revoke any time.",
+    "feature.four.title": "Remembers your pairing",
+    "feature.one.body": "OpenCode, Kilo, Claude: one door. No per-site APIs.",
+    "feature.one.title": "One endpoint, every page",
+    "feature.six.body": "Password, OTP, payment: always refused. You are in charge.",
+    "feature.six.title": "You hold the controls",
+    "feature.three.body": "From the web to a spreadsheet. From a prompt to a document.",
+    "feature.three.title": "Fills the sheet",
+    "feature.two.body": "Searches, compares, summarizes on the page you are on.",
+    "feature.two.title": "Reads the web, answers",
+    "features.sub": "Six things. One direction: done.",
+    "features.title": "What it does.",
+    "final.sub": "One extension, one account, and full control of your browser.",
+    "final.title": "Install. Pair. Work.",
+    "footer.account": "Account",
+    "footer.bukti": "Proof",
+    "footer.docs": "Docs",
+    "footer.download": "Download",
+    "footer.features": "Features",
+    "footer.home": "Home",
+    "footer.legal": "Legal",
+    "footer.privacy": "Privacy",
+    "footer.product": "Product",
+    "footer.rights": "© 2026 Opera Agent. All rights reserved.",
+    "footer.source": "Source code",
+    "footer.support": "Support",
+    "footer.terms": "Terms",
+    "hero.caption": "Install via terminal",
+    "hero.copy": "Copy",
+    "hero.stat.perms": "permissions",
+    "hero.stat.prims": "browser primitives",
+    "hero.stat.tools": "MCP tools",
+    "hero.title": "An AI assistant in <span class=\"accent\">your browser.</span>",
+    "install.checklist": "Open the checklist",
     "install.panel.body": "One device, one account, one key that stays in this browser.",
-    "install.panel.device": "Office laptop",
-    "install.panel.online": "online",
     "install.panel.code": "Pairing code",
+    "install.panel.device": "Office laptop",
+    "install.panel.done": "done",
     "install.panel.left": "valid for",
+    "install.panel.online": "online",
     "install.panel.status": "Status trail",
     "install.panel.task": "Fill the onboarding sheet",
-    "install.panel.done": "done",
-    "final.title": "Install. Pair. Work.",
-    "final.sub": "One extension, one account, and full control of your browser.",
-    "footer.account": "Account",
-    "demo.tab.docs": "Docs",
-    "demo.tab.maps": "Maps",
-    "demo.docs.read": "48 lines read",
-    "demo.docs.write": "3 lines added",
-    "demo.docs.artifact": "summary.md",
-    "demo.docs.foot": "The result is a file",
-    "demo.maps.find": "3 results",
-    "demo.maps.pick": "full address",
-    "demo.maps.artifact": "list.md",
-    "demo.maps.foot": "Job finished"
+    "install.panel.title": "Extension panel",
+    "install.start": "Start installing",
+    "install.sub": "Download. Sign in. Pair. <a href=\"./unduh.html\">The guide</a> if needed.",
+    "install.title": "From prompt to outcome.",
+    "model.copy": "Just copy",
+    "model.custom": "Custom…",
+    "model.endpoint": "API endpoint",
+    "model.key": "API key",
+    "model.name": "Model name",
+    "model.note": "HTTPS and local models on 127.0.0.1 are supported. Use <em>Just copy</em> before installing the extension.",
+    "model.provider": "Provider",
+    "model.save": "Save to the extension",
+    "model.sub": "Your endpoint and key stay in your browser.",
+    "model.title": "Bring your model.",
+    "nav.docs": "Docs",
+    "nav.download": "Download",
+    "nav.features": "Features",
+    "nav.portal": "Portal",
+    "portal.banner.link": "Opera Agent Portal",
+    "portal.banner.m1": "One account. Every model. Every device.",
+    "portal.banner.m2": "Pay per finished job.",
+    "portal.banner.m3": "Your data never leaves the device.",
+    "portal.banner.next": "Next message",
+    "portal.banner.prev": "Previous message",
+    "portal.big.access": "Access",
+    "portal.big.platform": "Portal",
+    "portal.label.access": "Account",
+    "portal.label.platform": "Platform",
+    "portal.overview.body": "Connect your agent to every device",
+    "portal.overview.title": "Overview",
+    "portal.plans.body": "A flat price per finished job",
+    "portal.plans.title": "Plans",
+    "portal.referrals.body": "Install, pair once, start working",
+    "portal.referrals.title": "Start here",
+    "portal.signin.body": "Continue to your dashboard",
+    "portal.signin.title": "Sign in",
+    "portal.signup.body": "One account, every device",
+    "portal.signup.title": "New account",
+    "pricing.link": "Pricing details",
+    "pricing.self.body": "Install, pair, run. Pay only for the model, to your own provider.",
+    "pricing.self.title": "Free extension",
+    "pricing.sub": "One price per finished job. Model costs from your balance.",
+    "pricing.title": "Fixed price. No surprises.",
+    "pricing.wallet.body": "We carry the cost; you pay per finished job.",
+    "pricing.wallet.title": "No key needed",
+    "privacy.content.dd": "Only goes to your model endpoint; queue history is stored in the project database.",
+    "privacy.content.dt": "Content",
+    "privacy.key.dd": "Stored locally. Never uploaded.",
+    "privacy.key.dt": "API key",
+    "privacy.shot.dd": "Sensitive and private pages are refused and never shared.",
+    "privacy.shot.dt": "Screenshot",
+    "privacy.sub": "Your model, keys, and approvals stay under your control. <a href=\"./privasi.html\">Read the privacy policy</a>.",
+    "privacy.title": "Your data stays yours.",
+    "run.done": "onboarding.csv - saved as a file",
+    "run.prompt": "Fill the onboarding spreadsheet from the web",
+    "run.rail.devices": "Devices",
+    "run.rail.settings": "Settings",
+    "run.rail.work": "Jobs",
+    "run.step.1": "Queueing the job",
+    "run.step.2": "Opening the tab and reading the summary",
+    "run.step.3": "Matching 12 rows against the source",
+    "run.step.4": "Saving onboarding.csv as a file",
+    "run.still": "A job running: the agent reads the page, and onboarding.csv lands as a file.",
+    "run.window.aria": "A running job in Opera Agent: fill the onboarding spreadsheet from the web, and onboarding.csv is saved as a file",
+    "signin.cta": "Sign in / Sign up",
+    "statement.one": "No API per site.",
+    "statement.three": "every page",
+    "statement.two": "One endpoint,",
+    "strip.label": "All pages. Not a whitelist.",
+    "tile.docs": "write documents from a prompt",
+    "tile.figma": "read and mutate designs",
+    "tile.github": "summarise PRs and open issues",
+    "tile.gmail": "draft and send replies",
+    "tile.jira": "triage and update tickets",
+    "tile.linear": "file issues from notes",
+    "tile.maps": "find and compare places",
+    "tile.notion": "create and tidy pages",
+    "tile.sheets": "fill a sheet from the web",
+    "tile.shopee": "track price and stock",
+    "tile.traveloka": "find the cheap flights",
+    "tile.youtube": "pull the points from a video",
+    "tiles.devices.body": "Status and control. <a href=\"./dashboard.html#device\">View</a>.",
+    "tiles.devices.title": "Devices",
+    "tiles.model.body": "Keys stay in your browser. <a href=\"#model\">Set up</a>.",
+    "tiles.model.title": "Your model",
+    "tiles.pairing.body": "A one-time code. <a href=\"./dashboard.html#pairing\">Create</a>.",
+    "tiles.pairing.title": "Pairing"
   }
-}</script>
+}
+</script>
   <script src="./i18n.js"></script>
 
   <script src="/wayfind.js"></script>
   <script src="/palette.js"></script>
+  <script src="/portal.js" defer></script>
   <script src="/spotlight.js"></script>
   <script src="/reveal.js"></script>
+  <script src="/run.js" defer></script>
+  <script src="/paint.js" defer></script>
+  <script src="/term.js" defer></script>
+  <script src="/copy.js" defer></script>
   <script type="module">
 
     // WHY the extension id is written here and pinned by a test: the page must be able to name the extension it configures.
@@ -654,65 +746,7 @@
       }
     });
 
-    // WHY the tabs answer one click: the visual proves three moments of the product, and the reader picks a moment instead of reading three paragraphs.
-    const tabs = [...document.querySelectorAll('.demoTab')];
-    const panels = [...document.querySelectorAll('.demoPanel')];
-
-    const showPanel = (name) => {
-      for (const tab of tabs) {
-        const on = tab.dataset.panel === name;
-        tab.classList.toggle('is-on', on);
-        tab.setAttribute('aria-selected', String(on));
-      }
-      for (const panel of panels) {
-        panel.hidden = panel.id !== `panel-${name}`;
-      }
-    };
-
-    for (const tab of tabs) {
-      tab.addEventListener('click', () => showPanel(tab.dataset.panel));
-      tab.addEventListener('keydown', (event) => {
-        if (event.key !== 'ArrowRight' && event.key !== 'ArrowLeft') return;
-        event.preventDefault();
-        const step = event.key === 'ArrowRight' ? 1 : -1;
-        const next = tabs[(tabs.indexOf(tab) + step + tabs.length) % tabs.length];
-        next.focus();
-        showPanel(next.dataset.panel);
-      });
-    }
-
-    // WHY the numbers count once: a reader who lands on the page watches the figures arrive instead of reading them as wallpaper.
     const reduceMotion = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-    // WHY the demo plays once and then waits: measured against firecrawl.dev on 2026-11-05, its hero moves before a reader touches anything, and a still product picture reads as a picture.
-    // The sequence shows all three moments once and stops, so the page never loops on its own, and a reader who reaches for it ends the sequence at once.
-    const demo = document.querySelector('.demo');
-    let demoTimer = null;
-    let demoStep = 0;
-
-    const stopDemo = () => {
-      if (demoTimer) clearTimeout(demoTimer);
-      demoTimer = null;
-      demoStep = 0;
-    };
-
-    const playDemo = () => {
-      if (reduceMotion || tabs.length === 0) return;
-      demoStep += 1;
-      if (demoStep >= tabs.length) {
-        stopDemo();
-        return;
-      }
-      showPanel(tabs[demoStep].dataset.panel);
-      demoTimer = setTimeout(playDemo, 5500);
-    };
-
-    if (demo && !reduceMotion) {
-      demoTimer = setTimeout(playDemo, 3500);
-      demo.addEventListener('pointerenter', stopDemo);
-      demo.addEventListener('focusin', stopDemo);
-      for (const tab of tabs) tab.addEventListener('click', stopDemo);
-    }
 
     // WHY THE PAIRING CLOCK RUNS: a pairing code that never changes is a picture, and the panel is the one place the reader learns that a code expires.
     // A code that runs out is replaced the way the dashboard replaces it, and a reader who asks for stillness sees the code stand still.

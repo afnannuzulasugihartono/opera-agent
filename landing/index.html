@@ -8,7 +8,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="theme-color" content="#000000" />
+  <meta name="theme-color" content="#0000f2" />
   <title data-i18n="meta.title">Masuk — Opera Agent</title>
   <meta name="description" content="Masuk ke Opera Agent dengan Google, GitHub, atau magic link email. Tanpa password milik kami." />
   <link rel="stylesheet" href="/site.css" />
@@ -23,20 +23,78 @@
 </head>
 <body>
   <header>
-    <div class="wrap">
-      <nav>
-        <a class="brand" href="/beranda.html" aria-current="page"><svg class="brandMark" viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="7"  /><path d="M8 5.6v12.8l3.1-2.9 1.9 4.5 2.4-1-2-4.5h3.9L8 5.6Z"  /></svg><span>Opera Agent</span></a>
-        <a href="/fitur.html" data-i18n="nav.features">Fitur</a>
-        <a href="/unduh.html" data-i18n="nav.download">Unduh</a>
-        <a href="/pasang-mcp.html" data-i18n="nav.mcp">MCP</a><a href="/harga" data-i18n="nav.price">Harga</a>
-        <a href="/dukungan.html" data-i18n="nav.support">Dukungan</a>
-        <a href="/docs.html" data-i18n="nav.docs">Docs</a>
-        <span class="lang" data-lang-toggle></span>
-        <button class="navSearch" type="button" aria-label="Cari halaman Ctrl K" aria-keyshortcuts="Control+K Meta+K"><svg class="navSearchIcon" viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><circle cx="7" cy="7" r="4.5" fill="none" stroke="currentColor" stroke-width="1.5"></circle><path d="M10.6 10.6 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path></svg><kbd class="navSearchKey">Ctrl K</kbd></button>
-        <a class="navCta" href="/" data-i18n="nav.signin">Masuk</a>
+  <div class="wrap">
+    <div class="navRow">
+      <nav class="navSide navLeft" aria-label="Primary">
+        <a href="./fitur.html" data-i18n="nav.features">Fitur</a>
+        <a href="./unduh.html" data-i18n="nav.download">Unduh</a><span class="lang" data-lang-toggle></span>
       </nav>
+      <a class="brand" href="/beranda.html" aria-current="page"><span class="wordmark">Opera<br/>Agent</span></a>
+      <nav class="navSide navRight" aria-label="Secondary">
+        <button class="navPortal" id="navPortalToggle" type="button" aria-expanded="false" aria-controls="portalMenu"><span data-i18n="nav.portal">Portal</span><svg class="navPortalChevron" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"></path></svg></button>
+        <a href="./docs.html" data-i18n="nav.docs">Docs</a>
+        <a class="navCta" href="./unduh.html" data-i18n="cta.download">Pasang Opera Agent</a>
+      </nav>
+
+
+    <div class="portalMenu" id="portalMenu" role="dialog" aria-modal="false" aria-labelledby="portalBannerLink" hidden>
+      <div class="portalBanner">
+        <a class="portalBannerLink" id="portalBannerLink" href="./akun.html">
+          <span class="portalBannerMark" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="16" cy="16" r="13"/><path d="M3 16h26"/><ellipse cx="16" cy="16" rx="13" ry="5.6"/></svg></span>
+          <span class="portalBannerText"><span class="portalBannerLinkText" data-i18n="portal.banner.link">Portal Opera Agent</span><span class="portalBannerRest"><span class="portalBannerMsg" data-i18n="portal.banner.m1">Satu akun. Semua model. Semua device.</span><span class="portalBannerMsg" data-i18n="portal.banner.m2" hidden>Bayar per pekerjaan selesai.</span><span class="portalBannerMsg" data-i18n="portal.banner.m3" hidden>Data tidak pernah meninggalkan device.</span></span></span>
+        </a>
+        <div class="portalBannerNav">
+          <button class="portalBannerChev" id="portalBannerPrev" type="button" data-i18n-attr="aria-label:portal.banner.prev" aria-label="Pesan sebelumnya"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 6-6 6 6 6"/></svg></button>
+          <button class="portalBannerChev" id="portalBannerNext" type="button" data-i18n-attr="aria-label:portal.banner.next" aria-label="Pesan berikutnya"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></button>
+        </div>
+      </div>
+      <div class="portalBody">
+        <div class="portalRow">
+          <div class="portalBigCol">
+            <p class="portalKind" data-i18n="portal.label.platform">Platform</p>
+            <p class="portalBig" data-i18n="portal.big.platform">Portal</p>
+          </div>
+          <ul class="portalDoors">
+            <li><a class="portalDoor" href="./docs.html" role="menuitem">
+              <span class="portalDoorName" data-i18n="portal.overview.title">Ikhtisar</span>
+              <span class="portalDoorDesc" data-i18n="portal.overview.body">Hubungkan agent ke setiap device</span>
+              <svg class="portalArrow" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M17 7H9M17 7v8"/></svg>
+            </a></li>
+            <li><a class="portalDoor" href="./harga.html" role="menuitem">
+              <span class="portalDoorName" data-i18n="portal.plans.title">Paket</span>
+              <span class="portalDoorDesc" data-i18n="portal.plans.body">Harga tetap per pekerjaan selesai</span>
+              <svg class="portalArrow" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M17 7H9M17 7v8"/></svg>
+            </a></li>
+            <li><a class="portalDoor" href="./unduh.html" role="menuitem">
+              <span class="portalDoorName" data-i18n="portal.referrals.title">Mulai dari sini</span>
+              <span class="portalDoorDesc" data-i18n="portal.referrals.body">Pasang extension, pair sekali, lalu kerja</span>
+              <svg class="portalArrow" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M17 7H9M17 7v8"/></svg>
+            </a></li>
+          </ul>
+        </div>
+        <div class="portalDivider" aria-hidden="true"></div>
+        <div class="portalRow">
+          <div class="portalBigCol">
+            <p class="portalKind" data-i18n="portal.label.access">Akun</p>
+            <p class="portalBig" data-i18n="portal.big.access">Akses</p>
+          </div>
+          <ul class="portalDoors">
+            <li><a class="portalDoor" href="./index.html" role="menuitem">
+              <span class="portalDoorName" data-i18n="portal.signin.title">Masuk</span>
+              <span class="portalDoorDesc" data-i18n="portal.signin.body">Lanjutkan ke dashboard Anda</span>
+              <svg class="portalArrow" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M17 7H9M17 7v8"/></svg>
+            </a></li>
+            <li><a class="portalDoor" href="./index.html" role="menuitem">
+              <span class="portalDoorName" data-i18n="portal.signup.title">Akun baru</span>
+              <span class="portalDoorDesc" data-i18n="portal.signup.body">Satu akun untuk semua device</span>
+              <svg class="portalArrow" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M17 7H9M17 7v8"/></svg>
+            </a></li>
+          </ul>
+        </div>
+      </div>
     </div>
-  </header>
+  </div>
+</header>
 
   <main class="wrap auth">
     <div class="split" data-reveal>
@@ -106,9 +164,10 @@
           <a href="./beranda.html" data-i18n="footer.home">Beranda</a>
           <a href="./fitur.html" data-i18n="footer.features">Fitur</a>
           <a href="./unduh.html" data-i18n="footer.download">Unduh</a>
-          <a href="./pasang-mcp.html">Pasang MCP</a>
+          <a href="./mcp.html">Pasang MCP</a>
           <a href="./bukti.html" data-i18n="footer.bukti">Bukti</a>
           <a href="./docs.html" data-i18n="footer.docs">Docs</a>
+          <a href="./harga.html">Harga</a>
           <a href="./akun.html" data-i18n="footer.account">Akun</a>
           <a href="./dashboard.html">Dashboard</a>
         </span>
@@ -124,63 +183,84 @@
     </div>
   </footer>
 
-  <script type="application/json" id="i18n-dict">{
+  <script type="application/json" id="i18n-dict">
+{
   "en": {
-    "footer.bukti": "Proof",
-    "footer.source": "Source code",
-    "footer.legal": "Legal",
-    "footer.docs": "Docs",
-    "footer.download": "Download",
-    "footer.product": "Product",
-    "nav.download": "Download",
-    "nav.signin": "Sign in",
-    "nav.features": "Features",
-    "nav.price": "Pricing",
-    "nav.docs": "Docs",
-    "nav.mcp": "MCP",
-    "nav.support": "Support",
-    "meta.title": "Sign in — Opera Agent",
-    "gate.title": "Sign in or register",
-    "gate.sub": "One account for your site and your devices. Registration is open — sign in, then pair a device.",
     "brand.b1": "You talk, the page moves.",
     "brand.b2": "No password of ours — just an email magic link.",
     "brand.b3": "Your model key is never sent to this server.",
-    "tabs.login": "Sign in",
-    "tabs.register": "Register",
-    "tabs.loginCopy": "Enter your account email, then click the link we send.",
-    "tabs.registerCopy": "Enter your email — a new account is created when you click the link.",
     "card.titleLogin": "Sign in with a magic link",
     "card.titleRegister": "Create a new account",
+    "cta.download": "Install Opera Agent",
+    "footer.account": "Account",
+    "footer.bukti": "Proof",
+    "footer.docs": "Docs",
+    "footer.download": "Download",
+    "footer.features": "Features",
+    "footer.home": "Home",
+    "footer.legal": "Legal",
+    "footer.privacy": "Privacy",
+    "footer.product": "Product",
+    "footer.rights": "© 2026 Opera Agent. All rights reserved.",
+    "footer.source": "Source code",
+    "footer.support": "Support",
+    "footer.terms": "Terms",
     "form.email": "Email",
     "form.emailPlaceholder": "you@example.com",
     "form.submitLogin": "Send magic link",
     "form.submitRegister": "Create account",
-    "or": "or",
-    "provider.google": "Sign in with Google",
-    "provider.github": "Sign in with GitHub",
-    "resend": "No email? Send it again",
+    "gate.sub": "One account for your site and your devices. Registration is open — sign in, then pair a device.",
+    "gate.title": "Sign in or register",
+    "meta.title": "Sign in — Opera Agent",
+    "nav.docs": "Docs",
+    "nav.download": "Download",
+    "nav.features": "Features",
+    "nav.portal": "Portal",
     "note": "Signing in connects your account. Binding a device to your account arrives with pairing, and this page never asks for your password.",
+    "or": "or",
+    "portal.banner.link": "Opera Agent Portal",
+    "portal.banner.m1": "One account. Every model. Every device.",
+    "portal.banner.m2": "Pay per finished job.",
+    "portal.banner.m3": "Your data never leaves the device.",
+    "portal.banner.next": "Next message",
+    "portal.banner.prev": "Previous message",
+    "portal.big.access": "Access",
+    "portal.big.platform": "Portal",
+    "portal.label.access": "Account",
+    "portal.label.platform": "Platform",
+    "portal.overview.body": "Connect your agent to every device",
+    "portal.overview.title": "Overview",
+    "portal.plans.body": "A flat price per finished job",
+    "portal.plans.title": "Plans",
+    "portal.referrals.body": "Install, pair once, start working",
+    "portal.referrals.title": "Start here",
+    "portal.signin.body": "Continue to your dashboard",
+    "portal.signin.title": "Sign in",
+    "portal.signup.body": "One account, every device",
+    "portal.signup.title": "New account",
+    "provider.github": "Sign in with GitHub",
+    "provider.google": "Sign in with Google",
+    "resend": "No email? Send it again",
     "return.body": "Once signed in, you return to the OAuth permission page.",
     "return.continue": "Continue to permission",
     "return.home": "Home",
     "signed.dashboard": "Open dashboard",
     "signed.signout": "Sign out",
-    "signedin.title": "Account",
     "signedin.sub": "Your account for the website and your devices.",
+    "signedin.title": "Account",
     "signedin.whoami": "Signed in as {email}.",
-    "footer.rights": "© 2026 Opera Agent. All rights reserved.",
-    "footer.home": "Home",
-    "footer.privacy": "Privacy",
-    "footer.terms": "Terms",
-    "footer.features": "Features",
-    "footer.support": "Support",
-    "footer.account": "Account"
+    "tabs.login": "Sign in",
+    "tabs.loginCopy": "Enter your account email, then click the link we send.",
+    "tabs.register": "Register",
+    "tabs.registerCopy": "Enter your email — a new account is created when you click the link."
   }
-}</script>
+}
+</script>
   <script src="./i18n.js"></script>
 
   <script src="/wayfind.js"></script>
   <script src="/palette.js"></script>
+  <script src="/portal.js" defer></script>
 
   <script src="/reveal.js"></script>
   <script type="module">

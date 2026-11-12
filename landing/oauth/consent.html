@@ -8,7 +8,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="theme-color" content="#000000" />
+  <meta name="theme-color" content="#0000f2" />
   <title>Izin OAuth — Opera Agent</title>
   <meta name="description" content="Layar izin OAuth Opera Agent: aplikasi mana yang meminta akses, lalu izinkan atau tolak." />
   <link rel="stylesheet" href="/site.css" />
@@ -23,21 +23,78 @@
 </head>
 <body>
   <header>
-    <div class="wrap">
-      <nav>
-        <a class="brand" href="/beranda.html" aria-current="page"><svg class="brandMark" viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="7"  /><path d="M8 5.6v12.8l3.1-2.9 1.9 4.5 2.4-1-2-4.5h3.9L8 5.6Z"  /></svg><span>Opera Agent</span></a>
+  <div class="wrap">
+    <div class="navRow">
+      <nav class="navSide navLeft" aria-label="Primary">
         <a href="/fitur.html">Fitur</a>
-        <a href="/unduh.html">Unduh</a>
-        <a href="/pasang-mcp.html">MCP</a>
-        <a href="/harga">Harga</a>
-        <a href="/dukungan.html">Dukungan</a>
-        <a href="/docs.html">Docs</a>
-        <span class="lang" data-lang-toggle></span>
-        <button class="navSearch" type="button" aria-label="Cari halaman Ctrl K" aria-keyshortcuts="Control+K Meta+K"><svg class="navSearchIcon" viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><circle cx="7" cy="7" r="4.5" fill="none" stroke="currentColor" stroke-width="1.5"></circle><path d="M10.6 10.6 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path></svg><kbd class="navSearchKey">Ctrl K</kbd></button>
-        <a class="navCta" href="/">Masuk</a>
+        <a href="/unduh.html">Unduh</a><span class="lang" data-lang-toggle></span>
       </nav>
+      <a class="brand" href="/beranda.html" aria-current="page"><span class="wordmark">Opera<br/>Agent</span></a>
+      <nav class="navSide navRight" aria-label="Secondary">
+        <button class="navPortal" id="navPortalToggle" type="button" aria-expanded="false" aria-controls="portalMenu">Portal<svg class="navPortalChevron" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"></path></svg></button>
+        <a href="/docs.html">Docs</a>
+        <a class="navCta" href="/unduh.html">Pasang Opera Agent</a>
+      </nav>
+
+
+    <div class="portalMenu" id="portalMenu" role="dialog" aria-modal="false" aria-labelledby="portalBannerLink" hidden>
+      <div class="portalBanner">
+        <a class="portalBannerLink" id="portalBannerLink" href="/akun.html">
+          <span class="portalBannerMark" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="16" cy="16" r="13"/><path d="M3 16h26"/><ellipse cx="16" cy="16" rx="13" ry="5.6"/></svg></span>
+          <span class="portalBannerText"><span class="portalBannerLinkText">Portal Opera Agent</span><span class="portalBannerRest"><span class="portalBannerMsg">Satu akun. Semua model. Semua device.</span><span class="portalBannerMsg" hidden>Bayar per pekerjaan selesai.</span><span class="portalBannerMsg" hidden>Data tidak pernah meninggalkan device.</span></span></span>
+        </a>
+        <div class="portalBannerNav">
+          <button class="portalBannerChev" id="portalBannerPrev" type="button" aria-label="Pesan sebelumnya"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 6-6 6 6 6"/></svg></button>
+          <button class="portalBannerChev" id="portalBannerNext" type="button" aria-label="Pesan berikutnya"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></button>
+        </div>
+      </div>
+      <div class="portalBody">
+        <div class="portalRow">
+          <div class="portalBigCol">
+            <p class="portalKind">Platform</p>
+            <p class="portalBig">Portal</p>
+          </div>
+          <ul class="portalDoors">
+            <li><a class="portalDoor" href="/docs.html" role="menuitem">
+              <span class="portalDoorName">Ikhtisar</span>
+              <span class="portalDoorDesc">Hubungkan agent ke setiap device</span>
+              <svg class="portalArrow" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M17 7H9M17 7v8"/></svg>
+            </a></li>
+            <li><a class="portalDoor" href="/harga.html" role="menuitem">
+              <span class="portalDoorName">Paket</span>
+              <span class="portalDoorDesc">Harga tetap per pekerjaan selesai</span>
+              <svg class="portalArrow" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M17 7H9M17 7v8"/></svg>
+            </a></li>
+            <li><a class="portalDoor" href="/unduh.html" role="menuitem">
+              <span class="portalDoorName">Mulai dari sini</span>
+              <span class="portalDoorDesc">Pasang extension, pair sekali, lalu kerja</span>
+              <svg class="portalArrow" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M17 7H9M17 7v8"/></svg>
+            </a></li>
+          </ul>
+        </div>
+        <div class="portalDivider" aria-hidden="true"></div>
+        <div class="portalRow">
+          <div class="portalBigCol">
+            <p class="portalKind">Akun</p>
+            <p class="portalBig">Akses</p>
+          </div>
+          <ul class="portalDoors">
+            <li><a class="portalDoor" href="/index.html" role="menuitem">
+              <span class="portalDoorName">Masuk</span>
+              <span class="portalDoorDesc">Lanjutkan ke dashboard Anda</span>
+              <svg class="portalArrow" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M17 7H9M17 7v8"/></svg>
+            </a></li>
+            <li><a class="portalDoor" href="/index.html" role="menuitem">
+              <span class="portalDoorName">Akun baru</span>
+              <span class="portalDoorDesc">Satu akun untuk semua device</span>
+              <svg class="portalArrow" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M17 7H9M17 7v8"/></svg>
+            </a></li>
+          </ul>
+        </div>
+      </div>
     </div>
-  </header>
+  </div>
+</header>
 
   <main class="wrap prose">
     <h1>Izin aplikasi</h1>
@@ -92,6 +149,7 @@
           <a href="/unduh.html">Unduh</a>
           <a href="/bukti.html">Bukti</a>
           <a href="/docs.html">Docs</a>
+          <a href="/harga.html">Harga</a>
         </span>
       </div>
       <div class="footCol">
@@ -118,6 +176,7 @@
 
   <script src="/wayfind.js"></script>
   <script src="/palette.js"></script>
+  <script src="/portal.js" defer></script>
   <script type="module">
 
     // WHY plain fetch and not the Supabase SDK from a CDN: every page here may reach one origin, pinned in _headers.

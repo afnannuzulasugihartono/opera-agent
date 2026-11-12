@@ -87,7 +87,7 @@ test('the consent page is served at the path GoTrue actually asks for', () => {
 
 test('every page link resolves, including on the page that lives in a subdirectory', () => {
 
-  const pages = ['beranda.html', 'index.html', 'akun.html', 'dashboard.html', 'privasi.html', 'syarat.html', 'unduh.html', 'unduh-berkas.html', 'fitur.html', 'studi.html', 'dukungan.html', 'docs.html', '404.html', 'oauth/consent.html'];
+  const pages = ['beranda.html', 'index.html', 'akun.html', 'dashboard.html', 'privasi.html', 'syarat.html', 'unduh.html', 'fitur.html', 'studi.html', 'dukungan.html', 'docs.html', '404.html', 'oauth/consent.html'];
   // WHY THE ROOT IS EXEMPT FROM THE FILE CHECK: "/" is the sign-in door the host resolves, so it has no file behind it; /harga is rendered by the site's worker from opera-agent-billing.
   // Every other link is still proved to exist, so a door that moves without its page still fails here.
   const noFile = new Set(['/harga', '/']);
@@ -117,7 +117,7 @@ test('every page link resolves, including on the page that lives in a subdirecto
 
 test('the consent screen carries the same navigation as every other page', () => {
 
-  const entries = (page) => [...read(`landing/${page}`).match(/<nav>[\s\S]*?<\/nav>/)[0].matchAll(/>([^<>]+)<\/a>/g)].map((m) => m[1].trim());
+  const entries = (page) => [...read(`landing/${page}`).match(/<nav\b[^>]*>[\s\S]*?<\/nav>/)[0].matchAll(/>([^<>]+)<\/a>/g)].map((m) => m[1].trim());
   const shared = entries('beranda.html');
   for (const page of ['akun.html', 'dashboard.html', 'index.html', 'privasi.html', 'syarat.html', 'unduh.html', 'oauth/consent.html']) {
     assert.deepEqual(entries(page), shared, `${page} offers the same nav entries`);

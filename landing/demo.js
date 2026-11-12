@@ -212,9 +212,9 @@
     query('.pageDl').classList.add('is-shown');
     query('.pageExt .extTopRight .chromeToggle').classList.remove('on');
     const bar = query('.chromeOmnibox');
-    bar.querySelector('.typeUrl').textContent = 'opera-agent.pages.dev/unduh-berkas';
+    bar.querySelector('.typeUrl').textContent = 'opera-agent.pages.dev/unduh';
     bar.classList.remove('is-focused', 'is-enter');
-    query('.chromeTabTitle').textContent = 'unduh-berkas - Opera Agent';
+    query('.chromeTabTitle').textContent = 'unduh - Opera Agent';
     picker.classList.remove('is-open');
     popup.classList.remove('is-open', 'is-pasted', 'is-connected');
     popup.querySelector('.oaFieldEmpty').classList.remove('is-focused');

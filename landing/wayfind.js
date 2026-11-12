@@ -1,5 +1,5 @@
-// @last-edited: 2026-11-05 UTC+7.
-// @title: wayfind — the reader always knows where they are.
+// @last-edited: 2026-11-12 UTC+7.
+// @title: wayfind - the reader always knows where they are.
 // @state: one scroll listener; it grows a line under the header, marks the section in view, and offers a way back up.
 // @dependencies: none.
 
@@ -24,9 +24,10 @@ toTop.setAttribute('aria-label', english ? 'Back to top' : 'Kembali ke atas');
 toTop.textContent = '↑';
 document.body?.append(toTop);
 
+// WHY A JUMP, NOT A GLIDE: on a long page a smooth scroll walks the reader past every screen between here and home - the reader asked for the top, not the tour.
+
 toTop.addEventListener('click', () => {
-  const still = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  window.scrollTo({ top: 0, behavior: still ? 'auto' : 'smooth' });
+  window.scrollTo({ top: 0, behavior: 'instant' });
 });
 
 const doors = [...document.querySelectorAll('.toc a[href^="#"]')];

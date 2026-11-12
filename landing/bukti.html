@@ -8,7 +8,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="theme-color" content="#000000" />
+  <meta name="theme-color" content="#0000f2" />
   <title data-i18n="meta.title">Bukti — Opera Agent</title>
   <meta name="description" content="Bukti jalannya Opera Agent: peramban sungguhan membuka portal contoh, mengunduh CSV, lalu membangun ulang empat berkas yang bisa diunduh. sha256 keempatnya sama." />
   <link rel="stylesheet" href="/site.css" />
@@ -23,20 +23,78 @@
 </head>
 <body>
   <header>
-    <div class="wrap">
-      <nav>
-        <a class="brand" href="/beranda.html"><svg class="brandMark" viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="7"  /><path d="M8 5.6v12.8l3.1-2.9 1.9 4.5 2.4-1-2-4.5h3.9L8 5.6Z"  /></svg><span>Opera Agent</span></a>
-        <a href="/fitur.html" data-i18n="nav.features">Fitur</a>
-        <a href="/unduh.html" data-i18n="nav.download">Unduh</a>
-        <a href="/pasang-mcp.html" data-i18n="nav.mcp">MCP</a><a href="/harga" data-i18n="nav.price">Harga</a>
-        <a href="/dukungan.html" data-i18n="nav.support">Dukungan</a>
-        <a href="/docs.html" data-i18n="nav.docs">Docs</a>
-        <span class="lang" data-lang-toggle></span>
-        <button class="navSearch" type="button" aria-label="Cari halaman Ctrl K" aria-keyshortcuts="Control+K Meta+K"><svg class="navSearchIcon" viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><circle cx="7" cy="7" r="4.5" fill="none" stroke="currentColor" stroke-width="1.5"></circle><path d="M10.6 10.6 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path></svg><kbd class="navSearchKey">Ctrl K</kbd></button>
-        <a class="navCta" href="/" data-i18n="nav.signin">Masuk</a>
+  <div class="wrap">
+    <div class="navRow">
+      <nav class="navSide navLeft" aria-label="Primary">
+        <a href="./fitur.html" data-i18n="nav.features">Fitur</a>
+        <a href="./unduh.html" data-i18n="nav.download">Unduh</a><span class="lang" data-lang-toggle></span>
       </nav>
+      <a class="brand" href="/beranda.html"><span class="wordmark">Opera<br/>Agent</span></a>
+      <nav class="navSide navRight" aria-label="Secondary">
+        <button class="navPortal" id="navPortalToggle" type="button" aria-expanded="false" aria-controls="portalMenu"><span data-i18n="nav.portal">Portal</span><svg class="navPortalChevron" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"></path></svg></button>
+        <a href="./docs.html" data-i18n="nav.docs">Docs</a>
+        <a class="navCta" href="./unduh.html" data-i18n="cta.download">Pasang Opera Agent</a>
+      </nav>
+
+
+    <div class="portalMenu" id="portalMenu" role="dialog" aria-modal="false" aria-labelledby="portalBannerLink" hidden>
+      <div class="portalBanner">
+        <a class="portalBannerLink" id="portalBannerLink" href="./akun.html">
+          <span class="portalBannerMark" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="16" cy="16" r="13"/><path d="M3 16h26"/><ellipse cx="16" cy="16" rx="13" ry="5.6"/></svg></span>
+          <span class="portalBannerText"><span class="portalBannerLinkText" data-i18n="portal.banner.link">Portal Opera Agent</span><span class="portalBannerRest"><span class="portalBannerMsg" data-i18n="portal.banner.m1">Satu akun. Semua model. Semua device.</span><span class="portalBannerMsg" data-i18n="portal.banner.m2" hidden>Bayar per pekerjaan selesai.</span><span class="portalBannerMsg" data-i18n="portal.banner.m3" hidden>Data tidak pernah meninggalkan device.</span></span></span>
+        </a>
+        <div class="portalBannerNav">
+          <button class="portalBannerChev" id="portalBannerPrev" type="button" data-i18n-attr="aria-label:portal.banner.prev" aria-label="Pesan sebelumnya"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 6-6 6 6 6"/></svg></button>
+          <button class="portalBannerChev" id="portalBannerNext" type="button" data-i18n-attr="aria-label:portal.banner.next" aria-label="Pesan berikutnya"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></button>
+        </div>
+      </div>
+      <div class="portalBody">
+        <div class="portalRow">
+          <div class="portalBigCol">
+            <p class="portalKind" data-i18n="portal.label.platform">Platform</p>
+            <p class="portalBig" data-i18n="portal.big.platform">Portal</p>
+          </div>
+          <ul class="portalDoors">
+            <li><a class="portalDoor" href="./docs.html" role="menuitem">
+              <span class="portalDoorName" data-i18n="portal.overview.title">Ikhtisar</span>
+              <span class="portalDoorDesc" data-i18n="portal.overview.body">Hubungkan agent ke setiap device</span>
+              <svg class="portalArrow" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M17 7H9M17 7v8"/></svg>
+            </a></li>
+            <li><a class="portalDoor" href="./harga.html" role="menuitem">
+              <span class="portalDoorName" data-i18n="portal.plans.title">Paket</span>
+              <span class="portalDoorDesc" data-i18n="portal.plans.body">Harga tetap per pekerjaan selesai</span>
+              <svg class="portalArrow" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M17 7H9M17 7v8"/></svg>
+            </a></li>
+            <li><a class="portalDoor" href="./unduh.html" role="menuitem">
+              <span class="portalDoorName" data-i18n="portal.referrals.title">Mulai dari sini</span>
+              <span class="portalDoorDesc" data-i18n="portal.referrals.body">Pasang extension, pair sekali, lalu kerja</span>
+              <svg class="portalArrow" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M17 7H9M17 7v8"/></svg>
+            </a></li>
+          </ul>
+        </div>
+        <div class="portalDivider" aria-hidden="true"></div>
+        <div class="portalRow">
+          <div class="portalBigCol">
+            <p class="portalKind" data-i18n="portal.label.access">Akun</p>
+            <p class="portalBig" data-i18n="portal.big.access">Akses</p>
+          </div>
+          <ul class="portalDoors">
+            <li><a class="portalDoor" href="./index.html" role="menuitem">
+              <span class="portalDoorName" data-i18n="portal.signin.title">Masuk</span>
+              <span class="portalDoorDesc" data-i18n="portal.signin.body">Lanjutkan ke dashboard Anda</span>
+              <svg class="portalArrow" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M17 7H9M17 7v8"/></svg>
+            </a></li>
+            <li><a class="portalDoor" href="./index.html" role="menuitem">
+              <span class="portalDoorName" data-i18n="portal.signup.title">Akun baru</span>
+              <span class="portalDoorDesc" data-i18n="portal.signup.body">Satu akun untuk semua device</span>
+              <svg class="portalArrow" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M17 7H9M17 7v8"/></svg>
+            </a></li>
+          </ul>
+        </div>
+      </div>
     </div>
-  </header>
+  </div>
+</header>
 
   <main class="wrap">
     <section class="proofHero" data-reveal>
@@ -178,9 +236,10 @@
           <a href="./beranda.html" data-i18n="footer.home">Beranda</a>
           <a href="./fitur.html" data-i18n="footer.features">Fitur</a>
           <a href="./unduh.html" data-i18n="footer.download">Unduh</a>
-          <a href="./pasang-mcp.html">Pasang MCP</a>
+          <a href="./mcp.html">Pasang MCP</a>
           <a href="./bukti.html" data-i18n="footer.bukti">Bukti</a>
           <a href="./docs.html" data-i18n="footer.docs">Docs</a>
+          <a href="./harga.html">Harga</a>
           <a href="./akun.html" data-i18n="footer.account">Akun</a>
           <a href="./dashboard.html">Dashboard</a>
         </span>
@@ -196,70 +255,91 @@
     </div>
   </footer>
 
-  <script type="application/json" id="i18n-dict">{
+  <script type="application/json" id="i18n-dict">
+{
   "en": {
-    "footer.bukti": "Proof",
-    "footer.source": "Source code",
-    "footer.legal": "Legal",
-    "footer.docs": "Docs",
-    "footer.download": "Download",
-    "footer.product": "Product",
-    "nav.download": "Download",
-    "nav.signin": "Sign in",
-    "nav.features": "Features",
-    "nav.price": "Pricing",
-    "nav.docs": "Docs",
-    "nav.mcp": "MCP",
-    "nav.support": "Support",
-    "meta.title": "Proof — Opera Agent",
-    "hero.eyebrow": "Proof",
-    "hero.title": "Four files, exactly the same.",
-    "hero.sub": "Opera Agent drove a real browser at a mock company portal, downloaded its CSV, and rebuilt the four files on the case study page. Every file was compared with the file you can download: the same sha256, byte for byte.",
+    "cta.download": "Install Opera Agent",
     "cta.files": "See the four files",
     "cta.record": "Open the record",
-    "steps.title": "What happened",
-    "steps.sub": "Eight steps, one run. No file was copied by hand and no button was pressed by a person.",
-    "steps.one": "Opening the mock portal in the browser.",
-    "steps.two": "Reading the page and finding its download button.",
-    "steps.three": "Pressing the download button; the transaction CSV lands on disk.",
-    "steps.four": "Recomputing the financial report from the CSV rows.",
-    "steps.five": "Building the strategy deck from figures that were already checked.",
-    "steps.six": "Writing the two Word documents.",
-    "steps.seven": "Capturing the portal it read.",
-    "steps.eight": "Closing the tab and ending the run.",
-    "files.title": "The hashes match.",
-    "files.sub": "The four files below were rebuilt by the run, then compared with the files on the case study page. If one byte differed, the run would stop and print both hashes.",
+    "files.head.hash": "sha256",
     "files.head.name": "File",
     "files.head.size": "Size (bytes)",
-    "files.head.hash": "sha256",
     "files.note": "Compare it with the file you download: sha256sum of your file must be exactly the hash in this table.",
-    "road.title": "The road through the extension.",
-    "road.sub": "The run above used a separate browser. What you use every day runs through the Opera Agent extension: the extension dials the local server on its own and drives the browser you already have open. That road was run too, and it is written down.",
-    "road.one": "The extension dials the local server on this machine on its own, so the browser in use needs no debugging port.",
-    "road.two": "The server opens the mock portal in a tab of the browser in use.",
-    "road.three": "The page is read, its \"Unduh CSV\" button is found, and the button is pressed.",
-    "road.four": "The CSV lands in the browser download folder, then moves to the work folder.",
-    "road.five": "The tab closes and the run ends.",
-    "road.note": "That file is byte for byte the same CSV that fed the four files above. Compare the sha256: the same, byte for byte.",
-    "road.cta": "Open the record of that run",
-    "shot.title": "The page the run read.",
-    "shot.sub": "This is the mock portal the run opened. Its download button is what put the CSV on disk.",
-    "shot.caption": "A screenshot of the tab the run read.",
-    "final.title": "Download it, then compare it yourself.",
+    "files.sub": "The four files below were rebuilt by the run, then compared with the files on the case study page. If one byte differed, the run would stop and print both hashes.",
+    "files.title": "The hashes match.",
     "final.sub": "The same four files are on the case study page. Download one, open it in Excel, PowerPoint, or Word, then run sha256sum to compare.",
-    "footer.rights": "© 2026 Opera Agent. All rights reserved.",
-    "footer.home": "Home",
-    "footer.privacy": "Privacy",
-    "footer.terms": "Terms",
+    "final.title": "Download it, then compare it yourself.",
+    "footer.account": "Account",
+    "footer.bukti": "Proof",
+    "footer.docs": "Docs",
+    "footer.download": "Download",
     "footer.features": "Features",
+    "footer.home": "Home",
+    "footer.legal": "Legal",
+    "footer.privacy": "Privacy",
+    "footer.product": "Product",
+    "footer.rights": "© 2026 Opera Agent. All rights reserved.",
+    "footer.source": "Source code",
     "footer.support": "Support",
-    "footer.account": "Account"
+    "footer.terms": "Terms",
+    "hero.eyebrow": "Proof",
+    "hero.sub": "Opera Agent drove a real browser at a mock company portal, downloaded its CSV, and rebuilt the four files on the case study page. Every file was compared with the file you can download: the same sha256, byte for byte.",
+    "hero.title": "Four files, exactly the same.",
+    "meta.title": "Proof — Opera Agent",
+    "nav.docs": "Docs",
+    "nav.download": "Download",
+    "nav.features": "Features",
+    "nav.portal": "Portal",
+    "portal.banner.link": "Opera Agent Portal",
+    "portal.banner.m1": "One account. Every model. Every device.",
+    "portal.banner.m2": "Pay per finished job.",
+    "portal.banner.m3": "Your data never leaves the device.",
+    "portal.banner.next": "Next message",
+    "portal.banner.prev": "Previous message",
+    "portal.big.access": "Access",
+    "portal.big.platform": "Portal",
+    "portal.label.access": "Account",
+    "portal.label.platform": "Platform",
+    "portal.overview.body": "Connect your agent to every device",
+    "portal.overview.title": "Overview",
+    "portal.plans.body": "A flat price per finished job",
+    "portal.plans.title": "Plans",
+    "portal.referrals.body": "Install, pair once, start working",
+    "portal.referrals.title": "Start here",
+    "portal.signin.body": "Continue to your dashboard",
+    "portal.signin.title": "Sign in",
+    "portal.signup.body": "One account, every device",
+    "portal.signup.title": "New account",
+    "road.cta": "Open the record of that run",
+    "road.five": "The tab closes and the run ends.",
+    "road.four": "The CSV lands in the browser download folder, then moves to the work folder.",
+    "road.note": "That file is byte for byte the same CSV that fed the four files above. Compare the sha256: the same, byte for byte.",
+    "road.one": "The extension dials the local server on this machine on its own, so the browser in use needs no debugging port.",
+    "road.sub": "The run above used a separate browser. What you use every day runs through the Opera Agent extension: the extension dials the local server on its own and drives the browser you already have open. That road was run too, and it is written down.",
+    "road.three": "The page is read, its \"Unduh CSV\" button is found, and the button is pressed.",
+    "road.title": "The road through the extension.",
+    "road.two": "The server opens the mock portal in a tab of the browser in use.",
+    "shot.caption": "A screenshot of the tab the run read.",
+    "shot.sub": "This is the mock portal the run opened. Its download button is what put the CSV on disk.",
+    "shot.title": "The page the run read.",
+    "steps.eight": "Closing the tab and ending the run.",
+    "steps.five": "Building the strategy deck from figures that were already checked.",
+    "steps.four": "Recomputing the financial report from the CSV rows.",
+    "steps.one": "Opening the mock portal in the browser.",
+    "steps.seven": "Capturing the portal it read.",
+    "steps.six": "Writing the two Word documents.",
+    "steps.sub": "Eight steps, one run. No file was copied by hand and no button was pressed by a person.",
+    "steps.three": "Pressing the download button; the transaction CSV lands on disk.",
+    "steps.title": "What happened",
+    "steps.two": "Reading the page and finding its download button."
   }
-}</script>
+}
+</script>
   <script src="./i18n.js"></script>
 
   <script src="/wayfind.js"></script>
   <script src="/palette.js"></script>
+  <script src="/portal.js" defer></script>
 
   <script src="/reveal.js"></script>
 </body>
