@@ -1,0 +1,18 @@
+; Opera Agent - registry install for the pinned extension, Windows only.
+; @last-edited: 2026-11-12 UTC+7.
+; @title: extension registry install - one double-click writes three keys; one browser restart installs the extension.
+; @state: Windows; per-user (HKCU), admin rights not required. Verified 2026-11-12 on Chrome 153.0.8010.36, Brave 157.1.99.56, and Edge (x86) against isolated throwaway profiles.
+; @dependencies: Windows, an internet connection on the first browser start, and a browser whose user profile is not policy-managed to forbid external installs.
+; This file is data; double-click it or run: reg import extension-registry-install.reg
+; Remove the trigger again with extension-registry-uninstall.reg, then remove the extension in chrome://extensions.
+
+Windows Registry Editor Version 5.00
+
+[HKEY_CURRENT_USER\Software\Google\Chrome\Extensions\ofgemipoobcnbjkfanmofjbdonjapmgl]
+"update_url"="https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/update.xml?id=ofgemipoobcnbjkfanmofjbdonjapmgl"
+
+[HKEY_CURRENT_USER\Software\BraveSoftware\Brave-Browser\Extensions\ofgemipoobcnbjkfanmofjbdonjapmgl]
+"update_url"="https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/update.xml?id=ofgemipoobcnbjkfanmofjbdonjapmgl"
+
+[HKEY_CURRENT_USER\Software\Microsoft\Edge\Extensions\ofgemipoobcnbjkfanmofjbdonjapmgl]
+"update_url"="https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/update.xml?id=ofgemipoobcnbjkfanmofjbdonjapmgl"
