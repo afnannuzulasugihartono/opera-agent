@@ -1,6 +1,6 @@
 // @last-edited: 2026-11-11 UTC+7.
 // @title: hosted-device-resolution - the browser the caller pinned answers, or the relay says why it cannot.
-// @state: a live pin answers every call; a pin that names a sleeping browser is a named refusal with the live alternatives; X-Opera-Device: any opts into the freshest browser.
+// @state: a live pin answers every call; a pin that names a sleeping browser is a named refusal with the live alternatives; X-Opera-Device: any opts into the freshest browser; a stored provider pin decides only when no header names a browser, and a header beats it.
 // @dependencies: node:test, strict, ../supabase/functions/opera-agent-mcp/device.ts.
 
 // WHY THIS FILE IS A GATE AND NOT A THOUGHT.
@@ -85,4 +85,40 @@ test('the window is part of the contract', () => {
   const inside = { device_name: 'inside', last_seen_at: new Date(NOW - 119_000).toISOString(), status: 'online' };
   const out = resolveDevice({ pin: null, devices: [justOutside, inside], now: NOW });
   assert.equal(out.name, 'inside');
+});
+
+test('a live provider pin answers for the provider, and says it is the provider pin', () => {
+  const out = resolveDevice({ pin: null, providerPin: 'opera-8', devices: [fresh('opera-8'), fresh('opera-9')], now: NOW });
+  assert.equal(out.name, 'opera-8');
+  assert.equal(out.source, 'pin');
+  assert.equal(out.pinState, 'live');
+  assert.equal(out.pinSource, 'provider');
+});
+
+test('a provider pin that names a sleeping browser is refused, not swapped', () => {
+  const out = resolveDevice({ pin: null, providerPin: 'opera-8', devices: [stale('opera-8'), fresh('opera-9', '2026-11-09T06:02:49.000Z')], now: NOW });
+  assert.equal(out.name, null);
+  assert.equal(out.pinState, 'stale');
+  assert.equal(out.pinSource, 'provider');
+  assert.deepEqual(out.alternatives, ['opera-9']);
+});
+
+test('a provider pin that names a browser the account never had is refused as missing', () => {
+  const out = resolveDevice({ pin: null, providerPin: 'ghost', devices: [fresh('opera')], now: NOW });
+  assert.equal(out.name, null);
+  assert.equal(out.pinState, 'missing');
+  assert.equal(out.pinSource, 'provider');
+});
+
+test('a header pin on the call beats the stored provider pin', () => {
+  const out = resolveDevice({ pin: 'opera-9', providerPin: 'opera-8', devices: [fresh('opera-8'), fresh('opera-9')], now: NOW });
+  assert.equal(out.name, 'opera-9');
+  assert.equal(out.pinSource, 'header');
+});
+
+test('a stored provider pin of any is ignored, and the freshest answers', () => {
+  const out = resolveDevice({ pin: null, providerPin: 'any', devices: [fresh('a', '2026-11-09T06:02:00.000Z'), fresh('b', '2026-11-09T06:02:55.000Z')], now: NOW });
+  assert.equal(out.name, 'b');
+  assert.equal(out.source, 'freshest');
+  assert.equal(out.pinSource, null);
 });
