@@ -180,7 +180,7 @@ type ExecutionMode = "background" | "foreground";
 
 export function registerTools(server: McpServer, deps: ToolDeps) {
   const {
-    execute, executeScreenshot, executeMap, executeStatus, executeUpdateStatus, runWorkflow, runAdhoc, rpc, textResult, toolError,
+    execute, executeScreenshot, executeRecordStart, executeRecordStop, executeScan, executeMap, executeStatus, executeUpdateStatus, runWorkflow, runAdhoc, rpc, textResult, toolError,
     callVmHost, vmRunResult, rpcErrorParts, db, deviceName, provider, caller, deviceResolution
   } = deps;
 
@@ -519,6 +519,61 @@ export function registerTools(server: McpServer, deps: ToolDeps) {
     tileOffset?: number;
     timeoutMs?: number;
   }) => executeScreenshot({ tabId, ...(crop ? { crop } : {}), ...(quality != null ? { quality } : {}), ...(maxWidth != null ? { maxWidth } : {}), ...(maxHeight != null ? { maxHeight } : {}), ...(previousHash ? { previousHash } : {}), ...(fullPage === true ? { fullPage: true } : {}), ...(tileOffset != null ? { tileOffset } : {}) }, timeoutMs ?? (fullPage === true ? 30000 : undefined), deviceName, provider));
+
+  server.registerTool("record_start", {
+    title: "Record an Opera tab from here on",
+    description: "Arm a recording on the tab to a webm in the user's download folder. After this call, drive whatever the task needs - click_element, fill_element, press_key, scroll_page, pointer or run_browser_burst - or pass scroll:true to also sweep the page top to bottom - and pass record_stop when it is finished. The recorder captures the visual result of everything that happens; the same sensitive-surface refusal as capture_page applies at arm time. Returns: ok, tabId, the armed manifest (filename, fps, maxWidth, quality, scrolled, startedAt) and the page being recorded.",
+    inputSchema: {
+      tabId: tabIdSchema,
+      filename: z.string().max(120).optional()
+        .describe("Optional file name for the webm in Downloads; a safe default is used otherwise."),
+      fps: z.number().int().min(5).max(30).optional()
+        .describe("Target frames per second for the encoder. Defaults to 15."),
+      maxWidth: z.number().int().min(320).max(1600).optional()
+        .describe("Maximum width of the encoded frame. Defaults to 1280."),
+      quality: z.number().int().min(40).max(80).optional()
+        .describe("JPEG quality of the screencast frames. Defaults to 60."),
+      scroll: z.boolean().optional()
+        .describe("Also sweep the page from top to bottom with a smooth scroll. Defaults to false - drive whatever else the task needs."),
+      timeoutMs: timeoutSchema
+    },
+    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true }
+  }, ({ tabId, filename, fps, maxWidth, quality, scroll, timeoutMs }: TargetTab & {
+    filename?: string;
+    fps?: number;
+    maxWidth?: number;
+    quality?: number;
+    scroll?: boolean;
+    timeoutMs?: number;
+  }) => executeRecordStart({ tabId, ...(filename ? { filename } : {}), ...(fps != null ? { fps } : {}), ...(maxWidth != null ? { maxWidth } : {}), ...(quality != null ? { quality } : {}), ...(scroll === true ? { scroll: true } : {}) }, timeoutMs ?? 10000, deviceName, provider));
+
+  server.registerTool("record_stop", {
+    title: "Finish the Opera tab recording",
+    description: "Finish an armed recording and write the webm to the user's download folder. Returns: ok, tabId, the recording manifest (filename, path, bytes, durationMs, screencastFrames, encoderFrames, scrolledTo), the page it recorded, and up to four sampled JPEG stills as images.",
+    inputSchema: {
+      tabId: tabIdSchema,
+      timeoutMs: timeoutSchema
+    },
+    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true }
+  }, ({ tabId, timeoutMs }: TargetTab & { timeoutMs?: number }) => executeRecordStop({ tabId }, timeoutMs ?? 30000, deviceName, provider));
+
+  server.registerTool("scan_page", {
+    title: "Scan the Opera page into one file",
+    description: "Scan a page into one self-contained html file in the user's download folder: the rendered light DOM with its stylesheets, scripts (integrity preserved), images, icons, srcset and the @font-face fonts referenced by those stylesheets inlined as data URLs - the internal structure of a site, kept for offline reading or reconstruction. Uses the same sensitive-surface refusal as capture_page: password, OTP, payment and other sensitive pages are never scanned. KeptAbsolute lists assets that could not be fetched or inlined, and shadow roots are not serialized by outerHTML. Returns: ok, tabId, the scan manifest (filename, path, bytes, documentBytes, inlined counts, fontsInlined, keptAbsolute, failures, shadowRoots note) and the page it came from.",
+    inputSchema: {
+      tabId: tabIdSchema,
+      filename: z.string().max(120).optional()
+        .describe("Optional file name for the scan in Downloads; a safe default is used otherwise."),
+      maxBytes: z.number().int().min(524288).max(26214400).optional()
+        .describe("Size budget for the finished scan. Defaults to 10 MiB; the scan is refused with SCAN_TOO_LARGE above it."),
+      timeoutMs: timeoutSchema
+    },
+    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true }
+  }, ({ tabId, filename, maxBytes, timeoutMs }: TargetTab & {
+    filename?: string;
+    maxBytes?: number;
+    timeoutMs?: number;
+  }) => executeScan({ tabId, ...(filename ? { filename } : {}), ...(maxBytes != null ? { maxBytes } : {}) }, timeoutMs ?? 55000, deviceName, provider));
 
   server.registerTool("read_page_map", {
     title: "Read Opera page map",

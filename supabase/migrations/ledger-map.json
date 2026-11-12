@@ -8,11 +8,11 @@
     "content": 20,
     "ledger-names-the-file": 2,
     "name": 25,
-    "no-ledger-row": 3,
+    "no-ledger-row": 4,
     "part-of-combined": 13,
     "version-and-name": 48
   },
-  "treeFiles": 122,
+  "treeFiles": 123,
   "resolved": 110,
   "unapplied": 12,
   "map": [
@@ -746,6 +746,12 @@
       "file": "20261110230000_opera_methods_from_contract.sql",
       "remote": null,
       "evidence": "applied-outside-ledger",
+      "cover": null
+    },
+    {
+      "file": "20261112000000_opera_methods_record_scan.sql",
+      "remote": null,
+      "evidence": "no-ledger-row",
       "cover": null
     }
   ]

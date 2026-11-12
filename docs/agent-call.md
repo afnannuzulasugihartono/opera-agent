@@ -75,7 +75,7 @@ claude mcp add --transport http opera-agent https://nenmkmtvjremqphfqnfw.supabas
 What a caller gets wrong: the device header names which of your devices does
 the work, and the server uses the first paired device when the header is
 missing. A device that is offline is a device that answers nothing. The server
-adds 37 tools to the browser primitives, and every one of them acts on the
+adds 40 tools to the browser primitives, and every one of them acts on the
 paired device's browser, not on the machine the agent runs on. Two of them
 reach the extension itself rather than a page: `check_update` says what the
 device runs and what the update service serves, and `apply_update` asks the

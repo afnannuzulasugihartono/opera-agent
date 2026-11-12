@@ -57,12 +57,22 @@
 // WHY CRLF does not cause false failures: a Windows checkout rewrites line endings, so the test normalizes CRLF to LF before hashing.
 // Otherwise every developer on Windows would see all nine pins fail for a reason that is not a contract change.
 
+// WHY manifest.json and index.ts were re-pinned a third time on 2026-11-12: the 1.6.44 release bump.
+// 1.6.43 to 1.6.44; nothing else in either file moved with the bump.
+
+// WHY these four were re-pinned on 2026-11-12: the surface gained the two tools that go beyond stills, on purpose.
+// The device now mirrors a page into one self-contained html file in Downloads (page.scan, for reading or rebuilding a site offline instead of hand-transcribing it), and it records the tab to a webm in Downloads while the page smooth-scrolls from the top to the bottom (page.record, the honest way to see features and animations a screenshot cannot).
+// The dispatch cases, the tool schemas, the executors that shape the two results, and the content script list the manifest injects are the reviewed changes; content.js did not move, and the recording lives in its own content module with its own scope, not in the pinned file.
+
+// WHY these four moved again on 2026-11-12: the recording is now an arm/stop session, not one fixed scroll.
+// The agent asked for the recording to capture whatever happens between arm and stop - clicks, fills, scrolls, bursts - so the surface carries page.record_start and page.record_stop instead of page.record; the tools.ts schemas, the index.ts executors and the dispatch switch moved with it, on purpose.
+
 export const PUBLIC_SURFACE_LOCKS = Object.freeze([
   ['../extension/content.js', 'be462c9e32536137c94714185cdee227828538a1'],
-  ['../extension/background.js', '8a0ed718b4820f6f2b19907232a667f4ede3d67d'],
-  ['../extension/manifest.json', 'c17f1d00e3a4948b81e0515db0f0d42653ae9889'],
-  ['../supabase/functions/opera-agent-mcp/index.ts', '256be7a05d150a48660a108354748c7dea1faf36'],
-  ['../supabase/functions/opera-agent-mcp/tools.ts', 'a3336416664f49af19507c3e18a45e9871c64087'],
+  ['../extension/background.js', 'fa4b45e22cb59f4b36bb6b238d60dbdc17f3b6e5'],
+  ['../extension/manifest.json', '551ac29fe26e31b0ddde94b42ee916cc53750178'],
+  ['../supabase/functions/opera-agent-mcp/index.ts', '993749849083b0a04f8d069683366dfedbffb42c'],
+  ['../supabase/functions/opera-agent-mcp/tools.ts', '7682e0185f5ea16e422650a2a6bcfe7b949a7359'],
 ]);
 
 export const OBSERVATION_STACK_LOCKS = Object.freeze([

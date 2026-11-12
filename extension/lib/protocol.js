@@ -9,7 +9,7 @@
 // WHY one file: the service worker, the MCP server, and the Node tests must agree on exactly which primitives exist.
 // A second copy of the list would eventually disagree.
 
-export const PRODUCT_VERSION = '1.6.43';
+export const PRODUCT_VERSION = '1.6.44';
 export const PROTOCOL_VERSION = 1;
 
 import { resolveKeyInput } from './keyboard.js';
@@ -65,6 +65,9 @@ export const METHOD_SPECS = Object.freeze({
   'page.click': { timeoutMs: 8000 },
   'page.pointer': { timeoutMs: 8000 },
   'page.capture': { timeoutMs: 30000 },
+  'page.record_start': { timeoutMs: 10000 },
+  'page.record_stop': { timeoutMs: 30000 },
+  'page.scan': { timeoutMs: 55000 },
   'page.fill': { timeoutMs: 8000 },
   'page.focus': { timeoutMs: 5000 },
   'page.scroll': { timeoutMs: 5000 },
@@ -298,6 +301,55 @@ export function validateCommand(command) {
     }
     if (params.tileOffset != null && (!Number.isInteger(Number(params.tileOffset)) || Number(params.tileOffset) < 0)) {
       return { ok: false, error: 'Invalid capture tile offset.' };
+    }
+  }
+  if (command.method === 'page.record_start') {
+    const params = command.params || {};
+    const allowedKeys = new Set(['tabId', 'filename', 'fps', 'maxWidth', 'quality', 'scroll']);
+    const unexpectedKey = Object.keys(params).find((key) => !allowedKeys.has(key));
+
+    if (unexpectedKey) return { ok: false, error: 'Record start params do not allow ' + unexpectedKey + '.' };
+
+    if (params.fps != null && (!Number.isInteger(Number(params.fps)) || Number(params.fps) < 5 || Number(params.fps) > 30)) {
+      return { ok: false, error: 'Record fps must be an integer from 5 to 30.' };
+    }
+
+    if (params.maxWidth != null && (!Number.isInteger(Number(params.maxWidth)) || Number(params.maxWidth) < 320 || Number(params.maxWidth) > 1600)) {
+      return { ok: false, error: 'Record maxWidth must be an integer from 320 to 1600.' };
+    }
+
+    if (params.quality != null && (!Number.isInteger(Number(params.quality)) || Number(params.quality) < 40 || Number(params.quality) > 80)) {
+      return { ok: false, error: 'Record quality must be an integer from 40 to 80.' };
+    }
+
+    if (params.scroll != null && typeof params.scroll !== 'boolean') {
+      return { ok: false, error: 'Record scroll must be a boolean.' };
+    }
+
+    if (params.filename != null && (typeof params.filename !== 'string' || params.filename.length > 120 || params.filename.includes('"') || /[\\/:*?<>|]/.test(params.filename))) {
+      return { ok: false, error: 'Record filename must be a file name of at most 120 characters, with no path separators.' };
+    }
+  }
+  if (command.method === 'page.record_stop') {
+    const params = command.params || {};
+    const allowedKeys = new Set(['tabId']);
+    const unexpectedKey = Object.keys(params).find((key) => !allowedKeys.has(key));
+
+    if (unexpectedKey) return { ok: false, error: 'Record stop params do not allow ' + unexpectedKey + '.' };
+  }
+  if (command.method === 'page.scan') {
+    const params = command.params || {};
+    const allowedKeys = new Set(['tabId', 'filename', 'maxBytes']);
+    const unexpectedKey = Object.keys(params).find((key) => !allowedKeys.has(key));
+
+    if (unexpectedKey) return { ok: false, error: 'Mirror params do not allow ' + unexpectedKey + '.' };
+
+    if (params.maxBytes != null && (!Number.isInteger(Number(params.maxBytes)) || Number(params.maxBytes) < 524288 || Number(params.maxBytes) > 26214400)) {
+      return { ok: false, error: 'Mirror maxBytes must be an integer from 524288 to 26214400.' };
+    }
+
+    if (params.filename != null && (typeof params.filename !== 'string' || params.filename.length > 120 || params.filename.includes('"') || /[\\/:*?<>|]/.test(params.filename))) {
+      return { ok: false, error: 'Mirror filename must be a file name of at most 120 characters, with no path separators.' };
     }
   }
   if (command.method === 'page.fill') {

@@ -89,7 +89,7 @@ async function ensureContent(tabId) {
   } catch (error) {
     log.debug('CONTENT_PING_FAILED', error?.message || String(error));
   }
-  await chrome.scripting.executeScript({ target: { tabId }, files: ['worker/pair-cookie.js', 'lib/agent-log.js', 'lib/page-map.js', 'semantic-identity.js', 'semantic-views.js', 'role-reconcile.js', 'hover-settle.js', 'content.js'] });
+  await chrome.scripting.executeScript({ target: { tabId }, files: ['worker/pair-cookie.js', 'lib/agent-log.js', 'lib/page-map.js', 'semantic-identity.js', 'semantic-views.js', 'role-reconcile.js', 'hover-settle.js', 'content/record-scan.js', 'content.js'] });
 }
 
 export async function contentCall(tabId, method, params = {}) {
@@ -109,6 +109,23 @@ export async function contentCall(tabId, method, params = {}) {
     if (!response) throw new Error('No response from page bridge.');
     if (response.ok === false) throw new Error(response.error || 'Page bridge error.');
   }
+  return response;
+}
+
+export async function recordScanCall(tabId, method, params = {}) {
+
+  const message = { scope: 'opera-agent-record-scan', method, params };
+  let response = null;
+  try {
+    response = await chrome.tabs.sendMessage(tabId, message);
+  } catch (error) {
+
+    log.debug('RECORD_SCAN_SEND_FAILED', error?.message || String(error));
+  }
+  if (response) return response;
+  await ensureContent(tabId);
+  response = await chrome.tabs.sendMessage(tabId, message);
+  if (!response) throw new Error('No response from the record-scan bridge.');
   return response;
 }
 

@@ -431,6 +431,16 @@ test('a module with its own code is reached by the product, not only by its own 
       const hit = resolve(file, spec.startsWith('.') ? spec : `./${spec}`);
       if (hit) targets.add(hit);
     }
+    // WHY executeScript files are edges: the worker reaches a module by injecting it by file name (content/record-main.js, lib/statement-file.js), never by import - a MAIN-world encoder runs in the page's realm and cannot be imported into the worker.
+    // An entry that is not extension-relative is left alone; a path that does not resolve adds no edge, like every other rule here.
+    for (const match of text.matchAll(/files:\s*\[([^\]]+)\]/g)) {
+      for (const quoted of match[1].matchAll(/["']([^"']+)["']/g)) {
+        const spec = quoted[1];
+        if (!spec.endsWith('.js')) continue;
+        const hit = spec.startsWith('.') ? resolve(file, spec) : resolve('extension/placeholder.js', `./${spec}`);
+        if (hit) targets.add(hit);
+      }
+    }
     edges.set(file, [...targets]);
   }
 

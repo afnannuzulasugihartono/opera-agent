@@ -1,0 +1,39 @@
+<!-- * @last-edited: 2026-11-12 UTC+7. -->
+<!-- * @title: usability-scan - the fixture the scan and record tests drive against: a tall page with an external stylesheet and script. -->
+<!-- * @state: static fixture, served by tests/browser_extension_test.py under /scan-css and /scan-js; the anchor ids are the markers the scan test asserts inlined. -->
+<!-- * @dependencies: none. -->
+
+<!doctype html>
+<html lang="id">
+<head>
+<title>Opera Agent Scan Fixture</title>
+<meta charset="utf-8">
+<link rel="stylesheet" href="/scan-css">
+</head>
+<body>
+<header>
+  <h1 id="scanTop">SCAN_PAGE_HEADING</h1>
+  <img id="scanPixel" src="/scan-pixel" width="64" height="64" alt="pixel">
+</header>
+<main style="height:3400px;padding:32px">
+  <p>scan fixture body</p>
+  <button id="scanButton" type="button">Increment counter</button>
+  <p>Counter: <span id="scanCount">0</span></p>
+  <input id="scanInput" type="text" placeholder="Type here">
+  <p id="scanEcho">echo</p>
+  <script>
+    document.getElementById('scanButton').addEventListener('click', () => {
+      var counter = document.getElementById('scanCount');
+      counter.textContent = String(Number(counter.textContent) + 1);
+    });
+    document.getElementById('scanInput').addEventListener('input', (event) => {
+      document.getElementById('scanEcho').textContent = event.target.value;
+    });
+  </script>
+</main>
+<footer>
+  <p id="scanBottom">SCAN_PAGE_FOOTER</p>
+</footer>
+<script src="/scan-js"></script>
+</body>
+</html>

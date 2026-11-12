@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Opera Agent",
-  "version": "1.6.43.0",
+  "version": "1.6.44.0",
   "description": "Bawa asisten AI Anda mengemudikan browser: klik, ketik, isi formulir, baca halaman. Anda pilih modelnya.",
   "permissions": [
     "tabs",
@@ -33,6 +33,7 @@
         "semantic-views.js",
         "role-reconcile.js",
         "hover-settle.js",
+        "content/record-scan.js",
         "content.js"
       ],
       "run_at": "document_start",
@@ -50,6 +51,12 @@
     }
   },
   "options_page": "options.html",
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
   "externally_connectable": {
     "matches": [
       "http://localhost/*",
@@ -59,11 +66,5 @@
   },
   "content_security_policy": {
     "extension_pages": "script-src 'self'; object-src 'self'; connect-src 'self' http://127.0.0.1:* ws://127.0.0.1:* https://*.supabase.co wss://*.supabase.co https:"
-  },
-  "icons": {
-    "16": "icons/icon16.png",
-    "32": "icons/icon32.png",
-    "48": "icons/icon48.png",
-    "128": "icons/icon128.png"
   }
 }
