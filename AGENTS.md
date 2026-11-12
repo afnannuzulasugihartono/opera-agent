@@ -1,4 +1,4 @@
-@last-edited: 2026-11-10 UTC+7.
+@last-edited: 2026-11-12 UTC+7.
 @related: [`README.md`](README.md) - [`docs/handoff.md`](docs/handoff.md) - [`docs/security.md`](docs/security.md)
 
 # Opera Agent agent instructions
@@ -23,6 +23,7 @@ These ride with every job. Read them before acting, not once per session.
 - Read the lines you need, never the file: ranges through `Select-Object -Skip n -First m` or `Select-String -Context`, logs through their tails. Printing a file whole to find one line is a failed search done in public.
 - Filter before you display. A command that can produce hundreds of lines runs through a bounded filter or the machinery the tree already carries - `npm test` ends in the dot reporter, one dot per test, failures printed in full at the end, nothing else. The gate is `tests/tidy-output.test.mjs`.
 - Find every implicit state machine you touch and decide its fate before you ship: model it, delete it, or tolerate it with a written reason - ranked user > developer > agent, always. The register is `docs/state-machines.json`; the gate is `tests/implicit-state-machines.test.mjs`.
+- **Every user-visible change ships through the Release bump button.** Any bug fix, any new tool, any tool edited or rewritten, any MCP or extension mechanism change - merge the work, then dispatch `Release bump` (`.github/workflows/release-bump.yml`, input `version`), fill the prose in the PR it opens, merge that PR, and only then dispatch the deploy chain (deploy-functions, publish-npm, publish-crx, deploy-site). Nobody edits version numbers by hand; the button or nothing, and the clocks either all move together or the run is red.
 
 ## Goals
 
