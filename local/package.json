@@ -27,7 +27,6 @@
     "caret-guard.js",
     "cdp.js",
     "cloud.js",
-    "detect-browsers.js",
     "install.js",
     "oauth.js",
     "registry.js",

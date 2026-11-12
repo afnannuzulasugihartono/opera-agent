@@ -60,7 +60,7 @@ export async function installCrxInto(root, browser, bytes, readme = crxReadme(br
 
 import fs from 'node:fs';
 import { execFileSync } from 'node:child_process';
-import { probeBrowsers } from './detect-browsers.js';
+import { detectBrowsers } from './browsers.js';
 import { writeExtensionKey } from './registry.js';
 
 const NON_WINDOWS = 'Opera Agent installs its extension only into Windows browsers. On this platform, install from the Chrome Web Store or the Opera Agent download page (https://opera-agent.pages.dev/unduh).';
@@ -68,8 +68,6 @@ const NON_WINDOWS = 'Opera Agent installs its extension only into Windows browse
 const NO_BROWSER = 'No Chrome, Brave or Edge was found on this machine. Install one of them, or grab the signed build from https://opera-agent.pages.dev/unduh.';
 
 const defaultExec = (cmd, args) => execFileSync(cmd, args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
-
-const capitalize = (s) => s[0].toUpperCase() + s.slice(1);
 
 export async function install({
   platform = process.platform,
@@ -81,14 +79,14 @@ export async function install({
   print = () => {},
 } = {}) {
   if (platform !== 'win32') return { ok: false, browsers: [], message: NON_WINDOWS };
-  const found = probeBrowsers(existsAt);
+  const found = detectBrowsers({ platform: 'win32', exists: existsAt, env }).filter((entry) => ['chrome', 'brave', 'edge'].includes(entry.id));
   if (found.length === 0) return { ok: false, browsers: [], message: NO_BROWSER };
 
   const results = [];
   for (const browser of found) {
     const key = writeExtensionKey({ vendor: browser.id, exec });
     if (!key.ok) {
-      results.push({ id: browser.id, path: browser.path, keyWritten: false, crx: 'failed', error: key.error });
+      results.push({ id: browser.id, keyWritten: false, crx: 'failed', error: key.error });
       continue;
     }
     let crx = 'written';
@@ -102,7 +100,7 @@ export async function install({
       crx = 'failed';
       error = String(caught?.message || caught);
     }
-    results.push({ id: browser.id, path: browser.path, keyWritten: true, crx, destination, error });
+    results.push({ id: browser.id, keyWritten: true, crx, destination, error });
   }
 
   const ok = results.every((entry) => entry.keyWritten && entry.crx === 'written');

@@ -20,9 +20,9 @@ const goodReply = (bytes, sha) => (async (url, opts = {}) => {
 });
 
 const browserPaths = {
-  chrome: 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
-  brave: 'C:\\Program Files\\BraveSoftware\\Brave-Browser\\Application\\brave.exe',
-  edge: 'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe',
+  chrome: 'c:/program files/google/chrome/application/chrome.exe',
+  brave: 'c:/program files/bravesoftware/brave-browser/application/brave.exe',
+  edge: 'c:/program files (x86)/microsoft/edge/application/msedge.exe',
 };
 
 const sha = (bytes) => crypto.createHash('sha256').update(bytes).digest('hex');

@@ -1,39 +1,51 @@
 // @last-edited: 2026-11-12 UTC+7.
-// @title: detect-browsers - the paths this machine carries, and what the probe answers.
-// @state: the probe is a pure function; it reads nothing but the environment it is given.
-// @dependencies: test, assert, ../local/detect-browsers.js.
+// @title: detect-browsers - one truth, two answers: what detectBrowsers finds, and what the installer does with it.
+// @state: the package's one browser list, asked through its own detectBrowsers; no second path table anywhere.
+// @dependencies: test, assert, ../local/browsers.js.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { probeBrowsers, browserCandidates } from '../local/detect-browsers.js';
+import { detectBrowsers, BROWSERS, expandPath } from '../local/browsers.js';
 
 const tree = (paths) => { const set = new Set(paths); return (p) => set.has(p); };
 
-test('finds chrome at Program Files', () => {
-  const found = probeBrowsers(tree(['C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe']));
-  assert.deepEqual(found, [{ id: 'chrome', path: 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe' }]);
+const lower = (p) => String(p).toLowerCase().replace(/\\/g, '/');
+
+test('finds chrome at the Program Files path', () => {
+  const paths = BROWSERS.filter((b) => b.id === 'chrome').flatMap((b) => b.paths.win32).map((p) => lower(expandPath(p, {})));
+  const found = detectBrowsers({ platform: 'win32', exists: tree(paths), env: {} });
+  assert.deepEqual(found.map((b) => b.id), ['chrome']);
 });
 
-test('finds nothing when nothing exists', () => assert.deepEqual(probeBrowsers(() => false), []));
-
-test('finds brave at Program Files', () => {
-  const found = probeBrowsers(tree(['C:\\Program Files\\BraveSoftware\\Brave-Browser\\Application\\brave.exe']));
-  assert.deepEqual(found, [{ id: 'brave', path: 'C:\\Program Files\\BraveSoftware\\Brave-Browser\\Application\\brave.exe' }]);
+test('finds nothing when nothing exists', () => {
+  const found = detectBrowsers({ platform: 'win32', exists: () => false, env: {} });
+  assert.deepEqual(found, []);
 });
 
-test('finds edge under Program Files (x86)', () => {
-  const found = probeBrowsers(tree(['C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe']));
-  assert.deepEqual(found, [{ id: 'edge', path: 'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe' }]);
+test('finds brave when it exists', () => {
+  const paths = BROWSERS.filter((b) => b.id === 'brave').flatMap((b) => b.paths.win32).map((p) => lower(expandPath(p, {})));
+  const found = detectBrowsers({ platform: 'win32', exists: tree(paths), env: {} });
+  assert.deepEqual(found.map((b) => b.id), ['brave']);
 });
 
-test('finds all three when present, one entry each, in report order', () => {
-  const all = new Set(browserCandidates().map((entry) => entry.path));
-  const found = probeBrowsers((p) => all.has(p));
-  assert.deepEqual(found.map((entry) => entry.id), ['chrome', 'brave', 'edge']);
+test('finds edge when it exists', () => {
+  const paths = BROWSERS.filter((b) => b.id === 'edge').flatMap((b) => b.paths.win32).map((p) => lower(expandPath(p, {})));
+  const found = detectBrowsers({ platform: 'win32', exists: tree(paths), env: {} });
+  assert.deepEqual(found.map((b) => b.id), ['edge']);
 });
 
-test('candidates are absolute paths under an existing drive root', () => {
-  for (const entry of browserCandidates()) {
-    assert.match(entry.path, /^[A-Z]:\\/, entry.path);
-  }
+test('finds all three with the three-browser filter the installer uses', () => {
+  const paths = BROWSERS.filter((b) => ['chrome', 'brave', 'edge'].includes(b.id)).flatMap((b) => b.paths.win32).map((p) => lower(expandPath(p, {})));
+  const found = detectBrowsers({ platform: 'win32', exists: tree(paths), env: {} }).filter((b) => ['chrome', 'brave', 'edge'].includes(b.id));
+  assert.deepEqual(found.map((b) => b.id), ['chrome', 'edge', 'brave']);
+});
+
+test('ignores browsers the installer does not support', () => {
+  const paths = BROWSERS.filter((b) => ['opera', 'vivaldi', 'chromium'].includes(b.id)).flatMap((b) => b.paths.win32).map((p) => lower(expandPath(p, {})));
+  const found = detectBrowsers({ platform: 'win32', exists: tree(paths), env: {} }).filter((b) => ['chrome', 'brave', 'edge'].includes(b.id));
+  assert.deepEqual(found, []);
+});
+
+test('%LOCALAPPDATA% expands against env', () => {
+  assert.match(expandPath('%LOCALAPPDATA%\\Google\\Chrome\\Application\\chrome.exe', { LOCALAPPDATA: 'C:\\Users\\X\\AppData\\Local' }), /Users\\X\\AppData\\Local\\Google\\Chrome\\Application\\chrome.exe/);
 });
