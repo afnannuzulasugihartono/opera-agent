@@ -172,9 +172,10 @@ for (const [file, contents] of writes) {
 }
 
 const npmCmd = process.platform === 'win32' ? 'npm.cmd' : 'npm';
+const npmSpawn = process.platform === 'win32' ? { shell: true } : {};
 
-execFileSync(npmCmd, ['run', 'gates:refresh'], { cwd: repo, stdio: ['ignore', 'inherit', 'inherit'] });
+execFileSync(npmCmd, ['run', 'gates:refresh'], { cwd: repo, stdio: ['ignore', 'inherit', 'inherit'], ...npmSpawn });
 
-execFileSync(npmCmd, ['test'], { cwd: repo, stdio: ['ignore', 'inherit', 'inherit'] });
-execFileSync(npmCmd, ['run', 'check'], { cwd: repo, stdio: ['ignore', 'inherit', 'inherit'] });
+execFileSync(npmCmd, ['test'], { cwd: repo, stdio: ['ignore', 'inherit', 'inherit'], ...npmSpawn });
+execFileSync(npmCmd, ['run', 'check'], { cwd: repo, stdio: ['ignore', 'inherit', 'inherit'], ...npmSpawn });
 console.log(`bump-version: the tree reads ${newVersion}; gates green; review npm run gates:refresh output above for the re-pins`);
