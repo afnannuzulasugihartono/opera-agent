@@ -1,5 +1,5 @@
-// @last-edited: 2026-11-11 UTC+7.
-// @title: boundary-locks — the frozen locks on the public boundary, shared by the checkpoint tests.
+// @last-edited: 2026-11-12 UTC+7.
+// @title: boundary-locks - the frozen locks on the public boundary, shared by the checkpoint tests.
 // @state: nine pins over four stacks; each line says why the current pin exists, and nothing else.
 // @dependencies: none.
 
@@ -74,12 +74,17 @@
 // WHY these four moved again on 2026-11-12: the recording is now an arm/stop session, not one fixed scroll.
 // The agent asked for the recording to capture whatever happens between arm and stop - clicks, fills, scrolls, bursts - so the surface carries page.record_start and page.record_stop instead of page.record; the tools.ts schemas, the index.ts executors and the dispatch switch moved with it, on purpose.
 
+// WHY these three were re-pinned on 2026-11-12: the 1.6.48 provider pins and the version constants.
+// The relay gained per-provider routing (`resolveDeviceFresh` reads `opera_provider_pins` when no X-Opera-Device header names a browser; index.ts) and the switch_device tool (tools.ts), so a multi-harness account can bind opencode to one browser and claude to another without editing client configs.
+// The refusal for a sleeping provider pin names switch_device; the browser_status device object reports pinSource.
+// manifest.json and index.ts also carry the version bump to 1.6.48; the contract moved, so the pin moves with it - content.js and background.js did not.
+
 export const PUBLIC_SURFACE_LOCKS = Object.freeze([
   ['../extension/content.js', 'be462c9e32536137c94714185cdee227828538a1'],
   ['../extension/background.js', 'fa4b45e22cb59f4b36bb6b238d60dbdc17f3b6e5'],
-  ['../extension/manifest.json', '064cffbe393f842e03f0c90d77ead060f8196a03'],
-  ['../supabase/functions/opera-agent-mcp/index.ts', 'b55f7af3af241e9cd33b5a1bbeb07c936191d38c'],
-  ['../supabase/functions/opera-agent-mcp/tools.ts', '0a7bbdaeff10841cd46075956b414dddda82cb13'],
+  ['../extension/manifest.json', '63eeeafc204fa29062d76643c1e39841ad0087bc'],
+  ['../supabase/functions/opera-agent-mcp/index.ts', '27557fdd07dba11a0357af66fda338800a463ab7'],
+  ['../supabase/functions/opera-agent-mcp/tools.ts', '8ffc0c95f0bfbda5580ed610ed06de430a4634d7'],
 ]);
 
 export const OBSERVATION_STACK_LOCKS = Object.freeze([

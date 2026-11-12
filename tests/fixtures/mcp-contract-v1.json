@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "protocolVersion": 1,
-  "toolCount": 39,
-  "sourceSha256": "abaf106856327884463ad07558414502dad87f67cd8a5b536cd92d014d6d6f69",
+  "toolCount": 40,
+  "sourceSha256": "2b14d4704f8ef0621ae66412e8246f9ba9180d9753a21a2db91653a944828906",
   "tools": [
     "browser_status",
     "check_update",
@@ -42,6 +42,7 @@
     "media_listen_read",
     "statement_deliver",
     "statement_manifest",
-    "invoice_create"
+    "invoice_create",
+    "switch_device"
   ]
 }

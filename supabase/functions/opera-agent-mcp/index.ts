@@ -106,12 +106,22 @@ export type VmCaller = { userId: string; token: string };
 // When it is not live the answer names the pin, the silence and the live alternatives, and the caller can ask for one with X-Opera-Device: any.
 // The judgement itself lives in device.ts, where it is a pure function a test can pin.
 
-async function resolveDeviceFresh(auth: AuthContext, req?: Request): Promise<DeviceResolution> {
+async function resolveDeviceFresh(auth: AuthContext, req?: Request, provider?: string): Promise<DeviceResolution> {
   if (auth.type === "static") {
-    return { name: DEVICE_NAME, source: "pin", pinned: DEVICE_NAME, ageMs: null, alternatives: [], pinState: "live" };
+    return { name: DEVICE_NAME, source: "pin", pinned: DEVICE_NAME, ageMs: null, alternatives: [], pinState: "live", pinSource: null };
   }
   const deviceFromHeader = req?.headers.get("x-opera-device")?.trim() || "";
   const supabase = await db();
+  let providerPin: string | null = null;
+  if (!deviceFromHeader && provider && provider !== "unknown" && auth.type === "user") {
+    const { data: pinRow } = await supabase
+      .from("opera_provider_pins")
+      .select("device_name")
+      .eq("user_id", auth.userId)
+      .eq("provider", provider)
+      .maybeSingle();
+    providerPin = String(pinRow?.device_name ?? "").trim() || null;
+  }
   const { data } = await supabase
     .from("opera_devices")
     .select("device_name, last_seen_at, status")
@@ -119,7 +129,7 @@ async function resolveDeviceFresh(auth: AuthContext, req?: Request): Promise<Dev
     .neq("status", "disabled")
     .neq("status", "revoked")
     .limit(25);
-  return resolveDevice({ pin: deviceFromHeader || null, devices: data ?? [] });
+  return resolveDevice({ pin: deviceFromHeader || null, providerPin, devices: data ?? [] });
 }
 
 // WHY A MISSING LIVE BROWSER IS NOT A 401.
@@ -138,17 +148,23 @@ function noLiveDevice(req: Request) {
 // Driving a different browser would answer the call and lose the tab: the agent would hold a tab id from the pinned profile and the next call would come from another profile, which reads as a broken tool.
 // So the relay says what it found, names the browsers that are awake, and gives the one header that reaches them; the caller chooses, and the command is not sent while the pin sleeps.
 
-function pinnedDeviceNotLive(req: Request, resolution: DeviceResolution) {
+function pinnedDeviceNotLive(req: Request, resolution: DeviceResolution, provider?: string) {
   const pinned = resolution.pinned || "the pinned device";
+  const viaProvider = resolution.pinSource === "provider" && provider;
+  const via = viaProvider
+    ? `The provider "${provider}" is pinned to the device "${pinned}"`
+    : `This account pinned the device "${pinned}"`;
   const silentFor = resolution.ageMs === null
     ? "it has never reported in"
     : `it has been silent for ${Math.round(resolution.ageMs / 1000)}s`;
   const alternatives = resolution.alternatives.length
-    ? ` Browsers awake for this account: ${resolution.alternatives.join(", ")}. Send X-Opera-Device: ${resolution.alternatives[0]} to drive one, or X-Opera-Device: any to let the relay pick the freshest.`
+    ? ` Browsers awake for this account: ${resolution.alternatives.join(", ")}. ${viaProvider
+      ? `Call switch_device with "${resolution.alternatives[0]}" to pin this provider there, or switch_device with "any" to clear the pin and let the relay pick.`
+      : `Send X-Opera-Device: ${resolution.alternatives[0]} to drive one, or X-Opera-Device: any to let the relay pick the freshest.`}`
     : " No browser for this account is awake right now: open one with Opera Agent installed and paired, then try again.";
   return json(req, {
     error: "pinned_device_not_live",
-    error_description: `This account pinned the device "${pinned}" and ${silentFor}, so no command was sent.${alternatives}`
+    error_description: `${via} and ${silentFor}, so no command was sent.${alternatives}`
   }, 503);
 }
 
@@ -623,6 +639,7 @@ async function executeStatus(method: string, params: Record<string, unknown>, ti
         name: resolution.name,
         source: resolution.source,
         pinned: resolution.pinned,
+        pinSource: resolution.pinSource,
         ageMs: resolution.ageMs,
         ...(resolution.alternatives.length ? { alternatives: resolution.alternatives } : {})
       }
@@ -951,7 +968,7 @@ function vmRunResult(value: unknown) {
   return textResult(value);
 }
 
-const SERVER_VERSION = "1.6.47";
+const SERVER_VERSION = "1.6.48";
 
 // WHY A SOCKET NEXT TO THE HTTP.
 // Every HTTPS call pays for an isolate that has never run before: the platform boots one per request, measured here as twenty distinct isolates for twenty probes, and the boot plus the round trips it cannot reuse cost roughly 1.8 s against work the browser answers in under a millisecond.
@@ -1079,7 +1096,8 @@ function serveMcpSocket(req: Request) {
           socket.close(4401, "unauthorized");
           return;
         }
-        const resolution = await resolveDeviceFresh(authContext, fake);
+        const provider = await resolveProvider(fake, authContext);
+        const resolution = await resolveDeviceFresh(authContext, fake, provider);
         if (!resolution.name) {
           if (resolution.pinState === "stale" || resolution.pinState === "missing") {
             socket.close(4401, `pinned device "${resolution.pinned}" is not live`);
@@ -1088,7 +1106,6 @@ function serveMcpSocket(req: Request) {
           socket.close(4401, "no live browser");
           return;
         }
-        const provider = await resolveProvider(fake, authContext);
         const caller: VmCaller | null = authContext.type === "user"
           ? { userId: authContext.userId, token: bearerToken(fake) }
           : null;
@@ -1190,12 +1207,12 @@ Deno.serve(async (req: Request) => {
   const requestStartedAt = Date.now();
   const authContext = await authenticate(req);
   if (!authContext) return unauthorized(req);
-  const resolution = await resolveDeviceFresh(authContext, req);
+  const provider = await resolveProvider(req, authContext);
+  const resolution = await resolveDeviceFresh(authContext, req, provider);
   if (!resolution.name) {
-    if (resolution.pinState === "stale" || resolution.pinState === "missing") return pinnedDeviceNotLive(req, resolution);
+    if (resolution.pinState === "stale" || resolution.pinState === "missing") return pinnedDeviceNotLive(req, resolution, provider);
     return noLiveDevice(req);
   }
-  const provider = await resolveProvider(req, authContext);
   const caller: VmCaller | null = authContext.type === "user"
     ? { userId: authContext.userId, token: bearerToken(req) }
     : null;

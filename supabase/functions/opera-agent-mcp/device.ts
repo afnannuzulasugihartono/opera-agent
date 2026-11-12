@@ -1,4 +1,4 @@
-// @last-edited: 2026-11-11 UTC+7.
+// @last-edited: 2026-11-12 UTC+7.
 // @title: device - which browser answers, on what evidence.
 // @state: a pinned device answers while it is live; a pin that names a sleeping browser is a named refusal, never a silent switch to another browser.
 // @dependencies: none.
@@ -20,6 +20,11 @@
 // The extension heartbeats every thirty seconds; a device that misses four beats in a row is gone for any purpose that involves waiting on it.
 // The same window already names a device "online" in the presence answer, so resolution and presence cannot disagree about what "now" means.
 
+// WHY A PROVIDER PIN OUTRANKS THE DEFAULT, AND A HEADER OUTRANKS A PROVIDER PIN.
+// A stored per-provider pin exists so "opencode" can be bound to one browser and "claude" to another on the same account, with no client config to keep in sync.
+// A caller that writes X-Opera-Device on a call named its browser for that call, and a name written per call is a stronger ask than one remembered from a past one - so the header wins, and the stored pin is read only when no header names a device.
+// A stored pin of "any" is not stored by design; if one is found it is ignored and the freshest rule applies.
+
 const LIVE_WINDOW_MS = 120_000;
 
 export type DeviceRow = {
@@ -29,6 +34,7 @@ export type DeviceRow = {
 };
 
 export type DevicePinState = 'none' | 'live' | 'stale' | 'missing';
+export type DevicePinSource = 'header' | 'provider' | null;
 
 export type DeviceResolution = {
   name: string | null;
@@ -37,6 +43,7 @@ export type DeviceResolution = {
   ageMs: number | null;
   alternatives: string[];
   pinState: DevicePinState;
+  pinSource: DevicePinSource;
 };
 
 type NamedRow = { name: string; ageMs: number | null; live: boolean };
@@ -55,13 +62,18 @@ const namedRows = (devices: DeviceRow[], now: number, windowMs: number): NamedRo
   return out;
 };
 
-export function resolveDevice({ pin = null, devices, now = Date.now(), windowMs = LIVE_WINDOW_MS }: {
+export function resolveDevice({ pin = null, providerPin = null, devices, now = Date.now(), windowMs = LIVE_WINDOW_MS }: {
   pin?: string | null;
+  providerPin?: string | null;
   devices: DeviceRow[];
   now?: number;
   windowMs?: number;
 }): DeviceResolution {
-  const requested = String(pin || '').trim() || null;
+  const headerPin = String(pin || '').trim() || null;
+  const storedPin = String(providerPin || '').trim() || null;
+  const storedUsable = storedPin && storedPin.toLowerCase() !== 'any' ? storedPin : null;
+  const requested = headerPin ?? storedUsable;
+  const pinSource: DevicePinSource = headerPin ? 'header' : storedUsable ? 'provider' : null;
   const rows = namedRows(devices, now, windowMs);
   const live = rows.filter((row) => row.live).sort((a, b) => (a.ageMs ?? 0) - (b.ageMs ?? 0));
   const liveNames = live.map((row) => row.name);
@@ -77,7 +89,8 @@ export function resolveDevice({ pin = null, devices, now = Date.now(), windowMs 
         pinned,
         ageMs: match.ageMs,
         alternatives: liveNames.filter((name) => name !== match.name),
-        pinState: 'live'
+        pinState: 'live',
+        pinSource
       };
     }
     return {
@@ -86,7 +99,8 @@ export function resolveDevice({ pin = null, devices, now = Date.now(), windowMs 
       pinned,
       ageMs: match?.ageMs ?? null,
       alternatives: liveNames,
-      pinState: match ? 'stale' : 'missing'
+      pinState: match ? 'stale' : 'missing',
+      pinSource
     };
   }
 
@@ -97,6 +111,7 @@ export function resolveDevice({ pin = null, devices, now = Date.now(), windowMs 
     pinned: requested,
     ageMs: next?.ageMs ?? null,
     alternatives: next ? liveNames.slice(1) : [],
-    pinState: 'none'
+    pinState: 'none',
+    pinSource
   };
 }
