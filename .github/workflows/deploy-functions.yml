@@ -15,7 +15,7 @@ on:
   workflow_dispatch:
     inputs:
       functions:
-        description: Edge functions to deploy, comma-separated (default: opera-agent-mcp).
+        description: "Edge functions to deploy, comma-separated (default: opera-agent-mcp)."
         required: false
         default: 'opera-agent-mcp'
         type: string
