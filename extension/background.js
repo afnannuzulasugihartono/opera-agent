@@ -27,6 +27,7 @@ import { listenStart, listenStop } from './worker/listen.js';
 import { capturePage } from './worker/capture-page.js';
 import { recordStart, recordStop } from './worker/record-session.js';
 import { scanPage } from './worker/scan-page.js';
+import { dumpPage } from './worker/dump-page.js';
 import {
   executionMode,
   sampleTabFocus,
@@ -343,6 +344,10 @@ export async function dispatch(method, params = {}, context = {}) {
     case 'page.scan': {
       const tabId = await resolveTabId(params);
       return scanPage(tabId, params, context);
+    }
+    case 'page.dump': {
+      const tabId = await resolveTabId(params);
+      return dumpPage(tabId, params, context);
     }
     case 'page.key': {
       const tabId = await resolveTabId(params);

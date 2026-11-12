@@ -48,12 +48,13 @@ const FROZEN_MCP_TOOLS = [
   'navigate_tab', 'open_url', 'pointer', 'press_key', 'read_page', 'stream_keys',
   'run_adhoc', 'run_browser_burst', 'run_program', 'run_workflow', 'scroll_page', 'skill_recall', 'skill_save',
   'media_stream_start', 'media_stream_stop', 'media_listen_read',
-  'check_update', 'apply_update', 'scan_page', 'record_start', 'record_stop', 'switch_device'
+  'check_update', 'apply_update', 'dump_page', 'save_page', 'record_start', 'record_stop', 'switch_device'
 ];
 
 const FROZEN_METHODS = [
   'browser.burst', 'browser.ping', 'extension.update', 'media.pause', 'media.play', 'media.seek',
   'media.state', 'media.stream_start', 'media.stream_stop', 'page.capture', 'page.click', 'page.collect_links',
+  'page.dump',
   'page.fill', 'page.find', 'page.focus', 'page.key', 'page.pointer',
   'page.query', 'page.read', 'page.record_start', 'page.record_stop', 'page.scan', 'page.scroll', 'page.stream', 'page.wait_for',
   'statement.download', 'statement.manifest',
@@ -104,7 +105,8 @@ const FROZEN_TOOL_SCHEMAS = Object.freeze({
   invoice_create: '06cfef1148eed4af',
   record_start: '067fb032b10b3f6f',
   record_stop: 'a5a690be3a1dd2e6',
-  scan_page: '63e082d6d801f284',
+  dump_page: '4927489add94cbc6',
+  save_page: '63e082d6d801f284',
   switch_device: '0c842fac613a8416',
 });
 
@@ -217,7 +219,7 @@ test('MCP exposes focused browser tools and no generic command escape hatch', ()
   assert.deepEqual(tools, [
     'browser_status', 'check_update', 'apply_update', 'run_browser_burst', 'run_workflow', 'run_program', 'run_adhoc', 'skill_save', 'skill_recall', 'start_watch',
     'wait_events', 'stop_watch', 'list_tabs', 'open_url', 'activate_tab', 'navigate_tab', 'close_tab',
-    'read_page', 'capture_page', 'record_start', 'record_stop', 'scan_page', 'find_elements', 'click_element', 'fill_element', 'press_key', 'stream_keys', 'scroll_page',
+    'read_page', 'capture_page', 'record_start', 'record_stop', 'dump_page', 'save_page', 'find_elements', 'click_element', 'fill_element', 'press_key', 'stream_keys', 'scroll_page',
     'pointer',
     'media_state', 'media_play', 'media_pause', 'media_seek',
     'media_stream_start', 'media_stream_stop', 'media_listen_read',
@@ -227,15 +229,15 @@ test('MCP exposes focused browser tools and no generic command escape hatch', ()
   assert.doesNotMatch(source, /registerTool\("(?:run_command|execute_command|raw_command)"/);
 });
 
-test('R4 keeps the protocol inventory frozen at 35 allowlisted primitives - page.stream, statement and extension.update added, then the armed recorder and the scan', () => {
+test('R4 keeps the protocol inventory frozen at 36 allowlisted primitives - page.stream, statement and extension.update added, then the armed recorder and the scan', () => {
   assert.equal(PRODUCT_VERSION, '1.6.48');
-  assert.equal(ALLOWED_METHODS.length, 35);
+  assert.equal(ALLOWED_METHODS.length, 36);
   assert.deepEqual([...ALLOWED_METHODS].sort(), FROZEN_METHODS);
 });
 
-test('R20 merges read_page_map into read_page view=map, so the public MCP tool inventory is 40 tools', async () => {
+test('R20 merges read_page_map into read_page view=map, so the public MCP tool inventory is 41 tools', async () => {
   const registered = [...source.matchAll(/server\.registerTool\("([a-z_]+)"/g)].map((match) => match[1]);
-  assert.equal(registered.length, 40);
+  assert.equal(registered.length, 41);
   assert.deepEqual([...registered].sort(), [...FROZEN_MCP_TOOLS, 'start_watch', 'stop_watch', 'wait_events', 'statement_deliver', 'statement_manifest', 'invoice_create'].sort());
 });
 
@@ -278,9 +280,9 @@ test('browser_status answers its plan even when the command it carried failed', 
 
 test('the tool count and names match the contract', () => {
   const registered = [...source.matchAll(/server\.registerTool\("([a-z_]+)"/g)].map((m) => m[1]);
-  assert.equal(registered.length, 40);
+  assert.equal(registered.length, 41);
   assert.deepEqual(registered, contract.tools);
-  assert.equal(contract.toolCount, 40);
+  assert.equal(contract.toolCount, 41);
 });
 
 test('no generic escape hatch was introduced', () => {
@@ -388,7 +390,7 @@ const READABLE_INPUTS_MOVED = Object.freeze({
 
 test('the frozen schema map matches the live file, and records the changes it has approved', () => {
   const blocks = toolBlocks();
-  assert.equal(blocks.length, 40, 'the public tool count changes only by reviewed decision (loop tools removed; check_update and apply_update joined; record_start, record_stop and scan_page joined; switch_device joins for provider pins)');
+  assert.equal(blocks.length, 41, 'the public tool count changes only by reviewed decision (loop tools removed; check_update and apply_update joined; record_start, record_stop and switch_device joined; scan_page became save_page with dump_page beside it)');
   const actual = {};
   for (const block of blocks) actual[block.name] = schemaDigest(block.schema);
 
@@ -660,7 +662,7 @@ test('MCP delegates only known Opera Agent methods', () => {
   const methods = [...source.matchAll(/execute\("([a-z.]+)"/g)].map((match) => match[1]);
   const allowed = new Set([
     'browser.ping', 'browser.burst', 'tabs.list', 'tabs.open', 'tabs.activate', 'tabs.navigate', 'tabs.close',
-    'page.read', 'page.capture', 'page.find', 'page.click', 'page.fill', 'page.key', 'page.scroll', 'page.pointer', 'page.stream',
+    'page.read', 'page.capture', 'page.find', 'page.click', 'page.fill', 'page.key', 'page.scroll', 'page.pointer', 'page.stream', 'page.dump',
     'media.state', 'media.play', 'media.pause', 'media.seek',
     'watch.start', 'watch.stop', 'watch.stop_all', 'watch.list',
     'statement.download', 'statement.manifest', 'extension.update'
@@ -755,7 +757,7 @@ test('the whole-file digest fixture is re-frozen to the live file', () => {
 
 test('every tool has a title and says what it returns', () => {
   const starts = [...source.matchAll(/server\.registerTool\("([a-z_]+)"/g)];
-  assert.equal(starts.length, 40, 'the tool count changes only by reviewed decision');
+  assert.equal(starts.length, 41, 'the tool count changes only by reviewed decision');
 
   starts.forEach((match, index) => {
     const end = index + 1 < starts.length ? starts[index + 1].index : source.length;

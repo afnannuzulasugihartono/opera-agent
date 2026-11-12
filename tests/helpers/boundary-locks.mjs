@@ -64,8 +64,9 @@
 // The version constants moved (manifest.json `version` and index.ts `SERVER_VERSION`); nothing about the public contract moved.
 // Any other diff in either file would have broken this before it got this far.
 
-// WHY manifest.json and index.ts were re-pinned a third time on 2026-11-12: the 1.6.44 release bump.
-// 1.6.43 to 1.6.44; nothing else in either file moved with the bump.
+// WHY tools.ts was re-pinned on 2026-11-13: the agent gained two tools.
+// dump_page reads a whole page as one structured object; save_page is the silent rename of scan_page, writing straight to Downloads without any user confirmation dialog.
+// The surface review moved with the tools by design.
 
 // WHY these four were re-pinned on 2026-11-12: the surface gained the two tools that go beyond stills, on purpose.
 // The device now mirrors a page into one self-contained html file in Downloads (page.scan, for reading or rebuilding a site offline instead of hand-transcribing it), and it records the tab to a webm in Downloads while the page smooth-scrolls from the top to the bottom (page.record, the honest way to see features and animations a screenshot cannot).
@@ -73,6 +74,9 @@
 
 // WHY these four moved again on 2026-11-12: the recording is now an arm/stop session, not one fixed scroll.
 // The agent asked for the recording to capture whatever happens between arm and stop - clicks, fills, scrolls, bursts - so the surface carries page.record_start and page.record_stop instead of page.record; the tools.ts schemas, the index.ts executors and the dispatch switch moved with it, on purpose.
+
+// WHY these two were re-pinned on 2026-11-13: the agent gained one more read-only primitive.
+// background.js imports dump-page.js and dispatches page.dump so the agent can read a whole page as one structured object instead of one viewport; the public contract gained exactly that method and nothing else moved.
 
 // WHY these three were re-pinned on 2026-11-12: the 1.6.48 provider pins and the version constants.
 // The relay gained per-provider routing (`resolveDeviceFresh` reads `opera_provider_pins` when no X-Opera-Device header names a browser; index.ts) and the switch_device tool (tools.ts), so a multi-harness account can bind opencode to one browser and claude to another without editing client configs.
@@ -85,10 +89,10 @@
 
 export const PUBLIC_SURFACE_LOCKS = Object.freeze([
   ['../extension/content.js', 'fd75fc8ba524c201294b4919603fb478400865039f46d5a00730b0f1b937ecb3'],
-  ['../extension/background.js', '8ee7f51f38d6365533a6dfe336647627e9e956ad9c4ebed31eb79df6680b42f2'],
+  ['../extension/background.js', 'c222723151c856e0051b67ac8b489d97096ed6605da080fff1c8bb859a05fe01'],
   ['../extension/manifest.json', '2e331ba959d3302cbe9c1f46eb524254981d42edb96035f39b18ba8799b3e4a2'],
   ['../supabase/functions/opera-agent-mcp/index.ts', 'd813149ba50f0a4c0114188fc5d1721eeabb067d60983c0f9be561b8cbb92ad0'],
-  ['../supabase/functions/opera-agent-mcp/tools.ts', '7f7e14539f344accfdb1e1b07b3e25161ba763a6a2ad548c15b9e1d59feb7da9'],
+  ['../supabase/functions/opera-agent-mcp/tools.ts', '762b50196dc6a9c8add35e2c2da18da7d6dad84bfff833826cabe7536e4f0e80'],
 ]);
 
 export const OBSERVATION_STACK_LOCKS = Object.freeze([

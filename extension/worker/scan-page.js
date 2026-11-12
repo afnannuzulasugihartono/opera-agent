@@ -260,13 +260,31 @@ export async function scanPage(tabId, params, context) {
     throw codedError(out?.error || 'SCAN_INLINE_FAILED', 'The page could not inline its scan.', { tabId: id });
   }
 
-  if (out.documentBytes > maxBytes) {
-    throw codedError('SCAN_TOO_LARGE', `The scan is ${out.documentBytes} bytes, past the ${maxBytes} budget. Pass a larger maxBytes or scan a smaller page.`, {
+  if (out.htmlBytes > maxBytes) {
+    throw codedError('SCAN_TOO_LARGE', `The scan is ${out.htmlBytes} bytes, past the ${maxBytes} budget. Pass a larger maxBytes or scan a smaller page.`, {
       tabId: id,
-      bytes: out.documentBytes,
+      bytes: out.htmlBytes,
       budget: maxBytes
     });
   }
+
+  // WHY THE DOWNLOAD IS WRITTEN FROM THE WORKER: a page-initiated download goes through the browser's user-driven "ask where to save each file" flow, so the caller was stopped by a Save dialog that no amount of silent timing would have avoided.
+  // The service worker may call chrome.downloads.download with saveAs:false, which bypasses that dialog and writes to the default downloads folder straight away; the filename is ours to choose here.
+  // The data URL is assembled in-memory; the browser may not amend the filename or fail through an assister's heuristic.
+  await new Promise((resolve, reject) => {
+    const bytes = new TextEncoder().encode(out.html);
+    let binary = '';
+    const chunk = 0x8000;
+    for (let i = 0; i < bytes.length; i += chunk) {
+      binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunk));
+    }
+    const url = `data:text/html;base64,${btoa(binary)}`;
+    chrome.downloads.download({ url, filename, saveAs: false }, (downloadId) => {
+      const lastError = chrome.runtime?.lastError;
+      if (lastError || !downloadId) reject(codedError('DOWNLOAD_FAILED', lastError?.message || 'downloads.download refused the file.', { filename }));
+      else resolve();
+    });
+  });
 
   const item = await waitForDownloadByFilename(filename, 60000);
 

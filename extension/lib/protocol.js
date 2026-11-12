@@ -68,6 +68,7 @@ export const METHOD_SPECS = Object.freeze({
   'page.record_start': { timeoutMs: 10000 },
   'page.record_stop': { timeoutMs: 30000 },
   'page.scan': { timeoutMs: 55000 },
+  'page.dump': { timeoutMs: 20000 },
   'page.fill': { timeoutMs: 8000 },
   'page.focus': { timeoutMs: 5000 },
   'page.scroll': { timeoutMs: 5000 },
@@ -336,6 +337,20 @@ export function validateCommand(command) {
     const unexpectedKey = Object.keys(params).find((key) => !allowedKeys.has(key));
 
     if (unexpectedKey) return { ok: false, error: 'Record stop params do not allow ' + unexpectedKey + '.' };
+  }
+  if (command.method === 'page.dump') {
+    const params = command.params || {};
+    const allowedKeys = new Set(['tabId', 'offset', 'limit']);
+    const unexpectedKey = Object.keys(params).find((key) => !allowedKeys.has(key));
+    if (unexpectedKey) return { ok: false, error: 'Dump params do not allow ' + unexpectedKey + '.' };
+
+    if (params.limit != null && (!Number.isInteger(Number(params.limit)) || Number(params.limit) < 0 || Number(params.limit) > 200000)) {
+      return { ok: false, error: 'Dump limit must be an integer from 0 to 200000.' };
+    }
+
+    if (params.offset != null && (!Number.isInteger(Number(params.offset)) || Number(params.offset) < 0)) {
+      return { ok: false, error: 'Dump offset must be an integer at least 0.' };
+    }
   }
   if (command.method === 'page.scan') {
     const params = command.params || {};
