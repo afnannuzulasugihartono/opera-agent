@@ -8,6 +8,7 @@ What each release contained, and why. The notes live in
 
 | Release | Date | Notes |
 | --- | --- | --- |
+| 1.6.45 | 2026-11-12 | [the registry accepts the runner's identity, proven once](docs/releases/1.6.45.md) |
 | 1.6.44 | 2026-11-12 | [record and scan a page, and see what the visitor sees](docs/releases/1.6.44.md) |
 | 1.6.43 | 2026-11-11 | [the local road asks the bridge its own question, and every road has a number](docs/releases/1.6.43.md) |
 | 1.6.42 | 2026-11-11 | [the panel sizes once, and the release pushes itself out](docs/releases/1.6.42.md) |
