@@ -27,7 +27,7 @@ function fail(message) {
   process.exit(1);
 }
 
-if (!arg || !/^\d+\.\d+\.\d+$/.test(arg)) fail('pass one version, e.g. node scripts/bump-version.mjs 1.6.49');
+if (!arg || !/^\d+\.\d+\.\d+$/.test(arg)) fail('pass one version, e.g. node scripts/bump-version.mjs X.Y.Z');
 const newVersion = arg;
 
 const manifestPath = path.join(repo, 'extension/manifest.json');
@@ -172,6 +172,8 @@ for (const [file, contents] of writes) {
   const full = path.join(repo, file);
   fs.writeFileSync(full, contents.replace(/\r\n/g, '\n'), 'utf8');
 }
+
+execFileSync('git', ['add', '-A'], { cwd: repo, stdio: ['ignore', 'inherit', 'inherit'] });
 
 const npmCmd = process.platform === 'win32' ? 'npm.cmd' : 'npm';
 const npmSpawn = process.platform === 'win32' ? { shell: true } : {};
