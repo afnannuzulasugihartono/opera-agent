@@ -469,21 +469,34 @@ export function registerTools(server: McpServer, deps: ToolDeps) {
 
   server.registerTool("read_page", {
     title: "Read Opera page",
-    description: "Read a compact task-facing page observation with reusable refs, stable keys, relevant change evidence, screen rectangles, true viewport presence, document identity, viewport geometry, and zoom. Icon-only controls carry a computed accessibleName that find_elements matches; text-poor canvas-class pages also include a read-only axSummary accessibility snapshot (role/name facts only, not clickable refs). Use pagination for long pages. Returns: ok, tabId, and the page observation: url, title, text, the elements with their refs, and the viewport facts.",
+    description: "One reader, two answers. The default answers the current task: the active viewport with relevant text and reusable refs, relevant change evidence, screen rectangles, true viewport presence, document identity, viewport geometry, and zoom; text-poor canvas-class pages also carry a read-only axSummary accessibility snapshot. view: map answers the whole document instead: every meaningful element grouped into seventeen classes with document coordinates that survive scrolling, or the skeleton (counts per class, regions, headings, tables, images), or one class paginated, or every class in one call with all:true. Both are the same engine; pick by the question, not by habit. Returns: ok, tabId, and the answer named by view - the page observation (url, title, text, the elements with their refs, the viewport facts) for brief, or the page facts (classes/regions/outline/tables/images for the skeleton, or elements with offset, limit, total, hasMore and nextOffset) for map.",
     inputSchema: {
       tabId: tabIdSchema,
+      view: z.enum(["brief", "map"]).optional()
+        .describe("'brief' (default) is the task-facing read: viewport text with reusable refs and the delta since the last read. 'map' is the document-wide map: every element grouped into seventeen classes with document coordinates."),
       offset: z.number().int().nonnegative().optional()
-        .describe("Where in the text to start reading, in characters. Use it to page through a long page."),
-      limit: z.number().int().min(300).max(12000).optional()
-        .describe("How much text to read, in characters; defaults to 6000."),
+        .describe("brief: where in the text to start reading, in characters; defaults to 0. map: how many elements of the class to skip; defaults to 0."),
+      limit: z.number().int().positive().optional()
+        .describe("brief: how much text to read, in characters; defaults to 6000, up to 12000. map: how many elements to return; defaults to 200 and never more than 1000."),
       includeElements: z.boolean().optional()
-        .describe("Return the interactive elements with their refs; defaults to true."),
+        .describe("brief only: return the interactive elements with their refs; defaults to true."),
       maxElements: z.number().int().min(1).max(300).optional()
-        .describe("Maximum elements to return; defaults to 120.")
+        .describe("brief only: maximum elements to return; defaults to 120."),
+      class: z.enum(["button", "choice", "input", "select", "heading", "link", "media", "iframe", "picture", "icon", "table", "list", "form", "region", "separator", "status", "text"]).optional()
+        .describe("map only: one of the seventeen classes to pull; omit it to get the skeleton."),
+      all: z.boolean().optional()
+        .describe("map only: one call that answers every class at once: the whole document's elements with the class each one belongs to, so nothing has to be pulled class by class. The answer is trimmed to the device's ceiling and says so."),
+      timeoutMs: timeoutSchema
     },
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true }
-  }, (args: TargetTab & { offset?: number; limit?: number; includeElements?: boolean; maxElements?: number }) =>
-    execute("page.read", { ...args, view: "compact" }, undefined, deviceName, provider));
+  }, (args: TargetTab & { view?: "brief" | "map"; offset?: number; limit?: number; includeElements?: boolean; maxElements?: number; class?: string; all?: boolean; timeoutMs?: number }) => {
+    if ((args.view ?? "brief") === "map") {
+      return executeMap({ tabId: args.tabId, ...(args.class ? { class: args.class } : {}), ...(args.all === true ? { all: true } : {}), ...(args.offset != null ? { offset: args.offset } : {}), ...(args.limit != null ? { limit: args.limit } : {}) }, args.timeoutMs ?? 30000, deviceName, provider);
+    }
+    const { view: _view, class: _class, all: _all, timeoutMs: _timeoutMs, ...briefArgs } = args;
+    const textLimit = briefArgs.limit != null ? Math.min(12000, Math.max(300, briefArgs.limit)) : undefined;
+    return execute("page.read", { ...briefArgs, ...(textLimit ? { limit: textLimit } : {}), view: "compact" }, undefined, deviceName, provider);
+  });
 
   server.registerTool("capture_page", {
     title: "Capture Opera page",
@@ -574,25 +587,6 @@ export function registerTools(server: McpServer, deps: ToolDeps) {
     maxBytes?: number;
     timeoutMs?: number;
   }) => executeScan({ tabId, ...(filename ? { filename } : {}), ...(maxBytes != null ? { maxBytes } : {}) }, timeoutMs ?? 55000, deviceName, provider));
-
-  server.registerTool("read_page_map", {
-    title: "Read Opera page map",
-    description: "Map the whole page, not one viewport: every meaningful element grouped into seventeen classes with document coordinates and a ref that stays valid after scrolling. Without class it answers the skeleton (document size, per-class counts and boxes, regions, headings, tables, images); with class it answers that class, paged by offset and limit. Returns: ok, tabId, the page facts, and classes/regions/outline/tables/images for the skeleton or elements with offset, limit, total, hasMore and nextOffset for one class.",
-    inputSchema: {
-      tabId: tabIdSchema,
-      class: z.enum(["button", "choice", "input", "select", "heading", "link", "media", "iframe", "picture", "icon", "table", "list", "form", "region", "separator", "status", "text"]).optional()
-        .describe("One of the seventeen classes to pull; omit it to get the skeleton."),
-      all: z.boolean().optional()
-        .describe("One call that answers every class at once: the whole document's elements with the class each one belongs to, so nothing has to be pulled class by class. The answer is trimmed to the device's ceiling and says so."),
-      offset: z.number().int().nonnegative().optional()
-        .describe("How many elements of the class to skip; defaults to 0."),
-      limit: z.number().int().min(1).max(1000).optional()
-        .describe("How many elements to return; defaults to 200 and never more than 1000."),
-      timeoutMs: timeoutSchema
-    },
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true }
-  }, ({ tabId, class: className, all, offset, limit, timeoutMs }: TargetTab & { class?: string; all?: boolean; offset?: number; limit?: number; timeoutMs?: number }) =>
-    executeMap({ tabId, ...(className ? { class: className } : {}), ...(all === true ? { all: true } : {}), ...(offset != null ? { offset } : {}), ...(limit != null ? { limit } : {}) }, timeoutMs ?? 30000, deviceName, provider));
 
   server.registerTool("find_elements", {
     title: "Find page elements",

@@ -62,7 +62,7 @@ const FROZEN_METHODS = [
 ];
 
 const FROZEN_READ_PAGE_PROPERTIES = [
-  'includeElements', 'limit', 'maxElements', 'offset', 'tabId'
+  'all', 'class', 'includeElements', 'limit', 'maxElements', 'offset', 'tabId', 'timeoutMs', 'view'
 ];
 
 const FROZEN_TOOL_SCHEMAS = Object.freeze({
@@ -83,8 +83,7 @@ const FROZEN_TOOL_SCHEMAS = Object.freeze({
   activate_tab: '6b33a62b8f071dd0',
   navigate_tab: 'e48d509464c7d5ab',
   close_tab: '7e963cf5ec747863',
-  read_page: '86d6b7503733127d',
-  read_page_map: '7bafd2cbe2639a35',
+  read_page: '362cc7ec8aaf20c7',
   capture_page: '3e263f2f10804cc6',
   find_elements: 'f6eb0d7b9da2c372',
   click_element: 'e4293043033ea470',
@@ -217,7 +216,7 @@ test('MCP exposes focused browser tools and no generic command escape hatch', ()
   assert.deepEqual(tools, [
     'browser_status', 'check_update', 'apply_update', 'run_browser_burst', 'run_workflow', 'run_program', 'run_adhoc', 'skill_save', 'skill_recall', 'start_watch',
     'wait_events', 'stop_watch', 'list_tabs', 'open_url', 'activate_tab', 'navigate_tab', 'close_tab',
-    'read_page', 'capture_page', 'record_start', 'record_stop', 'scan_page', 'read_page_map', 'find_elements', 'click_element', 'fill_element', 'press_key', 'stream_keys', 'scroll_page',
+    'read_page', 'capture_page', 'record_start', 'record_stop', 'scan_page', 'find_elements', 'click_element', 'fill_element', 'press_key', 'stream_keys', 'scroll_page',
     'pointer',
     'media_state', 'media_play', 'media_pause', 'media_seek',
     'media_stream_start', 'media_stream_stop', 'media_listen_read',
@@ -228,18 +227,18 @@ test('MCP exposes focused browser tools and no generic command escape hatch', ()
 });
 
 test('R4 keeps the protocol inventory frozen at 35 allowlisted primitives - page.stream, statement and extension.update added, then the armed recorder and the scan', () => {
-  assert.equal(PRODUCT_VERSION, '1.6.46');
+  assert.equal(PRODUCT_VERSION, '1.6.47');
   assert.equal(ALLOWED_METHODS.length, 35);
   assert.deepEqual([...ALLOWED_METHODS].sort(), FROZEN_METHODS);
 });
 
-test('R11 removes the sense-act loop tools, so the public MCP tool inventory is 40 tools', async () => {
+test('R20 merges read_page_map into read_page view=map, so the public MCP tool inventory is 39 tools', async () => {
   const registered = [...source.matchAll(/server\.registerTool\("([a-z_]+)"/g)].map((match) => match[1]);
-  assert.equal(registered.length, 40);
-  assert.deepEqual([...registered].sort(), [...FROZEN_MCP_TOOLS, 'start_watch', 'stop_watch', 'wait_events', 'statement_deliver', 'statement_manifest', 'invoice_create', 'read_page_map'].sort());
+  assert.equal(registered.length, 39);
+  assert.deepEqual([...registered].sort(), [...FROZEN_MCP_TOOLS, 'start_watch', 'stop_watch', 'wait_events', 'statement_deliver', 'statement_manifest', 'invoice_create'].sort());
 });
 
-test('R4 keeps the read_page input schema frozen with no view parameter', async () => {
+test('R20 merges the map into read_page view=map; the schema carries the full map surface', async () => {
   const start = source.indexOf('server.registerTool("read_page"');
   assert.ok(start >= 0, 'read_page tool must remain registered');
   const end = source.indexOf('server.registerTool(', start + 1);
@@ -248,18 +247,10 @@ test('R4 keeps the read_page input schema frozen with no view parameter', async 
   const schemaEnd = block.indexOf('annotations:');
   assert.ok(schemaStart >= 0 && schemaEnd > schemaStart, 'read_page input schema block must be present');
   const schema = block.slice(schemaStart, schemaEnd);
-  const properties = [...schema.matchAll(/(\w+):\s*(?:z\.|tabIdSchema)/g)].map((match) => match[1]);
+  const properties = [...schema.matchAll(/(\w+):\s*(?:z\.|tabIdSchema|timeoutSchema)/g)].map((match) => match[1]);
   assert.deepEqual([...new Set(properties)].sort(), FROZEN_READ_PAGE_PROPERTIES);
-  assert.doesNotMatch(schema, /view:/);
-});
-
-test('the map tool takes a class and a page, and never an envelope', () => {
-  const block = toolBlock('read_page_map');
-  const body = objectBody(block.slice(block.indexOf('inputSchema:')), 'inputSchema:');
-  const names = propertiesOf(body).map((property) => property.name).sort();
-  assert.deepEqual(names, ['all', 'class', 'limit', 'offset', 'tabId', 'timeoutMs']);
+  assert.match(schema, /view:/);
   assert.match(source, /executeMap\(\{ tabId/);
-  assert.match(source, /runCommand\("page\.read", \{ \.\.\.params, view: "map" \}/);
 });
 
 test('the status tool names the worker faults it answers', () => {
@@ -286,9 +277,9 @@ test('browser_status answers its plan even when the command it carried failed', 
 
 test('the tool count and names match the contract', () => {
   const registered = [...source.matchAll(/server\.registerTool\("([a-z_]+)"/g)].map((m) => m[1]);
-  assert.equal(registered.length, 40);
+  assert.equal(registered.length, 39);
   assert.deepEqual(registered, contract.tools);
-  assert.equal(contract.toolCount, 40);
+  assert.equal(contract.toolCount, 39);
 });
 
 test('no generic escape hatch was introduced', () => {
@@ -396,7 +387,7 @@ const READABLE_INPUTS_MOVED = Object.freeze({
 
 test('the frozen schema map matches the live file, and records the changes it has approved', () => {
   const blocks = toolBlocks();
-  assert.equal(blocks.length, 40, 'the public tool count changes only by reviewed decision (loop tools removed; check_update and apply_update joined; record_start, record_stop and scan_page join the reviewed set)');
+  assert.equal(blocks.length, 39, 'the public tool count changes only by reviewed decision (loop tools removed; check_update and apply_update joined; record_start, record_stop and scan_page join the reviewed set)');
   const actual = {};
   for (const block of blocks) actual[block.name] = schemaDigest(block.schema);
 
@@ -763,7 +754,7 @@ test('the whole-file digest fixture is re-frozen to the live file', () => {
 
 test('every tool has a title and says what it returns', () => {
   const starts = [...source.matchAll(/server\.registerTool\("([a-z_]+)"/g)];
-  assert.equal(starts.length, 40, 'the tool count changes only by reviewed decision');
+  assert.equal(starts.length, 39, 'the tool count changes only by reviewed decision');
 
   starts.forEach((match, index) => {
     const end = index + 1 < starts.length ? starts[index + 1].index : source.length;

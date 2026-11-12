@@ -8,6 +8,7 @@ What each release contained, and why. The notes live in
 
 | Release | Date | Notes |
 | --- | --- | --- |
+| 1.6.47 | 2026-11-12 | [one reader, two answers: read_page with view; everything aligns at 1.6.47](docs/releases/1.6.47.md) |
 | 1.6.46 | 2026-11-12 | [the command installs the extension, and everything is 1.6.46](docs/releases/1.6.46.md) |
 | 1.6.45 | 2026-11-12 | [the registry accepts the runner's identity, proven once](docs/releases/1.6.45.md) |
 | 1.6.44 | 2026-11-12 | [record and scan a page, and see what the visitor sees](docs/releases/1.6.44.md) |
