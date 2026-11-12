@@ -6,7 +6,7 @@
 name: Release bump
 
 # WHY THIS IS A BUTTON AND NOT A PUSH TO MAIN.
-# The 1.6.48 release moved every clock by hand, and the one forgotten clock reads as a broken release until CI catches it.
+# A release once moved every clock by hand, and the one forgotten clock reads as a broken release until CI catches it.
 # The bump itself is mechanical; the review of what the bump says about the release is not.
 # So the workflow rewrites the clocks and opens the PR, and stops: merge and the deploy dispatches stay the human's.
 

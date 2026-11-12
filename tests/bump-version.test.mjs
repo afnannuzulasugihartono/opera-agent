@@ -12,6 +12,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { execFileSync } from 'node:child_process';
+import { applyEntries, buildEnumeration, countOccurrences } from '../scripts/bump-version-lib.mjs';
 
 const root = new URL('..', import.meta.url);
 const current = JSON.parse(fs.readFileSync(new URL('extension/manifest.json', root), 'utf8')).version;
@@ -78,4 +79,27 @@ test('the current version appears nowhere outside the enumeration and the allowl
     }
   }
   assert.deepEqual(stray, [], `the current version is carried by file(s) the bump does not know how to move:\n${stray.join('\n')}`);
+});
+
+test('two rewrites for the same file both land, in order', () => {
+  const handoff = '- main = at the 1.2.3 release commit (everything 1.2.3). See [docs/releases/1.2.3.md](releases/1.2.3.md).';
+  const entries = buildEnumeration('1.2.3', '4.5.6').filter((entry) => entry.file === 'docs/handoff.md');
+  const out = applyEntries(handoff, entries);
+  assert.match(out, /at the 4\.5\.6 release commit/);
+  assert.match(out, /everything 4\.5\.6/);
+  assert.equal(countOccurrences(out, 'releases/4.5.6.md'), 2);
+  assert.equal(countOccurrences(out, '1.2.3'), 0);
+});
+
+test('an entry whose expected count is not met fails loudly and names the file', () => {
+  const entries = buildEnumeration('1.2.3', '4.5.6').filter((entry) => entry.file === 'extension/manifest.json');
+  assert.throws(() => applyEntries('{ "version": "0.0.0" }', entries), /extension\/manifest\.json/);
+});
+
+test('a file with several clocks moves them all in one pass', () => {
+  const script = "assert.equal(a, '1.2.3'); assert.equal(b, '1.2.3'); assert.equal(c, '1.2.3');";
+  const entries = buildEnumeration('1.2.3', '4.5.6').filter((entry) => entry.file === 'scripts/check.mjs');
+  const out = applyEntries(script, entries);
+  assert.equal(countOccurrences(out, '4.5.6'), 3);
+  assert.equal(countOccurrences(out, '1.2.3'), 0);
 });
