@@ -39,6 +39,10 @@ jobs:
           node-version: 22.20.0
           registry-url: https://registry.npmjs.org
 
+      - name: The runner's npm can speak OIDC
+        # WHY: node 22 ships npm 10, which cannot do the OIDC exchange the trusted publisher needs; npm >= 11.5.1 is required (npm trusted-publishers docs). Without this step the PUT leaves without a token and the registry answers 404.
+        run: npm install --global npm@11 && npm --version
+
       - name: The version in the tree is the version asked for
         env:
           ASKED: ${{ inputs.version }}
