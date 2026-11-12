@@ -105,7 +105,7 @@ const FROZEN_TOOL_SCHEMAS = Object.freeze({
   invoice_create: '06cfef1148eed4af',
   record_start: '067fb032b10b3f6f',
   record_stop: 'a5a690be3a1dd2e6',
-  dump_page: '4927489add94cbc6',
+  dump_page: '5833609063d2ffe7',
   save_page: '63e082d6d801f284',
   switch_device: '0c842fac613a8416',
 });
