@@ -87,11 +87,14 @@
 // The pinning protocol used a weak hash (git-blob SHA1); the finding is a critical vulnerability for any consumer of the convention, and the answer is a stronger digest, not a waiver.
 // The contract criterion did not change; the digest got stronger, so every pin below was recomputed in the same act.
 
+// WHY these three were re-pinned on 2026-11-12: the 1.6.49 release rode them.
+// The version constants moved (manifest.json version, index.ts SERVER_VERSION); nothing about the public contract moved with them.
+
 export const PUBLIC_SURFACE_LOCKS = Object.freeze([
   ['../extension/content.js', 'fd75fc8ba524c201294b4919603fb478400865039f46d5a00730b0f1b937ecb3'],
   ['../extension/background.js', 'c222723151c856e0051b67ac8b489d97096ed6605da080fff1c8bb859a05fe01'],
-  ['../extension/manifest.json', '2e331ba959d3302cbe9c1f46eb524254981d42edb96035f39b18ba8799b3e4a2'],
-  ['../supabase/functions/opera-agent-mcp/index.ts', 'd813149ba50f0a4c0114188fc5d1721eeabb067d60983c0f9be561b8cbb92ad0'],
+  ['../extension/manifest.json', '0a7a02180b6e00e65ba28aeacd799da630341caf4fc29702ac9b9830b29ae5b0'],
+  ['../supabase/functions/opera-agent-mcp/index.ts', '92ce7532280e97c46edd5a8b782747513d487450e4bf49b0f41bcd47e93d8d76'],
   ['../supabase/functions/opera-agent-mcp/tools.ts', '762b50196dc6a9c8add35e2c2da18da7d6dad84bfff833826cabe7536e4f0e80'],
 ]);
 
