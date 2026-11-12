@@ -52,6 +52,7 @@
     "office/zip.js",
     "page-expressions.js",
     "pointer.js",
+    "postinstall.mjs",
     "primitives-file.js",
     "primitives.js",
     "read-strategy.js",
@@ -81,6 +82,7 @@
   ],
   "license": "MIT",
   "scripts": {
-    "prepack": "node ../scripts/pack-mcp.mjs"
+    "prepack": "node ../scripts/pack-mcp.mjs",
+    "postinstall": "node postinstall.mjs"
   }
 }
