@@ -1,0 +1,100 @@
+# @last-edited: 2026-11-12 UTC+7.
+# @title: release-bump - one dispatch moves every clock; the PR it opens is the review.
+# @state: workflow_dispatch with one input; runs the bump engine on main and stops at a pull request.
+# @dependencies: scripts/bump-version.mjs, tests/bump-version.test.mjs, .github/workflows/publish-*.yml for the deliberate dispatches after merge.
+
+name: Release bump
+
+# WHY THIS IS A BUTTON AND NOT A PUSH TO MAIN.
+# A release once moved every clock by hand, and the one forgotten clock reads as a broken release until CI catches it.
+# The bump itself is mechanical; the review of what the bump says about the release is not.
+# So the workflow rewrites the clocks and opens the PR, and stops: merge and the deploy dispatches stay the human's.
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: The version to bump to (e.g. X.Y.Z); it must differ from what main reads today.
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: release-bump
+  cancel-in-progress: false
+
+jobs:
+  bump:
+    name: Bump every clock and open the PR
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      VERSION: ${{ inputs.version }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22.20.0
+
+      - name: npm is present and recent
+        run: npm --version
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+
+      - name: The input is a version
+        shell: bash
+        run: |
+          if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::version must look like X.Y.Z, got: $VERSION"
+            exit 1
+          fi
+
+      - name: The bump moves every clock and the gates must stay green
+        run: node scripts/bump-version.mjs "$VERSION"
+
+      - name: Commit the bump on its own branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          BRANCH="release/${VERSION}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -B "$BRANCH"
+          git add -A
+          git commit -m "release: ${VERSION} - version bump from ${{ github.sha }}"
+          git push -u origin "$BRANCH" --force-with-lease
+
+      - name: Open the pull request
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          {
+            echo "## What this PR does"
+            echo
+            echo "Mechanical bump to \`${VERSION}\`, produced by \`scripts/bump-version.mjs\` from \`main\` at \`${{ github.sha }}\`."
+            echo
+            echo "## Files changed"
+            echo
+            git diff --name-only "origin/main...HEAD" | sed 's/^/- /'
+            echo
+            echo "## The pins"
+            echo
+            echo "- \`tests/helpers/boundary-locks.mjs\` re-pinned with a new WHY block naming this release."
+            echo "- \`tests/fixtures/mcp-contract-v1.json\` carries a recomputed \`sourceSha256\`."
+            echo "- \`gates.lock\` re-pinned by \`npm run gates:refresh\` inside the engine."
+            echo
+            echo "## For the reviewer"
+            echo
+            echo "1. Read \`docs/releases/${VERSION}.md\` - the scaffold is a skeleton; fill the prose honestly (what reached the surface, what changes for callers, what it costs the reader) before merging."
+            echo "2. Update the \`docs/handoff.md\` shipped entry to name this release (the engine only rewrites the State bullet anchors)."
+            echo "3. The tool count is not rewired by this bump; if this release moves 39 or 40 deliberately, that is a separate reviewed decision like every time before."
+            echo "4. Merge is your call; the deploys (deploy-functions, publish-npm, publish-crx, deploy-site) stay dispatched by hand after merge."
+          } > pr-body.md
+          gh pr create --title "release: ${VERSION} - version bump" --body-file pr-body.md --base main --head "release/${VERSION}"

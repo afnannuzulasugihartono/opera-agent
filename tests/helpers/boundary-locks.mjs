@@ -1,9 +1,9 @@
 // @last-edited: 2026-11-12 UTC+7.
 // @title: boundary-locks - the frozen locks on the public boundary, shared by the checkpoint tests.
-// @state: nine pins over four stacks; each line says why the current pin exists, and nothing else.
+// @state: ten pins over four stacks; each line says why the current pin exists, and nothing else.
 // @dependencies: none.
 
-// Each entry is the git-blob SHA1 (LF-normalized) of a runtime source whose public contract is frozen.
+// Each entry is the git-blob SHA-256 (LF-normalized) of a runtime source whose public contract is frozen.
 // Changing one means the contract changed, which is a reviewed decision: update the SHA in the same commit and say what moved.
 
 // WHY there is no re-pin history here.
@@ -79,21 +79,25 @@
 // The refusal for a sleeping provider pin names switch_device; the browser_status device object reports pinSource.
 // manifest.json and index.ts also carry the version bump to 1.6.48; the contract moved, so the pin moves with it - content.js and background.js did not.
 
+// WHY these ten moved on 2026-11-12 a fourth time: the hash is now SHA-256.
+// The pinning protocol used a weak hash (git-blob SHA1); the finding is a critical vulnerability for any consumer of the convention, and the answer is a stronger digest, not a waiver.
+// The contract criterion did not change; the digest got stronger, so every pin below was recomputed in the same act.
+
 export const PUBLIC_SURFACE_LOCKS = Object.freeze([
-  ['../extension/content.js', 'be462c9e32536137c94714185cdee227828538a1'],
-  ['../extension/background.js', 'fa4b45e22cb59f4b36bb6b238d60dbdc17f3b6e5'],
-  ['../extension/manifest.json', '63eeeafc204fa29062d76643c1e39841ad0087bc'],
-  ['../supabase/functions/opera-agent-mcp/index.ts', '27557fdd07dba11a0357af66fda338800a463ab7'],
-  ['../supabase/functions/opera-agent-mcp/tools.ts', '8ffc0c95f0bfbda5580ed610ed06de430a4634d7'],
+  ['../extension/content.js', 'fd75fc8ba524c201294b4919603fb478400865039f46d5a00730b0f1b937ecb3'],
+  ['../extension/background.js', '8ee7f51f38d6365533a6dfe336647627e9e956ad9c4ebed31eb79df6680b42f2'],
+  ['../extension/manifest.json', '2e331ba959d3302cbe9c1f46eb524254981d42edb96035f39b18ba8799b3e4a2'],
+  ['../supabase/functions/opera-agent-mcp/index.ts', 'd813149ba50f0a4c0114188fc5d1721eeabb067d60983c0f9be561b8cbb92ad0'],
+  ['../supabase/functions/opera-agent-mcp/tools.ts', '7f7e14539f344accfdb1e1b07b3e25161ba763a6a2ad548c15b9e1d59feb7da9'],
 ]);
 
 export const OBSERVATION_STACK_LOCKS = Object.freeze([
-  ['../lib/reactive-vm.js', 'adb646c71fd033593bdbef264179b9877d569371'],
-  ['../lib/reactive-vm-control-flow.js', '266dbfb47714b8cdc913410ac94402482def5dfe'],
-  ['../lib/reactive-vm-collect.js', 'f687f4cd3088788b02291c64a12860d0fa5742e1'],
+  ['../lib/reactive-vm.js', '3ac99be9fe8504a13bc66c730c6ea33484c3884c3fa0b009778a157ce8ff8793'],
+  ['../lib/reactive-vm-control-flow.js', 'b63ec432a107f0bb0754e702f4804be14dac1f6f5a8d25d4f6ddae171053f287'],
+  ['../lib/reactive-vm-collect.js', '31d337414bfa0460ac093310ec44afab6563d0cfb4258c02500470f49fadf24a'],
 ]);
 
 export const RELEVANCE_STACK_LOCKS = Object.freeze([
-  ['../lib/multi-signal-relevance.js', 'a1bf0e5f1702d50a41340fa553d3b5255f2876a1'],
-  ['../lib/delta-first-observation.js', '847cdf88ad9d6c410984f3b4c427370796ef84f1'],
+  ['../lib/multi-signal-relevance.js', '230f5c7722e088adfdc6b4d99b2331c7752486a198a6e6bc63e4238809af2c01'],
+  ['../lib/delta-first-observation.js', '1471eadfa5fb4cf0b7871c855304c7af4e8225c21478f93ccde5e87dd3ccf974'],
 ]);
