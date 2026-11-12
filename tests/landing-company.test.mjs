@@ -12,6 +12,15 @@ import fs from 'node:fs';
 
 const root = new URL('..', import.meta.url);
 const read = (name) => fs.readFileSync(new URL(name, root), 'utf8');
+
+// WHY THE SHARED FOOTER IS READ HERE TOO: nine pages carry their doors from the one canonical block in footer.js; a page that mounts it is checked against the same list, not against an empty static tag.
+
+const effectiveFooter = (page) => {
+  const html = read(`landing/${page}`);
+  const own = html.match(/<footer[\s\S]*?<\/footer>/)?.[0] ?? '';
+  if (own.includes('data-footer-mount')) return read('landing/footer.js');
+  return own;
+};
 const pages = ['beranda.html', 'akun.html', 'index.html', 'dashboard.html', 'unduh.html', 'privasi.html', 'syarat.html', '404.html', 'fitur.html', 'studi.html', 'dukungan.html', 'docs.html'];
 
 test('every head carries the mark, so no tab looks unfinished', () => {
@@ -24,7 +33,7 @@ test('every head carries the mark, so no tab looks unfinished', () => {
 });
 
 test('every footer offers the same doors', () => {
-  const links = (page) => [...read(`landing/${page}`).match(/<footer[\s\S]*?<\/footer>/)[0].matchAll(/href="([^"]+)"/g)].map((m) => m[1]);
+  const links = (page) => [...effectiveFooter(page).matchAll(/href="([^"]+)"/g)].map((m) => m[1]);
   const shared = links('beranda.html');
   for (const page of pages) {
     assert.deepEqual(links(page), shared, `${page} ends like every other page`);
@@ -111,7 +120,7 @@ test('no page points at support that does not exist', () => {
 test('every footer reaches the public source, because a product that drives a browser shows its code', () => {
   // WHY THIS LOCK: the site asks for six browser permissions, so the reader is owed the place where the code is read, not a promise that it is open.
   for (const page of pages) {
-    const footer = read(`landing/${page}`).match(/<footer[\s\S]*?<\/footer>/)[0];
+    const footer = effectiveFooter(page);
     assert.ok(footer.includes('href="https://github.com/afnannuzulasugihartono/opera-agent"'), `${page} points at the source`);
   }
 });

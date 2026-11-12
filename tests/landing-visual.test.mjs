@@ -129,6 +129,8 @@ test('every section closes before the next one opens', () => {
   assert.match(index, /<\/section>\s*<section id="faq"[^>]*>/, 'the FAQ stands beside privacy, not inside it');
 });
 
+// WHY THE DOOR IS ASSERTED IN TWO ARTEFACTS: the page carries the mount it will be injected into, and the one shared builder carries the actual door - a page without the mount renders nothing, a builder without the door dangles.
+
 test('the nav faces the reader like a masthead: two doors each side, one ask', () => {
   // WHY THE CHROME IS A MASTHEAD: the house reference for this page (the Hermes Agent masthead) is a centred wordmark flanked by one short list each side, two doors on the left and the portal door plus the ask on the right - everything else belongs to the footer.
   // WHY THE DOORS ARE DECLARED ONCE: two on the left, the portal door and the ask on the right - measured against the house masthead, and Dukungan lives in the footer because a masthead carries only what a newcomer asks about.
@@ -138,17 +140,22 @@ test('the nav faces the reader like a masthead: two doors each side, one ask', (
     // The fold is the last thing in the header, so the masthead is what stands before it.
     const rawHeader = /<header>([\s\S]*?)<\/header>/.exec(html)?.[1] ?? '';
     assert.ok(rawHeader, `${page} has a header to count`);
-    const header = rawHeader.replace(/<div class="portalMenu"[\s\S]*$/, '');
+    const header = rawHeader.replace(/<div data-portal-menu>[\s\S]*$/, '');
     const internal = [...header.matchAll(/<a [^>]*>/g)].map((m) => m[0]).filter((tag) => !/class="brand"|class="navCta"/.test(tag));
     assert.equal(internal.length, 3, `${page} keeps the nav to three text doors, and carries ${internal.length}`);
     assert.equal((header.match(/class="navCta"/g) || []).length, 1, `${page} offers exactly one ask`);
     assert.match(header, /<span class="wordmark">/, `${page} carries the wordmark`);
-    assert.match(header, /id="navPortalToggle"/, `${page} carries the portal door`);
+    assert.match(header, /data-portal-toggle/, `${page} carries the portal mount`);
+    const portalBuilder = read('portal.js');
+    assert.match(portalBuilder, /id="navPortalToggle"/, `${page}'s portal.js builds the portal door`);
+    assert.match(portalBuilder, /id="portalMenu"/, `${page}'s portal.js builds the portal menu`);
     const door = (name) => new RegExp(`href="(?:\\./|/)${name.replace('.', '\\.')}"`);
     for (const name of ['fitur.html', 'unduh.html', 'docs.html']) {
       assert.match(header, door(name), `${page} reaches ${name} from the nav`);
     }
-    assert.match(html, door('dukungan.html'), `${page} still reaches Dukungan from the rules below`);
+    const footerHtml = html.match(/<footer[\s\S]*?<\/footer>/)?.[0] ?? '';
+    const rules = footerHtml.includes('data-footer-mount') ? read('footer.js') : footerHtml;
+    assert.match(rules, door('dukungan.html'), `${page} still reaches Dukungan from the rules below`);
   }
 });
 
@@ -536,7 +543,7 @@ test('the home page shows more than it explains', () => {
     .replace(/<div class="installCard">[\s\S]*?<\/div>\s*<\/div>\s*<\/div>/g, ' ')
     .replace(/<div class="row" id="ctaIn" hidden>[\s\S]*?<\/div>/g, ' ')
     .replace(/<div class="runWindow[^"]*"[\s\S]*?<\/section>/g, ' ')
-    .replace(/<div class="portalMenu"[\s\S]*?<\/div>\s*<\/div>\s*<\/header>/g, ' ')
+    .replace(/<div data-portal-menu><\/div>\s*<\/header>/g, ' ')
     .replace(/<[^>]+>/g, ' ')
     .replace(/&[a-z]+;/g, ' ');
   const words = visible.split(/\s+/).filter(Boolean).length;

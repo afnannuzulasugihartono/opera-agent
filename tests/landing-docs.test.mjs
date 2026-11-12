@@ -11,6 +11,15 @@ import { mcpSurfaceSourceSync } from './helpers/mcp-surface-source.mjs';
 const root = new URL('..', import.meta.url);
 const read = (name) => fs.readFileSync(new URL(name, root), 'utf8');
 
+// WHY THE SHARED FOOTER IS READ HERE TOO: nine pages carry it from footer.js; a page that mounts it is checked against the same grid, not an empty static tag.
+
+const effectiveFooter = (page) => {
+  const html = read(`landing/${page}`);
+  const own = html.match(/<footer[\s\S]*?<\/footer>/)?.[0] ?? '';
+  if (own.includes('data-footer-mount')) return read('landing/footer.js');
+  return own;
+};
+
 test('the docs page carries six sections and one map', () => {
   const html = read('landing/docs.html');
   for (const id of ['pasang', 'pairing', 'tugas', 'saldo', 'mcp', 'batas']) {
@@ -79,9 +88,9 @@ test('the docs page reads like a manual: a sidebar, a search box, and the text',
 
 test('the footer maps the site in columns, not in one long row', () => {
   for (const page of ['beranda.html', 'fitur.html', 'harga.html', 'docs.html', 'unduh.html', 'dukungan.html', 'privasi.html', 'syarat.html', '404.html', 'index.html']) {
-    const html = read(`landing/${page}`);
-    assert.match(html, /<footer[\s\S]*?class="[^"]*\bfootGrid\b/, `${page} carries the column footer`);
-    assert.ok((html.match(/class="footCol"/g) || []).length >= 3, `${page} groups its doors into columns`);
+    const footerHtml = effectiveFooter(page);
+    assert.match(footerHtml, /class="[^"]*\bfootGrid\b/, `${page} carries the column footer`);
+    assert.ok((footerHtml.match(/class="footCol"/g) || []).length >= 3, `${page} groups its doors into columns`);
   }
   const css = read('landing/site.css');
   assert.match(css, /\.footGrid \{[^}]*display: grid/s, 'the footer is a grid');

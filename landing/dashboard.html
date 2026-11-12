@@ -49,68 +49,13 @@
       </nav>
       <a class="brand" href="/beranda.html" aria-current="page"><span class="wordmark">Opera<br/>Agent</span></a>
       <nav class="navSide navRight" aria-label="Secondary">
-        <button class="navPortal" id="navPortalToggle" type="button" aria-expanded="false" aria-controls="portalMenu"><span data-i18n="nav.portal">Portal</span><svg class="navPortalChevron" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"></path></svg></button>
+    <span data-portal-toggle></span>
         <a href="./docs.html" data-i18n="nav.docs">Docs</a>
         <a class="navCta" href="./unduh.html" data-i18n="cta.download">Pasang Opera Agent</a>
       </nav>
 
 
-    <div class="portalMenu" id="portalMenu" role="dialog" aria-modal="false" aria-labelledby="portalBannerLink" hidden>
-      <div class="portalBanner">
-        <a class="portalBannerLink" id="portalBannerLink" href="./akun.html">
-          <span class="portalBannerMark" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="16" cy="16" r="13"/><path d="M3 16h26"/><ellipse cx="16" cy="16" rx="13" ry="5.6"/></svg></span>
-          <span class="portalBannerText"><span class="portalBannerLinkText" data-i18n="portal.banner.link">Portal Opera Agent</span><span class="portalBannerRest"><span class="portalBannerMsg" data-i18n="portal.banner.m1">Satu akun. Semua model. Semua device.</span><span class="portalBannerMsg" data-i18n="portal.banner.m2" hidden>Bayar per pekerjaan selesai.</span><span class="portalBannerMsg" data-i18n="portal.banner.m3" hidden>Data tidak pernah meninggalkan device.</span></span></span>
-        </a>
-        <div class="portalBannerNav">
-          <button class="portalBannerChev" id="portalBannerPrev" type="button" data-i18n-attr="aria-label:portal.banner.prev" aria-label="Pesan sebelumnya"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 6-6 6 6 6"/></svg></button>
-          <button class="portalBannerChev" id="portalBannerNext" type="button" data-i18n-attr="aria-label:portal.banner.next" aria-label="Pesan berikutnya"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></button>
-        </div>
-      </div>
-      <div class="portalBody">
-        <div class="portalRow">
-          <div class="portalBigCol">
-            <p class="portalKind" data-i18n="portal.label.platform">Platform</p>
-            <p class="portalBig" data-i18n="portal.big.platform">Portal</p>
-          </div>
-          <ul class="portalDoors">
-            <li><a class="portalDoor" href="./docs.html" role="menuitem">
-              <span class="portalDoorName" data-i18n="portal.overview.title">Ikhtisar</span>
-              <span class="portalDoorDesc" data-i18n="portal.overview.body">Hubungkan agent ke setiap device</span>
-              <svg class="portalArrow" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M17 7H9M17 7v8"/></svg>
-            </a></li>
-            <li><a class="portalDoor" href="./harga.html" role="menuitem">
-              <span class="portalDoorName" data-i18n="portal.plans.title">Paket</span>
-              <span class="portalDoorDesc" data-i18n="portal.plans.body">Harga tetap per pekerjaan selesai</span>
-              <svg class="portalArrow" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M17 7H9M17 7v8"/></svg>
-            </a></li>
-            <li><a class="portalDoor" href="./unduh.html" role="menuitem">
-              <span class="portalDoorName" data-i18n="portal.referrals.title">Mulai dari sini</span>
-              <span class="portalDoorDesc" data-i18n="portal.referrals.body">Pasang extension, pair sekali, lalu kerja</span>
-              <svg class="portalArrow" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M17 7H9M17 7v8"/></svg>
-            </a></li>
-          </ul>
-        </div>
-        <div class="portalDivider" aria-hidden="true"></div>
-        <div class="portalRow">
-          <div class="portalBigCol">
-            <p class="portalKind" data-i18n="portal.label.access">Akun</p>
-            <p class="portalBig" data-i18n="portal.big.access">Akses</p>
-          </div>
-          <ul class="portalDoors">
-            <li><a class="portalDoor" href="./index.html" role="menuitem">
-              <span class="portalDoorName" data-i18n="portal.signin.title">Masuk</span>
-              <span class="portalDoorDesc" data-i18n="portal.signin.body">Lanjutkan ke dashboard Anda</span>
-              <svg class="portalArrow" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M17 7H9M17 7v8"/></svg>
-            </a></li>
-            <li><a class="portalDoor" href="./index.html" role="menuitem">
-              <span class="portalDoorName" data-i18n="portal.signup.title">Akun baru</span>
-              <span class="portalDoorDesc" data-i18n="portal.signup.body">Satu akun untuk semua device</span>
-              <svg class="portalArrow" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M17 7H9M17 7v8"/></svg>
-            </a></li>
-          </ul>
-        </div>
-      </div>
-    </div>
+    <div data-portal-menu></div>
   </div>
 </header>
 
@@ -373,8 +318,7 @@
     </div>
   </footer>
 
-  <script type="application/json" id="i18n-dict">
-{
+  <script type="application/json" id="i18n-dict">{
   "en": {
     "aksi.meta": "The command goes to your own device. Devices refuse pages showing passwords, one-time codes, or payments.",
     "aksi.methodLabel": "Primitive",
@@ -428,7 +372,6 @@
     "nav.docs": "Docs",
     "nav.download": "Download",
     "nav.features": "Features",
-    "nav.portal": "Portal",
     "pairing.button": "Create pairing code",
     "pairing.copy": "Copy code",
     "pairing.meta": "A one-time code, valid for 10 minutes, bound to this account. Paste it into the extension popup on the device you want to connect.",
@@ -445,26 +388,6 @@
     "plan.upgrade": "See plans",
     "plan.usageLabel": "Quota used today",
     "plan.usedToday": "commands used today",
-    "portal.banner.link": "Opera Agent Portal",
-    "portal.banner.m1": "One account. Every model. Every device.",
-    "portal.banner.m2": "Pay per finished job.",
-    "portal.banner.m3": "Your data never leaves the device.",
-    "portal.banner.next": "Next message",
-    "portal.banner.prev": "Previous message",
-    "portal.big.access": "Access",
-    "portal.big.platform": "Portal",
-    "portal.label.access": "Account",
-    "portal.label.platform": "Platform",
-    "portal.overview.body": "Connect your agent to every device",
-    "portal.overview.title": "Overview",
-    "portal.plans.body": "A flat price per finished job",
-    "portal.plans.title": "Plans",
-    "portal.referrals.body": "Install, pair once, start working",
-    "portal.referrals.title": "Start here",
-    "portal.signin.body": "Continue to your dashboard",
-    "portal.signin.title": "Sign in",
-    "portal.signup.body": "One account, every device",
-    "portal.signup.title": "New account",
     "rail.account": "Account",
     "rail.action": "Action",
     "rail.balance": "Balance",
@@ -514,8 +437,7 @@
     "tabel.searchPlaceholder": "Search this table…",
     "tabel.title": "Tables"
   }
-}
-</script>
+}</script>
 
   <script src="./i18n.js"></script>
 

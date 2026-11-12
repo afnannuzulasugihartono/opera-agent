@@ -310,12 +310,16 @@ test('the download page explains every permission the manifest requests', () => 
   assert.match(html, /ditolak di tab private/, 'the private-tab refusal is stated');
 });
 
+// WHY THE SHARED FOOTER IS READ HERE TOO: unduh.html mounts the canonical footer, so the dashboard door lives in footer.js.
+
 test('the download page shares the site navigation and floor', () => {
   const html = read('unduh.html');
   assert.match(html, /<html lang="id"/, 'the language is declared');
   assert.match(html, /<main/, 'a main landmark exists');
   assert.match(html, /<footer/, 'the footer exists');
-  assert.match(html, /akun\.html/, 'the dashboard is reachable');
+  const footerHtml = html.match(/<footer[\s\S]*?<\/footer>/)?.[0] ?? '';
+  const effectiveFooter = footerHtml.includes('data-footer-mount') ? read('footer.js') : footerHtml;
+  assert.match(effectiveFooter, /akun\.html/, 'the dashboard is reachable');
   const noScript = html.replace(/<script[\s\S]*?<\/script>/g, '');
   assert.match(noScript, /(unduh|Unduh|arsip|archive)/, 'it reads without script');
 });

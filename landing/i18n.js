@@ -5,6 +5,43 @@
  * @dependencies: none.
  */
 
+  var SHARED_EN = {
+    "footer.account": "Account",
+    "footer.bukti": "Proof",
+    "footer.docs": "Docs",
+    "footer.download": "Download",
+    "footer.features": "Features",
+    "footer.home": "Home",
+    "footer.legal": "Legal",
+    "footer.privacy": "Privacy",
+    "footer.product": "Product",
+    "footer.rights": "© 2026 Opera Agent. All rights reserved.",
+    "footer.source": "Source code",
+    "footer.support": "Support",
+    "footer.terms": "Terms",
+    "nav.portal": "Portal",
+    "portal.banner.link": "Opera Agent Portal",
+    "portal.banner.m1": "One account. Every model. Every device.",
+    "portal.banner.m2": "Pay per finished job.",
+    "portal.banner.m3": "Your data never leaves the device.",
+    "portal.banner.next": "Next message",
+    "portal.banner.prev": "Previous message",
+    "portal.big.access": "Access",
+    "portal.big.platform": "Portal",
+    "portal.label.access": "Account",
+    "portal.label.platform": "Platform",
+    "portal.overview.body": "Connect your agent to every device",
+    "portal.overview.title": "Overview",
+    "portal.plans.body": "A flat price per finished job",
+    "portal.plans.title": "Plans",
+    "portal.referrals.body": "Install, pair once, start working",
+    "portal.referrals.title": "Start here",
+    "portal.signin.body": "Continue to your dashboard",
+    "portal.signin.title": "Sign in",
+    "portal.signup.body": "One account, every device",
+    "portal.signup.title": "New account",
+  };
+
 (function () {
   'use strict';
 
@@ -212,7 +249,16 @@
   }
 
   function table() {
-    return (dict && dict[current]) || {};
+    var own = (dict && dict[current]) || {};
+
+    if (current !== 'en') return own;
+
+    var merged = {};
+
+    for (var key in SHARED_EN) merged[key] = SHARED_EN[key];
+    for (var ownKey in own) merged[ownKey] = own[ownKey];
+
+    return merged;
   }
 
   function apply() {
