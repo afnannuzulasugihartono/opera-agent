@@ -10,9 +10,9 @@ import http from 'node:http';
 import { mkdtemp, rm, stat } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { install, CRX_MAGIC } from '../local/install.js';
+import { install } from '../local/install.js';
 
-const makeCrx = () => Buffer.concat([Buffer.from(CRX_MAGIC), Buffer.from('payload-of-filler-bytes-for-testing')]);
+const makeCrx = () => Buffer.from('zip-payload-of-the-opera-agent-build-for-tests');
 
 const goodReply = (bytes, sha) => (async (url, opts = {}) => {
   if (opts.method === 'HEAD') return { ok: true, status: 200, headers: { get: () => sha } };
@@ -63,7 +63,7 @@ test('writes keys for each detected browser and reports success', async () => {
       'HKCU\\Software\\BraveSoftware\\Brave-Browser\\Extensions\\ofgemipoobcnbjkfanmofjbdonjapmgl',
     ].sort());
     for (const id of ['Chrome', 'Brave']) {
-      assert.equal((await stat(path.join(root, id, 'extension.crx'))).size, bytes.length);
+      assert.equal((await stat(path.join(root, id, 'opera-agent.zip'))).size, bytes.length);
     }
   } finally {
     await rm(root, { recursive: true, force: true });
@@ -87,7 +87,7 @@ test('CRX failure leaves the keys written, no folder created, reports reason', a
     });
     assert.equal(report.browsers[0].keyWritten, true);
     assert.equal(report.browsers[0].crx, 'failed');
-    assert.match(report.message, /backup CRX failed/);
+    assert.match(report.message, /backup ZIP failed/);
     await assert.rejects(() => stat(path.join(root, 'Chrome')), /ENOENT/);
   } finally {
     await rm(root, { recursive: true, force: true });

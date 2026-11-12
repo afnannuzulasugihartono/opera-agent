@@ -1,7 +1,7 @@
 // @last-edited: 2026-11-12 UTC+7.
 // @title: postinstall - global install only, CI-skip, opt-out honoured, never red.
 // @state: the guard decides before any browser is named, so the failure mode is silence with exit 0.
-// @dependencies: test, assert, node:child_process, node:path, ../local/postinstall.mjs behaviour via env simulation.
+// @dependencies: test, assert, node:child_process, node:path, ../local/postinstall.js behaviour via env simulation.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -10,7 +10,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = new URL('..', import.meta.url);
-const script = new URL('../local/postinstall.mjs', import.meta.url);
+const script = new URL('../local/postinstall.js', import.meta.url);
 
 const run = (env) => {
   const result = execFileSync(process.execPath, [fileURLToPath(script)], {

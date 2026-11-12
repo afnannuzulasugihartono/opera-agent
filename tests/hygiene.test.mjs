@@ -458,6 +458,18 @@ test('a module with its own code is reached by the product, not only by its own 
   if (manifest.action?.default_popup) roots.add(`extension/${manifest.action.default_popup}`);
   if (manifest.options_page) roots.add(`extension/${manifest.options_page}`);
   for (const file of present) if (/^landing\/.*\.html$/.test(file)) roots.add(file);
+  // WHY THE PACKAGE'S LIFECYCLE SCRIPTS ARE ROOTS.
+  // npm runs `postinstall` and `prepack` on the user's machine; the import graph cannot follow a subprocess, so the gate must be told the package.json scripts count as entry points - otherwise a wired lifecycle hook reads as dead code.
+  const localManifestPath = path.join(dir, 'local', 'package.json');
+  if (fsSync.existsSync(localManifestPath)) {
+    const localManifest = JSON.parse(fsSync.readFileSync(localManifestPath, 'utf8'));
+    for (const value of Object.values(localManifest.scripts ?? {})) {
+      const match = /^node\s+(\S+)/.exec(value);
+      if (!match) continue;
+      const candidate = path.posix.normalize(path.posix.join('local', match[1]));
+      if (textOf.has(candidate)) roots.add(candidate);
+    }
+  }
 
   const reached = new Set();
   const queue = [...roots];

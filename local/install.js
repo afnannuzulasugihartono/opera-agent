@@ -8,13 +8,12 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
-export const CRX_URL = 'https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/opera-agent-ofgemipoobcnbjkfanmofjbdonjapmgl-1.6.44.crx';
+export const ZIP_URL = 'https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/download/opera-agent.zip?for=chrome';
 export const SHA256_HEADER = 'x-opera-sha256';
 export const EXTENSION_ID = 'ofgemipoobcnbjkfanmofjbdonjapmgl';
-export const CRX_MAGIC = [0x43, 0x72, 0x32, 0x34]; // 'Cr24'
 
-export async function fetchVerifiedCrx({ url, sha256Header = SHA256_HEADER, fetchImpl = globalThis.fetch } = {}) {
-  if (!url) throw new Error('fetchVerifiedCrx: url is required');
+export async function fetchVerifiedZip({ url = ZIP_URL, sha256Header = SHA256_HEADER, fetchImpl = globalThis.fetch } = {}) {
+  if (!url) throw new Error('fetchVerifiedZip: url is required');
   const head = await fetchImpl(url, { method: 'HEAD' });
   if (!head?.ok) throw new Error(`HEAD ${url} answered ${head?.status ?? 'no response'}`);
   const expected = head.headers?.get?.(sha256Header);
@@ -22,7 +21,6 @@ export async function fetchVerifiedCrx({ url, sha256Header = SHA256_HEADER, fetc
   const body = await fetchImpl(url, { method: 'GET' });
   if (!body?.ok) throw new Error(`GET ${url} answered ${body?.status ?? 'no response'}`);
   const bytes = Buffer.from(await body.arrayBuffer());
-  if (bytes.length < CRX_MAGIC.length || !CRX_MAGIC.every((b, i) => bytes[i] === b)) throw new Error('payload is not a CRX (magic bytes missing)');
   const actual = crypto.createHash('sha256').update(bytes).digest('hex');
   if (actual.toLowerCase() !== String(expected).toLowerCase()) throw new Error(`sha256 mismatch: expected ${expected}, got ${actual}`);
   return bytes;
@@ -31,13 +29,13 @@ export async function fetchVerifiedCrx({ url, sha256Header = SHA256_HEADER, fetc
 export function crxReadme(browser) {
   return `Opera Agent for ${browser}
 
-This folder keeps a verified copy of the extension in case the browser
-cannot install it from the registry. To install manually: chrome://extensions
-(edge/brave equivalents) -> Developer mode -> Load unpacked -> this folder's
-parent in this OperaAgent tree.
+This folder keeps a verified copy of the extension build (opera-agent.zip) in
+case the browser cannot install it from the registry. To install manually:
+extract opera-agent.zip, then chrome://extensions (edge: edge://extensions,
+brave: brave://extensions) -> Developer mode -> Load unpacked -> the extracted folder.
 
 How the automatic install works: the browser reads HKCU\\Software\\...\\Extensions\\${EXTENSION_ID},
-fetches the update manifest, downloads the same CRX, and installs it. Deleting the
+fetches the update manifest, downloads the same build from the update endpoint, and installs it. Deleting the
 key removes the extension on next start.
 
 Uninstall: run \`opera-agent-mcp uninstall\`, or double-click
@@ -47,12 +45,12 @@ Pairing: run \`opera-agent-mcp auth\` to sign in, then open the extension and pa
 }
 
 export async function installCrxInto(root, browser, bytes, readme = crxReadme(browser)) {
-  if (!bytes || bytes.length < CRX_MAGIC.length || !CRX_MAGIC.every((b, i) => bytes[i] === b)) {
-    throw new Error('installCrxInto called with bytes that are not a CRX; refusing to write');
+  if (!bytes || bytes.length === 0) {
+    throw new Error('installCrxInto called with empty bytes; refusing to write');
   }
   const folder = path.join(root, browser[0].toUpperCase() + browser.slice(1));
   await mkdir(folder, { recursive: true });
-  const crx = path.join(folder, 'extension.crx');
+  const crx = path.join(folder, 'opera-agent.zip');
   await writeFile(crx, bytes);
   await writeFile(path.join(folder, 'README.txt'), readme);
   return { folder, crx };
@@ -93,7 +91,7 @@ export async function install({
     let error;
     let destination;
     try {
-      const bytes = await fetchVerifiedCrx({ url: CRX_URL, fetchImpl });
+      const bytes = await fetchVerifiedZip({ fetchImpl });
       const written = await installCrxInto(root, browser.id, bytes);
       destination = written.folder;
     } catch (caught) {
@@ -108,7 +106,7 @@ export async function install({
     ...results.map((entry) => {
       if (!entry.keyWritten) return `${entry.id}: registry key not written (${entry.error})`;
       if (entry.crx === 'written') return `${entry.id}: registered for automatic install; backup written to ${entry.destination}`;
-      return `${entry.id}: registered for automatic install (restart the browser to pick it up); the backup CRX failed: ${entry.error}`;
+      return `${entry.id}: registered for automatic install (restart the browser to pick it up); the backup ZIP failed: ${entry.error}`;
     }),
     'Sign in with `opera-agent-mcp auth`, then open the extension and pair the device.',
   ].join('\n');
@@ -185,4 +183,21 @@ export async function uninstall({
   const message = [...steps.map((entry) => `${entry.step}: ${entry.result}`), instructions].join('\n');
   print(message);
   return { ok: true, steps, message };
+}
+
+// WHY A MISSING BROWSER OR A FOREIGN OS IS NOT A FAILURE.
+// `install` reports information the user may act on, and exits 0; anything exit 1 names a thing that was attempted and failed.
+
+export async function installFromCli() {
+  const report = await install();
+  if (report.message) process.stdout.write(report.message + '\n');
+  if (report.ok) return 0;
+  if (report.browsers.length === 0) return 0;
+  return 1;
+}
+
+export async function uninstallFromCli({ keepPair = process.argv.includes('--keep-pair') } = {}) {
+  const report = await uninstall({ keepPair });
+  if (report.message) process.stdout.write(report.message + '\n');
+  return 0;
 }
