@@ -43,7 +43,7 @@ when `OPERA_AGENT_NO_INSTALL` is unset. `OPERA_AGENT_NO_INSTALL=1 npm i -g opera
 | Zip fetch fails / hash mismatch | no folder written, keys still written, reason printed, install exits 1 | unit test |
 | Fresh Windows machine, browser starts after install | extension installs itself | driven on this machine 2026-11-12, Chrome 153.0.8010.36, Brave 157.1.99.56, Edge |
 | Keys deleted, browser starts | extension removes itself | driven same day, all three browsers |
-| Chrome after a removal, keys restored | does **not** silently reinstall in that profile | driven 2026-11-12; document this to anyone who asks |
+| Chrome after a removal, keys restored | does **not** silently reinstall in that profile | driven 2026-11-12; the removal blacklist is in the browser, not in us. A user who Removes needs Load unpacked, or the Web Store listing |
 | Developer-mode (Load unpacked) copy | not visible to the keys; one click at `chrome://extensions` removes it | known browser behaviour |
 
 # THE TWO COMMANDS
