@@ -72,9 +72,14 @@ jobs:
       - name: The registry answers with the version
         run: |
           VERSION="$(node -p "require('./local/package.json').version")"
-          PUBLISHED="$(npm view opera-agent-mcp@${VERSION} version 2>/dev/null || true)"
-          echo "registry says: ${PUBLISHED:-nothing}"
-          if [ "${PUBLISHED}" != "${VERSION}" ]; then
-            echo "the registry does not answer ${VERSION} yet"
-            exit 1
-          fi
+          for attempt in 1 2 3 4 5 6 7 8 9 10 11 12; do
+            PUBLISHED="$(npm view opera-agent-mcp@${VERSION} version 2>/dev/null || true)"
+            echo "attempt ${attempt}: registry says: ${PUBLISHED:-nothing}"
+            if [ "${PUBLISHED}" = "${VERSION}" ]; then
+              echo "registry answers ${VERSION}"
+              exit 0
+            fi
+            sleep 15
+          done
+          echo "the registry does not answer ${VERSION} yet"
+          exit 1
