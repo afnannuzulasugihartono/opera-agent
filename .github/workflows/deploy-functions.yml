@@ -1,0 +1,78 @@
+# @last-edited: 2026-11-12 UTC+7.
+# @title: deploy-functions - deploys the edge functions in supabase/functions/, on dispatch.
+# @state: what is being deployed, by whom, against which project, is decided here; the run answers with the exact project and function it touched.
+# @dependencies: SUPABASE_ACCESS_TOKEN secret, supabase/setup-cli.
+
+# WHY THIS EXISTS.
+# The everyday machine was the only place that could deploy an edge function - the `supabase` CLI login on it went stale, and a stale login is not a finding, it is a wall.
+# This workflow does the same job from CI, with a token the owner already keeps in GitHub Secrets for the publish-crx release flow, so a deploy is one dispatch and one sentence in the log.
+# WHY ONLY ON DISPATCH.
+# A merge that ships a function without being asked to would deploy it before the owner reads the diff; dispatch-only makes the deployment an explicit act, exactly like publish-crx.
+
+name: Deploy functions
+
+on:
+  workflow_dispatch:
+    inputs:
+      functions:
+        description: Edge functions to deploy, comma-separated (default: opera-agent-mcp).
+        required: false
+        default: 'opera-agent-mcp'
+        type: string
+      reason:
+        description: What is being deployed and why, for the deployment log.
+        required: false
+        type: string
+
+concurrency:
+  group: deploy-functions
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: Deploy the edge functions
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    environment: production
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: The version matches the manifest
+        shell: bash
+        run: |
+          MANIFEST="$(node -p "require('./extension/manifest.json').version")"
+          MCP="$(grep -o 'SERVER_VERSION = "[0-9.]*"' supabase/functions/opera-agent-mcp/index.ts | cut -d'"' -f2)"
+          echo "extension manifest: ${MANIFEST}"
+          echo "edge function SERVER_VERSION: ${MCP}"
+          if [ "${MANIFEST}" != "${MCP}" ]; then
+            echo "::error::the extension manifest says ${MANIFEST} and the edge function carries SERVER_VERSION ${MCP}; refusing to deploy a mismatched pair"
+            exit 1
+          fi
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Deploy
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          PROJECT_ID: nenmkmtvjremqphfqnfw
+        shell: bash
+        run: |
+          IFS=',' read -ra FUNCTIONS <<< "${{ inputs.functions }}"
+          for f in "${FUNCTIONS[@]}"; do
+            f="$(echo "$f" | xargs)"
+            echo "::group::deploying $f"
+            supabase functions deploy "$f" --project-ref "$PROJECT_ID" --yes
+            echo "::endgroup::"
+          done
+
+      - name: Confirm the MCP health answers
+        shell: bash
+        run: |
+          curl --fail --silent --show-error --location --retry 5 --retry-delay 5 \
+            --output /dev/null --write-out 'status %{http_code}\n' \
+            https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp/health
