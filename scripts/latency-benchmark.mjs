@@ -128,7 +128,7 @@ const runRef = async (query) => (await call('find_elements', { query })).item?.r
 await add('browser_status', () => call('browser_status', { tabId: undefined }));
 await add('list_tabs', () => call('list_tabs'));
 await add('read_page', () => call('read_page'));
-await add('read_page_map', () => call('read_page_map', { limit: 5 }));
+await add('read_page (view map)', () => call('read_page', { view: 'map', limit: 5 }));
 await add('find_elements', () => call('find_elements', { query: 'Row 42' }));
 await add('capture_page', () => call('capture_page'), 5);
 await add('scroll_page', () => call('scroll_page', { y: 120 }));

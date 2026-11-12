@@ -121,12 +121,13 @@ defaults to, and what it changes.
 
 ### The whole page, not one window
 
-`read_page` reads one viewport at a time. `read_page_map` reads the document:
-every meaningful element, named by one of seventeen classes, with a rectangle
-in **document coordinates** — so a map taken before a scroll still names the
+`read_page` reads one viewport at a time by default, with `view: "brief"`. The
+same tool answers the whole document with `view: "map"`: every meaningful
+element, named by one of seventeen classes, with a rectangle in
+**document coordinates** - so a map taken before a scroll still names the
 right place after it, while `ref` stays the key that clicks.
 
-Call it once with no `class` and it answers the skeleton: the document size,
+Call `read_page` with `view: "map"` and no `class` and it answers the skeleton: the document size,
 one row per class with a count and a box, the regions, the headings, the tables
 and the images. Call it again with one `class`, `offset` and `limit` (default
 200, maximum 1000) and it answers that class. `hasMore` and `nextOffset` name

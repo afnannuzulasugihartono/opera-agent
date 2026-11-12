@@ -128,7 +128,7 @@
 
         <section data-reveal>
           <h2 id="tools">Tools MCP</h2>
-          <p>40 tool di atas 35 primitive browser. Tugas masing-masing:</p>
+          <p>39 tool di atas 35 primitive browser. Tugas masing-masing:</p>
 
           <h3>Peramban</h3>
           <dl class="toolList">
@@ -142,8 +142,7 @@
 
           <h3>Halaman (membaca)</h3>
           <dl class="toolList">
-            <dt><code>read_page</code></dt><dd>Observasi padat tugas: teks, elemen interaktif dengan ref, dan fakta viewport.</dd>
-            <dt><code>read_page_map</code></dt><dd>Peta seluruh halaman dalam 17 kelas dengan koordinat dan ref yang bertahan saat scroll.</dd>
+            <dt><code>read_page</code></dt><dd>Default: observasi padat tugas (teks, elemen interaktif dengan ref, fakta viewport). Dengan <code>view: "map"</code>: peta seluruh halaman dalam 17 kelas, koordinat dokumen, ref bertahan saat scroll.</dd>
             <dt><code>capture_page</code></dt><dd>JPEG terbatas dari tab tertentu; bisa satu halaman penuh lewat tile.</dd>
             <dt><code>record_start</code></dt><dd>Merekam tab ke webm di folder Downloads; setelah dipanggil, semua perintah berjalan seperti biasa (klik, isi, scroll, burst) dan semuanya tertangkap. Ditolak di permukaan sensitif seperti capture_page.</dd>
             <dt><code>record_stop</code></dt><dd>Mengakhiri rekaman dan menulis webm ke folder Downloads; mengembalikan manifest (nama berkas, byte, frame) dan sampai empat still sebagai gambar.</dd>
@@ -249,7 +248,7 @@
             <button type="button" data-copy="cfg-claude" data-i18n="copy">Salin</button>
           </div>
 
-          <p>Server itu menambah 40 tool di atas 35 primitive browser.</p>
+          <p>Server itu menambah 39 tool di atas 35 primitive browser.</p>
 
           <p>Opera Agent bisa dipanggil lewat tiga jalan: server hosted di atas, server lokal di mesin sendiri, dan extension yang menjalankan peramban yang sedang dipakai. Ketiganya dijelaskan di satu panduan: <a href="https://github.com/afnannuzulasugihartono/opera-agent/blob/main/docs/agent-call.md">docs/agent-call.md</a>.</p>
 

@@ -98,7 +98,7 @@ test('the guide says what the proof test actually re-checks', () => {
 
 test('the guide teaches the whole-page read and the full-page capture', () => {
   const guide = read('docs/agent-call.md');
-  assert.ok(guide.includes('read_page_map'), 'the map tool is named');
+  assert.match(guide, /view: "map"/, 'the map view of read_page is named');
   assert.match(guide, /skeleton/, 'the first call is described as the skeleton');
   assert.match(guide, /nextOffset/, 'the pull is described with its cursor');
   assert.match(guide, /tileOffset/, 'the tile walk is described');

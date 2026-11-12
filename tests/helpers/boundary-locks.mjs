@@ -57,6 +57,9 @@
 // WHY CRLF does not cause false failures: a Windows checkout rewrites line endings, so the test normalizes CRLF to LF before hashing.
 // Otherwise every developer on Windows would see all nine pins fail for a reason that is not a contract change.
 
+// WHY these two were re-pinned on 2026-11-12: the 1.6.47 alignment and tool merge.
+// The version constants moved (manifest.json `version`, index.ts `SERVER_VERSION`), and tools.ts carries the merged read_page (view: brief|map) in place of read_page + read_page_map; nothing about the public contract moved except the numbers and the tool count.
+
 // WHY these two were re-pinned on 2026-11-12: the 1.6.46 alignment.
 // The version constants moved (manifest.json `version` and index.ts `SERVER_VERSION`); nothing about the public contract moved.
 // Any other diff in either file would have broken this before it got this far.
@@ -74,9 +77,9 @@
 export const PUBLIC_SURFACE_LOCKS = Object.freeze([
   ['../extension/content.js', 'be462c9e32536137c94714185cdee227828538a1'],
   ['../extension/background.js', 'fa4b45e22cb59f4b36bb6b238d60dbdc17f3b6e5'],
-  ['../extension/manifest.json', 'a102b8c2434e3bfe07a5910d89920293d885fbf9'],
-  ['../supabase/functions/opera-agent-mcp/index.ts', '86347acf1603034abd6303467eaebe5a74f5e5b8'],
-  ['../supabase/functions/opera-agent-mcp/tools.ts', '7682e0185f5ea16e422650a2a6bcfe7b949a7359'],
+  ['../extension/manifest.json', '064cffbe393f842e03f0c90d77ead060f8196a03'],
+  ['../supabase/functions/opera-agent-mcp/index.ts', 'b55f7af3af241e9cd33b5a1bbeb07c936191d38c'],
+  ['../supabase/functions/opera-agent-mcp/tools.ts', '0a7bbdaeff10841cd46075956b414dddda82cb13'],
 ]);
 
 export const OBSERVATION_STACK_LOCKS = Object.freeze([

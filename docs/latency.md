@@ -21,7 +21,6 @@ same calls through that client.
 | Tool | p50 | p95 |
 | --- | --- | --- |
 | `read_page` | 13 | 14 |
-| `read_page_map` | 1 | 2 |
 | `find_elements` | 3 | 4 |
 | `click_element` | 4 | 5 |
 | `fill_element` | 4 | 5 |
@@ -56,7 +55,6 @@ page is asked whether it landed.
 | Tool | p50 | p95 |
 | --- | --- | --- |
 | `read_page` | 1322 | 8549 |
-| `read_page_map` | 1418 | 1693 |
 | `find_elements` | 1408 | 1561 |
 | `list_tabs` | 1335 | 3326 |
 | `browser_status` | 1325 | 1396 |
