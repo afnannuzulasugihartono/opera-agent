@@ -584,7 +584,7 @@ export function registerTools(server: McpServer, deps: ToolDeps) {
       timeoutMs: timeoutSchema
     },
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false }
-  }, ({ tabId, offset, limit, timeoutMs }: TargetTab & { offset?: number; limit?: number; timeoutMs?: number }) => execute("page.dump", { ...(offset != null ? { offset } : {}), ...(limit != null ? { limit } : {}) }, timeoutMs ?? 20000, deviceName, provider));
+  }, ({ tabId, offset, limit, timeoutMs }: TargetTab & { offset?: number; limit?: number; timeoutMs?: number }) => execute("page.dump", { tabId, ...(offset != null ? { offset } : {}), ...(limit != null ? { limit } : {}) }, timeoutMs ?? 20000, deviceName, provider));
 
   server.registerTool("save_page", {
     title: "Save the page into one file",

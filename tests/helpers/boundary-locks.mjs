@@ -64,7 +64,9 @@
 // The version constants moved (manifest.json `version` and index.ts `SERVER_VERSION`); nothing about the public contract moved.
 // Any other diff in either file would have broken this before it got this far.
 
-// WHY tools.ts was re-pinned on 2026-11-13: the agent gained two tools.
+// WHY tools.ts was re-pinned on 2026-11-13 a second time: the dump_page executor forgot one parameter.
+// The dump_page tool's handler called execute("page.dump", { offset, limit }) without tabId, so the relay silently dispatched the read to the tab the extension was currently active on instead of the requested tab.
+// The pin moves with the reviewed one-line fix; the artifact hash moves before the reader sees a tab the user never asked for.
 // dump_page reads a whole page as one structured object; save_page is the silent rename of scan_page, writing straight to Downloads without any user confirmation dialog.
 // The surface review moved with the tools by design.
 
@@ -95,7 +97,7 @@ export const PUBLIC_SURFACE_LOCKS = Object.freeze([
   ['../extension/background.js', 'c222723151c856e0051b67ac8b489d97096ed6605da080fff1c8bb859a05fe01'],
   ['../extension/manifest.json', '0a7a02180b6e00e65ba28aeacd799da630341caf4fc29702ac9b9830b29ae5b0'],
   ['../supabase/functions/opera-agent-mcp/index.ts', '92ce7532280e97c46edd5a8b782747513d487450e4bf49b0f41bcd47e93d8d76'],
-  ['../supabase/functions/opera-agent-mcp/tools.ts', '762b50196dc6a9c8add35e2c2da18da7d6dad84bfff833826cabe7536e4f0e80'],
+  ['../supabase/functions/opera-agent-mcp/tools.ts', '4675349f0bf22cfed166699c02c7ebb53bf0c24a2ca48d8a919e52a3ae2ff48d'],
 ]);
 
 export const OBSERVATION_STACK_LOCKS = Object.freeze([
