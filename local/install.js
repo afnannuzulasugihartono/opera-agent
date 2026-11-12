@@ -115,3 +115,74 @@ export async function install({
   print(message);
   return { ok, browsers: results, message };
 }
+
+import { existsSync } from 'node:fs';
+import { rm } from 'node:fs/promises';
+import { spawn } from 'node:child_process';
+import { deleteExtensionKey } from './registry.js';
+
+export const deviceFile = (home) => path.join(home, '.opera-agent', 'device.json');
+
+const defaultSpawn = (cmd, args, opts) => {
+  const child = spawn(cmd, args, opts);
+  child.unref();
+  return child;
+};
+
+export async function uninstall({
+  env = process.env,
+  platform = process.platform,
+  exec = defaultExec,
+  spawnImpl = defaultSpawn,
+  root = env.LOCALAPPDATA ? path.join(env.LOCALAPPDATA, 'OperaAgent') : path.join(os.homedir(), 'OperaAgent'),
+  home = env.OPERA_AGENT_HOME || os.homedir(),
+  keepPair = false,
+  print = () => {},
+} = {}) {
+  const steps = [];
+  for (const vendor of ['chrome', 'brave', 'edge']) {
+    const result = deleteExtensionKey({ vendor, exec });
+    steps.push({ step: `registry key for ${vendor}`, result: result.ok ? 'deleted; the registry-installed extension removes itself on next browser start' : `not removed (${result.error})` });
+  }
+  if (platform === 'win32') {
+    try {
+      if (existsSync(root)) {
+        await rm(root, { recursive: true, force: true });
+        steps.push({ step: 'OperaAgent folder', result: `deleted ${root}` });
+      } else {
+        steps.push({ step: 'OperaAgent folder', result: 'not found' });
+      }
+    } catch (error) {
+      steps.push({ step: 'OperaAgent folder', result: `could not delete: ${error.message}` });
+    }
+  } else {
+    steps.push({ step: 'OperaAgent folder', result: 'not applicable (the folder is Windows-only)' });
+  }
+  const device = deviceFile(home);
+  if (keepPair) {
+    steps.push({ step: 'device pairing', result: 'kept (--keep-pair)' });
+  } else if (existsSync(device)) {
+    try {
+      await rm(device, { force: true });
+      steps.push({ step: 'device pairing', result: 'deleted' });
+    } catch (error) {
+      steps.push({ step: 'device pairing', result: `could not delete: ${error.message}` });
+    }
+  } else {
+    steps.push({ step: 'device pairing', result: 'not found' });
+  }
+  try {
+    spawnImpl('npm', ['uninstall', '-g', 'opera-agent-mcp'], { detached: true, stdio: 'ignore' });
+    steps.push({ step: 'npm package', result: 'uninstall spawned in its own process; it finishes after this command exits' });
+  } catch (error) {
+    steps.push({ step: 'npm package', result: `could not spawn the uninstall (${error.message}); run \`npm uninstall -g opera-agent-mcp\` yourself` });
+  }
+  const instructions = [
+    'A registry-installed extension leaves the browser on its next start.',
+    'Copies installed the manual developer-mode way (Load unpacked) stay until you remove them in the browser itself:',
+    'chrome://extensions, brave://extensions, edge://extensions -> Remove.',
+  ].join('\n');
+  const message = [...steps.map((entry) => `${entry.step}: ${entry.result}`), instructions].join('\n');
+  print(message);
+  return { ok: true, steps, message };
+}
