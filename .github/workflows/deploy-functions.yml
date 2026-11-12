@@ -52,18 +52,17 @@ jobs:
             exit 1
           fi
 
-      - uses: supabase/setup-cli@v1
-        with:
-          version: latest
+      - uses: supabase/setup-cli@689adcfb80d947100a1eab127289b97d1fb07b13 # v3.2.0
 
       - name: Deploy
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           PROJECT_ID: nenmkmtvjremqphfqnfw
+          FUNCTIONS: ${{ inputs.functions }}
         shell: bash
         run: |
-          IFS=',' read -ra FUNCTIONS <<< "${{ inputs.functions }}"
-          for f in "${FUNCTIONS[@]}"; do
+          IFS=',' read -ra ARRAY <<< "$FUNCTIONS"
+          for f in "${ARRAY[@]}"; do
             f="$(echo "$f" | xargs)"
             echo "::group::deploying $f"
             supabase functions deploy "$f" --project-ref "$PROJECT_ID" --yes
@@ -73,6 +72,7 @@ jobs:
       - name: Confirm the MCP health answers
         shell: bash
         run: |
-          curl --fail --silent --show-error --location --retry 5 --retry-delay 5 \
+          curl --fail --silent --show-error --retry 5 --retry-delay 5 \
+            --proto '=https' --proto-redir '=https' \
             --output /dev/null --write-out 'status %{http_code}\n' \
             https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp/health
