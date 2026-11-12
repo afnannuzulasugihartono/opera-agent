@@ -29,6 +29,7 @@
     "cloud.js",
     "detect-browsers.js",
     "oauth.js",
+    "registry.js",
     "decks.js",
     "dev-shim.js",
     "dialog.js",
