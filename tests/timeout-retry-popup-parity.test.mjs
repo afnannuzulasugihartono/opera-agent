@@ -98,5 +98,5 @@ test('MCP instructions cover OAuth popups and openedTabs follow-through', () => 
 });
 
 test('U-R line ships as release 1.6.32', () => {
-  assert.equal(PRODUCT_VERSION, '1.6.49');
+  assert.equal(PRODUCT_VERSION, '1.6.50');
 });
