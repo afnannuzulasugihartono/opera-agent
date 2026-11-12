@@ -128,7 +128,7 @@
 
         <section data-reveal>
           <h2 id="tools">Tools MCP</h2>
-          <p>39 tool di atas 35 primitive browser. Tugas masing-masing:</p>
+          <p>40 tool di atas 35 primitive browser. Tugas masing-masing:</p>
 
           <h3>Peramban</h3>
           <dl class="toolList">
@@ -183,6 +183,12 @@
             <dt><code>media_stream_stop</code></dt><dd>Hentikan sesi dengar; ekor terakhir ikut ditranskripsi.</dd>
             <dt><code>media_listen_read</code></dt><dd>Baca segmen transkrip dengan cursor; transkrip tidak pernah masuk dashboard.</dd>
           </dl>
+
+          <h3>Rute</h3>
+          <dl class="toolList">
+            <dt><code>switch_device</code></dt><dd>Kunci provider ini ke satu browser untuk semua panggilan berikutnya (mis. opencode di Brave, Claude di Chrome). Tanpa argumen: baca pin sekarang dan browser yang awake; <code>any</code>: lepas kuncinya, freshest awake menjawab; header <code>X-Opera-Device</code> pada satu panggilan selalu menang atas pin.</dd>
+          </dl>
+          <p class="meta">Pin disimpan per (akun, provider); provider lain tidak ikut pindah.</p>
 
           <h3>Kas</h3>
           <dl class="toolList">
@@ -248,7 +254,7 @@
             <button type="button" data-copy="cfg-claude" data-i18n="copy">Salin</button>
           </div>
 
-          <p>Server itu menambah 39 tool di atas 35 primitive browser.</p>
+          <p>Server itu menambah 40 tool di atas 35 primitive browser.</p>
 
           <p>Opera Agent bisa dipanggil lewat tiga jalan: server hosted di atas, server lokal di mesin sendiri, dan extension yang menjalankan peramban yang sedang dipakai. Ketiganya dijelaskan di satu panduan: <a href="https://github.com/afnannuzulasugihartono/opera-agent/blob/main/docs/agent-call.md">docs/agent-call.md</a>.</p>
 

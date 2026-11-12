@@ -1,5 +1,5 @@
-// @last-edited: 2026-11-09 UTC+7.
-// @title: tools — the 34 tools this MCP server offers, and the schemas they take.
+// @last-edited: 2026-11-12 UTC+7.
+// @title: tools - the 40 tools this MCP server offers, and the schemas they take.
 // @state: every tool the surface advertises, with the input shape each one answers.
 // @dependencies: @modelcontextprotocol/sdk, zod/v4, ../_shared/seal-vm-program.js.
 
@@ -22,6 +22,10 @@ import * as z from "zod/v4";
 import { CommandFailure } from "../_shared/seal-vm-program.js";
 
 import type { ToolDeps } from "./index.ts";
+
+// The same two-minute window device.ts uses to call a browser live.
+
+const LIVE_WINDOW_MS = 120_000;
 
 const tabIdSchema = z.number().int().nonnegative()
   .describe("Explicit Opera automation target tab ID returned by open_url or list_tabs.");
@@ -900,6 +904,66 @@ export function registerTools(server: McpServer, deps: ToolDeps) {
       throw new Error(`${String(body.error || `the billing function answered HTTP ${response.status}`)}${refused}`);
     }
     return deps.textResult({ ok: true, invoice: body.invoice, link: body.url });
+  });
+
+  server.registerTool("switch_device", {
+    title: "Switch the browser this provider drives",
+    description: "Pin THIS provider - the X-Opera-Provider this call arrived with, e.g. opencode - to one browser for every later call from it, or ask which browser it drives now. Pass device to set the pin: the name must belong to this account's browsers, and a sleeping browser is fine (calls afterwards are refused by name until it is awake again). Pass any to clear the pin and let the relay answer with the freshest awake browser. Omit device to read the current pin and the browsers awake right now. A call that writes the X-Opera-Device header always wins over the stored pin for that call. The pin is stored per provider, so switching here never moves another provider to another browser. Returns: ok, provider, pin (the pinned device name or null), awake (the device names that heartbeat within two minutes), message.",
+    inputSchema: {
+      device: z.string().min(1).max(64).optional().describe('The browser device name to pin this provider to, e.g. opera-9; "any" to clear the pin; omit to read the current pin.')
+    },
+    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false }
+  }, async ({ device }: { device?: string }) => {
+    const providerName = String(provider || "unknown").trim().toLowerCase();
+    if (!caller) {
+      return deps.textResult({ ok: false, error: "static_pin", message: "A static token is pinned to one device by the deployment and cannot be re-pointed." });
+    }
+    if (!providerName || providerName === "unknown") {
+      return deps.textResult({ ok: false, error: "unknown_provider", message: "The caller did not identify its provider (X-Opera-Provider), and a pin is stored per provider. Set the header and try again." });
+    }
+    const userId = caller.userId;
+    const supabase = await deps.db();
+    const { data: rows } = await supabase
+      .from("opera_devices")
+      .select("device_name, last_seen_at, status")
+      .eq("user_id", userId)
+      .neq("status", "disabled")
+      .neq("status", "revoked")
+      .limit(25);
+    const known = (rows ?? []).map((row: { device_name?: unknown }) => String(row?.device_name ?? "").trim()).filter(Boolean);
+    const now = Date.now();
+    const freshNow = (rows ?? []).filter((row: { last_seen_at?: unknown }) => {
+      const seen = row?.last_seen_at ? Date.parse(String(row.last_seen_at)) : NaN;
+      return Number.isFinite(seen) && now - seen <= LIVE_WINDOW_MS;
+    }).map((row: { device_name?: unknown }) => String(row?.device_name ?? "").trim()).filter(Boolean);
+    const readPin = async () => {
+      const { data } = await supabase
+        .from("opera_provider_pins")
+        .select("device_name")
+        .eq("user_id", userId)
+        .eq("provider", providerName)
+        .maybeSingle();
+      return String((data as { device_name?: unknown } | null)?.device_name ?? "").trim() || null;
+    };
+
+    if (!device) {
+      const pin = await readPin();
+      return deps.textResult({ ok: true, provider: providerName, pin, awake: freshNow, message: pin ? `Provider "${providerName}" is pinned to "${pin}".` : `Provider "${providerName}" has no pin; the freshest awake browser answers.` });
+    }
+    const target = device.trim();
+    if (target.toLowerCase() === "any") {
+      const { error } = await supabase.from("opera_provider_pins").delete().eq("user_id", userId).eq("provider", providerName);
+      if (error) return deps.textResult({ ok: false, error: "pin_clear_failed", message: error.message });
+      return deps.textResult({ ok: true, provider: providerName, pin: null, awake: freshNow, message: `Provider "${providerName}" pin cleared; the freshest awake browser answers.` });
+    }
+    const canonical = known.find((name) => name.toLowerCase() === target.toLowerCase());
+    if (!canonical) {
+      return deps.textResult({ ok: false, error: "unknown_device", known, message: `No device named "${target}" is registered for this account. Devices on the account: ${known.join(", ") || "none"}.` });
+    }
+    const { error } = await supabase.from("opera_provider_pins").upsert({ user_id: userId, provider: providerName, device_name: canonical, updated_at: new Date().toISOString() });
+    if (error) return deps.textResult({ ok: false, error: "pin_failed", message: error.message });
+    const asleep = freshNow.some((name) => name.toLowerCase() === canonical.toLowerCase()) ? "" : " That browser is not awake right now; calls are refused by name until it is.";
+    return deps.textResult({ ok: true, provider: providerName, pin: canonical, awake: freshNow, message: `Provider "${providerName}" is pinned to "${canonical}".${asleep}` });
   });
 
 }

@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generated": "2026-11-09 UTC",
+  "generated": "2026-11-12 UTC+7",
   "source": "Two read-only sweeps, 2026-11-09 UTC: extension/|local/|lib/ (~200 files) and supabase/|landing/|scripts/|store/|.github/",
   "why": "An implicit state machine is code whose behavior hangs on state nobody declared. It is the shape of every silent failure in this product: the 'connected but dead' bridge, the ghost listen session, the command that completes after its timeout, the plan that runs out mid-run. The register names each one, and the gate (tests/implicit-state-machines.test.mjs) refuses hidden state nobody can point at. The decision order is fixed: UX > DX > AX — a failure the user can feel is fixed before a convenience for either of us.",
   "machines": [
@@ -93,6 +93,21 @@
       "wrongIfConfused": "a revoked device renders as plain 'offline' — the user cannot tell rebooting from revoked, and re-pairing is the only cure, never said on the page; a disabled device can never pair again",
       "decision": "model",
       "why": "three death paths with one status column; revoke needs a visible state, not a rotated hash",
+      "rank": 1
+    },
+    {
+      "id": "hosted-provider-pin",
+      "kind": "edge",
+      "where": "supabase/functions/opera-agent-mcp/index.ts (resolveDeviceFresh) and tools.ts (switch_device)",
+      "states": [
+        "unpinned",
+        "pinned"
+      ],
+      "writers": "the switch_device tool (upsert and delete on opera_provider_pins); nothing else writes the table",
+      "readers": "resolveDeviceFresh on every POST and every websocket auth; pinnedDeviceNotLive on refusal; browser_status device object for pinSource",
+      "wrongIfConfused": "a pin naming a sleeping or deleted browser makes every call from that provider answer 503 pinned_device_not_live while the account's other browsers sit awake and healthy; the fix is one switch_device call or one X-Opera-Device header, and the refusal names both",
+      "decision": "model",
+      "why": "the pin is per (account, provider) and outranks the freshest-awake default; the header outranks the pin for the one call it rides on; one writer, one table, one precedence rule, and a refusal that names the exit - the machine exists so a multi-harness setup can bind providers to browsers deterministically without client config edits",
       "rank": 1
     },
     {

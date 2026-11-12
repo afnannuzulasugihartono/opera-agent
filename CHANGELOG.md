@@ -1,4 +1,4 @@
-@last-edited: 2026-11-09 UTC+7.
+@last-edited: 2026-11-12 UTC+7.
 @related: [`README.md`](README.md) - [`docs/handoff.md`](docs/handoff.md) - [`docs/releases/`](docs/releases/)
 
 # Changelog
@@ -8,6 +8,7 @@ What each release contained, and why. The notes live in
 
 | Release | Date | Notes |
 | --- | --- | --- |
+| 1.6.48 | 2026-11-12 | [provider pins: switch_device and per-provider routing; everything aligns at 1.6.48](docs/releases/1.6.48.md) |
 | 1.6.47 | 2026-11-12 | [one reader, two answers: read_page with view; everything aligns at 1.6.47](docs/releases/1.6.47.md) |
 | 1.6.46 | 2026-11-12 | [the command installs the extension, and everything is 1.6.46](docs/releases/1.6.46.md) |
 | 1.6.45 | 2026-11-12 | [the registry accepts the runner's identity, proven once](docs/releases/1.6.45.md) |

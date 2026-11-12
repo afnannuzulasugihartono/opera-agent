@@ -73,8 +73,16 @@ claude mcp add --transport http opera-agent https://nenmkmtvjremqphfqnfw.supabas
 ```
 
 What a caller gets wrong: the device header names which of your devices does
-the work, and the server uses the first paired device when the header is
-missing. A device that is offline is a device that answers nothing. The server
+the work. The routing order is: the `X-Opera-Device` header on a call wins for that
+call; otherwise the provider pin stored for (your account, your `X-Opera-Provider`)
+decides; otherwise the freshest awake browser answers. Change the pin from any
+agent with the `switch_device` tool - `switch_device` with no arguments reads the
+current pin and the awake browsers, `switch_device` with another device name pins
+this provider to it for every later call, and `switch_device` with `any` clears
+the pin. A pin names one browser: while that browser is awake it answers every
+call, and when it is not the relay answers with a named refusal that lists the
+awake browsers - the command is never sent to a different browser by accident.
+A device that is offline is a device that answers nothing. The server
 adds 40 tools to the browser primitives, and every one of them acts on the
 paired device's browser, not on the machine the agent runs on. Two of them
 reach the extension itself rather than a page: `check_update` says what the
@@ -90,9 +98,11 @@ The named device answers every call while it is awake, because a tab id lives
 inside one browser: a call that lands on your everyday profile and the next call
 that lands on another profile leaves the agent holding a tab id that exists on
 neither. When the named device is asleep the server refuses by name instead of
-switching - `pinned_device_not_live`, naming how long it has been silent, which
-browsers are awake, and the header to send. Send `X-Opera-Device: any` when you
-want the freshest awake browser and do not care which one it is.
+switching - `pinned_device_not_live`, naming how long it has been silent and
+which browsers are awake. If the pin came from `switch_device`, the refusal names
+the tool to call to move the provider; if it came from the header, the server
+names the header that reaches each awake browser. Send `X-Opera-Device: any`
+when you want the freshest awake browser and do not care which one it is.
 
 ### What a call answers
 
