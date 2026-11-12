@@ -1,7 +1,7 @@
 /*
- * @last-edited: 2026-11-12 UTC+7.
- * @title: record-scan - the scan pipeline and the scroll, inside the page: the scan harvest and rewrite (outerHTML + inline), and the smooth scroll the recorder rides on.
- * @state: exposed as globalThis.OperaAgentRecordScan; scan pipeline collect/inline and record_scroll.scroll; no network from the page's own realm, no mutation of the live DOM.
+ * @last-edited: 2026-11-13 UTC+7.
+ * @title: record-scan - the scan pipeline and the scroll, inside the page: the scan harvest and rewrite (outerHTML + inline), the dump the agent reads, and the smooth scroll the recorder rides on.
+ * @state: exposed as globalThis.OperaAgentRecordScan; scan pipeline collect/inline, dumpPage, record_scroll.scroll; no network from the page's own realm, no mutation of the live DOM.
  * @dependencies: none.
  */
 
@@ -51,6 +51,70 @@
     } catch (error) {
       return null;
     }
+  }
+
+  function dumpPage(params) {
+    var offset = Math.max(0, Number.parseInt(params && params.offset, 10) || 0);
+    var limit = params && params.limit != null
+      ? Math.min(200000, Math.max(0, Number.parseInt(params.limit, 10) || 0))
+      : 12000;
+
+    var rawText = document.body ? String(document.body.innerText || '') : '';
+    var slice = rawText.slice(offset, offset + limit);
+    var truncated = offset + limit < rawText.length;
+    var title = String(document.title || '').trim().slice(0, 300);
+
+    var headings = [];
+    var headingNodes = document.querySelectorAll('h1,h2,h3,h4,h5,h6');
+    for (var i = 0; i < headingNodes.length && headings.length < 200; i += 1) {
+      var text = String(headingNodes[i].innerText || '').replace(/\s+/g, ' ').trim().slice(0, 300);
+      if (text) headings.push({ level: Number(headingNodes[i].tagName.slice(1)), text: text });
+    }
+
+    var links = [];
+    var seen = new Set();
+    var anchors = document.querySelectorAll('a[href]');
+    for (var j = 0; j < anchors.length && links.length < 500; j += 1) {
+      var anchor = anchors[j];
+      var href = String(anchor.getAttribute('href') || '').trim();
+      try { href = new URL(href, document.baseURI).href; } catch (error) { /* keep the raw href if the URL parse fails */ }
+      var anchorText = String(anchor.innerText || '').replace(/\s+/g, ' ').trim().slice(0, 160);
+      var key = href + '|' + anchorText;
+      if (!href || seen.has(key)) continue;
+      seen.add(key);
+      links.push({ href: href, text: anchorText });
+    }
+
+    var scripts = [];
+    var scriptNodes = document.querySelectorAll('script');
+    for (var k = 0; k < scriptNodes.length && scripts.length < 200; k += 1) {
+      var script = scriptNodes[k];
+      var src = script.getAttribute('src');
+      if (!src && !script.getAttribute('integrity') && !script.getAttribute('type')) continue;
+      scripts.push({ src: src || null, integrity: script.getAttribute('integrity') || null, type: script.getAttribute('type') || null });
+    }
+
+    var styles = [];
+    var styleLinks = document.querySelectorAll('link[rel~="stylesheet"][href]');
+    for (var m = 0; m < styleLinks.length && styles.length < 200; m += 1) {
+      styles.push({ href: String(styleLinks[m].getAttribute('href') || '') });
+    }
+
+    return {
+      ok: true,
+      url: String(document.baseURI),
+      title: title,
+      offset: offset,
+      limit: limit,
+      totalText: rawText.length,
+      truncated: truncated,
+      nextOffset: truncated && offset + limit < rawText.length ? offset + limit : null,
+      text: slice,
+      headings: headings,
+      links: links,
+      scripts: scripts,
+      styles: styles
+    };
   }
 
   function collectScanAssets() {
@@ -271,25 +335,11 @@
 
     var html = doc.documentElement.outerHTML;
 
-    if (args && typeof args.filename === 'string' && html.length > 0) {
-      var blob = new Blob([html], { type: 'text/html' });
-      var url = URL.createObjectURL(blob);
-      var anchor = document.createElement('a');
-
-      anchor.href = url;
-      anchor.download = args.filename;
-      anchor.style.display = 'none';
-      document.documentElement.appendChild(anchor);
-      anchor.click();
-      anchor.remove();
-      await new Promise(function (resolve) { setTimeout(resolve, 900); });
-      URL.revokeObjectURL(url);
-    }
-
     return {
       ok: true,
       documentBytes: source.length,
       htmlBytes: html.length,
+      html: html,
       inlined: inlined,
       kept: Array.from(new Set(kept)).slice(0, 64)
     };
@@ -298,7 +348,8 @@
   globalThis.OperaAgentRecordScan = {
     recordScrollTo: recordScrollTo,
     collectScanAssets: collectScanAssets,
-    scanInline: scanInline
+    scanInline: scanInline,
+    dumpPage: dumpPage
   };
 
   function onMessage(message, _sender, sendResponse) {
@@ -311,6 +362,7 @@
           case 'record_scroll.scroll': return recordScrollTo(message.params);
           case 'page.scan_collect': return collectScanAssets();
           case 'page.scan_inline': return scanInline(message.params);
+          case 'page.dump': return dumpPage(message.params);
           default: return { ok: false, error: 'Unknown record-scan method.' };
         }
       })

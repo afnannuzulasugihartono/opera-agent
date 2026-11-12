@@ -83,7 +83,7 @@ the pin. A pin names one browser: while that browser is awake it answers every
 call, and when it is not the relay answers with a named refusal that lists the
 awake browsers - the command is never sent to a different browser by accident.
 A device that is offline is a device that answers nothing. The server
-adds 40 tools to the browser primitives, and every one of them acts on the
+adds 41 tools to the browser primitives, and every one of them acts on the
 paired device's browser, not on the machine the agent runs on. Two of them
 reach the extension itself rather than a page: `check_update` says what the
 device runs and what the update service serves, and `apply_update` asks the

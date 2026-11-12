@@ -1,5 +1,5 @@
 // @last-edited: 2026-11-12 UTC+7.
-// @title: tools - the 40 tools this MCP server offers, and the schemas they take.
+// @title: tools - the 41 tools this MCP server offers, and the schemas they take.
 // @state: every tool the surface advertises, with the input shape each one answers.
 // @dependencies: @modelcontextprotocol/sdk, zod/v4, ../_shared/seal-vm-program.js.
 
@@ -574,9 +574,21 @@ export function registerTools(server: McpServer, deps: ToolDeps) {
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true }
   }, ({ tabId, timeoutMs }: TargetTab & { timeoutMs?: number }) => executeRecordStop({ tabId }, timeoutMs ?? 30000, deviceName, provider));
 
-  server.registerTool("scan_page", {
-    title: "Scan the Opera page into one file",
-    description: "Scan a page into one self-contained html file in the user's download folder: the rendered light DOM with its stylesheets, scripts (integrity preserved), images, icons, srcset and the @font-face fonts referenced by those stylesheets inlined as data URLs - the internal structure of a site, kept for offline reading or reconstruction. Uses the same sensitive-surface refusal as capture_page: password, OTP, payment and other sensitive pages are never scanned. KeptAbsolute lists assets that could not be fetched or inlined, and shadow roots are not serialized by outerHTML. Returns: ok, tabId, the scan manifest (filename, path, bytes, documentBytes, inlined counts, fontsInlined, keptAbsolute, failures, shadowRoots note) and the page it came from.",
+  server.registerTool("dump_page", {
+    title: "Dump the page as structured content",
+    description: "Read the whole page, not one viewport: the title, the URL, the visible text (paginated by offset and limit), the headings, the links with their text, the scripts, and the stylesheets, in one structured object. Use it when a question needs the entire written content of a page rather than a corner of it - the answer for 'what does this page say', 'what links does it have', 'is there a script for X'. For one visible viewport use read_page; for a self-contained offline file of the same content use save_page. Returns: ok, tabId, dump { url, title, offset, limit, totalText, truncated, nextOffset, text, headings, links, scripts, styles }, and the page it came from.",
+    inputSchema: {
+      tabId: tabIdSchema,
+      offset: z.number().int().min(0).optional().describe("Where in the text to start, in characters. Defaults to 0."),
+      limit: z.number().int().min(0).max(200000).optional().describe("How much text to return, in characters. Defaults to 12000; pass 0 for structure only, with no text."),
+      timeoutMs: timeoutSchema
+    },
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false }
+  }, ({ tabId, offset, limit, timeoutMs }: TargetTab & { offset?: number; limit?: number; timeoutMs?: number }) => execute("page.dump", { ...(offset != null ? { offset } : {}), ...(limit != null ? { limit } : {}) }, timeoutMs ?? 20000, deviceName, provider));
+
+  server.registerTool("save_page", {
+    title: "Save the page into one file",
+    description: "Save a page into one self-contained html file in the user's download folder: the rendered light DOM with its stylesheets, scripts (integrity preserved), images, icons, srcset and the @font-face fonts referenced by those stylesheets inlined as data URLs - the internal structure of a site, kept for offline reading or reconstruction. The file is written into Downloads directly; no Save dialog is shown, because the device owns the write. Uses the same sensitive-surface refusal as capture_page: password, OTP, payment and other sensitive pages are never saved. KeptAbsolute lists assets that could not be fetched or inlined, and shadow roots are not serialized by outerHTML. Returns: ok, tabId, the scan manifest (filename, path, bytes, documentBytes, inlined counts, fontsInlined, keptAbsolute, failures, shadowRoots note) and the page it came from.",
     inputSchema: {
       tabId: tabIdSchema,
       filename: z.string().max(120).optional()
