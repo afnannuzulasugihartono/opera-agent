@@ -27,6 +27,7 @@
     "caret-guard.js",
     "cdp.js",
     "cloud.js",
+    "detect-browsers.js",
     "oauth.js",
     "decks.js",
     "dev-shim.js",
