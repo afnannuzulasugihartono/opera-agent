@@ -10,154 +10,133 @@ import os from 'node:os';
 import path from 'node:path';
 import { uninstall, deviceFile } from '../local/install.js';
 
-const tmpRoot = () => mkdtemp(path.join(os.tmpdir(), 'oa-uninstall-'));
-const homeWith = (dir) => ({ OPERA_AGENT_HOME: dir });
-
-test('clean machine reports nothing removed and exits ok', async () => {
-  const root = await tmpRoot();
-  const home = await mkdtemp(path.join(os.tmpdir(), 'oa-home-'));
+const withRoots = async (fn) => {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'oa-uninstall-root-'));
+  const home = await mkdtemp(path.join(os.tmpdir(), 'oa-uninstall-home-'));
   try {
-    const removed = {};
-    const absent = path.join(home, 'OperaAgent');
-    const result = await uninstall({
-      platform: 'win32',
-      env: { LOCALAPPDATA: root, OPERA_AGENT_HOME: home },
-      exec: () => { const e = new Error('Unable to find the specified registry key or value.'); e.status = 1; throw e; },
-      spawnImpl: () => { removed.spawned = true; return { unref() {} }; },
-      root: absent,
-      home,
-    });
-    assert.equal(result.ok, true);
-    assert.ok(removed.spawned, 'npm uninstall was spawned anyway');
-    const text = result.message;
-    for (const vendor of ['chrome', 'brave', 'edge']) assert.match(text, new RegExp(`registry key for ${vendor}`));
-    assert.match(text, /OperaAgent folder: not found/);
-    assert.match(text, /device pairing: not found/);
+    return await fn({ root, home });
   } finally {
     await rm(root, { recursive: true, force: true });
     await rm(home, { recursive: true, force: true });
   }
+};
+
+const env = (root, home) => ({ LOCALAPPDATA: root, OPERA_AGENT_HOME: home });
+const quietExec = () => {};
+const noSpawn = () => ({ unref() {} });
+const absentKey = () => { const e = new Error('Unable to find the specified registry key or value.'); e.status = 1; throw e; };
+
+test('clean machine reports nothing removed and exits ok', async () => {
+  await withRoots(async ({ root, home }) => {
+    const spawned = { yes: false };
+    const result = await uninstall({
+      platform: 'win32',
+      env: env(root, home),
+      exec: absentKey,
+      spawnImpl: () => { spawned.yes = true; return noSpawn(); },
+      root: path.join(home, 'OperaAgent'),
+      home,
+    });
+    assert.equal(result.ok, true);
+    assert.equal(spawned.yes, true, 'npm uninstall was spawned anyway');
+    for (const vendor of ['chrome', 'brave', 'edge']) assert.match(result.message, new RegExp(`registry key for ${vendor}`));
+    assert.match(result.message, /OperaAgent folder: not found/);
+    assert.match(result.message, /device pairing: not found/);
+  });
 });
 
 test('deletes all three registry keys', async () => {
-  const root = await tmpRoot();
-  const home = await mkdtemp(path.join(os.tmpdir(), 'oa-home-'));
-  try {
+  await withRoots(async ({ root, home }) => {
     const calls = [];
     const result = await uninstall({
       platform: 'win32',
-      env: { LOCALAPPDATA: root, OPERA_AGENT_HOME: home },
+      env: env(root, home),
       exec: (cmd, args) => calls.push(args),
-      spawnImpl: () => ({ unref() {} }),
-      root,
+      spawnImpl: noSpawn,
+      root: path.join(home, 'OperaAgent'),
       home,
     });
     const vendors = calls.map(([op, key]) => String(key).includes('Google') ? 'chrome' : String(key).includes('Brave') ? 'brave' : 'edge');
     assert.deepEqual(new Set(vendors), new Set(['chrome', 'brave', 'edge']));
-    assert.ok(result.message.includes('registry key for chrome'));
-    assert.ok(result.message.includes('registry key for edge'));
-  } finally {
-    await rm(root, { recursive: true, force: true });
-    await rm(home, { recursive: true, force: true });
-  }
+    assert.match(result.message, /registry key for chrome/);
+    assert.match(result.message, /registry key for edge/);
+  });
 });
 
 test('deletes the OperaAgent folder including the dedicated ChromeProfile', async () => {
-  const root = await tmpRoot();
-  const home = await mkdtemp(path.join(os.tmpdir(), 'oa-home-'));
-  try {
+  await withRoots(async ({ root, home }) => {
     await mkdir(path.join(root, 'ChromeProfile'), { recursive: true });
     await writeFile(path.join(root, 'ChromeProfile', 'marker.txt'), 'x');
     const result = await uninstall({
       platform: 'win32',
-      env: { LOCALAPPDATA: root, OPERA_AGENT_HOME: home },
-      exec: () => {},
-      spawnImpl: () => ({ unref() {} }),
+      env: env(root, home),
+      exec: quietExec,
+      spawnImpl: noSpawn,
       root,
       home,
     });
     await assert.rejects(() => stat(path.join(root, 'ChromeProfile')), /ENOENT/);
     assert.match(result.message, /OperaAgent folder: deleted/);
-  } finally {
-    await rm(root, { recursive: true, force: true });
-    await rm(home, { recursive: true, force: true });
-  }
+  });
 });
 
 test('keepPair preserves the device file; everything else still goes', async () => {
-  const root = await tmpRoot();
-  const home = await mkdtemp(path.join(os.tmpdir(), 'oa-home-'));
-  try {
+  await withRoots(async ({ root, home }) => {
     await mkdir(path.join(root, 'Chrome'), { recursive: true });
     await mkdir(path.join(home, '.opera-agent'), { recursive: true });
     await writeFile(deviceFile(home), '{"deviceName":"opera-9"}');
     const result = await uninstall({
       platform: 'win32',
-      env: { LOCALAPPDATA: root, OPERA_AGENT_HOME: home },
-      exec: () => {},
-      spawnImpl: () => ({ unref() {} }),
+      env: env(root, home),
+      exec: quietExec,
+      spawnImpl: noSpawn,
       root,
       home,
       keepPair: true,
     });
     assert.match(result.message, /device pairing: kept \(--keep-pair\)/);
     assert.match(result.message, /OperaAgent folder: deleted/);
-  } finally {
-    await rm(root, { recursive: true, force: true });
-    await rm(home, { recursive: true, force: true });
-  }
+  });
 });
 
 test('deletes the paired device file by default', async () => {
-  const root = await tmpRoot();
-  const home = await mkdtemp(path.join(os.tmpdir(), 'oa-home-'));
-  try {
+  await withRoots(async ({ root, home }) => {
     await mkdir(path.join(home, '.opera-agent'), { recursive: true });
     await writeFile(deviceFile(home), '{"deviceName":"opera-9"}');
     const result = await uninstall({
       platform: 'win32',
-      env: { LOCALAPPDATA: root, OPERA_AGENT_HOME: home },
-      exec: () => {},
-      spawnImpl: () => ({ unref() {} }),
+      env: env(root, home),
+      exec: quietExec,
+      spawnImpl: noSpawn,
       root,
       home,
     });
     assert.match(result.message, /device pairing: deleted/);
     await assert.rejects(() => stat(deviceFile(home)), /ENOENT/);
-  } finally {
-    await rm(root, { recursive: true, force: true });
-    await rm(home, { recursive: true, force: true });
-  }
+  });
 });
 
 test('spawns npm uninstall -g opera-agent-mcp with detached:true', async () => {
-  const root = await tmpRoot();
-  const home = await mkdtemp(path.join(os.tmpdir(), 'oa-home-'));
-  try {
+  await withRoots(async ({ root, home }) => {
     const calls = [];
     await uninstall({
       platform: 'win32',
-      env: { LOCALAPPDATA: root, OPERA_AGENT_HOME: home },
-      exec: () => {},
+      env: env(root, home),
+      exec: quietExec,
       spawnImpl: (cmd, args, opts) => { calls.push([cmd, ...args, opts]); return { unref() {} }; },
       root,
       home,
     });
     assert.deepEqual(calls, [['npm', 'uninstall', '-g', 'opera-agent-mcp', { detached: true, stdio: 'ignore' }]]);
-  } finally {
-    await rm(root, { recursive: true, force: true });
-    await rm(home, { recursive: true, force: true });
-  }
+  });
 });
 
 test('spawn failure is reported and the command still exits ok', async () => {
-  const root = await tmpRoot();
-  const home = await mkdtemp(path.join(os.tmpdir(), 'oa-home-'));
-  try {
+  await withRoots(async ({ root, home }) => {
     const result = await uninstall({
       platform: 'win32',
-      env: { LOCALAPPDATA: root, OPERA_AGENT_HOME: home },
-      exec: () => {},
+      env: env(root, home),
+      exec: quietExec,
       spawnImpl: () => { throw new Error('spawn npm ENOENT'); },
       root,
       home,
@@ -165,29 +144,21 @@ test('spawn failure is reported and the command still exits ok', async () => {
     assert.equal(result.ok, true);
     assert.match(result.message, /could not spawn/);
     assert.match(result.message, /npm uninstall -g opera-agent-mcp/);
-  } finally {
-    await rm(root, { recursive: true, force: true });
-    await rm(home, { recursive: true, force: true });
-  }
+  });
 });
 
 test('prints the browser Remove instructions for developer-mode copies', async () => {
-  const root = await tmpRoot();
-  const home = await mkdtemp(path.join(os.tmpdir(), 'oa-home-'));
-  try {
+  await withRoots(async ({ root, home }) => {
     const result = await uninstall({
       platform: 'win32',
-      env: { LOCALAPPDATA: root, OPERA_AGENT_HOME: home },
-      exec: () => {},
-      spawnImpl: () => ({ unref() {} }),
+      env: env(root, home),
+      exec: quietExec,
+      spawnImpl: noSpawn,
       root,
       home,
     });
     assert.match(result.message, /chrome:\/\/extensions/);
     assert.match(result.message, /brave:\/\/extensions/);
     assert.match(result.message, /edge:\/\/extensions/);
-  } finally {
-    await rm(root, { recursive: true, force: true });
-    await rm(home, { recursive: true, force: true });
-  }
+  });
 });
