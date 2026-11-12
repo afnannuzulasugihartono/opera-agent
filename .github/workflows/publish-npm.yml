@@ -43,7 +43,7 @@ jobs:
           registry-url: https://registry.npmjs.org
 
       - name: The runner's npm can speak OIDC
-        run: npm install --global npm@11 && npm --version
+        run: npm install --global --ignore-scripts npm@11.5.1 && npm --version
 
       - name: The version in the tree is the version asked for
         env:
