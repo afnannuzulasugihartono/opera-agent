@@ -92,11 +92,14 @@
 // WHY these three were re-pinned on 2026-11-12: the 1.6.49 release rode them.
 // The version constants moved (manifest.json version, index.ts SERVER_VERSION); nothing about the public contract moved with them.
 
+// WHY these three were re-pinned on 2026-11-12: the 1.6.50 release rode them.
+// The version constants moved (manifest.json version, index.ts SERVER_VERSION); nothing about the public contract moved with them.
+
 export const PUBLIC_SURFACE_LOCKS = Object.freeze([
   ['../extension/content.js', 'fd75fc8ba524c201294b4919603fb478400865039f46d5a00730b0f1b937ecb3'],
   ['../extension/background.js', 'c222723151c856e0051b67ac8b489d97096ed6605da080fff1c8bb859a05fe01'],
-  ['../extension/manifest.json', '0a7a02180b6e00e65ba28aeacd799da630341caf4fc29702ac9b9830b29ae5b0'],
-  ['../supabase/functions/opera-agent-mcp/index.ts', '92ce7532280e97c46edd5a8b782747513d487450e4bf49b0f41bcd47e93d8d76'],
+  ['../extension/manifest.json', 'aaad334ded5c8febe60127a01b8ccfeddb5e0f191f42800a1567b1c9ec6fc84e'],
+  ['../supabase/functions/opera-agent-mcp/index.ts', 'c805688f4ba85a2f6ff1f104bdf58e982de0c6b7b80fa29ff0d5b2999a9967ab'],
   ['../supabase/functions/opera-agent-mcp/tools.ts', '4675349f0bf22cfed166699c02c7ebb53bf0c24a2ca48d8a919e52a3ae2ff48d'],
 ]);
 
