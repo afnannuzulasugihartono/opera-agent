@@ -1,9 +1,11 @@
 # @last-edited: 2026-11-12 UTC+7.
 # @title: registry install - the extension appears in Chrome, Brave and Edge with one double-click, no store review waiting.
 # @state: measured 2026-11-12 on Windows against isolated throwaway profiles: Chrome 153.0.8010.36, Brave 157.1.99.56 and Edge (x86) each installed the extension automatically after the first browser start, from the public update URL.
-# @dependencies: `store/extension-registry-install.reg`, `store/extension-registry-uninstall.reg`, `docs/releases/1.6.44.md`.
+# @dependencies: `store/extension-registry-install.reg`, `store/extension-registry-uninstall.reg`, `docs/install.md`, `docs/releases/1.6.44.md`.
 
 # WHAT IT DOES
+
+**The interactive path lives in [`docs/install.md`](./install.md)** — this page is the `.reg` route for people who want the keys without the npm package (or whose package is unreachable).
 
 `store/extension-registry-install.reg` writes three keys, one per browser
 (Windows `HKCU`, per-user, no administrator rights):

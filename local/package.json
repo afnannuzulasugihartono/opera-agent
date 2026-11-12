@@ -1,6 +1,6 @@
 {
   "name": "opera-agent-mcp",
-  "version": "1.6.45",
+  "version": "1.6.46",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/afnannuzulasugihartono/opera-agent.git"
@@ -27,7 +27,9 @@
     "caret-guard.js",
     "cdp.js",
     "cloud.js",
+    "install.js",
     "oauth.js",
+    "registry.js",
     "decks.js",
     "dev-shim.js",
     "dialog.js",
@@ -50,6 +52,7 @@
     "office/zip.js",
     "page-expressions.js",
     "pointer.js",
+    "postinstall.js",
     "primitives-file.js",
     "primitives.js",
     "read-strategy.js",
@@ -79,6 +82,7 @@
   ],
   "license": "MIT",
   "scripts": {
-    "prepack": "node ../scripts/pack-mcp.mjs"
+    "prepack": "node ../scripts/pack-mcp.mjs",
+    "postinstall": "node postinstall.js"
   }
 }

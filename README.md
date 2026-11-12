@@ -51,6 +51,8 @@ npm i -g opera-agent-mcp
 | `opera-agent-mcp cloud` | the hosted server, through OAuth |
 | `opera-agent-mcp auth` | sign in once; the token stays beside this install |
 | `opera-agent-mcp doctor` | print what is connected and what the plan allows |
+| `opera-agent-mcp install` | register the extension with every Chromium browser on this Windows machine |
+| `opera-agent-mcp uninstall` | remove the keys, the OperaAgent folder, and the package itself |
 
 The local drive is metered where it happens: the bridge verifies the session
 against the account once, enforces the allowance locally, and reports the usage

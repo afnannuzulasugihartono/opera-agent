@@ -11,12 +11,14 @@
 
 const USAGE = `opera-agent-mcp <mode>
 
-  local   drive the everyday browser on this machine, over the loopback bridge
-  cloud   drive it through the hosted Opera Agent server
-  auth    sign in with a browser and keep the token beside this install
-  doctor  print what is connected, the plan, and what the plan allows
+  local      drive the everyday browser on this machine, over the loopback bridge
+  cloud      drive it through the hosted Opera Agent server
+  auth       sign in with a browser and keep the token beside this install
+  doctor     print what is connected, the plan, and what the plan allows
+  install    detect this machine's browsers, register the extension, keep a verified CRX backup
+  uninstall  remove the extension's registry keys, the OperaAgent folder, and this package; prints what it cannot remove
 
-  --help  print this
+  --help     print this
 `;
 
 const requested = process.argv[2] || 'local';
@@ -44,6 +46,12 @@ if (mode === 'doctor') {
     process.stderr.write('Sign-in did not finish: ' + String(error?.message || error) + '\n');
     process.exitCode = 4;
   }
+} else if (mode === 'install') {
+  const { installFromCli } = await import('../install.js');
+  process.exitCode = await installFromCli();
+} else if (mode === 'uninstall') {
+  const { uninstallFromCli } = await import('../install.js');
+  process.exitCode = await uninstallFromCli();
 } else {
   process.stderr.write(`Unknown mode: ${mode}\n${USAGE}`);
   process.exit(2);
