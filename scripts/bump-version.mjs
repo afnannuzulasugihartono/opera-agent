@@ -86,14 +86,16 @@ for (const entry of enumeration) {
   if (before !== after) writes.set(entry.file, after);
 }
 
-function sha1Blob(file) {
-  const content = Buffer.from(fs.readFileSync(path.join(repo, file), 'utf8').replace(/\r\n/g, '\n'), 'utf8');
+const contentOf = (file) => (writes.has(file) ? writes.get(file) : fs.readFileSync(path.join(repo, file), 'utf8'));
+
+function sha1BlobText(text) {
+  const content = Buffer.from(String(text).replace(/\r\n/g, '\n'), 'utf8');
   return crypto.createHash('sha1').update(Buffer.from(`blob ${content.length}\0`)).update(content).digest('hex');
 }
 
 const lockFile = path.join(repo, 'tests/helpers/boundary-locks.mjs');
 const rePinned = ['extension/manifest.json', 'supabase/functions/opera-agent-mcp/index.ts', 'supabase/functions/opera-agent-mcp/tools.ts']
-  .map((file) => [file.replace(/^extension\//, '../extension/').replace(/^supabase\//, '../supabase/'), sha1Blob(file)]);
+  .map((file) => [file.replace(/^extension\//, '../extension/').replace(/^supabase\//, '../supabase/'), sha1BlobText(contentOf(file))]);
 const boundarySource = fs.readFileSync(lockFile, 'utf8');
 let boundaryNext = boundarySource;
 for (const [relativePath, sha] of rePinned) {
@@ -108,7 +110,7 @@ writes.set('tests/helpers/boundary-locks.mjs', boundaryNext);
 
 const contractPath = path.join(repo, 'tests/fixtures/mcp-contract-v1.json');
 const contract = JSON.parse(fs.readFileSync(contractPath, 'utf8'));
-const sourceForHash = fs.readFileSync(path.join(repo, 'supabase/functions/opera-agent-mcp/index.ts'), 'utf8') + '\n' + fs.readFileSync(path.join(repo, 'supabase/functions/opera-agent-mcp/tools.ts'), 'utf8');
+const sourceForHash = contentOf('supabase/functions/opera-agent-mcp/index.ts') + '\n' + contentOf('supabase/functions/opera-agent-mcp/tools.ts');
 const contractNext = { ...contract, sourceSha256: sha256ContractSource(sourceForHash) };
 if (contractNext.sourceSha256 !== contract.sourceSha256) {
   writes.set('tests/fixtures/mcp-contract-v1.json', `${JSON.stringify(contractNext, null, 2)}\n`);
