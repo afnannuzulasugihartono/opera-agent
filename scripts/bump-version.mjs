@@ -75,7 +75,7 @@ if (!arg || !/^\d+\.\d+\.\d+$/.test(arg)) fail('pass one version, e.g. node scri
   const boundarySource = fs.readFileSync(lockFile, 'utf8');
   let boundaryNext = boundarySource;
   for (const [relativePath, sha] of rePinned) {
-    const pattern = new RegExp(`(\\['${relativePath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}', ')[0-9a-f]{40}('\\])`);
+    const pattern = new RegExp(`(\\['${relativePath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}', ')[0-9a-f]{64}('\\])`);
     if (!pattern.test(boundaryNext)) fail(`tests/helpers/boundary-locks.mjs: no pin line for ${relativePath}`);
     boundaryNext = boundaryNext.replace(pattern, `$1${sha}$2`);
   }
