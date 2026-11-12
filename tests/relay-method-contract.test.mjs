@@ -13,7 +13,11 @@ import fs from 'node:fs';
 
 const root = new URL('..', import.meta.url);
 const protocol = fs.readFileSync(new URL('extension/lib/protocol.js', root), 'utf8');
-const migration = fs.readFileSync(new URL('supabase/migrations/20261110230000_opera_methods_from_contract.sql', root), 'utf8');
+
+// WHY TWO FILES: the seed was applied and may not be edited, so a second seed, kept beside it, carries the methods the contract gained after it - the gate reads both and holds both to the contract.
+
+const seedFiles = ['supabase/migrations/20261110230000_opera_methods_from_contract.sql', 'supabase/migrations/20261112000000_opera_methods_record_scan.sql'];
+const migration = seedFiles.map((file) => fs.readFileSync(new URL(file, root), 'utf8')).join('\n');
 
 const spec = protocol.match(/export const METHOD_SPECS = Object\.freeze\(\{([\s\S]*?)\n\}\);/)[1];
 const methods = [...spec.matchAll(/'([a-z_]+\.[a-z_]+)':\s*\{\s*timeoutMs:\s*(\w+)\s*\}/g)]

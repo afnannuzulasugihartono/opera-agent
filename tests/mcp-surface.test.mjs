@@ -48,14 +48,14 @@ const FROZEN_MCP_TOOLS = [
   'navigate_tab', 'open_url', 'pointer', 'press_key', 'read_page', 'stream_keys',
   'run_adhoc', 'run_browser_burst', 'run_program', 'run_workflow', 'scroll_page', 'skill_recall', 'skill_save',
   'media_stream_start', 'media_stream_stop', 'media_listen_read',
-  'check_update', 'apply_update'
+  'check_update', 'apply_update', 'scan_page', 'record_start', 'record_stop'
 ];
 
 const FROZEN_METHODS = [
   'browser.burst', 'browser.ping', 'extension.update', 'media.pause', 'media.play', 'media.seek',
   'media.state', 'media.stream_start', 'media.stream_stop', 'page.capture', 'page.click', 'page.collect_links',
   'page.fill', 'page.find', 'page.focus', 'page.key', 'page.pointer',
-  'page.query', 'page.read', 'page.scroll', 'page.stream', 'page.wait_for',
+  'page.query', 'page.read', 'page.record_start', 'page.record_stop', 'page.scan', 'page.scroll', 'page.stream', 'page.wait_for',
   'statement.download', 'statement.manifest',
   'tabs.activate', 'tabs.close', 'tabs.find', 'tabs.get', 'tabs.list', 'tabs.navigate',
   'tabs.open', 'tabs.reload'
@@ -103,6 +103,9 @@ const FROZEN_TOOL_SCHEMAS = Object.freeze({
   statement_manifest: 'c8e06f753d58ad98',
   statement_deliver: '7a4a87bc8e59884b',
   invoice_create: '06cfef1148eed4af',
+  record_start: '067fb032b10b3f6f',
+  record_stop: 'a5a690be3a1dd2e6',
+  scan_page: '63e082d6d801f284',
 });
 
 const PLAN_DOOR_CHANGED_TOOL = 'invoice_create';
@@ -214,7 +217,7 @@ test('MCP exposes focused browser tools and no generic command escape hatch', ()
   assert.deepEqual(tools, [
     'browser_status', 'check_update', 'apply_update', 'run_browser_burst', 'run_workflow', 'run_program', 'run_adhoc', 'skill_save', 'skill_recall', 'start_watch',
     'wait_events', 'stop_watch', 'list_tabs', 'open_url', 'activate_tab', 'navigate_tab', 'close_tab',
-    'read_page', 'capture_page', 'read_page_map', 'find_elements', 'click_element', 'fill_element', 'press_key', 'stream_keys', 'scroll_page',
+    'read_page', 'capture_page', 'record_start', 'record_stop', 'scan_page', 'read_page_map', 'find_elements', 'click_element', 'fill_element', 'press_key', 'stream_keys', 'scroll_page',
     'pointer',
     'media_state', 'media_play', 'media_pause', 'media_seek',
     'media_stream_start', 'media_stream_stop', 'media_listen_read',
@@ -224,15 +227,15 @@ test('MCP exposes focused browser tools and no generic command escape hatch', ()
   assert.doesNotMatch(source, /registerTool\("(?:run_command|execute_command|raw_command)"/);
 });
 
-test('R4 keeps the protocol inventory frozen at 32 allowlisted primitives — page.stream, statement and extension.update added', () => {
-  assert.equal(PRODUCT_VERSION, '1.6.43');
-  assert.equal(ALLOWED_METHODS.length, 32);
+test('R4 keeps the protocol inventory frozen at 35 allowlisted primitives - page.stream, statement and extension.update added, then the armed recorder and the scan', () => {
+  assert.equal(PRODUCT_VERSION, '1.6.44');
+  assert.equal(ALLOWED_METHODS.length, 35);
   assert.deepEqual([...ALLOWED_METHODS].sort(), FROZEN_METHODS);
 });
 
-test('R11 removes the sense-act loop tools, so the public MCP tool inventory is 37 tools', async () => {
+test('R11 removes the sense-act loop tools, so the public MCP tool inventory is 40 tools', async () => {
   const registered = [...source.matchAll(/server\.registerTool\("([a-z_]+)"/g)].map((match) => match[1]);
-  assert.equal(registered.length, 37);
+  assert.equal(registered.length, 40);
   assert.deepEqual([...registered].sort(), [...FROZEN_MCP_TOOLS, 'start_watch', 'stop_watch', 'wait_events', 'statement_deliver', 'statement_manifest', 'invoice_create', 'read_page_map'].sort());
 });
 
@@ -283,9 +286,9 @@ test('browser_status answers its plan even when the command it carried failed', 
 
 test('the tool count and names match the contract', () => {
   const registered = [...source.matchAll(/server\.registerTool\("([a-z_]+)"/g)].map((m) => m[1]);
-  assert.equal(registered.length, 37);
+  assert.equal(registered.length, 40);
   assert.deepEqual(registered, contract.tools);
-  assert.equal(contract.toolCount, 37);
+  assert.equal(contract.toolCount, 40);
 });
 
 test('no generic escape hatch was introduced', () => {
@@ -393,7 +396,7 @@ const READABLE_INPUTS_MOVED = Object.freeze({
 
 test('the frozen schema map matches the live file, and records the changes it has approved', () => {
   const blocks = toolBlocks();
-  assert.equal(blocks.length, 37, 'the public tool count changes only by reviewed decision (loop tools removed; check_update and apply_update join the reviewed set)');
+  assert.equal(blocks.length, 40, 'the public tool count changes only by reviewed decision (loop tools removed; check_update and apply_update joined; record_start, record_stop and scan_page join the reviewed set)');
   const actual = {};
   for (const block of blocks) actual[block.name] = schemaDigest(block.schema);
 
@@ -760,7 +763,7 @@ test('the whole-file digest fixture is re-frozen to the live file', () => {
 
 test('every tool has a title and says what it returns', () => {
   const starts = [...source.matchAll(/server\.registerTool\("([a-z_]+)"/g)];
-  assert.equal(starts.length, 37, 'the tool count changes only by reviewed decision');
+  assert.equal(starts.length, 40, 'the tool count changes only by reviewed decision');
 
   starts.forEach((match, index) => {
     const end = index + 1 < starts.length ? starts[index + 1].index : source.length;

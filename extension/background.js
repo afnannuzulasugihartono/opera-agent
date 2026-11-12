@@ -25,6 +25,8 @@ import { collectAxSummary } from './worker/capture.js';
 import { publicTab, requireTabId, resolveTabId, waitTabReady, contentCall } from './worker/tab-content.js';
 import { listenStart, listenStop } from './worker/listen.js';
 import { capturePage } from './worker/capture-page.js';
+import { recordStart, recordStop } from './worker/record-session.js';
+import { scanPage } from './worker/scan-page.js';
 import {
   executionMode,
   sampleTabFocus,
@@ -329,6 +331,18 @@ export async function dispatch(method, params = {}, context = {}) {
     case 'page.capture': {
       const tabId = await resolveTabId(params);
       return capturePage(tabId, params, context);
+    }
+    case 'page.record_start': {
+      const tabId = await resolveTabId(params);
+      return recordStart(tabId, params, context);
+    }
+    case 'page.record_stop': {
+      const tabId = await resolveTabId(params);
+      return recordStop(tabId, params, context);
+    }
+    case 'page.scan': {
+      const tabId = await resolveTabId(params);
+      return scanPage(tabId, params, context);
     }
     case 'page.key': {
       const tabId = await resolveTabId(params);

@@ -290,6 +290,17 @@ INTERACTION_CONTROLS_PAGE = (
 PAGE_MAP_PAGE = (ROOT / "tests" / "fixtures" / "usability-page-map.html").read_text(
     encoding="utf-8"
 )
+SCAN_PAGE = (ROOT / "tests" / "fixtures" / "usability-scan.html").read_text(
+    encoding="utf-8"
+)
+ANIM_PAGE = (ROOT / "tests" / "fixtures" / "usability-anim.html").read_text(
+    encoding="utf-8"
+)
+SCAN_CSS = b"body{margin:0}\n/* SCAN_EXTERNAL_STYLESHEET_MARKER: the fixture's external sheet */\n#scanTop{letter-spacing:2px}\n"
+SCAN_JS = b"window.__scanMarker='SCAN_EXTERNAL_SCRIPT_MARKER';\n"
+SCAN_PIXEL = base64.b64decode(
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="
+)
 
 # WHY THE PORTAL IS A FIXTURE AND THE STATEMENT IS REAL BYTES.
 # The device path is the one that turns a service into a product, and it had only ever been proved against a fake browser.
@@ -685,11 +696,29 @@ class Handler(BaseHTTPRequestHandler):
                 pass
             return
 
+        if self.path in ("/scan-css", "/scan-js", "/scan-pixel"):
+            if self.path == "/scan-css":
+                payload, content_type = SCAN_CSS, "text/css; charset=utf-8"
+            elif self.path == "/scan-js":
+                payload, content_type = (
+                    SCAN_JS,
+                    "application/javascript; charset=utf-8",
+                )
+            else:
+                payload, content_type = SCAN_PIXEL, "image/png"
+            self.send_response(200)
+            self.send_header("Content-Type", content_type)
+            self.send_header("Content-Length", str(len(payload)))
+            self.end_headers()
+            self.wfile.write(payload)
+            return
+
         if (
             self.path.startswith("/page")
             or self.path.startswith("/visual")
             or self.path.startswith("/blank")
             or self.path.startswith("/iframe")
+            or self.path.startswith("/scan")
             or self.path.startswith("/pre8e-r0")
             or self.path.startswith("/pre8e-r1")
             or self.path.startswith("/pre8e-r2")
@@ -723,6 +752,8 @@ class Handler(BaseHTTPRequestHandler):
                 document = IDENTITY_PAGE
             elif self.path.startswith("/pre8e-r9"):
                 document = INTERACTION_CONTROLS_PAGE
+            elif self.path.startswith("/scan"):
+                document = SCAN_PAGE
             elif self.path.startswith("/pre8e-r1"):
                 document = ACTIONABILITY_ACCEPTANCE_PAGE
             elif self.path.startswith("/pre8e-r0"):
@@ -1262,6 +1293,110 @@ async def run(port, profile):
         result = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
         tab_id = result["tab"]["id"]
         assert result["tab"]["title"] == "Opera Agent Test Page"
+
+        cid = STATE.push(
+            "tabs.open",
+            {"url": f"http://{HOST}:{port}/scan", "active": False, "wait": True},
+            benchmark="tabs.open+scan",
+        )
+        scan_tab = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))["tab"][
+            "id"
+        ]
+
+        cid = STATE.push(
+            "page.record_start",
+            {
+                "tabId": scan_tab,
+                "filename": "opera-agent-test-record.webm",
+                "fps": 15,
+                "maxWidth": 800,
+                "quality": 50,
+            },
+            timeout=60000,
+            benchmark="page.record_start",
+        )
+        armed = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid, 60))
+        assert armed["armed"]["filename"] == "opera-agent-test-record.webm", armed
+        assert armed["armed"]["startedAt"] > 0, armed
+
+        cid = STATE.push(
+            "page.find",
+            {
+                "tabId": scan_tab,
+                "role": "button",
+                "text": "Increment counter",
+                "exact": True,
+            },
+            benchmark="page.record_find.button",
+        )
+        button = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+        cid = STATE.push(
+            "page.click",
+            {"tabId": scan_tab, "ref": button["item"]["ref"]},
+            benchmark="page.record_click",
+        )
+        assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+
+        cid = STATE.push(
+            "page.find",
+            {"tabId": scan_tab, "role": "textbox", "text": "Type here", "exact": True},
+            benchmark="page.record_find.input",
+        )
+        input_found = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+        cid = STATE.push(
+            "page.fill",
+            {
+                "tabId": scan_tab,
+                "ref": input_found["item"]["ref"],
+                "value": "record session",
+            },
+            benchmark="page.record_fill",
+        )
+        assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+
+        cid = STATE.push(
+            "page.scroll",
+            {"tabId": scan_tab, "y": 600, "absolute": True},
+            benchmark="page.record_scroll",
+        )
+        assert_completed_ok(await asyncio.to_thread(STATE.wait, cid))
+
+        cid = STATE.push(
+            "page.record_stop",
+            {"tabId": scan_tab},
+            timeout=60000,
+            benchmark="page.record_stop",
+        )
+        record = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid, 60))
+        rec = record["recording"]
+        assert rec["bytes"] > 0, rec
+        assert rec["screencastFrames"] > 0, rec
+        assert len(record["samples"]) >= 1, record
+        record_path = Path(rec["path"])
+        assert record_path.exists(), rec
+        assert record_path.read_bytes()[:4] == b"\x1a\x45\xdf\xa3", (
+            record_path.read_bytes()[:4]
+        )
+
+        cid = STATE.push(
+            "page.scan",
+            {"tabId": scan_tab, "filename": "opera-agent-test-scan.html"},
+            timeout=60000,
+            benchmark="page.scan",
+        )
+        scan_result = assert_completed_ok(await asyncio.to_thread(STATE.wait, cid, 60))
+        mir = scan_result["scan"]
+        assert mir["bytes"] > 0, mir
+        assert mir["inlined"]["stylesheets"] >= 1, mir
+        assert mir["inlined"]["scripts"] >= 1, mir
+        scan_path = Path(mir["path"])
+        assert scan_path.exists(), mir
+        scan_text = scan_path.read_text(encoding="utf-8", errors="replace")
+        assert "SCAN_EXTERNAL_STYLESHEET_MARKER" in scan_text, scan_text[:400]
+        assert "SCAN_EXTERNAL_SCRIPT_MARKER" in scan_text, scan_text[:400]
+        assert "/scan-css" not in scan_text and "/scan-js" not in scan_text, scan_text[
+            :400
+        ]
 
         restore = await activate_and_report_restore(worker, tab_id)
         if restore is not None:

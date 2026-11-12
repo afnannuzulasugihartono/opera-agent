@@ -156,29 +156,29 @@
 #    tests/helpers/canonical-source-hash.mjs strips the comment lines and collapses
 #    the whitespace before hashing a tool schema, so the pin holds the tool's
 #    contract and not its indentation.
-scripts/check.mjs 42fb418bc07c82f3c87a40d04b77dcf07ae8259d
+scripts/check.mjs 7e9e066012da17e0763716ea1dadad2425c87d89
 scripts/scope.mjs 2293857de17bf0077a368729555f3af5a13a6ff5
 scripts/scope-check.mjs d6359cc409244f0fdc13cc7ef496daddd5981910
 
 # --- the pins themselves: editing these is how a drift goes unnoticed ---
-tests/helpers/boundary-locks.mjs 50fe06cd78a12f1bbf28bb23521089b99d73b8e7
+tests/helpers/boundary-locks.mjs 93624fb4fb0d3b304d04289835254bce08166b75
 tests/helpers/canonical-source-hash.mjs a4ebaa0d40122afce47a52cba39309d7dfdb1af1
 tests/helpers/comment-format.mjs bced9e4c9b7a58b56e3317067d5e6717dd2040bf
 tests/comment-format.test.mjs 0231619043033b07c22f725feee511d6ebb34bd4
 tests/comment-claims.test.mjs 09b2944f3ca73f2304752df2423ab67a35a462e6
 
 # --- structural rules a human reviewer would otherwise have to remember ---
-tests/hygiene.test.mjs 0312ff4ae0fffe556ce5475dda177716aab55d35
+tests/hygiene.test.mjs d3473954b371b5291ee088d0af786dee2fddf3e4
 tests/structure-gates.test.mjs 3ebf0d1b62858e67d7f6fb441461be85e7158a63
 tests/boundary-locks.test.mjs 3a9ae9e36aec03a4470ce2f9cf0971f66724ecf8
 
 # --- controls that decide what the product accepts at runtime ---
-extension/lib/protocol.js 94e45cc27ac21a1bcc20962778350cc686403a5b
+extension/lib/protocol.js d7103e66a59887c0f85743b31ffc9649965af493
 lib/secret-pattern.js 06386015c5756f83c08ee06cc571b9ae897d850a
 supabase/functions/_shared/cors.js dead4552d786ef0fdbaf71ad5bfb3c99e647b575
 
 # --- surfaces an owner, not an agent, should have to look at ---
-extension/manifest.json c17f1d00e3a4948b81e0515db0f0d42653ae9889
+extension/manifest.json 551ac29fe26e31b0ddde94b42ee916cc53750178
 .gitleaks.toml 4cdb3f1b759def776beeb77df39ea4cd52513e64
 .github/CODEOWNERS 8b4d8f8bb18f931b9c6e4a15cd06dac9e4be3a20
 .github/workflows/ci.yml bf241518b3aea12b4fbc49ab102552cea139c1e5

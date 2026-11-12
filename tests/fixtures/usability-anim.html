@@ -1,0 +1,63 @@
+<!-- * @last-edited: 2026-11-12 UTC+7. -->
+<!-- * @title: usability-anim - the fixture the recorder test drives against: a page with a real 60fps rAF loop (rotating ring + frame counter) and an external stylesheet/script. -->
+<!-- * @state: static fixture, served by tests/browser_extension_test.py under /scan-css and /scan-js; the anchor ids are the markers the record asserts captured content. -->
+<!-- * @dependencies: none. -->
+
+<!doctype html>
+<html lang="id">
+<head>
+<title>Opera Agent Anim Fixture</title>
+<meta charset="utf-8">
+<link rel="stylesheet" href="/scan-css">
+</head>
+<body>
+<header>
+  <h1 id="animTop">Animasi fixture</h1>
+  <img id="animPixel" src="/scan-pixel" width="64" height="64" alt="pixel">
+</header>
+<main>
+  <canvas id="animCanvas" width="640" height="360" aria-label="Rotasi ring dan penghitung frame"></canvas>
+  <button id="animButton" type="button">Increment counter</button>
+  <p>Counter: <span id="animCount">0</span></p>
+  <input id="animInput" type="text" placeholder="Type here">
+  <p id="animEcho">echo</p>
+  <script>
+    document.getElementById('animButton').addEventListener('click', () => {
+      var counter = document.getElementById('animCount');
+      counter.textContent = String(Number(counter.textContent) + 1);
+    });
+    document.getElementById('animInput').addEventListener('input', (event) => {
+      document.getElementById('animEcho').textContent = event.target.value;
+    });
+    var canvas = document.getElementById('animCanvas');
+    var ctx = canvas.getContext('2d');
+    var start = performance.now();
+    function frame(now) {
+      var elapsed = (now - start) / 1000;
+      var t = performance.now();
+      ctx.fillStyle = '#08081a';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.strokeStyle = '#0000f2';
+      ctx.lineWidth = 22;
+      ctx.beginPath();
+      ctx.arc(canvas.width / 2, canvas.height / 2, 110, elapsed, elapsed + Math.PI * 1.1);
+      ctx.stroke();
+      ctx.fillStyle = '#f2f2f2';
+      ctx.font = '28px ui-monospace, Menlo, Consolas, monospace';
+      ctx.textBaseline = 'middle';
+      ctx.textAlign = 'center';
+      ctx.fillText((elapsed).toFixed(2) + 's', canvas.width / 2, canvas.height / 2);
+      ctx.fillStyle = '#f2f2f2';
+      ctx.font = '18px ui-monospace, Menlo, Consolas, monospace';
+      ctx.fillText('frame ' + Math.floor(elapsed * 60), canvas.width / 2, canvas.height / 2 + 48);
+      requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+  </script>
+</main>
+<footer>
+  <p id="animBottom">ANIM_PAGE_FOOTER</p>
+</footer>
+<script src="/scan-js"></script>
+</body>
+</html>

@@ -8,7 +8,7 @@ import assert from 'node:assert/strict';
 import { ALLOWED_METHODS, EXECUTION_MODES, METHOD_SPECS, validateCommand, validateBurst, safeUrl, normalizeError, PRODUCT_VERSION, PROTOCOL_VERSION } from '../extension/lib/protocol.js';
 
 test('version and protocol are stable', () => {
-  assert.equal(PRODUCT_VERSION, '1.6.43');
+  assert.equal(PRODUCT_VERSION, '1.6.44');
   assert.equal(PROTOCOL_VERSION, 1);
 });
 
@@ -25,6 +25,29 @@ test('method allowlist contains only named primitives', () => {
     assert.match(method, /^[a-z]+\.[a-z_]+$/);
     assert.ok(spec.timeoutMs >= 500 && spec.timeoutMs <= 55000);
   }
+});
+
+test('the record and scan primitives are allowlisted and bounded', () => {
+  assert.ok(ALLOWED_METHODS.includes('page.record_start'));
+  assert.ok(ALLOWED_METHODS.includes('page.record_stop'));
+  assert.ok(ALLOWED_METHODS.includes('page.scan'));
+  assert.equal(METHOD_SPECS['page.record_start'].timeoutMs, 10000);
+  assert.equal(METHOD_SPECS['page.record_stop'].timeoutMs, 30000);
+  assert.equal(METHOD_SPECS['page.scan'].timeoutMs, 55000);
+  assert.equal(validateCommand({ id: 'abcdefgh', method: 'page.record_start', params: { tabId: 1 } }).ok, true);
+  assert.equal(validateCommand({ id: 'abcdefgh', method: 'page.record_start', params: { tabId: 1, fps: 15, maxWidth: 1280, quality: 60, scroll: true, filename: 'mirror.webm' } }).ok, true);
+  assert.equal(validateCommand({ id: 'abcdefgh', method: 'page.record_start', params: { bogus: true } }).ok, false);
+  assert.equal(validateCommand({ id: 'abcdefgh', method: 'page.record_start', params: { fps: 60 } }).ok, false);
+  assert.equal(validateCommand({ id: 'abcdefgh', method: 'page.record_start', params: { quality: 90 } }).ok, false);
+  assert.equal(validateCommand({ id: 'abcdefgh', method: 'page.record_start', params: { scroll: 'yes' } }).ok, false);
+  assert.equal(validateCommand({ id: 'abcdefgh', method: 'page.record_start', params: { filename: '../escape.webm' } }).ok, false);
+  assert.equal(validateCommand({ id: 'abcdefgh', method: 'page.record_stop', params: { tabId: 1 } }).ok, true);
+  assert.equal(validateCommand({ id: 'abcdefgh', method: 'page.record_stop', params: {} }).ok, true);
+  assert.equal(validateCommand({ id: 'abcdefgh', method: 'page.record_stop', params: { fps: 15 } }).ok, false);
+  assert.equal(validateCommand({ id: 'abcdefgh', method: 'page.scan', params: { tabId: 1, filename: 'mirror.html', maxBytes: 1048576 } }).ok, true);
+  assert.equal(validateCommand({ id: 'abcdefgh', method: 'page.scan', params: { bogus: true } }).ok, false);
+  assert.equal(validateCommand({ id: 'abcdefgh', method: 'page.scan', params: { maxBytes: 100 } }).ok, false);
+  assert.equal(validateCommand({ id: 'abcdefgh', method: 'page.scan', params: { filename: 'a/b.html' } }).ok, false);
 });
 
 test('bounded browser burst accepts only linear page actions', () => {
