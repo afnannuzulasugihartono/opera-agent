@@ -8,7 +8,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="theme-color" content="#000000" />
+  <meta name="theme-color" content="#0000f2" />
   <title>Docs — Opera Agent</title>
   <meta name="description" content="Panduan Opera Agent: pasang extension, pair device, jalankan tugas pertama, isi saldo, hubungkan AI harness lewat MCP, dan batas yang dijaga." />
   <link rel="stylesheet" href="/site.css" />
@@ -23,20 +23,23 @@
 </head>
 <body>
   <header>
-    <div class="wrap">
-      <nav>
-        <a class="brand" href="/beranda.html"><svg class="brandMark" viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="7"  /><path d="M8 5.6v12.8l3.1-2.9 1.9 4.5 2.4-1-2-4.5h3.9L8 5.6Z"  /></svg><span>Opera Agent</span></a>
-        <a href="/fitur.html" data-i18n="nav.features">Fitur</a>
-        <a href="/unduh.html" data-i18n="nav.download">Unduh</a>
-        <a href="/pasang-mcp.html" data-i18n="nav.mcp">MCP</a><a href="/harga" data-i18n="nav.price">Harga</a>
-        <a href="/dukungan.html" data-i18n="nav.support">Dukungan</a>
-        <a href="/docs.html" data-i18n="nav.docs" aria-current="page">Docs</a>
-        <span class="lang" data-lang-toggle></span>
-        <button class="navSearch" type="button" aria-label="Cari halaman Ctrl K" aria-keyshortcuts="Control+K Meta+K"><svg class="navSearchIcon" viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><circle cx="7" cy="7" r="4.5" fill="none" stroke="currentColor" stroke-width="1.5"></circle><path d="M10.6 10.6 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path></svg><kbd class="navSearchKey">Ctrl K</kbd></button>
-        <a class="navCta" href="/" data-i18n="nav.signin">Masuk</a>
+  <div class="wrap">
+    <div class="navRow">
+      <nav class="navSide navLeft" aria-label="Primary">
+        <a href="./fitur.html" data-i18n="nav.features">Fitur</a>
+        <a href="./unduh.html" data-i18n="nav.download">Unduh</a><span class="lang" data-lang-toggle></span>
       </nav>
-    </div>
-  </header>
+      <a class="brand" href="/beranda.html"><span class="wordmark">Opera<br/>Agent</span></a>
+      <nav class="navSide navRight" aria-label="Secondary">
+    <span data-portal-toggle></span>
+        <a href="./docs.html" aria-current="page" data-i18n="nav.docs">Docs</a>
+        <a class="navCta" href="./unduh.html" data-i18n="cta.download">Pasang Opera Agent</a>
+      </nav>
+
+
+    <div data-portal-menu></div>
+  </div>
+</header>
 
   <main class="wrap">
     <div class="docLayout">
@@ -99,7 +102,7 @@
           <p>Anda bicara, browser bekerja, hasilnya menjadi artefak nyata. Contoh: <em>Buka Google Maps, cari kopi dekat Monas, dan tulis hasilnya ke sheet.</em></p>
           <ul>
             <li>Satu pekerjaan berarti satu hasil: satu halaman, satu laporan, atau satu daftar.</li>
-            <li>Jumlah aksinya dibatasi. Perkiraan yang lebih besar ditolak di depan dengan tawaran dipecah, bukan gagal di tengah. Batas dan harganya ada di halaman <a href="/harga">Harga</a>.</li>
+            <li>Jumlah aksinya dibatasi. Perkiraan yang lebih besar ditolak di depan dengan tawaran dipecah, bukan gagal di tengah. Batas dan harganya ada di halaman <a href="./harga.html">Harga</a>.</li>
             <li>Konten halaman hanya pergi ke endpoint model Anda; kunci API tersimpan di browser ini.</li>
           </ul>
         </section>
@@ -119,7 +122,7 @@
 
         <section data-reveal>
           <h2 id="saldo">Saldo dan tagihan</h2>
-          <p>Isi saldo lewat QRIS dari Dashboard, tanpa langganan. Saldo yang kurang membuat pekerjaan ditolak sebelum mulai, dengan tautan isi ulang. Harga tetap, pengembalian, dan masa berlaku saldo ada di halaman <a href="/harga">Harga</a>.</p>
+          <p>Isi saldo lewat QRIS dari Dashboard, tanpa langganan. Saldo yang kurang membuat pekerjaan ditolak sebelum mulai, dengan tautan isi ulang. Harga tetap, pengembalian, dan masa berlaku saldo ada di halaman <a href="./harga.html">Harga</a>.</p>
         </section>
 
 
@@ -194,7 +197,7 @@
         <section data-reveal>
           <h2 id="mcp">Hubungkan AI harness</h2>
           <p>Satu server MCP untuk ChatGPT, Claude, Codex, Claude Code, OpenCode, VS Code (Copilot), Kilo Code, Cursor, dan konektor lain.</p>
-          <p><a href="./pasang-mcp.html">Pasang MCP</a> — panduan lengkap per harness, termasuk cara pasang dari terminal dan prompt yang bisa ditempel ke AI Anda.</p>
+          <p><a href="./mcp.html">Pasang MCP</a> — panduan lengkap per harness, termasuk cara pasang dari terminal dan prompt yang bisa ditempel ke AI Anda.</p>
           <p>Server MCP:</p>
           <div class="copybox">
             <pre><code id="mcp-url">https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp</code></pre>
@@ -270,61 +273,18 @@
   </main>
 
         <footer>
-    <div class="wrap footGrid simplified">
-      <div class="footCol">
-        <span class="footBrand">Opera Agent</span>
-        <span class="footNote" data-i18n="footer.rights">© 2026 Opera Agent. Hak cipta dilindungi.</span>
-        <span class="doors"><a href="https://github.com/afnannuzulasugihartono/opera-agent" data-i18n="footer.source">Kode sumber</a></span>
-      </div>
-      <div class="footCol">
-        <h3 data-i18n="footer.product">Produk</h3>
-        <span class="doors">
-          <a href="./beranda.html" data-i18n="footer.home">Beranda</a>
-          <a href="./fitur.html" data-i18n="footer.features">Fitur</a>
-          <a href="./unduh.html" data-i18n="footer.download">Unduh</a>
-          <a href="./pasang-mcp.html">Pasang MCP</a>
-          <a href="./bukti.html" data-i18n="footer.bukti">Bukti</a>
-          <a href="./docs.html" data-i18n="footer.docs">Docs</a>
-          <a href="./akun.html" data-i18n="footer.account">Akun</a>
-          <a href="./dashboard.html">Dashboard</a>
-        </span>
-      </div>
-      <div class="footCol">
-        <h3 data-i18n="footer.legal">Legal</h3>
-        <span class="doors">
-          <a href="./privasi.html" data-i18n="footer.privacy">Privasi</a>
-          <a href="./syarat.html" data-i18n="footer.terms">Syarat</a>
-          <a href="./dukungan.html" data-i18n="footer.support">Dukungan</a>
-        </span>
-      </div>
-    </div>
+    <div data-footer-mount></div>
   </footer>
 
   <script type="application/json" id="i18n-dict">{
   "en": {
-    "footer.bukti": "Proof",
-    "footer.source": "Source code",
-    "footer.legal": "Legal",
-    "footer.docs": "Docs",
-    "footer.download": "Download",
-    "footer.product": "Product",
-    "nav.download": "Download",
-    "nav.signin": "Sign in",
-    "nav.features": "Features",
-    "nav.price": "Pricing",
-    "nav.docs": "Docs",
-    "nav.mcp": "MCP",
-    "nav.support": "Support",
     "copy": "Copy",
-    "md.copy": "Copy as Markdown",
+    "cta.download": "Install Opera Agent",
     "map.toggle": "On this page",
-    "footer.rights": "© 2026 Opera Agent. All rights reserved.",
-    "footer.home": "Home",
-    "footer.privacy": "Privacy",
-    "footer.terms": "Terms",
-    "footer.features": "Features",
-    "footer.support": "Support",
-    "footer.account": "Account"
+    "md.copy": "Copy as Markdown",
+    "nav.docs": "Docs",
+    "nav.download": "Download",
+    "nav.features": "Features"
   }
 }</script>
   <script src="./i18n.js"></script>
@@ -332,6 +292,8 @@
   <script src="/wayfind.js"></script>
   <script src="/markdown.js"></script>
   <script src="/palette.js"></script>
+  <script src="/portal.js" defer></script>
+  <script src="/footer.js" defer></script>
 
   <script src="/reveal.js"></script>
   <script src="/docs.js"></script>

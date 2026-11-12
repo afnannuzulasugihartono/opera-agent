@@ -21,11 +21,12 @@ const port = Number(process.argv[2] || 8777);
 
 const FILES = new Set([
   'beranda.html', 'index.html', 'akun.html', 'dashboard.html', 'unduh.html',
-  'unduh-berkas.html', 'privasi.html', 'syarat.html', '404.html', 'fitur.html',
+  'privasi.html', 'syarat.html', '404.html', 'fitur.html',
   'studi.html', 'bukti.html', 'dukungan.html', 'docs.html', 'harga.html', 'site.css', 'beranda.css',
   'features.css', 'studi.css', 'bukti.css', 'download.css', 'auth.css', 'app.css', 'dashboard.css',
   'harga.css', 'docs.css', 'support.css', 'notfound.css', 'i18n.js', 'spotlight.js', 'docs.js', 'reveal.js',
-  'wayfind.js', 'palette.js', 'markdown.js', 'demo.js', 'demo-kit.js', 'verify.js', 'pasang-mcp.html', 'oauth/consent.html', 'fonts/instrument-sans-latin.woff2',
+  'wayfind.js', 'palette.js', 'markdown.js', 'demo.js', 'demo-kit.js', 'verify.js', 'run.js', 'copy.js', 'paint.js', 'term.js', 'portal.js', 'mcp.html', 'oauth/consent.html', 'fonts/instrument-sans-latin.woff2',
+  'fonts/playfair-display-latin.woff2', 'fonts/anton-latin.woff2',
   'bukti/portal.jpg'
 ]);
 
@@ -57,7 +58,7 @@ createServer(async (req, res) => {
   }
   try {
     const body = await readFile(file);
-    res.writeHead(200, { 'content-type': types[extname(file)] || 'application/octet-stream' });
+    res.writeHead(200, { 'content-type': types[extname(file)] || 'application/octet-stream', 'cache-control': 'no-store' });
     res.end(body);
   } catch {
     res.writeHead(404);

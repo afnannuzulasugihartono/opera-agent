@@ -18,7 +18,7 @@ const root = new URL('..', import.meta.url);
 const landing = fileURLToPath(new URL('landing', root));
 const PAGES = [
   'beranda.html', 'index.html', 'akun.html', 'dashboard.html', 'unduh.html',
-  'unduh-berkas.html', 'harga.html', 'bukti.html', 'docs.html', 'dukungan.html',
+  'harga.html', 'bukti.html', 'docs.html', 'dukungan.html',
   'privasi.html', 'syarat.html', '404.html', 'fitur.html', 'studi.html',
   'oauth/consent.html'
 ];

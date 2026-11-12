@@ -8,7 +8,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="theme-color" content="#000000" />
+  <meta name="theme-color" content="#0000f2" />
   <title>Syarat Layanan — Opera Agent</title>
   <meta name="description" content="Syarat layanan Opera Agent: akses terbuka, bawa model sendiri, dan pairing yang dapat dicabut." />
   <link rel="stylesheet" href="/site.css" />
@@ -22,20 +22,23 @@
 </head>
 <body>
   <header>
-    <div class="wrap">
-      <nav>
-        <a class="brand" href="/beranda.html" aria-current="page"><svg class="brandMark" viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="7"  /><path d="M8 5.6v12.8l3.1-2.9 1.9 4.5 2.4-1-2-4.5h3.9L8 5.6Z"  /></svg><span>Opera Agent</span></a>
-        <a href="/fitur.html" data-i18n="nav.features">Fitur</a>
-        <a href="/unduh.html" data-i18n="nav.download">Unduh</a>
-        <a href="/pasang-mcp.html" data-i18n="nav.mcp">MCP</a><a href="/harga" data-i18n="nav.price">Harga</a>
-        <a href="/dukungan.html" data-i18n="nav.support">Dukungan</a>
-        <a href="/docs.html" data-i18n="nav.docs">Docs</a>
-        <span class="lang" data-lang-toggle></span>
-        <button class="navSearch" type="button" aria-label="Cari halaman Ctrl K" aria-keyshortcuts="Control+K Meta+K"><svg class="navSearchIcon" viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><circle cx="7" cy="7" r="4.5" fill="none" stroke="currentColor" stroke-width="1.5"></circle><path d="M10.6 10.6 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path></svg><kbd class="navSearchKey">Ctrl K</kbd></button>
-        <a class="navCta" href="/" data-i18n="nav.signin">Masuk</a>
+  <div class="wrap">
+    <div class="navRow">
+      <nav class="navSide navLeft" aria-label="Primary">
+        <a href="./fitur.html" data-i18n="nav.features">Fitur</a>
+        <a href="./unduh.html" data-i18n="nav.download">Unduh</a><span class="lang" data-lang-toggle></span>
       </nav>
-    </div>
-  </header>
+      <a class="brand" href="/beranda.html" aria-current="page"><span class="wordmark">Opera<br/>Agent</span></a>
+      <nav class="navSide navRight" aria-label="Secondary">
+    <span data-portal-toggle></span>
+        <a href="./docs.html" data-i18n="nav.docs">Docs</a>
+        <a class="navCta" href="./unduh.html" data-i18n="cta.download">Pasang Opera Agent</a>
+      </nav>
+
+
+    <div data-portal-menu></div>
+  </div>
+</header>
 
   <main class="wrap prose">
     <p class="lang-note">Halaman ini tersedia dalam Bahasa Indonesia. / This page is available in Indonesian.</p>
@@ -84,64 +87,23 @@
   </main>
 
         <footer>
-    <div class="wrap footGrid simplified">
-      <div class="footCol">
-        <span class="footBrand">Opera Agent</span>
-        <span class="footNote" data-i18n="footer.rights">© 2026 Opera Agent. Hak cipta dilindungi.</span>
-        <span class="doors"><a href="https://github.com/afnannuzulasugihartono/opera-agent" data-i18n="footer.source">Kode sumber</a></span>
-      </div>
-      <div class="footCol">
-        <h3 data-i18n="footer.product">Produk</h3>
-        <span class="doors">
-          <a href="./beranda.html" data-i18n="footer.home">Beranda</a>
-          <a href="./fitur.html" data-i18n="footer.features">Fitur</a>
-          <a href="./unduh.html" data-i18n="footer.download">Unduh</a>
-          <a href="./pasang-mcp.html">Pasang MCP</a>
-          <a href="./bukti.html" data-i18n="footer.bukti">Bukti</a>
-          <a href="./docs.html" data-i18n="footer.docs">Docs</a>
-          <a href="./akun.html" data-i18n="footer.account">Akun</a>
-          <a href="./dashboard.html">Dashboard</a>
-        </span>
-      </div>
-      <div class="footCol">
-        <h3 data-i18n="footer.legal">Legal</h3>
-        <span class="doors">
-          <a href="./privasi.html" data-i18n="footer.privacy">Privasi</a>
-          <a href="./syarat.html" data-i18n="footer.terms">Syarat</a>
-          <a href="./dukungan.html" data-i18n="footer.support">Dukungan</a>
-        </span>
-      </div>
-    </div>
+    <div data-footer-mount></div>
   </footer>
 
   <script type="application/json" id="i18n-dict">{
   "en": {
-    "footer.bukti": "Proof",
-    "footer.source": "Source code",
-    "footer.legal": "Legal",
-    "footer.docs": "Docs",
-    "footer.download": "Download",
-    "footer.product": "Product",
-    "nav.download": "Download",
-    "nav.signin": "Sign in",
-    "nav.features": "Features",
-    "nav.price": "Pricing",
+    "cta.download": "Install Opera Agent",
     "nav.docs": "Docs",
-    "nav.mcp": "MCP",
-    "nav.support": "Support",
-    "footer.rights": "© 2026 Opera Agent. All rights reserved.",
-    "footer.home": "Home",
-    "footer.privacy": "Privacy",
-    "footer.terms": "Terms",
-    "footer.features": "Features",
-    "footer.support": "Support",
-    "footer.account": "Account"
+    "nav.download": "Download",
+    "nav.features": "Features"
   }
 }</script>
   <script src="./i18n.js"></script>
 
   <script src="/wayfind.js"></script>
   <script src="/palette.js"></script>
+  <script src="/portal.js" defer></script>
+  <script src="/footer.js" defer></script>
 
   <script src="/reveal.js"></script>
 </body>

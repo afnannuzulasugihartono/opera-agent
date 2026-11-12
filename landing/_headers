@@ -32,7 +32,7 @@
 
 /beranda
   Cache-Control: no-store
-  Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-4jv7n8YxuoDJG7gc/rwPz0vSQnxEKlMcDrwHYwUPLPA='; connect-src 'none'; style-src 'self' 'unsafe-inline'; img-src data:; font-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
+  Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-EGHlEzWWr5oJqC1oYajsUZeMM0Ivbux6dXNbzMQ8gCE='; connect-src 'none'; style-src 'self' 'unsafe-inline'; img-src data:; font-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
   Referrer-Policy: no-referrer
   X-Content-Type-Options: nosniff
   Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
@@ -43,7 +43,7 @@
 
 /beranda.html
   Cache-Control: no-store
-  Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-4jv7n8YxuoDJG7gc/rwPz0vSQnxEKlMcDrwHYwUPLPA='; connect-src 'none'; style-src 'self' 'unsafe-inline'; img-src data:; font-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
+  Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-EGHlEzWWr5oJqC1oYajsUZeMM0Ivbux6dXNbzMQ8gCE='; connect-src 'none'; style-src 'self' 'unsafe-inline'; img-src data:; font-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
   Referrer-Policy: no-referrer
   X-Content-Type-Options: nosniff
   Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
@@ -144,7 +144,7 @@
   Cross-Origin-Resource-Policy: same-origin
   X-Frame-Options: DENY
 
-/pasang-mcp
+/mcp
   Cache-Control: no-store
   Content-Security-Policy: default-src 'none'; script-src 'self'; connect-src 'none'; style-src 'self' 'unsafe-inline'; img-src data:; font-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
   Referrer-Policy: no-referrer
@@ -154,7 +154,7 @@
   Cross-Origin-Opener-Policy: same-origin
   Cross-Origin-Resource-Policy: same-origin
 
-/pasang-mcp.html
+/mcp.html
   Cache-Control: no-store
   Content-Security-Policy: default-src 'none'; script-src 'self'; connect-src 'none'; style-src 'self' 'unsafe-inline'; img-src data:; font-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
   Referrer-Policy: no-referrer
@@ -165,28 +165,6 @@
   Cross-Origin-Resource-Policy: same-origin
 
 /unduh.html
-  Cache-Control: no-store
-  Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-fazsXaeghFR6veNLQNxT3Wp/S1Tzz4I6pN9HuLhjvaQ=' 'sha256-P4Dg7DTSUOLZaPFt9jgYbJ1cN1KfSWqDRYaDvVbvV8w='; connect-src 'none'; style-src 'self' 'unsafe-inline'; img-src data:; font-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
-  Referrer-Policy: no-referrer
-  X-Content-Type-Options: nosniff
-  Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
-  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), bluetooth=()
-  Cross-Origin-Opener-Policy: same-origin
-  Cross-Origin-Resource-Policy: same-origin
-  X-Frame-Options: DENY
-
-/unduh-berkas
-  Cache-Control: no-store
-  Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-fazsXaeghFR6veNLQNxT3Wp/S1Tzz4I6pN9HuLhjvaQ=' 'sha256-P4Dg7DTSUOLZaPFt9jgYbJ1cN1KfSWqDRYaDvVbvV8w='; connect-src 'none'; style-src 'self' 'unsafe-inline'; img-src data:; font-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
-  Referrer-Policy: no-referrer
-  X-Content-Type-Options: nosniff
-  Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
-  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), bluetooth=()
-  Cross-Origin-Opener-Policy: same-origin
-  Cross-Origin-Resource-Policy: same-origin
-  X-Frame-Options: DENY
-
-/unduh-berkas.html
   Cache-Control: no-store
   Content-Security-Policy: default-src 'none'; script-src 'self' 'sha256-fazsXaeghFR6veNLQNxT3Wp/S1Tzz4I6pN9HuLhjvaQ=' 'sha256-P4Dg7DTSUOLZaPFt9jgYbJ1cN1KfSWqDRYaDvVbvV8w='; connect-src 'none'; style-src 'self' 'unsafe-inline'; img-src data:; font-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'
   Referrer-Policy: no-referrer

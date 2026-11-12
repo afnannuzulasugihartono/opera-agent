@@ -11,6 +11,15 @@ import { mcpSurfaceSourceSync } from './helpers/mcp-surface-source.mjs';
 const root = new URL('..', import.meta.url);
 const read = (name) => fs.readFileSync(new URL(name, root), 'utf8');
 
+// WHY THE SHARED FOOTER IS READ HERE TOO: nine pages carry it from footer.js; a page that mounts it is checked against the same grid, not an empty static tag.
+
+const effectiveFooter = (page) => {
+  const html = read(`landing/${page}`);
+  const own = html.match(/<footer[\s\S]*?<\/footer>/)?.[0] ?? '';
+  if (own.includes('data-footer-mount')) return read('landing/footer.js');
+  return own;
+};
+
 test('the docs page carries six sections and one map', () => {
   const html = read('landing/docs.html');
   for (const id of ['pasang', 'pairing', 'tugas', 'saldo', 'mcp', 'batas']) {
@@ -36,11 +45,13 @@ test('the docs page states the counts the code proves', () => {
   assert.match(html, /enam izin/i, 'the page states six permissions');
 });
 
+// WHY ./harga.html: the price page is a real file in this tree, proved by this very test's facts below, so the docs page opens the file a reader can actually receive; the worker's /harga route stays as a compatibility alias, not as the door.
+
 test('the docs page leaves the money to the price page, and the code proves that page', () => {
   const html = read('landing/docs.html');
   const price = read('landing/harga.html');
   const wallet = read('supabase/functions/_shared/wallet.js');
-  assert.ok(html.includes('href="/harga"'), 'the docs page points at the price page');
+  assert.ok(html.includes('href="./harga.html"'), 'the docs page points at the price page');
   for (const money of [/Rp10\.000/, /10 aksi/, /30 menit/, /dikembalikan penuh/]) {
     assert.doesNotMatch(html, money, 'the docs page repeats no money fact');
   }
@@ -76,10 +87,10 @@ test('the docs page reads like a manual: a sidebar, a search box, and the text',
 });
 
 test('the footer maps the site in columns, not in one long row', () => {
-  for (const page of ['beranda.html', 'fitur.html', 'harga.html', 'docs.html', 'unduh.html', 'dukungan.html', 'privasi.html', 'syarat.html', '404.html', 'index.html', 'unduh-berkas.html']) {
-    const html = read(`landing/${page}`);
-    assert.match(html, /<footer>[\s\S]*?class="[^"]*\bfootGrid\b/, `${page} carries the column footer`);
-    assert.ok((html.match(/class="footCol"/g) || []).length >= 3, `${page} groups its doors into columns`);
+  for (const page of ['beranda.html', 'fitur.html', 'harga.html', 'docs.html', 'unduh.html', 'dukungan.html', 'privasi.html', 'syarat.html', '404.html', 'index.html']) {
+    const footerHtml = effectiveFooter(page);
+    assert.match(footerHtml, /class="[^"]*\bfootGrid\b/, `${page} carries the column footer`);
+    assert.ok((footerHtml.match(/class="footCol"/g) || []).length >= 3, `${page} groups its doors into columns`);
   }
   const css = read('landing/site.css');
   assert.match(css, /\.footGrid \{[^}]*display: grid/s, 'the footer is a grid');
@@ -105,7 +116,7 @@ test('the ambient motion breathes slowly, and bows out when the reader asks', ()
 
 test('the docs page links to the doors a reader needs', () => {
   const html = read('landing/docs.html');
-  for (const href of ['./unduh.html', './dashboard.html', '/harga', './dukungan.html']) {
+  for (const href of ['./unduh.html', './dashboard.html', './harga.html', './dukungan.html']) {
     assert.ok(html.includes(`href="${href}"`), `the page reaches ${href}`);
   }
 });

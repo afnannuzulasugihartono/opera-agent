@@ -20,7 +20,6 @@ const DESTINATIONS = [
   { path: '/bukti.html', id: 'Bukti', en: 'Proof', hint: { id: 'Empat berkas, sama persis', en: 'Four files, exactly the same' }, keys: 'bukti proof hash sha256 jalannya run record bukti jalan extension' },
   { path: '/harga', id: 'Harga', en: 'Pricing', hint: { id: 'Biaya dan saldo', en: 'Cost and balance' }, keys: 'harga pricing biaya cost saldo top up money' },
   { path: '/unduh.html', id: 'Unduh', en: 'Download', hint: { id: 'Extension browser', en: 'Browser extension' }, keys: 'unduh download extension pasang install chrome' },
-  { path: '/unduh-berkas.html', id: 'Berkas', en: 'Files', hint: { id: 'Berkas rilis', en: 'Release files' }, keys: 'berkas files zip rilis release' },
   { path: '/docs.html', id: 'Docs', en: 'Docs', hint: { id: 'Panduan', en: 'The guide' }, keys: 'docs panduan guide baca read' },
   { path: '/docs#pasang', id: 'Pasang extension', en: 'Install the extension', hint: { id: 'Mulai', en: 'Start' }, keys: 'pasang install extension' },
   { path: '/docs#pairing', id: 'Pair device', en: 'Pair a device', hint: { id: 'Kode sekali pakai', en: 'One time code' }, keys: 'pair pairing device kode' },

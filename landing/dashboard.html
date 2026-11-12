@@ -10,7 +10,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="theme-color" content="#000000" />
+  <meta name="theme-color" content="#0000f2" />
   <title>Dashboard — Opera Agent</title>
   <meta name="description" content="Dashboard Opera Agent: device yang ter-pairing, perintahnya, akun ini, dan kendali atasnya." />
   <link rel="stylesheet" href="/site.css" />
@@ -41,20 +41,23 @@
 </head>
 <body>
   <header>
-    <div class="wrap">
-      <nav>
-        <a class="brand" href="/beranda.html" aria-current="page"><svg class="brandMark" viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="7"  /><path d="M8 5.6v12.8l3.1-2.9 1.9 4.5 2.4-1-2-4.5h3.9L8 5.6Z"  /></svg><span>Opera Agent</span></a>
-        <a href="/fitur.html" data-i18n="nav.features">Fitur</a>
-        <a href="/unduh.html" data-i18n="nav.download">Unduh</a>
-        <a href="/pasang-mcp.html" data-i18n="nav.mcp">MCP</a><a href="/harga" data-i18n="nav.price">Harga</a>
-        <a href="/dukungan.html" data-i18n="nav.support">Dukungan</a>
-        <a href="/docs.html" data-i18n="nav.docs">Docs</a>
-        <span class="lang" data-lang-toggle></span>
-        <button class="navSearch" type="button" aria-label="Cari halaman Ctrl K" aria-keyshortcuts="Control+K Meta+K" data-i18n-attr="aria-label:nav.search"><svg class="navSearchIcon" viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><circle cx="7" cy="7" r="4.5" fill="none" stroke="currentColor" stroke-width="1.5"></circle><path d="M10.6 10.6 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path></svg><kbd class="navSearchKey">Ctrl K</kbd></button>
-        <a class="navCta" href="/" data-i18n="nav.signin">Masuk</a>
+  <div class="wrap">
+    <div class="navRow">
+      <nav class="navSide navLeft" aria-label="Primary">
+        <a href="./fitur.html" data-i18n="nav.features">Fitur</a>
+        <a href="./unduh.html" data-i18n="nav.download">Unduh</a><span class="lang" data-lang-toggle></span>
       </nav>
-    </div>
-  </header>
+      <a class="brand" href="/beranda.html" aria-current="page"><span class="wordmark">Opera<br/>Agent</span></a>
+      <nav class="navSide navRight" aria-label="Secondary">
+    <span data-portal-toggle></span>
+        <a href="./docs.html" data-i18n="nav.docs">Docs</a>
+        <a class="navCta" href="./unduh.html" data-i18n="cta.download">Pasang Opera Agent</a>
+      </nav>
+
+
+    <div data-portal-menu></div>
+  </div>
+</header>
 
   <main class="wrap wide console">
     <div class="layout">
@@ -296,9 +299,10 @@
           <a href="./beranda.html" data-i18n="footer.home">Beranda</a>
           <a href="./fitur.html" data-i18n="footer.features">Fitur</a>
           <a href="./unduh.html" data-i18n="footer.download">Unduh</a>
-          <a href="./pasang-mcp.html">Pasang MCP</a>
+          <a href="./mcp.html">Pasang MCP</a>
           <a href="./bukti.html" data-i18n="footer.bukti">Bukti</a>
           <a href="./docs.html" data-i18n="footer.docs">Docs</a>
+          <a href="./harga.html">Harga</a>
           <a href="./akun.html" data-i18n="footer.account">Akun</a>
           <a href="./dashboard.html">Dashboard</a>
         </span>
@@ -316,126 +320,122 @@
 
   <script type="application/json" id="i18n-dict">{
   "en": {
-    "nav.features": "Features",
-    "nav.download": "Download",
-    "nav.price": "Pricing",
-    "nav.support": "Support",
-    "nav.docs": "Docs",
-    "nav.mcp": "MCP",
-    "nav.signin": "Sign in",
-    "nav.search": "Search pages Ctrl K",
-    "footer.copy": "© 2026 Opera Agent. All rights reserved.",
-    "footer.source": "Source code",
-    "footer.product": "Product",
-    "footer.home": "Home",
-    "footer.bukti": "Proof",
-    "footer.account": "Account",
-    "footer.legal": "Legal",
-    "footer.privacy": "Privacy",
-    "footer.terms": "Terms",
-    "rail.title": "Opera Agent",
-    "rail.customer": "Customers",
-    "rail.operator": "Operator",
-    "rail.tablesLink": "Tables",
-    "rail.listen": "Listen",
-    "rail.pairing": "Pairing",
-    "rail.account": "Account",
-    "rail.balance": "Balance",
-    "rail.action": "Action",
-    "rail.history": "History",
-    "rail.overview": "Overview",
-    "rail.tables": "Data tables",
-    "rail.collapseHide": "Hide navigation",
-    "rail.sections": "Dashboard sections",
-    "home.title": "Overview",
-    "home.installExtension": "Install the extension",
-    "home.manageAccount": "Manage account",
-    "home.pairCount": "Paired devices",
-    "home.onlineNow": "Online now",
-    "home.commandsDone": "Commands finished",
-    "plan.label": "Your plan",
-    "plan.remaining": "commands left today",
-    "plan.of": "of",
-    "plan.usedToday": "commands used today",
-    "plan.session": "/ session",
-    "plan.usageLabel": "Quota used today",
-    "plan.cta": "Manage plan",
-    "plan.upgrade": "See plans",
-    "plan.exhausted": "Plan exhausted — resets tomorrow 00:00 UTC.",
-    "plan.error": "Couldn't read the plan status.",
-    "plan.retry": "Retry",
-    "device.title": "Devices",
-    "device.meta": "Devices paired to this account, with their last ten commands.",
-    "history.title": "History",
-    "history.meta": "The latest commands on every device, newest first. Method and status only — never the command contents.",
-    "history.filterGroup": "Filter by status",
-    "history.filterAll": "All",
-    "history.filterCompleted": "Completed",
-    "history.filterFailed": "Failed",
-    "history.filterPending": "Queued",
-    "history.searchPlaceholder": "Search method or device…",
-    "history.searchAria": "Search history",
-    "history.colTime": "Time",
-    "history.colStatus": "Status",
-    "history.colMethod": "Method",
-    "history.colDevice": "Device",
-    "history.colDuration": "Duration",
-    "history.emptyTitle": "No command history yet.",
-    "history.emptyBody": "Run your first job from the <a href=\"#aksi\">Action tab</a>.",
-    "history.noMatchTitle": "No command matches that.",
-    "history.noMatchBody": "Loosen the status filter or the keyword.",
-    "history.reset": "Clear filters",
-    "tabel.title": "Tables",
-    "tabel.meta": "Project data, read-only: rows filtered server-side, secret columns masked before they leave.",
-    "tabel.searchPlaceholder": "Search this table…",
-    "tabel.searchAria": "Search rows in this table",
-    "tabel.csv": "Export CSV",
-    "tabel.csvTitle": "Download up to 5,000 rows matching the current filter",
-    "tabel.emptyTitle": "This table is empty.",
-    "tabel.emptyBody": "No row matches this account and this filter.",
-    "tabel.prev": "‹ Previous",
-    "tabel.next": "Next ›",
-    "dengar.title": "Listening sessions",
-    "dengar.meta": "Audio sessions to this account: metadata only, never the spoken words. Transcripts live in the model's tool results alone.",
-    "saldo.title": "Balance",
-    "saldo.meta": "Prepaid balance for finished jobs: top up via QRIS, charged when one job completes, refunded in full on failure. Numbers here are read from the server every time this page opens.",
-    "saldo.balance": "Balance",
-    "saldo.available": "Available now",
-    "saldo.topUp": "Top up",
-    "saldo.refresh": "Reload",
-    "saldo.pricesMeta": "Price list — read from the server every time this page opens, like the balance. Charged only when one job completes.",
-    "saldo.colJob": "Job",
-    "saldo.colPrice": "Price",
-    "saldo.colKind": "Kind",
-    "saldo.colAmount": "Amount",
-    "saldo.colNote": "Note",
-    "saldo.kindDeposit": "Top up",
-    "saldo.kindSettle": "Job finished",
-    "saldo.kindRefund": "Refund",
-    "saldo.kindAdjust": "Adjustment",
-    "saldo.priceDeposit": "Top up balance (QRIS)",
-    "saldo.priceSimple": "Simple job — on completion",
-    "saldo.priceReport": "Report — on completion",
-    "saldo.priceBatchItem": "Per item in a batch — on completion",
-    "saldo.priceEmptyTitle": "Can't load the price list.",
-    "saldo.priceEmptyBody": "Try the reload button.",
-    "saldo.walletEmptyTitle": "No balance movements yet.",
-    "saldo.walletEmptyBody": "Top up first, then run one job from the <a href=\"#aksi\">Action tab</a>.",
-    "pairing.title": "Manual pairing",
-    "pairing.meta": "A one-time code, valid for 10 minutes, bound to this account. Paste it into the extension popup on the device you want to connect.",
-    "pairing.nameLabel": "Device name",
-    "pairing.button": "Create pairing code",
-    "pairing.copy": "Copy code",
-    "aksi.title": "Run an action",
     "aksi.meta": "The command goes to your own device. Devices refuse pages showing passwords, one-time codes, or payments.",
     "aksi.methodLabel": "Primitive",
     "aksi.run": "Run",
-    "akun.title": "This account",
+    "aksi.title": "Run an action",
     "akun.installElsewhere": "Install on another device",
+    "akun.title": "This account",
+    "cta.download": "Install Opera Agent",
+    "dengar.meta": "Audio sessions to this account: metadata only, never the spoken words. Transcripts live in the model's tool results alone.",
+    "dengar.title": "Listening sessions",
+    "device.meta": "Devices paired to this account, with their last ten commands.",
+    "device.title": "Devices",
+    "footer.account": "Account",
+    "footer.bukti": "Proof",
+    "footer.copy": "© 2026 Opera Agent. All rights reserved.",
     "footer.docs": "Docs",
     "footer.download": "Download",
     "footer.features": "Features",
-    "footer.support": "Support"
+    "footer.home": "Home",
+    "footer.legal": "Legal",
+    "footer.privacy": "Privacy",
+    "footer.product": "Product",
+    "footer.source": "Source code",
+    "footer.support": "Support",
+    "footer.terms": "Terms",
+    "history.colDevice": "Device",
+    "history.colDuration": "Duration",
+    "history.colMethod": "Method",
+    "history.colStatus": "Status",
+    "history.colTime": "Time",
+    "history.emptyBody": "Run your first job from the <a href=\"#aksi\">Action tab</a>.",
+    "history.emptyTitle": "No command history yet.",
+    "history.filterAll": "All",
+    "history.filterCompleted": "Completed",
+    "history.filterFailed": "Failed",
+    "history.filterGroup": "Filter by status",
+    "history.filterPending": "Queued",
+    "history.meta": "The latest commands on every device, newest first. Method and status only — never the command contents.",
+    "history.noMatchBody": "Loosen the status filter or the keyword.",
+    "history.noMatchTitle": "No command matches that.",
+    "history.reset": "Clear filters",
+    "history.searchAria": "Search history",
+    "history.searchPlaceholder": "Search method or device…",
+    "history.title": "History",
+    "home.commandsDone": "Commands finished",
+    "home.installExtension": "Install the extension",
+    "home.manageAccount": "Manage account",
+    "home.onlineNow": "Online now",
+    "home.pairCount": "Paired devices",
+    "home.title": "Overview",
+    "nav.docs": "Docs",
+    "nav.download": "Download",
+    "nav.features": "Features",
+    "pairing.button": "Create pairing code",
+    "pairing.copy": "Copy code",
+    "pairing.meta": "A one-time code, valid for 10 minutes, bound to this account. Paste it into the extension popup on the device you want to connect.",
+    "pairing.nameLabel": "Device name",
+    "pairing.title": "Manual pairing",
+    "plan.cta": "Manage plan",
+    "plan.error": "Couldn't read the plan status.",
+    "plan.exhausted": "Plan exhausted — resets tomorrow 00:00 UTC.",
+    "plan.label": "Your plan",
+    "plan.of": "of",
+    "plan.remaining": "commands left today",
+    "plan.retry": "Retry",
+    "plan.session": "/ session",
+    "plan.upgrade": "See plans",
+    "plan.usageLabel": "Quota used today",
+    "plan.usedToday": "commands used today",
+    "rail.account": "Account",
+    "rail.action": "Action",
+    "rail.balance": "Balance",
+    "rail.collapseHide": "Hide navigation",
+    "rail.customer": "Customers",
+    "rail.history": "History",
+    "rail.listen": "Listen",
+    "rail.operator": "Operator",
+    "rail.overview": "Overview",
+    "rail.pairing": "Pairing",
+    "rail.sections": "Dashboard sections",
+    "rail.tables": "Data tables",
+    "rail.tablesLink": "Tables",
+    "rail.title": "Opera Agent",
+    "saldo.available": "Available now",
+    "saldo.balance": "Balance",
+    "saldo.colAmount": "Amount",
+    "saldo.colJob": "Job",
+    "saldo.colKind": "Kind",
+    "saldo.colNote": "Note",
+    "saldo.colPrice": "Price",
+    "saldo.kindAdjust": "Adjustment",
+    "saldo.kindDeposit": "Top up",
+    "saldo.kindRefund": "Refund",
+    "saldo.kindSettle": "Job finished",
+    "saldo.meta": "Prepaid balance for finished jobs: top up via QRIS, charged when one job completes, refunded in full on failure. Numbers here are read from the server every time this page opens.",
+    "saldo.priceBatchItem": "Per item in a batch — on completion",
+    "saldo.priceDeposit": "Top up balance (QRIS)",
+    "saldo.priceEmptyBody": "Try the reload button.",
+    "saldo.priceEmptyTitle": "Can't load the price list.",
+    "saldo.priceReport": "Report — on completion",
+    "saldo.priceSimple": "Simple job — on completion",
+    "saldo.pricesMeta": "Price list — read from the server every time this page opens, like the balance. Charged only when one job completes.",
+    "saldo.refresh": "Reload",
+    "saldo.title": "Balance",
+    "saldo.topUp": "Top up",
+    "saldo.walletEmptyBody": "Top up first, then run one job from the <a href=\"#aksi\">Action tab</a>.",
+    "saldo.walletEmptyTitle": "No balance movements yet.",
+    "tabel.csv": "Export CSV",
+    "tabel.csvTitle": "Download up to 5,000 rows matching the current filter",
+    "tabel.emptyBody": "No row matches this account and this filter.",
+    "tabel.emptyTitle": "This table is empty.",
+    "tabel.meta": "Project data, read-only: rows filtered server-side, secret columns masked before they leave.",
+    "tabel.next": "Next ›",
+    "tabel.prev": "‹ Previous",
+    "tabel.searchAria": "Search rows in this table",
+    "tabel.searchPlaceholder": "Search this table…",
+    "tabel.title": "Tables"
   }
 }</script>
 
@@ -444,6 +444,7 @@
 
   <script src="/wayfind.js"></script>
   <script src="/palette.js"></script>
+  <script src="/portal.js" defer></script>
   <script type="module">
 
     // WHY reader RPCs and no table paths: opera_my_devices returns the caller's devices with their ten latest commands, method and status only, and the opera_konsol_* pair returns one page of one table with the ownership filter, the page caps and the masking already applied server-side.

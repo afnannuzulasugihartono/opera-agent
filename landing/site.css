@@ -9,6 +9,16 @@
  */
 
 @font-face {
+  font-family: "Playfair Display";
+  font-style: normal;
+  font-weight: 400 900;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("/fonts/playfair-display-latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2013, U+2014, U+2019, U+FEFF, U+FFFD;
+}
+
+@font-face {
   font-family: "Instrument Sans";
   font-style: normal;
   font-weight: 400 700;
@@ -18,25 +28,41 @@
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 
+@font-face {
+  font-family: "Anton";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/anton-latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2013, U+2014, U+2019, U+FEFF, U+FFFD;
+}
+
 /* â”€â”€ tokens â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 :root {
-  --bg: #000000;
-  --surface: #17181c;
-  --surface-2: #23262f;
-  --ink: #ededed;
-  --muted: #a1a1a1;
-  --line: #23262f;
-  --line-strong: #353841;
-  --accent: #3ecf8e;
-  --accent-strong: #5fe0a5;
-  --accent-soft: rgba(62, 207, 142, .12);
+  --display: "Playfair Display", Georgia, "Times New Roman", serif;
+  --condensed: "Anton", "Arial Narrow", "Liberation Sans Narrow", sans-serif;
+  --bg: #0000f2;
+  --blue: #0000f2;
+  --blue-strong: #1e1eff;
+  --on-blue: #ffffff;
+  --on-blue-soft: rgba(255, 255, 255, .62);
+  --on-blue-line: rgba(255, 255, 255, .14);
+  --surface: #19192f;
+  --surface-2: #232344;
+  --ink: #f2f2f2;
+  --muted: #b9b9e0;
+  --line: rgba(242, 242, 242, 0.16);
+  --line-strong: rgba(242, 242, 242, 0.32);
+  --accent: #c3c4ff;
+  --accent-strong: #dcdcfb;
+  --accent-soft: rgba(195, 196, 255, .16);
   --danger: #ff6b6b;
   --danger-soft: rgba(255, 107, 107, .12);
   --warn: #f6c969;
   --danger-line: rgba(255, 107, 107, .28);
-  --on-fill: #0a0a0a;
-  --focus: #3ecf8e;
+  --on-fill: #0a0a24;
+  --focus: #c3c4ff;
   --chrome: #a8c7fa;
   --chrome-on: #041e49;
   --yellow: #f2c94c;
@@ -58,6 +84,8 @@
   --font: "Instrument Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
   --wrap: 1160px;
+  --section-y: clamp(4rem, 9vh, 8rem);
+  --gutter: clamp(1.25rem, 5vw, 3.5rem);
   --prose: 680px;
   --surface-soft: var(--surface-2);
   --brand: var(--accent);
@@ -76,15 +104,46 @@ html {
   height: 100%;
   -webkit-text-size-adjust: 100%;
   scroll-padding-top: 92px;
+  background: var(--bg);
+}
+
+/*
+ * WHY THE MOSAIC IS FIXED BEHIND EVERYTHING: the page is the general's face at Ravenna - a portrait that does not move when you scroll, only lightens where the hand passes.
+ * The scrim is the room the text reads in; without it the words vanish into the gold tiles.
+ */
+
+.bgCanvas {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.bgScrim {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: linear-gradient(96deg, rgba(6, 7, 20, 0.82) 0%, rgba(6, 7, 20, 0.68) 26%, rgba(6, 7, 20, 0.28) 48%, rgba(6, 7, 20, 0.04) 68%, rgba(6, 7, 20, 0.22) 100%);
+}
+
+header,
+main,
+footer {
+  position: relative;
+  z-index: 2;
 }
 
 body {
-  margin: 0;
-  min-height: 100vh;
-  min-height: 100dvh;
+  margin: 10px;
+  min-height: calc(100vh - 20px);
+  min-height: calc(100dvh - 20px);
   display: flex;
   flex-direction: column;
-  background: var(--bg);
+  background: transparent;
   color: var(--ink);
   color-scheme: dark;
   font-family: var(--font);
@@ -158,14 +217,14 @@ h4 {
 
 h1 {
   margin: 0 0 18px;
-  font-size: clamp(42px, 5.6vw, 78px);
+  font-size: clamp(34px, min(5.6vw, 9vh), 78px);
   line-height: .99;
   letter-spacing: -.045em;
 }
 
 h2 {
   margin: 0 0 12px;
-  font-size: clamp(28px, 3.2vw, 44px);
+  font-size: clamp(22px, min(3.2vw, 5.4vh), 44px);
   line-height: 1.06;
   letter-spacing: -.035em;
 }
@@ -239,7 +298,7 @@ hr {
 /* â”€â”€ layout â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 .wrap {
-  width: min(100% - 48px, var(--wrap));
+  width: min(100% - var(--gutter), var(--wrap));
   margin-inline: auto;
   padding: 0;
 }
@@ -250,10 +309,6 @@ main.wrap.narrow { max-width: var(--prose); }
 main.wrap.wide { max-width: var(--wrap); }
 
 main.wrap.auth { max-width: 1080px; }
-
-@media (max-width: 560px) {
-  .wrap { width: min(100% - 32px, var(--wrap)); }
-}
 
 .eyebrow {
   display: inline-flex;
@@ -322,35 +377,421 @@ main.wrap.auth { max-width: 1080px; }
 
 /* â”€â”€ header â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
+/*
+ * WHY THE CHROME IS A MASTHEAD: two doors on the left, the wordmark centred like a newspaper's, two on the right and one ask beyond them - the same shape the house reference uses.
+ * The bar is translucent over the navy panel so the blue frame stays the loud thing.
+ */
+
 header {
   position: sticky;
   top: 0;
   z-index: 20;
   border-bottom: 1px solid var(--line);
-  background: rgba(0, 0, 0, .86);
-  -webkit-backdrop-filter: saturate(180%) blur(18px);
-  backdrop-filter: saturate(180%) blur(18px);
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  -webkit-backdrop-filter: saturate(150%) blur(14px);
+  backdrop-filter: saturate(150%) blur(14px);
 }
 
-/* WHY the chrome shares the content measure: a 980px bar over a 1200px page reads as a mistake at a glance. */
+header .wrap { max-width: none; padding: 0 18px; position: relative; }
 
-header .wrap { max-width: var(--wrap); }
+.navRow {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  min-height: 88px;
+  gap: 12px;
+}
 
-header nav {
+.navSide {
   display: flex;
   align-items: center;
-  gap: 26px;
-  min-height: 68px;
-  padding: 12px 0;
-  overflow-x: auto;
-  scrollbar-width: none;
+  gap: clamp(28px, 6vw, 84px);
 }
 
-header nav::-webkit-scrollbar { display: none; }
+.navLeft {
+  justify-self: start;
+}
+
+.navRight {
+  justify-self: end;
+  gap: clamp(18px, 3vw, 40px);
+}
+
+.navSide a {
+  color: var(--muted);
+  font-family: var(--font);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-decoration: none;
+  transition: color .18s var(--ease);
+  white-space: nowrap;
+}
+
+.navSide a:hover,
+.navSide a[aria-current="page"] {
+  color: var(--ink);
+}
 
 /*
- * WHY THE LINE UNDER THE HEADER: measured against firecrawl.dev on 2026-11-04, its pages show the reader how far they have come, and a long guide without that cue reads as a wall of text.
- * The line is two pixels of accent and it grows with the scroll; it carries no text and asks for no attention.
+ * WHY THE CURRENT DOOR GROWS ITS LINE IN: a hard swap reads as a flicker of chrome; the line draws itself once, the length of a hover, and the reader never loses which door they walked through.
+ * A stillness-seeking reader gets the finished line with a zero-duration animation (see the reduce block at the foot of this sheet).
+ */
+
+header nav a[aria-current="page"] {
+  background-image: linear-gradient(currentColor, currentColor);
+  background-repeat: no-repeat;
+  background-position: 0 100%;
+  background-size: 100% 1px;
+  animation: nav-line-in .45s var(--ease);
+}
+
+@keyframes nav-line-in {
+  from { background-size: 0% 1px; }
+  to { background-size: 100% 1px; }
+}
+
+.brand {
+  justify-self: center;
+  text-decoration: none;
+  view-transition-name: brand;
+}
+
+.wordmark {
+  font-family: var(--display);
+  font-weight: 500;
+  font-size: clamp(24px, 3.4vw, 34px);
+  line-height: .95;
+  letter-spacing: 0.015em;
+  text-transform: uppercase;
+  text-align: center;
+  color: var(--ink);
+}
+
+.navRight {
+  display: flex;
+  align-items: center;
+}
+
+.navCta {
+  display: inline-flex;
+  align-items: center;
+  min-height: 42px;
+  padding: 0 20px;
+  border-radius: 6px;
+  background: var(--ink);
+  color: var(--on-fill);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background .2s var(--ease);
+}
+
+.navCta:hover {
+  background: #ffffff;
+}
+
+@media (max-width: 620px) {
+  .navSide a { display: none; }
+  .navSide { gap: 0; }
+  .navRow { min-height: 68px; }
+  .wordmark { font-size: 22px; }
+}
+
+/*
+ * WHY THE PORTAL MENU IS THE HERMES FOLD: the account door swings into a white banner (what the portal is, one sentence, one door) over a cobalt body (PLATFORM | PORTAL and ACCOUNT | ACCESS); the reader leaves with one answer: where their account lives.
+ * The banner is the one white strip on the page, on purpose; the rows under it are the same ink as the canvas, so the fold reads as the masthead opening, not as a dialog.
+ */
+
+.navPortal {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid rgba(242, 242, 242, 0.55);
+  background: transparent;
+  padding: 9px 12px;
+  border-radius: 2px;
+  color: var(--ink);
+  font-family: var(--font);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: border-color .18s var(--ease), background .18s var(--ease);
+}
+
+.navPortal:hover,
+.navPortal[aria-expanded="true"] {
+  border-color: var(--ink);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.navPortalChevron {
+  width: 12px;
+  height: 12px;
+  transition: transform .18s var(--ease);
+}
+
+.navPortal[aria-expanded="true"] .navPortalChevron {
+  transform: rotate(180deg);
+}
+
+.portalMenu {
+  position: absolute;
+  top: calc(100% + 12px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 30;
+  width: min(1060px, calc(100vw - 28px));
+  overflow: hidden;
+  border-radius: 12px;
+  box-shadow: 0 34px 90px rgba(2, 2, 40, 0.55), 0 6px 20px rgba(2, 2, 40, 0.35);
+}
+
+.portalBanner {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 10px 14px 10px 20px;
+  background: #ffffff;
+}
+
+.portalBannerLink {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1 1 auto;
+  min-width: 0;
+  text-decoration: none;
+  color: #141424;
+}
+
+.portalBannerMark {
+  flex: 0 0 auto;
+  width: 30px;
+  height: 30px;
+  color: #0000f2;
+}
+
+.portalBannerMark svg {
+  width: 100%;
+  height: 100%;
+}
+
+.portalBannerText {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 6px;
+  font-size: 15px;
+  line-height: 1.35;
+}
+
+.portalBannerLinkText {
+  color: #0000f2;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1.5px;
+}
+
+.portalBannerRest {
+  color: #141424;
+}
+
+.portalBannerMsg[hidden] {
+  display: none;
+}
+
+.portalBannerNav {
+  display: flex;
+  gap: 4px;
+  flex: 0 0 auto;
+}
+
+.portalBannerChev {
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #141424;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: background .15s var(--ease);
+}
+
+.portalBannerChev:hover,
+.portalBannerChev:focus-visible {
+  background: rgba(10, 10, 30, 0.09);
+}
+
+.portalBannerChev svg {
+  width: 16px;
+  height: 16px;
+}
+
+.portalBody {
+  background: #0000f2;
+  padding: 8px 16px 14px;
+}
+
+.portalRow {
+  display: grid;
+  grid-template-columns: 172px 1fr;
+  gap: 10px;
+  align-items: center;
+  padding: 12px 4px 14px;
+}
+
+.portalBigCol {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.portalKind {
+  margin: 0;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.portalBig {
+  margin: 0;
+  font-family: var(--condensed);
+  font-weight: 400;
+  font-size: clamp(40px, 4.6vw, 58px);
+  line-height: 0.94;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  color: #ffffff;
+}
+
+.portalDoors {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.portalDoor {
+  display: grid;
+  grid-template-columns: minmax(104px, 158px) 1fr auto;
+  align-items: center;
+  gap: 24px;
+  padding: 11px 14px;
+  border-radius: 8px;
+  text-decoration: none;
+  transition: background .15s var(--ease);
+}
+
+.portalDoor:hover,
+.portalDoor:focus-visible {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.portalDoorName {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: #ffffff;
+}
+
+.portalDoorDesc {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.62);
+}
+
+.portalDoor:hover .portalDoorDesc,
+.portalDoor:focus-visible .portalDoorDesc {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.portalArrow {
+  width: 15px;
+  height: 15px;
+  stroke: #ffffff;
+  opacity: 0.9;
+}
+
+.portalDivider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.26);
+}
+
+@media (max-width: 880px) {
+  .portalRow {
+    grid-template-columns: 128px 1fr;
+    gap: 8px;
+  }
+  .portalBig {
+    font-size: 38px;
+  }
+  .portalDoor {
+    grid-template-columns: minmax(88px, 120px) 1fr auto;
+    gap: 12px;
+    padding: 10px 10px;
+  }
+  .portalDoorDesc {
+    letter-spacing: 0.07em;
+  }
+}
+
+@media (max-width: 640px) {
+  .portalMenu {
+    width: calc(100vw - 16px);
+    top: calc(100% + 8px);
+  }
+  .portalRow {
+    grid-template-columns: 1fr;
+    gap: 10px;
+    padding: 12px 2px;
+  }
+  .portalBigCol {
+    flex-direction: row;
+    align-items: baseline;
+    gap: 14px;
+  }
+  .portalBig {
+    font-size: 32px;
+  }
+  .portalBannerText {
+    font-size: 13px;
+  }
+  .portalDoor {
+    grid-template-columns: 1fr auto;
+    grid-template-rows: auto auto;
+    row-gap: 2px;
+  }
+  .portalDoorDesc {
+    grid-column: 1;
+    grid-row: 2;
+  }
+  .portalArrow {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    align-self: center;
+  }
+}
+
+
+/*
+ * WHY the readProgress line exists: a long page is a promise with no end in sight; a two-pixel line under the header tells the reader exactly how far through it they are.
  */
 
 .readProgress {
@@ -365,8 +806,7 @@ header nav::-webkit-scrollbar { display: none; }
 }
 
 /*
- * WHY THE WAY BACK LIVES IN THE CORNER: a reader who scrolled a long page wants one tap back to the top, and measured against docs.firecrawl.dev on 2026-11-05, its rail carries that one door.
- * The button stays out of the way until the reader has scrolled past a screen and a half, so it never covers the page on arrival.
+ * WHY the way back lives in the corner: anyone who scrolled this far can return home with one tap instead of a marathon flick.
  */
 
 .toTop {
@@ -388,7 +828,7 @@ header nav::-webkit-scrollbar { display: none; }
   opacity: 0;
   pointer-events: none;
   transform: translateY(6px);
-  transition: opacity .16s var(--ease), transform .16s var(--ease), border-color .16s var(--ease), color .16s var(--ease);
+  transition: opacity .16s var(--ease), transform .16s var(--ease);
 }
 
 .toTop[data-shown="true"] {
@@ -407,184 +847,12 @@ header nav::-webkit-scrollbar { display: none; }
   outline-offset: 2px;
 }
 
-/*
- * WHY THE MAP MARKS THE SECTION IN VIEW: a reader who scrolls knows where they are, and the map must agree with the page or the map is a second thing to read.
- */
-
 .toc a[aria-current="true"] {
   color: var(--ink);
   font-weight: 600;
 }
 
-header nav .brand {
-  display: inline-flex;
-  align-items: center;
-  gap: 9px;
-  flex: 0 0 auto;
-  margin-right: auto;
-  color: var(--ink);
-  font-size: 15.5px;
-  font-weight: 650;
-  letter-spacing: -.025em;
-  text-decoration: none;
-  white-space: nowrap;
-  view-transition-name: brand;
-}
-
-header nav .brand:hover { color: var(--ink); }
-
-.brandMark {
-  width: 22px;
-  height: 22px;
-  flex: 0 0 auto;
-  border-radius: 7px;
-}
-
-/*
- * WHY THE MARK IS CUT FROM THE CANVAS: the old mark was a dark square with a light glyph, which on a dark page is a hole with a light shape in it.
- * The square now carries the accent and the glyph is cut out of it, so the mark reads at any size.
- */
-
-header nav .brandMark rect { fill: var(--accent); }
-
-header nav .brandMark path { fill: var(--bg); }
-
-header nav a:not(.brand):not(.navCta) {
-  flex: 0 0 auto;
-  padding: 6px 0;
-  color: var(--muted);
-  font-size: 13.5px;
-  font-weight: 500;
-  letter-spacing: -.01em;
-  text-decoration: none;
-  white-space: nowrap;
-  transition: color .2s var(--ease);
-}
-
-header nav a:not(.brand):not(.navCta):hover,
-header nav a[aria-current="page"]:not(.brand):not(.navCta) {
-  color: var(--ink);
-}
-
-header nav a[aria-current="page"]:not(.brand):not(.navCta) {
-  background-image: linear-gradient(currentColor, currentColor);
-  background-position: 0 100%;
-  background-repeat: no-repeat;
-  background-size: 100% 1px;
-  animation: nav-line-in .25s var(--ease);
-}
-
-@keyframes nav-line-in {
-  from { background-size: 0% 1px; }
-  to { background-size: 100% 1px; }
-}
-
-/* WHY the filled action keeps its own ink when the page it points at is the current one: without this, the current-page rule painted black on black and the button read as an empty pill. */
-
-header nav .navCta,
-header nav .navCta[aria-current="page"] { color: var(--on-fill); }
-
-header nav .navCta {
-  flex: 0 0 auto;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 36px;
-  padding: 0 17px;
-  border: 1px solid var(--ink);
-  border-radius: var(--radius-sm);
-  background: var(--ink);
-  color: var(--on-fill);
-  font-size: 13px;
-  font-weight: 600;
-  text-decoration: none;
-  white-space: nowrap;
-  transition: background .2s var(--ease), border-color .2s var(--ease);
-}
-
-header nav .navCta:hover {
-  border-color: var(--accent);
-  background: var(--accent);
-  color: var(--on-fill);
-}
-
-@media (max-width: 980px) {
-  header nav { gap: 18px; min-height: 62px; padding: 10px 0; }
-}
-
-@media (max-width: 720px) {
-  header nav { gap: 14px; mask-image: linear-gradient(to right, #000 92%, transparent); -webkit-mask-image: linear-gradient(to right, #000 92%, transparent); }
-  header nav a:not(.brand):not(.navCta) { font-size: 13px; }
-  header nav .navCta { min-height: 34px; padding: 0 14px; }
-}
-
-/*
- * WHY the account and console links leave the phone row first: at 390px the sign-in action was scrolled off-screen while three secondary doors pushed it there, and a visitor who cannot see the one filled action has no way in.
- * The footer still carries every door.
- */
-
-/*
- * WHY THE PHONE ROW KEEPS THE BRAND, THE DOOR, AND THE ACTION: measured at 390px on 2026-11-05, the five doors pushed the sign-in action 238px sideways, so a visitor had to swipe a row to find the one filled button.
- * The doors are one tap away in the palette, which on a phone lists every page, and the footer still carries them all.
- */
-
-@media (max-width: 620px) {
-  header nav a:not(.brand):not(.navCta) { display: none; }
-}
-
-@media (max-width: 620px) {
-  header nav { gap: 12px; mask-image: none; -webkit-mask-image: none; }
-  header nav .nav-account,
-  header nav a[href$="dashboard.html"] { display: none; }
-  header nav .navCta { padding: 0 13px; }
-}
-
 /* search door and palette */
-
-/*
- * WHY THE DOOR STAYS CLOSED WITHOUT JAVASCRIPT: a button that opens nothing is worse than no button, so the door appears only when the script that answers it is on the page.
- * WHY THE KEY IS WRITTEN ON THE DOOR: a reader who sees Ctrl K learns the shortcut without reading a sentence about it.
- */
-
-.navSearch {
-  display: none;
-  flex: 0 0 auto;
-  align-items: center;
-  gap: 6px;
-  min-height: 30px;
-  padding: 0 8px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
-  background: var(--surface);
-  color: var(--muted);
-  font: inherit;
-  font-size: 12px;
-  cursor: pointer;
-  transition: color .16s var(--ease), border-color .16s var(--ease);
-}
-
-html.hasPalette .navSearch { display: inline-flex; }
-
-.navSearch:hover {
-  border-color: var(--line-strong);
-  color: var(--ink);
-}
-
-.navSearch:focus-visible {
-  outline: 2px solid var(--focus);
-  outline-offset: 2px;
-}
-
-.navSearchKey {
-  padding: 1px 5px;
-  border: 1px solid var(--line);
-  border-radius: 3px;
-  background: var(--surface-2);
-  color: var(--muted);
-  font-family: var(--mono);
-  font-size: 10.5px;
-  line-height: 1.5;
-}
 
 .palette {
   width: min(560px, calc(100vw - 32px));
@@ -698,10 +966,6 @@ html.hasPalette .navSearch { display: inline-flex; }
 /*
  * WHY THE KEY HINT LEAVES THE PHONE ROW: at 390px the nav row is already tight, and the door itself still answers with a tap.
  */
-
-@media (max-width: 720px) {
-  .navSearchKey { display: none; }
-}
 
 /* â”€â”€ footer â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
@@ -908,13 +1172,7 @@ footer .doors a:hover { color: var(--ink); }
   gap: 16px;
 }
 
-/* WHY three tracks: five exits read as three and two, not as a full row with one orphan. */
-
-.exitGrid { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
-
-@media (max-width: 700px) { .exitGrid { grid-template-columns: 1fr; } }
-
-/* â”€â”€ bento grid â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── bento grid ───────────────────────────────────────────────────── */
 
 /*
  * WHY THE GRID IS SHARED: the home page and the features page both answer "what does it do?" with the same four cards, and two copies of one grid drift apart in a week.
@@ -1241,21 +1499,7 @@ button { font-family: inherit; }
 
 /* â”€â”€ surfaces â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
-.panelLight {
-  border-radius: var(--radius);
-  background: var(--surface-2);
-  color: var(--ink);
-}
-
-.panelLight code {
-  border-color: var(--line-strong);
-  background: var(--bg);
-  color: var(--ink);
-}
-
-.panelLight a { color: var(--accent); }
-
-/* â”€â”€ OAuth consent lists â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* OAuth consent lists â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 ul.scopes {
   margin: 0;
@@ -1525,3 +1769,5 @@ html.js [data-reveal].in {
   body { background: #fff; color: #000; }
   main { padding: 0; }
 }
+
+

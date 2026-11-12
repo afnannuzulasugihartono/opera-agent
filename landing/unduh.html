@@ -1,181 +1,453 @@
-<!-- @last-edited: 2026-11-09 UTC+7. -->
-<!-- @title: unduh - the door: one archive, five browsers, one action. -->
-<!-- @state: one hero with a giant door and the archive fan; one proof strip from a real MCP document; permissions and the store note folded below; the merged file page carries the steps. -->
-<!-- @dependencies: site.css, download.css, i18n.js, reveal.js, wayfind.js, palette.js, logos.js. -->
+<!-- @last-edited: 2026-10-26 UTC+7. -->
+<!-- @title: unduh — one card per browser, the archive filled and the rest closed, then every install path. -->
+<!-- @state: the merged page: each browser card fills the .zip and closes the .crx and the update manifest behind a details; the steps, verification, enterprise notes, and matrix live here, and the hub only opens the door. -->
+<!-- @dependencies: site.css, download.css, i18n.js, reveal.js, wayfind.js, palette.js. -->
+
 
 <!doctype html>
 <html lang="id">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="theme-color" content="#000000" />
-  <title data-i18n="meta.title">Unduh — Opera Agent</title>
-  <meta name="description" content="Unduh Opera Agent: satu arsip untuk Chrome, Edge, Brave, Opera, dan Vivaldi. Build terbaru, selalu." />
+  <meta name="theme-color" content="#0000f2" />
+  <title data-i18n="meta.title">Unduh berkas — Opera Agent</title>
+  <meta name="description" content="Unduh Opera Agent untuk Chrome, Edge, Brave, Opera, dan Vivaldi: arsip .zip manual atau CRX bertanda tangan untuk mesin enterprise." />
   <link rel="stylesheet" href="/site.css" />
   <link rel="stylesheet" href="/download.css" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%230b0d10'/%3E%3Cpath d='M5.2 2.2v10.2l2.5-2.3 1.5 3.6 1.9-.8-1.6-3.6h3.1L5.2 2.2Z' fill='%233ecf8e'/%3E%3C/svg%3E" />
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="Opera Agent" />
-  <meta property="og:title" content="Unduh — Opera Agent" />
-  <meta property="og:description" content="Unduh Opera Agent: satu arsip untuk Chrome, Edge, Brave, Opera, dan Vivaldi. Build terbaru, selalu." />
+  <meta property="og:title" content="Unduh berkas — Opera Agent" />
+  <meta property="og:description" content="Unduh Opera Agent untuk Chrome, Edge, Brave, Opera, dan Vivaldi: arsip .zip manual atau CRX bertanda tangan untuk mesin enterprise." />
   <meta property="og:url" content="https://opera-agent.pages.dev/unduh" />
   <meta property="og:locale" content="id_ID" />
 </head>
 <body>
   <header>
-    <div class="wrap">
-      <nav>
-        <a class="brand" href="/beranda.html"><svg class="brandMark" viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="7"  /><path d="M8 5.6v12.8l3.1-2.9 1.9 4.5 2.4-1-2-4.5h3.9L8 5.6Z"  /></svg><span>Opera Agent</span></a>
-        <a href="/fitur.html" data-i18n="nav.features">Fitur</a>
-        <a href="/unduh.html" data-i18n="nav.download" aria-current="page">Unduh</a>
-        <a href="/pasang-mcp.html" data-i18n="nav.mcp">MCP</a><a href="/harga" data-i18n="nav.price">Harga</a>
-        <a href="/dukungan.html" data-i18n="nav.support">Dukungan</a>
-        <a href="/docs.html" data-i18n="nav.docs">Docs</a>
-        <span class="lang" data-lang-toggle></span>
-        <button class="navSearch" type="button" aria-label="Cari halaman Ctrl K" aria-keyshortcuts="Control+K Meta+K"><svg class="navSearchIcon" viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><circle cx="7" cy="7" r="4.5" fill="none" stroke="currentColor" stroke-width="1.5"></circle><path d="M10.6 10.6 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path></svg><kbd class="navSearchKey">Ctrl K</kbd></button>
-        <a class="navCta" href="/" data-i18n="nav.signin">Masuk</a>
+  <div class="wrap">
+    <div class="navRow">
+      <nav class="navSide navLeft" aria-label="Primary">
+        <a href="./fitur.html" data-i18n="nav.features">Fitur</a>
+        <a href="./unduh.html" aria-current="page" data-i18n="nav.download">Unduh</a><span class="lang" data-lang-toggle></span>
       </nav>
-    </div>
-  </header>
+      <a class="brand" href="/beranda.html"><span class="wordmark">Opera<br/>Agent</span></a>
+      <nav class="navSide navRight" aria-label="Secondary">
+    <span data-portal-toggle></span>
+        <a href="./docs.html" data-i18n="nav.docs">Docs</a>
+        <a class="navCta" href="./unduh.html" data-i18n="cta.download">Pasang Opera Agent</a>
+      </nav>
+
+
+    <div data-portal-menu></div>
+  </div>
+</header>
 
   <main class="wrap wide">
-    <div class="hero" data-reveal>
-      <div class="hero-text">
-        <h1 class="heroTitle" data-i18n="page.title">Pasang Opera Agent</h1>
-        <p class="lede" data-i18n="page.lede">Tanpa toko: satu arsip untuk semua browser Chromium. Build terbaru, selalu.</p>
-        <p class="hero-cta"><a class="btn giant" href="./unduh-berkas.html" data-i18n="door">Unduh Opera Agent</a></p>
-        <p class="also" data-i18n-html="also">juga tersedia: <a href="./unduh-berkas.html">Panduan format</a> &middot; <a href="./dashboard.html">Dashboard</a></p>
-        <dl class="statBand" aria-label="Fakta produk">
-          <div><dt><span class="stat-num">40</span></dt><dd data-i18n="stat.tools">tool MCP</dd></div>
-          <div><dt><span class="stat-num">35</span></dt><dd data-i18n="stat.prims">primitif browser</dd></div>
-        </dl>
-      </div>
-
-      <aside class="pack" data-reveal aria-label="Satu arsip untuk lima browser">
-        <ol class="packRow" aria-hidden="true">
-          <li class="packTile" title="Chrome" data-logo="chrome">C</li>
-          <li class="packTile" title="Edge" data-logo="edge">E</li>
-          <li class="packTile" title="Brave" data-logo="brave">B</li>
-          <li class="packTile" title="Opera" data-logo="opera">O</li>
-          <li class="packTile" title="Vivaldi" data-logo="vivaldi">V</li>
-        </ol>
-      </aside>
+    <div class="heroFiles" data-reveal>
+      <h1 data-i18n="page.title">Unduh berkas</h1>
+      <p class="lede" data-i18n="page.sub">Satu build. Lima browser. Sekali klik. Build terbaru, selalu.</p>
     </div>
 
-    <figure class="artifact" data-reveal>
-      <img src="/bukti/canvas-docs.jpg" alt="Dokumen Google Docs berisi laporan ringkasan yang ditulis seluruhnya oleh asisten AI lewat MCP, terlihat tabel Operasi dan Hasil serta tiga temuan" width="1920" height="877" loading="lazy" />
-      <figcaption>
-        <span data-i18n="artifact.cap">Dokumen asli, ditulis seluruhnya lewat MCP.</span>
-        <a href="./bukti.html" data-i18n="artifact.link">Lihat bukti</a>
-      </figcaption>
-    </figure>
+    <div class="browsers" id="berkas">
+      <article class="browser" data-browser="chrome">
+        <span class="badge" hidden data-i18n="card.yours">Browser Anda</span>
+        <span class="glyph" aria-hidden="true" data-logo="chrome">C</span>
+        <h2>Chrome</h2>
+        <div class="btn-row">
+          <a class="btn" href="https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/download/opera-agent.zip?for=chrome" download data-i18n="card.zipMain">Unduh .zip</a>
+          <p class="cardNote" data-i18n="card.why">Pasang lewat developer mode. Yang dipasang dari folder tidak pernah diperbarui sendiri.</p>
+        </div>
+        <p class="otherBuilds"><span class="otherLabel" data-i18n="card.more">Lainnya</span><a href="https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/download/opera-agent.crx?for=chrome" download data-i18n="card.crx" title="Paket bertanda tangan: untuk mesin yang dikelola dan pembaruan otomatis">.crx</a><span class="dot" aria-hidden="true">&middot;</span><a href="https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/update.xml?id=ofgemipoobcnbjkfanmofjbdonjapmgl" data-i18n="card.manifest">Manifest</a></p>
+      </article>
+      <article class="browser" data-browser="edge">
+        <span class="badge" hidden data-i18n="card.yours">Browser Anda</span>
+        <span class="glyph" aria-hidden="true" data-logo="edge">E</span>
+        <h2>Edge</h2>
+        <div class="btn-row">
+          <a class="btn" href="https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/download/opera-agent.zip?for=edge" download data-i18n="card.zipMain">Unduh .zip</a>
+          <p class="cardNote" data-i18n="card.why">Pasang lewat developer mode. Yang dipasang dari folder tidak pernah diperbarui sendiri.</p>
+        </div>
+        <p class="otherBuilds"><span class="otherLabel" data-i18n="card.more">Lainnya</span><a href="https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/download/opera-agent.crx?for=edge" download data-i18n="card.crx" title="Paket bertanda tangan: untuk mesin yang dikelola dan pembaruan otomatis">.crx</a><span class="dot" aria-hidden="true">&middot;</span><a href="https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/update.xml?id=ofgemipoobcnbjkfanmofjbdonjapmgl" data-i18n="card.manifest">Manifest</a></p>
+      </article>
+      <article class="browser" data-browser="brave">
+        <span class="badge" hidden data-i18n="card.yours">Browser Anda</span>
+        <span class="glyph" aria-hidden="true" data-logo="brave">B</span>
+        <h2>Brave</h2>
+        <div class="btn-row">
+          <a class="btn" href="https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/download/opera-agent.zip?for=brave" download data-i18n="card.zipMain">Unduh .zip</a>
+          <p class="cardNote" data-i18n="card.why">Pasang lewat developer mode. Yang dipasang dari folder tidak pernah diperbarui sendiri.</p>
+        </div>
+        <p class="otherBuilds"><span class="otherLabel" data-i18n="card.more">Lainnya</span><a href="https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/download/opera-agent.crx?for=brave" download data-i18n="card.crx" title="Paket bertanda tangan: untuk mesin yang dikelola dan pembaruan otomatis">.crx</a><span class="dot" aria-hidden="true">&middot;</span><a href="https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/update.xml?id=ofgemipoobcnbjkfanmofjbdonjapmgl" data-i18n="card.manifest">Manifest</a></p>
+      </article>
+      <article class="browser" data-browser="opera">
+        <span class="badge" hidden data-i18n="card.yours">Browser Anda</span>
+        <span class="glyph" aria-hidden="true" data-logo="opera">O</span>
+        <h2>Opera</h2>
+        <div class="btn-row">
+          <a class="btn" href="https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/download/opera-agent.zip?for=opera" download data-i18n="card.zipMain">Unduh .zip</a>
+          <p class="cardNote" data-i18n="card.why">Pasang lewat developer mode. Yang dipasang dari folder tidak pernah diperbarui sendiri.</p>
+        </div>
+        <p class="otherBuilds"><span class="otherLabel" data-i18n="card.more">Lainnya</span><a href="https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/download/opera-agent.crx?for=opera" download data-i18n="card.crx" title="Paket bertanda tangan: untuk mesin yang dikelola dan pembaruan otomatis">.crx</a><span class="dot" aria-hidden="true">&middot;</span><a href="https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/update.xml?id=ofgemipoobcnbjkfanmofjbdonjapmgl" data-i18n="card.manifest">Manifest</a></p>
+      </article>
+      <article class="browser" data-browser="vivaldi">
+        <span class="badge" hidden data-i18n="card.yours">Browser Anda</span>
+        <span class="glyph" aria-hidden="true" data-logo="vivaldi">V</span>
+        <h2>Vivaldi</h2>
+        <div class="btn-row">
+          <a class="btn" href="https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/download/opera-agent.zip?for=vivaldi" download data-i18n="card.zipMain">Unduh .zip</a>
+          <p class="cardNote" data-i18n="card.why">Pasang lewat developer mode. Yang dipasang dari folder tidak pernah diperbarui sendiri.</p>
+        </div>
+        <p class="otherBuilds"><span class="otherLabel" data-i18n="card.more">Lainnya</span><a href="https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/download/opera-agent.crx?for=vivaldi" download data-i18n="card.crx" title="Paket bertanda tangan: untuk mesin yang dikelola dan pembaruan otomatis">.crx</a><span class="dot" aria-hidden="true">&middot;</span><a href="https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/update.xml?id=ofgemipoobcnbjkfanmofjbdonjapmgl" data-i18n="card.manifest">Manifest</a></p>
+      </article>
+    </div>
 
-    <section class="quiet">
-      <details class="fold" id="izin">
-        <summary><span data-i18n="perms.title">Izin, dengan alasan jelas.</span></summary>
-        <dl class="foldFacts">
-          <dt><code>tabs</code></dt><dd data-i18n="perms.tabs">Buka dan navigasi tab.</dd>
-          <dt><code>scripting</code></dt><dd data-i18n="perms.scripting">Content script tetap hidup.</dd>
-          <dt><code>storage</code></dt><dd data-i18n="perms.storage">Token dan setelan lokal Anda.</dd>
-          <dt><code>alarms</code></dt><dd data-i18n="perms.alarms">Heartbeat tetap segar.</dd>
-          <dt><code>debugger</code></dt><dd data-i18n="perms.debugger">Klik terpercaya, screenshot, dan aksesibilitas.</dd>
-          <dt><code>downloads</code></dt><dd data-i18n="perms.downloads">Simpan berkas, buktikan hasilnya.</dd>
-        </dl>
-        <p class="meta" data-i18n-html="perms.host">Host permission di semua asal — Anda tentukan halamannya. Screenshot ditolak di tab private; password, OTP, PIN, kartu, CVV diblokir.</p>
-      </details>
-      <details class="fold" id="review">
-        <summary><span data-i18n="review.title">Kenapa belum ada tombol pasang sekali klik?</span></summary>
-        <p data-i18n-html="review.body">Ekstensi <code>debugger</code> perlu review Chrome Web Store. Sampai rilis, arsip yang sama Anda pasang manual — listing permanen menyusul.</p>
-      </details>
-      <details class="fold" id="riwayat">
-        <summary><span data-i18n="side.title">Build lama &amp; riwayat</span></summary>
-        <p data-i18n-html="side.body">Setiap rilis 1.6.x bertanda tangan tetap tersedia di <a href="https://github.com/afnannuzulasugihartono/opera-agent/releases">GitHub Releases</a> — .zip, .crx dan SHA256SUMS — untuk mesin enterprise.</p>
-      </details>
-    </section>
+    <script type="application/json" id="i18n-dict">{
+  "en": {
+    "card.crx": ".crx",
+    "card.manifest": "Manifest",
+    "card.more": "Other",
+    "card.why": "Install it through developer mode. One loaded from a folder is never updated by itself.",
+    "card.yours": "Your browser",
+    "card.zipMain": "Download .zip",
+    "cta.download": "Install Opera Agent",
+    "meta.title": "Download files — Opera Agent",
+    "nav.docs": "Docs",
+    "nav.download": "Download",
+    "nav.features": "Features",
+    "page.sub": "One build. Five browsers. One click.",
+    "page.title": "Download files",
+    "perms.alarms": "A heartbeat that stays fresh.",
+    "perms.debugger": "Trusted clicks, screenshots and accessibility.",
+    "perms.downloads": "Save a file, prove the result.",
+    "perms.host": "Host permission on every origin — you decide the page. Screenshots are refused in a private tab; passwords, OTPs, PINs, cards and CVVs are blocked.",
+    "perms.scripting": "Keep the content script alive.",
+    "perms.storage": "Your token and local settings.",
+    "perms.tabs": "Open and navigate tabs.",
+    "perms.title": "Permissions, clearly explained",
+    "review.body": "A <code>debugger</code> extension needs Chrome Web Store review. Until then you load the same archive yourself; the listing follows after review.",
+    "review.title": "Why there is no one-click install button yet",
+    "steps.demoNote": "This animation shows the <em>.zip</em> route: extract it, load the folder. One loaded from a folder is never updated by itself, and the <em>Reload</em> step below is how it is updated.",
+    "steps.title": "Install",
+    "support.intro": "Chromium: Chrome, Edge, Brave, Opera, Vivaldi. Firefox has no <code>debugger</code> permission.",
+    "support.no": "refused",
+    "support.not": "no",
+    "support.th.crx": ".crx file",
+    "support.th.zip": ".zip archive",
+    "support.title": "Which browsers are supported",
+    "support.yes": "works",
+    "verify.copy": "Copy",
+    "verify.copyLocal": "Copy the local command",
+    "verify.copyServer": "Copy the server command",
+    "verify.intro": "The SHA-256 fingerprint changes every release. Two commands below; both must print the same fingerprint.",
+    "verify.match": "Both fingerprints must match.",
+    "verify.tagLocal": "Local",
+    "verify.tagServer": "Server",
+    "verify.title": "Verify the file"
+  }
+}</script>
+    <div class="downloadBody centered" data-reveal>
+    <details class="sectionFold" open>
+      <summary><h2 data-i18n="steps.title">Cara memasang</h2></summary>
+      <p class="demoNote" data-i18n-html="steps.demoNote">Animasi ini untuk jalan <em>.zip</em>: ekstrak, muat folder. Yang dipasang dari folder tidak pernah diperbarui sendiri, dan langkah <em>Reload</em> di bawah adalah cara memperbaruinya.</p>
+      <div class="demo" aria-hidden="true">
+        <div class="desktop">
+          <div class="demoCanvas">
+          <div class="demoStage">
+
+            <div class="deskIcons" aria-hidden="true">
+              <span class="deskIcon"><svg viewBox="0 0 24 24" class="deskPcIcon"><rect x="3" y="5" width="18" height="12" rx="1.6" fill="none" stroke="var(--ink)" stroke-width="1.4"/><path d="M9 21h6M12 17v4" stroke="var(--ink)" stroke-width="1.4" stroke-linecap="round"/></svg><em>This PC</em></span>
+              <span class="deskIcon"><svg viewBox="0 0 24 24" class="deskPcIcon"><path d="M5 8h14M9.5 8V5.5h5V8M6.5 8l1.2 11h8.6L17.5 8" fill="none" stroke="var(--ink)" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg><em>Recycle Bin</em></span>
+              <span class="deskIcon"><svg viewBox="0 0 24 24" class="deskPcIcon"><path d="M11.3 2 6.2 12.4h4.6L9.3 22l7.4-10.9h-4.7L14.4 2z" style="fill:var(--accent)"/></svg><em>Opera Agent</em></span>
+              <span class="deskIcon"><svg viewBox="0 0 24 24" class="deskPcIcon"><path d="M3 8A2 2 0 0 1 5 6h4.6l2 2H19a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8z" fill="var(--yellow)" stroke="var(--surface-2)" stroke-width=".8" stroke-linejoin="round"/></svg><em>Downloads</em></span>
+            </div>
+
+            <div class="appWin osWin chromeWin extRealChrome" data-app="chrome">
+              <div class="chromeTabStrip">
+                <span class="chromeTab chromeTabActive"><svg viewBox="0 0 24 24" class="chromeTabIcon"><path d="M11.7 2.6a1.3 1.3 0 0 1 1.3-1.3 1.3 1.3 0 0 1 1.3 1.3c0 .6-.4 1-.4 1.7a1.3 1.3 0 0 0 1.3 1.3h1.5a1.3 1.3 0 0 1 1.3 1.3v1.5c0 .6.4 1-.4 1.7a1.3 1.3 0 0 1 0 1.8c.8.7.4 1.1.4 1.7v1.5a1.3 1.3 0 0 1-1.3 1.3H13c-.6 0-1 .4-1.7 1.3a1.3 1.3 0 0 1-1.8 0c-.7-.9-1.1-1.3-1.7-1.3H6.3A1.3 1.3 0 0 1 5 17.6v-1.5c0-.6-.4-1-.4-1.7a1.3 1.3 0 0 1 1.2-1.3c.6 0 1-.4 1.7-1.3a1.3 1.3 0 0 1 0-1.8c-.3-.3-.5-.7-.5-.9z" fill="var(--chrome-tone)"/></svg><span class="chromeTabTitle">unduh - Opera Agent</span><i class="chromeTabClose"></i></span>
+                <span class="chromeTab chromeTabIdle"><span class="tabFav"></span>Extension updater</span>
+                <span class="chromeTab chromeTabIdle"><span class="tabFav"></span>Sherlock Holmes - Wiki</span>
+                <span class="chromeTab chromeTabIdle"><span class="tabFav"></span>404 Not found</span>
+                <span class="tabNew"></span>
+                <span class="chromeWinGlyphs"><i class="wgMin"></i><i class="wgMax"></i><i class="wgClose"></i></span>
+              </div>
+              <div class="chromeToolbar">
+                <svg viewBox="0 0 24 24" class="chromeNavIcon dim"><path d="M14.5 6 9 12l5.5 6" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <svg viewBox="0 0 24 24" class="chromeNavIcon"><path d="M9.5 6 15 12l-5.5 6" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <svg viewBox="0 0 24 24" class="chromeNavIcon"><path d="M19 9a8 8 0 1 0 .5 7" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+                <span class="chromeOmnibox" data-ext-url="chrome://extensions" data-dash-url="opera-agent.pages.dev/dashboard#pairing"><svg viewBox="0 0 24 24" class="chromeOmniIcon"><circle cx="9" cy="9" r="5.4" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M13 13.5 21 21" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg><span class="typeUrl">opera-agent.pages.dev/unduh</span><span class="typeCaret"></span></span>
+                <svg viewBox="0 0 24 24" class="chromeNavIcon"><path d="M9 3v3M15 3v3M3.5 9h17M5 7.5h14A1.5 1.5 0 0 1 20.5 9v9.5A1.5 1.5 0 0 1 19 20H5a1.5 1.5 0 0 1-1.5-1.5V9A1.5 1.5 0 0 1 5 7.5z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <span class="extTrigger extTriggerDark" title="Opera Agent"><svg viewBox="0 0 24 24" class="chromeNavIcon"><rect x="3" y="3" width="18" height="18" rx="5" fill="var(--bg)"/><path d="M8 5.6v12.8l3.1-2.9 1.9 4.5 2.4-1-2-4.5h3.9L8 5.6Z" fill="var(--accent)"/></svg></span>
+                <span class="chromeAvatar">A</span>
+                <svg viewBox="0 0 24 24" class="chromeNavIcon"><path d="M5 7h14M5 12h14M5 17h14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+              </div>
+              <span class="chromeLoad" aria-hidden="true"></span>
+              <div class="chromePages">
+                <div class="chromePage pageDl is-shown">
+                  <div class="dlPageBody">
+                    <span class="dlPageKicker">DOWNLOAD FILES</span>
+                    <span class="dlPageTitle">One build. Five browsers.</span>
+                    <span class="dlBigBtn"><svg viewBox="0 0 24 24" class="dlBigBtnIcon"><path d="M12 4v11M7 10.5l5 5 5-5M5.5 19h13" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>Download .zip</span>
+                  </div>
+                  <div class="dlShelf">
+                    <span class="dlIcon">.zip</span>
+                    <span class="dlMeta"><span class="dlName">opera-agent.zip</span><span class="dlTrack"><span class="dlFill"></span></span></span>
+                    <svg viewBox="0 0 24 24" class="checkIcon dlCheck" aria-hidden="true"><path d="M4 12.5 9.5 18 20 6.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  </div>
+                </div>
+                <div class="chromePage pageExt">
+                  <div class="extPageChrome">
+                    <div class="extTopRow">
+                      <svg viewBox="0 0 24 24" class="extTopPuzzle"><path d="M11.7 2.6a1.3 1.3 0 0 1 1.3-1.3 1.3 1.3 0 0 1 1.3 1.3c0 .6-.4 1-.4 1.7a1.3 1.3 0 0 0 1.3 1.3h1.5a1.3 1.3 0 0 1 1.3 1.3v1.5c0 .6.4 1-.4 1.7a1.3 1.3 0 0 1 0 1.8c.8.7.4 1.1.4 1.7v1.5a1.3 1.3 0 0 1-1.3 1.3H13c-.6 0-1 .4-1.7 1.3a1.3 1.3 0 0 1-1.8 0c-.7-.9-1.1-1.3-1.7-1.3H6.3A1.3 1.3 0 0 1 5 17.6v-1.5c0-.6-.4-1-.4-1.7a1.3 1.3 0 0 1 1.2-1.3c.6 0 1-.4 1.7-1.3a1.3 1.3 0 0 1 0-1.8c-.3-.3-.5-.7-.5-.9z" fill="var(--chrome-tone)"/></svg>
+                      <span class="extTopTitle">Extensions</span>
+                      <span class="extSearchPill"><svg viewBox="0 0 24 24" class="extSearchIcon"><circle cx="10.5" cy="10.5" r="6" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M15.5 15.5 21 21" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>Search extensions</span>
+                      <span class="extTopRight"><span class="extTopRightLabel">Developer mode</span><span class="chromeToggle"><span class="chromeToggleKnob"></span></span></span>
+                    </div>
+                    <div class="extActionRow">
+                      <span class="chromePillBtn blue">Load unpacked</span>
+                      <span class="chromePillBtn">Pack extension</span>
+                      <span class="chromePillBtn">Update</span>
+                    </div>
+                    <div class="extManaged"><svg viewBox="0 0 24 24" class="extManagedIcon"><path d="M4 21V7a1.5 1.5 0 0 1 1.5-1.5H10A1.5 1.5 0 0 1 11.5 7v14M4 15h7M4 19h7M11.5 11H20a1.5 1.5 0 0 1 1.5 1.5V21M11.5 15H21M11.5 19H21" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg><span>Your <u>browser is managed</u> by your organization</span></div>
+                    <div class="extBody">
+                      <div class="extSide">
+                        <span class="sidePill sel"><svg viewBox="0 0 24 24" class="sideIcon"><path d="M11.7 2.6a1.3 1.3 0 0 1 1.3-1.3 1.3 1.3 0 0 1 1.3 1.3c0 .6-.4 1-.4 1.7a1.3 1.3 0 0 0 1.3 1.3h1.5a1.3 1.3 0 0 1 1.3 1.3v1.5c0 .6.4 1-.4 1.7a1.3 1.3 0 0 1 0 1.8c.8.7.4 1.1.4 1.7v1.5a1.3 1.3 0 0 1-1.3 1.3H13c-.6 0-1 .4-1.7 1.3a1.3 1.3 0 0 1-1.8 0c-.7-.9-1.1-1.3-1.7-1.3H6.3A1.3 1.3 0 0 1 5 17.6v-1.5c0-.6-.4-1-.4-1.7a1.3 1.3 0 0 1 1.2-1.3c.6 0 1-.4 1.7-1.3a1.3 1.3 0 0 1 0-1.8c-.3-.3-.5-.7-.5-.9z" fill="currentColor"/></svg>My extensions</span>
+                        <span class="sideRow"><svg viewBox="0 0 24 24" class="sideIcon"><path d="M7 8h10a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2Z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M7 11h.01M11 11h.01M15 11h.01M7 13.5h10" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>Keyboard shortcuts</span>
+                        <span class="sideNote">Discover more extensions and themes on the<br><u>Chrome Web Store</u></span>
+                      </div>
+                      <div class="extMain">
+                        <div class="extMainHead">
+                          <span class="extMainTitle">All Extensions</span>
+                          <span class="extMainRight"><span class="extMainRightLabel">Pin new extensions to Toolbar</span><span class="chromeToggle on small"><span class="chromeToggleKnob"></span></span></span>
+                        </div>
+                        <div class="extGrid">
+                          <div class="extCardChrome extLocal">
+                            <div class="extCardTop">
+                              <div class="extCardTile"><svg viewBox="0 0 24 24"><path d="M11.3 2 6.2 12.4h4.6L9.3 22l7.4-10.9h-4.7L14.4 2z" style="fill:var(--accent)"/></svg></div>
+                              <div class="extCardContent">
+                                <div class="extCardNameRow"><span class="extCardName">Opera Agent</span></div>
+                                <div class="extCardDesc">Private local bridge for Supabase-driven browser control.</div>
+                                <div class="extCardId">ID: ofgemipoobcnbjkfanmofjbdonjapmgl</div>
+                                <div class="extCardSw">Inspect views service worker</div>
+                              </div>
+                            </div>
+                            <div class="extCardFoot"><span class="chromePillBtn">Details</span><span class="chromePillBtn">Remove</span><span class="chromePillBtn danger">Errors</span><svg viewBox="0 0 24 24" class="extReload"><path d="M19 9a8 8 0 1 0 .5 7" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg><span class="chromeToggle on"><span class="chromeToggleKnob"></span></span></div>
+                          </div>
+                          <div class="extCardChrome extStore">
+                            <div class="extCardTop">
+                              <div class="extCardTile tileRed"><svg viewBox="0 0 24 24"><path d="M12 4l7 12a1.5 1.5 0 0 1-1.4 2H6.4A1.5 1.5 0 0 1 5 16l7-12z" fill="var(--chrome-text)"/><text x="12" y="14.5" font-size="7.5" font-weight="700" fill="var(--chrome-bg)" text-anchor="middle">PDF</text></svg></div>
+                              <div class="extCardContent">
+                                <div class="extCardNameRow"><span class="extCardName">PDF Toolkit</span></div>
+                                <div class="extCardDesc">Edit, sign and compress PDFs right in Chrome.</div>
+                                <div class="extCardId">ID: efaidnbmnnnibpcajpcglefindmkaj</div>
+                                <div class="extCardSw">Inspect views service worker</div>
+                              </div>
+                            </div>
+                            <div class="extCardFoot"><span class="chromePillBtn">Details</span><span class="chromePillBtn">Remove</span><span class="chromeToggle on"><span class="chromeToggleKnob"></span></span></div>
+                          </div>
+                          <div class="extCardChrome extStore">
+                            <div class="extCardTop">
+                              <div class="extCardTile tileAmber"><svg viewBox="0 0 24 24"><path d="M6 7h12v10H6z" fill="var(--chrome-text)"/><path d="M8.5 9.2 11 12l2.5 2.8M13 9.2 15.5 12l-2.5 2.8" stroke="var(--chrome-bg)" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+                              <div class="extCardContent">
+                                <div class="extCardNameRow"><span class="extCardName">Watch Together</span></div>
+                                <div class="extCardDesc">Watch synced videos with your group.</div>
+                                <div class="extCardId">ID: cimpffmigeipdhhjhphshejkgcdpjolg</div>
+                                <div class="extCardSw">Inspect views service worker (Inactive)</div>
+                              </div>
+                            </div>
+                            <div class="extCardFoot"><span class="chromePillBtn">Details</span><span class="chromePillBtn">Remove</span><span class="chromeToggle off"><span class="chromeToggleKnob"></span></span></div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="chromePage pageDash">
+                  <div class="dashSiteHead"><span class="siteBrand"><svg viewBox="0 0 24 24" class="siteBrandMark"><path d="M11.3 2 6.2 12.4h4.6L9.3 22l7.4-10.9h-4.7L14.4 2z" style="fill:var(--accent)"/></svg>Opera Agent</span><span class="siteNav">Features</span><span class="siteNav">Download</span><span class="siteNav">Pricing</span><span class="siteNav">Support</span><span class="siteNav">Docs</span><span class="siteLang">ID&nbsp;&nbsp;EN</span><span class="siteSignIn">Sign in</span></div>
+                  <div class="dashSplit">
+                    <div class="dashSide"><span class="dashSideItem">Overview</span><span class="dashSideItem">Device (7)</span><span class="dashSideItem">History</span><span class="dashSideItem">Action</span><span class="dashSideItem">Balance</span><span class="dashSideItem sel">Pairing</span><span class="dashSideItem">Account</span></div>
+                    <div class="dashMain">
+                      <span class="dashEmail">Devices of afnannuzulasugihartono@gmail.com.</span>
+                      <div class="dashStats"><span class="dashStat"><span class="dashStatLabel">Paired devices</span><span class="dashStatValue">7</span></span><span class="dashStat"><span class="dashStatLabel">Online now</span><span class="dashStatValue">5</span></span><span class="dashStat"><span class="dashStatLabel">Commands finished</span><span class="dashStatValue">12623 of 1318</span></span></div>
+                      <span class="dashHeading">Manual pairing</span>
+                      <div class="pairPanel">
+                        <span class="pairPanelText">A one-time code, valid for 10 minutes, bound to this account. Paste it into the extension popup on the device you want to connect.</span>
+                        <span class="deviceNameLabel">Device name</span>
+                        <span class="deviceNameField">Chrome on Windows</span>
+                        <span class="pairCreateBtn">Create pairing code</span>
+                        <span class="pairCodeRow"><span class="pairCodeLabel">Pairing code</span><span class="pairCodeLine"><span class="pairCodeValue">OAB—X7Q2</span><span class="pairCopyBtn" aria-label="Copy pairing code"><svg viewBox="0 0 24 24" class="copyIcon" aria-hidden="true"><rect x="8.5" y="8.5" width="10.5" height="10.5" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M5.5 15.5V6a2 2 0 0 1 2-2h9" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg><svg viewBox="0 0 24 24" class="copiedIcon" aria-hidden="true"><path d="M5 12.5 9.5 17 19 6.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span></span><span class="pairCodeHint">Valid for 10 minutes</span></span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="appWin osWin expWin" data-app="explorer">
+              <div class="expTabStrip">
+                <span class="expTab expTabActive"><svg viewBox="0 0 24 24" class="expTabIcon"><path d="M3 8A2 2 0 0 1 5 6h4.6l2 2H19a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8z" fill="var(--yellow)"/></svg>Downloads<i class="expTabClose"></i></span>
+                <span class="expTabPlus"></span>
+                <span class="chromeWinGlyphs"><i class="wgMin"></i><i class="wgMax"></i><i class="wgClose"></i></span>
+              </div>
+              <div class="expNavRow"><svg viewBox="0 0 24 24" class="navArrow dim"><path d="M14.5 6 9 12l5.5 6" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg><svg viewBox="0 0 24 24" class="navArrow"><path d="M9.5 6 15 12l-5.5 6" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg><svg viewBox="0 0 24 24" class="navArrow"><path d="M12 5v12M8 11l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg><svg viewBox="0 0 24 24" class="navArrow"><path d="M19 9a8 8 0 1 0 .5 7" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg><span class="crumbBar"><svg viewBox="0 0 24 24" class="crumbIcon"><rect x="3" y="5" width="18" height="12" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M9 21h6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>This PC<span class="pickSep">›</span><span class="crumbHere">Downloads</span></span><span class="searchPill"><svg viewBox="0 0 24 24" class="searchIcon"><circle cx="10.5" cy="10.5" r="6" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M15.5 15.5 21 21" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>Search Downloads</span></div>
+              <div class="expToolbar"><span class="toolItem toolPrimary"><svg viewBox="0 0 24 24" class="toolIcon"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>New<i class="toolCaret"></i></span><span class="toolItem"><svg viewBox="0 0 24 24" class="toolIcon"><path d="M4 9l5 5M7 6l-3 3 3 3M9 7h11M9 12h11M9 17h7" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="toolItem"><svg viewBox="0 0 24 24" class="toolIcon"><rect x="8" y="3" width="13" height="13" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.4"/><rect x="3" y="8" width="13" height="13" rx="1.5" style="fill:var(--surface-2)" stroke="currentColor" stroke-width="1.4"/></svg></span><span class="toolItem extractAll"><svg viewBox="0 0 24 24" class="toolIcon"><path d="M3 9.5A2 2 0 0 1 5 7.5h4.6l2 2H15a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-8Z" style="fill:var(--yellow)"/><path d="M17 3v8M13.8 8.6 17 4.4l3.2 4.2" fill="none" style="stroke:var(--accent)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>Extract all</span><span class="toolItem right sortView"><span class="sortItem"><svg viewBox="0 0 24 24" class="toolIcon"><path d="M7 8h10M7 12h7M7 16h4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>Sort<i class="toolCaret"></i></span><span class="viewItem"><svg viewBox="0 0 24 24" class="toolIcon"><path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>View<i class="toolCaret"></i></span><span class="rightDetails">Details</span></span></div>
+              <div class="expBody">
+                <div class="expNav"><span class="expNavItem"><svg viewBox="0 0 24 24" class="expNavIcon"><path d="M4 11 12 4l8 7M6.5 9.5V20h11V9.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>Home</span><span class="expNavItem"><svg viewBox="0 0 24 24" class="expNavIcon"><rect x="3" y="4" width="18" height="12" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M9 21h6M12 16v5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>Desktop</span><span class="expNavItem sel"><svg viewBox="0 0 24 24" class="expNavIcon"><path d="M12 4v12M6.5 10.5 12 16l5.5-5.5M4 19.5h16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>Downloads</span><span class="expNavItem"><svg viewBox="0 0 24 24" class="expNavIcon"><path d="M6 4h12v16H6z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M9 8.5h6M9 12h6M9 15.5h4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>Documents</span><span class="expNavItem"><svg viewBox="0 0 24 24" class="expNavIcon"><rect x="4" y="5" width="16" height="14" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="12" cy="12" r="3.3" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M4 15l4.5-4.5L13 15l3-3L20 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>Pictures</span><span class="expNavItem"><svg viewBox="0 0 24 24" class="expNavIcon"><rect x="3" y="4" width="18" height="12" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M9 21h6M12 16v5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>This PC</span><span class="expNavItem dimmed"><svg viewBox="0 0 24 24" class="expNavIcon"><rect x="2.5" y="10" width="19" height="7" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M6 13.5h.01M9.5 13.5h.01" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>OS (C:)</span></div>
+                <div class="expList"><span class="expColRow expColHead"><span>Name</span><span>Date modified</span><span>Type</span><span>Size</span></span><span class="expGroup">Today</span><span class="expRow expRowNew"><span class="expName"><svg viewBox="0 0 24 24" class="folderIconSm"><path d="M2 7.5A2 2 0 0 1 4 5.5h5.2l2.3 2h8.5a2 2 0 0 1 2 2v8.5a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-10Z" style="fill:var(--yellow)"/></svg>opera-agent</span><span class="expCell dim">11/10/2026 6:05 PM</span><span class="expCell dim">File folder</span><span class="expCell dim"></span></span><span class="expRow sel"><span class="expName"><svg viewBox="0 0 24 24" class="folderIconSm"><path d="M2 7.5A2 2 0 0 1 4 5.5h5.2l2.3 2h8.5a2 2 0 0 1 2 2v8.5a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-10Z" style="fill:var(--yellow)"/><rect x="7.3" y="9.2" width="1.5" height="1.5" rx=".3" style="fill:var(--surface-2)"/><rect x="7.3" y="12.4" width="1.5" height="1.5" rx=".3" style="fill:var(--surface-2)"/></svg>opera-agent.zip</span><span class="expCell dim">11/10/2026 6:05 PM</span><span class="expCell dim">Compressed (zipped) Folder</span><span class="expCell dim">134 KB</span></span><span class="expGroup">Yesterday</span><span class="expRow"><span class="expName"><svg viewBox="0 0 24 24" class="folderIconSm"><path d="M2 7.5A2 2 0 0 1 4 5.5h5.2l2.3 2h8.5a2 2 0 0 1 2 2v8.5a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-10Z" style="fill:var(--yellow)"/></svg>opera-agent</span><span class="expCell dim">11/9/2026 7:06 PM</span><span class="expCell dim">File folder</span><span class="expCell dim"></span></span><span class="expRow"><span class="expName"><svg viewBox="0 0 24 24" class="folderIconSm"><path d="M2 7.5A2 2 0 0 1 4 5.5h5.2l2.3 2h8.5a2 2 0 0 1 2 2v8.5a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-10Z" style="fill:var(--yellow)"/><rect x="7.3" y="9.2" width="1.5" height="1.5" rx=".3" style="fill:var(--surface-2)"/></svg>opera-agent.zip</span><span class="expCell dim">11/9/2026 7:04 AM</span><span class="expCell dim">Compressed (zipped) Folder</span><span class="expCell dim">136 KB</span></span><span class="expRow"><span class="expName"><span class="fileIconSm txt">T</span>npm_recovery_codes</span><span class="expCell dim">11/9/2026 11:39 AM</span><span class="expCell dim">Text Document</span><span class="expCell dim">1 KB</span></span></div>
+                <div class="expDetails"><svg viewBox="0 0 24 24" class="expBigZip"><path d="M2 7.5A2 2 0 0 1 4 5.5h5.2l2.3 2h8.5a2 2 0 0 1 2 2v8.5a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-10Z" style="fill:var(--yellow)"/><rect x="7.2" y="8.8" width="1.9" height="1.9" rx=".35" style="fill:var(--surface-2)"/><rect x="7.2" y="12.6" width="1.9" height="1.9" rx=".35" style="fill:var(--surface-2)"/><rect x="7.2" y="16.4" width="1.9" height="1.9" rx=".35" style="fill:var(--surface-2)"/></svg><span class="expDetName">opera-agent.zip</span><span class="expShareBtn"><svg viewBox="0 0 24 24" class="toolIcon"><path d="M16 6 22 12l-6 6M21 12H9" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>Share</span><span class="expDetHead">Details</span><span class="expDetRow"><span class="expDetKey">Type</span><span class="expDetVal">Compressed (zipped) Folder</span></span><span class="expDetRow"><span class="expDetKey">Size</span><span class="expDetVal">134 KB</span></span><span class="expDetRow"><span class="expDetKey">File location</span><span class="expDetVal">C:\Users\ASUS\Downloads</span></span><span class="expDetRow"><span class="expDetKey">Date modified</span><span class="expDetVal">11/10/2026 6:05 PM</span></span><span class="expDetBtn"><svg viewBox="0 0 24 24" class="toolIcon"><path d="M8 6V4h8v2M6 6h12l1.5 14a1.7 1.7 0 0 1-1.7 1.7H6.3A1.7 1.7 0 0 1 4.6 19L6 6Z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>Properties</span></div>
+              </div>
+              <div class="expStatusBar"><span>19 items</span><span class="expState">1 item selected&nbsp;&nbsp;134 KB</span></div>
+              <div class="extractDlg">
+                <div class="extractHead"><svg viewBox="0 0 24 24" class="extractHeadIcon"><path d="M3 8.5A2 2 0 0 1 5 6.5h4.5l2 2H19a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-8Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>Extract Compressed (Zipped) Folders<span class="wgCloseSm"></span></div>
+                <div class="extractBody">
+                  <span class="extractLabel">Files will be extracted to this folder:</span>
+                  <span class="extractPath">C:\Users\ASUS\Downloads\opera-agent</span>
+                  <span class="extractNote">Show extracted files when complete</span>
+                </div>
+                <div class="extractFoot"><span class="extractBtn quiet">Cancel</span><span class="extractBtn extractGo">Extract</span></div>
+              </div>
+            </div>
+
+            <div class="appWin osWin termWin" data-app="terminal">
+              <div class="termBar"><span class="termTab"><svg viewBox="0 0 24 24" class="termTabIcon"><path d="M10.6 2.7 3 13.2h4.7l-1 7.6 8.6-10.5h-5.2l1.6-7.6z" fill="var(--chrome-tone)"/></svg>Windows PowerShell<i class="termTabClose"></i></span><span class="termNewTab"></span><svg viewBox="0 0 24 24" class="termProfiles"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="chromeWinGlyphs"><i class="wgMin"></i><i class="wgMax"></i><i class="wgClose"></i></span></div>
+              <div class="termBody"><span class="termLine termHead">Windows PowerShell</span><span class="termLine termHead">Copyright (C) Microsoft Corporation. All rights reserved.</span><span class="termLine t1"><span class="psPrompt">PS C:\OperaAgent&gt;</span> <span class="termCmd" data-cmd="curl.exe -sI https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/download/opera-agent.zip | findstr /i x-opera-sha256"></span><span class="termCaret"></span></span><span class="termLine t2 hashLine">x-opera-sha256:&nbsp; a3f9c41d22e8b70461f0d8c5b2a4179e56d03bc8a41f7d92c0e85b6a47d103ce91</span><span class="termLine t3"><span class="psPrompt">PS C:\OperaAgent&gt;</span> <span class="termCmd" data-cmd="Get-FileHash .\opera-agent-*.zip -Algorithm SHA256"></span><span class="termCaret"></span></span><span class="termLine t4 hashLine">A3F9C41D22E8B70461F0D8C5B2A4179E56D03BC8A41F7D92C0E85B6A47D103CE91</span><svg viewBox="0 0 24 24" class="checkIconBig checkTerm" aria-hidden="true"><path d="M4 12.5 9.5 18 20 6.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+            </div>
+
+            <div class="folderPick"><div class="pickTitleBar"><span class="pickTitleText">Select the extension directory.</span><span class="pickX"></span></div><div class="pickNavRow"><svg viewBox="0 0 24 24" class="navArrow dim"><path d="M14.5 6 9 12l5.5 6" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg><svg viewBox="0 0 24 24" class="navArrow"><path d="M9.5 6 15 12l-5.5 6" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg><svg viewBox="0 0 24 24" class="navArrow"><path d="M12 5v12M8 11l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg><svg viewBox="0 0 24 24" class="navArrow"><path d="M19 9a8 8 0 1 0 .5 7" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg><span class="pickCrumbBar"><svg viewBox="0 0 24 24" class="crumbIcon"><path d="M3 8A2 2 0 0 1 5 6h4.6l2 2H19a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8z" fill="var(--yellow)"/></svg>Downloads<span class="pickSep">›</span><span class="crumbHere">opera-agent</span><svg viewBox="0 0 24 24" class="pickCrumbChevron"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></span><svg viewBox="0 0 24 24" class="navArrow pickRefresh"><path d="M19 9a8 8 0 1 0 .5 7M19 3.5v5h-5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="pickSearch"><svg viewBox="0 0 24 24" class="searchIcon"><circle cx="10.5" cy="10.5" r="6" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M15.5 15.5 21 21" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>Search opera-agent</span></div><div class="pickCmdRow"><span class="pickCmdItem">Organize<svg viewBox="0 0 24 24" class="pickCaret"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="pickCmdItem">New folder</span><span class="pickCmdRight"><svg viewBox="0 0 24 24" class="pickViewIcon"><path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><svg viewBox="0 0 24 24" class="pickCaret"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="pickHelp">?</span></span></div><div class="pickBody"><div class="pickSide"><span class="pickHome sel"><svg viewBox="0 0 24 24" class="pickHomeIcon"><path d="M4 11 12 4l8 7M6.5 9.5V20h11V9.5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>Home</span><span class="pickSideRule"></span><span class="pickSideItem"><svg viewBox="0 0 24 24" class="pickSideIcon"><path d="M4 11 12 4l8 7M6.5 9.5V20h11V9.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity=".7"/></svg>Desktop</span><span class="pickSideItem sel"><svg viewBox="0 0 24 24" class="pickSideIcon"><path d="M3 8A2 2 0 0 1 5 6h4.6l2 2H19a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8z" fill="var(--yellow)"/></svg>Downloads</span><span class="pickSideItem"><svg viewBox="0 0 24 24" class="pickSideIcon"><path d="M6 4h12v16H6z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M9 8h6M9 12h6M9 16h4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>Documents</span><span class="pickSideItem"><svg viewBox="0 0 24 24" class="pickSideIcon"><rect x="4" y="5" width="16" height="14" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="12" cy="12" r="3.5" fill="none" stroke="currentColor" stroke-width="1.4"/></svg>Pictures</span><span class="pickSideItem"><svg viewBox="0 0 24 24" class="pickSideIcon"><circle cx="9" cy="16.5" r="2.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M11.5 14 13 6h6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>Music</span><span class="pickSideItem"><svg viewBox="0 0 24 24" class="pickSideIcon"><rect x="3.5" y="6" width="17" height="12" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="12" cy="12" r="2.8" fill="none" stroke="currentColor" stroke-width="1.4"/></svg>Videos</span></div><div class="pickList"><span class="pickColRow"><span>Name</span><span>Date modified</span><span>Type</span><span>Size</span></span><span class="expGroup">Today</span><span class="pickRow"><span class="expName"><svg viewBox="0 0 24 24" class="folderIconSm"><path d="M2 7.5A2 2 0 0 1 4 5.5h5.2l2.3 2h8.5a2 2 0 0 1 2 2v8.5a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-10Z" style="fill:var(--yellow)"/></svg>icons</span><span class="pickDim">11/10/2026 6:05 PM</span><span class="pickDim">File folder</span><span class="pickDim"></span></span><span class="pickRow"><span class="expName"><svg viewBox="0 0 24 24" class="folderIconSm"><path d="M2 7.5A2 2 0 0 1 4 5.5h5.2l2.3 2h8.5a2 2 0 0 1 2 2v8.5a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-10Z" style="fill:var(--yellow)"/></svg>lib</span><span class="pickDim">11/10/2026 6:05 PM</span><span class="pickDim">File folder</span><span class="pickDim"></span></span><span class="pickRow"><span class="expName"><svg viewBox="0 0 24 24" class="folderIconSm"><path d="M2 7.5A2 2 0 0 1 4 5.5h5.2l2.3 2h8.5a2 2 0 0 1 2 2v8.5a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-10Z" style="fill:var(--yellow)"/></svg>worker</span><span class="pickDim">11/10/2026 6:05 PM</span><span class="pickDim">File folder</span><span class="pickDim"></span></span></div></div><div class="pickFootBar"><span class="pickFolderLabel">Folder:</span><span class="pickFolderField"></span></div><div class="pickBtnRow"><span class="pickBtn pickGo">Select Folder</span><span class="pickBtn quiet">Cancel</span><span class="pickGrip"></span></div></div>
+
+            <div class="oaPopup" aria-hidden="true">
+              <div class="oaPanel oaPanelOut">
+                <div class="oaHeader"><span class="extCardIcon mini outline"><svg viewBox="0 0 24 24"><path d="M11.3 2 6.2 12.4h4.6L9.3 22l7.4-10.9h-4.7L14.4 2z" style="fill:var(--accent)"/></svg></span><span class="oaHeaderText"><span class="oaName">Opera Agent</span><span class="oaProtocol">Protocol 1</span></span></div>
+                <span class="oaPillOff"><i class="oaDotOff"></i>Not connected</span>
+                <span class="oaFieldLabel">PAIRING CODE</span>
+                <span class="oaFieldEmpty"><span class="oaFieldValue">OAB—X7Q2</span></span>
+                <span class="oaHint">Code from Dashboard · valid for 10 minutes</span>
+              </div>
+              <div class="oaPanel oaPanelIn">
+                <div class="oaHeader"><span class="extCardIcon mini"><svg viewBox="0 0 24 24"><path d="M11.3 2 6.2 12.4h4.6L9.3 22l7.4-10.9h-4.7L14.4 2z" style="fill:var(--on-fill)"/></svg></span><span class="oaHeaderText"><span class="oaName">Opera Agent</span><span class="oaProtocol">Protocol 1</span></span></div>
+                <span class="oaPillOn"><i class="oaDotOn"></i>Connected</span>
+                <div class="oaRows">
+                  <span class="oaRow"><span class="oaKey">STATUS</span><span class="oaVal dim">LOCAL ONLY</span></span>
+                  <span class="oaRow"><span class="oaKey">DEVICE</span><span class="oaVal">opera-7</span></span>
+                  <span class="oaRow"><span class="oaKey">CONNECTION</span><span class="oaVal">Connected</span></span>
+                  <span class="oaRow"><span class="oaKey">LAST COMMAND</span><span class="oaVal dim">—</span></span>
+                  <span class="oaRow"><span class="oaKey">SCREEN</span><span class="oaVal ok">Allowed</span></span>
+                </div>
+                <span class="oaSection">DEVICE CONTROL</span>
+                <div class="oaBtns"><span class="oaBtn">Mark this tab private</span><span class="oaBtn">Run self-test</span><span class="oaBtn danger">Unpair</span></div>
+              </div>
+            </div>
+
+            <span class="demoCursor" aria-hidden="true"><svg viewBox="0 0 24 24" class="cursorArrow"><path d="M5 3 19 12.5l-6.5 1.4L9 20z" style="fill:var(--ink);stroke:var(--surface);stroke-width:1.3;stroke-linejoin:round"/></svg></span>
+            <span class="demoRipple" aria-hidden="true"></span>
+
+          </div>
+          <div class="taskbarWin">
+            <span class="tbItem tbStart"><svg viewBox="0 0 22 22" aria-hidden="true"><path fill="#00adef" d="M3 4.5h7.4v7.4H3zM11.6 4.5H19v7.4h-7.4zM3 12.6h7.4v7.4H3zM11.6 12.6H19v7.4h-7.4z"/></svg></span>
+            <span class="tbItem tbSearch"><svg viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6" fill="none" stroke="var(--ink)" stroke-width="1.7"/><path d="M15.5 15.5 21 21" stroke="var(--ink)" stroke-width="1.7" stroke-linecap="round"/></svg></span>
+            <span class="tbItem tbPinned tChrome"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" fill="none" stroke="var(--ink)" stroke-width="1.9"/><circle cx="12" cy="12" r="3.6" fill="var(--accent)"/></svg></span>
+            <span class="tbItem tbPinned tFolder"><svg viewBox="0 0 24 24"><path d="M3 8A2 2 0 0 1 5 6h4.6l2 2H19a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8z" fill="var(--yellow)"/></svg></span>
+            <span class="tbItem tbPinned tBolt"><svg viewBox="0 0 24 24"><path d="M11.3 2 6.2 12.4h4.6L9.3 22l7.4-10.9h-4.7L14.4 2z" style="fill:var(--accent)"/></svg></span>
+            <span class="tbItem tbPinned tTerm"><svg viewBox="0 0 24 24"><rect width="21" height="15" rx="2" fill="var(--surface-2)" stroke="var(--line-strong)"/><path d="M6 8.5 10 12l-4 3.5M12.5 15h5" stroke="var(--accent)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+            <span class="tbTrayIcons"><svg viewBox="0 0 24 24" class="trayIcon"><path d="M6 15l6-6 6 6" fill="none" stroke="var(--ink)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg><svg viewBox="0 0 24 24" class="trayIcon"><path d="M4 10a12 12 0 0 1 16 0M7.5 13.5a7 7 0 0 1 9 0M11 17h.01" fill="none" stroke="var(--ink)" stroke-width="1.6" stroke-linecap="round"/></svg><svg viewBox="0 0 24 24" class="trayIcon"><path d="M4 10v4h4l6 5V5l-6 5H4z" fill="var(--ink)"/><path d="M18.5 9.5a4 4 0 0 1 0 5" fill="none" stroke="var(--ink)" stroke-width="1.5" stroke-linecap="round"/></svg><svg viewBox="0 0 24 24" class="trayIcon"><rect x="2" y="8" width="17" height="8" rx="1.5" fill="none" stroke="var(--ink)" stroke-width="1.4"/><path d="M22 11v2" stroke="var(--ink)" stroke-width="1.4" stroke-linecap="round"/><path d="M5 11v2M8.5 11v2M12 11v2" stroke="var(--ink)" stroke-width="1.3" stroke-linecap="round"/></svg></span>
+            <span class="tbClock"><time>7:34 AM</time><time>11/10/2026</time></span>
+          </div>
+          </div>
+        </div>
+      </div>
+
+      <ol class="steps srOnly">
+      <li><strong>Unduh arsip.</strong> Klik tombolnya di atas; berkas mendarat di Downloads.</li>
+      <li><strong>Ekstrak arsip.</strong> <em>Extract all</em> di toolbar Explorer; pilih folder tetap, misalnya <code>C:\OperaAgent\</code>.</li>
+      <li><strong>Buka halaman ekstensi.</strong> <code>chrome://extensions</code>, nyalakan <em>Developer mode</em>.</li>
+      <li><strong>Muat folder.</strong> <em>Load unpacked</em> - pilih folder hasil ekstrak.</li>
+      <li><strong>Pasangkan device.</strong> <a href="./dashboard.html">Dasbor</a>, tempel kode pairing.</li>
+      <li><strong>Verifikasi berkas.</strong> Kedua sidik jari harus sama.</li>
+      <li><strong>Saat ada versi baru.</strong> Unduh build barunya, ekstrak <em>di atas folder yang sama</em>, lalu tekan <em>Reload</em> di <code>chrome://extensions</code>. Extension yang dipasang dari folder tidak pernah ditanyakan ke server pembaruan, jadi ini satu-satunya jalannya.</li>
+      </ol>
+    </details>
+
+
+    <details class="fold" id="izin"><summary><span data-i18n="perms.title">Izin, dengan alasan jelas.</span></summary><dl class="foldFacts"><dt><code>tabs</code></dt><dd data-i18n="perms.tabs">Buka dan navigasi tab.</dd><dt><code>scripting</code></dt><dd data-i18n="perms.scripting">Content script tetap hidup.</dd><dt><code>storage</code></dt><dd data-i18n="perms.storage">Token dan setelan lokal Anda.</dd><dt><code>alarms</code></dt><dd data-i18n="perms.alarms">Heartbeat tetap segar.</dd><dt><code>debugger</code></dt><dd data-i18n="perms.debugger">Klik terpercaya, screenshot, dan aksesibilitas.</dd><dt><code>downloads</code></dt><dd data-i18n="perms.downloads">Simpan berkas, buktikan hasilnya.</dd></dl><p class="meta" data-i18n-html="perms.host">Host permission di semua asal — Anda tentukan halamannya. Screenshot ditolak di tab private; password, OTP, PIN, kartu, CVV diblokir.</p></details><details class="fold" id="review"><summary><span data-i18n="review.title">Kenapa belum ada tombol pasang sekali klik?</span></summary><p data-i18n-html="review.body">Ekstensi <code>debugger</code> perlu review Chrome Web Store. Sampai rilis, arsip yang sama Anda pasang manual — listing permanen menyusul.</p></details>
+    <details class="sectionFold" open>
+      <summary><h2 id="verifikasi" data-i18n="verify.title">Verifikasi berkas</h2></summary>
+      <div class="foldBody">
+      <p data-i18n-html="verify.intro">Sidik jari SHA-256 berubah di setiap rilis. Dua perintah ini; keduanya harus menghasilkan nilai yang sama.</p>
+      <div class="verifyPanel" id="verifyPanel">
+        <div class="verifyHead">
+          <svg viewBox="0 0 24 24" class="verifyShield" aria-hidden="true"><path d="M12 2.5 4.5 6.3v6.1c0 4.6 3.2 8.9 7.5 10.6 4.3-1.7 7.5-6 7.5-10.6V6.3L12 2.5Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M9 12l2.2 2.2L15.5 9.7" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span class="verifyHeadTitle">SHA-256</span>
+          <span class="verifyHeadTag">x-opera-sha256</span>
+        </div>
+        <div class="verifyBlock">
+          <span class="verifyTag" data-i18n="verify.tagServer">Server</span>
+          <div class="verifyCmdRow">
+            <pre><code aria-hidden="true"><span class="verifyPrompt">PS C:\&gt;</span> <span class="verifyType" id="curlType"></span><span class="verifyCaret" id="curlCaret"></span></code></pre><noscript><pre><code>curl.exe -sI https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/download/opera-agent.zip | findstr /i x-opera-sha256</code></pre></noscript>
+            <button class="verifyCopy" type="button" data-copy="curl.exe -sI https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/download/opera-agent.zip | findstr /i x-opera-sha256" aria-label="Salin perintah server" data-i18n-attr="aria-label:verify.copyServer"><svg viewBox="0 0 24 24" class="verifyCopyIcon" aria-hidden="true"><rect x="8.5" y="8.5" width="10.5" height="10.5" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M5.5 15.5V6a2 2 0 0 1 2-2h9" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg><svg viewBox="0 0 24 24" class="verifyCopyCheck" aria-hidden="true"><path d="M5 12.5 9.5 17 19 6.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="verifyCopyText" data-i18n="verify.copy">Salin</span></button>
+          </div>
+        </div>
+        <div class="verifyBlock">
+          <span class="verifyTag" data-i18n="verify.tagLocal">Lokal</span>
+          <div class="verifyCmdRow">
+            <pre><code aria-hidden="true"><span class="verifyPrompt">PS C:\&gt;</span> <span class="verifyType" id="localType"></span><span class="verifyCaret" id="localCaret"></span></code></pre><noscript><pre><code>Get-FileHash .\opera-agent-*.zip -Algorithm SHA256</code></pre></noscript>
+            <button class="verifyCopy" type="button" data-copy="Get-FileHash .\opera-agent-*.zip -Algorithm SHA256" aria-label="Salin perintah lokal" data-i18n-attr="aria-label:verify.copyLocal"><svg viewBox="0 0 24 24" class="verifyCopyIcon" aria-hidden="true"><rect x="8.5" y="8.5" width="10.5" height="10.5" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M5.5 15.5V6a2 2 0 0 1 2-2h9" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg><svg viewBox="0 0 24 24" class="verifyCopyCheck" aria-hidden="true"><path d="M5 12.5 9.5 17 19 6.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="verifyCopyText" data-i18n="verify.copy">Salin</span></button>
+          </div>
+        </div>
+        <p class="verifyVerdict"><svg viewBox="0 0 24 24" class="verifyVerdictIcon verifyVerdictMatch" aria-hidden="true"><path d="M5 12.5 9.5 17 19 6.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-i18n="verify.match">Kedua sidik jari harus sama.</span></p>
+      </div>
+      </div>
+    </details>
+
+    <h2 data-i18n="support.title">Browser yang didukung</h2>
+    <p data-i18n-html="support.intro">Chromium: Chrome, Edge, Brave, Opera, Vivaldi. Firefox tidak punya izin <code>debugger</code>.</p>
+    <div class="tablePanel">
+    <table class="support">
+      <thead>
+        <tr><th>Browser</th><th data-i18n="support.th.crx">Berkas .crx</th><th data-i18n="support.th.zip">Arsip .zip</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Chrome</td><td class="no" data-i18n="support.no">ditolak</td><td class="yes" data-i18n="support.yes">berjalan</td></tr>
+        <tr><td>Edge</td><td class="no" data-i18n="support.no">ditolak</td><td class="yes" data-i18n="support.yes">berjalan</td></tr>
+        <tr><td>Brave</td><td class="no" data-i18n="support.no">ditolak</td><td class="yes" data-i18n="support.yes">berjalan</td></tr>
+        <tr><td>Opera</td><td class="no" data-i18n="support.no">ditolak</td><td class="yes" data-i18n="support.yes">berjalan</td></tr>
+        <tr><td>Vivaldi</td><td class="no" data-i18n="support.no">ditolak</td><td class="yes" data-i18n="support.yes">berjalan</td></tr>
+        <tr><td>Firefox</td><td class="no" data-i18n="support.not">tidak</td><td class="no" data-i18n="support.not">tidak</td></tr>
+      </tbody>
+    </table>
+    </div>
+    </div>
   </main>
 
-        <footer>
-    <div class="wrap footGrid simplified">
-      <div class="footCol">
-        <span class="footBrand">Opera Agent</span>
-        <span class="footNote" data-i18n="footer.rights">c 2026 Opera Agent. Hak cipta dilindungi.</span>
-        <span class="doors"><a href="https://github.com/afnannuzulasugihartono/opera-agent" data-i18n="footer.source">Kode sumber</a></span>
-      </div>
-      <div class="footCol">
-        <h3 data-i18n="footer.product">Produk</h3>
-        <span class="doors">
-          <a href="./beranda.html" data-i18n="footer.home">Beranda</a>
-          <a href="./fitur.html" data-i18n="footer.features">Fitur</a>
-          <a href="./unduh.html" data-i18n="footer.download">Unduh</a>
-          <a href="./pasang-mcp.html">Pasang MCP</a>
-          <a href="./bukti.html" data-i18n="footer.bukti">Bukti</a>
-          <a href="./docs.html" data-i18n="footer.docs">Docs</a>
-          <a href="./akun.html" data-i18n="footer.account">Akun</a>
-          <a href="./dashboard.html">Dashboard</a>
-        </span>
-      </div>
-      <div class="footCol">
-        <h3 data-i18n="footer.legal">Legal</h3>
-        <span class="doors">
-          <a href="./privasi.html" data-i18n="footer.privacy">Privasi</a>
-          <a href="./syarat.html" data-i18n="footer.terms">Syarat</a>
-          <a href="./dukungan.html" data-i18n="footer.support">Dukungan</a>
-        </span>
-      </div>
-    </div>
+    <footer>
+    <div data-footer-mount></div>
   </footer>
-  <script src="./i18n.js"></script>
-  <script src="/wayfind.js"></script>
-  <script src="/palette.js"></script>
-  <script src="/logos.js"></script>
-  <script src="/reveal.js"></script>
+    <script src="./i18n.js"></script>
+    <script src="./verify.js" defer></script>
 
-  <script type="application/json" id="i18n-dict">
-{
-  "en": {
-    "footer.bukti": "Proof",
-    "footer.source": "Source code",
-    "footer.legal": "Legal",
-    "footer.docs": "Docs",
-    "footer.download": "Download",
-    "footer.product": "Product",
-    "nav.download": "Download",
-    "nav.signin": "Sign in",
-    "nav.features": "Features",
-    "nav.price": "Pricing",
-    "nav.docs": "Docs",
-    "nav.mcp": "MCP",
-    "nav.support": "Support",
-    "meta.title": "Download - Opera Agent",
-    "page.title": "Install Opera Agent",
-    "page.lede": "Storeless: one archive for every Chromium browser. The newest build, always.",
-    "door": "Download Opera Agent",
-    "also": "also available: <a href=\"./unduh-berkas.html\">Format guide</a> &middot; <a href=\"./dashboard.html\">Dashboard</a>",
-    "artifact.cap": "A real document, written entirely through MCP.",
-    "artifact.link": "See the proof",
-    "perms.title": "Permissions, clearly explained",
-    "perms.tabs": "Open and navigate tabs.",
-    "perms.scripting": "Keep the content script alive.",
-    "perms.storage": "Your local tokens and settings.",
-    "perms.alarms": "Keep the heartbeat fresh.",
-    "perms.debugger": "Trusted clicks, screenshots, and accessibility.",
-    "perms.downloads": "Save files and prove it.",
-    "perms.host": "Screenshots are refused in private tabs; password, OTP, PIN, card and CVV fields are never answered.",
-    "review.title": "Why there is no one-click install button yet",
-    "review.body": "A <code>debugger</code> extension needs Chrome Web Store review. Until then you load the same archive yourself; the listing follows after review.",
-    "side.title": "Older builds &amp; releases",
-    "side.body": "Every signed 1.6.x release stays on <a href=\"https://github.com/afnannuzulasugihartono/opera-agent/releases\">GitHub Releases</a> — .zip, .crx and SHA256SUMS — for enterprise machines.",
-    "footer.rights": "c 2026 Opera Agent. All rights reserved.",
-    "footer.home": "Home",
-    "footer.privacy": "Privacy",
-    "footer.terms": "Terms",
-    "footer.account": "Account",
-    "footer.features": "Features",
-    "footer.support": "Support",
-    "stat.tools": "MCP tools",
-    "stat.prims": "browser primitives"
-  }
-}
+    <script src="/wayfind.js"></script>
+    <script src="/palette.js"></script>
+  <script src="/portal.js" defer></script>
+  <script src="/footer.js" defer></script>
+
+    <script src="/logos.js"></script>
+    <script src="/reveal.js"></script>
+    <script src="./demo.js"></script>
+  <script type="module">
+      const cards = [...document.querySelectorAll('[data-browser]')];
+      const brands = (navigator.userAgentData?.brands || []).map((entry) => entry.brand).join(' ');
+      const agent = `${brands} ${navigator.userAgent || ''}`;
+      const found = /OPR\/|Opera/i.test(agent) ? 'opera'
+        : /Edg/i.test(agent) ? 'edge'
+        : /Brave/i.test(agent) ? 'brave'
+        : /Vivaldi/i.test(agent) ? 'vivaldi'
+        : /Chrome/i.test(agent) ? 'chrome'
+        : '';
+      if (found) {
+        const card = cards.find((element) => element.dataset.browser === found);
+        card?.classList.add('yours');
+        const badge = card?.querySelector('.badge');
+        if (badge) badge.hidden = false;
+      }
     </script>
+
 </body>
 </html>

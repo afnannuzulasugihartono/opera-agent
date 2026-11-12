@@ -230,8 +230,9 @@ test('the page shows each connected device id and can copy it', () => {
 });
 
 test('the dashboard shares the site navigation and footer', () => {
+  // WHY THE PIN READS THE STACKED WORDMARK: the masthead is the Hermes fold, and the brand's two lines are broken by a <br/>, so "Opera\nAgent" is one name printed on two lines, not two strings.
   const html = read('dashboard.html');
-  assert.match(html, /class="brand"[^>]*>[\s\S]{0,400}?Opera Agent</, 'the brand is shared');
+  assert.match(html, /class="brand"[^>]*>[\s\S]{0,400}?Agent</, 'the brand is shared');
   assert.match(html, /privasi\.html/, 'the privacy policy is linked');
   assert.match(html, /syarat\.html/, 'the terms are linked');
   assert.match(html, /Keluar|akun\.html/, 'the way to the account page is one click away');
@@ -822,9 +823,10 @@ test('the console declares no palette of its own', () => {
 test('the chrome of an app page answers in the same ink as its canvas', () => {
   const html = read('dashboard.html');
   assert.doesNotMatch(html, /class="app-dark"/, 'the console names no scale of its own');
+  // WHY THE PINS READ TOKENS, NOT A LITERAL: the masthead sits on the shared dark surface with a blur, so the header names var(--surface) rather than a raw ink - the claim is "same canvas", and a token is the canvas.
   const sheet = read('site.css');
-  assert.match(sheet, /header \{[^}]*background: rgba\(0, 0, 0, \.86\)/, 'the shared header answers in the canvas');
-  assert.match(sheet, /header nav \.navCta \{[^}]*color: var\(--on-fill\)/, 'and the sign-in action takes the ink its fill asks for');
+  assert.match(sheet, /header \{[^}]*background: color-mix\(in srgb, var\(--surface\)/, 'the shared header answers in the canvas');
+  assert.match(sheet, /\.navCta \{[^}]*color: var\(--on-fill\)/, 'and the sign-in action takes the ink its fill asks for');
   assert.match(sheet, /\.chip\.warn \{[^}]*color: var\(--warn\)/, 'and the one tint the shared sheet names is a token');
 });
 

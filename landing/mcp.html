@@ -1,5 +1,5 @@
 <!-- @last-edited: 2026-11-10 UTC+7. -->
-<!-- @title: pasang-mcp - one endpoint and one prompt for every MCP-capable agent: ChatGPT, Claude, Codex, Claude Code, OpenCode, Kilo Code, Cursor, and the terminal. -->
+<!-- @title: mcp - one endpoint and one prompt for every MCP-capable agent: ChatGPT, Claude, Codex, Claude Code, OpenCode, Kilo Code, Cursor, and the terminal. -->
 <!-- @state: static page; every agent gets the same two paths (hosted OAuth endpoint, local npm stdio) and the same copy-paste prompt; the docs page carries the 40 tools. -->
 <!-- @dependencies: site.css, docs.css, i18n.js, reveal.js, wayfind.js, palette.js. -->
 
@@ -8,7 +8,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="theme-color" content="#000000" />
+  <meta name="theme-color" content="#0000f2" />
   <title data-i18n="meta.title">Pasang MCP - Opera Agent</title>
   <meta name="description" content="Satu endpoint MCP dan 40 tool untuk semua AI harness: ChatGPT, Claude, Codex, Claude Code, OpenCode, Kilo Code, Cursor, dan terminal." />
   <link rel="stylesheet" href="/site.css" />
@@ -18,25 +18,28 @@
   <meta property="og:site_name" content="Opera Agent" />
   <meta property="og:title" content="Pasang MCP - Opera Agent" />
   <meta property="og:description" content="Satu endpoint MCP untuk semua AI harness." />
-  <meta property="og:url" content="https://opera-agent.pages.dev/pasang-mcp" />
+  <meta property="og:url" content="https://opera-agent.pages.dev/mcp" />
   <meta property="og:locale" content="id_ID" />
 </head>
 <body>
   <header>
-    <div class="wrap">
-      <nav>
-        <a class="brand" href="/beranda.html"><svg class="brandMark" viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="7" /><path d="M8 5.6v12.8l3.1-2.9 1.9 4.5 2.4-1-2-4.5h3.9L8 5.6Z" /></svg><span>Opera Agent</span></a>
-        <a href="/fitur.html" data-i18n="nav.features">Fitur</a>
-        <a href="/unduh.html" data-i18n="nav.download">Unduh</a>
-        <a href="/pasang-mcp.html" data-i18n="nav.mcp">MCP</a><a href="/harga" data-i18n="nav.price">Harga</a>
-        <a href="/dukungan.html" data-i18n="nav.support">Dukungan</a>
-        <a href="/docs.html" data-i18n="nav.docs">Docs</a>
-        <span class="lang" data-lang-toggle></span>
-        <button class="navSearch" type="button" aria-label="Cari halaman Ctrl K" aria-keyshortcuts="Control+K Meta+K"><svg class="navSearchIcon" viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><circle cx="7" cy="7" r="4.5" fill="none" stroke="currentColor" stroke-width="1.5"></circle><path d="M10.6 10.6 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path></svg><kbd class="navSearchKey">Ctrl K</kbd></button>
-        <a class="navCta" href="/" data-i18n="nav.signin">Masuk</a>
+  <div class="wrap">
+    <div class="navRow">
+      <nav class="navSide navLeft" aria-label="Primary">
+        <a href="./fitur.html" data-i18n="nav.features">Fitur</a>
+        <a href="./unduh.html" data-i18n="nav.download">Unduh</a><span class="lang" data-lang-toggle></span>
       </nav>
-    </div>
-  </header>
+      <a class="brand" href="/beranda.html"><span class="wordmark">Opera<br/>Agent</span></a>
+      <nav class="navSide navRight" aria-label="Secondary">
+    <span data-portal-toggle></span>
+        <a href="./docs.html" data-i18n="nav.docs">Docs</a>
+        <a class="navCta" href="./unduh.html" data-i18n="cta.download">Pasang Opera Agent</a>
+      </nav>
+
+
+    <div data-portal-menu></div>
+  </div>
+</header>
 
   <main class="wrap">
   <div class="prose docBody">
@@ -1320,7 +1323,9 @@ opera-agent-mcp doctor   cek koneksi &amp; yang diizinkan rencana Anda</code></p
           <a href="./unduh.html" data-i18n="footer.download">Unduh</a>
           <a href="./bukti.html" data-i18n="footer.bukti">Bukti</a>
           <a href="./docs.html" data-i18n="footer.docs">Docs</a>
-          <a href="./pasang-mcp.html">Pasang MCP</a>
+          <a href="./harga.html">Harga</a>
+          <a href="./mcp.html">Pasang MCP</a>
+          <a href="./akun.html" data-i18n="footer.account">Akun</a>
           <a href="./dashboard.html">Dashboard</a>
         </span>
       </div>
@@ -1335,39 +1340,36 @@ opera-agent-mcp doctor   cek koneksi &amp; yang diizinkan rencana Anda</code></p
     </div>
   </footer>
 
-  <script type="application/json" id="i18n-dict">
-{
+  <script type="application/json" id="i18n-dict">{
   "en": {
-    "meta.title": "Install MCP - Opera Agent",
+    "copy": "Copy",
+    "cta.download": "Install Opera Agent",
+    "footer.account": "Account",
     "footer.bukti": "Proof",
-    "footer.source": "Source code",
-    "footer.legal": "Legal",
     "footer.docs": "Docs",
     "footer.download": "Download",
-    "footer.product": "Product",
-    "nav.download": "Download",
-    "nav.signin": "Sign in",
-    "nav.features": "Features",
-    "nav.price": "Pricing",
-    "nav.docs": "Docs",
-    "nav.mcp": "MCP",
-    "nav.support": "Support",
-    "copy": "Copy",
-    "footer.rights": "© 2026 Opera Agent. All rights reserved.",
-    "footer.home": "Home",
-    "footer.privacy": "Privacy",
-    "footer.terms": "Terms",
-    "footer.account": "Account",
     "footer.features": "Features",
-    "footer.support": "Support"
+    "footer.home": "Home",
+    "footer.legal": "Legal",
+    "footer.privacy": "Privacy",
+    "footer.product": "Product",
+    "footer.rights": "© 2026 Opera Agent. All rights reserved.",
+    "footer.source": "Source code",
+    "footer.support": "Support",
+    "footer.terms": "Terms",
+    "meta.title": "Install MCP - Opera Agent",
+    "nav.docs": "Docs",
+    "nav.download": "Download",
+    "nav.features": "Features"
   }
-}
-  </script>
+}</script>
   <script src="./i18n.js"></script>
   <script src="/wayfind.js"></script>
   <script src="/palette.js"></script>
+  <script src="/portal.js" defer></script>
   <script src="/reveal.js"></script>
   <script src="/markdown.js"></script>
+  <script src="/copy.js" defer></script>
   <script src="./demo-kit.js" defer></script>
 </body>
 </html>

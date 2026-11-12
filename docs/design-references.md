@@ -40,10 +40,10 @@ Observed card grammar:
 - Primary buttons are filled rectangles with small radius; the page accent
   sampled at `#0078d4`.
 
-Adopted on `landing/unduh-berkas.html`: one card per browser (five, so the
-grid wraps), detected-browser badge plus highlight, zip as the filled primary
-button and CRX as the ghost secondary, one requirement line per card. Site
-radius and green accent stay as the house style.
+Adopted on `landing/unduh.html`: one card per browser (five, so the grid wraps),
+detected-browser badge plus highlight, zip as the filled primary button and CRX
+as the ghost secondary, one requirement line per card. Site radius and green
+accent stay as the house style.
 
 ## Facebook login page
 

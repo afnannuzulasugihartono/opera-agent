@@ -32,7 +32,7 @@ test('the file has rules, and every one of them carries a policy', () => {
 test('every path of the site is covered, so no rule can be reached by inheritance', () => {
 
   const covered = new Set(rules.flatMap((rule) => rule.paths));
-  for (const page of ['/', '/beranda', '/beranda.html', '/index.html', '/akun', '/akun.html', '/dashboard', '/dashboard.html', '/unduh', '/unduh.html', '/unduh-berkas', '/unduh-berkas.html', '/privasi', '/privasi.html', '/syarat', '/syarat.html', '/fitur', '/fitur.html', '/studi', '/studi.html', '/bukti', '/bukti.html', '/dukungan', '/dukungan.html', '/docs', '/docs.html', '/harga', '/404.html', '/robots.txt', '/sitemap.xml']) {
+  for (const page of ['/', '/beranda', '/beranda.html', '/index.html', '/akun', '/akun.html', '/dashboard', '/dashboard.html', '/unduh', '/unduh.html', '/mcp', '/mcp.html', '/privasi', '/privasi.html', '/syarat', '/syarat.html', '/fitur', '/fitur.html', '/studi', '/studi.html', '/bukti', '/bukti.html', '/dukungan', '/dukungan.html', '/docs', '/docs.html', '/harga', '/404.html', '/robots.txt', '/sitemap.xml']) {
     assert.ok(covered.has(page), `_headers must cover ${page}`);
   }
 });
@@ -67,13 +67,13 @@ test('the pages that talk to Supabase still name only that origin', () => {
   }
 });
 
+// WHY THERE IS NO EXCEPTION LEFT: the unkeyed page this list once carved out was deleted with the merge into unduh.html; mcp.html carries no inline module, so script-src 'self' covers it and no hash is owed.
+
 test('every inline script is named by a hash, and the CSP offers no unsafe-inline', () => {
 
   const hashesOf = (html) => [...html.matchAll(/<script(?![^>]*src=)[^>]*>([\s\S]*?)<\/script>/g)]
     .filter((m) => !m[0].includes('type="application/json"'))
     .map((m) => "'sha256-" + createHash('sha256').update(m[1], 'utf8').digest('base64') + "'");
-  // WHY unduh-berkas.html STANDS OUTSIDE THIS GATE FOR NOW: its CSP has no path-scoped rule — the file is served under the /(.*) fallback without named hashes, while the typewriter script runs classic and lives behind a hash the policy does not carry.
-  // Tracking it here would ask the gate to prove something the deployment cannot yet promise: a named hash on a path with no rule.
   const keyed = ['beranda.html', 'index.html', 'akun.html', 'dashboard.html', 'dukungan.html', 'oauth/consent.html', 'unduh.html'];
   for (const path of keyed) {
     const rule = rules.find((r) => r.paths.includes(`/${path}`) || (path === 'index.html' && r.paths.includes('/')));

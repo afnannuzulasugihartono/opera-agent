@@ -12,7 +12,16 @@ import fs from 'node:fs';
 
 const root = new URL('..', import.meta.url);
 const read = (name) => fs.readFileSync(new URL(name, root), 'utf8');
-const pages = ['beranda.html', 'akun.html', 'index.html', 'dashboard.html', 'unduh.html', 'unduh-berkas.html', 'privasi.html', 'syarat.html', '404.html', 'fitur.html', 'studi.html', 'dukungan.html', 'docs.html'];
+
+// WHY THE SHARED FOOTER IS READ HERE TOO: nine pages carry their doors from the one canonical block in footer.js; a page that mounts it is checked against the same list, not against an empty static tag.
+
+const effectiveFooter = (page) => {
+  const html = read(`landing/${page}`);
+  const own = html.match(/<footer[\s\S]*?<\/footer>/)?.[0] ?? '';
+  if (own.includes('data-footer-mount')) return read('landing/footer.js');
+  return own;
+};
+const pages = ['beranda.html', 'akun.html', 'index.html', 'dashboard.html', 'unduh.html', 'privasi.html', 'syarat.html', '404.html', 'fitur.html', 'studi.html', 'dukungan.html', 'docs.html'];
 
 test('every head carries the mark, so no tab looks unfinished', () => {
   for (const page of pages) {
@@ -24,7 +33,7 @@ test('every head carries the mark, so no tab looks unfinished', () => {
 });
 
 test('every footer offers the same doors', () => {
-  const links = (page) => [...read(`landing/${page}`).match(/<footer[\s\S]*?<\/footer>/)[0].matchAll(/href="([^"]+)"/g)].map((m) => m[1]);
+  const links = (page) => [...effectiveFooter(page).matchAll(/href="([^"]+)"/g)].map((m) => m[1]);
   const shared = links('beranda.html');
   for (const page of pages) {
     assert.deepEqual(links(page), shared, `${page} ends like every other page`);
@@ -39,7 +48,7 @@ test('crawlers are told what exists', () => {
   assert.match(robots, /^User-agent: \*/m, 'robots speaks to every crawler');
   assert.match(robots, /Sitemap: https:\/\/opera-agent\.pages\.dev\/sitemap\.xml/, 'and names the map');
   const map = read('landing/sitemap.xml');
-  for (const path of ['', '/akun', '/beranda', '/dashboard', '/unduh', '/unduh-berkas', '/privasi', '/syarat', '/fitur', '/dukungan', '/oauth/consent']) {
+  for (const path of ['', '/akun', '/beranda', '/dashboard', '/unduh', '/privasi', '/syarat', '/fitur', '/dukungan', '/oauth/consent']) {
     assert.ok(map.includes(`https://opera-agent.pages.dev${path}`), `the map lists ${path || '/'}`);
   }
   assert.doesNotMatch(map, /404/, 'and not the not-found page');
@@ -71,17 +80,17 @@ test('every page renders in standards mode with its own theme color', () => {
 });
 
 test('every nav marks the page being read', () => {
-  // WHY THE MARK IS PER DOOR: the nav now carries the four doors a newcomer asks about, so a page marks the door it belongs to, and akun, dashboard and 404 mark the brand, which is where they sit.
+  // WHY THE MARK IS READ IN THE HEADER AND THE FOOTER: the masthead carries two doors each side plus the wordmark, so a page outside those three doors (dukungan) marks itself in the footer instead - the claim is unchanged: the reader always sees which page they are holding, and akun, dashboard and 404 mark the brand, which is where they sit.
   const marked = {
     'beranda.html': '/beranda.html',
     '404.html': '/beranda.html',
-    'fitur.html': '/fitur.html',
-    'dukungan.html': '/dukungan.html'
+    'fitur.html': './fitur.html',
+    'dukungan.html': './dukungan.html'
   };
   for (const [page, self] of Object.entries(marked)) {
-    const nav = read(`landing/${page}`).match(/<nav>[\s\S]*?<\/nav>/)[0];
-    // WHY THE ATTRIBUTE ORDER IS NOT PART OF THE CLAIM: the rewrite writes the mark right after the link's class, and the brand carries its own href second; a mark that moved is still a mark.
-    const links = [...nav.matchAll(/<a\b[^>]*>/g)].map((m) => m[0]);
+    const full = read(`landing/${page}`);
+    const scopes = [...full.matchAll(/<(header|footer)>[\s\S]*?<\/\1>/g)].map((m) => m[0]);
+    const links = scopes.flatMap((scope) => [...scope.matchAll(/<a\b[^>]*>/g)].map((m) => m[0]));
     const hit = links.some((link) => link.includes(`href="${self}"`) && link.includes('aria-current="page"'));
     assert.ok(hit, `${page} marks ${self} current`);
   }
@@ -111,7 +120,7 @@ test('no page points at support that does not exist', () => {
 test('every footer reaches the public source, because a product that drives a browser shows its code', () => {
   // WHY THIS LOCK: the site asks for six browser permissions, so the reader is owed the place where the code is read, not a promise that it is open.
   for (const page of pages) {
-    const footer = read(`landing/${page}`).match(/<footer[\s\S]*?<\/footer>/)[0];
+    const footer = effectiveFooter(page);
     assert.ok(footer.includes('href="https://github.com/afnannuzulasugihartono/opera-agent"'), `${page} points at the source`);
   }
 });

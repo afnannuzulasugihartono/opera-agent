@@ -8,7 +8,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="theme-color" content="#000000" />
+  <meta name="theme-color" content="#0000f2" />
   <title data-i18n="meta.title">Studi kasus — Opera Agent</title>
   <meta name="description" content="Studi kasus Opera Agent: satu file kas September jadi laporan keuangan, rencana strategis, riset promosi, dan rencana pemasaran. Empat berkas bisa diunduh." />
   <link rel="stylesheet" href="/site.css" />
@@ -23,20 +23,23 @@
 </head>
 <body>
   <header>
-    <div class="wrap">
-      <nav>
-        <a class="brand" href="/beranda.html"><svg class="brandMark" viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="7"  /><path d="M8 5.6v12.8l3.1-2.9 1.9 4.5 2.4-1-2-4.5h3.9L8 5.6Z"  /></svg><span>Opera Agent</span></a>
-        <a href="/fitur.html" data-i18n="nav.features">Fitur</a>
-        <a href="/unduh.html" data-i18n="nav.download">Unduh</a>
-        <a href="/pasang-mcp.html" data-i18n="nav.mcp">MCP</a><a href="/harga" data-i18n="nav.price">Harga</a>
-        <a href="/dukungan.html" data-i18n="nav.support">Dukungan</a>
-        <a href="/docs.html" data-i18n="nav.docs">Docs</a>
-        <span class="lang" data-lang-toggle></span>
-        <button class="navSearch" type="button" aria-label="Cari halaman Ctrl K" aria-keyshortcuts="Control+K Meta+K"><svg class="navSearchIcon" viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><circle cx="7" cy="7" r="4.5" fill="none" stroke="currentColor" stroke-width="1.5"></circle><path d="M10.6 10.6 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path></svg><kbd class="navSearchKey">Ctrl K</kbd></button>
-        <a class="navCta" href="/" data-i18n="nav.signin">Masuk</a>
+  <div class="wrap">
+    <div class="navRow">
+      <nav class="navSide navLeft" aria-label="Primary">
+        <a href="./fitur.html" data-i18n="nav.features">Fitur</a>
+        <a href="./unduh.html" data-i18n="nav.download">Unduh</a><span class="lang" data-lang-toggle></span>
       </nav>
-    </div>
-  </header>
+      <a class="brand" href="/beranda.html"><span class="wordmark">Opera<br/>Agent</span></a>
+      <nav class="navSide navRight" aria-label="Secondary">
+    <span data-portal-toggle></span>
+        <a href="./docs.html" data-i18n="nav.docs">Docs</a>
+        <a class="navCta" href="./unduh.html" data-i18n="cta.download">Pasang Opera Agent</a>
+      </nav>
+
+
+    <div data-portal-menu></div>
+  </div>
+</header>
 
   <main class="wrap">
     <section class="studyHero" data-reveal>
@@ -134,94 +137,52 @@
   </main>
 
         <footer>
-    <div class="wrap footGrid simplified">
-      <div class="footCol">
-        <span class="footBrand">Opera Agent</span>
-        <span class="footNote" data-i18n="footer.rights">© 2026 Opera Agent. Hak cipta dilindungi.</span>
-        <span class="doors"><a href="https://github.com/afnannuzulasugihartono/opera-agent" data-i18n="footer.source">Kode sumber</a></span>
-      </div>
-      <div class="footCol">
-        <h3 data-i18n="footer.product">Produk</h3>
-        <span class="doors">
-          <a href="./beranda.html" data-i18n="footer.home">Beranda</a>
-          <a href="./fitur.html" data-i18n="footer.features">Fitur</a>
-          <a href="./unduh.html" data-i18n="footer.download">Unduh</a>
-          <a href="./pasang-mcp.html">Pasang MCP</a>
-          <a href="./bukti.html" data-i18n="footer.bukti">Bukti</a>
-          <a href="./docs.html" data-i18n="footer.docs">Docs</a>
-          <a href="./akun.html" data-i18n="footer.account">Akun</a>
-          <a href="./dashboard.html">Dashboard</a>
-        </span>
-      </div>
-      <div class="footCol">
-        <h3 data-i18n="footer.legal">Legal</h3>
-        <span class="doors">
-          <a href="./privasi.html" data-i18n="footer.privacy">Privasi</a>
-          <a href="./syarat.html" data-i18n="footer.terms">Syarat</a>
-          <a href="./dukungan.html" data-i18n="footer.support">Dukungan</a>
-        </span>
-      </div>
-    </div>
+    <div data-footer-mount></div>
   </footer>
 
   <script type="application/json" id="i18n-dict">{
   "en": {
-    "footer.bukti": "Proof",
-    "footer.source": "Source code",
-    "footer.legal": "Legal",
-    "footer.docs": "Docs",
-    "footer.download": "Download",
-    "footer.product": "Product",
-    "nav.download": "Download",
-    "nav.signin": "Sign in",
-    "nav.features": "Features",
-    "nav.price": "Pricing",
-    "nav.docs": "Docs",
-    "nav.mcp": "MCP",
-    "nav.support": "Support",
-    "meta.title": "Case study — Opera Agent",
-    "hero.eyebrow": "Case study",
-    "hero.title": "One month of cash becomes four files.",
-    "hero.sub": "Sinar Jaya, September 2026. One CSV file becomes a financial report, a strategy deck, a promotion study, and a marketing plan. Every figure names the rows it came from, so it can be checked.",
     "cta.download": "Download Opera Agent",
     "cta.features": "See what it can do",
-    "input.title": "The input is one file.",
-    "input.sub": "Twenty-three cash rows for September, four columns: date, account, channel, amount. No template, no table that was already built.",
-    "out.title": "The output is four files.",
-    "out.sub": "Each file opens in the tool people already use: Excel, PowerPoint, Word. Download them as they are.",
-    "out.one.title": "Financial report (.xlsx)",
-    "out.one.body": "Three sheets: the report, the source of each number, and the ledger. Every figure names the rows that produced it. <a href=\"/contoh/laporan-keuangan-2026-09.xlsx\" download>Download .xlsx</a>",
-    "out.two.title": "Strategy deck (.pptx)",
-    "out.two.body": "A cover, then four slides: where we stand, three pillars for 2027, where the money is, and a 90-day plan. <a href=\"/contoh/rencana-strategis-2027.pptx\" download>Download .pptx</a>",
-    "out.three.title": "Promotion study (.docx)",
-    "out.three.body": "Executive summary, method, results, and limits, with a table per channel. <a href=\"/contoh/riset-promo.docx\" download>Download .docx</a>",
-    "out.four.title": "Marketing plan (.docx)",
-    "out.four.body": "Goals, segmentation, what makes us different, a nine-month plan, and how it is measured. <a href=\"/contoh/rencana-pemasaran-2027.docx\" download>Download .docx</a>",
-    "out.note": "The run is proven on the <a href=\"/bukti.html\">proof page</a>: one run rebuilds these four files, and the sha256 matches.",
-    "figure.title": "The figures are rechecked.",
-    "figure.sub": "The report recomputes every figure from the rows it names. A strategy slide may only use a figure the report holds; if it does not, the slide is refused before it is written.",
-    "figure.head.name": "Figure",
-    "figure.head.value": "Value",
-    "figure.head.rows": "Rows",
-    "figure.revenue.name": "Sales Revenue",
     "figure.cogs.name": "Cost of Services",
-    "figure.total.name": "September total",
+    "figure.head.name": "Figure",
+    "figure.head.rows": "Rows",
+    "figure.head.value": "Value",
     "figure.note": "Source: 23 rows of transactions-2026-09.csv. Seven figures checked, no mismatch.",
-    "final.title": "Open the files now.",
+    "figure.revenue.name": "Sales Revenue",
+    "figure.sub": "The report recomputes every figure from the rows it names. A strategy slide may only use a figure the report holds; if it does not, the slide is refused before it is written.",
+    "figure.title": "The figures are rechecked.",
+    "figure.total.name": "September total",
     "final.sub": "The four files on this page were built from mock data, and they open in the tools you already use. Your next job starts from the same file.",
-    "footer.rights": "© 2026 Opera Agent. All rights reserved.",
-    "footer.home": "Home",
-    "footer.privacy": "Privacy",
-    "footer.terms": "Terms",
-    "footer.features": "Features",
-    "footer.support": "Support",
-    "footer.account": "Account"
+    "final.title": "Open the files now.",
+    "hero.eyebrow": "Case study",
+    "hero.sub": "Sinar Jaya, September 2026. One CSV file becomes a financial report, a strategy deck, a promotion study, and a marketing plan. Every figure names the rows it came from, so it can be checked.",
+    "hero.title": "One month of cash becomes four files.",
+    "input.sub": "Twenty-three cash rows for September, four columns: date, account, channel, amount. No template, no table that was already built.",
+    "input.title": "The input is one file.",
+    "meta.title": "Case study — Opera Agent",
+    "nav.docs": "Docs",
+    "nav.download": "Download",
+    "nav.features": "Features",
+    "out.four.body": "Goals, segmentation, what makes us different, a nine-month plan, and how it is measured. <a href=\"/contoh/rencana-pemasaran-2027.docx\" download>Download .docx</a>",
+    "out.four.title": "Marketing plan (.docx)",
+    "out.note": "The run is proven on the <a href=\"/bukti.html\">proof page</a>: one run rebuilds these four files, and the sha256 matches.",
+    "out.one.body": "Three sheets: the report, the source of each number, and the ledger. Every figure names the rows that produced it. <a href=\"/contoh/laporan-keuangan-2026-09.xlsx\" download>Download .xlsx</a>",
+    "out.one.title": "Financial report (.xlsx)",
+    "out.sub": "Each file opens in the tool people already use: Excel, PowerPoint, Word. Download them as they are.",
+    "out.three.body": "Executive summary, method, results, and limits, with a table per channel. <a href=\"/contoh/riset-promo.docx\" download>Download .docx</a>",
+    "out.three.title": "Promotion study (.docx)",
+    "out.title": "The output is four files.",
+    "out.two.body": "A cover, then four slides: where we stand, three pillars for 2027, where the money is, and a 90-day plan. <a href=\"/contoh/rencana-strategis-2027.pptx\" download>Download .pptx</a>",
+    "out.two.title": "Strategy deck (.pptx)"
   }
 }</script>
   <script src="./i18n.js"></script>
 
   <script src="/wayfind.js"></script>
   <script src="/palette.js"></script>
+  <script src="/portal.js" defer></script>
+  <script src="/footer.js" defer></script>
 
   <script src="/reveal.js"></script>
   <script src="/spotlight.js"></script>

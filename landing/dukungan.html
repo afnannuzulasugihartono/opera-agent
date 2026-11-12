@@ -8,7 +8,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="theme-color" content="#000000" />
+  <meta name="theme-color" content="#0000f2" />
   <title data-i18n="meta.title">Dukungan — Opera Agent</title>
   <meta name="description" content="Dukungan Opera Agent: cara mengatasi device yang tidak muncul, ekstensi yang tidak ter-pasang, sesi yang keluar sendiri, dan laporan privasi yang benar." />
   <link rel="stylesheet" href="/site.css" />
@@ -23,20 +23,23 @@
 </head>
 <body>
   <header>
-    <div class="wrap">
-      <nav>
-        <a class="brand" href="/beranda.html"><svg class="brandMark" viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="7"  /><path d="M8 5.6v12.8l3.1-2.9 1.9 4.5 2.4-1-2-4.5h3.9L8 5.6Z"  /></svg><span>Opera Agent</span></a>
-        <a href="/fitur.html" data-i18n="nav.features">Fitur</a>
-        <a href="/unduh.html" data-i18n="nav.download">Unduh</a>
-        <a href="/pasang-mcp.html" data-i18n="nav.mcp">MCP</a><a href="/harga" data-i18n="nav.price">Harga</a>
-        <a href="/dukungan.html" data-i18n="nav.support" aria-current="page">Dukungan</a>
-        <a href="/docs.html" data-i18n="nav.docs">Docs</a>
-        <span class="lang" data-lang-toggle></span>
-        <button class="navSearch" type="button" aria-label="Cari halaman Ctrl K" aria-keyshortcuts="Control+K Meta+K"><svg class="navSearchIcon" viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><circle cx="7" cy="7" r="4.5" fill="none" stroke="currentColor" stroke-width="1.5"></circle><path d="M10.6 10.6 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path></svg><kbd class="navSearchKey">Ctrl K</kbd></button>
-        <a class="navCta" href="/" data-i18n="nav.signin">Masuk</a>
+  <div class="wrap">
+    <div class="navRow">
+      <nav class="navSide navLeft" aria-label="Primary">
+        <a href="./fitur.html" data-i18n="nav.features">Fitur</a>
+        <a href="./unduh.html" data-i18n="nav.download">Unduh</a><span class="lang" data-lang-toggle></span>
       </nav>
-    </div>
-  </header>
+      <a class="brand" href="/beranda.html"><span class="wordmark">Opera<br/>Agent</span></a>
+      <nav class="navSide navRight" aria-label="Secondary">
+    <span data-portal-toggle></span>
+        <a href="./docs.html" data-i18n="nav.docs">Docs</a>
+        <a class="navCta" href="./unduh.html" data-i18n="cta.download">Pasang Opera Agent</a>
+      </nav>
+
+
+    <div data-portal-menu></div>
+  </div>
+</header>
 
   <main class="wrap prose supportMain">
     <header class="supportHero" data-reveal>
@@ -105,9 +108,10 @@
           <a href="./beranda.html" data-i18n="footer.home">Beranda</a>
           <a href="./fitur.html" data-i18n="footer.features">Fitur</a>
           <a href="./unduh.html" data-i18n="footer.download">Unduh</a>
-          <a href="./pasang-mcp.html">Pasang MCP</a>
+          <a href="./mcp.html">Pasang MCP</a>
           <a href="./bukti.html" data-i18n="footer.bukti">Bukti</a>
           <a href="./docs.html" data-i18n="footer.docs">Docs</a>
+          <a href="./harga.html">Harga</a>
           <a href="./akun.html" data-i18n="footer.account">Akun</a>
           <a href="./dashboard.html">Dashboard</a>
         </span>
@@ -117,59 +121,57 @@
         <span class="doors">
           <a href="./privasi.html" data-i18n="footer.privacy">Privasi</a>
           <a href="./syarat.html" data-i18n="footer.terms">Syarat</a>
-          <a href="./dukungan.html" data-i18n="footer.support">Dukungan</a>
+          <a href="./dukungan.html" aria-current="page" data-i18n="footer.support">Dukungan</a>
         </span>
       </div>
     </div>
   </footer>
   <script type="application/json" id="i18n-dict">{
   "en": {
-    "footer.bukti": "Proof",
-    "footer.source": "Source code",
-    "footer.legal": "Legal",
-    "footer.docs": "Docs",
-    "footer.download": "Download",
-    "footer.product": "Product",
-    "nav.download": "Download",
-    "nav.signin": "Sign in",
-    "nav.features": "Features",
-    "nav.price": "Pricing",
-    "nav.docs": "Docs",
-    "nav.mcp": "MCP",
-    "nav.support": "Support",
-    "meta.title": "Support — Opera Agent",
-    "page.title": "Support",
-    "hint": "Missing something? <kbd>Ctrl</kbd> <kbd>K</kbd> searches every page.",
-    "nodev.title": "Device missing from the dashboard",
-    "noext.title": "Extension not installed",
-    "mcp.title": "Connecting an AI harness (OpenCode, Kilo, ChatGPT, Claude)",
-    "mcp.pointer": "The MCP server, the device header, and the OpenCode, Kilo, and Claude configs live on the <a href=\"./docs.html\">Docs</a> page.",
-    "session.title": "Your session keeps expiring",
-    "privacy.title": "Privacy and data",
-    "contact.title": "No answer here?",
     "contact.body": "Three doors so your question reaches someone who can answer it.",
     "contact.emailKind": "Email",
-    "contact.issueKind": "Public issue",
-    "contact.securityKind": "Security",
     "contact.issue": "Open a new issue",
+    "contact.issueKind": "Public issue",
     "contact.security": "Report it privately",
-    "nodev.body": "Open the <a href=\"./dashboard.html\">Dashboard</a> and check each device's status. If it is offline, re-pair with a fresh code there. Never leave an unknown device paired; revoke any you do not know.",
-    "noext.body": "Follow <a href=\"./unduh.html\">Download</a>. If the automatic install button is blocked, use the raw archive and enable developer mode, then tick your browser and press <strong>Install</strong>. Check <em>chrome://extensions</em> and <em>chrome://policy</em>.",
-    "session.body": "Access tokens expire after about an hour. They are usually refreshed automatically through the stored refresh token; if the refresh fails too, you are sent back to <a href=\"./index.html\">Sign in</a>. That is deliberate, not a lost account. Command history stays.",
-    "privacy.body": "Questions about data control: every self-serve control lives on the <a href=\"./akun.html\">Account</a> and <a href=\"./privasi.html\">Privacy</a> pages. Never file security findings as public issues; report them privately through the Security tab on the repository.",
-    "footer.rights": "© 2026 Opera Agent. All rights reserved.",
-    "footer.home": "Home",
-    "footer.privacy": "Privacy",
-    "footer.terms": "Terms",
+    "contact.securityKind": "Security",
+    "contact.title": "No answer here?",
+    "cta.download": "Install Opera Agent",
+    "footer.account": "Account",
+    "footer.bukti": "Proof",
+    "footer.docs": "Docs",
+    "footer.download": "Download",
     "footer.features": "Features",
+    "footer.home": "Home",
+    "footer.legal": "Legal",
+    "footer.privacy": "Privacy",
+    "footer.product": "Product",
+    "footer.rights": "© 2026 Opera Agent. All rights reserved.",
+    "footer.source": "Source code",
     "footer.support": "Support",
-    "footer.account": "Account"
+    "footer.terms": "Terms",
+    "hint": "Missing something? <kbd>Ctrl</kbd> <kbd>K</kbd> searches every page.",
+    "mcp.pointer": "The MCP server, the device header, and the OpenCode, Kilo, and Claude configs live on the <a href=\"./docs.html\">Docs</a> page.",
+    "mcp.title": "Connecting an AI harness (OpenCode, Kilo, ChatGPT, Claude)",
+    "meta.title": "Support — Opera Agent",
+    "nav.docs": "Docs",
+    "nav.download": "Download",
+    "nav.features": "Features",
+    "nodev.body": "Open the <a href=\"./dashboard.html\">Dashboard</a> and check each device's status. If it is offline, re-pair with a fresh code there. Never leave an unknown device paired; revoke any you do not know.",
+    "nodev.title": "Device missing from the dashboard",
+    "noext.body": "Follow <a href=\"./unduh.html\">Download</a>. If the automatic install button is blocked, use the raw archive and enable developer mode, then tick your browser and press <strong>Install</strong>. Check <em>chrome://extensions</em> and <em>chrome://policy</em>.",
+    "noext.title": "Extension not installed",
+    "page.title": "Support",
+    "privacy.body": "Questions about data control: every self-serve control lives on the <a href=\"./akun.html\">Account</a> and <a href=\"./privasi.html\">Privacy</a> pages. Never file security findings as public issues; report them privately through the Security tab on the repository.",
+    "privacy.title": "Privacy and data",
+    "session.body": "Access tokens expire after about an hour. They are usually refreshed automatically through the stored refresh token; if the refresh fails too, you are sent back to <a href=\"./index.html\">Sign in</a>. That is deliberate, not a lost account. Command history stays.",
+    "session.title": "Your session keeps expiring"
   }
 }</script>
   <script src="./i18n.js"></script>
 
   <script src="/wayfind.js"></script>
   <script src="/palette.js"></script>
+  <script src="/portal.js" defer></script>
 
   <script src="/reveal.js"></script>
 </body>

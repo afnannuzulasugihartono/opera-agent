@@ -8,7 +8,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="theme-color" content="#000000" />
+  <meta name="theme-color" content="#0000f2" />
   <title data-i18n="meta.title">Fitur — Opera Agent</title>
   <meta name="description" content="Fitur Opera Agent: 40 tool dan 35 primitive, enam izin yang dijelaskan satu per satu, model milik Anda berjalan di perangkat Anda, pairing device yang tetap." />
   <link rel="stylesheet" href="/site.css" />
@@ -23,20 +23,23 @@
 </head>
 <body>
   <header>
-    <div class="wrap">
-      <nav>
-        <a class="brand" href="/beranda.html"><svg class="brandMark" viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="7"  /><path d="M8 5.6v12.8l3.1-2.9 1.9 4.5 2.4-1-2-4.5h3.9L8 5.6Z"  /></svg><span>Opera Agent</span></a>
-        <a href="/fitur.html" data-i18n="nav.features" aria-current="page">Fitur</a>
-        <a href="/unduh.html" data-i18n="nav.download">Unduh</a>
-        <a href="/pasang-mcp.html" data-i18n="nav.mcp">MCP</a><a href="/harga" data-i18n="nav.price">Harga</a>
-        <a href="/dukungan.html" data-i18n="nav.support">Dukungan</a>
-        <a href="/docs.html" data-i18n="nav.docs">Docs</a>
-        <span class="lang" data-lang-toggle></span>
-        <button class="navSearch" type="button" aria-label="Cari halaman Ctrl K" aria-keyshortcuts="Control+K Meta+K"><svg class="navSearchIcon" viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><circle cx="7" cy="7" r="4.5" fill="none" stroke="currentColor" stroke-width="1.5"></circle><path d="M10.6 10.6 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path></svg><kbd class="navSearchKey">Ctrl K</kbd></button>
-        <a class="navCta" href="/" data-i18n="nav.signin">Masuk</a>
+  <div class="wrap">
+    <div class="navRow">
+      <nav class="navSide navLeft" aria-label="Primary">
+        <a href="./fitur.html" aria-current="page" data-i18n="nav.features">Fitur</a>
+        <a href="./unduh.html" data-i18n="nav.download">Unduh</a><span class="lang" data-lang-toggle></span>
       </nav>
-    </div>
-  </header>
+      <a class="brand" href="/beranda.html"><span class="wordmark">Opera<br/>Agent</span></a>
+      <nav class="navSide navRight" aria-label="Secondary">
+    <span data-portal-toggle></span>
+        <a href="./docs.html" data-i18n="nav.docs">Docs</a>
+        <a class="navCta" href="./unduh.html" data-i18n="cta.download">Pasang Opera Agent</a>
+      </nav>
+
+
+    <div data-portal-menu></div>
+  </div>
+</header>
 
   <main class="wrap">
     <section class="featureHero" data-reveal>
@@ -132,107 +135,65 @@
 
     <section class="finalBand" data-reveal aria-labelledby="finalTitle">
       <h2 id="finalTitle" data-i18n="final.title">Satu extension. Browser Anda.</h2>
-      <p data-i18n-html="final.sub">Harga dan aturannya ada di halaman <a href="/harga">Harga</a>.</p>
+      <p data-i18n-html="final.sub">Harga dan aturannya ada di halaman <a href="/harga.html">Harga</a>.</p>
       <a class="btn primary" href="./unduh.html" data-i18n="cta.download">Unduh</a>
     </section>
   </main>
 
         <footer>
-    <div class="wrap footGrid simplified">
-      <div class="footCol">
-        <span class="footBrand">Opera Agent</span>
-        <span class="footNote" data-i18n="footer.rights">© 2026 Opera Agent. Hak cipta dilindungi.</span>
-        <span class="doors"><a href="https://github.com/afnannuzulasugihartono/opera-agent" data-i18n="footer.source">Kode sumber</a></span>
-      </div>
-      <div class="footCol">
-        <h3 data-i18n="footer.product">Produk</h3>
-        <span class="doors">
-          <a href="./beranda.html" data-i18n="footer.home">Beranda</a>
-          <a href="./fitur.html" data-i18n="footer.features">Fitur</a>
-          <a href="./unduh.html" data-i18n="footer.download">Unduh</a>
-          <a href="./pasang-mcp.html">Pasang MCP</a>
-          <a href="./bukti.html" data-i18n="footer.bukti">Bukti</a>
-          <a href="./docs.html" data-i18n="footer.docs">Docs</a>
-          <a href="./akun.html" data-i18n="footer.account">Akun</a>
-          <a href="./dashboard.html">Dashboard</a>
-        </span>
-      </div>
-      <div class="footCol">
-        <h3 data-i18n="footer.legal">Legal</h3>
-        <span class="doors">
-          <a href="./privasi.html" data-i18n="footer.privacy">Privasi</a>
-          <a href="./syarat.html" data-i18n="footer.terms">Syarat</a>
-          <a href="./dukungan.html" data-i18n="footer.support">Dukungan</a>
-        </span>
-      </div>
-    </div>
+    <div data-footer-mount></div>
   </footer>
 
   <script type="application/json" id="i18n-dict">{
   "en": {
-    "footer.bukti": "Proof",
-    "footer.source": "Source code",
-    "footer.legal": "Legal",
-    "footer.docs": "Docs",
-    "footer.download": "Download",
-    "footer.product": "Product",
-    "nav.download": "Download",
-    "nav.signin": "Sign in",
-    "nav.features": "Features",
-    "nav.price": "Pricing",
-    "nav.docs": "Docs",
-    "nav.mcp": "MCP",
-    "nav.support": "Support",
-    "meta.title": "Features — Opera Agent",
-    "page.title": "Your browser, as a work tool.",
+    "cta.download": "Download",
+    "final.sub": "The price and its rules are on the <a href=\"/harga\">Pricing</a> page.",
+    "final.title": "One extension. Your browser.",
     "hero.how": "See how it works",
     "intro": "<strong>A companion with an AI behind it.</strong> You talk. The browser works. The result becomes a real artefact.",
-    "stat.tools": "tools",
-    "stat.prims": "primitives",
-    "stat.perms": "permissions",
-    "s1.title": "40 tools, 35 primitives",
+    "meta.title": "Features — Opera Agent",
+    "nav.docs": "Docs",
+    "nav.download": "Download",
+    "nav.features": "Features",
+    "page.title": "Your browser, as a work tool.",
+    "perm.body": "No permission outside this list.",
+    "perm.title": "The permissions we ask for",
     "s1.body": "Read, fill, navigate, verify. Maps, YouTube, Docs are the first examples.",
-    "s2.title": "Six permissions, each explained",
+    "s1.title": "40 tools, 35 primitives",
     "s2.body": "Each permission has one reason you can read on the <a href=\"./unduh.html\">Download</a> page.",
-    "s3.title": "Your own model",
+    "s2.title": "Six permissions, each explained",
     "s3.body": "Your endpoint and key stay in your browser. Page content only goes to the model you choose. <a href=\"./privasi.html\">Privacy</a>.",
-    "s4.title": "Device pairing",
+    "s3.title": "Your own model",
     "s4.body": "A one-time code binds a device to your account. Manage from <a href=\"./dashboard.html\">Dashboard</a>.",
-    "s5.title": "Read pages without exploits",
+    "s4.title": "Device pairing",
     "s5.body": "Passwords, one-time codes, tokens, and payment fields are always refused.",
-    "s6.title": "MCP for any harness",
+    "s5.title": "Read pages without exploits",
     "s6.body": "OpenCode, Kilo Code, and Claude Code share one endpoint. <a href=\"./docs.html\">Docs</a>.",
-    "s7.title": "Four files from one conversation",
+    "s6.title": "MCP for any harness",
     "s7.body": "A financial report, a strategy deck, a research paper, and a marketing plan — written as files you can open right away: <a href=\"./contoh/laporan-keuangan-2026-09.xlsx\" download>Report (.xlsx)</a>, <a href=\"./contoh/rencana-strategis-2027.pptx\" download>Deck (.pptx)</a>, <a href=\"./contoh/riset-promo.docx\" download>Paper (.docx)</a>, <a href=\"./contoh/rencana-pemasaran-2027.docx\" download>Marketing (.docx)</a>. <a href=\"./studi.html\">The full case study</a>.",
-    "s8.title": "A portal that asks to sign in no longer freezes the work",
+    "s7.title": "Four files from one conversation",
     "s8.body": "Sign-in or captcha? The agent reads first, waits for you to complete it, and continues in the same tab. One-time codes are never answered by the agent.",
-    "task.title": "From one sentence to a file.",
-    "task.talk": "Talk",
-    "task.talk.body": "One sentence: summarise the Q4 onboarding check.",
+    "s8.title": "A portal that asks to sign in no longer freezes the work",
+    "stat.perms": "permissions",
+    "stat.prims": "primitives",
+    "stat.tools": "tools",
     "task.read": "Read",
     "task.read.body": "Pages, buttons, and rows are read.",
-    "task.write": "Write",
-    "task.write.body": "Forms and cells are filled, not clicked blindly.",
     "task.save": "Save",
     "task.save.body": "The file and the proof are saved.",
-    "perm.title": "The permissions we ask for",
-    "perm.body": "No permission outside this list.",
-    "final.title": "One extension. Your browser.",
-    "final.sub": "The price and its rules are on the <a href=\"/harga\">Pricing</a> page.",
-    "cta.download": "Download",
-    "footer.rights": "© 2026 Opera Agent. All rights reserved.",
-    "footer.home": "Home",
-    "footer.privacy": "Privacy",
-    "footer.terms": "Terms",
-    "footer.features": "Features",
-    "footer.support": "Support",
-    "footer.account": "Account"
+    "task.talk": "Talk",
+    "task.talk.body": "One sentence: summarise the Q4 onboarding check.",
+    "task.title": "From one sentence to a file.",
+    "task.write": "Write",
+    "task.write.body": "Forms and cells are filled, not clicked blindly."
   }
 }</script>
   <script src="./i18n.js"></script>
 
   <script src="/wayfind.js"></script>
   <script src="/palette.js"></script>
+  <script src="/portal.js" defer></script>
+  <script src="/footer.js" defer></script>
 
   <script src="/reveal.js"></script>
   <script src="/spotlight.js"></script>

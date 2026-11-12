@@ -24,11 +24,6 @@ main.wrap { padding-top: 68px; padding-bottom: 96px; }
   letter-spacing: -.045em;
 }
 
-.featureHero .lede {
-  margin: 0 0 22px;
-  font-size: clamp(16px, 1.15vw, 18px);
-}
-
 .featureIntro {
   max-width: 62ch;
   margin: 0;

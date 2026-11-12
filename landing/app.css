@@ -27,8 +27,6 @@ main.console { padding-top: 56px; padding-bottom: 80px; }
   border-bottom: 1px solid var(--line);
 }
 
-.appHead .eyebrow { margin: 0 0 10px; }
-
 .appHead h1 {
   margin: 0 0 8px;
   font-size: clamp(32px, 3.4vw, 46px);
@@ -198,8 +196,7 @@ main.console { padding-top: 56px; padding-bottom: 80px; }
 .appCard dl.facts dt:first-of-type,
 .appCard dl.facts dd:first-of-type { border-top: 0; }
 
-.appCard ul.linked,
-.appCard ul.scopes {
+.appCard ul.linked {
   display: grid;
   gap: 8px;
   margin: 0;
@@ -209,8 +206,7 @@ main.console { padding-top: 56px; padding-bottom: 80px; }
   font-size: 13.5px;
 }
 
-.appCard ul.linked li,
-.appCard ul.scopes li {
+.appCard ul.linked li {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -218,8 +214,7 @@ main.console { padding-top: 56px; padding-bottom: 80px; }
   border-top: 1px solid var(--line);
 }
 
-.appCard ul.linked li:first-child,
-.appCard ul.scopes li:first-child { border-top: 0; }
+.appCard ul.linked li:first-child { border-top: 0; }
 
 .appCard ul.linked code {
   background: var(--surface-soft);
