@@ -2,6 +2,9 @@
 # @title: publish-npm - publishes the local MCP package with the runner's own identity.
 # @state: the version it publishes, the gates it waits for, and the registry answer it confirms.
 # @dependencies: npm trusted publishing (OIDC), the package in local/.
+# WHY THE RUNNER INSTALLS npm@11: node 22 ships npm 10, which cannot do the OIDC exchange the trusted publisher needs; npm >= 11.5.1 is required, and without it the PUT leaves without a token and the registry answers 404.
+
+# WHY THIS PUBLISHES WITHOUT A TOKEN.
 
 # WHY THIS PUBLISHES WITHOUT A TOKEN.
 # npm is restricting the tokens that bypass two-factor authentication, and direct publishing with one ends in January 2027.
@@ -40,7 +43,6 @@ jobs:
           registry-url: https://registry.npmjs.org
 
       - name: The runner's npm can speak OIDC
-        # WHY: node 22 ships npm 10, which cannot do the OIDC exchange the trusted publisher needs; npm >= 11.5.1 is required (npm trusted-publishers docs). Without this step the PUT leaves without a token and the registry answers 404.
         run: npm install --global npm@11 && npm --version
 
       - name: The version in the tree is the version asked for
