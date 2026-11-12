@@ -13,10 +13,10 @@ import {
   RELEVANCE_STACK_LOCKS,
 } from './helpers/boundary-locks.mjs';
 
-function sha1Blob(bytes) {
+function sha256Blob(bytes) {
 
   const content = Buffer.from(bytes.toString('utf8').replace(/\r\n/g, '\n'), 'utf8');
-  return createHash('sha1').update(Buffer.from(`blob ${content.length}\0`)).update(content).digest('hex');
+  return createHash('sha256').update(Buffer.from(`blob ${content.length}\0`)).update(content).digest('hex');
 }
 
 for (const [label, locks, expectedSize] of [
@@ -29,7 +29,7 @@ for (const [label, locks, expectedSize] of [
       `${label} lock lost or gained an entry; update this count deliberately, never by deletion`);
     for (const [relativePath, expected] of new Map(locks)) {
       const bytes = await readFile(new URL(relativePath, import.meta.url));
-      assert.equal(sha1Blob(bytes), expected, `${relativePath} must remain byte-for-byte unchanged`);
+      assert.equal(sha256Blob(bytes), expected, `${relativePath} must remain byte-for-byte unchanged`);
     }
   });
 }

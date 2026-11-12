@@ -31,6 +31,8 @@ jobs:
     name: Bump every clock and open the PR
     runs-on: ubuntu-24.04
     timeout-minutes: 20
+    env:
+      VERSION: ${{ inputs.version }}
     steps:
       - uses: actions/checkout@v7
 
@@ -42,29 +44,29 @@ jobs:
         run: npm --version
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --ignore-scripts
 
       - name: The input is a version
         shell: bash
         run: |
-          if ! [[ "${{ inputs.version }}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "::error::version must look like X.Y.Z, got: ${{ inputs.version }}"
+          if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::version must look like X.Y.Z, got: $VERSION"
             exit 1
           fi
 
       - name: The bump moves every clock and the gates must stay green
-        run: node scripts/bump-version.mjs "${{ inputs.version }}"
+        run: node scripts/bump-version.mjs "$VERSION"
 
       - name: Commit the bump on its own branch
         shell: bash
         run: |
           set -euo pipefail
-          BRANCH="release/${{ inputs.version }}"
+          BRANCH="release/${VERSION}"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git checkout -B "$BRANCH"
           git add -A
-          git commit -m "release: ${{ inputs.version }} - version bump from ${{ github.sha }}"
+          git commit -m "release: ${VERSION} - version bump from ${{ github.sha }}"
           git push -u origin "$BRANCH" --force-with-lease
 
       - name: Open the pull request
@@ -76,7 +78,7 @@ jobs:
           {
             echo "## What this PR does"
             echo
-            echo "Mechanical bump to \`${{ inputs.version }}\`, produced by \`scripts/bump-version.mjs\` from \`main\` at \`${{ github.sha }}\`."
+            echo "Mechanical bump to \`${VERSION}\`, produced by \`scripts/bump-version.mjs\` from \`main\` at \`${{ github.sha }}\`."
             echo
             echo "## Files changed"
             echo
@@ -90,9 +92,9 @@ jobs:
             echo
             echo "## For the reviewer"
             echo
-            echo "1. Read \`docs/releases/${{ inputs.version }}.md\` - the scaffold is a skeleton; fill the prose honestly (what reached the surface, what changes for callers, what it costs the reader) before merging."
+            echo "1. Read \`docs/releases/${VERSION}.md\` - the scaffold is a skeleton; fill the prose honestly (what reached the surface, what changes for callers, what it costs the reader) before merging."
             echo "2. Update the \`docs/handoff.md\` shipped entry to name this release (the engine only rewrites the State bullet anchors)."
             echo "3. The tool count is not rewired by this bump; if this release moves 39 or 40 deliberately, that is a separate reviewed decision like every time before."
             echo "4. Merge is your call; the deploys (deploy-functions, publish-npm, publish-crx, deploy-site) stay dispatched by hand after merge."
           } > pr-body.md
-          gh pr create --title "release: ${{ inputs.version }} - version bump" --body-file pr-body.md --base main --head "release/${{ inputs.version }}"
+          gh pr create --title "release: ${VERSION} - version bump" --body-file pr-body.md --base main --head "release/${VERSION}"

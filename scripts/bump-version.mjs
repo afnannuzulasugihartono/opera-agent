@@ -18,6 +18,14 @@ import { fileURLToPath } from 'node:url';
 import { sha256ContractSource } from '../tests/helpers/canonical-source-hash.mjs';
 import { buildEnumeration, applyEntries, buildWhyBlock, buildChangelogRow, buildReleaseNote } from './bump-version-lib.mjs';
 
+const GIT_CANDIDATES = process.platform === 'win32'
+  ? ['C:\\Program Files\\Git\\cmd\\git.exe', 'C:\\Program Files\\Git\\bin\\git.exe']
+  : ['/usr/bin/git', '/bin/git'];
+const GIT_BIN = GIT_CANDIDATES.find((candidate) => fs.existsSync(candidate));
+if (!GIT_BIN) {
+  console.error('bump-version: git not found at a fixed, unwriteable path; install Git there or run on the CI runner');
+  process.exit(1);
+}
 const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const dryRun = process.argv.includes('--dry-run');
 const arg = process.argv.slice(2).find((value) => value !== '--dry-run');
@@ -37,7 +45,7 @@ if (!arg || !/^\d+\.\d+\.\d+$/.test(arg)) fail('pass one version, e.g. node scri
   if (!/^\d+\.\d+\.\d+$/.test(current)) fail(`extension/manifest.json does not read a three-part version: ${current}`);
   if (current === newVersion) fail(`the tree already reads ${newVersion}`);
 
-  const dirty = execFileSync('git', ['status', '--porcelain'], { cwd: repo, encoding: 'utf8' }).trim();
+  const dirty = execFileSync(GIT_BIN, ['status', '--porcelain'], { cwd: repo, encoding: 'utf8' }).trim();
   if (dirty) fail(`the tree is dirty; the bump must land as one reviewable diff:\n${dirty}`);
 
   const today = new Date().toISOString().slice(0, 10);
@@ -56,14 +64,14 @@ if (!arg || !/^\d+\.\d+\.\d+$/.test(arg)) fail('pass one version, e.g. node scri
 
   const contentOf = (file) => (writes.has(file) ? writes.get(file) : fs.readFileSync(path.join(repo, file), 'utf8'));
 
-  function sha1BlobText(text) {
+  function sha256BlobText(text) {
     const content = Buffer.from(String(text).replace(/\r\n/g, '\n'), 'utf8');
-    return crypto.createHash('sha1').update(Buffer.from(`blob ${content.length}\0`)).update(content).digest('hex');
+    return crypto.createHash('sha256').update(Buffer.from(`blob ${content.length}\0`)).update(content).digest('hex');
   }
 
   const lockFile = path.join(repo, 'tests/helpers/boundary-locks.mjs');
   const rePinned = ['extension/manifest.json', 'supabase/functions/opera-agent-mcp/index.ts', 'supabase/functions/opera-agent-mcp/tools.ts']
-    .map((file) => [file.replace(/^extension\//, '../extension/').replace(/^supabase\//, '../supabase/'), sha1BlobText(contentOf(file))]);
+    .map((file) => [file.replace(/^extension\//, '../extension/').replace(/^supabase\//, '../supabase/'), sha256BlobText(contentOf(file))]);
   const boundarySource = fs.readFileSync(lockFile, 'utf8');
   let boundaryNext = boundarySource;
   for (const [relativePath, sha] of rePinned) {
@@ -94,7 +102,7 @@ if (!arg || !/^\d+\.\d+\.\d+$/.test(arg)) fail('pass one version, e.g. node scri
   changelogLines.splice(firstRow, 0, buildChangelogRow(newVersion, today));
   writes.set('CHANGELOG.md', changelogLines.join('\n'));
 
-  const recentCommits = execFileSync('git', ['log', '--oneline', '-12'], { cwd: repo, encoding: 'utf8' }).trim().split('\n').map((line) => `- ${line}`).join('\n');
+  const recentCommits = execFileSync(GIT_BIN, ['log', '--oneline', '-12'], { cwd: repo, encoding: 'utf8' }).trim().split('\n').map((line) => `- ${line}`).join('\n');
   writes.set(releaseNote, buildReleaseNote(newVersion, today, recentCommits));
 
   const packageLockPath = path.join(repo, 'package-lock.json');
@@ -118,7 +126,7 @@ if (!arg || !/^\d+\.\d+\.\d+$/.test(arg)) fail('pass one version, e.g. node scri
     fs.writeFileSync(path.join(repo, file), contents.replace(/\r\n/g, '\n'), 'utf8');
   }
 
-  execFileSync('git', ['add', '-A'], { cwd: repo, stdio: ['ignore', 'inherit', 'inherit'] });
+  execFileSync(GIT_BIN, ['add', '-A'], { cwd: repo, stdio: ['ignore', 'inherit', 'inherit'] });
 
   const npmCmd = process.platform === 'win32' ? 'npm.cmd' : 'npm';
   const npmSpawn = process.platform === 'win32' ? { shell: true } : {};
@@ -132,3 +140,4 @@ if (!arg || !/^\d+\.\d+\.\d+$/.test(arg)) fail('pass one version, e.g. node scri
   console.error(`bump-version: ${message}`);
   process.exit(1);
 }
+
