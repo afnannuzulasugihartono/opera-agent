@@ -1,6 +1,6 @@
 # @last-edited: 2026-11-13 UTC+7.
 # @title: Repo architecture - one product, two roads, one enforced map.
-# @state: the design for the full restructure; two pull requests; nothing implemented yet.
+# @state: the design for the full restructure and the one-source redesign; the two-roads consolidation (PR #1) is in flight.
 # @dependencies: `docs/naming.md`, `docs/anti-drift.md`, `tests/helpers/boundary-locks.mjs`, `gates.lock`, `.github/CODEOWNERS`.
 
 # WHAT THIS FIXES
@@ -36,6 +36,45 @@ Opera Agent is one product, delivered two ways, with one browser half in common:
 ```
 
 The invariant that makes it two roads and not two products: **the tool surface is the same 42 tools on both roads, and any module both roads need lives once in `shared/`, never copied by hand.**
+
+# THE REDESIGNED LAYERS
+
+The owner's ruling, 2026-11-13: the product is redesigned so the two roads are one source with two adapters, not two parallel implementations that happen to agree. The layer model, top to bottom:
+
+```
+L7  BROWSER HALF          extension/ - MV3; the terminus of both roads; protocol.js is the one wire truth
+L6  SURFACE               hosted: HTTP/SSE + OAuth (any MCP client, anywhere)
+                          local:  stdio (any stdio harness, on this machine)
+L5  TRANSPORT ADAPTER     hosted: tool call -> wire method(s) -> relay -> extension
+                          local:  tool call -> driver verb -> CDP (foreground tab) or bridge (active:false)
+L4  ORCHESTRATION         shared/tools/*.mjs - the tool LOGIC, one implementation each:
+                          searchBing(params, caps), readPage(params, caps), waitFor(params, caps), ...
+L3  TOOL SURFACE          shared/tool-surface.mjs - the 42 tools: name, title, description, inputSchema (JSON);
+                          both roads derive from it; parity gate fails on any drift
+L2  SHARED CORE           shared/ - pure modules, no I/O: parser, normalizer, VM, semantic state, ax-menu,
+                          canonical-order, secret-pattern
+L1  WIRE PROTOCOL         extension/lib/protocol.js - METHOD_SPECS; never a second copy
+L0  BUILD & RELEASE       scripts/{release,pack,verify} - bump, pack (byte-copy), gates; one chain for both roads
+```
+
+**The ports-and-adapters seam.** Every tool that exists on both roads exports its logic from `shared/tools/<name>.mjs` as `run(params, caps)`, where `caps` is the I/O the road provides. The orchestration - open one background tab, read pages, dedupe, close on every exit path, shape the answer - is written once. The adapters are thin mappings:
+
+- hosted adapter: `caps = { openTab: w('tabs.open'), navigate: w('tabs.navigate'), dump: w('page.dump'), closeTab: w('tabs.close'), ... }` where `w(method)` sends the wire call through the relay
+- local adapter: `caps = { openTab: driver.open, dump: t => driver.evaluate(SERP_EXPRESSION), closeTab: driver.close, ... }` - and the CDP-vs-bridge branch of the local road collapses into this one driver object instead of forking orchestration
+
+Example of the complete unification (search_bing, the tool that already diverged once):
+
+```js
+// shared/tools/search-bing.mjs - ONE implementation, both roads
+export async function searchBing(params, caps) { /* open -> read <=3 pages -> dedupe -> close; answer { ok, kind, page, search } */ }
+// hosted adapter wires caps over page.dump; local adapter over SERP_EXPRESSION; the decision logic is identical.
+```
+
+**What deliberately stays two:** the adapters, the transports, the runtimes, the deploy artifacts (CRX, npm tarball, edge bundle), and the browser harness. L1/L2/L3/L4/L7 are one; L5/L6 are two; L0 is one chain.
+
+**Parity that cannot rot.** `tests/tool-surface-parity.test.mjs` (L3) plus per-tool-family parity tests (L4): each tool's `run(params, capsFake)` is exercised against one shared fake driver and its contract output is compared road-agnostically. Drift is a red suite, not a remark.
+
+**Staging (sizing is deliberately honest):** PR #3 unifies L3 (contract). PR #4a unifies L4 for search_bing and pays the parity apparatus once. PR #4b unifies the read ladder (read-strategy, surface-profile). PR #4c unifies the input verbs and waits (click, type, key, wait_for, burst steps). PR #4d finishes the rest family by family, measuring parity as it goes. 1.6.51 ships first, on the #289 + PR #2 state; #4 stages follow, each suite-green.
 
 # TARGET TREE
 
@@ -241,7 +280,7 @@ Everything else in AGENTS.md stays as it is. The owner reviews this diff in the 
 # WHAT THIS DESIGN DELIBERATELY DOES NOT CHANGE
 
 - No behavior change anywhere. Every move is `git mv` (blob unchanged) or a path-string rewrite. Tests remain byte-identical except import lines that must deepen one segment.
-- No protocol change; no tool surface change; `SERVER_VERSION`, tool names and shapes untouched.
+- No protocol change; no tool surface shape change; `SERVER_VERSION`, tool names and input schemas untouched by PR #1 and #2. PR #3 unifies the descriptions (wording) under one source - names, counts and schemas unchanged by it as well.
 - No deploy contract moves, except `supabase/` -> `hosted/`, which is a rename only. The supabase CLI is invoked with `working-directory: hosted` in `deploy-functions.yml`; `release-bump.yml`, `release.yml`, `deploy-site.yml`, `publish-npm.yml`, `ci.yml` need path updates only where they reference the renamed paths or moved scripts.
 - `tests/browser_extension_test.py`, `tests/paper_e2e.py`, `tests/real_site_smoke.py` keep their paths.
 - Historical docs (`docs/releases/`, `docs/superpowers/`) are not rewritten to the new paths; they record what was true when written.
@@ -271,6 +310,36 @@ Everything else in AGENTS.md stays as it is. The owner reviews this diff in the 
 | S9 | Full CI (unit, browser, secret-scan, SonarCloud) on the PR; merge | CI matrix all green |
 | S10 | Release 1.6.51 as usual: release-bump -> prose -> merge -> publish-crx -> tag -> release.yml -> deploy-functions -> publish-npm -> deploy-site -> live `search_bing` call -> handoff bullet | the live call answers 42 tools and a real Bing SERP |
 
+**PR #3 - the tool surface, one source (the owner ruling of 2026-11-13; replaces the last meaningful duplication).** Branched from `main` after PR #2 merges.
+
+The two roads advertise the same 42 tools today by writing them independently: `local/tools.js` exports a plain-JS `TOOLS` (JSON-Schema descriptors; consumed by `local/mcp-server.js`), and `hosted/functions/opera-agent-mcp/tools.ts` registers the same 42 with zod. The names and counts are pinned by `mcp-surface.test.mjs`; the descriptions are not, and they have already drifted (search_bing's wording differs between the two roads). The owner wants them synchronized; this stage makes them one source, not two copies that are checked or not.
+
+1. New `shared/tool-surface.mjs`: `export const TOOLS` - the 42 tools verbatim in the local JSON-Schema shape (name, title, description, inputSchema with `pattern`/`minLength`/`maxLength`/`minimum`/`maximum`/`enum`/`const`/`default`, nested `properties`, `required`). Moved out of `local/tools.js` essentially unchanged; the hosted wording of any drifted description wins (the hosted text is the fuller one).
+2. `local/tools.js` becomes a thin re-export: `export { TOOLS, ASKABLE, askParams, STRAY_FILE_TAB }` - ASKABLE/askParams logic moves unchanged; nothing about the call path changes for local.
+3. `hosted/functions/opera-agent-mcp/tools.ts` becomes a thin wrapper: a ~150-line `jsonSchemaToZod()` maps every schema key to zod (`string->z.string().regex/min/max`, `integer/number->z.number().int().min().max()`, `boolean`, `enum->z.enum([...])`, `const->z.literal(...)`, `array`, nested `object->z.object({...})`, `record->z.record(...)`, `unknown`, `optional` via the `required` array) and each tool registers with the shared `title`/`description`/`inputSchema`. Handlers stay in `index.ts`/`tools.ts` - they differ by transport and they must stay two roads.
+4. Hosted-only refinements that are behavioral (not wire shape) may stay in the hosted wrapper, documented, and only ever tighten: never loosen what the model may send.
+5. New gate `tests/tool-surface-parity.test.mjs` (subject folder `tests/shared/`): both roads' derivations must equal `shared/tool-surface.mjs` on names, titles, descriptions, and input schemas - field by field. Drift in either road fails CI. `mcp-surface.test.mjs` and `mcp-output-*.test.mjs` continue to pin counts and rendering.
+6. `scripts/pack/pack-mcp.mjs` carries one more file (`tool-surface.mjs`) into `local/lib/`; `.gitignore` unchanged (`local/lib/` remains the one rule).
+7. `tests/helpers/boundary-locks.mjs` and `gates.lock` re-pinned once; `docs/api.md` and the release note for the next version name the change. The tool count stays 42; no caller sees a new name.
+
+Gate for PR #3: `npm test` (must equal 201 + 1 new parity file), `npm run check`, CI matrix green, SonarCloud clean (net deletion of ~700 duplicated lines justifies it outright).
+
+**PR #4 - the two roads become one source with two adapters (L4, the orchestration layer).** Branched from `main` after PR #3 merges. This is the full redesign the owner approved on 2026-11-13 ("design ulang lengkap arsitekturnya supaya satu source dua road dan tersinkronisasi"): the tool LOGIC, not only the tool contract, lives once in `shared/tools/`.
+
+The ports-and-adapters shape (see THE REDESIGNED LAYERS):
+
+| Stage | What happens | Gate |
+|---|---|---|
+| S11 | The parity apparatus: a shared fake driver plus `tests/tool-parity.test.mjs` harness (contract-output comparison, run identically from either road's adapter); no tool moved yet | parity harness green against one moved tool |
+| S12 | `shared/tools/search-bing.mjs` unified (the tool that already diverged once); both roads become thin `caps` providers; the hosted and local search tests pin the same golden outputs | golden tests equal on both roads; mcp-surface green; browser harness green |
+| S13 | The read ladder unified (`shared/tools/read-page.mjs`, `surface-profile.mjs`, strategy tables); local read-strategy.js and hosted read path both derive | parity golden tests green; `read_page`/`surface_profile` behave identically |
+| S14 | Input verbs + waits unified (`shared/tools/input.mjs`, `wait-for.mjs`, burst step logic); `click`/`type`/`key`/`wait_for`/`browser.burst` one source | parity green; burst perf unchanged (benchmarked) |
+| S15 | The remaining 42, family by family; each PR small enough to review, each green; families whose I/O genuinely cannot unify (e.g. install verbs, device pairing) are documented as adapter-heavy but keep the contract parity from PR #3 | parity per family; release discipline per stage |
+
+Sizing, honestly: S11-S12 are days; S13-S14 are a week of focused work with the parity harness already paid for; S15 is a long tail measured family by family, never big-bang. 1.6.51 ships on the #289 + PR #2 state; nothing in #4 blocks the release, and nothing in the release blocks #4.
+
+Forbidden by this stage: any tool logic remaining in only one road; any description/schema wording surviving outside `shared/tool-surface.mjs`; any `caps` mapping that papers over a behavioral difference rather than naming it (a real difference is either designed away in the shared logic, or kept and documented - never silent).
+
 # RISKS AND MITIGATIONS
 
 - **S6 depth rewrite is where a subtle break hides.** Mitigations: the rewrite is one sed-like pattern per prefix; the suite reads the paths twice (imports + the py harness); 201 tests must pass; `npm pack --dry-run` smoke for the local package; tarball load check (the #289 proof) re-run.
@@ -288,6 +357,8 @@ Everything else in AGENTS.md stays as it is. The owner reviews this diff in the 
 - "Buat dalam bentuk folder full, tidak boleh miss satu file dan satu folder pun, plan arsitektur dulu wajib" -> this document; appendices A-D enumerate every file; the py harnesses are named, not waved at; the gate invents no directories.
 - `local/` stays flat (npm artifact stability) with a README role map (Appendix B); `agent-map.md` deleted; PR split kept: #289 ships the two-roads consolidation, #2 ships the restructure.
 - Implementation starts with PR #1: two-roads consolidation + parser fixes, then this plan as PR #2.
+- 2026-11-13: "Hosted dan local harus tersinkron toolnya; sejauh ini mereka berdiri sendiri" -> PR #3 added: the tool surface becomes one source (`shared/tool-surface.mjs`), both roads thin wrappers, a parity gate, after PR #2 and before further releases. Tool count stays 42; handlers stay two roads by necessity (I/O differs); drifted descriptions unify on the hosted wording.
+- 2026-11-13: "Design ulang lengkap arsitekturnya supaya satu source dua road dan tersinkronisasi" -> PR #4 added: the layer model (L0-L7), the ports-and-adapters seam (`shared/tools/*.mjs`, `run(params, caps)`), the L5/L6-two/L1-L4/L7-one invariant, and the parity apparatus (shared fake driver, per-family golden tests). Staged S11-S15; 1.6.51 ships first; no big-bang. The layers are the architecture; "two roads" is now a property of the seam points (L5/L6), not of every file.
 
 # EXPLICIT QUESTIONS STILL OPEN (for the owner, answerable at spec review)
 
