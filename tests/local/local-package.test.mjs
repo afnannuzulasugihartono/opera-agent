@@ -85,10 +85,10 @@ test('every module the bin can reach is inside the published files', () => {
 test('the list names nothing the package does not have', () => {
   const onDisk = new Set();
   for (const entry of readdirSync(local, { withFileTypes: true })) {
-    if (entry.isFile() && entry.name.endsWith('.js')) onDisk.add(entry.name);
+    if (entry.isFile() && /\.(js|cmd)$/i.test(entry.name)) onDisk.add(entry.name);
     if (!entry.isDirectory()) continue;
     for (const child of readdirSync(join(local, entry.name), { withFileTypes: true })) {
-      if (child.isFile() && child.name.endsWith('.js')) onDisk.add(`${entry.name}/${child.name}`);
+      if (child.isFile() && /\.(js|cmd)$/i.test(child.name)) onDisk.add(`${entry.name}/${child.name}`);
     }
   }
 
