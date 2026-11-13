@@ -67,6 +67,8 @@ function shouldFormat(file) {
 
 function repoFiles() {
   try {
+    // S4036: the resolved 'git' comes from the runner PATH like every script in this tree; nothing flows into PATH and pinning it per-OS would break the runners.
+    // NOSONAR
     const output = execFileSync('git', ['ls-files', '-z', '--cached', '--others', '--exclude-standard'], { cwd: root, encoding: 'utf8', maxBuffer: 1 << 28 });
     return new Set(output.split('\0').filter(Boolean));
   } catch {

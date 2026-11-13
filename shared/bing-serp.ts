@@ -127,9 +127,10 @@ export function parseBingSerp({ text = '', links = [] }: SerpPage = {}, { curren
     if (nonDisplay.length) {
       title = (nonDisplay[nonDisplay.length - 1] ?? '').replace(/\s+/g, ' ').trim().slice(0, 300);
     } else {
-      title = (group.texts[group.texts.length - 1] ?? '')
-        .replace(/›.*$/, '')
-        .replace(/https?:\/\/\S+/g, '')
+      title = (group.texts[group.texts.length - 1] ?? '');
+      const arrow = title.indexOf('›');
+      if (arrow >= 0) title = title.slice(0, arrow);
+      title = title.replace(/https?:\/\/\S+/g, '')
         .replace(/\s+/g, ' ')
         .trim()
         .slice(0, 300);

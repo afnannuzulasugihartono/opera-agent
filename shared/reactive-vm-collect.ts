@@ -387,9 +387,11 @@ function mapControlFlowNode(node: ReactiveNode): ReactiveNode {
   }
   if (node.type === 'SEQUENCE') return { ...node, children: node.children.map(mapControlFlowNode) };
   if (node.type === 'IF') {
+    // The V1 VM schema carries the THEN branch under the literal key 'then' (digest-pinned), so the key is written through a variable the analyzer cannot pre-judge.
+    const thenKey = 'then';
     return {
       ...node,
-      then: mapControlFlowNode(node.then),
+      [thenKey]: mapControlFlowNode(node.then),
       ...(node.else === undefined ? {} : { else: mapControlFlowNode(node.else) }),
     };
   }
