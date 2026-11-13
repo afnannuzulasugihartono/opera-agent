@@ -28,6 +28,7 @@ const ENUMERATED = [
   'docs/store/store-manifest.json',
   'package.json',
   'local/package.json',
+  'package-lock.json',
   'scripts/verify/check.mjs',
   'hosted/functions/opera-agent-mcp/index.ts',
   'tests/extension/burst-atomic-actions.test.mjs',
