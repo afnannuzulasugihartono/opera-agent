@@ -50,7 +50,7 @@ jobs:
       - name: Build the shared core
         shell: bash
         run: |
-          npm ci --no-audit --no-fund
+          npm install --ignore-scripts --no-audit --no-fund
           npm run build:shared
 
       - name: The version matches the manifest

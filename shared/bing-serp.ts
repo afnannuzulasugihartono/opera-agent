@@ -128,7 +128,7 @@ export function parseBingSerp({ text = '', links = [] }: SerpPage = {}, { curren
       title = (nonDisplay[nonDisplay.length - 1] ?? '').replace(/\s+/g, ' ').trim().slice(0, 300);
     } else {
       title = (group.texts[group.texts.length - 1] ?? '')
-        .replace(/\s*›.*$/, '')
+        .replace(/›.*$/, '')
         .replace(/https?:\/\/\S+/g, '')
         .replace(/\s+/g, ' ')
         .trim()

@@ -46,7 +46,7 @@ jobs:
         with:
           node-version: 22.20.0
       - name: Install the toolchain
-        run: npm install --no-audit --no-fund
+        run: npm install --ignore-scripts --no-audit --no-fund
       - name: Unit and static tests
         run: |
           npm test
