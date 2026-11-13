@@ -12,6 +12,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
+import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 const repo = path.dirname(path.dirname(path.dirname(fileURLToPath(import.meta.url))));
@@ -137,6 +138,41 @@ test('shared modules import only within shared/', () => {
     for (const target of importsOf(full)) {
       if (target.startsWith('shared/')) continue;
       offenders.push(`shared/${f.name} -> ${target}`);
+    }
+  }
+  assert.deepEqual(offenders, [], offenders.join('\n'));
+});
+
+// WHY A COMPILED COPY IS NOT A SECOND SOURCE.
+// A folder that carries TypeScript is compiled: the .js beside each .ts is an artefact, not a file anyone edits.
+// The failure this rule refuses is the hand-written .js that sits next to a .ts source and drifts from it - the duplicate this whole effort exists to remove.
+// So every .js in such a folder must be untracked (an artefact git does not carry) and must have its .ts source beside it; anything else fails the map.
+
+const GENERATED_ALLOW = [/^local\/lib\//];
+
+const walkFiles = (dir) => {
+  const out = [];
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) out.push(...walkFiles(full));
+    else out.push(full);
+  }
+  return out;
+};
+
+test('an emitted .js has a .ts source beside it and is never tracked', () => {
+  const tracked = new Set(execFileSync('git', ['ls-files'], { cwd: repo, encoding: 'utf8' }).split('\n').filter(Boolean));
+  const offenders = [];
+  for (const folder of ['shared', 'local', 'extension']) {
+    const dir = path.join(repo, folder);
+    if (!fs.existsSync(dir)) continue;
+    const files = walkFiles(dir);
+    if (!files.some((f) => f.endsWith('.ts'))) continue;
+    for (const file of files.filter((f) => f.endsWith('.js'))) {
+      const rel = path.relative(repo, file).split(path.sep).join('/');
+      if (GENERATED_ALLOW.some((re) => re.test(rel))) continue;
+      if (tracked.has(rel)) { offenders.push(`${rel}: a tracked .js in a folder that carries .ts sources`); continue; }
+      if (!fs.existsSync(file.replace(/\.js$/, '.ts'))) offenders.push(`${rel}: an emitted .js with no .ts source beside it`);
     }
   }
   assert.deepEqual(offenders, [], offenders.join('\n'));

@@ -3,8 +3,67 @@
 // @state: the signal kinds, the epochs they group into, and the relevance each epoch produces.
 // @dependencies: delta-first-observation, canonical-order.
 
-import { createDeltaFirstObservationPipeline } from './delta-first-observation.js';
+import { createDeltaFirstObservationPipeline, type DeltaFirstObservationResult, type ReasoningObservation } from './delta-first-observation.js';
 import { codeUnitCompare } from './canonical-order.js';
+
+export interface MultiSignalRelevanceOptions {
+  maxSignalsPerEpoch?: number;
+  maxAffectedKeysPerEpoch?: number;
+  maxDependencyKeys?: number;
+  maxEpochAgeMs?: number;
+  now?: () => number;
+  maxEntitiesPerState?: number;
+  maxViewsPerState?: number;
+  maxStateBytes?: number;
+  maxAgeMs?: number;
+  maxPatchBytes?: number;
+  maxStates?: number;
+}
+
+export interface MultiSignalSignal {
+  type: string;
+  logicalIds: string[];
+  regionIds: string[];
+  waitConditionIds: string[];
+}
+
+export interface EpochSnapshot {
+  signalCount: number;
+  signalTypes: string[];
+  affectedDependencyKeys: string[];
+  overflowed: boolean;
+  overflowReasons: string[];
+  expired: boolean;
+}
+
+export interface RelevanceDecision {
+  decision: 'REASON_REQUIRED' | 'APPLY_AND_CONTINUE' | 'IGNORE_FOR_TASK';
+  reasoningWakeRequired: boolean;
+  reasoningObservation: ReasoningObservation | null;
+  canonicalState: DeltaFirstObservationResult['canonicalState'];
+  epoch: EpochSnapshot;
+  relevance: {
+    contextStatus: 'MISSING' | 'ACCEPTED' | 'INVALID';
+    matchedReasonDependencyKeys: string[];
+    matchedContinueDependencyKeys: string[];
+    safetyReasons: string[];
+  };
+}
+
+export interface MultiSignalRelevancePipeline {
+  recordSignal(identity: unknown, input: unknown): EpochSnapshot;
+  reconcile(identity: unknown, observation: unknown, taskContext: unknown): RelevanceDecision;
+  inspectEpoch(identity: unknown): EpochSnapshot | null;
+  clear(): void;
+}
+
+interface EpochCounter {
+  openedAt: number;
+  signalCount: number;
+  signalTypes: Set<string>;
+  affectedKeys: Set<string>;
+  overflowReasons: Set<string>;
+}
 
 const P3_SIGNAL_TYPES = Object.freeze([
   'ACTION_RESULT',
@@ -30,42 +89,43 @@ const MAX_EPOCH_AGE_MS = 60_000;
 const MAX_ID = 200;
 const DIGEST = /^sha256:[0-9a-f]{64}$/;
 
-function isPlainObject(value) {
+function isPlainObject(value: unknown): value is Record<string, unknown> {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
   const proto = Object.getPrototypeOf(value);
   return proto === Object.prototype || proto === null;
 }
 
-function bounded(value, maximum = MAX_ID) {
+function bounded(value: unknown, maximum: number = MAX_ID): string {
   return String(value ?? '').normalize('NFC').replace(/\s+/g, ' ').trim().slice(0, maximum);
 }
 
-function positiveInteger(value, fallback, maximum) {
-  return Number.isSafeInteger(value) && value > 0 ? Math.min(value, maximum) : fallback;
+function positiveInteger(value: unknown, fallback: number, maximum: number): number {
+  return Number.isSafeInteger(value) && (value as number) > 0 ? Math.min(value as number, maximum) : fallback;
 }
 
-function freeze(value) {
-  if (!value || typeof value !== 'object' || Object.isFrozen(value)) return value;
-  for (const child of Object.values(value)) freeze(child);
-  return Object.freeze(value);
+function freeze<T>(value: T): T {
+  if (!value || typeof value !== 'object' || Object.isFrozen(value as object)) return value;
+  for (const child of Object.values(value as Record<string, unknown>)) freeze(child);
+  return Object.freeze(value as T & object) as T;
 }
 
-function identityKey(identity) {
+function identityKey(identity: unknown): string {
+  const input = (identity ?? {}) as { tenantId?: unknown; deviceId?: unknown; tabId?: unknown; documentGeneration?: unknown; runtimeEpoch?: unknown };
   return JSON.stringify([
-    String(identity?.tenantId ?? ''),
-    String(identity?.deviceId ?? ''),
-    String(identity?.tabId ?? ''),
-    identity?.documentGeneration ?? null,
-    String(identity?.runtimeEpoch ?? ''),
+    String(input.tenantId ?? ''),
+    String(input.deviceId ?? ''),
+    String(input.tabId ?? ''),
+    input.documentGeneration ?? null,
+    String(input.runtimeEpoch ?? ''),
   ]);
 }
 
-function normalizeIdList(value) {
+function normalizeIdList(value: unknown): string[] {
   if (!Array.isArray(value)) return [];
   return [...new Set(value.map((item) => bounded(item)).filter(Boolean))];
 }
 
-function normalizeSignal(input) {
+function normalizeSignal(input: unknown): MultiSignalSignal {
   if (!isPlainObject(input)) throw new TypeError('signal must be a plain object');
   const type = bounded(input.type, 40);
   if (!SIGNAL_TYPES.has(type)) throw new TypeError('signal.type is unsupported');
@@ -78,7 +138,7 @@ function normalizeSignal(input) {
   };
 }
 
-function createEpoch(openedAt) {
+function createEpoch(openedAt: number): EpochCounter {
   return {
     openedAt,
     signalCount: 0,
@@ -88,7 +148,7 @@ function createEpoch(openedAt) {
   };
 }
 
-function addAffected(epoch, key, maximum) {
+function addAffected(epoch: EpochCounter, key: string, maximum: number): void {
   if (epoch.affectedKeys.has(key)) return;
   if (epoch.affectedKeys.size >= maximum) {
     epoch.overflowReasons.add('AFFECTED_KEY_OVERFLOW');
@@ -97,7 +157,7 @@ function addAffected(epoch, key, maximum) {
   epoch.affectedKeys.add(key);
 }
 
-function epochSnapshot(epoch, now, maxEpochAgeMs) {
+function epochSnapshot(epoch: EpochCounter | undefined, now: number, maxEpochAgeMs: number): EpochSnapshot {
   if (!epoch) {
     return freeze({
       signalCount: 0,
@@ -119,9 +179,9 @@ function epochSnapshot(epoch, now, maxEpochAgeMs) {
   });
 }
 
-function dependencyKeySet(input, prefix, validator = null) {
+function dependencyKeySet(input: unknown, prefix: string, validator: ((value: string) => boolean) | null = null): Set<string> {
   if (!Array.isArray(input)) throw new TypeError('dependency list must be an array');
-  const output = new Set();
+  const output = new Set<string>();
   for (const raw of input) {
     const value = bounded(raw);
     if (!value) throw new TypeError('dependency id is invalid');
@@ -131,12 +191,18 @@ function dependencyKeySet(input, prefix, validator = null) {
   return output;
 }
 
-function mergeInto(target, source) {
+function mergeInto<T>(target: Set<T>, source: Set<T>): Set<T> {
   for (const value of source) target.add(value);
   return target;
 }
 
-function normalizeContext(input, maxDependencyKeys) {
+interface NormalizedContext {
+  status: 'MISSING' | 'ACCEPTED' | 'INVALID';
+  reason: Set<string>;
+  continuation: Set<string>;
+}
+
+function normalizeContext(input: unknown, maxDependencyKeys: number): NormalizedContext {
   if (input === undefined || input === null) {
     return { status: 'MISSING', reason: new Set(), continuation: new Set() };
   }
@@ -144,15 +210,15 @@ function normalizeContext(input, maxDependencyKeys) {
     if (!isPlainObject(input)) throw new TypeError('context must be an object');
     if (input.source !== 'ACCEPTED_GOAL_CONSTRAINT_DEPENDENCIES') throw new TypeError('context source is not accepted');
     if (!bounded(input.goalId, 128)) throw new TypeError('goalId is required');
-    if (!Number.isSafeInteger(input.ledgerRevision) || input.ledgerRevision < 1) throw new TypeError('ledgerRevision is invalid');
+    if (!Number.isSafeInteger(input.ledgerRevision) || (input.ledgerRevision as number) < 1) throw new TypeError('ledgerRevision is invalid');
     if (typeof input.ledgerDigest !== 'string' || !DIGEST.test(input.ledgerDigest)) throw new TypeError('ledgerDigest is invalid');
     if (!isPlainObject(input.reasonDependencies) || !isPlainObject(input.continueDependencies)) {
       throw new TypeError('dependency groups are required');
     }
 
-    const reason = new Set();
-    const continuation = new Set();
-    const addGroup = (target, group) => {
+    const reason = new Set<string>();
+    const continuation = new Set<string>();
+    const addGroup = (target: Set<string>, group: Record<string, unknown>) => {
       mergeInto(target, dependencyKeySet(group.entityIds, 'entity'));
       mergeInto(target, dependencyKeySet(group.viewIds, 'view'));
       mergeInto(target, dependencyKeySet(group.waitConditionIds, 'wait'));
@@ -167,38 +233,42 @@ function normalizeContext(input, maxDependencyKeys) {
   }
 }
 
-function semanticAffectedKeys(reasoningObservation) {
-  const keys = new Set();
-  if (reasoningObservation?.kind !== 'COMPACT_PATCH') return keys;
-  const patch = reasoningObservation.patch || {};
-  for (const group of ['insertedEntities', 'updatedEntities', 'movedEntities']) {
-    for (const item of Array.isArray(patch[group]) ? patch[group] : []) {
-      const id = bounded(item?.logicalId);
+function semanticAffectedKeys(reasoningObservation: ReasoningObservation | null): Set<string> {
+  const keys = new Set<string>();
+  if (reasoningObservation?.kind !== 'COMPACT_PATCH' || !isPlainObject(reasoningObservation.patch)) return keys;
+  const patch = reasoningObservation.patch as Record<string, unknown>;
+  for (const groupName of ['insertedEntities', 'updatedEntities', 'movedEntities']) {
+    const list = Array.isArray(patch[groupName]) ? patch[groupName] as unknown[] : [];
+    for (const item of list) {
+      const id = bounded(isPlainObject(item) ? item.logicalId : '');
       if (id) keys.add(`entity:${id}`);
     }
   }
-  for (const raw of Array.isArray(patch.removedLogicalIds) ? patch.removedLogicalIds : []) {
+  const removedEntities = Array.isArray(patch.removedLogicalIds) ? patch.removedLogicalIds as unknown[] : [];
+  for (const raw of removedEntities) {
     const id = bounded(raw);
     if (id) keys.add(`entity:${id}`);
   }
-  for (const group of ['changedViews', 'invalidatedViews']) {
-    for (const item of Array.isArray(patch[group]) ? patch[group] : []) {
-      const id = bounded(item?.regionId);
+  for (const groupName of ['changedViews', 'invalidatedViews']) {
+    const list = Array.isArray(patch[groupName]) ? patch[groupName] as unknown[] : [];
+    for (const item of list) {
+      const id = bounded(isPlainObject(item) ? item.regionId : '');
       if (id) keys.add(`view:${id}`);
     }
   }
-  for (const raw of Array.isArray(patch.removedViewIds) ? patch.removedViewIds : []) {
+  const removedViews = Array.isArray(patch.removedViewIds) ? patch.removedViewIds as unknown[] : [];
+  for (const raw of removedViews) {
     const id = bounded(raw);
     if (id) keys.add(`view:${id}`);
   }
   return keys;
 }
 
-function intersections(affected, dependencies) {
+function intersections(affected: Set<string>, dependencies: Set<string>): string[] {
   return [...affected].filter((key) => dependencies.has(key)).sort(codeUnitCompare);
 }
 
-export function createMultiSignalRelevancePipeline(options = {}) {
+export function createMultiSignalRelevancePipeline(options: MultiSignalRelevanceOptions = {}): MultiSignalRelevancePipeline {
   const maxSignalsPerEpoch = positiveInteger(
     options.maxSignalsPerEpoch,
     DEFAULT_MAX_SIGNALS_PER_EPOCH,
@@ -219,17 +289,17 @@ export function createMultiSignalRelevancePipeline(options = {}) {
     DEFAULT_MAX_EPOCH_AGE_MS,
     MAX_EPOCH_AGE_MS,
   );
-  const now = typeof options.now === 'function' ? options.now : Date.now;
+  const now: () => number = typeof options.now === 'function' ? options.now : Date.now;
   const deltaPipeline = createDeltaFirstObservationPipeline(options);
-  const epochs = new Map();
+  const epochs = new Map<string, EpochCounter>();
 
-  function currentNow() {
+  function currentNow(): number {
     const value = Number(now());
     if (!Number.isFinite(value) || value < 0) throw new TypeError('clock must be finite and non-negative');
     return value;
   }
 
-  function recordSignal(identity, input) {
+  function recordSignal(identity: unknown, input: unknown): EpochSnapshot {
     const signal = normalizeSignal(input);
     const key = identityKey(identity);
     let epoch = epochs.get(key);
@@ -247,15 +317,15 @@ export function createMultiSignalRelevancePipeline(options = {}) {
     return epochSnapshot(epoch, currentNow(), maxEpochAgeMs);
   }
 
-  function inspectEpoch(identity) {
+  function inspectEpoch(identity: unknown): EpochSnapshot | null {
     const epoch = epochs.get(identityKey(identity));
     return epoch ? epochSnapshot(epoch, currentNow(), maxEpochAgeMs) : null;
   }
 
-  function reconcile(identity, observation, taskContext) {
+  function reconcile(identity: unknown, observation: unknown, taskContext: unknown): RelevanceDecision {
     const key = identityKey(identity);
     const timestamp = currentNow();
-    const epoch = epochs.get(key) || null;
+    const epoch = epochs.get(key) || undefined;
     const epochView = epochSnapshot(epoch, timestamp, maxEpochAgeMs);
     epochs.delete(key);
 
@@ -269,7 +339,7 @@ export function createMultiSignalRelevancePipeline(options = {}) {
     for (const type of epochView.signalTypes) {
       if (SAFETY_SIGNAL_TYPES.has(type)) safetyReasons.add(type);
     }
-    if (p2.reasoningObservation?.resetRequired === true || p2.canonicalState === null) {
+    if (p2.reasoningObservation.resetRequired === true || p2.canonicalState === null) {
       safetyReasons.add('P2_RESET_REQUIRED');
     }
 
@@ -280,8 +350,8 @@ export function createMultiSignalRelevancePipeline(options = {}) {
       ? intersections(affected, context.continuation)
       : [];
 
-    let decision;
-    if (p2.reasoningObservation?.kind === 'FULL_SNAPSHOT') decision = 'REASON_REQUIRED';
+    let decision: RelevanceDecision['decision'];
+    if (p2.reasoningObservation.kind === 'FULL_SNAPSHOT') decision = 'REASON_REQUIRED';
     else if (safetyReasons.size > 0) decision = 'REASON_REQUIRED';
     else if (context.status !== 'ACCEPTED') decision = 'REASON_REQUIRED';
     else if (matchedReasonDependencyKeys.length > 0) decision = 'REASON_REQUIRED';
@@ -304,7 +374,7 @@ export function createMultiSignalRelevancePipeline(options = {}) {
     });
   }
 
-  function clear() {
+  function clear(): void {
     epochs.clear();
     deltaPipeline.clear();
   }

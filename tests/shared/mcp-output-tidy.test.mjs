@@ -9,7 +9,7 @@ import { readFileSync } from 'node:fs';
 import { stripTypeScriptTypes } from 'node:module';
 
 const source = stripTypeScriptTypes(readFileSync(
-  new URL('../../shared/tidy.js', import.meta.url), 'utf8'
+  new URL('../../shared/tidy.ts', import.meta.url), 'utf8'
 ));
 
 const { tidyForAi } = await import(

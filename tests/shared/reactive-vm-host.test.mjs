@@ -2,6 +2,7 @@
 // @title: reactive-vm-host — the VM host's state contract.
 // @state: 8 locks; idempotency key, shape, secrets, cycles, clock, limits.
 // @dependencies: node:test, assert, fs, shared/reactive-vm-host.js.
+// The import loads the built artifact pretest emits; the source text the assertions read is the .ts file.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -16,7 +17,7 @@ import {
 
 const DIGEST = `sha256:${'a'.repeat(64)}`;
 const OTHER = `sha256:${'b'.repeat(64)}`;
-const source = () => fs.readFileSync(new URL('../../shared/reactive-vm-host.js', import.meta.url), 'utf8');
+const source = () => fs.readFileSync(new URL('../../shared/reactive-vm-host.ts', import.meta.url), 'utf8');
 
 const idempotency = (over = {}) => ({
   tenantId: 'tenant-1', runId: 'run-1', programDigest: DIGEST,
@@ -75,7 +76,7 @@ test('two guards are unreachable by any input, so they are locked on the source'
   assert.match(source(), /expected\.some\(\(key\) => !\(key in input\)\)/,
     'the missing-key half is present');
 
-  assert.match(source(), /SECRET_FIELD\.test\(key\)/,
+  assert.match(source(), /SECRET_FIELD\.test\(String\(key\)\)/,
     'the field-name half of the secret scan is present');
 
   assert.equal(await codeOf(() => deriveVmEffectIdempotencyKey(idempotency({ password: null }))),

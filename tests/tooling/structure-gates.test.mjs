@@ -42,7 +42,7 @@ const WORKER_CHROME_REQUIRED_EXCEPTIONS = new Set(['burst.js']);
 
 test('extension/lib is free of chrome.* as code, except the written exception', async () => {
   const dir = new URL('extension/lib/', root);
-  const names = (await readdir(dir)).filter((n) => n.endsWith('.js')).sort();
+  const names = (await readdir(dir)).filter((n) => /\.(js|ts)$/.test(n)).sort();
   const offenders = [];
   for (const name of names) {
     if (CHROME_FREE_EXCEPTIONS.has(name)) continue;
@@ -70,7 +70,7 @@ test('the documented chrome.* exceptions are still real, and no more have crept 
 
 test('a worker module with no chrome.* belongs in lib/, with one written exception', async () => {
   const dir = new URL('extension/worker/', root);
-  const names = (await readdir(dir)).filter((n) => n.endsWith('.js')).sort();
+  const names = (await readdir(dir)).filter((n) => /\.(js|ts)$/.test(n)).sort();
   const offenders = [];
   for (const name of names) {
     if (WORKER_CHROME_REQUIRED_EXCEPTIONS.has(name)) continue;
@@ -91,7 +91,7 @@ test('worker modules stay under their ceiling, and background.js does not grow',
 
   let names;
   try {
-    names = (await readdir(worker)).filter((n) => n.endsWith('.js')).sort();
+    names = (await readdir(worker)).filter((n) => /\.(js|ts)$/.test(n)).sort();
   } catch (error) {
     if (error?.code !== 'ENOENT') throw error;
     names = [];

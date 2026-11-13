@@ -13,12 +13,325 @@ import {
   createControlFlowVm,
   validateControlFlowProgram,
 } from './reactive-vm-control-flow.js';
-import { makeGuards, SECRET_FIELD } from './reactive-vm-core.js';
+import { makeGuards, type Guards } from './reactive-vm-core.js';
 
 // WHY A GUARD FACTORY AND NOT A LIBRARY OF NINETY EXPORTS.
 // The collect, control-flow and host modules used to carry these helpers verbatim; the factory hands each module the exact same guards with its own default code, and the semantics stay byte-identical.
 
-const { fail, isPlainObject, assertPlainObject, assertExactKeys, byteLength, assertSafeInteger, cloneJson, deepFreeze, assertNoSensitive } = makeGuards('INVALID_SEMANTICS');
+// WHY THE GUARDS ARE RE-TYPED HERE.
+// The factory hands back untyped helpers, and this module is where a JSON value becomes a checked shape: `fail` is declared never-returning so the compiler trusts that a guarded branch does not continue, and the object checks are declared as assertion functions so a checked value narrows.
+// Each adapter forwards to the shared guard, so the runtime is unchanged.
+
+const guards: Guards = makeGuards('INVALID_SEMANTICS');
+
+const fail: (code: string, message: string, details?: unknown) => never = (code, message, details) => {
+  guards.fail(code, message, details);
+  throw new Error('unreachable: the guard factory always throws');
+};
+
+function isPlainObject<T>(value: T): value is T & Record<string, unknown> {
+  return guards.isPlainObject(value);
+}
+
+function assertPlainObject<T>(value: T, path: string): asserts value is T & Record<string, unknown> {
+  guards.assertPlainObject(value, path);
+}
+
+function assertExactKeys<T>(value: T, required: readonly string[], optional: readonly string[], path: string): asserts value is T & Record<string, unknown> {
+  guards.assertExactKeys(value, [...required], [...optional], path);
+}
+
+function assertSafeInteger<T>(value: T, path: string, min: number, max: number): asserts value is T & number {
+  guards.assertSafeInteger(value, path, min, max);
+}
+
+const byteLength: (value: string) => number = (value) => guards.byteLength(value);
+
+// The factory's cloneJson returns unknown by design; the JSON it produced is by construction the same value T was before serialization.
+
+function cloneJson<T>(value: unknown, path?: string): T {
+  return guards.cloneJson(value, path) as T;
+}
+const deepFreeze: <T>(value: T) => T = (value) => guards.deepFreeze(value);
+const assertNoSensitive: (value: unknown, path?: string) => void = (value, path) => guards.assertNoSensitive(value, path);
+
+// WHY THE SHAPES ARE STRUCTURAL.
+// Every value here arrives as JSON that this module checks with the guards above, so the types name the checked shape, `unknown` marks the true edge, and the checks themselves stay the runtime truth.
+
+type JsonObject = Record<string, unknown>;
+type VmPathSegment = string | number;
+
+type ReactiveProgram = {
+  schemaVersion: string;
+  programId: string;
+  tenantId: string;
+  goalId: string;
+  goalRevision: number;
+  target: ProgramTarget;
+  budgets: ProgramBudgets;
+  root: ReactiveNode;
+  programDigest: string;
+};
+
+interface ProgramTarget {
+  deviceId: string;
+  tabId: number;
+  documentGeneration?: string;
+}
+
+interface ProgramBudgets {
+  collectionItemsPerBinding: number;
+  bindings: number;
+  persistedCheckpointBytes: number;
+}
+
+interface VmExpression {
+  op: string;
+  value?: unknown;
+  path?: unknown;
+  args?: VmExpression[];
+  arg?: VmExpression;
+}
+
+type SequenceNode = { type: 'SEQUENCE'; children: ReactiveNode[] };
+type IfNode = { type: 'IF'; predicate: VmExpression; then: ReactiveNode; else?: ReactiveNode };
+type LoopNode = { type: 'LOOP'; body: ReactiveNode; maxIterations: number };
+type UntilNode = { type: 'UNTIL'; predicate: VmExpression; body: ReactiveNode; maxIterations: number };
+type WaitEventNode = { type: 'WAIT_EVENT'; observation: { method: string; arguments: JsonObject }; predicate: VmExpression; intervalMs: number; timeoutMs: number };
+type AssertNode = { type: 'ASSERT'; predicate: VmExpression; onFailure: string };
+type CollectNode = { type: 'COLLECT'; source: VmExpression; projection: string[]; destination: string; maxItems: number };
+type DedupNode = { type: 'DEDUP'; source: VmExpression; keySpec: string[]; destination: string };
+type RetryNode = { type: 'RETRY'; body: ReactiveNode; policy: { attempts: number; delayMs: number } };
+type ReturnNode = { type: 'RETURN'; valueSpec: VmExpression };
+type CommandNode = { type: 'COMMAND'; method: string; arguments: JsonObject; resultBinding: string };
+type SuspendNode = { type: 'SUSPEND'; reason: string; contextSpec: JsonObject };
+
+type ReactiveNode =
+  | SequenceNode
+  | IfNode
+  | LoopNode
+  | UntilNode
+  | WaitEventNode
+  | AssertNode
+  | CollectNode
+  | DedupNode
+  | RetryNode
+  | ReturnNode
+  | CommandNode
+  | SuspendNode;
+
+interface ControlFrame {
+  kind: string;
+  parentPath: VmPathSegment[];
+  iteration?: number;
+  attempt?: number;
+  nextIndex?: number;
+  notBeforeMs?: number | null;
+}
+
+interface PendingEffect {
+  requestDigest: string;
+  purpose: string;
+  method: string;
+  arguments: JsonObject;
+  target: ProgramTarget;
+  resultBinding: string | null;
+  nodePath: VmPathSegment[];
+  ordinal: number;
+}
+
+interface PendingDigestHost {
+  runId: string;
+  frames: ControlFrame[];
+  pendingEffect: PendingEffect | null;
+}
+
+interface EffectResult {
+  requestDigest: string;
+  method: string;
+  ok: boolean;
+  provenance: unknown;
+  value: unknown;
+  errorCode?: string;
+}
+
+interface AdvanceCollectInput {
+  logicalNowMs: number;
+  cancelled?: boolean;
+  effectResult?: EffectResult;
+}
+
+interface CreateCollectOptions {
+  runId: string;
+  tenantId: string;
+  goalRevision: number;
+  logicalNowMs: number;
+  deadlineAtMs?: number;
+  initialBindings?: JsonObject | null;
+  initialObservationMeta?: unknown;
+}
+
+interface ObservationMetaEntry {
+  method: string;
+  logicalNowMs: number;
+  provenance: JsonObject | null;
+  observationKind: string;
+  scopeKind: string;
+  boundaryStable: boolean;
+  dependencyFingerprint: string;
+  dependencyKinds: string[];
+}
+
+interface CollectionDependencies {
+  sourceBinding: string | null;
+  fingerprint: string | null;
+  kinds: string[];
+  documentGeneration: unknown;
+}
+
+interface CollectionCompletion {
+  status: string;
+  scopeKind: string;
+  completeWithinScope: boolean;
+  universal: boolean;
+  unresolved: string[];
+  limits: string[];
+}
+
+interface Invalidation {
+  invalidated: boolean;
+  causes: string[];
+}
+
+interface Ambiguity {
+  kind: string;
+  indexes: number[];
+  keyTier?: string;
+}
+
+interface DedupSummary {
+  keySpec: string[];
+  duplicatesRemoved: number;
+  ambiguityCount: number;
+  canonicalBeforeFingerprint: boolean;
+}
+
+type Collection = {
+  schemaVersion: string;
+  destination: string;
+  items: JsonObject[];
+  sourceCount: number;
+  itemCount: number;
+  truncated: boolean;
+  remainingCount: number;
+  ambiguities: Ambiguity[];
+  provenance: JsonObject | null;
+  observationKind: string;
+  dependencies: CollectionDependencies;
+  completion: CollectionCompletion;
+  invalidation: Invalidation | null;
+  dedup?: DedupSummary;
+  collectionDigest: string;
+};
+
+interface CollectionChange {
+  invalidated: boolean;
+  collection: Collection;
+}
+
+interface CanonicalIdentity {
+  tier: string;
+  field: string;
+  key: string;
+}
+
+interface CollectionMeta {
+  provenance: JsonObject | null;
+  observationKind: string;
+  scopeKind: string;
+  boundaryStable: boolean;
+  dependencies: CollectionDependencies;
+}
+
+interface CollectOptions {
+  maxItems?: number;
+  collectionBudget?: number;
+  destination?: string;
+  sourceBinding?: string | null;
+  observationMeta?: ObservationMetaEntry | null | undefined;
+  existing?: Collection | null;
+}
+
+interface DedupOptions {
+  collectionBudget?: number;
+  destination?: string;
+}
+
+interface ObservationChange {
+  dependencyFingerprint: string | null;
+  dependencyKinds: string[];
+  documentGeneration: unknown;
+}
+
+interface CompletionInput {
+  truncated: boolean;
+  ambiguityCount: number;
+  boundaryStable: boolean;
+  scopeKind: string;
+  inheritedPartial?: boolean;
+}
+
+interface CollectCounters {
+  executedNodes: number;
+  commandLeaves: number;
+  totalIterations: number;
+  cumulativeWaitMs: number;
+  retryAttempts: number;
+}
+
+interface Suspension {
+  reason: string;
+  context: JsonObject;
+}
+
+export interface VmTransition {
+  kind: string;
+  request?: { requestDigest: string };
+  requestDigest?: string | null;
+  resultDigest?: string | null;
+  [key: string]: unknown;
+}
+
+export interface CollectState {
+  schemaVersion: string;
+  runId: string;
+  programDigest: string;
+  tenantId: string;
+  goalId: string;
+  goalRevision: number;
+  target: ProgramTarget;
+  status: string;
+  cursorPath: VmPathSegment[] | null;
+  frames: ControlFrame[];
+  bindings: Record<string, unknown>;
+  counters: CollectCounters;
+  pendingEffect: PendingEffect | null;
+  waitState: unknown;
+  result: unknown;
+  suspension: Suspension | null;
+  resultDigest: string | null;
+  deadlineAtMs: number;
+  lastLogicalNowMs: number;
+  transitionIndex: number;
+  observationMeta: Record<string, ObservationMetaEntry>;
+}
+
+type CollectInnerState = Omit<CollectState, 'observationMeta'> & { observationMeta?: unknown };
+
+export interface CollectStep {
+  state: CollectState;
+  transition: VmTransition;
+}
 
 const CONTROL_FLOW_STATE_VERSION = 'OA_REACTIVE_VM_CONTROL_FLOW_STATE_V1';
 const STATE_VERSION = 'OA_REACTIVE_VM_COLLECT_STATE_V1';
@@ -30,8 +343,8 @@ const TERMINAL_STATUSES = new Set(['RETURNED', 'SUSPENDED', 'LIMIT_REACHED', 'FA
 const EXECUTABLE_NODES = new Set([
   'SEQUENCE', 'IF', 'LOOP', 'UNTIL', 'WAIT_EVENT', 'ASSERT', 'COLLECT', 'DEDUP', 'RETRY', 'RETURN', 'COMMAND', 'SUSPEND',
 ]);
-const SCOPE_KINDS = new Set(['LOADED_DOM', 'VISIBLE_VIEWPORT', 'DECLARED_BOUNDED_FEED', 'OBSERVED_STATE', 'SCREENSHOT']);
-const OBSERVATION_KINDS = new Set(['DIRECT_OBSERVATION', 'SCREENSHOT', 'BOUNDARY_OBSERVATION']);
+const SCOPE_KINDS: ReadonlySet<unknown> = new Set(['LOADED_DOM', 'VISIBLE_VIEWPORT', 'DECLARED_BOUNDED_FEED', 'OBSERVED_STATE', 'SCREENSHOT']);
+const OBSERVATION_KINDS: ReadonlySet<unknown> = new Set(['DIRECT_OBSERVATION', 'SCREENSHOT', 'BOUNDARY_OBSERVATION']);
 const DEPENDENCY_KINDS = new Set(['ENTITY_SET', 'SCROLL', 'VIEWPORT', 'ZOOM', 'DOCUMENT']);
 const CANONICAL_KEY_FIELDS = new Set(['logicalId', 'canonicalId']);
 const FINGERPRINT_FIELDS = new Set(['semanticFingerprint', 'identityFingerprint', 'bindingHash']);
@@ -39,15 +352,17 @@ const WEAK_KEY_FIELDS = new Set([
   'name', 'label', 'text', 'x', 'y', 'width', 'height', 'rect', 'inViewport',
   'geometryRevision', 'index', 'position',
 ]);
-function assertSafeBindingName(value, path) {
+function assertSafeBindingName(value: unknown, path: string): asserts value is string {
   if (typeof value !== 'string' || !SAFE_SEGMENT.test(value) || FORBIDDEN_PATH_SEGMENTS.has(value)) {
     fail('INVALID_SEMANTICS', `${path} is not a safe binding name.`);
   }
 }
 
-function nodeAtPath(program, path) {
+// The cursor walks plain JSON whose segments are each checked to exist before the step, so the two casts here name verified facts: the segment lookup, and the instruction type the plain-object check demanded.
+
+function nodeAtPath(program: ReactiveProgram, path: readonly VmPathSegment[] | null): ReactiveNode {
   if (!Array.isArray(path) || path.length < 1 || path[0] !== 'root') fail('INVALID_SEMANTICS', 'VM cursor path is invalid.');
-  let current = program;
+  let current: JsonObject = program;
   for (const segment of path) {
     if (typeof segment === 'number') {
       if (!Array.isArray(current) || !Number.isSafeInteger(segment) || segment < 0 || segment >= current.length) {
@@ -60,32 +375,35 @@ function nodeAtPath(program, path) {
         || !Object.prototype.hasOwnProperty.call(current, segment)) {
       fail('INVALID_SEMANTICS', 'VM cursor segment is invalid.');
     }
-    current = current[segment];
+    current = current[segment] as JsonObject;
   }
   if (!isPlainObject(current) || typeof current.type !== 'string') fail('INVALID_SEMANTICS', 'VM cursor does not reference an instruction.');
-  return current;
+  return current as ReactiveNode;
 }
 
-function mapControlFlowNode(node) {
+function mapControlFlowNode(node: ReactiveNode): ReactiveNode {
   if (node.type === 'COLLECT' || node.type === 'DEDUP') {
     return { type: 'ASSERT', predicate: { op: 'CONST', value: true }, onFailure: 'FAIL' };
   }
   if (node.type === 'SEQUENCE') return { ...node, children: node.children.map(mapControlFlowNode) };
   if (node.type === 'IF') {
+    // WHY the THEN branch is written exactly as the schema pins it.
+    // The V1 VM schema carries the THEN branch under the literal key 'then'; every digest and VM test pins those bytes, so the key is not negotiable.
+    const thenKey = 'then';
     return {
       ...node,
-      then: mapControlFlowNode(node.then),
+      [thenKey]: mapControlFlowNode(node.then),
       ...(node.else === undefined ? {} : { else: mapControlFlowNode(node.else) }),
     };
   }
   if (node.type === 'LOOP' || node.type === 'UNTIL' || node.type === 'RETRY') {
     return { ...node, body: mapControlFlowNode(node.body) };
   }
-  return cloneJson(node);
+  return cloneJson<ReactiveNode>(node);
 }
 
-async function shadowControlFlowProgram(program) {
-  const shadow = cloneJson(program);
+async function shadowControlFlowProgram(program: ReactiveProgram): Promise<ReactiveProgram> {
+  const shadow = cloneJson<ReactiveProgram>(program);
   shadow.root = mapControlFlowNode(program.root);
   shadow.programDigest = '';
   const { programDigest: _ignored, ...body } = shadow;
@@ -93,7 +411,7 @@ async function shadowControlFlowProgram(program) {
   return shadow;
 }
 
-function walk7DNode(node, budgets, path = 'program.root') {
+function walk7DNode(node: ReactiveNode, budgets: ProgramBudgets, path = 'program.root'): void {
   if (!EXECUTABLE_NODES.has(node.type)) fail('INVALID_SEMANTICS', `${node.type} is not executable in Checkpoint 7D.`);
   if (node.type === 'COLLECT') {
     if (node.maxItems > budgets.collectionItemsPerBinding) {
@@ -115,24 +433,25 @@ function walk7DNode(node, budgets, path = 'program.root') {
   }
 }
 
-export async function validateCollectProgram(programInput) {
-  const program = await validateReactiveProgram(programInput);
+export async function validateCollectProgram(programInput: unknown): Promise<ReactiveProgram> {
+  // validateReactiveProgram returns the program it produced; this cast names that.
+  const program = (await validateReactiveProgram(programInput)) as ReactiveProgram;
   walk7DNode(program.root, program.budgets);
   const shadow = await shadowControlFlowProgram(program);
   await validateControlFlowProgram(shadow);
   return program;
 }
 
-function minimalProvenance(input) {
+function minimalProvenance(input: unknown): JsonObject | null {
   if (!isPlainObject(input)) return null;
-  const output = {};
+  const output: JsonObject = {};
   for (const key of ['tenantId', 'deviceId', 'tabId', 'documentGeneration']) {
     if (Object.prototype.hasOwnProperty.call(input, key)) output[key] = input[key];
   }
   return output;
 }
 
-function validateProvenance(provenance, program, path) {
+function validateProvenance(provenance: unknown, program: ReactiveProgram, path: string): void {
   assertPlainObject(provenance, path);
   if (provenance.tenantId !== program.tenantId) fail('CROSS_TENANT', `${path} belongs to another tenant.`);
   if (provenance.deviceId !== program.target.deviceId) fail('CROSS_DEVICE', `${path} belongs to another device.`);
@@ -143,7 +462,7 @@ function validateProvenance(provenance, program, path) {
   }
 }
 
-function validateObservationMetaEntry(meta, program, path) {
+function validateObservationMetaEntry(meta: unknown, program: ReactiveProgram, path: string): void {
   assertExactKeys(
     meta,
     ['method', 'logicalNowMs', 'provenance', 'observationKind', 'scopeKind', 'boundaryStable', 'dependencyFingerprint', 'dependencyKinds'],
@@ -156,7 +475,7 @@ function validateObservationMetaEntry(meta, program, path) {
   if (!OBSERVATION_KINDS.has(meta.observationKind)) fail('INVALID_SEMANTICS', `${path}.observationKind is invalid.`);
   if (!SCOPE_KINDS.has(meta.scopeKind)) fail('INVALID_SEMANTICS', `${path}.scopeKind is invalid.`);
   if (typeof meta.boundaryStable !== 'boolean') fail('INVALID_SEMANTICS', `${path}.boundaryStable must be boolean.`);
-  if (!DIGEST_RE.test(meta.dependencyFingerprint)) fail('INVALID_SEMANTICS', `${path}.dependencyFingerprint is invalid.`);
+  if (!DIGEST_RE.test(String(meta.dependencyFingerprint))) fail('INVALID_SEMANTICS', `${path}.dependencyFingerprint is invalid.`);
   if (!Array.isArray(meta.dependencyKinds) || meta.dependencyKinds.length > 5
       || meta.dependencyKinds.some((item) => !DEPENDENCY_KINDS.has(item))) {
     fail('INVALID_SEMANTICS', `${path}.dependencyKinds is invalid.`);
@@ -164,7 +483,7 @@ function validateObservationMetaEntry(meta, program, path) {
   assertNoSensitive(meta, path);
 }
 
-function validateObservationMeta(meta, program, path = 'state.observationMeta') {
+function validateObservationMeta(meta: unknown, program: ReactiveProgram, path = 'state.observationMeta'): void {
   assertPlainObject(meta, path);
   if (Object.keys(meta).length > program.budgets.bindings) fail('BINDING_BUDGET_EXCEEDED', `${path} exceeds the binding budget.`);
   for (const [binding, value] of Object.entries(meta)) {
@@ -173,12 +492,12 @@ function validateObservationMeta(meta, program, path = 'state.observationMeta') 
   }
 }
 
-function assertUnifiedBindingBudget(bindings, meta, program, path) {
+function assertUnifiedBindingBudget(bindings: JsonObject | null | undefined, meta: JsonObject | null | undefined, program: ReactiveProgram, path: string): void {
   const keys = new Set([...Object.keys(bindings ?? {}), ...Object.keys(meta ?? {})]);
   if (keys.size > program.budgets.bindings) fail('BINDING_BUDGET_EXCEEDED', `${path} bindings and observation metadata exceed the binding budget.`);
 }
 
-function controlVector(frames) {
+function controlVector(frames: ControlFrame[]): JsonObject[] {
   return frames
     .filter((frame) => ['LOOP', 'UNTIL', 'RETRY'].includes(frame.kind))
     .map((frame) => ({
@@ -189,7 +508,7 @@ function controlVector(frames) {
     }));
 }
 
-function effectDigestBody(programDigest, state, pending) {
+function effectDigestBody(programDigest: string, state: { runId: string; frames: ControlFrame[] }, pending: PendingEffect): JsonObject {
   return {
     programDigest,
     runId: state.runId,
@@ -203,34 +522,34 @@ function effectDigestBody(programDigest, state, pending) {
   };
 }
 
-async function rewritePendingDigest(state, programDigest) {
+async function rewritePendingDigest<T extends PendingDigestHost>(state: T, programDigest: string): Promise<T> {
   if (state.pendingEffect === null) return state;
-  const next = cloneJson(state);
-  next.pendingEffect.requestDigest = await digestCanonical(effectDigestBody(programDigest, next, next.pendingEffect));
+  const next = cloneJson<T>(state);
+  next.pendingEffect!.requestDigest = await digestCanonical(effectDigestBody(programDigest, next, next.pendingEffect!));
   return next;
 }
 
-async function toInnerState(program, shadow, publicState) {
+async function toInnerState(program: ReactiveProgram, shadow: ReactiveProgram, publicState: unknown): Promise<CollectInnerState> {
   assertPlainObject(publicState, 'state');
   if (publicState.schemaVersion !== STATE_VERSION) fail('INVALID_SEMANTICS', 'state.schemaVersion is unsupported for Checkpoint 7D.');
   if (publicState.programDigest !== program.programDigest) fail('PROGRAM_DIGEST_MISMATCH', 'State program digest differs from program.');
   validateObservationMeta(publicState.observationMeta, program);
-  const inner = cloneJson(publicState);
+  const inner = cloneJson<CollectInnerState>(publicState);
   delete inner.observationMeta;
   inner.schemaVersion = CONTROL_FLOW_STATE_VERSION;
   inner.programDigest = shadow.programDigest;
   return rewritePendingDigest(inner, shadow.programDigest);
 }
 
-async function terminalDigest(state) {
+async function terminalDigest(state: CollectState): Promise<string> {
   return digestCanonical({ status: state.status, result: state.result, suspension: state.suspension });
 }
 
-async function fromInnerState(program, innerState, observationMeta, previousPublicPending = null) {
-  let state = cloneJson(innerState);
+async function fromInnerState(program: ReactiveProgram, innerState: unknown, observationMeta: Record<string, ObservationMetaEntry>, previousPublicPending: PendingEffect | null = null): Promise<CollectState> {
+  let state = cloneJson<CollectState>(innerState);
   state.schemaVersion = STATE_VERSION;
   state.programDigest = program.programDigest;
-  state.observationMeta = cloneJson(observationMeta);
+  state.observationMeta = cloneJson<Record<string, ObservationMetaEntry>>(observationMeta);
   if (state.pendingEffect !== null) state = await rewritePendingDigest(state, program.programDigest);
   if (TERMINAL_STATUSES.has(state.status)) {
     const context = state.suspension?.context;
@@ -243,10 +562,12 @@ async function fromInnerState(program, innerState, observationMeta, previousPubl
   return deepFreeze(state);
 }
 
-async function externalizeTransition(program, innerTransition, publicState, previousPublicPending = null) {
-  const transition = cloneJson(innerTransition);
+// externalizeTransition replays a transition whose request digest is rewritten from the public state when pending; an EFFECT_REQUEST always carries the request it was cloned from.
+
+async function externalizeTransition(_program: ReactiveProgram, innerTransition: unknown, publicState: CollectState, previousPublicPending: PendingEffect | null = null): Promise<VmTransition> {
+  const transition = cloneJson<VmTransition>(innerTransition);
   if (transition.kind === 'EFFECT_REQUEST' && publicState.pendingEffect) {
-    transition.request.requestDigest = publicState.pendingEffect.requestDigest;
+    transition.request!.requestDigest = publicState.pendingEffect.requestDigest;
   }
   if (transition.kind === 'AWAITING_EFFECT' && publicState.pendingEffect) {
     transition.requestDigest = publicState.pendingEffect.requestDigest;
@@ -258,23 +579,25 @@ async function externalizeTransition(program, innerTransition, publicState, prev
   return deepFreeze(transition);
 }
 
-function sourceBindingForExpression(expr) {
+function sourceBindingForExpression(expr: VmExpression): string | null {
   if (!expr || expr.op !== 'PATH' || !Array.isArray(expr.path) || typeof expr.path[0] !== 'string') return null;
   return expr.path[0];
 }
 
-function normalizeSource(source, path = 'collection source') {
+// normalizeSource accepts a raw array or a checked collection envelope; when the version and item array are both checked, the envelope is a collection.
+
+function normalizeSource(source: unknown, path = 'collection source'): { items: JsonObject[]; inherited: Collection | null } {
   if (Array.isArray(source)) return { items: source, inherited: null };
   if (isPlainObject(source) && source.schemaVersion === COLLECTION_VERSION && Array.isArray(source.items)) {
-    return { items: source.items, inherited: source };
+    return { items: source.items, inherited: source as Collection };
   }
   if (isPlainObject(source) && Array.isArray(source.items)) return { items: source.items, inherited: null };
   fail('INVALID_SEMANTICS', `${path} must resolve to an array or a bounded item envelope.`);
 }
 
-function projectedItem(item, projection) {
+function projectedItem(item: unknown, projection: string[]): JsonObject {
   assertPlainObject(item, 'collection item');
-  const output = {};
+  const output: JsonObject = {};
   for (const field of projection) {
     if (Object.prototype.hasOwnProperty.call(item, field)) output[field] = cloneJson(item[field], `collection item.${field}`);
   }
@@ -282,15 +605,17 @@ function projectedItem(item, projection) {
   return output;
 }
 
-function ambiguityFromItems(items) {
-  const ambiguities = [];
+function ambiguityFromItems(items: JsonObject[]): Ambiguity[] {
+  const ambiguities: Ambiguity[] = [];
   items.forEach((item, index) => {
     if (item.identityAmbiguous === true) ambiguities.push({ kind: 'SOURCE_IDENTITY_AMBIGUOUS', indexes: [index] });
   });
   return ambiguities;
 }
 
-function normalizeCollectionMeta(observationMeta, sourceBinding) {
+// Observation metadata reaches this function only through validateObservationMetaEntry, which asserts a non-null plain provenance before storing it — the provenance bang and its documentGeneration read rest on that fact.
+
+function normalizeCollectionMeta(observationMeta: ObservationMetaEntry | null | undefined, sourceBinding: string | null): CollectionMeta {
   if (!observationMeta) {
     return {
       provenance: null,
@@ -314,13 +639,13 @@ function normalizeCollectionMeta(observationMeta, sourceBinding) {
       sourceBinding: sourceBinding ?? null,
       fingerprint: observationMeta.dependencyFingerprint,
       kinds: [...observationMeta.dependencyKinds],
-      documentGeneration: observationMeta.provenance.documentGeneration ?? null,
+      documentGeneration: observationMeta.provenance!.documentGeneration ?? null,
     },
   };
 }
 
-function completionFor({ truncated, ambiguityCount, boundaryStable, scopeKind, inheritedPartial = false }) {
-  const unresolved = [];
+function completionFor({ truncated, ambiguityCount, boundaryStable, scopeKind, inheritedPartial = false }: CompletionInput): CollectionCompletion {
+  const unresolved: string[] = [];
   if (truncated) unresolved.push('COLLECTION_CAP_REACHED');
   if (ambiguityCount) unresolved.push(`IDENTITY_AMBIGUITIES:${ambiguityCount}`);
   if (!boundaryStable) unresolved.push('STABLE_BOUNDARY_NOT_OBSERVED');
@@ -337,12 +662,7 @@ function completionFor({ truncated, ambiguityCount, boundaryStable, scopeKind, i
   };
 }
 
-async function collectionDigest(collection) {
-  const { collectionDigest: _ignored, ...body } = collection;
-  return digestCanonical(body);
-}
-
-function collectionDigestSyncPlaceholder(collection) {
+function collectionDigestSyncPlaceholder(collection: unknown): string {
   const serialized = canonicalJson(collection);
   let first = 2166136261;
   let second = 5381;
@@ -356,8 +676,8 @@ function collectionDigestSyncPlaceholder(collection) {
   return `local:${chunk}`;
 }
 
-function invalidateCollectionForObservationChange(collectionInput, changeInput) {
-  const collection = cloneJson(collectionInput);
+function invalidateCollectionForObservationChange(collectionInput: unknown, changeInput: ObservationChange): CollectionChange {
+  const collection = cloneJson<Collection>(collectionInput);
   if (collection.schemaVersion !== COLLECTION_VERSION || !Array.isArray(collection.items)) {
     fail('INVALID_SEMANTICS', 'Collection dependency invalidation requires an OA_VM_COLLECTION_V1 value.');
   }
@@ -379,7 +699,7 @@ function invalidateCollectionForObservationChange(collectionInput, changeInput) 
   const invalidated = documentChanged || (viewportDependent && viewportChanged);
   if (!invalidated) return deepFreeze({ invalidated: false, collection: deepFreeze(collection) });
 
-  const reset = {
+  const reset: Collection = {
     ...collection,
     items: [],
     sourceCount: 0,
@@ -401,10 +721,10 @@ function invalidateCollectionForObservationChange(collectionInput, changeInput) 
     },
   };
   reset.collectionDigest = collectionDigestSyncPlaceholder(reset);
-  return deepFreeze({ invalidated: true, collection: deepFreeze(cloneJson(reset)) });
+  return deepFreeze({ invalidated: true, collection: deepFreeze(cloneJson<Collection>(reset)) });
 }
 
-function collectSemanticRecords(sourceInput, projection, options = {}) {
+function collectSemanticRecords(sourceInput: unknown, projection: string[], options: CollectOptions = {}): Collection {
   if (!Array.isArray(projection) || projection.length < 1 || projection.length > 32
       || projection.some((item) => typeof item !== 'string' || !SAFE_SEGMENT.test(item))) {
     fail('INVALID_SEMANTICS', 'COLLECT projection is invalid.');
@@ -420,7 +740,7 @@ function collectSemanticRecords(sourceInput, projection, options = {}) {
   const source = normalizeSource(sourceInput);
   const meta = normalizeCollectionMeta(options.observationMeta ?? null, options.sourceBinding ?? null);
   let existing = options.existing ?? null;
-  let invalidation = null;
+  let invalidation: Invalidation | null = null;
   if (existing !== null) {
     if (!isPlainObject(existing) || existing.schemaVersion !== COLLECTION_VERSION || !Array.isArray(existing.items)) {
       fail('INVALID_SEMANTICS', 'Existing collection is malformed.');
@@ -453,7 +773,7 @@ function collectSemanticRecords(sourceInput, projection, options = {}) {
     scopeKind: meta.scopeKind === 'OBSERVED_STATE' && existing?.completion?.scopeKind ? existing.completion.scopeKind : meta.scopeKind,
     inheritedPartial,
   });
-  const collection = {
+  const collection: Collection = {
     schemaVersion: COLLECTION_VERSION,
     destination: options.destination ?? existing?.destination ?? 'collection',
     items,
@@ -471,14 +791,14 @@ function collectSemanticRecords(sourceInput, projection, options = {}) {
   };
   assertNoSensitive(collection, 'collection');
   collection.collectionDigest = collectionDigestSyncPlaceholder(collection);
-  return deepFreeze(cloneJson(collection));
+  return deepFreeze(cloneJson<Collection>(collection));
 }
 
-function usableString(value) {
+function usableString(value: unknown): boolean {
   return typeof value === 'string' && value.length > 0 && byteLength(value) <= 512;
 }
 
-function canonicalIdentity(item, keySpec) {
+function canonicalIdentity(item: JsonObject, keySpec: string[]): CanonicalIdentity | null {
   if (item.identityAmbiguous === true) return null;
   for (const field of keySpec) {
     if (CANONICAL_KEY_FIELDS.has(field) && usableString(item[field])) {
@@ -498,7 +818,7 @@ function canonicalIdentity(item, keySpec) {
   return null;
 }
 
-function conflictingCanonicalIdentity(left, right) {
+function conflictingCanonicalIdentity(left: JsonObject, right: JsonObject): boolean {
   if (usableString(left.logicalId) && usableString(right.logicalId) && left.logicalId !== right.logicalId) return true;
   if (usableString(left.canonicalId) && usableString(right.canonicalId) && left.canonicalId !== right.canonicalId) return true;
   const leftStable = usableString(left.stableKey) && ['id', 'href'].includes(String(left.stableKeySource || '').toLowerCase());
@@ -506,27 +826,27 @@ function conflictingCanonicalIdentity(left, right) {
   return leftStable && rightStable && left.stableKey !== right.stableKey;
 }
 
-function preferredDuplicate(left, right) {
-  const leftRevision = Number.isSafeInteger(left.semanticRevision) ? left.semanticRevision : 0;
-  const rightRevision = Number.isSafeInteger(right.semanticRevision) ? right.semanticRevision : 0;
+function preferredDuplicate(left: JsonObject, right: JsonObject): JsonObject {
+  const leftRevision = Number.isSafeInteger(left.semanticRevision) ? Number(left.semanticRevision) : 0;
+  const rightRevision = Number.isSafeInteger(right.semanticRevision) ? Number(right.semanticRevision) : 0;
   return rightRevision > leftRevision ? right : left;
 }
 
-function fingerprintCollisionKeys(items, keySpec) {
-  const groups = new Map();
+function fingerprintCollisionKeys(items: JsonObject[], keySpec: string[]): Set<string> {
+  const groups = new Map<string, Set<string>>();
   for (const item of items) {
     if (item.identityAmbiguous === true) continue;
     const fingerprintField = keySpec.find((field) => FINGERPRINT_FIELDS.has(field) && usableString(item[field]));
     if (!fingerprintField) continue;
     const fingerprint = `${fingerprintField}:${item[fingerprintField]}`;
     if (!groups.has(fingerprint)) groups.set(fingerprint, new Set());
-    if (usableString(item.logicalId)) groups.get(fingerprint).add(`logicalId:${item.logicalId}`);
-    else if (usableString(item.canonicalId)) groups.get(fingerprint).add(`canonicalId:${item.canonicalId}`);
+    if (usableString(item.logicalId)) groups.get(fingerprint)!.add(`logicalId:${item.logicalId}`);
+    else if (usableString(item.canonicalId)) groups.get(fingerprint)!.add(`canonicalId:${item.canonicalId}`);
   }
   return new Set([...groups.entries()].filter(([, ids]) => ids.size > 1).map(([key]) => key));
 }
 
-function dedupSemanticRecords(sourceInput, keySpec, options = {}) {
+function dedupSemanticRecords(sourceInput: unknown, keySpec: string[], options: DedupOptions = {}): Collection {
   if (!Array.isArray(keySpec) || keySpec.length < 1 || keySpec.length > 8
       || keySpec.some((field) => typeof field !== 'string' || !SAFE_SEGMENT.test(field))) {
     fail('INVALID_SEMANTICS', 'DEDUP keySpec is invalid.');
@@ -544,16 +864,16 @@ function dedupSemanticRecords(sourceInput, keySpec, options = {}) {
   const items = source.items.map((item) => {
     assertPlainObject(item, 'DEDUP item');
     assertNoSensitive(item, 'DEDUP item');
-    return cloneJson(item);
+    return cloneJson<JsonObject>(item);
   });
   const secondaryCollisions = fingerprintCollisionKeys(items, keySpec);
-  const output = [];
-  const identities = new Map();
-  const ambiguities = [];
+  const output: JsonObject[] = [];
+  const identities = new Map<string, { outputIndex: number; sourceIndexes: number[]; identity: CanonicalIdentity }>();
+  const ambiguities: Ambiguity[] = [];
   let duplicatesRemoved = 0;
 
   for (let index = 0; index < items.length; index += 1) {
-    const item = items[index];
+    const item = items[index]!;
     const identity = canonicalIdentity(item, keySpec);
     const fingerprintField = keySpec.find((field) => FINGERPRINT_FIELDS.has(field) && usableString(item[field]));
     const fingerprintKey = fingerprintField ? `${fingerprintField}:${item[fingerprintField]}` : null;
@@ -570,8 +890,9 @@ function dedupSemanticRecords(sourceInput, keySpec, options = {}) {
       output.push(item);
       continue;
     }
-    const prior = identities.get(identity.key);
-    const existing = output[prior.outputIndex];
+    // The identity map only holds keys it was given, so the entry and its output slot are both present.
+    const prior = identities.get(identity.key)!;
+    const existing = output[prior.outputIndex]!;
     if (conflictingCanonicalIdentity(existing, item)) {
       output.push(item);
       ambiguities.push({ kind: 'IDENTITY_COLLISION', indexes: [...prior.sourceIndexes, index], keyTier: identity.tier });
@@ -593,7 +914,7 @@ function dedupSemanticRecords(sourceInput, keySpec, options = {}) {
     scopeKind: inheritedCompletion?.scopeKind ?? 'OBSERVED_STATE',
     inheritedPartial: inheritedCompletion?.status === 'PARTIAL' && inheritedCompletion?.completeWithinScope !== true,
   });
-  const result = {
+  const result: Collection = {
     schemaVersion: COLLECTION_VERSION,
     destination: options.destination ?? inherited?.destination ?? 'deduped',
     items: output,
@@ -617,24 +938,26 @@ function dedupSemanticRecords(sourceInput, keySpec, options = {}) {
   };
   assertNoSensitive(result, 'dedup collection');
   result.collectionDigest = collectionDigestSyncPlaceholder(result);
-  return deepFreeze(cloneJson(result));
+  return deepFreeze(cloneJson<Collection>(result));
 }
 
-function deriveEffectObservationMeta(program, pending, effectResult, logicalNowMs) {
+// The COMMAND pending effect always carries a string method; null is only the WAIT_EVENT placeholder, and observation metadata is never derived for that case.
+
+function deriveEffectObservationMeta(_program: ReactiveProgram, pending: { method: string | null }, effectResult: EffectResult, logicalNowMs: number): ObservationMetaEntry {
   const method = pending.method;
   let scopeKind = 'OBSERVED_STATE';
   let observationKind = 'DIRECT_OBSERVATION';
-  let dependencyKinds = [];
+  let dependencyKinds: string[] = [];
   if (method === 'page.capture') {
     scopeKind = 'SCREENSHOT';
     observationKind = 'SCREENSHOT';
     dependencyKinds = ['VIEWPORT'];
-  } else if (['page.read', 'page.query', 'page.find', 'page.collect_links'].includes(method)) {
+  } else if (['page.read', 'page.query', 'page.find', 'page.collect_links'].includes(String(method))) {
     scopeKind = 'LOADED_DOM';
     dependencyKinds = ['ENTITY_SET'];
   }
   return {
-    method,
+    method: method as string,
     logicalNowMs,
     provenance: minimalProvenance(effectResult.provenance),
     observationKind,
@@ -645,12 +968,19 @@ function deriveEffectObservationMeta(program, pending, effectResult, logicalNowM
   };
 }
 
-function observationMetaForSource(state, node) {
+function observationMetaForSource(state: CollectState, node: CollectNode): { binding: string | null; meta: ObservationMetaEntry | null | undefined } {
   const binding = sourceBindingForExpression(node.source);
   if (binding && state.observationMeta[binding]) return { binding, meta: state.observationMeta[binding] };
   const source = evaluateReactiveExpression(node.source, state.bindings);
   if (isPlainObject(source) && source.schemaVersion === COLLECTION_VERSION) {
-    const provenance = source.provenance;
+    // isPlainObject plus the schemaVersion check above is the runtime truth for this shape; the cast narrows the read-only view of it.
+    const bag = source as Record<string, unknown> & {
+      provenance?: JsonObject;
+      observationKind?: string;
+      completion?: { scopeKind?: string; completeWithinScope?: boolean };
+      dependencies?: { fingerprint?: string; kinds?: string[] };
+    };
+    const provenance = bag.provenance;
     if (provenance) {
       return {
         binding,
@@ -658,11 +988,11 @@ function observationMetaForSource(state, node) {
           method: 'collection',
           logicalNowMs: state.lastLogicalNowMs,
           provenance,
-          observationKind: source.observationKind ?? 'DIRECT_OBSERVATION',
-          scopeKind: source.completion?.scopeKind ?? 'OBSERVED_STATE',
-          boundaryStable: source.completion?.completeWithinScope === true,
-          dependencyFingerprint: source.dependencies?.fingerprint ?? `sha256:${'0'.repeat(64)}`,
-          dependencyKinds: source.dependencies?.kinds ?? [],
+          observationKind: bag.observationKind ?? 'DIRECT_OBSERVATION',
+          scopeKind: bag.completion?.scopeKind ?? 'OBSERVED_STATE',
+          boundaryStable: bag.completion?.completeWithinScope === true,
+          dependencyFingerprint: bag.dependencies?.fingerprint ?? `sha256:${'0'.repeat(64)}`,
+          dependencyKinds: bag.dependencies?.kinds ?? [],
         },
       };
     }
@@ -670,8 +1000,8 @@ function observationMetaForSource(state, node) {
   return { binding, meta: null };
 }
 
-async function terminalizeCollect(program, stateInput, limit, context = {}) {
-  const state = cloneJson(stateInput);
+async function terminalizeCollect(_program: ReactiveProgram, stateInput: CollectState, limit: string, context: JsonObject = {}): Promise<CollectStep> {
+  const state = cloneJson<CollectState>(stateInput);
   state.status = 'LIMIT_REACHED';
   state.cursorPath = null;
   state.frames = [];
@@ -688,11 +1018,13 @@ async function terminalizeCollect(program, stateInput, limit, context = {}) {
   });
 }
 
-function stateBytesWithinBudget(program, state) {
+function stateBytesWithinBudget(program: ReactiveProgram, state: CollectInnerState | CollectState): boolean {
   return byteLength(canonicalJson(state)) <= program.budgets.persistedCheckpointBytes;
 }
 
-async function executeCollectionNode(program, shadow, state, input, node) {
+// Both COLLECT branches write through the checked collectors, so the binding just written is a Collection: a pre-existing value on the destination was itself written by an earlier COLLECT, and the receipt reads the item count and the completion summary straight off it.
+
+async function executeCollectionNode(program: ReactiveProgram, shadow: ReactiveProgram, state: CollectState, input: AdvanceCollectInput, node: CollectNode | DedupNode): Promise<CollectStep> {
   const inner = await toInnerState(program, shadow, state);
   const advanced = await advanceControlFlowVm(shadow, inner, input);
   let publicState = await fromInnerState(program, advanced.state, state.observationMeta, state.pendingEffect);
@@ -701,46 +1033,46 @@ async function executeCollectionNode(program, shadow, state, input, node) {
     return deepFreeze({ state: publicState, transition: await externalizeTransition(program, advanced.transition, publicState, state.pendingEffect) });
   }
 
-  const next = cloneJson(publicState);
+  const next = cloneJson<CollectState>(publicState);
   if (!Object.prototype.hasOwnProperty.call(next.bindings, node.destination)
       && Object.keys(next.bindings).length >= program.budgets.bindings) {
     return terminalizeCollect(program, next, 'BINDINGS', { budget: program.budgets.bindings });
   }
 
-  const source = evaluateReactiveExpression(node.source, state.bindings);
+  const source: unknown = evaluateReactiveExpression(node.source, state.bindings);
   if (node.type === 'COLLECT') {
     const sourceMeta = observationMetaForSource(state, node);
     next.bindings[node.destination] = collectSemanticRecords(source, node.projection, {
-      existing: state.bindings[node.destination] ?? null,
+      existing: (state.bindings[node.destination] ?? null) as Collection | null,
       destination: node.destination,
       maxItems: node.maxItems,
       collectionBudget: program.budgets.collectionItemsPerBinding,
       sourceBinding: sourceMeta.binding,
       observationMeta: sourceMeta.meta,
     });
-    if (sourceMeta.meta) next.observationMeta[node.destination] = cloneJson(sourceMeta.meta);
+    if (sourceMeta.meta) next.observationMeta[node.destination] = cloneJson<ObservationMetaEntry>(sourceMeta.meta);
   } else {
     next.bindings[node.destination] = dedupSemanticRecords(source, node.keySpec, {
       destination: node.destination,
       collectionBudget: program.budgets.collectionItemsPerBinding,
     });
     const sourceBinding = sourceBindingForExpression(node.source);
-    if (sourceBinding && state.observationMeta[sourceBinding]) next.observationMeta[node.destination] = cloneJson(state.observationMeta[sourceBinding]);
+    if (sourceBinding && state.observationMeta[sourceBinding]) next.observationMeta[node.destination] = cloneJson<ObservationMetaEntry>(state.observationMeta[sourceBinding]);
   }
   assertNoSensitive(next.bindings[node.destination], `state.bindings.${node.destination}`);
   if (!stateBytesWithinBudget(program, next)) {
     return terminalizeCollect(program, next, 'PERSISTED_CHECKPOINT_BYTES', { budgetBytes: program.budgets.persistedCheckpointBytes });
   }
   publicState = deepFreeze(next);
-  const transition = cloneJson(await externalizeTransition(program, advanced.transition, publicState, state.pendingEffect));
+  const transition = cloneJson<VmTransition>(await externalizeTransition(program, advanced.transition, publicState, state.pendingEffect));
   transition.instruction = node.type;
   transition.destination = node.destination;
-  transition.itemCount = publicState.bindings[node.destination].itemCount;
-  transition.completion = publicState.bindings[node.destination].completion.status;
+  transition.itemCount = (publicState.bindings[node.destination] as Collection).itemCount;
+  transition.completion = (publicState.bindings[node.destination] as Collection).completion.status;
   return deepFreeze({ state: publicState, transition: deepFreeze(transition) });
 }
 
-export async function createCollectVm(programInput, options) {
+export async function createCollectVm(programInput: unknown, options: CreateCollectOptions): Promise<CollectState> {
   const program = await validateCollectProgram(programInput);
   assertExactKeys(
     options,
@@ -757,7 +1089,7 @@ export async function createCollectVm(programInput, options) {
     ...(options.deadlineAtMs === undefined ? {} : { deadlineAtMs: options.deadlineAtMs }),
     ...(options.initialBindings === undefined ? {} : { initialBindings: options.initialBindings }),
   };
-  const meta = cloneJson(options.initialObservationMeta ?? {});
+  const meta = cloneJson<Record<string, ObservationMetaEntry>>(options.initialObservationMeta ?? {});
   validateObservationMeta(meta, program, 'options.initialObservationMeta');
   assertUnifiedBindingBudget(options.initialBindings, meta, program, 'options');
   const inner = await createControlFlowVm(shadow, innerOptions);
@@ -766,10 +1098,10 @@ export async function createCollectVm(programInput, options) {
   return state;
 }
 
-export async function advanceCollectVm(programInput, stateInput, input) {
+export async function advanceCollectVm(programInput: unknown, stateInput: unknown, input: AdvanceCollectInput): Promise<CollectStep> {
   const program = await validateCollectProgram(programInput);
   const shadow = await shadowControlFlowProgram(program);
-  const state = cloneJson(stateInput);
+  const state = cloneJson<CollectState>(stateInput);
   if (state.schemaVersion !== STATE_VERSION || state.programDigest !== program.programDigest) {
     fail('PROGRAM_DIGEST_MISMATCH', '7D state does not belong to this program.');
   }
@@ -784,19 +1116,19 @@ export async function advanceCollectVm(programInput, stateInput, input) {
     }
   }
 
-  const previousPublicPending = state.pendingEffect ? cloneJson(state.pendingEffect) : null;
+  const previousPublicPending = state.pendingEffect ? cloneJson<PendingEffect>(state.pendingEffect) : null;
   const innerState = await toInnerState(program, shadow, state);
-  let innerInput = cloneJson(input);
+  let innerInput = cloneJson<AdvanceCollectInput>(input);
   if (previousPublicPending && input.effectResult !== undefined) {
     if (input.effectResult.requestDigest !== previousPublicPending.requestDigest) {
       fail('INVALID_SEMANTICS', 'Effect result does not match the pending 7D request.');
     }
-    innerInput.effectResult.requestDigest = innerState.pendingEffect.requestDigest;
+    innerInput.effectResult!.requestDigest = innerState.pendingEffect!.requestDigest;
   }
   const pendingBinding = innerState.pendingEffect?.purpose === 'COMMAND' ? innerState.pendingEffect.resultBinding : null;
   const pendingMethod = innerState.pendingEffect?.purpose === 'COMMAND' ? innerState.pendingEffect.method : null;
   const advanced = await advanceControlFlowVm(shadow, innerState, innerInput);
-  const meta = cloneJson(state.observationMeta);
+  const meta = cloneJson<Record<string, ObservationMetaEntry>>(state.observationMeta);
   if (pendingBinding && input.effectResult?.ok === true) {
     const pending = { method: pendingMethod };
     meta[pendingBinding] = deriveEffectObservationMeta(program, pending, input.effectResult, input.logicalNowMs);

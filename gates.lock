@@ -156,29 +156,30 @@
 #    tests/helpers/canonical-source-hash.mjs strips the comment lines and collapses
 #    the whitespace before hashing a tool schema, so the pin holds the tool's
 #    contract and not its indentation.
-scripts/verify/check.mjs 3befd73a4d3a75ccb22943e9234c1505590104b5
+scripts/verify/check.mjs d124bd7f974061abbad317985ae443c1c901b842
 scripts/verify/scope.mjs f5895703e958e67c79a1f2f4392b037a84c26220
 scripts/verify/scope-check.mjs 2a4ba5563b68a9979c40165363235f72cac0d4df
 
 # --- the pins themselves: editing these is how a drift goes unnoticed ---
-tests/helpers/boundary-locks.mjs 96d447b064055c88ae21e40beef015dae39946d4
+tests/helpers/boundary-locks.mjs 34256f122015fc2512f0151b112d8dd7fd930d7b
 tests/helpers/canonical-source-hash.mjs a4ebaa0d40122afce47a52cba39309d7dfdb1af1
 tests/helpers/comment-format.mjs bced9e4c9b7a58b56e3317067d5e6717dd2040bf
 tests/docs/comment-format.test.mjs f8e65a5d6d50cd5ea609c5ba1646d2cb8bcc487f
 tests/docs/comment-claims.test.mjs 27e1d1218b036ef7dd028b33cb63236ae325c442
 
 # --- structural rules a human reviewer would otherwise have to remember ---
-tests/tooling/hygiene.test.mjs 8ad356b430063570361f4644536cd6de35c04754
-tests/tooling/structure-gates.test.mjs be0a148b50f6996befb7968ca4979ae60ab9f73c
+tests/tooling/hygiene.test.mjs aa59d7710c30dd40b091df89118da2ca89930874
+tests/tooling/structure-gates.test.mjs 208ebc0bbd85bdcfc30a2077e3fe2ddf02e2144e
 tests/tooling/boundary-locks.test.mjs 7d33c80db5c4a07f659387fbae6fcf172d758757
 
 # --- controls that decide what the product accepts at runtime ---
 extension/lib/protocol.js 14d9a778570a1b789c80e6fe6e5f37d68031013c
-shared/secret-pattern.js 5392a31127fa25df3d9f55d0a9fa87562200418d
+# The runtime-safety scan moved from shared/secret-pattern.js to shared/secret-pattern.ts when the core became strict TypeScript; the artifact is tsc output and is never committed, so the criterion pins the source.
+shared/secret-pattern.ts 5392a31127fa25df3d9f55d0a9fa87562200418d
 hosted/functions/_shared/cors.js dead4552d786ef0fdbaf71ad5bfb3c99e647b575
 
 # --- surfaces an owner, not an agent, should have to look at ---
 extension/manifest.json 47789c72fa3876d4a9d94104f7da94b72e25bcb2
 .gitleaks.toml c86e2ad6f0f7b76e512fda11f76e533b807dc883
 .github/CODEOWNERS ca0271e08aadabe56f86ae17620b36073df44cfb
-.github/workflows/ci.yml bf241518b3aea12b4fbc49ab102552cea139c1e5
+.github/workflows/ci.yml 54187bd4824bf797d733096ccbfc4862a8ab0fdc

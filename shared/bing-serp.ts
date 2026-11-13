@@ -15,16 +15,39 @@ const DISPLAY_URL_LINE = /^[\w-]+(\.[\w-]+)+(:[0-9]+)?(\/[\w./-]*)?$/;
 const DISPLAY_MIXED = /^[\w-]+(\.[\w-]+)+(:[0-9]+)?(\/[\w./-]*)?\s+https?:\/\//i;
 const DISPLAYISH = /^https?:\/\//i;
 
-function isDisplayText(text) {
+export interface SerpLink {
+  href?: string | undefined;
+  text?: string | undefined;
+}
+
+export interface SerpPage {
+  text?: string | undefined;
+  links?: SerpLink[] | undefined;
+}
+
+export interface SerpResult {
+  rank: number;
+  title: string;
+  url: string;
+  site: string;
+  snippet: string;
+}
+
+export interface SerpParsed {
+  results: SerpResult[];
+  nextFirst: number | null;
+}
+
+function isDisplayText(text: string): boolean {
   return DISPLAY_URL_LINE.test(text) || DISPLAYISH.test(text) || DISPLAY_MIXED.test(text);
 }
 
 /**
- * @param {string} href
- * @returns {string} the lower-cased hostname, or an empty string for unparsable input
+ * @param href the link's href as Bing rendered it
+ * @returns the lower-cased hostname, or an empty string for unparsable input
  */
 
-export function hostOf(href) {
+export function hostOf(href: string): string {
   try {
     return new URL(href).hostname.toLowerCase();
   } catch {
@@ -32,7 +55,7 @@ export function hostOf(href) {
   }
 }
 
-function isExternal(href) {
+function isExternal(href: string): boolean {
   if (!/^https?:\/\//i.test(href)) return false;
   const host = hostOf(href);
   if (!host) return false;
@@ -46,14 +69,14 @@ function isExternal(href) {
  * A redirect wrapper promises nothing about its target; the target is attacker-controlled.
  * Returning it without the same checks every other href goes through would let javascript: or file: leak out as "results".
  * So the target passes through isExternal before it is ever returned, and anything that fails stays dropped, exactly like the wrapper itself.
- * @param {string} href
- * @returns {string | null} the decoded target, or null when there is nothing to unwrap
+ * @param href the redirect URL as Bing rendered it
+ * @returns the decoded target, or null when there is nothing to unwrap
  */
 
-function unwrapBingRedirect(href) {
+function unwrapBingRedirect(href: string): string | null {
   const host = hostOf(href);
   if (!host || !BING_HOST.test(host)) return null;
-  let url;
+  let url: URL;
   try {
     url = new URL(href);
   } catch {
@@ -64,10 +87,10 @@ function unwrapBingRedirect(href) {
   if (!packed) return null;
   const encoded = packed.replace(/^a1/i, '').replace(/-/g, '+').replace(/_/g, '/');
   const padded = encoded.padEnd(encoded.length + ((4 - (encoded.length % 4)) % 4), '=');
-  let target;
+  let target: string;
   try {
     const binary = atob(padded);
-    target = new TextDecoder().decode(Uint8Array.from(binary, (c) => c.charCodeAt(0)));
+    target = new TextDecoder().decode(Uint8Array.from(binary, (c: string) => c.charCodeAt(0)));
   } catch {
     return null;
   }
@@ -79,14 +102,14 @@ function unwrapBingRedirect(href) {
 // Headings also catch People-Also-Ask questions and the "Related searches" and "Pagination" blocks, which have no external href - anchors cannot produce them.
 // Rank is page-local; the caller re-numbers once the pages are concatenated.
 
-/**
- * @param {{ text?: string, links?: Array<{ href?: string, text?: string }> }} input
- * @param {{ currentFirst?: number }} [options]
- * @returns {{ results: Array<{ rank: number, title: string, url: string, site: string, snippet: string }>, nextFirst: number | null }}
- */
+interface CardGroup {
+  url: string;
+  site: string;
+  texts: string[];
+}
 
-export function parseBingSerp({ text = '', links = [] } = {}, { currentFirst = 1 } = {}) {
-  const byHref = new Map();
+export function parseBingSerp({ text = '', links = [] }: SerpPage = {}, { currentFirst = 1 }: { currentFirst?: number } = {}): SerpParsed {
+  const byHref = new Map<string, CardGroup>();
   for (const link of links) {
     const href = String(link?.href ?? '').trim();
     const external = unwrapBingRedirect(href) ?? href;
@@ -97,34 +120,36 @@ export function parseBingSerp({ text = '', links = [] } = {}, { currentFirst = 1
     byHref.set(external, group);
   }
 
-  const results = [];
+  const results: SerpResult[] = [];
   for (const group of byHref.values()) {
-    const nonDisplay = group.texts.filter((t) => !isDisplayText(t));
-    let title;
+    const nonDisplay = group.texts.filter((t: string) => !isDisplayText(t));
+    let title: string;
     if (nonDisplay.length) {
-      title = nonDisplay[nonDisplay.length - 1].replace(/\s+/g, ' ').trim().slice(0, 300);
+      title = (nonDisplay[nonDisplay.length - 1] ?? '').replace(/\s+/g, ' ').trim().slice(0, 300);
     } else {
-      title = (group.texts[group.texts.length - 1] ?? '')
-        .replace(/\s*›.*$/, '')
-        .replace(/https?:\/\/\S+/g, '')
+      title = (group.texts[group.texts.length - 1] ?? '');
+      const arrow = title.indexOf('›');
+      if (arrow >= 0) title = title.slice(0, arrow);
+      title = title.replace(/https?:\/\/\S+/g, '')
         .replace(/\s+/g, ' ')
         .trim()
         .slice(0, 300);
     }
     if (!title || !group.url) continue;
-    results.push({ title, url: group.url, site: group.site, snippet: '' });
+    results.push({ rank: 0, title, url: group.url, site: group.site, snippet: '' });
   }
 
   // WHY NEXT FIRST IS DERIVED FROM THE PAGE, NOT ASSUMED.
   // Bing's page size changed between result sets before (30, then 10): the pagination links name the first result of each numbered page, so the next page is the smallest first= above the current one, whatever the page size is today.
-  let nextFirst = null;
+  let nextFirst: number | null = null;
   for (const link of links) {
     const href = String(link?.href ?? '');
     const linkHost = hostOf(href);
     if (!linkHost || !BING_HOST.test(linkHost)) continue;
     const match = /[?&]first=(\d+)/.exec(href);
-    if (!match) continue;
-    const candidate = Number(match[1]);
+    const first = match?.[1];
+    if (!first) continue;
+    const candidate = Number(first);
     if (!Number.isFinite(candidate) || candidate <= currentFirst) continue;
     if (nextFirst === null || candidate < nextFirst) nextFirst = candidate;
   }
@@ -134,14 +159,14 @@ export function parseBingSerp({ text = '', links = [] } = {}, { currentFirst = 1
   // WHY DUPLICATE TITLES CARRY A COUNT, NOT A DELETE.
   // Two cards may render the same title; a Set with one entry per title would drop the boundary for the second card after the first card's walk, and the snippet would bleed across cards.
   // A multiset keeps one boundary per remaining occurrence.
-  const lines = String(text).split(/\r?\n/).map((line) => line.trim());
-  const pending = new Map();
+  const lines = String(text).split(/\r?\n/).map((line: string) => line.trim());
+  const pending = new Map<string, number>();
   for (const result of results) pending.set(result.title, (pending.get(result.title) ?? 0) + 1);
-  const hasPending = (line) => (pending.get(line) ?? 0) > 0;
+  const hasPending = (line: string): boolean => (pending.get(line) ?? 0) > 0;
   let cursor = 0;
-  const findTitle = (from, title) => {
+  const findTitle = (from: number, title: string): number => {
     for (let i = from; i < lines.length; i += 1) if (lines[i] === title) return i;
-    for (let i = from; i < lines.length; i += 1) if (lines[i].startsWith(title)) return i;
+    for (let i = from; i < lines.length; i += 1) if (lines[i]?.startsWith(title)) return i;
     return -1;
   };
   for (const result of results) {
@@ -150,9 +175,9 @@ export function parseBingSerp({ text = '', links = [] } = {}, { currentFirst = 1
     if (at < 0) continue;
     let k = at + 1;
     while (k < lines.length && !lines[k]) k += 1;
-    const buf = [];
+    const buf: string[] = [];
     while (k < lines.length) {
-      const line = lines[k];
+      const line = lines[k] as string;
       if (!line) break;
       if (DISPLAY_URL_LINE.test(line) || line.includes('›')) break;
       if (hasPending(line)) break;
