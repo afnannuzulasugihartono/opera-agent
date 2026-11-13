@@ -65,11 +65,17 @@ function shouldFormat(file) {
 // A file git lists is exactly the set a person would ship: tracked files, plus untracked-but-not-ignored new files, which is what `git add` would stage.
 // Outside a git checkout the filesystem is all there is, and the rule falls back to it.
 
+function fixedGitEnv() {
+  // The analyzer's PATH finding is answered with fixed, unwriteable directories per platform rather than a suppress marker; git lives there by dpkg/installer design on every runner this tree uses.
+  const fixedPath = process.platform === 'win32'
+    ? 'C:\\Windows\\System32;C:\\Program Files\\Git\\cmd'
+    : '/usr/local/bin:/usr/bin:/bin';
+  return { ...process.env, PATH: fixedPath };
+}
+
 function repoFiles() {
   try {
-    // S4036: the resolved 'git' comes from the runner PATH like every script in this tree; nothing flows into PATH and pinning it per-OS would break the runners.
-    // NOSONAR
-    const output = execFileSync('git', ['ls-files', '-z', '--cached', '--others', '--exclude-standard'], { cwd: root, encoding: 'utf8', maxBuffer: 1 << 28 });
+    const output = execFileSync('git', ['ls-files', '-z', '--cached', '--others', '--exclude-standard'], { cwd: root, encoding: 'utf8', maxBuffer: 1 << 28, env: fixedGitEnv() });
     return new Set(output.split('\0').filter(Boolean));
   } catch {
     return null;
