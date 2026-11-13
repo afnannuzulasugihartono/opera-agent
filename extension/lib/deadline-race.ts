@@ -9,10 +9,13 @@
 // This is kept as a standalone pure module so both directions are testable: the work resolving must clear the timer, and the work rejecting must clear it too.
 // Neither behaviour is observable from outside a browser otherwise.
 
+// `makeError` builds the deadline error; a rejection reason must always be an Error (deadline-race callers pass codedError, which is one).
+// Neither behaviour is observable from outside a browser otherwise.
+
 const DEFAULT_ERROR_MESSAGE = 'Deadline exceeded.';
 
-export async function raceWithTimeout<T>(work: () => Promise<T>, timeoutMs: number, makeError?: () => T | Error): Promise<T> {
-  const build: () => T | Error = makeError ?? (() => new Error(DEFAULT_ERROR_MESSAGE));
+export async function raceWithTimeout<T>(work: () => Promise<T>, timeoutMs: number, makeError?: () => Error): Promise<T> {
+  const build: () => Error = makeError ?? (() => new Error(DEFAULT_ERROR_MESSAGE));
   let timer: ReturnType<typeof setTimeout> | undefined;
   try {
     return await Promise.race([

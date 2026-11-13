@@ -255,8 +255,8 @@ export async function trustedHover(tabId: number, params: { ref?: unknown; timeo
   const rect = info && isRecord(info.rect) ? info.rect : undefined;
   const rawX = rect?.centerX;
   const rawY = rect?.centerY;
-  const x = typeof rawX === 'number' ? rawX : NaN;
-  const y = typeof rawY === 'number' ? rawY : NaN;
+  const x = typeof rawX === 'number' ? rawX : Number.NaN;
+  const y = typeof rawY === 'number' ? rawY : Number.NaN;
   if (!Number.isFinite(x) || !Number.isFinite(y)) throw new Error('Element has no hoverable rectangle.');
   const timeoutMs = clamp(params.timeoutMs, 50, 8000, 1500);
   return withDebugger(tabId, context, (target) => withInputFocusEmulation(target, mode, () =>

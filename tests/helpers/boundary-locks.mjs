@@ -112,7 +112,8 @@
 
 // WHY content.ts moved again: the manifest loads content.js as a classic script, and no ES-module boundary of any kind may exist inside it.
 // The converted source imported isRecord from lib/guards.js; an MV3 classic script cannot parse that, so the import became a local copy of the same guard and the module marker the build appends is stripped from the classic-script files.
-// behaviour is unchanged - the primitives are the same ones the suite drives; only the stub broke the load, and only the load noticed.
+// Behaviour is unchanged - the primitives are the same ones the suite drives; only the stub broke the load, and only the load noticed.
+// WHY content.ts moved twice more: the ReDoS round replaced the two character-class-alternating patterns with a single class and with split/join, and the best-effort close paths now use .catch(() => {}) with no comment inside the body - a gate reads comments as belonging above what they document.
 
 // WHY control-flow and collect moved: the frozen VM went to TypeScript, and the two pure cores moved with it.
 // The runtime validator and the collection engine are the same programs the suite already proves; the pins move with the reviewed conversion.
@@ -120,7 +121,7 @@
 // Comment lines do not reach the runtime; nothing else in the file moved with it.
 
 export const PUBLIC_SURFACE_LOCKS = Object.freeze([
-  ['../extension/content.ts', 'da18f164973807db25effbf29b8d71a53732eb7605efe0c19be80a7c024fd2f3'],
+  ['../extension/content.ts', 'f710fafa23478a2e28c63849bb7bce384c04c0bc86198fdaeb2fa1770d88f24d'],
   ['../extension/background.ts', '1d345ff86bd86cdfdcba137f6d5dbb995467b3dd4080d0324b0544cb24e05a93'],
   ['../extension/manifest.json', 'aaad334ded5c8febe60127a01b8ccfeddb5e0f191f42800a1567b1c9ec6fc84e'],
   ['../hosted/functions/opera-agent-mcp/index.ts', '9895b06e0abe7e7bbb222e5580c03d4065439db3284111fe3f8f7234b57b77b2'],

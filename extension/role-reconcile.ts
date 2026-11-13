@@ -98,10 +98,11 @@
     return TAG_ROLES[tag] || '';
   }
 
+  // The canonical role is ASCII words joined by single dashes; splitting cannot backtrack.
   function normalizeAxRole(role: unknown): string {
     const value = String(role == null ? '' : role).trim().toLowerCase();
     if (!value) return '';
-    return value.replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+    return value.split(/[^a-z0-9]+/).filter(Boolean).join('-');
   }
 
   function axRoleIndex(axItems: unknown): Map<string, string> {

@@ -107,17 +107,21 @@ function utf8(bytes: Uint8Array): string {
   return new TextDecoder().decode(bytes);
 }
 
+// WHY THE PATTERN IS SPLIT.
+// A quoted URL, a double-quoted URL and a bare URL are three unambiguous alternatives; a single optional-quote pattern lets the character classes share characters and backtrack super-linearly on adversarial CSS.
+
+const CSS_URL_PATTERN = new RegExp("url\\(\\s*(?:'([^']*)'|\"([^\"]*)\"|([^'\")\\s]*))\\s*\\)", 'g');
+const cssUrlAt = (match: RegExpMatchArray): string | undefined => match[1] ?? match[2] ?? match[3];
+
 function cssWithFonts(css: string, baseUrl: string, fontMap: Map<string, ScanAsset>): string {
   let output = css;
 
-  const urlPattern = new RegExp("url\\(\\s*['\"]?([^'\")]+)['\"]?\\s*\\)", 'g');
-
-  const urls = [...css.matchAll(urlPattern)];
+  const urls = [...css.matchAll(CSS_URL_PATTERN)];
 
   const seen = new Set();
 
   for (const match of urls) {
-    const raw = match[1]?.trim() ?? '';
+    const raw = cssUrlAt(match)?.trim() ?? '';
 
     if (!raw || /^(data:|#)/i.test(raw)) continue;
 
@@ -203,8 +207,8 @@ export async function scanPage(tabId: unknown, params: Record<string, unknown> |
     if (isCss) {
       const text = utf8(fetched.bytes);
 
-      const fontRefs = [...text.matchAll(new RegExp("url\\(\\s*['\"]?([^'\")]+)['\"]?\\s*\\)", 'g'))]
-        .map((match) => match[1]?.trim() ?? '')
+      const fontRefs = [...text.matchAll(CSS_URL_PATTERN)]
+        .map((match) => cssUrlAt(match)?.trim() ?? '')
         .filter((raw) => raw && !/^(data:|#)/i.test(raw))
         .map((raw) => {
           try {

@@ -77,22 +77,23 @@ function refuse(code: string, message: string) {
   return { ok: false, code, message };
 }
 
-function measure(node: unknown, maxDepth: number, depth = 1, counter = { commands: 0, tooDeep: false }) {
-  if (node === null || typeof node !== 'object') return counter;
+function measure(node: unknown, maxDepth: number, depth = 1, counter?: { commands: number; tooDeep: boolean }) {
+  const acc = counter ?? { commands: 0, tooDeep: false };
+  if (node === null || typeof node !== 'object') return acc;
   if (depth > maxDepth) {
-    counter.tooDeep = true;
-    return counter;
+    acc.tooDeep = true;
+    return acc;
   }
-  if (isRecord(node) && node.type === 'COMMAND') counter.commands += 1;
+  if (isRecord(node) && node.type === 'COMMAND') acc.commands += 1;
   for (const [key, value] of Object.entries(node)) {
     if (key === 'arguments' || key === 'valueSpec' || key === 'value') continue;
     if (Array.isArray(value)) {
-      for (const item of value) measure(item, maxDepth, depth + 1, counter);
+      for (const item of value) measure(item, maxDepth, depth + 1, acc);
     } else if (value && typeof value === 'object') {
-      measure(value, maxDepth, depth + 1, counter);
+      measure(value, maxDepth, depth + 1, acc);
     }
   }
-  return counter;
+  return acc;
 }
 
 export function compileGoalPlan(rawText: unknown, { target, budgets, programId = 'goal-plan', goalRevision = 1 }: { target?: unknown; budgets?: Record<string, unknown> | undefined; programId?: string; goalRevision?: number } = {}) {

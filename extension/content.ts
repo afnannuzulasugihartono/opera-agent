@@ -315,11 +315,15 @@ interface ListenCaptureState {
     return String(value ?? '').replace(/\s+/g, ' ').trim().slice(0, max);
   }
 
-  const PUA_GLYPH_RE = /[\uE000-\uF8FF\u200B\u200C\uFEFF]|\u200D/g;
-  const VISITED_SUFFIX_RE = /\s*visited link\s*$/i;
+  // WHY THE CLASS RANGES ARE MERGED: one character class, one pass, no alternation, no backtracking.
+  const PUA_GLYPH_RE = /[\uE000-\uF8FF\u200B-\u200D\uFEFF]/g;
   function normalizeObservableText(value: unknown, max = 500): string {
     const text = clean(value, max + 40).replace(PUA_GLYPH_RE, ' ').replace(/\s+/g, ' ').trim();
-    const untagged = VISITED_SUFFIX_RE.test(text) ? text.replace(VISITED_SUFFIX_RE, '').trim() : text;
+    const lower = text.toLowerCase();
+    const VISITED_LINK_SUFFIX = 'visited link';
+    const untagged = lower.endsWith(VISITED_LINK_SUFFIX)
+      ? text.slice(0, text.length - VISITED_LINK_SUFFIX.length).trimEnd()
+      : text;
     return untagged.slice(0, max);
   }
 
@@ -327,7 +331,9 @@ interface ListenCaptureState {
     return String(value ?? '')
       .replace(/\r\n?/g, '\n')
       .replace(/[\t\f\v ]+/g, ' ')
-      .replace(/ *\n */g, '\n')
+      .split('\n')
+      .map((line) => line.replace(/^ +| +$/g, ''))
+      .join('\n')
       .replace(/\n{3,}/g, '\n\n')
       .trim();
   }
@@ -2282,7 +2288,7 @@ interface ListenCaptureState {
           listenStop().catch(() => {});
         }
       } else if (listenCapture.ctx) {
-        try { listenCapture.ctx.close(); } catch {}
+        try { listenCapture.ctx.close().catch(() => {}); } catch {}
         listenCapture.ctx = null;
       }
     };
@@ -2358,7 +2364,7 @@ interface ListenCaptureState {
     }
     listenCapture.recorder = null;
     if (listenCapture.ctx) {
-      try { listenCapture.ctx.close(); } catch {}
+      try { listenCapture.ctx.close().catch(() => {}); } catch {}
       listenCapture.ctx = null;
     }
     return { ok: true, flushed: false };

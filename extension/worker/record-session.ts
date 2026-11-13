@@ -327,7 +327,7 @@ export async function recordStop(tabId: number, params: Record<string, unknown> 
   let scrolledTo: unknown = null;
 
   try {
-    if (held.scrollDone) {
+    if (held.scrollDone !== undefined) {
       const scrolled = await Promise.race([held.scrollDone, sleepMs(5000).then(() => null)]);
 
       scrolledTo = scrolled?.scrolled ?? null;

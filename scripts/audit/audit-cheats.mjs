@@ -62,17 +62,16 @@ for (const root of productRoots) {
     const lines = text.split('\n');
     for (let index = 0; index < lines.length; index += 1) {
       const line = lines[index];
-      let match;
       forbidden.lastIndex = 0;
-      while ((match = forbidden.exec(line))) {
-        const global = lines.slice(Math.max(0, index - 3), index + 2).join(' ');
-        findings.push(`${root}/${rel}:${index + 1}: ${match[0].trim()}\n  > ${line.trim().slice(0, 120)}`);
+      const forbiddenMatch = forbidden.exec(line);
+      if (forbiddenMatch) {
+        findings.push(`${root}/${rel}:${index + 1}: ${forbiddenMatch[0].trim()}\n  > ${line.trim().slice(0, 120)}`);
         countFinding(`${root}/${rel}`);
-        break;
       }
       unknownCast.lastIndex = 0;
-      while ((match = unknownCast.exec(line))) {
-        findings.push(`${root}/${rel}:${index + 1}: ${match[0].trim()}\n  > ${line.trim().slice(0, 120)}`);
+      let castMatch;
+      while ((castMatch = unknownCast.exec(line))) {
+        findings.push(`${root}/${rel}:${index + 1}: ${castMatch[0].trim()}\n  > ${line.trim().slice(0, 120)}`);
         countFinding(`${root}/${rel}`);
       }
     }
