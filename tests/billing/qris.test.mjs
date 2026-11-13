@@ -1,7 +1,7 @@
 // @last-edited: 2026-11-04 UTC+7.
 // @title: qris — the conversion the payer app accepted on 2026-11-02, pinned tag by tag.
 // @state: the CRC anchor, the parse round-trip, and the dynamic form: tag 01 12, tag 54 whole rupiah before tag 58, tag 62/07 A02, CRC recomputed.
-// @dependencies: node:test, node:assert/strict, ../hosted/functions/_shared/qris.js.
+// @dependencies: node:test, node:assert/strict, ../hosted/functions/_shared/qris.ts.
 
 // WHY THE CANONICAL VECTOR ANCHORS THE CRC.
 // The probe on 2026-11-02 measured F47E as the CRC of the real merchant payload, but the full payload lives only on the owner's phone screenshot.
@@ -9,7 +9,7 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { crc16CcittFalse, parseQris, serializeQris, toDynamicQris, qrisAmount, qrisCategory } from '../../hosted/functions/_shared/qris.js';
+import { crc16CcittFalse, parseQris, serializeQris, toDynamicQris, qrisAmount, qrisCategory } from '../../hosted/functions/_shared/qris.ts';
 
 // A merchant-shaped static payload: tag 00, tag 01 static, a merchant tag 26, a country tag 58, category tag 62/07 A01, and a CRC.
 

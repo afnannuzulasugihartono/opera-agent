@@ -8,7 +8,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { stripTypeScriptTypes } from 'node:module';
 import vm from 'node:vm';
-import { CORS_DEFAULT_ORIGINS, resolveAllowedOrigin } from '../../hosted/functions/_shared/cors.js';
+import { CORS_DEFAULT_ORIGINS, resolveAllowedOrigin } from '../../hosted/functions/_shared/cors.ts';
 import { isUpgradeRequest, serveDeviceSocket } from '../../hosted/functions/opera-agent-bridge/bridge-socket.ts';
 
 const req = (origin) => ({ headers: { get: (name) => (name.toLowerCase() === 'origin' ? origin : null) } });
@@ -57,7 +57,7 @@ test('no edge function answers a wildcard origin any more', () => {
   for (const name of EDGE_FUNCTIONS) {
     const source = readFileSync(new URL(`../../hosted/functions/${name}/index.ts`, import.meta.url), 'utf8');
     assert.doesNotMatch(source, /"Access-Control-Allow-Origin":\s*"\*"/, `${name} must not answer a wildcard origin`);
-    assert.match(source, /from "\.\.\/_shared\/cors\.js"/, `${name} must resolve the origin through the shared allowlist`);
+    assert.match(source, /from "\.\.\/_shared\/cors\.ts"/, `${name} must resolve the origin through the shared allowlist`);
     assert.match(source, /resolveAllowedOrigin\(req, CORS_DEFAULT_ORIGINS\)/, `${name} must decide the origin per request`);
   }
 });

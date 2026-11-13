@@ -1,0 +1,293 @@
+// @last-edited: 2026-10-21 UTC+7.
+// @title: dev-shim — the stdio proxy that swaps the worker behind the pipe without dropping the client.
+// @state: the supervisor, the rebuild budget, and the notification that tells the client its tools moved.
+// @dependencies: none.
+
+// WHY A PROXY AND NOT A RESTART.
+// The client owns the pipe and does not reconnect: killing the server to reload its code leaves a dead MCP behind a human round trip.
+// The shim keeps one pipe for the whole session and swaps the worker behind it, so a file save costs a second of reload instead of a toggle.
+// Development only; production spawns the worker directly.
+
+// WHY THE SHIM PARSES ONLY IDS.
+// It forwards bytes it never interprets, except to learn which responses settle which requests: that table is what lets a swap wait for the in-flight instead of dropping it, and fail it by name when the wait runs out.
+// Anything unparsable forwards blind in both directions.
+
+// WHY INITIALIZE IS REPLAYED.
+// The client shakes hands once, with whichever worker was alive first.
+// The replay hands the stored handshake to the new worker and swallows its answer, so the client never sees a second hello.
+
+// WHY A CRASHED WORKER IS REBUILT WITH A BUDGET, AND WHY THE BUDGET DOES NOT KILL THE CONNECTION.
+// A worker that dies on its own comes back, because transient deaths happen; past three rebuilds in thirty seconds it is poisoned — a syntax error restarts forever.
+// The old answer was to end the shim, which handed the client a dead MCP and flipped its switch off: a person editing code watched the server toggle itself off, and the only way back was a manual toggle.
+// So a poisoned worker now answers every request by name and keeps the pipe open.
+// Nothing is hidden — every call says the worker is broken — and the client stays connected, so saving a fix brings the tools back on its own.
+
+// WHY A RELOAD TELLS THE CLIENT ITS TOOLS MOVED.
+// The client caches the tool list from the handshake, so a new tool stayed invisible until somebody toggled the server by hand — the exact round trip the shim was built to remove.
+// The protocol has a notification for exactly that, and the shim is the only party that knows a swap happened, so the shim sends it.
+
+// WHY NO SINGLETON LOCK SURVIVES HERE.
+// One shim per machine was enforced by an atomic PID file, and the second shim was told to exit — which took a whole session's tools down while a healthy bridge sat one port away holding the browser.
+// The bridge is now shareable (a driver that loses the port adopts the one that won it), so there is nothing left to enforce and nothing left to
+
+const TOOLS_CHANGED = JSON.stringify({ jsonrpc: '2.0', method: 'notifications/tools/list_changed' });
+
+// The pipe and the worker as the shim actually uses them.
+// The production worker is a ChildProcess with stdio pipes; the tests drive a fake shaped like this.
+
+export interface SupervisorPipe {
+  on(event: string, listener: (chunk: unknown) => void): void;
+}
+
+export interface SupervisorOutput {
+  write(chunk: string): unknown;
+}
+
+export interface SupervisorWorker {
+  stdin: { write(chunk: string): unknown };
+  stdout: SupervisorPipe & { setEncoding?(encoding: string): void };
+  on(event: string, listener: (arg: unknown) => void): unknown;
+  kill(signal?: string): unknown;
+}
+
+export interface SupervisorOptions {
+  spawnWorker: () => SupervisorWorker;
+  watchFiles?: ((onChange: () => void) => { close(): void }) | undefined;
+  input: SupervisorPipe;
+  output: SupervisorOutput;
+  log?: (message: unknown) => void;
+  now?: () => number;
+  settleMs?: number;
+  debounceMs?: number;
+  maxRespawns?: number;
+  respawnWindowMs?: number;
+}
+
+export function createSupervisor({
+  spawnWorker,
+  watchFiles,
+  input,
+  output,
+  log = () => {},
+  now = () => Date.now(),
+  settleMs = 5000,
+  debounceMs = 300,
+  maxRespawns = 3,
+  respawnWindowMs = 30000
+}: SupervisorOptions) {
+  let child: SupervisorWorker | null = null;
+  let watcher: { close(): void } | null = null;
+  let swapping = false;
+  let stopped = false;
+  let dirty = false;
+  let poisoned: string | null = null;
+  let initLine: string | null = null;
+  let replayId: string | number | null = null;
+  let queue: string[] = [];
+  let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+  const pending = new Set<string | number>();
+  const deaths: number[] = [];
+
+  const methodOf = (line: string): string | null => {
+    try {
+      const parsed: unknown = JSON.parse(line);
+      if (typeof parsed !== 'object' || parsed === null) return null;
+      const method = (parsed as { method?: unknown }).method;
+      return typeof method === 'string' ? method : null;
+    } catch {
+      return null;
+    }
+  };
+
+  const idOf = (line: string): string | number | null => {
+    try {
+      const parsed: unknown = JSON.parse(line);
+      if (typeof parsed !== 'object' || parsed === null) return null;
+      const id = (parsed as { id?: unknown }).id;
+      return typeof id === 'string' || typeof id === 'number' ? id : null;
+    } catch {
+      return null;
+    }
+  };
+
+  const splitter = (onLine: (line: string) => void) => {
+    let rest = '';
+    return (chunk: unknown) => {
+      rest += String(chunk);
+      const lines = rest.split('\n');
+      rest = lines.pop()!;
+      for (const line of lines) onLine(line);
+    };
+  };
+
+  const send = (line: string) => {
+    if (child) child.stdin.write(`${line}\n`);
+  };
+
+  const forwardToClient = (line: string) => {
+    output.write(`${line}\n`);
+  };
+
+  const failPending = (message: string) => {
+    for (const id of [...pending]) {
+      pending.delete(id);
+      forwardToClient(JSON.stringify({ jsonrpc: '2.0', id, error: { code: -32000, message } }));
+    }
+  };
+
+  const replayInit = () => {
+    if (!initLine) return;
+    replayId = idOf(initLine);
+    send(initLine);
+  };
+
+  const onClientLine = (line: string) => {
+    const text = line.trim();
+    if (!text) return;
+    if (poisoned) {
+      const id = idOf(text);
+      if (id !== null) {
+        forwardToClient(JSON.stringify({ jsonrpc: '2.0', id, error: { code: -32000, message: poisoned } }));
+      }
+      return;
+    }
+    if (swapping) {
+      queue.push(text);
+      return;
+    }
+    const id = idOf(text);
+    if (id !== null) pending.add(id);
+    if (methodOf(text) === 'initialize') initLine = text;
+    send(text);
+  };
+
+  const onChildLine = (line: string) => {
+    const text = line.trim();
+    if (!text) return;
+    const id = idOf(text);
+    if (id !== null) {
+      pending.delete(id);
+      if (replayId !== null && id === replayId) {
+        replayId = null;
+        return;
+      }
+    }
+    forwardToClient(text);
+  };
+
+  const killChild = (): Promise<void> => new Promise((resolve) => {
+    const dying = child;
+    child = null;
+    if (!dying) return resolve();
+    dying.on('exit', () => resolve());
+    try {
+      dying.kill();
+    } catch {
+      resolve();
+      return;
+    }
+    setTimeout(() => {
+      try {
+        dying.kill('SIGKILL');
+      } catch {}
+      resolve();
+    }, 2000);
+  });
+
+  const noteDeath = () => {
+    const at = now();
+    deaths.push(at);
+    while (deaths.length > 0 && deaths[0]! < at - respawnWindowMs) deaths.shift();
+  };
+
+  const startChild = () => {
+    const mine = spawnWorker();
+    child = mine;
+    if (typeof mine.stdout.setEncoding === 'function') mine.stdout.setEncoding('utf8');
+    mine.stdout.on('data', splitter(onChildLine));
+    mine.on('error', () => {
+      if (child === mine) onChildExit('spawn-error');
+    });
+    mine.on('exit', (code: unknown) => {
+      if (child === mine) onChildExit(code);
+    });
+  };
+
+  const onChildExit = (code: unknown) => {
+    if (stopped) return;
+    child = null;
+    failPending('dev server worker died, retry');
+    noteDeath();
+    if (deaths.length > maxRespawns) {
+      poisoned = `the dev worker keeps dying (${deaths.length} times in ${respawnWindowMs} ms) — save a file to rebuild it`;
+      log(poisoned);
+      return;
+    }
+    log(`worker exited (${code == null ? 'signal' : String(code)}), rebuilding`);
+    startChild();
+    replayInit();
+  };
+
+  const reload = async () => {
+    if (stopped || swapping) return;
+    poisoned = null;
+    swapping = true;
+    queue = [];
+    log('files changed, swapping worker');
+
+    const deadline = now() + settleMs;
+
+    const waiting = () => pending.size > 0 && now() < deadline && !stopped;
+    while (waiting()) {
+      await new Promise<void>((resolve) => { setTimeout(resolve, 25); });
+    }
+    failPending('dev server reloaded, retry');
+    await killChild();
+    if (stopped) return;
+    startChild();
+    replayInit();
+    forwardToClient(TOOLS_CHANGED);
+    const held = queue;
+    queue = [];
+    swapping = false;
+    for (const line of held) onClientLine(line);
+    if (dirty && !stopped) {
+      dirty = false;
+      scheduleReload();
+    }
+  };
+
+  const scheduleReload = () => {
+    if (stopped) return;
+    if (swapping) {
+      dirty = true;
+      return;
+    }
+    if (debounceTimer) clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => { void reload(); }, debounceMs);
+  };
+
+  const stop = async () => {
+    if (stopped) return;
+    stopped = true;
+    if (debounceTimer) clearTimeout(debounceTimer);
+    try {
+      watcher?.close();
+    } catch {}
+    await killChild();
+  };
+
+  const setInputEncoding = input as unknown as { setEncoding?(encoding: BufferEncoding): void };
+  if (typeof setInputEncoding.setEncoding === 'function') setInputEncoding.setEncoding('utf8');
+  input.on('data', splitter(onClientLine));
+  startChild();
+  if (typeof watchFiles === 'function') {
+    try {
+      watcher = watchFiles(scheduleReload);
+    } catch (error: unknown) {
+      log(`watch unavailable, serving without reload: ${String((error as Error)?.message ?? error)}`);
+    }
+  }
+
+  return { stop };
+}

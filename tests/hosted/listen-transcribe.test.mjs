@@ -12,7 +12,7 @@ import { readFileSync } from 'node:fs';
 import { stripTypeScriptTypes } from 'node:module';
 import { createHash } from 'node:crypto';
 import vm from 'node:vm';
-import { CORS_DEFAULT_ORIGINS, resolveAllowedOrigin } from '../../hosted/functions/_shared/cors.js';
+import { CORS_DEFAULT_ORIGINS, resolveAllowedOrigin } from '../../hosted/functions/_shared/cors.ts';
 
 const source = stripTypeScriptTypes(readFileSync(new URL('../../hosted/functions/opera-agent-listen/index.ts', import.meta.url), 'utf8')
   .replace(/^import .*;\r?\n/gm, ''));

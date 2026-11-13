@@ -12,7 +12,7 @@
 // A silent refusal is a bug report nobody writes; a named one is a support question that names the fix.
 // Every refusal below carries the plan that ran out.
 
-import { PLANS } from '../_shared/plans.js';
+import { PLANS } from '../_shared/plans.ts';
 
 const FIRM_FEATURES = Object.freeze({
   all: 'the whole-page map',

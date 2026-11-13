@@ -377,7 +377,7 @@ test('no module under extension/, shared/, scripts/ or hosted/functions/ exports
 
 const STAGED_FOR_THE_OPEN_TASK = new Map([
   ['shared/ax-menu.ts', 'Task 9 of docs/superpowers/plans/2026-10-14-docs-paper-plan.md: the AX road reads live row names to compare against the label map'],
-  ['hosted/functions/_shared/docs-ui-map.js', 'Task 9 of docs/superpowers/plans/2026-10-14-docs-paper-plan.md: the map the AX road is compared against'],
+  ['hosted/functions/_shared/docs-ui-map.ts', 'Task 9 of docs/superpowers/plans/2026-10-14-docs-paper-plan.md: the map the AX road is compared against'],
 ]);
 
 test('a module with its own code is reached by the product, not only by its own test', async () => {
@@ -449,8 +449,8 @@ test('a module with its own code is reached by the product, not only by its own 
   // its artifact is, so the census counts the pair as one module.
   for (const [file, targets] of edges) {
     for (const target of [...targets]) {
-      const match = /^shared\/(.+)\.js$/.exec(target);
-      if (match && textOf.has(`shared/${match[1]}.ts`)) targets.push(`shared/${match[1]}.ts`);
+      const match = /^(shared|local)\/(.+)\.js$/.exec(target);
+      if (match && textOf.has(`${match[1]}/${match[2]}.ts`)) targets.push(`${match[1]}/${match[2]}.ts`);
     }
   }
 
@@ -481,6 +481,12 @@ test('a module with its own code is reached by the product, not only by its own 
     }
   }
 
+  // A root that names the emitted copy also reaches its source; a lifecycle script or bin stub is the same module as its .ts twin, and the census judges the source.
+  for (const file of [...roots]) {
+    const match = /^(local|shared)\/(.+)\.js$/.exec(file);
+    if (match && textOf.has(`${match[1]}/${match[2]}.ts`)) roots.add(`${match[1]}/${match[2]}.ts`);
+  }
+
   const reached = new Set();
   const queue = [...roots];
   while (queue.length) {
@@ -499,7 +505,9 @@ test('a module with its own code is reached by the product, not only by its own 
 
   // Ambient type-declaration files are types, never runtime code, so they are not modules that can be reached.
   // shared/<stem>.js is the build's copy of shared/<stem>.ts and cannot be judged on its own; its source is, and the artifact-to-source mapping above carries the reach.
-  const runtimeFiles = codeFiles.filter((file) => /^(extension|shared|local|hosted\/functions|scripts)\//.test(file)
+  const runtimeFiles = codeFiles.filter((file) =>
+    (/^(extension|shared|hosted\/functions|scripts)\//.test(file)
+      || (/^local\//.test(file) && file.endsWith('.ts')))
     && !file.endsWith('.d.ts')
     && !/^shared\/[^/]+\.js$/.test(file));
   const unreachable = runtimeFiles.filter((file) => !reached.has(file) && !isShim(textOf.get(file)));

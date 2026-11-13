@@ -7,7 +7,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { compileGoalPlan } from '../../extension/lib/goal-plan.js';
 import { advanceCollectVm, createCollectVm, validateCollectProgram } from '../../shared/reactive-vm-collect.js';
-import { digestCanonical } from '../../hosted/functions/_shared/goal-ledger.js';
+import { digestCanonical } from '../../hosted/functions/_shared/goal-ledger.ts';
 
 const reply = JSON.stringify({
   root: {
