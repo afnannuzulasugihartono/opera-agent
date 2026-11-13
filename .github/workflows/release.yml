@@ -26,6 +26,10 @@ jobs:
         with:
           node-version: 22
 
+      - name: Install the toolchain
+        shell: bash
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
       - name: Resolve version
         shell: bash
         run: |
