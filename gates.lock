@@ -182,4 +182,4 @@ hosted/functions/_shared/cors.js dead4552d786ef0fdbaf71ad5bfb3c99e647b575
 extension/manifest.json 47789c72fa3876d4a9d94104f7da94b72e25bcb2
 .gitleaks.toml c86e2ad6f0f7b76e512fda11f76e533b807dc883
 .github/CODEOWNERS ca0271e08aadabe56f86ae17620b36073df44cfb
-.github/workflows/ci.yml bf241518b3aea12b4fbc49ab102552cea139c1e5
+.github/workflows/ci.yml 6bd4d39bb0176ec8697e1f42fd9a65dbb1e7896f
