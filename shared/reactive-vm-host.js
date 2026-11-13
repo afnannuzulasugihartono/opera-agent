@@ -6,9 +6,9 @@
 import { digestCanonical } from '../supabase/functions/_shared/goal-ledger.js';
 import { SECRET_VALUE } from './secret-pattern.js';
 import { createMultiSignalRelevancePipeline } from './multi-signal-relevance.js';
+import { SECRET_FIELD } from './reactive-vm-core.js';
 
 const DIGEST_RE = /^sha256:[0-9a-f]{64}$/;
-const SECRET_FIELD = /(?:password|passcode|otp|secret|credential|private.?key|access.?token|refresh.?token|card.?number|cvv|payment.?data|pairing.?code|signing.?key)/i;
 
 const TERMINAL = new Set(['SUSPENDED', 'RETURNED', 'LIMIT_REACHED', 'FAILED', 'CANCELLED', 'EXPIRED']);
 

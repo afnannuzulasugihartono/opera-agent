@@ -1,9 +1,8 @@
-// @last-edited: 2026-11-07 UTC+7.
-// @title: tidy — the shape a model reads: the answer first, the transport gone.
+// @last-edited: 2026-11-13 UTC+7.
+// @title: tidy - the shape a model reads: the answer first, the transport gone.
 // @state: the envelope rules, the tab fields, the bridge fields, and one flag that returns the raw envelope.
+// The one shared source, both roads bundle it.
 // @dependencies: none.
-
-type Json = Record<string, unknown>;
 
 // No tool accepts a command id, a run id or a timing block, so a model can never spend them.
 
@@ -13,25 +12,25 @@ const TRANSPORT_KEYS = ["commandId", "runId", "timing"];
 
 const TAB_KEYS = ["muted", "pinned", "audible", "windowId"];
 
-function isObject(value: unknown): value is Json {
+function isObject(value) {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function isTab(value: Json): boolean {
+function isTab(value) {
   return typeof value.id === "number" && typeof value.url === "string";
 }
 
-function isBridge(value: Json): boolean {
+function isBridge(value) {
   return Array.isArray(value.trace)
     && ("port" in value || "url" in value || "linked" in value || "commands" in value);
 }
 
-function trimValue(value: unknown): unknown {
+function trimValue(value) {
   if (Array.isArray(value)) return value.map(trimValue);
   if (!isObject(value)) return value;
 
   if (isTab(value)) {
-    const tab: Json = { ...value };
+    const tab = { ...value };
     for (const key of TAB_KEYS) delete tab[key];
     return tab;
   }
@@ -40,7 +39,7 @@ function trimValue(value: unknown): unknown {
     return typeof value.lastError === "string" && value.lastError ? { lastError: value.lastError } : {};
   }
 
-  const trimmed: Json = {};
+  const trimmed = {};
   for (const [key, item] of Object.entries(value)) {
     const next = trimValue(item);
     if (key === "bridge" && isObject(next) && Object.keys(next).length === 0) continue;
@@ -49,10 +48,10 @@ function trimValue(value: unknown): unknown {
   return trimmed;
 }
 
-export function tidyForAi(value: unknown): Json {
+export function tidyForAi(value) {
   if (!isObject(value)) return { value: value ?? null };
 
-  const out: Json = {};
+  const out = {};
   for (const [key, item] of Object.entries(value)) {
     if (TRANSPORT_KEYS.includes(key)) continue;
     if (key === "status" && item === "completed") continue;
@@ -74,5 +73,5 @@ export function tidyForAi(value: unknown): Json {
 
   if (!("ok" in out)) out.ok = true;
 
-  return trimValue(out) as Json;
+  return trimValue(out);
 }

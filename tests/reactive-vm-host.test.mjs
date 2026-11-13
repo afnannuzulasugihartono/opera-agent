@@ -1,7 +1,7 @@
 // @last-edited: 2026-10-11 UTC+7.
 // @title: reactive-vm-host — the VM host's state contract.
 // @state: 8 locks; idempotency key, shape, secrets, cycles, clock, limits.
-// @dependencies: node:test, assert, fs, lib/reactive-vm-host.js.
+// @dependencies: node:test, assert, fs, shared/reactive-vm-host.js.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -12,11 +12,11 @@ import {
   classifyVmPersistence,
   deriveVmEffectIdempotencyKey,
   reconcileVmEffectObservation
-} from '../lib/reactive-vm-host.js';
+} from '../shared/reactive-vm-host.js';
 
 const DIGEST = `sha256:${'a'.repeat(64)}`;
 const OTHER = `sha256:${'b'.repeat(64)}`;
-const source = () => fs.readFileSync(new URL('../lib/reactive-vm-host.js', import.meta.url), 'utf8');
+const source = () => fs.readFileSync(new URL('../shared/reactive-vm-host.js', import.meta.url), 'utf8');
 
 const idempotency = (over = {}) => ({
   tenantId: 'tenant-1', runId: 'run-1', programDigest: DIGEST,

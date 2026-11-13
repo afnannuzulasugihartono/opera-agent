@@ -156,29 +156,29 @@
 #    tests/helpers/canonical-source-hash.mjs strips the comment lines and collapses
 #    the whitespace before hashing a tool schema, so the pin holds the tool's
 #    contract and not its indentation.
-scripts/check.mjs 139a8afbcfb1dc9ba6081a08ac84dad15291bfcc
+scripts/check.mjs f6eb8abb6d57abe829f86b76bd9ecf124cb4da0f
 scripts/scope.mjs 2293857de17bf0077a368729555f3af5a13a6ff5
 scripts/scope-check.mjs d6359cc409244f0fdc13cc7ef496daddd5981910
 
 # --- the pins themselves: editing these is how a drift goes unnoticed ---
-tests/helpers/boundary-locks.mjs 0cda683f97e8780931abfe7bcff56c57381d9dc4
+tests/helpers/boundary-locks.mjs 5885113ceebe58c350eb58d8ab11dffe854e7cd5
 tests/helpers/canonical-source-hash.mjs a4ebaa0d40122afce47a52cba39309d7dfdb1af1
 tests/helpers/comment-format.mjs bced9e4c9b7a58b56e3317067d5e6717dd2040bf
 tests/comment-format.test.mjs 0231619043033b07c22f725feee511d6ebb34bd4
 tests/comment-claims.test.mjs 09b2944f3ca73f2304752df2423ab67a35a462e6
 
 # --- structural rules a human reviewer would otherwise have to remember ---
-tests/hygiene.test.mjs b2ebad27ecb46dd9200ce50ad2d2bb93ba91e793
+tests/hygiene.test.mjs 9ca7e6ad6f2bb0729f1eb10a52fee49cbfd94cf3
 tests/structure-gates.test.mjs 3ebf0d1b62858e67d7f6fb441461be85e7158a63
 tests/boundary-locks.test.mjs b652662d40f21b495e80cca134f46f4337448d57
 
 # --- controls that decide what the product accepts at runtime ---
 extension/lib/protocol.js 14d9a778570a1b789c80e6fe6e5f37d68031013c
-lib/secret-pattern.js 06386015c5756f83c08ee06cc571b9ae897d850a
+shared/secret-pattern.js 06386015c5756f83c08ee06cc571b9ae897d850a
 supabase/functions/_shared/cors.js dead4552d786ef0fdbaf71ad5bfb3c99e647b575
 
 # --- surfaces an owner, not an agent, should have to look at ---
 extension/manifest.json 47789c72fa3876d4a9d94104f7da94b72e25bcb2
 .gitleaks.toml 4cdb3f1b759def776beeb77df39ea4cd52513e64
-.github/CODEOWNERS 8b4d8f8bb18f931b9c6e4a15cd06dac9e4be3a20
+.github/CODEOWNERS 6d80376cc27b5a47e56a454b958f43944c681c2c
 .github/workflows/ci.yml bf241518b3aea12b4fbc49ab102552cea139c1e5

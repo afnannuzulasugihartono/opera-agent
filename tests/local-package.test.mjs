@@ -21,7 +21,7 @@ const shipped = JSON.parse(readFileSync(join(local, 'package.json'), 'utf8')).fi
 const IMPORT = /from '(\.{1,2}\/[^']+)'/g;
 
 // An import that resolves outside the package does not exist on the machine the user installs to, and a run-time read of a file outside the package dies with ENOENT.
-// The local server once died exactly this way on tidy.ts.
+// The local server once died exactly this way on the vendored tidy copy.
 // Skipping such an import silently let a package that cannot start keep the gate green, so they are collected and failed here instead.
 
 const outside = [];

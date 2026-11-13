@@ -12,13 +12,13 @@ import {
   advanceCollectVm,
   createCollectVm,
   validateCollectProgram,
-} from "../../../lib/reactive-vm-collect.js";
+} from "../../../shared/reactive-vm-collect.js";
 import {
   REACTIVE_VM_HOST_LIMITS,
   classifyVmPersistence,
   deriveVmEffectIdempotencyKey,
   reconcileVmEffectObservation,
-} from "../../../lib/reactive-vm-host.js";
+} from "../../../shared/reactive-vm-host.js";
 import {
   decodeVmHostKey,
   openVmHostToken,

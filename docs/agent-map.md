@@ -16,7 +16,7 @@ directory is not listed here, it is generated state, user data, or an archive.
 | Area | Entry | Responsibility | Tests |
 |---|---|---|---|
 | Extension runtime | `extension/background.js`, `extension/content.js` | MV3 worker, content injection, generic primitives | `tests/browser_extension_test.py`, `tests/*extension*.test.mjs` |
-| Shared pure modules | `lib/*.js` | Expressions, focus, protocol, working state | `tests/*semantic*.test.mjs`, `tests/*working-state*.test.mjs` |
+| Shared pure modules | `shared/*.js` | Expressions, focus, protocol, working state | `tests/*semantic*.test.mjs`, `tests/*working-state*.test.mjs` |
 | Cloud backend | `supabase/functions/*/index.ts`, `_shared/*.js` | Auth, billing, bridge, gateway, MCP, runner, update, VM | `tests/mcp-surface.test.mjs`, live Supabase tests |
 | Local MCP | `local/bin/opera-local.js`, `local/mcp-server.js` | CDP driver behind an MCP stdio server | `tests/local-*-*.test.mjs` |
 | Local primitives | `local/primitives.js` | The driver assembled: navigation, focus, and one verb per module below | `tests/local-primitives.test.mjs` |

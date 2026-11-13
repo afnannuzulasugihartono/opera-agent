@@ -44,6 +44,8 @@ import { leaseTab, releaseTab } from './bridge.js';
 
 import { tidyForAi } from './lib/tidy.js';
 import { TOOLS, ASKABLE, askParams, STRAY_FILE_TAB } from './tools.js';
+import { SERP_EXPRESSION } from './page-expressions.js';
+import { parseBingSerp } from './lib/bing-serp.js';
 import { pairDevice, taskRefund, taskReserve, taskSettle, walletBalance, walletQuote, walletTopUp } from './wallet-client.js';
 
 // The tool table lives in tools.js: the surface is data, and this file is the protocol that answers it.
@@ -384,7 +386,7 @@ export function createMcpServer(context) {
   const fallback = context.driver ?? null;
   const lease = context.lease ?? bridgeLease;
 
-  const driverFor = async (tabId) => {
+  const driverFor = async (tabId, { background = false } = {}) => {
     if (!tabId) return fallback;
 
     // WHY THE CLAIM IS ASKED BEFORE ANYTHING IS OPENED.
@@ -404,7 +406,7 @@ export function createMcpServer(context) {
       throw new Error(`No page target ${tabId}. Open pages: ${known.join(' | ')}`);
     }
     if (!sessions.has(tabId)) {
-      sessions.set(tabId, await context.open({ ...(context.sessionOptions ?? {}), targetId: tabId }));
+      sessions.set(tabId, await context.open({ ...(context.sessionOptions ?? {}), targetId: tabId, ...(background ? { background: true } : {}) }));
     }
     return sessions.get(tabId);
   };
@@ -594,6 +596,89 @@ const windowMatch = async (tab, driver) => (tab ? String(tab.title ?? '') : page
         return asText(await driver.surfaceProfile());
       case 'read_page':
         return asText(await driver.read({ allowCaretMove: args.allowCaretMove === true }));
+      // WHY THE SETTLE IS ASKED FOR, BOUNDED AND OPTIONAL.
+      // tabs.open already waits for the tab's load event, but load and settled-for-readers are different facts: Bing renders its cards server-side, and the first innerText read is only as fresh as whatever the page did after DOMContentLoaded.
+      // The optional call keeps a fake session in the tests working while the real one measures quiet before the read.
+      case 'search_bing': {
+        const query = String(args.query ?? '').trim();
+        if (!query) throw new Error('search_bing needs a non-empty query string.');
+        const pages = Math.min(3, Math.max(1, Math.floor(Number(args.pages) || 1)));
+        const firstUrl = `https://www.bing.com/search?q=${encodeURIComponent(query)}`;
+        // WHY ONE TAB AND WHY IT IS ALWAYS CLOSED.
+        // The everyday browser is visible while an agent works: the search walks at most three pages in one background tab (foreground on the direct-CDP fallback, which cannot order one) and closes it on every exit path; what remains is one structured answer.
+        const withDeadline = (promise, ms, what) => {
+          let timer;
+          const clock = new Promise((_, reject) => {
+            timer = setTimeout(() => reject(new Error(`${what} did not answer in ${ms}ms - the browser may be busy or asleep; the search tab was closed either way.`)), ms);
+          });
+          return Promise.race([
+            Promise.resolve(promise).then(
+              (value) => { clearTimeout(timer); return value; },
+              (error) => { clearTimeout(timer); throw error; }
+            ),
+            clock
+          ]);
+        };
+        let tabId = '';
+        let failure = null;
+        let closeFailed = false;
+        let answer = null;
+        try {
+          const opened = await fallback.open(firstUrl);
+          tabId = String(opened?.id ?? '');
+          if (!tabId) throw new Error('the search tab could not be confirmed; the browser may be asleep - check browser_status - and the open may have happened without this process hearing back; list_tabs shows whether a Bing tab is sitting there.');
+          const searchDriver = await driverFor(tabId, { background: true });
+          await searchDriver.waitForStill?.({ timeoutMs: 4000, quietMs: 150 })?.catch(() => null);
+          const merged = [];
+          let currentFirst = 1;
+          let truncated = false;
+          let textTruncated = false;
+          let fetched = 0;
+          let pageUrl = firstUrl;
+          let pageTitle = '';
+          for (let page = 0; page < pages; page += 1) {
+            if (page > 0) await withDeadline(searchDriver.navigate(`${firstUrl}&first=${currentFirst}`), 25000, 'navigating to the next results page');
+            const raw = await withDeadline(Promise.resolve().then(() => searchDriver.evaluate(SERP_EXPRESSION)), 15000, 'reading the results page');
+            const parsed = parseBingSerp({ text: String(raw?.text ?? ''), links: Array.isArray(raw?.links) ? raw.links : [] }, { currentFirst });
+            merged.push(...parsed.results);
+            fetched += 1;
+            truncated = parsed.nextFirst !== null;
+            textTruncated = textTruncated || raw?.truncated === true;
+            if (fetched === 1) {
+              pageUrl = String(raw?.url ?? firstUrl);
+              pageTitle = String(raw?.title ?? '');
+            }
+            if (parsed.nextFirst === null) break;
+            currentFirst = parsed.nextFirst;
+          }
+          const seen = new Set();
+          const results = [];
+          for (const result of merged) {
+            if (seen.has(result.url)) continue;
+            seen.add(result.url);
+            results.push({ ...result, rank: results.length + 1 });
+          }
+          answer = { ok: true, kind: 'search', page: { url: pageUrl, title: pageTitle }, search: { query, engine: 'bing', pages: fetched, count: results.length, truncated, ...(textTruncated ? { textTruncated: true } : {}), results } };
+        } catch (error) {
+          failure = error;
+        } finally {
+          if (tabId) {
+            sessions.get(tabId)?.close?.();
+            sessions.delete(tabId);
+            await lease.release(tabId, OWNER).catch(() => null);
+            await fallback.close(tabId).then(() => { closeFailed = false; }).catch(() => { closeFailed = true; });
+          }
+        }
+        if (failure) {
+          if (closeFailed) {
+            const message = failure instanceof Error ? failure.message : String(failure);
+            throw new Error(message + ' The search tab may still be open on the browser; check list_tabs.');
+          }
+          throw failure;
+        }
+        if (closeFailed && answer) answer.tabClosed = false;
+        return asText(answer);
+      }
       case 'find_elements':
         return asText(await driver.find(args.query));
       case 'click':

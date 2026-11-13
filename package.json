@@ -7,7 +7,7 @@
   "type": "module",
   "scripts": {
     "pretest": "node scripts/pack-mcp.mjs",
-  "test": "node --test --test-timeout=120000 --test-reporter=dot tests/*.test.mjs",
+    "test": "node --test --test-timeout=120000 --test-reporter=dot tests/*.test.mjs",
     "test:unit": "node --test tests/protocol.test.mjs tests/workflow-dsl.test.mjs",
     "test:browser": "python tests/browser_extension_test.py",
     "benchmark:semantic": "node scripts/semantic-baseline.mjs --runs=3",

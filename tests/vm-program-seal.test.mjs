@@ -16,7 +16,7 @@ import {
   sealVmProgram
 } from '../supabase/functions/_shared/seal-vm-program.js';
 import { digestCanonical } from '../supabase/functions/_shared/goal-ledger.js';
-import { validateCollectProgram } from '../lib/reactive-vm-collect.js';
+import { validateCollectProgram } from '../shared/reactive-vm-collect.js';
 
 const caller = { userId: 'caller-tenant' };
 

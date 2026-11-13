@@ -1,4 +1,4 @@
-// @last-edited: 2026-11-12 UTC+7.
+// @last-edited: 2026-11-13 UTC+7.
 // @title: boundary-locks - the frozen locks on the public boundary, shared by the checkpoint tests.
 // @state: ten pins over four stacks; each line says why the current pin exists, and nothing else.
 // @dependencies: none.
@@ -95,21 +95,27 @@
 // WHY these three were re-pinned on 2026-11-12: the 1.6.50 release rode them.
 // The version constants moved (manifest.json version, index.ts SERVER_VERSION); nothing about the public contract moved with them.
 
+// WHY these two were re-pinned on 2026-11-13: the surface gained search_bing, and it gained it as a workflow over the primitives, not as a new one.
+// The relay opens one background tab on the Bing SERP, reads up to three result pages with page.dump following Bing's own pagination links, zips the external anchors into rank, title, url, site and the snippet each card renders, dedupes across pages and closes the tab.
+// The extension gained nothing: tabs.open, tabs.navigate, page.dump and tabs.close are the whole road, so the 36-method protocol and its pins above did not move.
+// The local stdio road carries the same tool over its own tab broker, reading the one parser (shared/bing-serp.js), generated into the package by scripts/pack-mcp.mjs and never committed.
+// The evaluator that walks the SERP lives in local/page-expressions.js; the tools.ts schema and the tools.ts registration moved with it.
+
 export const PUBLIC_SURFACE_LOCKS = Object.freeze([
   ['../extension/content.js', 'fd75fc8ba524c201294b4919603fb478400865039f46d5a00730b0f1b937ecb3'],
   ['../extension/background.js', 'c222723151c856e0051b67ac8b489d97096ed6605da080fff1c8bb859a05fe01'],
   ['../extension/manifest.json', 'aaad334ded5c8febe60127a01b8ccfeddb5e0f191f42800a1567b1c9ec6fc84e'],
-  ['../supabase/functions/opera-agent-mcp/index.ts', 'c805688f4ba85a2f6ff1f104bdf58e982de0c6b7b80fa29ff0d5b2999a9967ab'],
-  ['../supabase/functions/opera-agent-mcp/tools.ts', '4675349f0bf22cfed166699c02c7ebb53bf0c24a2ca48d8a919e52a3ae2ff48d'],
+  ['../supabase/functions/opera-agent-mcp/index.ts', '1bc26ba242eae2bca8ddaed4ee9f574e0274b44046aa770f7ae4fe0539e5e0a6'],
+  ['../supabase/functions/opera-agent-mcp/tools.ts', '7581260b1d9c89d556566e3fefe5105e8e6f57187548c6679708478725b8396d'],
 ]);
 
 export const OBSERVATION_STACK_LOCKS = Object.freeze([
-  ['../lib/reactive-vm.js', '3ac99be9fe8504a13bc66c730c6ea33484c3884c3fa0b009778a157ce8ff8793'],
-  ['../lib/reactive-vm-control-flow.js', 'b63ec432a107f0bb0754e702f4804be14dac1f6f5a8d25d4f6ddae171053f287'],
-  ['../lib/reactive-vm-collect.js', '31d337414bfa0460ac093310ec44afab6563d0cfb4258c02500470f49fadf24a'],
+  ['../shared/reactive-vm.js', '6ac7706759db19bd648920691e6f0c9cc19c710f30cf832caef64ed76c104f87'],
+  ['../shared/reactive-vm-control-flow.js', 'aa3a9bb168572aad00a956e85303155f5a130c692f463b9248b8c336c2dcb4e6'],
+  ['../shared/reactive-vm-collect.js', 'd4ab3ff8df9d1b9e5c2e632a8dce5a639c2c0255a890b37d1702e3071e19ff7b'],
 ]);
 
 export const RELEVANCE_STACK_LOCKS = Object.freeze([
-  ['../lib/multi-signal-relevance.js', '230f5c7722e088adfdc6b4d99b2331c7752486a198a6e6bc63e4238809af2c01'],
-  ['../lib/delta-first-observation.js', '1471eadfa5fb4cf0b7871c855304c7af4e8225c21478f93ccde5e87dd3ccf974'],
+  ['../shared/multi-signal-relevance.js', '230f5c7722e088adfdc6b4d99b2331c7752486a198a6e6bc63e4238809af2c01'],
+  ['../shared/delta-first-observation.js', '1471eadfa5fb4cf0b7871c855304c7af4e8225c21478f93ccde5e87dd3ccf974'],
 ]);

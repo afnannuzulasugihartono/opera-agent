@@ -19,6 +19,10 @@ import os from 'node:os';
 import path from 'node:path';
 import { createMcpServer, TOOLS } from '../local/mcp-server.js';
 
+const serpFixture = JSON.parse(
+  fs.readFileSync(new URL('./fixtures/bing-serp-page1.json', import.meta.url), 'utf8')
+);
+
 // WHY THE FAILURE IS READ FROM THE ANSWER.
 // A refused tool answers the way the hosted wire answers: the call came back and it says what failed, so the message is read from the answer rather than from a protocol frame.
 
@@ -97,11 +101,66 @@ const openLease = () => {
   };
 };
 
+// WHY THE SEARCH SESSION IS A SECOND FAKE.
+// search_bing opens its own tab through the fallback driver and then drives a fresh named session on it; the session is the only thing that can evaluate the SERP expression, so the fake carries exactly navigate and evaluate.
+
+function fakeSearchSession(calls) {
+  let evaluation = 0;
+  return {
+    navigate: async (url) => { calls.push(['navigate', url]); return { url, waited: true }; },
+    evaluate: async () => {
+      evaluation += 1;
+      if (evaluation === 1) {
+        return { ...serpFixture, url: 'https://www.bing.com/search?q=opera%20agent%20mcp', title: 'opera agent mcp - Search' };
+      }
+      return {
+        text: 'another result\nexample.org\nhttps://example.org › deep-dive\nExample Deep Dive\n\nA synthetic second page for the parser.\n',
+        url: 'https://www.bing.com/search?q=opera%20agent%20mcp&first=11',
+        title: 'opera agent mcp - Search',
+        links: [
+          { href: 'https://example.org/deep-dive', text: 'example.org https://example.org › deep-dive' },
+          { href: 'https://example.org/deep-dive', text: 'Example Deep Dive' }
+        ]
+      };
+    },
+    close: () => { calls.push(['session-close']); },
+  };
+}
+
 const ctx = (driver = fakeDriver(), lease = openLease()) => ({
   driver,
   browsers: [{ id: 'chrome', binary: 'C:/chrome.exe' }],
   port: 9450,
-  lease
+  lease,
+  open: async () => fakeSearchSession(driver.calls)
+});
+
+// The /health fake the two browser_status tests share: one bridge, one health payload, one port, always closed.
+
+const withHealthBridge = async (health, fn) => {
+  const http = await import('node:http');
+  const bridge = http.createServer((req, res) => {
+    if (req.url === '/health') { res.writeHead(200, { 'content-type': 'application/json' }); res.end(JSON.stringify(health)); return; }
+    res.writeHead(404); res.end();
+  });
+  await new Promise((resolve) => bridge.listen(0, '127.0.0.1', resolve));
+  const ephemeral = bridge.address().port;
+  try {
+    return await fn(ephemeral);
+  } finally {
+    await new Promise((resolve) => bridge.close(resolve));
+  }
+};
+
+// The document-job papers share one skeleton; only the graph blocks differ.
+
+const insertMenuPaper = (graphs) => ({
+  title: 'Menu inventory',
+  sections: [{
+    heading: 'Insert menu',
+    tables: [{ headers: ['Item', 'Shortcut'], rows: [['Image', 'Ctrl+Alt+I'], ['Table', '']] }],
+    ...(graphs ? { graphs } : {})
+  }]
 });
 
 test('initialize answers with a protocol version and who this server is', async () => {
@@ -131,7 +190,7 @@ test('the surface covers what the driver can actually do', async () => {
   const { result } = await server.handle({ jsonrpc: '2.0', id: 3, method: 'tools/list', params: {} });
   const names = result.tools.map((t) => t.name).sort();
 
-  for (const required of ['browser_status', 'open_url', 'close_tab', 'list_tabs', 'read_page', 'find_elements', 'click', 'click_row', 'hover', 'press_key', 'type', 'append', 'scroll', 'get_computed', 'stream_keys', 'wait_for', 'caret_line', 'upload', 'drop_file', 'intercept_file_chooser', 'download', 'capture_page', 'ax_snapshot', 'browser_burst']) {
+  for (const required of ['browser_status', 'open_url', 'close_tab', 'list_tabs', 'read_page', 'search_bing', 'find_elements', 'click', 'click_row', 'hover', 'press_key', 'type', 'append', 'scroll', 'get_computed', 'stream_keys', 'wait_for', 'caret_line', 'upload', 'drop_file', 'intercept_file_chooser', 'download', 'capture_page', 'ax_snapshot', 'browser_burst']) {
     assert.ok(names.includes(required), `missing ${required}`);
   }
 });
@@ -141,7 +200,6 @@ test('the surface covers what the driver can actually do', async () => {
 // The status answer used to hand that promise straight to the caller, and JSON turned it into an empty object, so an agent asking "where am I" was told nothing at all - and the answer that names the road is the one an agent reads first.
 
 test('browser_status carries the meter of every linked device', async () => {
-  const http = await import('node:http');
   const health = {
     ok: true, linked: true, queued: 0, waiting: 0, meterRefusal: null,
     devices: [
@@ -149,13 +207,7 @@ test('browser_status carries the meter of every linked device', async () => {
       { slot: 2, id: 'dev-b', instanceId: 'inst-b', deviceName: 'opera-b', extensionVersion: '1.6.35', connectedAt: 2, meter: { plan: 'plan.firm', allowance: 500, dailyQuota: 5000, sent: 0, usedToday: 5000, remaining: 0 } }
     ]
   };
-  const bridge = http.createServer((req, res) => {
-    if (req.url === '/health') { res.writeHead(200, { 'content-type': 'application/json' }); res.end(JSON.stringify(health)); return; }
-    res.writeHead(404); res.end();
-  });
-  await new Promise((resolve) => bridge.listen(0, '127.0.0.1', resolve));
-  const ephemeral = bridge.address().port;
-  try {
+  return withHealthBridge(health, async (ephemeral) => {
     const server = createMcpServer({ ...ctx(), port: async () => ephemeral });
     const res = await server.handle({ jsonrpc: '2.0', id: 91, method: 'tools/call', params: { name: 'browser_status', arguments: {} } });
     const payload = JSON.parse(res.result.content[0].text);
@@ -170,13 +222,10 @@ test('browser_status carries the meter of every linked device', async () => {
     assert.equal(byName['opera-b'].plan.remaining, 0);
     assert.equal(payload.planExhausted, true);
     assert.deepEqual(payload.planExhaustedDevices, ['opera-b']);
-  } finally {
-    await new Promise((resolve) => bridge.close(resolve));
-  }
+  });
 });
 
 test('browser_status stays quiet when every linked device has headroom', async () => {
-  const http = await import('node:http');
   const usedToday = 206;
   const health = {
     ok: true, linked: true, queued: 0, waiting: 0, meterRefusal: null,
@@ -184,22 +233,14 @@ test('browser_status stays quiet when every linked device has headroom', async (
       { slot: 1, id: 'dev-a', instanceId: 'inst-a', deviceName: 'opera-a', extensionVersion: '1.6.35', connectedAt: 1, meter: { plan: 'plan.firm', allowance: 500, dailyQuota: 5000, sent: 0, usedToday, remaining: 4794 } }
     ]
   };
-  const bridge = http.createServer((req, res) => {
-    if (req.url === '/health') { res.writeHead(200, { 'content-type': 'application/json' }); res.end(JSON.stringify(health)); return; }
-    res.writeHead(404); res.end();
-  });
-  await new Promise((resolve) => bridge.listen(0, '127.0.0.1', resolve));
-  const ephemeral = bridge.address().port;
-  try {
+  return withHealthBridge(health, async (ephemeral) => {
     const server = createMcpServer({ ...ctx(), port: async () => ephemeral });
     const res = await server.handle({ jsonrpc: '2.0', id: 92, method: 'tools/call', params: { name: 'browser_status', arguments: {} } });
     const payload = JSON.parse(res.result.content[0].text);
     assert.equal(payload.planExhausted, undefined, 'no device at zero means no exhaustion claim');
     assert.equal(payload.planExhaustedDevices, undefined);
     assert.equal(payload.devices[0].plan.remaining, 4794);
-  } finally {
-    await new Promise((resolve) => bridge.close(resolve));
-  }
+  });
 });
 
 test('browser_status names the port the drive is on', async () => {
@@ -250,19 +291,12 @@ test('report_build turns an exported sheet into a checked report without a brows
 test('document_build turns a JSON paper into a checked document without a browser', async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'opera-document-tool-'));
   const source = path.join(dir, 'paper.json');
-  fs.writeFileSync(source, JSON.stringify({
-    title: 'Menu inventory',
-    sections: [{
-      heading: 'Insert menu',
-      tables: [{ headers: ['Item', 'Shortcut'], rows: [['Image', 'Ctrl+Alt+I'], ['Table', '']] }],
-      graphs: [{
-        kind: 'count',
-        title: 'Items',
-        source: { table: 0, labelColumn: 'Item', aggregate: 'count' },
-        data: [{ label: 'Image', value: 1 }, { label: 'Table', value: 1 }]
-      }]
-    }]
-  }));
+  fs.writeFileSync(source, JSON.stringify(insertMenuPaper([{
+    kind: 'count',
+    title: 'Items',
+    source: { table: 0, labelColumn: 'Item', aggregate: 'count' },
+    data: [{ label: 'Image', value: 1 }, { label: 'Table', value: 1 }]
+  }])));
   try {
     const server = createMcpServer(ctx());
     const res = await server.handle({
@@ -285,18 +319,11 @@ test('document_build turns a JSON paper into a checked document without a browse
 test('document_build refuses a graph with no source and writes nothing', async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'opera-document-invalid-'));
   const source = path.join(dir, 'bad.json');
-  fs.writeFileSync(source, JSON.stringify({
-    title: 'Menu inventory',
-    sections: [{
-      heading: 'Insert menu',
-      tables: [{ headers: ['Item', 'Shortcut'], rows: [['Image', 'Ctrl+Alt+I'], ['Table', '']] }],
-      graphs: [{
-        kind: 'count',
-        title: 'Items',
-        data: [{ label: 'Image', value: 1 }, { label: 'Table', value: 1 }]
-      }]
-    }]
-  }));
+  fs.writeFileSync(source, JSON.stringify(insertMenuPaper([{
+    kind: 'count',
+    title: 'Items',
+    data: [{ label: 'Image', value: 1 }, { label: 'Table', value: 1 }]
+  }])));
   try {
     const server = createMcpServer(ctx());
     const res = await server.handle({
@@ -1404,3 +1431,59 @@ test('ask_page refuses anything that could act, and says what it may ask', async
   assert.ok(!c.driver.calls.some((call) => call[0] === 'ask'), 'nothing reached the browser');
 });
 
+test('search_bing answers with the structured results and closes its tab', async () => {
+  const c = ctx();
+  const server = createMcpServer(c);
+
+  const res = await server.handle({
+    jsonrpc: '2.0', id: 60, method: 'tools/call',
+    params: { name: 'search_bing', arguments: { query: 'opera agent mcp' } }
+  });
+  const payload = JSON.parse(res.result.content[0].text);
+
+  assert.equal(payload.ok, true);
+  assert.equal(payload.kind, 'search');
+  assert.equal(payload.search.engine, 'bing');
+  assert.equal(payload.search.pages, 1);
+  assert.equal(payload.search.count, 10);
+  assert.equal(payload.search.truncated, true);
+  assert.equal(payload.search.results[0].rank, 1);
+  assert.equal(payload.search.results[0].title, 'Opera Agent: Private Local MCP Browser Automation Bridge');
+  assert.equal(payload.search.results[0].url, 'https://mcpmarket.com/server/opera-agent');
+  assert.equal(payload.search.results[0].site, 'mcpmarket.com');
+  assert.ok(payload.search.results.every((result) => result.snippet.length > 0), 'every result carries its snippet');
+  assert.ok(c.driver.calls.some((call) => call[0] === 'open' && call[1] === 'https://www.bing.com/search?q=opera%20agent%20mcp'));
+  assert.deepEqual(c.driver.calls.at(-1), ['close', 't2'], 'the search tab is closed, nothing is left on the browser');
+});
+
+test('search_bing across two pages navigates to the next first, merges and re-numbers', async () => {
+  const c = ctx();
+  const server = createMcpServer(c);
+
+  const res = await server.handle({
+    jsonrpc: '2.0', id: 61, method: 'tools/call',
+    params: { name: 'search_bing', arguments: { query: 'opera agent mcp', pages: 2 } }
+  });
+  const payload = JSON.parse(res.result.content[0].text);
+
+  assert.equal(payload.search.pages, 2);
+  assert.equal(payload.search.count, 11, 'ten cards from page 1 plus one from page 2');
+  assert.equal(payload.search.truncated, false, 'no next-page link remains on page 2');
+  assert.equal(payload.search.results.at(-1).rank, 11);
+  assert.equal(payload.search.results.at(-1).title, 'Example Deep Dive');
+  assert.ok(c.driver.calls.some((call) => call[0] === 'navigate' && call[1] === 'https://www.bing.com/search?q=opera%20agent%20mcp&first=11'));
+  assert.deepEqual(c.driver.calls.at(-1), ['close', 't2']);
+});
+
+test('search_bing refuses an empty query with the reason named', async () => {
+  const c = ctx();
+  const server = createMcpServer(c);
+
+  const res = await server.handle({
+    jsonrpc: '2.0', id: 62, method: 'tools/call',
+    params: { name: 'search_bing', arguments: { query: '   ' } }
+  });
+
+  assert.match(failureOf(res), /non-empty query/);
+  assert.ok(!c.driver.calls.some((call) => call[0] === 'open'), 'nothing reached the browser');
+});

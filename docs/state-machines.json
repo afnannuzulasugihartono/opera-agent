@@ -1,7 +1,7 @@
 {
   "version": 1,
   "generated": "2026-11-12 UTC+7",
-  "source": "Two read-only sweeps, 2026-11-09 UTC: extension/|local/|lib/ (~200 files) and supabase/|landing/|scripts/|store/|.github/",
+  "source": "Two read-only sweeps, 2026-11-09 UTC: extension/|local/|shared/ (~200 files) and supabase/|landing/|scripts/|store/|.github/",
   "why": "An implicit state machine is code whose behavior hangs on state nobody declared. It is the shape of every silent failure in this product: the 'connected but dead' bridge, the ghost listen session, the command that completes after its timeout, the plan that runs out mid-run. The register names each one, and the gate (tests/implicit-state-machines.test.mjs) refuses hidden state nobody can point at. The decision order is fixed: UX > DX > AX — a failure the user can feel is fixed before a convenience for either of us.",
   "machines": [
     {
@@ -175,7 +175,7 @@
       "readers": "every local MCP client, every agent reading locally",
       "wrongIfConfused": "a local tool answers with an envelope - { action: {..}, window: .., page: .. } - where the hosted wire answers with { ..page facts }; a model that learned one shape fails on the other and re-reads every answer",
       "decision": "model",
-      "why": "one shape both wires, already what tidy.ts pins on the hosted side - this is local-to-hosted convergence with no new state, only deletion of the divergence",
+      "why": "one shape both wires, already what shared/tidy.js pins on the hosted side - this is local-to-hosted convergence with no new state, only deletion of the divergence",
       "rank": 1
     },
     {
@@ -762,7 +762,7 @@
     {
       "id": "delta-observation-continuity",
       "kind": "lib",
-      "where": "lib/delta-first-observation.js:138",
+      "where": "shared/delta-first-observation.js:138",
       "states": [
         "BOOTSTRAP",
         "CONTIGUOUS",
@@ -878,7 +878,7 @@
     {
       "id": "reactive-vm-host-persistence",
       "kind": "lib",
-      "where": "lib/reactive-vm-host.js:125",
+      "where": "shared/reactive-vm-host.js:125",
       "states": [
         "quiescent",
         "retry-pending",

@@ -1,12 +1,12 @@
 // @last-edited: 2026-10-13 UTC+7.
 // @title: ax-menu — tree queries, verified walks, and honest failure.
 // @state: 10 locks; find, plan, open, open-fail, missing-row, click, accel, wait, fast-open, fast-refuse.
-// @dependencies: node:test, assert, ../lib/ax-menu.js.
+// @dependencies: node:test, assert, ../shared/ax-menu.js.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { axChildren, axFind, axRowIndex, axSubmenu, clickMenuRow, menuAccel, menuWalkPlan, openSubmenu, pressMenuAccel, waitAx } from '../lib/ax-menu.js';
+import { axChildren, axFind, axRowIndex, axSubmenu, clickMenuRow, menuAccel, menuWalkPlan, openSubmenu, pressMenuAccel, waitAx } from '../shared/ax-menu.js';
 
 // A reduced fixture from the live Insert menu: node ids, roles, names, and the one open submenu.
 // Shaped exactly like CDP Accessibility.getFullAXTree nodes.

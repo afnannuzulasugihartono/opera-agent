@@ -9,7 +9,7 @@ import { readFileSync } from 'node:fs';
 import { stripTypeScriptTypes } from 'node:module';
 
 const source = stripTypeScriptTypes(readFileSync(
-  new URL('../supabase/functions/opera-agent-mcp/tidy.ts', import.meta.url), 'utf8'
+  new URL('../shared/tidy.js', import.meta.url), 'utf8'
 ));
 
 const { tidyForAi } = await import(
@@ -141,7 +141,7 @@ test('the server tidies every answer and keeps the raw envelope one flag away', 
     new URL('../supabase/functions/opera-agent-mcp/index.ts', import.meta.url), 'utf8'
   );
 
-  assert.match(index, /import \{ tidyForAi \} from "\.\/tidy\.ts";/);
+  assert.match(index, /import \{ tidyForAi \} from "\.\.\/\.\.\/\.\.\/shared\/tidy\.js";/);
   assert.match(index, /OPERA_AGENT_MCP_RAW/);
   assert.match(index, /tidyForAi\(value\)/);
   assert.match(index, /tidyForAi\(shaped\)/);

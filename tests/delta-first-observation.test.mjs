@@ -11,7 +11,7 @@ import { PUBLIC_SURFACE_LOCKS } from './helpers/boundary-locks.mjs';
 import {
   createDeltaFirstObservationPipeline,
   reasoningPayloadBytes,
-} from '../lib/delta-first-observation.js';
+} from '../shared/delta-first-observation.js';
 import { mcpSurfaceSource } from './helpers/mcp-surface-source.mjs';
 
 const identity = (overrides = {}) => ({

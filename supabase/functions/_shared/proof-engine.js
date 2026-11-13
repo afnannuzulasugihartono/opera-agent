@@ -10,8 +10,8 @@ import {
   digestCanonical,
   validateLedger,
 } from './goal-ledger.js';
-import { codeUnitCompare } from '../../../lib/canonical-order.js';
-import { SECRET_VALUE } from '../../../lib/secret-pattern.js';
+import { codeUnitCompare } from '../../../shared/canonical-order.js';
+import { SECRET_VALUE } from '../../../shared/secret-pattern.js';
 
 const SCHEMA_VERSION = 1;
 const EVALUATOR_VERSION = 'OA_PROOF_V1';
