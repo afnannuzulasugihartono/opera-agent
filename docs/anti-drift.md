@@ -28,7 +28,7 @@ re-pins, and it refuses to run from inside the gate.
 
 What this buys, precisely: it does not *prevent* an edit. It converts a silent one into a
 loud one that names the file, forces the admission into the diff, and cannot be done by
-accident. Tampering with `tests/structure-gates.test.mjs` fails the gate on the next run —
+accident. Tampering with `tests/tooling/structure-gates.test.mjs` fails the gate on the next run —
 verified, not assumed.
 
 Re-pinning is deliberately uncomfortable: the pin carries no reason of its own, so whoever
@@ -36,7 +36,7 @@ re-pins must write in the commit why the criterion did or did not change.
 
 ### What Layer 1 cannot do
 
-`scripts/gates.mjs` verifies `gates.lock`, and it is deliberately **not** listed inside it.
+`scripts/verify/gates.mjs` verifies `gates.lock`, and it is deliberately **not** listed inside it.
 A verifier cannot pin its own hash — writing the hash changes it — so listing itself would
 need an exemption, and an exemption is exactly the hole the file exists to close. That is
 the soft spot, and it is written down in `gates.lock` rather than left for someone to find.
@@ -57,11 +57,11 @@ These predate this file and still carry most of the weight:
 | Gate | Catches |
 | --- | --- |
 | `npm test` | behaviour, including contracts exercised end to end |
-| `tests/structure-gates.test.mjs` | `extension/lib` reaching for `chrome.*`, worker files with no reason to exist |
-| `tests/hygiene.test.mjs` | dead exports, dead files, a comment that is not in the canonical form |
-| `tests/boundary-locks.test.mjs` | a public contract changing without a re-pin |
-| `tests/konsol-tables.test.mjs` | SQL policy drift, string for string |
-| `scripts/check.mjs` | version drift, forbidden runtime constructs, generated-file drift |
+| `tests/tooling/structure-gates.test.mjs` | `extension/lib` reaching for `chrome.*`, worker files with no reason to exist |
+| `tests/tooling/hygiene.test.mjs` | dead exports, dead files, a comment that is not in the canonical form |
+| `tests/tooling/boundary-locks.test.mjs` | a public contract changing without a re-pin |
+| `tests/hosted/konsol-tables.test.mjs` | SQL policy drift, string for string |
+| `scripts/verify/check.mjs` | version drift, forbidden runtime constructs, generated-file drift |
 | `gitleaks` | committed credentials |
 | `py tests/browser_extension_test.py` | anything the extension does inside a real page |
 

@@ -1,9 +1,9 @@
 // @last-edited: 2026-10-21 UTC+7.
 // @title: reactive-vm-host — the host side of the reactive VM: what it may persist and what it must refuse.
 // @state: the persistence classification, the idempotency key, and the limits every host request holds.
-// @dependencies: goal-ledger, multi-signal-relevance.
+// @dependencies: digest, multi-signal-relevance.
 
-import { digestCanonical } from '../supabase/functions/_shared/goal-ledger.js';
+import { digestCanonical } from './digest.js';
 import { SECRET_VALUE } from './secret-pattern.js';
 import { createMultiSignalRelevancePipeline } from './multi-signal-relevance.js';
 import { SECRET_FIELD } from './reactive-vm-core.js';

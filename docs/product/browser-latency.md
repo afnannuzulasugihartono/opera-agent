@@ -103,8 +103,8 @@ The cloud path pays isolate boot and database crossings before the browser sees
 anything. This report does not re-measure it; existing code comments record
 ~1.8 s for an edge isolate boot, 269/417 ms for two data-API crossings, and
 238 ms browser work against 496 ms transport for a six-step burst
-(`supabase/functions/opera-agent-mcp/index.ts:660`,
-`supabase/functions/opera-agent-mcp/index.ts:243`,
+(`hosted/functions/opera-agent-mcp/index.ts:660`,
+`hosted/functions/opera-agent-mcp/index.ts:243`,
 `extension/worker/execute-pull.js:148`).
 
 ## Measurements
@@ -521,7 +521,7 @@ the local path, and it is reproducible by anyone with a Chromium on the machine.
 
 ## Reproduce
 
-`npm run benchmark:latency` (`scripts/latency-benchmark.mjs`, `--runs=N` to
+`npm run benchmark:latency` (`scripts/bench/latency-benchmark.mjs`, `--runs=N` to
 change the sample size). The script launches its own headless Chrome with a
 temp `--user-data-dir`, serves its own 100-row fixture over loopback, imports
 `local/driver.js`, `local/sessions.js` and `local/mcp-server.js`, drives the

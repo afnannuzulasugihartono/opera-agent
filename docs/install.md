@@ -1,7 +1,7 @@
 # @last-edited: 2026-11-12 UTC+7.
 # @title: install - one command turns an empty Windows machine into a browser that has Opera Agent.
 # @state: measured 2026-11-12 on Windows against isolated throwaway profiles: Chrome 153.0.8010.36, Brave 157.1.99.56 and Edge each installed the extension automatically on first browser start; deleting the keys removed it the same way.
-# @dependencies: `docs/registry-install.md`, `store/extension-registry-install.reg`, `store/extension-registry-uninstall.reg`, `local/install.js`, `local/postinstall.js`, `local/registry.js`, `local/bin/opera-agent-mcp.js`.
+# @dependencies: `docs/registry-install.md`, `docs/store/extension-registry-install.reg`, `docs/store/extension-registry-uninstall.reg`, `local/install.js`, `local/postinstall.js`, `local/registry.js`, `local/bin/opera-agent-mcp.js`.
 
 # WHAT THE COMMAND DOES
 

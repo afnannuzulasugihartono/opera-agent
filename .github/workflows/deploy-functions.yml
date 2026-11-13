@@ -1,5 +1,5 @@
 # @last-edited: 2026-11-12 UTC+7.
-# @title: deploy-functions - deploys the edge functions in supabase/functions/, on dispatch.
+# @title: deploy-functions - deploys the edge functions in hosted/functions/, on dispatch.
 # @state: what is being deployed, by whom, against which project, is decided here; the run answers with the exact project and function it touched.
 # @dependencies: SUPABASE_ACCESS_TOKEN secret, supabase/setup-cli.
 
@@ -45,7 +45,7 @@ jobs:
         shell: bash
         run: |
           MANIFEST="$(node -p "require('./extension/manifest.json').version")"
-          MCP="$(grep -o 'SERVER_VERSION = "[0-9.]*"' supabase/functions/opera-agent-mcp/index.ts | cut -d'"' -f2)"
+          MCP="$(grep -o 'SERVER_VERSION = "[0-9.]*"' hosted/functions/opera-agent-mcp/index.ts | cut -d'"' -f2)"
           echo "extension manifest: ${MANIFEST}"
           echo "edge function SERVER_VERSION: ${MCP}"
           if [ "${MANIFEST}" != "${MCP}" ]; then
@@ -56,6 +56,7 @@ jobs:
       - uses: supabase/setup-cli@689adcfb80d947100a1eab127289b97d1fb07b13
 
       - name: Deploy
+        working-directory: hosted
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           PROJECT_ID: nenmkmtvjremqphfqnfw

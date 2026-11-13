@@ -40,7 +40,7 @@ import { leaseTab, releaseTab } from './bridge.js';
 
 // WHY THE SAME TIDY FUNCTION THE HOSTED SURFACE USES, AND WHY IT RIDES THE PACKAGE.
 // The rejections that keep a model from wasting tokens on envelopes, transport keys and duplicated chain fields apply to the local stdio surface too - a rule that lives in one place stays consistent and changes for one reason.
-// The copy is written at pack time (scripts/pack-mcp.mjs) because a path outside the package does not exist on the machine that runs the install: reading ../supabase at run time died with ENOENT for every installed user.
+// The copy is written at pack time (scripts/pack/pack-mcp.mjs) because a path outside the package does not exist on the machine that runs the install: reading ../supabase at run time died with ENOENT for every installed user.
 
 import { tidyForAi } from './lib/tidy.js';
 import { TOOLS, ASKABLE, askParams, STRAY_FILE_TAB } from './tools.js';

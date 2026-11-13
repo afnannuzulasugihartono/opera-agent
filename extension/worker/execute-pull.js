@@ -1,6 +1,6 @@
 // @last-edited: 2026-11-11 UTC+7.
 // @title: execute-pull — command execution, pairing and the device socket.
-// @state: owns WAKE_ALARM and socketClient; every statement here that runs at load time is listed in tests/background-load.test.mjs.
+// @state: owns WAKE_ALARM and socketClient; every statement here that runs at load time is listed in tests/extension/background-load.test.mjs.
 // @dependencies: utils, tab-content, private-tabs, listen, action-focus, watch-registry, capture, serialize, background, log, protocol, options-store, model-client, external-origins, deadline-race, socket-client, socket-protocol, browser-id.
 
 import { log } from '../lib/log.js';

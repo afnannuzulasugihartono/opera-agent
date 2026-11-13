@@ -1,9 +1,9 @@
 // @last-edited: 2026-10-21 UTC+7.
 // @title: reactive-vm — the reactive VM's program: what may be written, and what it evaluates to.
 // @state: the program validator, the expression evaluator, and the limits a program must fit in.
-// @dependencies: goal-ledger.
+// @dependencies: digest.
 
-import { canonicalJson, digestCanonical } from '../supabase/functions/_shared/goal-ledger.js';
+import { canonicalJson, digestCanonical } from './digest.js';
 import { makeGuards, ReactiveVmError } from './reactive-vm-core.js';
 
 const PROGRAM_VERSION = 'OA_REACTIVE_VM_V1';

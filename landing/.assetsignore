@@ -1,6 +1,6 @@
 # @last-edited: 2026-11-08 UTC+7.
 # @title: .assetsignore - keep the repository own files out of the site upload.
-# @state: one list of what the Cloudflare upload must not carry; tests/landing-hosting.test.mjs fails on drift.
+# @state: one list of what the Cloudflare upload must not carry; tests/landing/landing-hosting.test.mjs fails on drift.
 # @dependencies: none stated.
 
 # WHY this file exists: Cloudflare Pages uploads the whole directory, so the repository own files would travel with the site.

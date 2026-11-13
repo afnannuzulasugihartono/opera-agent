@@ -31,8 +31,8 @@ WWW-Authenticate: Bearer resource_metadata="https://.../.well-known/oauth-protec
 ```
 
 The record of what it answered without a token is
-[`proof/hosted-mcp.json`](../proof/hosted-mcp.json) — a one-shot snapshot taken on
-2026-11-10 by `node scripts/hosted-mcp-check.mjs`, which also probes that the OAuth
+[`docs/proof/hosted-mcp.json`](../docs/proof/hosted-mcp.json) — a one-shot snapshot taken on
+2026-11-10 by `node scripts/verify/hosted-mcp-check.mjs`, which also probes that the OAuth
 client below is still accepted by the authorization server.
 
 Add it to `opencode.json` (OpenCode V2 reads servers from `mcp.servers`, and its
@@ -248,22 +248,22 @@ other's token.
 
 ### The record
 
-`scripts/extension-run.mjs` drives a real browser through the extension and
+`scripts/dev/extension-run.mjs` drives a real browser through the extension and
 writes what happened:
 
 ```bash
-node scripts/extension-run.mjs
-node --test tests/extension-run.test.mjs
+node scripts/dev/extension-run.mjs
+node --test tests/extension/extension-run.test.mjs
 ```
 
-- [`proof/extension-run.md`](../proof/extension-run.md) — the readable record.
-- [`proof/extension-run.jsonl`](../proof/extension-run.jsonl) — one line per call.
-- [`proof/extension-portal.jpg`](../proof/extension-portal.jpg) — the picture the run took.
+- [`docs/proof/extension-run.md`](../docs/proof/extension-run.md) — the readable record.
+- [`docs/proof/extension-run.jsonl`](../docs/proof/extension-run.jsonl) — one line per call.
+- [`docs/proof/extension-portal.jpg`](../docs/proof/extension-portal.jpg) — the picture the run took.
 
 The last recorded run carried seven calls over the bridge — `browser_status`,
 `open_url`, `read_page`, `find_elements`, `download`, `capture_page`,
 `close_tab` — and the CSV it pulled down hashed equal to the file the portal
-served. `tests/extension-run.test.mjs` re-hashes that fixture and compares it
+served. `tests/extension/extension-run.test.mjs` re-hashes that fixture and compares it
 with the hash in the record; it does not drive a browser again.
 
 ## Which road is this product on?

@@ -10,7 +10,7 @@
 // No Ctrl+A, no Ctrl+V, no Shift+Enter — which is why complex editors scored as "weak keyboard" next to Playwright.
 // This module is purely additive: every previously valid key still resolves to byte-identical payloads, so existing callers and contracts are unchanged.
 
-// Semantics locked by tests/focus-and-keyboard.test.mjs:
+// Semantics locked by tests/extension/focus-and-keyboard.test.mjs:
 // - an unmodified named key resolves exactly as the historical KEY_MAP did
 // - modifiers OR into a CDP bitmask (alt 1, control 2, meta 4, shift 8)
 // - unknown keys and unknown modifiers are rejected, never passed through

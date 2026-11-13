@@ -14,7 +14,7 @@ installed extension.
 | Question | Answer |
 | --- | --- |
 | What may the extension do? | The primitives in [`extension/lib/protocol.js`](extension/lib/protocol.js), and nothing else. |
-| Where does site-specific behaviour live? | Server-side workflows in [`supabase/functions/`](supabase/functions/), which hot-update independently. |
+| Where does site-specific behaviour live? | Server-side workflows in [`hosted/functions/`](hosted/functions/), which hot-update independently. |
 | Where do credentials live? | GitHub Secrets and the project's secret store, never the repository. |
 | What is never read or typed? | Passwords, PINs, OTP and 2FA codes, CVV, and any security-code field. |
 | What is the full policy? | [`docs/security.md`](docs/security.md) |

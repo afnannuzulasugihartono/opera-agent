@@ -1,5 +1,5 @@
 @last-edited: 2026-10-23 UTC+7.
-@related: [`AGENTS.md`](../AGENTS.md) - [`agent-map.md`](agent-map.md) - [`api.md`](api.md) - [`product/browser-latency.md`](product/browser-latency.md)
+@related: [`AGENTS.md`](../AGENTS.md) - [`../ARCHITECTURE.md`](../ARCHITECTURE.md) - [`api.md`](api.md) - [`product/browser-latency.md`](product/browser-latency.md)
 
 # Naming
 
@@ -35,17 +35,17 @@ The wire contract is one file, `extension/lib/protocol.js`, and it is the source
 The tool surface is data, in two places for two surfaces:
 
 - `local/tools.js` — the local stdio server's tools.
-- `supabase/functions/opera-agent-mcp/tools.ts` — the cloud server's tools, registered one `registerTool` call each.
+- `hosted/functions/opera-agent-mcp/tools.ts` — the cloud server's tools, registered one `registerTool` call each.
 
-The Postgres names are in the migrations, and the edge functions refuse anything that is not a bare identifier before it reaches the database: `supabase/functions/opera-agent-mcp/index.ts` and `supabase/functions/opera-agent-bridge/index.ts` both reject a function or argument name that fails `^[a-z_][a-z0-9_]*$`.
+The Postgres names are in the migrations, and the edge functions refuse anything that is not a bare identifier before it reaches the database: `hosted/functions/opera-agent-mcp/index.ts` and `hosted/functions/opera-agent-bridge/index.ts` both reject a function or argument name that fails `^[a-z_][a-z0-9_]*$`.
 
 ## What enforces it
 
 The shapes are pinned by tests, so a name in the wrong shape fails a gate rather than reaching a user:
 
-- `tests/readme.test.mjs` reads the local tool names out of `local/tools.js` and counts them against the number the README claims.
-- `tests/ax-observation.test.mjs` counts the cloud tools by matching `server.registerTool("([a-z_]+)"`, and pins the total at 35.
-- `docs/api.md` documents the gateway's `method` parameter and the pattern it must match, and `tests/api-docs.test.mjs` fails when that document stops covering the routed paths.
+- `tests/docs/readme.test.mjs` reads the local tool names out of `local/tools.js` and counts them against the number the README claims.
+- `tests/extension/ax-observation.test.mjs` counts the cloud tools by matching `server.registerTool("([a-z_]+)"`, and pins the total at 35.
+- `docs/api.md` documents the gateway's `method` parameter and the pattern it must match, and `tests/docs/api-docs.test.mjs` fails when that document stops covering the routed paths.
 
 ## Adding a name
 

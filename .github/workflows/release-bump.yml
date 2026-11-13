@@ -1,7 +1,7 @@
 # @last-edited: 2026-11-12 UTC+7.
 # @title: release-bump - one dispatch moves every clock; the PR it opens is the review.
 # @state: workflow_dispatch with one input; runs the bump engine on main and stops at a pull request.
-# @dependencies: scripts/bump-version.mjs, tests/bump-version.test.mjs, .github/workflows/publish-*.yml for the deliberate dispatches after merge.
+# @dependencies: scripts/release/bump-version.mjs, tests/release/bump-version.test.mjs, .github/workflows/publish-*.yml for the deliberate dispatches after merge.
 
 name: Release bump
 
@@ -49,7 +49,7 @@ jobs:
           fi
 
       - name: The bump moves every clock and the gates must stay green
-        run: node scripts/bump-version.mjs "$VERSION"
+        run: node scripts/release/bump-version.mjs "$VERSION"
 
       - name: Commit the bump on its own branch
         shell: bash
@@ -72,7 +72,7 @@ jobs:
           {
             echo "## What this PR does"
             echo
-            echo "Mechanical bump to \`${VERSION}\`, produced by \`scripts/bump-version.mjs\` from \`main\` at \`${{ github.sha }}\`."
+            echo "Mechanical bump to \`${VERSION}\`, produced by \`scripts/release/bump-version.mjs\` from \`main\` at \`${{ github.sha }}\`."
             echo
             echo "## Files changed"
             echo

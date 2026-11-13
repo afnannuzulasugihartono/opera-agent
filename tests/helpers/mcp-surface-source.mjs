@@ -12,8 +12,8 @@ import { readFile } from 'node:fs/promises';
 // Reading both keeps every one of those tests saying what it was written to say.
 
 const FILES = [
-  '../../supabase/functions/opera-agent-mcp/index.ts',
-  '../../supabase/functions/opera-agent-mcp/tools.ts'
+  '../../hosted/functions/opera-agent-mcp/index.ts',
+  '../../hosted/functions/opera-agent-mcp/tools.ts'
 ];
 
 export const mcpSurfaceSourceSync = () => FILES

@@ -39,7 +39,7 @@ fetches the update manifest, downloads the same build from the update endpoint, 
 key removes the extension on next start.
 
 Uninstall: run \`opera-agent-mcp uninstall\`, or double-click
-store/extension-registry-uninstall.reg from the repository.
+docs/store/extension-registry-uninstall.reg from the repository.
 Pairing: run \`opera-agent-mcp auth\` to sign in, then open the extension and pair the device.
 `;
 }

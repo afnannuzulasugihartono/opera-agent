@@ -36,7 +36,7 @@ custom headers. No gateway route reads the query string, so `?apiKey=` is not a
 token carrier anywhere. Tokens are verified then
 dropped: regression tests pin that they never appear in logs, error payloads,
 or persisted records, and pin the carrier set inside `extractToken`. Enforced by
-[`tests/api-docs.test.mjs`](../tests/api-docs.test.mjs). A carrier
+[`tests/docs/api-docs.test.mjs`](../tests/docs/api-docs.test.mjs). A carrier
 reached through a helper function, or read by a route handler outside
 `extractToken`, stays covered by review rather than by that test. When
 device-token verification fails, the gateway verifies the value as a
