@@ -41,6 +41,7 @@
     "leases.js",
     "lib/endpoints.js",
     "lib/socket-protocol.js",
+    "lib/tidy.js",
     "mcp-server.js",
     "menu-tree.js",
     "observe.js",
