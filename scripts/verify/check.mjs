@@ -52,6 +52,8 @@ const files = [
   ...collectRuntimeFiles('extension', new Set(['.js', '.ts'])),
   // Untracked build artifacts are copies of the .ts sources; the scan judges the source, not the copy.
   ...collectRuntimeFiles('shared', new Set(['.js', '.ts'])).filter((file) => !/^shared[\/\\][^\/\\]+\.js$/.test(file)),
+  // Same rule for the npm product: the emitted twins under local/ are copies of the .ts sources, and the .d.ts under local/lib/ are declarations, never runtime code; the scan judges the sources.
+  ...collectRuntimeFiles('local', new Set(['.js', '.ts'])).filter((file) => !/^local[\/\\].*\.js$/.test(file) && !file.endsWith('.d.ts')),
   ...collectRuntimeFiles('hosted/functions', new Set(['.js', '.ts'])),
   ...collectRuntimeFiles('hosted/migrations', new Set(['.sql'])),
 ].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));

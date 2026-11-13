@@ -11,6 +11,14 @@ import { fileURLToPath } from 'node:url';
 
 const repo = fileURLToPath(new URL('../..', import.meta.url));
 
+test('the runtime census lists local/*.ts, not only .js', () => {
+  const listed = execFileSync(process.execPath, ['scripts/verify/check.mjs', '--list'], { cwd: repo, encoding: 'utf8' });
+  const lines = listed.split(/\r?\n/).map((line) => line.replace(/\\/g, '/'));
+  assert.ok(lines.includes('local/primitives.ts'), `the census lists the .ts sources:\n${lines.join('\n')}`);
+  assert.ok(!lines.some((line) => /^(local\/[^/]+|local\/bin\/[^/]+|local\/office\/[^/]+|local\/lib\/[^/]+)\.js$/.test(line)), 'the census never lists the emitted local/*.js copies');
+  assert.ok(!lines.some((line) => /^local\/.*\.d\.ts$/.test(line)), 'the census never lists local type declarations as runtime files');
+});
+
 test('the runtime census lists shared/*.ts, not only .js', () => {
   const listed = execFileSync(process.execPath, ['scripts/verify/check.mjs', '--list'], { cwd: repo, encoding: 'utf8' });
   const lines = listed.split(/\r?\n/).map((line) => line.replace(/\\/g, '/'));

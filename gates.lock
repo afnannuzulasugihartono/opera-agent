@@ -156,7 +156,7 @@
 #    tests/helpers/canonical-source-hash.mjs strips the comment lines and collapses
 #    the whitespace before hashing a tool schema, so the pin holds the tool's
 #    contract and not its indentation.
-scripts/verify/check.mjs d124bd7f974061abbad317985ae443c1c901b842
+scripts/verify/check.mjs 0f98221c8e37e7c366960f684bf0dc16d5dd6bcb
 scripts/verify/scope.mjs f5895703e958e67c79a1f2f4392b037a84c26220
 scripts/verify/scope-check.mjs 2a4ba5563b68a9979c40165363235f72cac0d4df
 
@@ -168,7 +168,7 @@ tests/docs/comment-format.test.mjs f8e65a5d6d50cd5ea609c5ba1646d2cb8bcc487f
 tests/docs/comment-claims.test.mjs 27e1d1218b036ef7dd028b33cb63236ae325c442
 
 # --- structural rules a human reviewer would otherwise have to remember ---
-tests/tooling/hygiene.test.mjs aa59d7710c30dd40b091df89118da2ca89930874
+tests/tooling/hygiene.test.mjs 9c583959a3e36f28d12213f93de25169ac0e1b67
 tests/tooling/structure-gates.test.mjs 208ebc0bbd85bdcfc30a2077e3fe2ddf02e2144e
 tests/tooling/boundary-locks.test.mjs 7d33c80db5c4a07f659387fbae6fcf172d758757
 
