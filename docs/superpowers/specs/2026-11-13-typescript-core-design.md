@@ -37,8 +37,19 @@ One source per file, compiled to the artifact each runtime needs. Emitted files 
 
 Why the browser is the hard part: MV3 loads plain files named in `manifest.json`; it cannot read `.ts`. So `extension/` gains one build step before packing — and that step is the price of "the correct way", paid once, guarded by a gate.
 
-# HOW THE BUILD WORKS
+# WHAT `@types/chrome` ADDS (the extension's API surface becomes typed)
 
+The extension calls the browser API in **189 places across 29 files**: `chrome.debugger` (attach, detach, sendCommand, onEvent), `tabs`, `scripting`, `storage`, `downloads`, `windows`, `alarms`, `runtime`. Today none of that is checked, and this is where a whole class of real bugs lives:
+
+- a tab id passed as a string where the API wants a number (or the reverse),
+- `chrome.debugger.sendCommand` resolved without its `{ result }` shape,
+- a `tabs.query` filter that silently matches nothing,
+- a storage read typed as `any`, so a renamed key is found by a user,
+- `chrome.scripting.executeScript` file lists that no longer exist.
+
+`@types/chrome` turns all of that into compile errors. It is one devDependency and part of S3, and it is the single cheapest protection this project can buy for the half of the product that talks to a browser — the half the suite can only exercise in CI, under xvfb, minutes after a mistake.
+
+# HOW THE BUILD WORKS
 ```
 shared/*.ts ──(compiled)──> shared/*.js ──┬──> local/lib/*.js   (existing pack step, now compiles)
                                           └──> extension/lib/*.js (new: build before CRX)
@@ -56,6 +67,7 @@ hosted/**/*.ts ──(never compiled)──> Deno runs it directly
   - the manifest's `background.js`, `content_scripts` and `web_accessible_resources` keep working unchanged,
   - `git rm --cached` + `.gitignore` the emitted files, exactly like `local/lib/`.
 - The npm package's `files` list gains nothing (the `.js` files it already lists are the compiled output).
+- **The dev loop stays one command.** "Load unpacked" in `chrome://extensions` must point at built files, so S3 adds `npm run build:extension` (and `build:extension:watch`), and `scripts/dev/extension-run.mjs` launches from the built output. The alternative Google's answer asks about — no build tools at all — is the shortcut this spec refuses, and its cost is exactly the 189 unchecked API call sites above.
 
 # THE THREE SAFETY RULES (a half-migrated codebase is worse than a `.js` one)
 
@@ -96,7 +108,7 @@ Stages 1–3 change no behaviour at all: same modules, same exports, same protoc
 
 - **Files converted:** 14 (`shared/`) + 54 (`local/`) + 58 (`extension/`) = **126 source files**, plus the 4 generated files under `local/lib/` which stop being tracked sources and become pure outputs.
 - **Config touched:** `tsconfig.base.json` + 3 per-surface configs, `package.json` scripts, `local/package.json` (`prepack`, `files`), `publish-crx.yml`, `.gitignore`, `.sonarcloud.properties`, `ARCHITECTURE.md`, `tests/tooling/architecture.test.mjs`, `gates.lock` (one re-pin).
-- **New tooling dependency:** `typescript` as a devDependency (the only new dependency; Deno is already installed and already checks `hosted/`).
+- **New tooling dependency:** `typescript` as a devDependency, plus `@types/chrome` for the extension surface and `@types/node` for the local road (the only new dependencies; Deno is already installed and already checks `hosted/`).
 - **Time:** S1 is a session; S2 and S3 are a session each with verification; S4 is PR #3. Four PRs, each independently reviewable and revertible.
 
 # HOW WE VERIFY (per stage, in this order)
@@ -134,4 +146,4 @@ Stages 1–3 change no behaviour at all: same modules, same exports, same protoc
 
 # APPENDIX B - every config file touched
 
-`tsconfig.base.json` (new) · `tsconfig.shared.json`, `tsconfig.local.json`, `tsconfig.extension.json` (new) · `package.json` (`type: module` stays; new `types` script; `pretest` builds shared+local) · `local/package.json` (`prepack` compiles; `files` unchanged because it already lists the emitted names) · `.github/workflows/publish-crx.yml` (compile step + emitted-set check before packing) · `.gitignore` (emitted `.js` patterns) · `.sonarcloud.properties` (generated-output exclusion, only if a workflow builds before analysis) · `ARCHITECTURE.md` (the target table from this spec) · `tests/tooling/architecture.test.mjs` (no-`.js`-in-a-`.ts`-folder rule) · `gates.lock` (one re-pin, reasons in the commit)
+`tsconfig.base.json` (new) · `tsconfig.shared.json`, `tsconfig.local.json`, `tsconfig.extension.json` (new; the extension config carries `"types": ["chrome"]` and `lib: ["DOM", "ES2022"]`, the local one `"types": ["node"]`) · `@types/chrome`, `@types/node`, `typescript` (new devDependencies) · `package.json` (`type: module` stays; new `types` script; `pretest` builds shared+local; new `build:extension` / `build:extension:watch`) · `local/package.json` (`prepack` compiles; `files` unchanged because it already lists the emitted names) · `.github/workflows/publish-crx.yml` (compile step + emitted-set check before packing) · `.gitignore` (emitted `.js` patterns) · `.sonarcloud.properties` (generated-output exclusion, only if a workflow builds before analysis) · `ARCHITECTURE.md` (the target table from this spec) · `tests/tooling/architecture.test.mjs` (no-`.js`-in-a-`.ts`-folder rule) · `scripts/dev/extension-run.mjs` (launch from the built output) · `gates.lock` (one re-pin, reasons in the commit)
