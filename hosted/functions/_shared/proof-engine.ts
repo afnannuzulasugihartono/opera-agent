@@ -9,7 +9,7 @@ import {
   canonicalJson,
   digestCanonical,
   validateLedger,
-} from './goal-ledger.js';
+} from './goal-ledger.ts';
 import { codeUnitCompare } from '../../../shared/canonical-order.js';
 import { SECRET_VALUE } from '../../../shared/secret-pattern.js';
 

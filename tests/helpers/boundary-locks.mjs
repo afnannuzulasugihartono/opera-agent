@@ -101,12 +101,16 @@
 // The local stdio road carries the same tool over its own tab broker, reading the one parser (shared/bing-serp.js), generated into the package by scripts/pack/pack-mcp.mjs and never committed.
 // The evaluator that walks the SERP lives in local/page-expressions.js; the tools.ts schema and the tools.ts registration moved with it.
 
+// WHY these two were re-pinned on 2026-11-13: the edge-runtime _shared modules changed extension, and the two MCP consumers name them straight from disk — the imports read `../_shared/seal-vm-program.js` becoming `../_shared/seal-vm-program.ts`, and friends.
+// No tool, no schema, no behaviour moved; only the module specifier points at the new extension, and the comment-stripped digest in tests/fixtures/mcp-contract-v1.json moved the same way.
+// Extension files and the manifest did not move.
+
 export const PUBLIC_SURFACE_LOCKS = Object.freeze([
   ['../extension/content.js', 'fd75fc8ba524c201294b4919603fb478400865039f46d5a00730b0f1b937ecb3'],
   ['../extension/background.js', 'c222723151c856e0051b67ac8b489d97096ed6605da080fff1c8bb859a05fe01'],
   ['../extension/manifest.json', 'aaad334ded5c8febe60127a01b8ccfeddb5e0f191f42800a1567b1c9ec6fc84e'],
-  ['../hosted/functions/opera-agent-mcp/index.ts', '1bc26ba242eae2bca8ddaed4ee9f574e0274b44046aa770f7ae4fe0539e5e0a6'],
-  ['../hosted/functions/opera-agent-mcp/tools.ts', '7581260b1d9c89d556566e3fefe5105e8e6f57187548c6679708478725b8396d'],
+  ['../hosted/functions/opera-agent-mcp/index.ts', '32b6b219095341b501aa856d1768a13d67c1e80e7e3072745f54d2d0208738a8'],
+  ['../hosted/functions/opera-agent-mcp/tools.ts', '3127cffe8cee8c6a1bf9c9e9c5950072d9535967e9732f0275871a4775c77353'],
 ]);
 
 export const OBSERVATION_STACK_LOCKS = Object.freeze([

@@ -1,7 +1,7 @@
 // @last-edited: 2026-11-04 UTC+7.
 // @title: wallet-api — the order of decisions, driven without a network or a key.
 // @state: the refusal that must arrive before any money is promised, the price that must come from the price list, and the two idempotent answers.
-// @dependencies: node:test, node:assert/strict, ../hosted/functions/_shared/wallet-api.js.
+// @dependencies: node:test, node:assert/strict, ../hosted/functions/_shared/wallet-api.ts.
 
 // WHY THE ORDER IS THE SUBJECT.
 // A wallet that refuses after it reserved is a wallet that holds money for work nobody started, and no later check can undo the promise.
@@ -9,7 +9,7 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { handleWalletAction, isWalletAction } from '../../hosted/functions/_shared/wallet-api.js';
+import { handleWalletAction, isWalletAction } from '../../hosted/functions/_shared/wallet-api.ts';
 
 const PRICES = [
   { kind: 'task.simple', amount_cents: 10000, currency: 'IDR' },

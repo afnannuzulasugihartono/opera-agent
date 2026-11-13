@@ -14,8 +14,8 @@ import {
   VM_PROGRAM_VERSION,
   VM_READ_ONLY_METHODS,
   sealVmProgram
-} from '../../hosted/functions/_shared/seal-vm-program.js';
-import { digestCanonical } from '../../hosted/functions/_shared/goal-ledger.js';
+} from '../../hosted/functions/_shared/seal-vm-program.ts';
+import { digestCanonical } from '../../hosted/functions/_shared/goal-ledger.ts';
 import { validateCollectProgram } from '../../shared/reactive-vm-collect.js';
 
 const caller = { userId: 'caller-tenant' };

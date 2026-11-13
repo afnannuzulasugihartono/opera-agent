@@ -1,7 +1,7 @@
 // @last-edited: 2026-11-04 UTC+7.
 // @title: wallet-api — the six answers a wallet gives, and the order they are given in.
 // @state: the routing of wallet and task actions, the owner that comes from the request and never from the body, and the status each refusal deserves.
-// @dependencies: ./wallet.js.
+// @dependencies: ./wallet.ts.
 
 // WHY THE HANDLERS ARE HERE AND NOT IN THE FUNCTION THAT SERVES THEM.
 // The function owns secrets and the database client; this module owns the order of decisions, and that order is what decides whether a refusal happens before or after money is promised.
@@ -12,7 +12,7 @@
 // A body is what the caller wrote, so an owner read from it is an owner the caller chose.
 // Every action below takes the owner from the resolver the function gives it, which reads a signed session or a paired device and nothing else.
 
-import { DEPOSIT_KIND, quotePlan } from './wallet.js';
+import { DEPOSIT_KIND, quotePlan } from './wallet.ts';
 
 const SHA256_HEX = /^[0-9a-f]{64}$/;
 const RESERVATION_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;

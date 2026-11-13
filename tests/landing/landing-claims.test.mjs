@@ -100,7 +100,7 @@ test('the shared-key rule is stated as a refusal, not as a promise', () => {
 test('the pricing page states only what the wallet enforces', () => {
   const page = read('landing/harga.html');
   const sql = read('hosted/migrations/20261104120000_opera_wallet.sql');
-  const wallet = read('hosted/functions/_shared/wallet.js');
+  const wallet = read('hosted/functions/_shared/wallet.ts');
   assert.match(page, /Rp10\.000/, 'the smallest top-up is stated');
   assert.match(sql, /1000000, 'IDR'/, 'and the migration prices it at Rp10.000 in cents');
   assert.match(page, /dikembalikan penuh/, 'a failed job is refunded in full');

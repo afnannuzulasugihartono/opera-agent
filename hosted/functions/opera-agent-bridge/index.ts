@@ -5,8 +5,8 @@
 
 import "@supabase/edge-runtime";
 import { createClient } from "@supabase/supabase-js";
-import { createEdgeLog } from "../_shared/edge-log.js";
-import { CORS_DEFAULT_ORIGINS, resolveAllowedOrigin } from "../_shared/cors.js";
+import { createEdgeLog } from "../_shared/edge-log.ts";
+import { CORS_DEFAULT_ORIGINS, resolveAllowedOrigin } from "../_shared/cors.ts";
 import { gateVerdict } from "./plan-gate.ts";
 import { isUpgradeRequest, serveDeviceSocket } from "./bridge-socket.ts";
 

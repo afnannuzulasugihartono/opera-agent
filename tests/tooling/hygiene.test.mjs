@@ -377,7 +377,7 @@ test('no module under extension/, shared/, scripts/ or hosted/functions/ exports
 
 const STAGED_FOR_THE_OPEN_TASK = new Map([
   ['shared/ax-menu.ts', 'Task 9 of docs/superpowers/plans/2026-10-14-docs-paper-plan.md: the AX road reads live row names to compare against the label map'],
-  ['hosted/functions/_shared/docs-ui-map.js', 'Task 9 of docs/superpowers/plans/2026-10-14-docs-paper-plan.md: the map the AX road is compared against'],
+  ['hosted/functions/_shared/docs-ui-map.ts', 'Task 9 of docs/superpowers/plans/2026-10-14-docs-paper-plan.md: the map the AX road is compared against'],
 ]);
 
 test('a module with its own code is reached by the product, not only by its own test', async () => {

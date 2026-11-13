@@ -11,10 +11,10 @@ import { streamCommandEvents, TERMINAL_COMMAND_STATUSES } from "../_shared/comma
 import { cutStreamAtTheAnswer } from "../_shared/cut-stream.ts";
 import * as z from "zod/v4";
 import { planInfo } from "./plan-info.ts";
-import { createEdgeLog } from "../_shared/edge-log.js";
-import { CORS_DEFAULT_ORIGINS, resolveAllowedOrigin } from "../_shared/cors.js";
-import { CommandFailure, sealVmProgram } from "../_shared/seal-vm-program.js";
-import { compileAdhocGraph } from "../_shared/adhoc-compile.js";
+import { createEdgeLog } from "../_shared/edge-log.ts";
+import { CORS_DEFAULT_ORIGINS, resolveAllowedOrigin } from "../_shared/cors.ts";
+import { CommandFailure, sealVmProgram } from "../_shared/seal-vm-program.ts";
+import { compileAdhocGraph } from "../_shared/adhoc-compile.ts";
 import { registerTools } from "./tools.ts";
 import { tidyForAi } from "../../../shared/tidy.js";
 import { resolveDevice, type DeviceResolution } from "./device.ts";

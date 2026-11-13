@@ -1,7 +1,7 @@
 // @last-edited: 2026-10-26 UTC+7.
 // @title: billing — what a delivery is worth, and what makes a payment claim true.
 // @state: the amount of an invoice, the two signatures, the attempt id a retry gets, the one rule that says whether a payment link is payable, and the rule that an undelivered month is not charged.
-// @dependencies: node:test, strict, node:crypto, ../hosted/functions/_shared/billing.js.
+// @dependencies: node:test, strict, node:crypto, ../hosted/functions/_shared/billing.ts.
 
 // WHY THESE RULES ARE TESTED AND NOT ASSUMED.
 // Money is the one place where being wrong is not a bug report but a customer's trust.
@@ -42,7 +42,7 @@ import {
   snapRedirect,
   SNAP_QRIS_ONLY_BELOW_CENTS,
   verifyInvoiceToken
-} from '../../hosted/functions/_shared/billing.js';
+} from '../../hosted/functions/_shared/billing.ts';
 
 const seen = [];
 
@@ -147,7 +147,7 @@ test('a signature that arrives as a number is refused, because a double cannot c
 // A notification is the only way an invoice becomes paid, so the field name is pinned here rather than left to agree with whatever the code happens to say.
 
 test('the signature is read from the field the provider sends, and the field is named', () => {
-  const shared = fs.readFileSync(new URL('../../hosted/functions/_shared/billing.js', import.meta.url), 'utf8');
+  const shared = fs.readFileSync(new URL('../../hosted/functions/_shared/billing.ts', import.meta.url), 'utf8');
   assert.match(shared, /signature_key/, 'the rule must read the field Midtrans sends');
   assert.match(shared, /notification\.signature_key\s*\?\?/, 'the provider field is read first, and the alias is the fallback');
 

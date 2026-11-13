@@ -3,7 +3,7 @@
 // @state: the method allowlists, the budgets, and the digest the sealed program carries.
 // @dependencies: goal-ledger.
 
-import { digestCanonical } from './goal-ledger.js';
+import { digestCanonical } from './goal-ledger.ts';
 
 export class CommandFailure extends Error {
   constructor(code, message, details) {

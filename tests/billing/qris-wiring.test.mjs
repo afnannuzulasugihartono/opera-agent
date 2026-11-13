@@ -13,7 +13,7 @@ import fs from 'node:fs';
 
 const root = new URL('../../', import.meta.url);
 const fn = fs.readFileSync(new URL('hosted/functions/opera-agent-billing/index.ts', root), 'utf8');
-const page = fs.readFileSync(new URL('hosted/functions/_shared/invoice-page.js', root), 'utf8');
+const page = fs.readFileSync(new URL('hosted/functions/_shared/invoice-page.ts', root), 'utf8');
 const tree = fs.readdirSync(new URL('hosted/functions', root), { recursive: true })
   .filter((name) => typeof name === 'string' && /\.(ts|js|json)$/.test(name))
   .map((name) => fs.readFileSync(new URL(`hosted/functions/${name}`, root), 'utf8'));
@@ -51,16 +51,16 @@ test('the detector is operator-gated, dry by default, and credits the wallet whe
   assert.ok(gate > 0 && call > gate, 'the operator token is checked before the detector runs');
   assert.match(fn, /\.is\("paid_at", null\)/, 'a feed close is guarded against a second close');
   assert.match(fn, /await creditTopUp\(closed\)/, 'a feed-paid top-up credits the wallet on the same path as a notification');
-  const detector = fs.readFileSync(new URL('hosted/functions/_shared/qris-detector.js', root), 'utf8');
+  const detector = fs.readFileSync(new URL('hosted/functions/_shared/qris-detector.ts', root), 'utf8');
   assert.match(detector, /grant_type: 'refresh_token'/, 'a 401 from the feed triggers one refresh retry');
 });
 
 test('every helper the function calls from billing.js is actually imported', () => {
-  const block = /import \{([\s\S]*?)\} from "\.\.\/_shared\/billing\.js"/.exec(fn)?.[1] ?? '';
+  const block = /import \{([\s\S]*?)\} from "\.\.\/_shared\/billing\.ts"/.exec(fn)?.[1] ?? '';
   const imported = new Set(block.split(',').map((name) => name.trim()).filter(Boolean));
   assert.ok(imported.has('providerAmount'), 'providerAmount is called on the invoice page but was not imported, which 500s every page render');
   for (const name of ['toDynamicQris']) {
-    const qrisBlock = /import \{([\s\S]*?)\} from "\.\.\/_shared\/qris\.js"/.exec(fn)?.[1] ?? '';
+    const qrisBlock = /import \{([\s\S]*?)\} from "\.\.\/_shared\/qris\.ts"/.exec(fn)?.[1] ?? '';
     assert.ok(qrisBlock.includes(name), `${name} must be imported from qris.js`);
   }
 });

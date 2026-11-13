@@ -125,7 +125,7 @@ test('the consent screen carries the same navigation as every other page', () =>
 });
 
 test('nothing the runtime reads still points at the separate consent deployment', () => {
-  for (const file of ['hosted/config.toml', 'hosted/functions/opera-agent-auth/index.ts', 'hosted/functions/_shared/cors.js', 'tests/hosted/edge-cors.test.mjs', 'extension/lib/endpoints.js']) {
+  for (const file of ['hosted/config.toml', 'hosted/functions/opera-agent-auth/index.ts', 'hosted/functions/_shared/cors.ts', 'tests/hosted/edge-cors.test.mjs', 'extension/lib/endpoints.js']) {
     assert.doesNotMatch(read(file), /oauth-consent-three/, `${file} no longer names the separate deployment`);
   }
 

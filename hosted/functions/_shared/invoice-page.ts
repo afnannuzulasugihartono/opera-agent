@@ -1,7 +1,7 @@
 // @last-edited: 2026-10-26 UTC+7.
 // @title: invoice-page — the page a customer opens, rendered from one invoice row and nothing else.
 // @state: every state an invoice or a payment link can be in, said in words, with no script and no asset to load.
-// @dependencies: ./billing.js.
+// @dependencies: ./billing.ts.
 
 // WHY THE PAGE IS A MODULE AND NOT A STRING INSIDE THE FUNCTION.
 // The page is what a customer sees when they owe money, and the function that serves it runs where no test can call it.
@@ -21,7 +21,7 @@
 // The money is rupiah and the customers read Jakarta time, so a deadline printed in UTC would expire seven hours before the hour a customer reads on the page.
 // The zone is stated rather than implied, and the format is spelled out instead of taken from a locale, so the same row renders the same text wherever the function runs.
 
-import { payLinkState } from './billing.js';
+import { payLinkState } from './billing.ts';
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
