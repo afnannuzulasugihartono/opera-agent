@@ -14,11 +14,13 @@ import { validateRule, type WatchRule, type WatchTrigger } from './lib/watch.js'
 import { isRecord } from './lib/guards.js';
 
 import './role-reconcile.js';
+import { isPrivateTab } from './worker/private-tabs.js';
 const { axRoleIndex, reconcileElements, hasRoleGap } = globalThis.OperaAgentRoleReconcile ?? { axRoleIndex: undefined, reconcileElements: undefined, hasRoleGap: undefined };
 
 import { log } from './lib/log.js';
 import { popupsSince } from './lib/popup-events.js';
 import { windowUpdateFor, windowUpdateCase } from './lib/window-restore.js';
+import { beginAgentActivity, endAgentActivity, agentTabFor } from './worker/activity.js';
 import { handleDebuggerDetach } from './lib/debugger-session.js';
 import { oversized, fitWithinBudget, RESULT_BUDGET_BYTES } from './lib/serialize.js';
 import { mutateTabs, nowIso, getConfig } from './worker/utils.js';
@@ -96,11 +98,35 @@ interface DispatchParams {
 
 // WHY A HELPER: waitTabReady takes a plain number and already owns the default and the clamp; undefined means "the default", exactly what passing the parameter through would have done.
 
+// WHY INLINE: the one call site needs no named binding.
+
 const waitTimeoutMsOf = (value: unknown): number | undefined => (value == null ? undefined : Number(value));
+
+// WHY THE BLOCK IS HERE AND INLINE: eligibility is one cheap check chain (URL, private flag, chip flag); the chip itself refuses on sensitive surfaces, so this never carries credential logic beyond what is already here.
+
+async function markAgentTab(params: unknown): Promise<number | null> {
+  const tabId = agentTabFor(params);
+  if (tabId === null) return null;
+  const bag = await chrome.storage.local.get(['oa_chip_enabled']).then((raw) => (isRecord(raw) ? raw : {}));
+  if (bag.oa_chip_enabled === false) return tabId;
+  try {
+    const tab = await chrome.tabs.get(tabId);
+    if (!/^https?:\/\//i.test(tab.url || '')) return tabId;
+    if (await isPrivateTab(tabId)) return tabId;
+    await chrome.scripting.executeScript({ target: { tabId }, files: ['content/agent-chip.js'] });
+  } catch (error) {
+    const message = error instanceof Error && error.message ? error.message : String(error);
+    log.debug('AGENT_CHIP_SKIPPED', message);
+  }
+  return tabId;
+}
 
 export async function dispatch(method: string, params: DispatchParams = {}, context: CaptureContext = {}) {
   ensureBridgeLink();
-  switch (method) {
+  const heldTabId = await markAgentTab(params);
+  if (heldTabId != null) beginAgentActivity(heldTabId, method);
+  try {
+    switch (method) {
     case 'browser.ping': {
       const cfg = await getConfig();
       const faults = log.errors();
@@ -419,5 +445,8 @@ export async function dispatch(method: string, params: DispatchParams = {}, cont
       return applyNewestBuild();
     default:
       throw new Error('Method is not implemented by this extension build.');
+    }
+  } finally {
+    if (heldTabId != null) void endAgentActivity(method);
   }
 }

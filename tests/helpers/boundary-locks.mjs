@@ -120,9 +120,14 @@
 // WHY control-flow moved twice: the comment-placement gate demanded the frame-exists comment stand above the pop instead of trailing it, and a gate is the gate.
 // Comment lines do not reach the runtime; nothing else in the file moved with it.
 
+// WHY background.ts moved again: the agent now marks the tab it is holding.
+// dispatch() begins an in-memory activity around every action that names an explicit tab and records it to chrome.storage.local; the agent-chip content script renders from it.
+// The chip is the only visible sign the agent is in the page; behaviour of the agent itself is unchanged.
+// WHY the comment-canonical spelling matters to this pin: the gate rewrites the activity.ts and background.ts comment lines, so bytes track the canonical form.
+
 export const PUBLIC_SURFACE_LOCKS = Object.freeze([
   ['../extension/content.ts', 'f710fafa23478a2e28c63849bb7bce384c04c0bc86198fdaeb2fa1770d88f24d'],
-  ['../extension/background.ts', '1d345ff86bd86cdfdcba137f6d5dbb995467b3dd4080d0324b0544cb24e05a93'],
+  ['../extension/background.ts', '8d700859a184591d6377c7f87aa582fe2404eb48e7e86f9c972b44a44771d5f5'],
   ['../extension/manifest.json', 'aaad334ded5c8febe60127a01b8ccfeddb5e0f191f42800a1567b1c9ec6fc84e'],
   ['../hosted/functions/opera-agent-mcp/index.ts', '9895b06e0abe7e7bbb222e5580c03d4065439db3284111fe3f8f7234b57b77b2'],
   ['../hosted/functions/opera-agent-mcp/tools.ts', '3127cffe8cee8c6a1bf9c9e9c5950072d9535967e9732f0275871a4775c77353'],

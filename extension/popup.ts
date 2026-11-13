@@ -166,6 +166,29 @@ async function showAutoUpdateState() {
   if (forget) forget.hidden = true;
 }
 
+// WHY THE TOGGLE LIVES IN THE POPUP.
+// The chip is the page half; this is the one place the reader can turn it off.
+
+const chipToggleText = $('chipToggleText');
+const chipToggleButton = $('chipToggleButton');
+
+async function showChipState() {
+  if (!chipToggleButton) return;
+  const stored = await chrome.storage.local.get(['oa_chip_enabled']) as { oa_chip_enabled?: unknown };
+  const on = stored.oa_chip_enabled !== false;
+  chipToggleButton.setAttribute('aria-checked', String(on));
+  if (chipToggleText) chipToggleText.textContent = on ? 'Tandai tab yang dipegang agent' : 'Jangan tandai tab agent';
+}
+
+void showChipState();
+
+chipToggleButton?.addEventListener('click', async () => {
+  const stored = await chrome.storage.local.get(['oa_chip_enabled']) as { oa_chip_enabled?: unknown };
+  const on = stored.oa_chip_enabled !== false;
+  await chrome.storage.local.set({ oa_chip_enabled: !on });
+  void showChipState();
+});
+
 $('pairToggleButton')?.addEventListener('click', () => {
   const section = $('pairSection');
   if (!section) return;
