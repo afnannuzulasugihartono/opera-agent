@@ -8,8 +8,8 @@
   "scripts": {
     "build:shared": "node scripts/pack/build-shared.mjs",
     "build:local": "node scripts/pack/build-local.mjs",
-    "types": "tsc --noEmit -p tsconfig.shared.json",
-    "pretest": "npm run build:shared && node scripts/pack/pack-mcp.mjs",
+    "types": "tsc --noEmit -p tsconfig.shared.json && tsc --noEmit -p tsconfig.local.json",
+    "pretest": "npm run build:shared && npm run build:local && node scripts/pack/pack-mcp.mjs",
     "test": "node --test --test-timeout=120000 --test-reporter=dot tests/**/*.test.mjs",
     "test:unit": "node --test tests/extension/protocol.test.mjs tests/vm/workflow-dsl.test.mjs",
     "test:browser": "python tests/browser_extension_test.py",

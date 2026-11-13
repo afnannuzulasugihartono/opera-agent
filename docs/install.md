@@ -1,14 +1,14 @@
 # @last-edited: 2026-11-12 UTC+7.
 # @title: install - one command turns an empty Windows machine into a browser that has Opera Agent.
 # @state: measured 2026-11-12 on Windows against isolated throwaway profiles: Chrome 153.0.8010.36, Brave 157.1.99.56 and Edge each installed the extension automatically on first browser start; deleting the keys removed it the same way.
-# @dependencies: `docs/registry-install.md`, `docs/store/extension-registry-install.reg`, `docs/store/extension-registry-uninstall.reg`, `local/install.js`, `local/postinstall.js`, `local/registry.js`, `local/bin/opera-agent-mcp.js`.
+# @dependencies: `docs/registry-install.md`, `docs/store/extension-registry-install.reg`, `docs/store/extension-registry-uninstall.reg`, `local/install.ts`, `local/postinstall.ts`, `local/registry.ts`, `local/bin/opera-agent-mcp.ts`.
 
 # WHAT THE COMMAND DOES
 
 `opera-agent-mcp install` (and `npm i -g opera-agent-mcp`, via the postinstall hook):
 
 1. Only on Windows. On any other OS it prints the Web Store path and exits 0.
-2. Detects the Chromium browsers this machine carries - Chrome, Brave and Edge - by probing the exact paths Chrome, Brave and Edge live at (`local/browsers.js`, the same table the driver uses; no second list).
+2. Detects the Chromium browsers this machine carries - Chrome, Brave and Edge - by probing the exact paths Chrome, Brave and Edge live at (`local/browsers.ts`, the same table the driver uses; no second list).
 3. Writes one per-user registry key per detected browser (`HKCU\Software\<Vendor>\<product>\Extensions\ofgemipoobcnbjkfanmofjbdonjapmgl`) carrying `update_url` = the public update manifest. The browser installs the extension itself on its next start; no UAC, no admin, no download dialog.
 4. Creates `%LOCALAPPDATA%\OperaAgent\{Chrome,Brave,Edge}\` only for the browsers found, containing a **verified** copy of the build (`opera-agent.zip`, sha256 checked against the `x-opera-sha256` header of the public update endpoint before the bytes are written) plus a README that explains the whole mechanism and the manual fallback.
 5. Runs `opera-agent-mcp doctor` and prints what remains human: sign in with `opera-agent-mcp auth` (OAuth, one browser round trip) and pair the device in the extension (one code, on purpose - pairing is the one thing a machine may not fake).
