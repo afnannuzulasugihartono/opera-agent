@@ -14,8 +14,126 @@ const DEFAULT_MAX_AGE_MS = 5 * 60 * 1000;
 const CHANGE_TYPES = new Set(['INSERT', 'UPDATE', 'REMOVE', 'MOVE']);
 const CLASSIFICATIONS = new Set(['INSERT', 'UPDATE', 'REMOVE', 'MOVE', 'MIXED', 'NO_RELEVANT_CHANGE', 'RESET']);
 
+export interface SemanticIdentity {
+  tenantId: string;
+  deviceId: string;
+  tabId: string;
+  documentGeneration: number;
+  runtimeEpoch: string;
+}
+
+export interface SemanticEntity {
+  logicalId: string;
+  semanticRevision: number;
+  stableKey: string;
+  stableKeySource: string;
+  tag: string;
+  role: string;
+  regionKey: string;
+  inViewport: boolean;
+  identityAmbiguous: boolean;
+  identityConfidence?: number;
+}
+
+export interface SemanticView {
+  regionId: string;
+  kind: string;
+  role: string;
+  viewRevision: number;
+  actionableCount: number;
+  repeatedEntityCount: number;
+  loadedEntityCount: number;
+  visibleEntityCount: number;
+  uniqueCanonicalLinkCount: number;
+  duplicateKeyCount: number;
+  ambiguityCount: number;
+  dependencies: {
+    entitySet: { fingerprint: string; count: number };
+    scrollState: { fingerprint: string } | null;
+  };
+  exhaustion: { reachedBoundary: boolean; stableObservations: number; status: string } | null;
+  completionStatus: string;
+}
+
+export interface SemanticChange {
+  type: string;
+  logicalId: string;
+  revision: number;
+}
+
+export interface SemanticObservation {
+  documentGeneration: number;
+  observationRevision: number;
+  sourceRevision: number;
+  resultingRevision: number;
+  classification: string;
+  completeSnapshotRequired: boolean;
+  changes: SemanticChange[];
+  entities: SemanticEntity[];
+  regions: SemanticView[];
+  changedRegionIds: string[];
+  removedRegionIds: string[];
+  digest: string;
+}
+
+export interface SemanticState {
+  stateId: string;
+  identity: SemanticIdentity;
+  documentGeneration: number;
+  semanticRevision: number;
+  entities: Map<string, SemanticEntity>;
+  views: Map<string, SemanticView>;
+  lastSourceRevision: number;
+  lastResultRevision: number;
+  lastDigest: string;
+  createdAt: number;
+  updatedAt: number;
+  createdOrder: number;
+  lastAccessOrder: number;
+}
+
+export interface PublicWorkingState {
+  stateId: string;
+  documentGeneration: number;
+  semanticRevision: number;
+  entityCount: number;
+  viewCount: number;
+  continuity: 'CONTIGUOUS';
+  lastSourceRevision: number;
+  lastResultRevision: number;
+  replayed: boolean;
+  entities: SemanticEntity[];
+  views: SemanticView[];
+  dependencies: Array<{
+    regionId: string;
+    entitySetFingerprint: string;
+    entityCount: number;
+    scrollFingerprint: string;
+  }>;
+}
+
+export interface StoreOptions {
+  maxStates?: number;
+  maxEntitiesPerState?: number;
+  maxViewsPerState?: number;
+  maxStateBytes?: number;
+  maxAgeMs?: number;
+  now?: () => number;
+}
+
+export interface SemanticWorkingStateStore {
+  bootstrap(identityInput: unknown, observationInput: unknown): PublicWorkingState;
+  apply(stateId: unknown, identityInput: unknown, observationInput: unknown): PublicWorkingState;
+  inspect(stateId: unknown, identityInput: unknown): PublicWorkingState;
+  drop(stateId: unknown): boolean;
+  clear(): void;
+  readonly size: number;
+}
+
 export class SemanticWorkingStateError extends Error {
-  constructor(code, message, details = undefined) {
+  code: string;
+  details: unknown;
+  constructor(code: string, message: string, details?: unknown) {
     super(message);
     this.name = 'SemanticWorkingStateError';
     this.code = code;
@@ -23,70 +141,72 @@ export class SemanticWorkingStateError extends Error {
   }
 }
 
-function fail(code, message, details) {
+function fail(code: string, message: string, details?: unknown): never {
   throw new SemanticWorkingStateError(code, message, details);
 }
 
-function isPlainObject(value) {
+function isPlainObject(value: unknown): value is Record<string, unknown> {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
   const proto = Object.getPrototypeOf(value);
   return proto === Object.prototype || proto === null;
 }
 
-function bounded(value, max) {
+function bounded(value: unknown, max: number): string {
   return String(value ?? '').replace(/\s+/g, ' ').trim().slice(0, max);
 }
 
-function positiveInteger(value, fallback, max = Number.MAX_SAFE_INTEGER) {
-  return Number.isSafeInteger(value) && value > 0 ? Math.min(value, max) : fallback;
+function positiveInteger(value: unknown, fallback: number, max: number = Number.MAX_SAFE_INTEGER): number {
+  return Number.isSafeInteger(value) && (value as number) > 0 ? Math.min(value as number, max) : fallback;
 }
 
-function safeRevision(value, path) {
-  if (!Number.isSafeInteger(value) || value < 0) fail('INVALID_OBSERVATION', `${path} must be a non-negative safe integer.`);
-  return value;
+function safeRevision(value: unknown, path: string): number {
+  if (!Number.isSafeInteger(value) || (value as number) < 0) fail('INVALID_OBSERVATION', `${path} must be a non-negative safe integer.`);
+  return value as number;
 }
 
-function canonical(value) {
+function canonical(value: unknown): string {
   if (Array.isArray(value)) return `[${value.map(canonical).join(',')}]`;
   if (value && typeof value === 'object') {
-    return `{${Object.keys(value).sort(codeUnitCompare).map((key) => `${JSON.stringify(key)}:${canonical(value[key])}`).join(',')}}`;
+    const record = value as Record<string, unknown>;
+    return `{${Object.keys(record).sort(codeUnitCompare).map((key) => `${JSON.stringify(key)}:${canonical(record[key])}`).join(',')}}`;
   }
   return JSON.stringify(value);
 }
 
-function digest(value) {
+function digest(value: unknown): string {
   return createHash('sha256').update(canonical(value)).digest('hex');
 }
 
-function clone(value) {
-  return value === undefined ? undefined : JSON.parse(JSON.stringify(value));
+function clone<T>(value: T): T {
+  if (value === undefined || value === null) return value;
+  return JSON.parse(JSON.stringify(value)) as T;
 }
 
-function frozen(value) {
-  if (!value || typeof value !== 'object' || Object.isFrozen(value)) return value;
-  for (const child of Object.values(value)) frozen(child);
-  return Object.freeze(value);
+function frozen<T>(value: T): T {
+  if (!value || typeof value !== 'object' || Object.isFrozen(value as object)) return value;
+  for (const child of Object.values(value as Record<string, unknown>)) frozen(child);
+  return Object.freeze(value as T & object) as T;
 }
 
-function normalizeIdentity(input) {
+function normalizeIdentity(input: unknown): SemanticIdentity {
   if (!isPlainObject(input)) fail('INVALID_IDENTITY', 'identity must be a plain object.');
-  const identity = {
+  const identity: SemanticIdentity = {
     tenantId: bounded(input.tenantId, 160),
     deviceId: bounded(input.deviceId, 160),
     tabId: bounded(input.tabId, 160),
-    documentGeneration: input.documentGeneration,
+    documentGeneration: input.documentGeneration as number,
     runtimeEpoch: bounded(input.runtimeEpoch, 160),
   };
-  for (const key of ['tenantId', 'deviceId', 'tabId', 'runtimeEpoch']) {
-    if (!identity[key]) fail('INVALID_IDENTITY', `identity.${key} is required.`);
+  if (!identity.tenantId || !identity.deviceId || !identity.tabId || !identity.runtimeEpoch) {
+    fail('INVALID_IDENTITY', 'identity.tenantId, deviceId, tabId and runtimeEpoch are required.');
   }
-  if (!Number.isSafeInteger(identity.documentGeneration) || identity.documentGeneration < 1) {
+  if (!Number.isSafeInteger(identity.documentGeneration) || (identity.documentGeneration as number) < 1) {
     fail('INVALID_IDENTITY', 'identity.documentGeneration must be a positive safe integer.');
   }
   return identity;
 }
 
-function assertSameIdentity(expected, actual) {
+function assertSameIdentity(expected: SemanticIdentity, actual: SemanticIdentity): void {
   if (actual.tenantId !== expected.tenantId) fail('CROSS_TENANT', 'Working state belongs to another tenant.');
   if (actual.deviceId !== expected.deviceId) fail('CROSS_DEVICE', 'Working state belongs to another device.');
   if (actual.tabId !== expected.tabId) fail('CROSS_TAB', 'Working state belongs to another tab.');
@@ -94,14 +214,14 @@ function assertSameIdentity(expected, actual) {
   if (actual.runtimeEpoch !== expected.runtimeEpoch) fail('RUNTIME_EPOCH_MISMATCH', 'Working state belongs to another runtime epoch.');
 }
 
-function sanitizeEntity(input) {
+function sanitizeEntity(input: unknown): SemanticEntity | null {
   if (!isPlainObject(input)) fail('INVALID_OBSERVATION', 'Every semantic entity must be a plain object.');
   if (input.sensitive === true) return null;
   const logicalId = bounded(input.logicalId, 200);
   if (!logicalId) fail('INVALID_OBSERVATION', 'Observed non-sensitive entity is missing logicalId.');
   const semanticRevision = safeRevision(input.semanticRevision, `entity(${logicalId}).semanticRevision`);
   if (semanticRevision < 1) fail('INVALID_OBSERVATION', `entity(${logicalId}).semanticRevision must be positive.`);
-  const entity = {
+  const entity: SemanticEntity = {
     logicalId,
     semanticRevision,
     stableKey: bounded(input.stableKey, 200),
@@ -112,15 +232,16 @@ function sanitizeEntity(input) {
     inViewport: input.inViewport === true,
     identityAmbiguous: input.identityAmbiguous === true,
   };
-  if (Number.isFinite(input.identityConfidence)) entity.identityConfidence = Math.max(0, Math.min(1, Number(input.identityConfidence)));
+  const confidence = Number(input.identityConfidence);
+  if (Number.isFinite(confidence)) entity.identityConfidence = Math.max(0, Math.min(1, confidence));
   return entity;
 }
 
-function sanitizeView(input) {
+function sanitizeView(input: unknown): SemanticView {
   if (!isPlainObject(input)) fail('INVALID_OBSERVATION', 'Every semantic view must be a plain object.');
   const regionId = bounded(input.regionId, 200);
   if (!regionId) fail('INVALID_OBSERVATION', 'Semantic view is missing regionId.');
-  const number = (value) => Number.isSafeInteger(value) && value >= 0 ? value : 0;
+  const number = (value: unknown): number => (Number.isSafeInteger(value) && (value as number) >= 0 ? (value as number) : 0);
   const dependencies = isPlainObject(input.dependencies) ? input.dependencies : {};
   const entitySet = isPlainObject(dependencies.entitySet) ? dependencies.entitySet : {};
   const scrollState = isPlainObject(dependencies.scrollState) ? dependencies.scrollState : null;
@@ -154,17 +275,17 @@ function sanitizeView(input) {
   };
 }
 
-function mapUnique(items, key, code) {
-  const output = new Map();
+function mapUnique<T>(items: T[], key: keyof T & string, code: string): Map<string, T> {
+  const output = new Map<string, T>();
   for (const item of items) {
-    const id = item[key];
+    const id = String(item[key]);
     if (output.has(id)) fail(code, `Duplicate ${key} in semantic observation.`);
     output.set(id, item);
   }
   return output;
 }
 
-function normalizeObservation(input) {
+function normalizeObservation(input: unknown): SemanticObservation {
   if (!isPlainObject(input)) fail('INVALID_OBSERVATION', 'observation must be a plain object.');
   const semanticState = input.semanticState;
   const semanticDelta = input.semanticDelta;
@@ -180,7 +301,7 @@ function normalizeObservation(input) {
   if (observationRevision !== resultingRevision) fail('INVALID_OBSERVATION', 'semanticState and semanticDelta revisions disagree.');
   const classification = bounded(semanticDelta.classification, 40);
   if (!CLASSIFICATIONS.has(classification)) fail('INVALID_OBSERVATION', 'semanticDelta.classification is unsupported.');
-  const changes = Array.isArray(semanticDelta.changes) ? semanticDelta.changes.map((change) => {
+  const changes: SemanticChange[] = Array.isArray(semanticDelta.changes) ? semanticDelta.changes.map((change) => {
     if (!isPlainObject(change)) fail('INVALID_OBSERVATION', 'semanticDelta changes must be plain objects.');
     const type = bounded(change.type, 20);
     const logicalId = bounded(change.logicalId, 200);
@@ -194,10 +315,10 @@ function normalizeObservation(input) {
   if (classification === 'NO_RELEVANT_CHANGE' && changes.length) fail('INVALID_OBSERVATION', 'NO_RELEVANT_CHANGE cannot carry semantic changes.');
 
   const rawElements = Array.isArray(input.elements) ? input.elements : [];
-  const entities = rawElements.map(sanitizeEntity).filter(Boolean);
-  const entityMap = mapUnique(entities, 'logicalId', 'AMBIGUOUS_IDENTITY');
+  const entities = rawElements.map(sanitizeEntity).filter((entity): entity is SemanticEntity => entity !== null);
+  mapUnique(entities, 'logicalId', 'AMBIGUOUS_IDENTITY');
   const regions = Array.isArray(semanticViews.regions) ? semanticViews.regions.map(sanitizeView) : [];
-  const viewMap = mapUnique(regions, 'regionId', 'INVALID_OBSERVATION');
+  mapUnique(regions, 'regionId', 'INVALID_OBSERVATION');
   const changedRegionIds = Array.isArray(semanticViews.changedRegionIds)
     ? semanticViews.changedRegionIds.map((value) => bounded(value, 200)).filter(Boolean) : [];
   const removedRegionIds = Array.isArray(semanticViews.removedRegionIds)
@@ -207,7 +328,7 @@ function normalizeObservation(input) {
     fail('AMBIGUOUS_IDENTITY', 'Ambiguous semantic identity cannot extend P1 continuity.');
   }
 
-  const normalized = {
+  const normalized: SemanticObservation = {
     documentGeneration,
     observationRevision,
     sourceRevision,
@@ -219,16 +340,17 @@ function normalizeObservation(input) {
     regions,
     changedRegionIds,
     removedRegionIds,
+    digest: '',
   };
   normalized.digest = digest(normalized);
   return normalized;
 }
 
-function sortedValues(map, key) {
+function sortedValues<T>(map: Map<string, T>, key: keyof T & string): T[] {
   return [...map.values()].map(clone).sort((left, right) => String(left[key]).localeCompare(String(right[key])));
 }
 
-function dependenciesFromViews(views) {
+function dependenciesFromViews(views: Map<string, SemanticView>): PublicWorkingState['dependencies'] {
   return sortedValues(views, 'regionId').map((view) => ({
     regionId: view.regionId,
     entitySetFingerprint: view.dependencies.entitySet.fingerprint,
@@ -237,8 +359,8 @@ function dependenciesFromViews(views) {
   }));
 }
 
-function stateBytes(state) {
-  return Buffer.byteLength(canonical({
+function stateBytes(state: SemanticState): number {
+  return new TextEncoder().encode(canonical({
     identity: state.identity,
     documentGeneration: state.documentGeneration,
     semanticRevision: state.semanticRevision,
@@ -246,10 +368,10 @@ function stateBytes(state) {
     views: sortedValues(state.views, 'regionId'),
     lastSourceRevision: state.lastSourceRevision,
     lastResultRevision: state.lastResultRevision,
-  }));
+  })).length;
 }
 
-function publicState(state, replayed = false) {
+function publicState(state: SemanticState, replayed = false): PublicWorkingState {
   return frozen({
     stateId: state.stateId,
     documentGeneration: state.documentGeneration,
@@ -266,40 +388,40 @@ function publicState(state, replayed = false) {
   });
 }
 
-export function createSemanticWorkingStateStore(options = {}) {
+export function createSemanticWorkingStateStore(options: StoreOptions = {}): SemanticWorkingStateStore {
   const maxStates = positiveInteger(options.maxStates, DEFAULT_MAX_STATES, 1024);
   const maxEntitiesPerState = positiveInteger(options.maxEntitiesPerState, DEFAULT_MAX_ENTITIES, 5000);
   const maxViewsPerState = positiveInteger(options.maxViewsPerState, DEFAULT_MAX_VIEWS, 1000);
   const maxStateBytes = positiveInteger(options.maxStateBytes, DEFAULT_MAX_STATE_BYTES, 16 * 1024 * 1024);
   const maxAgeMs = positiveInteger(options.maxAgeMs, DEFAULT_MAX_AGE_MS, 24 * 60 * 60 * 1000);
-  const now = typeof options.now === 'function' ? options.now : Date.now;
-  const states = new Map();
+  const now: () => number = typeof options.now === 'function' ? options.now : Date.now;
+  const states = new Map<string, SemanticState>();
   let stateCounter = 0;
   let accessCounter = 0;
 
-  function currentNow() {
+  function currentNow(): number {
     const value = Number(now());
     if (!Number.isFinite(value) || value < 0) fail('INVALID_CLOCK', 'Working-state clock must be finite and non-negative.');
     return value;
   }
 
-  function scopeKey(identity) {
+  function scopeKey(identity: SemanticIdentity): string {
     return canonical(identity);
   }
 
-  function stateIdFor(identity) {
+  function stateIdFor(identity: SemanticIdentity): string {
     stateCounter += 1;
     return `p1_${digest({ identity, stateCounter }).slice(0, 24)}`;
   }
 
-  function removeSameScope(identity) {
+  function removeSameScope(identity: SemanticIdentity): void {
     const target = scopeKey(identity);
     for (const [stateId, state] of states) {
       if (scopeKey(state.identity) === target) states.delete(stateId);
     }
   }
 
-  function enforceCapacity() {
+  function enforceCapacity(): void {
     while (states.size > maxStates) {
       const oldest = [...states.values()].sort((left, right) =>
         left.lastAccessOrder - right.lastAccessOrder || left.createdOrder - right.createdOrder)[0];
@@ -308,7 +430,7 @@ export function createSemanticWorkingStateStore(options = {}) {
     }
   }
 
-  function assertWithinBounds(entities, views, partialState = null) {
+  function assertWithinBounds(entities: Map<string, SemanticEntity>, views: Map<string, SemanticView>, partialState: SemanticState | null = null): void {
     if (entities.size > maxEntitiesPerState || views.size > maxViewsPerState) {
       fail('OVERFLOW', 'Working-state entity/view bounds exceeded.');
     }
@@ -317,9 +439,9 @@ export function createSemanticWorkingStateStore(options = {}) {
     }
   }
 
-  function lookup(stateId, identityInput, expiredCode = 'EXPIRED') {
+  function lookup(stateId: unknown, identityInput: unknown, expiredCode = 'EXPIRED'): SemanticState {
     const identity = normalizeIdentity(identityInput);
-    const state = states.get(String(stateId || ''));
+    const state = states.get(String(stateId ?? ''));
     if (!state) fail('RESET_REQUIRED', 'Working state is unavailable; a trusted full snapshot is required.');
     const timestamp = currentNow();
     if (timestamp - state.updatedAt > maxAgeMs) {
@@ -332,7 +454,7 @@ export function createSemanticWorkingStateStore(options = {}) {
     return state;
   }
 
-  function bootstrap(identityInput, observationInput) {
+  function bootstrap(identityInput: unknown, observationInput: unknown): PublicWorkingState {
     const identity = normalizeIdentity(identityInput);
     const observation = normalizeObservation(observationInput);
     if (observation.documentGeneration !== identity.documentGeneration) fail('CROSS_DOCUMENT', 'Observation document generation does not match trusted identity.');
@@ -347,7 +469,7 @@ export function createSemanticWorkingStateStore(options = {}) {
     const timestamp = currentNow();
     accessCounter += 1;
     const stateId = stateIdFor(identity);
-    const state = {
+    const state: SemanticState = {
       stateId,
       identity,
       documentGeneration: identity.documentGeneration,
@@ -370,7 +492,7 @@ export function createSemanticWorkingStateStore(options = {}) {
     return publicState(state, false);
   }
 
-  function apply(stateId, identityInput, observationInput) {
+  function apply(stateId: unknown, identityInput: unknown, observationInput: unknown): PublicWorkingState {
     const state = lookup(stateId, identityInput);
     const observation = normalizeObservation(observationInput);
     if (observation.documentGeneration !== state.documentGeneration) fail('CROSS_DOCUMENT', 'Observation document generation differs from working state.');
@@ -433,7 +555,7 @@ export function createSemanticWorkingStateStore(options = {}) {
       }
     }
 
-    const candidate = {
+    const candidate: SemanticState = {
       ...state,
       semanticRevision: observation.resultingRevision,
       entities: nextEntities,
@@ -456,12 +578,12 @@ export function createSemanticWorkingStateStore(options = {}) {
     return publicState(state, false);
   }
 
-  function inspect(stateId, identityInput) {
+  function inspect(stateId: unknown, identityInput: unknown): PublicWorkingState {
     return publicState(lookup(stateId, identityInput), false);
   }
 
-  function drop(stateId) {
-    return states.delete(String(stateId || ''));
+  function drop(stateId: unknown): boolean {
+    return states.delete(String(stateId ?? ''));
   }
 
   function clear() {

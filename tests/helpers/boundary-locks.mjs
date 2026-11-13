@@ -110,12 +110,12 @@ export const PUBLIC_SURFACE_LOCKS = Object.freeze([
 ]);
 
 export const OBSERVATION_STACK_LOCKS = Object.freeze([
-  ['../shared/reactive-vm.js', '30b209ad0c241e641779de985bec9a153fe9c80f1948b06fd53c1b4c3620b99a'],
-  ['../shared/reactive-vm-control-flow.js', 'e0296e030b868d8d16926dc29b468693199cafdd16ae10f79e79b1e730f2f1ab'],
-  ['../shared/reactive-vm-collect.js', 'd47262be4e89e6e662635a7752fe49388c4400a7a55eb00b6547c6fd04bc66ab'],
+  ['../shared/reactive-vm.ts', '7d15b2764ef9eb8f9929d0e6095d6f8fa1442898678b563d00852f7dc3b74d06'],
+  ['../shared/reactive-vm-control-flow.ts', 'a24a0d2e0574b9f8105c1085b66d92a17ede5e2e26d8ad76266364045695d708'],
+  ['../shared/reactive-vm-collect.ts', '6671df442f5ef4865cc4b53def3b6f81c6764c3419181f69f89e20393fa4db12'],
 ]);
 
 export const RELEVANCE_STACK_LOCKS = Object.freeze([
-  ['../shared/multi-signal-relevance.js', '230f5c7722e088adfdc6b4d99b2331c7752486a198a6e6bc63e4238809af2c01'],
-  ['../shared/delta-first-observation.js', '1471eadfa5fb4cf0b7871c855304c7af4e8225c21478f93ccde5e87dd3ccf974'],
+  ['../shared/multi-signal-relevance.ts', '05c95a51a4d6f9d7fafc877977a0bec7de518dc8eabf63591ddbe2d13260e85c'],
+  ['../shared/delta-first-observation.ts', '3d053f319619fee9839981dc14228d775ff528390030cb1b3804f5fc74bcdc2a'],
 ]);

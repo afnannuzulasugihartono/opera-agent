@@ -9,6 +9,7 @@
 // The list of files it reads is written down here, once, and the hygiene gate calls this program rather than walking the tree a second way.
 
 import { readFile, writeFile, readdir } from 'node:fs/promises';
+import { execFileSync } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { formatComments } from '../../tests/helpers/comment-format.mjs';
@@ -59,8 +60,23 @@ function shouldFormat(file) {
   return NAMES.has(path.basename(file));
 }
 
+// WHY GIT DECIDES WHICH FILES ARE THE REPOSITORY.
+// An uncommitted build artifact (shared/<stem>.js emitted by tsc, the copies pack-mcp writes into local/lib) is not repository code, and its formatting is the compiler's business; the rule judges the source, which git tracks.
+// A file git lists is exactly the set a person would ship: tracked files, plus untracked-but-not-ignored new files, which is what `git add` would stage.
+// Outside a git checkout the filesystem is all there is, and the rule falls back to it.
+
+function repoFiles() {
+  try {
+    const output = execFileSync('git', ['ls-files', '-z', '--cached', '--others', '--exclude-standard'], { cwd: root, encoding: 'utf8', maxBuffer: 1 << 28 });
+    return new Set(output.split('\0').filter(Boolean));
+  } catch {
+    return null;
+  }
+}
+
 async function targets() {
-  const files = (await walk(root)).filter(shouldFormat).sort();
+  const inRepo = repoFiles();
+  const files = (await walk(root)).filter(shouldFormat).filter((file) => !inRepo || inRepo.has(file)).sort();
   return files.map((file) => ({ file, ext: path.extname(file).toLowerCase() }));
 }
 

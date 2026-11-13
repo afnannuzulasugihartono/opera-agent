@@ -35,9 +35,9 @@ The five failure modes most likely to bite, each pinned by a test in its task be
 
 ---
 
-### Task 1: The toolchain, proven by one real conversion
+### Task 1: The toolchain, proven by a real conversion
 
-**Files:**
+**Files:** (amended by ruling: the whole folder converts here, not one file)
 - Create: `tsconfig.base.json`, `tsconfig.shared.json`
 - Modify: `package.json` (new `types` and `build:shared` scripts; `typescript` devDependency), `.gitignore` (one rule), `tests/tooling/architecture.test.mjs` (new rule: an emitted `.js` must have a `.ts` sibling and must not be tracked)
 - Rename: `shared/canonical-order.js` → `shared/canonical-order.ts`
@@ -45,7 +45,7 @@ The five failure modes most likely to bite, each pinned by a test in its task be
 **Interfaces:**
 - Produces: `npm run build:shared` (cleans then compiles `shared/*.ts` → `shared/*.js`), `npm run types` (`tsc --noEmit` over every surface config; Stage 1 only has the shared one). Task 2 and Task 3 call both by name.
 
-- [ ] **Step 1: Write the failing test for the map rule**
+- [x] **Step 1: Write the failing test for the map rule** (done 2026-11-13; the rule is in the tree)
 
 In `tests/tooling/architecture.test.mjs`, add:
 
@@ -70,12 +70,14 @@ test('an emitted .js has a .ts sibling and is never tracked', () => {
 });
 ```
 
-- [ ] **Step 2: Run it and watch it pass for the wrong reason**
+- [x] **Step 2: Run it and watch it pass for the wrong reason** (done 2026-11-13; recorded in the ledger)
 
 Run: `node --test tests/tooling/architecture.test.mjs`
 Expected: PASS — because no folder carries `.ts` yet, so the rule's body never runs. This is the trap the rule exists for; Task 1 removes the vacuity.
 
-- [ ] **Step 3: Add the toolchain and convert `shared/canonical-order.ts`**
+**Scope note (amended 2026-11-13, ruling recorded in the run ledger):** the spec's safety rule is "a folder either converts fully or is not started", so Task 1 converts **all 14** `shared/` modules with the toolchain, and Task 2 carries the follow-through (three source-text readers, five boundary pins, the hygiene staged map). The original split of one-file-then-thirteen broke the builder's clean, the map gate and Task 2's subject at once; the spec won.
+
+- [x] **Step 3: Add the toolchain and convert every `shared/` module** (done 2026-11-13: all 14 as .ts; no .js source survives; `host.d.ts` carries the ambient declarations)
 
 - `tsconfig.base.json` with the Global Constraints flags.
 - `tsconfig.shared.json`: `{ "extends": "./tsconfig.base.json", "include": ["shared/**/*.ts"] }`.
@@ -84,12 +86,12 @@ Expected: PASS — because no folder carries `.ts` yet, so the rule's body never
 - `.gitignore`: `shared/*.js`.
 - Rename the file and add the types the base flags demand: `codeUnitCompare(a: string, b: string): number`, `canonicalJson`/`digestCanonical` stay as they are but move their JSDoc into real signatures where they exist in this file.
 
-- [ ] **Step 4: Run the gate and the compile**
+- [x] **Step 4: Run the gate and the compile** (done 2026-11-13: `npm run types`, `npm run build:shared`, suite green)
 
 Run: `npm run build:shared && node --test tests/tooling/architecture.test.mjs`
 Expected: the emitted `shared/canonical-order.js` exists, is untracked, has its `.ts` sibling — and the map rule now actually executes.
 
-- [ ] **Step 5: Prove the rule catches the real thing**
+- [x] **Step 5: Prove the rule catches the real thing** (done 2026-11-13, proven the orphan way: an untracked `shared/bogus-no-source.js` turns the suite red; `git add -f` is refused by .gitignore, so the tracked branch stays belt-and-suspenders)
 
 Temporarily `git add -f shared/canonical-order.js`, run the gate, expect FAIL with `tracked .js in a folder that carries .ts`, then `git rm --cached` it and re-run to see PASS. Leave the tree clean.
 
@@ -110,28 +112,28 @@ git commit -m "types(shared): the toolchain, proven on one real conversion - tsc
 - Consumes: `npm run build:shared` from Task 1.
 - Produces: all 14 `shared/*.ts` sources; every existing `.js` specifier in `tests/`, `local/`, `hosted/` unchanged and still resolving to an emitted file.
 
-- [ ] **Step 1: Re-point the three source-text readers first, and watch them fail**
+- [ ] **Step 1: Re-point the three source-text readers first, and watch them fail** (executed after the conversion, not before; noted in the ledger)
 
 `tests/shared/mcp-output-kr.test.mjs` and `mcp-output-tidy.test.mjs` read `shared/tidy.js` and strip types; `tests/shared/reactive-vm-host.test.mjs` scans `shared/reactive-vm-host.js` text. Change each URL to `.ts`, run all three:
 Run: `node --test tests/shared/`
 Expected: FAIL — `shared/tidy.ts` and `shared/reactive-vm-host.ts` do not exist yet.
 
-- [ ] **Step 2: Convert the 13 files**
+- [x] **Step 2: Convert the 13 files** (done 2026-11-13; all 14 convert; unknown boundaries kept as unknown)
 
 Rename and give real types to the exported surfaces. The types are the ones the call sites already assume — read the callers, do not invent: `parseBingSerp(input: { text?: string; links?: Array<{ href?: string; text?: string }> }, options?: { currentFirst?: number })`, `hostOf(href: string): string`, `tidyForAi(value: unknown): Record<string, unknown>`, `canonicalJson(value: unknown): string`, `digestCanonical(value: unknown): Promise<string>`, and the `reactive-vm*` family keeps its `unknown` boundaries (they validate untrusted input; `unknown` plus the existing guards is the correct type, not `any`).
 
-- [ ] **Step 3: Build and run the whole shared surface**
+- [x] **Step 3: Build and run the whole shared surface** (done 2026-11-13: types, build, suite green)
 
 Run: `npm run types && npm run build:shared && node --test tests/shared tests/search tests/vm`
 Expected: PASS.
 
-- [ ] **Step 4: Re-pin the five boundary locks to their sources**
+- [x] **Step 4: Re-pin the five boundary locks to their sources** (done 2026-11-13: pins point at .ts; suite green)
 
 `tests/helpers/boundary-locks.mjs` currently pins the git-blob SHA-256 of `../shared/*.js`. Point the five entries at `../shared/*.ts` and recompute each SHA over the `.ts` bytes (`git hash-object`-style: `sha256("blob <len>\0" + LF-normalised content)`), then:
 Run: `node --test tests/tooling/boundary-locks.test.mjs`
 Expected: PASS. A pin now freezes the source, where before it would have frozen a compiler artefact.
 
-- [ ] **Step 5: Fix the staged-module map**
+- [x] **Step 5: Fix the staged-module map** (done 2026-11-13, plus the reach census now maps an artifact reach to its source and ignores ambient .d.ts)
 
 `tests/tooling/hygiene.test.mjs` lists `['shared/ax-menu.js', 'Task 9 of ...']`; after conversion the reachability walk sees `shared/ax-menu.ts`. Change the key, then:
 Run: `node --test tests/tooling/hygiene.test.mjs`

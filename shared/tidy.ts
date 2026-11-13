@@ -12,25 +12,27 @@ const TRANSPORT_KEYS = ["commandId", "runId", "timing"];
 
 const TAB_KEYS = ["muted", "pinned", "audible", "windowId"];
 
-function isObject(value) {
+type Json = Record<string, unknown>;
+
+function isObject(value: unknown): value is Json {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function isTab(value) {
+function isTab(value: Json): boolean {
   return typeof value.id === "number" && typeof value.url === "string";
 }
 
-function isBridge(value) {
+function isBridge(value: Json): boolean {
   return Array.isArray(value.trace)
     && ("port" in value || "url" in value || "linked" in value || "commands" in value);
 }
 
-function trimValue(value) {
+function trimValue(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(trimValue);
   if (!isObject(value)) return value;
 
   if (isTab(value)) {
-    const tab = { ...value };
+    const tab: Json = { ...value };
     for (const key of TAB_KEYS) delete tab[key];
     return tab;
   }
@@ -39,7 +41,7 @@ function trimValue(value) {
     return typeof value.lastError === "string" && value.lastError ? { lastError: value.lastError } : {};
   }
 
-  const trimmed = {};
+  const trimmed: Json = {};
   for (const [key, item] of Object.entries(value)) {
     const next = trimValue(item);
     if (key === "bridge" && isObject(next) && Object.keys(next).length === 0) continue;
@@ -48,10 +50,10 @@ function trimValue(value) {
   return trimmed;
 }
 
-export function tidyForAi(value) {
+export function tidyForAi(value: unknown): Json {
   if (!isObject(value)) return { value: value ?? null };
 
-  const out = {};
+  const out: Json = {};
   for (const [key, item] of Object.entries(value)) {
     if (TRANSPORT_KEYS.includes(key)) continue;
     if (key === "status" && item === "completed") continue;
@@ -72,6 +74,5 @@ export function tidyForAi(value) {
   }
 
   if (!("ok" in out)) out.ok = true;
-
-  return trimValue(out);
+  return trimValue(out) as Json;
 }

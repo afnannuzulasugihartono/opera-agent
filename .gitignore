@@ -105,3 +105,7 @@ graphify-out/
 
 local/lib/
 
+# The compiled twin of every TypeScript source: written by scripts/pack/build-shared.mjs beside the .ts, never committed; the map gate fails on a tracked .js in a folder that carries .ts.
+
+shared/*.js
+

@@ -49,8 +49,9 @@ function collectRuntimeFiles(relativeDir, extensions) {
 }
 
 const files = [
-  ...collectRuntimeFiles('extension', new Set(['.js'])),
-  ...collectRuntimeFiles('shared', new Set(['.js'])),
+  ...collectRuntimeFiles('extension', new Set(['.js', '.ts'])),
+  // Untracked build artifacts are copies of the .ts sources; the scan judges the source, not the copy.
+  ...collectRuntimeFiles('shared', new Set(['.js', '.ts'])).filter((file) => !/^shared[\/\\][^\/\\]+\.js$/.test(file)),
   ...collectRuntimeFiles('hosted/functions', new Set(['.js', '.ts'])),
   ...collectRuntimeFiles('hosted/migrations', new Set(['.sql'])),
 ].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
@@ -60,7 +61,7 @@ for (const file of files) {
   assert.doesNotMatch(text, /\beval\s*\(/, `${file} must not use eval`);
   assert.doesNotMatch(text, /new\s+Function\s*\(/, `${file} must not use Function constructor`);
 
-  if (file.endsWith('.js') && !file.startsWith('supabase' + path.sep)) {
+  if (file.endsWith('.js')) {
     try {
       execFileSync(process.execPath, ['--check', path.join(root, file)], { stdio: 'pipe' });
     } catch (error) {
@@ -106,9 +107,9 @@ assert.match(mcp, /\{ name: "opera-agent", version: SERVER_VERSION \}/, 'the dec
 
 const secretLiteral = /const SECRET_VALUE = \/\(\?:-----BEGIN/;
 for (const file of files) {
-  if (file.replace(/\\/g, '/') === 'shared/secret-pattern.js') continue;
+  if (file.replace(/\\/g, '/') === 'shared/secret-pattern.ts') continue;
   const text = fs.readFileSync(path.join(root, file), 'utf8');
-  assert.doesNotMatch(text, secretLiteral, `${file} must import SECRET_VALUE from shared/secret-pattern.js, not declare it`);
+  assert.doesNotMatch(text, secretLiteral, `${file} must import SECRET_VALUE from shared/secret-pattern, not declare it`);
 }
 
 const storeManifest = JSON.parse(fs.readFileSync(path.join(root, 'docs/store/store-manifest.json'), 'utf8'));

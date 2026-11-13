@@ -376,7 +376,7 @@ test('no module under extension/, shared/, scripts/ or hosted/functions/ exports
 // One module is staged for the one open task of the paper plan, and it is named here with that reason.
 
 const STAGED_FOR_THE_OPEN_TASK = new Map([
-  ['shared/ax-menu.js', 'Task 9 of docs/superpowers/plans/2026-10-14-docs-paper-plan.md: the AX road reads live row names to compare against the label map'],
+  ['shared/ax-menu.ts', 'Task 9 of docs/superpowers/plans/2026-10-14-docs-paper-plan.md: the AX road reads live row names to compare against the label map'],
   ['hosted/functions/_shared/docs-ui-map.js', 'Task 9 of docs/superpowers/plans/2026-10-14-docs-paper-plan.md: the map the AX road is compared against'],
 ]);
 
@@ -444,6 +444,16 @@ test('a module with its own code is reached by the product, not only by its own 
     edges.set(file, [...targets]);
   }
 
+  // The build emits shared/<stem>.js from shared/<stem>.ts, and both roads
+  // import the artifact by construction; the source is reached exactly when
+  // its artifact is, so the census counts the pair as one module.
+  for (const [file, targets] of edges) {
+    for (const target of [...targets]) {
+      const match = /^shared\/(.+)\.js$/.exec(target);
+      if (match && textOf.has(`shared/${match[1]}.ts`)) targets.push(`shared/${match[1]}.ts`);
+    }
+  }
+
   // The entry points: what the product actually runs.
   const roots = new Set();
   for (const file of present) {
@@ -487,7 +497,11 @@ test('a module with its own code is reached by the product, not only by its own 
     return withoutReexports === '';
   };
 
-  const runtimeFiles = codeFiles.filter((file) => /^(extension|shared|local|hosted\/functions|scripts)\//.test(file));
+  // Ambient type-declaration files are types, never runtime code, so they are not modules that can be reached.
+  // shared/<stem>.js is the build's copy of shared/<stem>.ts and cannot be judged on its own; its source is, and the artifact-to-source mapping above carries the reach.
+  const runtimeFiles = codeFiles.filter((file) => /^(extension|shared|local|hosted\/functions|scripts)\//.test(file)
+    && !file.endsWith('.d.ts')
+    && !/^shared\/[^/]+\.js$/.test(file));
   const unreachable = runtimeFiles.filter((file) => !reached.has(file) && !isShim(textOf.get(file)));
   const unexpected = unreachable.filter((file) => !STAGED_FOR_THE_OPEN_TASK.has(file));
   assert.deepEqual(unexpected, [],
