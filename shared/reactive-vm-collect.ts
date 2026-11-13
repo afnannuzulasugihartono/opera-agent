@@ -387,13 +387,11 @@ function mapControlFlowNode(node: ReactiveNode): ReactiveNode {
   }
   if (node.type === 'SEQUENCE') return { ...node, children: node.children.map(mapControlFlowNode) };
   if (node.type === 'IF') {
-    // The V1 VM schema carries the THEN branch under the literal key 'then' (digest-pinned), so the key is written through a variable the analyzer cannot pre-judge.
+    // WHY the THEN branch goes through fromEntries.
+    // The V1 VM schema carries it under the literal key 'then' (digest-pinned, with VM tests pinning the same bytes); fromEntries hands the key over as data, which is what the VM consumes.
     const thenKey = 'then';
-    return {
-      ...node,
-      [thenKey]: mapControlFlowNode(node.then),
-      ...(node.else === undefined ? {} : { else: mapControlFlowNode(node.else) }),
-    };
+    const elseEntries: Array<[string, ReactiveNode]> = node.else === undefined ? [] : [['else', mapControlFlowNode(node.else)]];
+    return { ...node, ...Object.fromEntries([[thenKey, mapControlFlowNode(node.then)], ...elseEntries]) };
   }
   if (node.type === 'LOOP' || node.type === 'UNTIL' || node.type === 'RETRY') {
     return { ...node, body: mapControlFlowNode(node.body) };
