@@ -8,6 +8,8 @@
 # This workflow does the same job from CI, with a token the owner already keeps in GitHub Secrets for the publish-crx release flow, so a deploy is one dispatch and one sentence in the log.
 # WHY ONLY ON DISPATCH.
 # A merge that ships a function without being asked to would deploy it before the owner reads the diff; dispatch-only makes the deployment an explicit act, exactly like publish-crx.
+# WHY THE BUILD RUNS HERE.
+# The functions statically import ../../../shared/*.js; the tree carries only the strict .ts sources - the emitted twins are never committed, so a fresh checkout must compile them before the CLI bundles a function that reads them.
 # WHY THE SHA, NOT A TAG: supabase/setup-cli is pinned to 689adcfb80d947100a1eab127289b97d1fb07b13 (v3.2.0); move it deliberately.
 
 name: Deploy functions
@@ -40,6 +42,16 @@ jobs:
     environment: production
     steps:
       - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22.20.0
+
+      - name: Build the shared core
+        shell: bash
+        run: |
+          npm ci --no-audit --no-fund
+          npm run build:shared
 
       - name: The version matches the manifest
         shell: bash
