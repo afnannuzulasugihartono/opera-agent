@@ -6,6 +6,7 @@
 // WHY THE COPIES ARE GENERATED AND NOT HAND-WRITTEN.
 // The package has to carry every module it imports, and a hand-written second copy would drift from the first.
 // So each shared module stays in one file in this tree, the copy is written here, and .gitignore keeps the generated copy out of the repository.
+// The one source per shared module, wherever it lives: the extension for the two protocol modules, the hosted _shared folder for the SERP parser both roads bundle, and tidy.ts for the answer normalizer.
 // tidy.ts is TypeScript with types only on the surface, so it is stripped here, at build time, instead of being read at run time from a path the installed package does not have.
 
 import fs from 'node:fs';
@@ -19,6 +20,7 @@ const target = path.join(repo, 'local', 'lib');
 const FILES = [
   { from: path.join('extension', 'lib'), names: ['socket-protocol.js', 'endpoints.js'] },
   { from: path.join('supabase', 'functions', 'opera-agent-mcp'), names: ['tidy.ts'], strip: true, as: 'tidy.js' },
+  { from: path.join('supabase', 'functions', '_shared'), names: ['bing-serp.js'] },
 ];
 
 fs.mkdirSync(target, { recursive: true });

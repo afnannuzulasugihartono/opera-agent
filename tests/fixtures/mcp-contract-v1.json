@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "protocolVersion": 1,
-  "toolCount": 41,
-  "sourceSha256": "1abbbb0a3e86d2221f927bb45c3053199f78fb89d48c153457bf4baf3c7055f3",
+  "toolCount": 42,
+  "sourceSha256": "c6b2aea429ed5d9a27841dc162d2467dc0ed8b3ca3cdf491588109c8c9c2bade",
   "tools": [
     "browser_status",
     "check_update",
@@ -27,6 +27,7 @@
     "record_stop",
     "dump_page",
     "save_page",
+    "search_bing",
     "find_elements",
     "click_element",
     "fill_element",

@@ -1,6 +1,6 @@
 // @last-edited: 2026-10-13 UTC+7.
 // @title: sessions — one cached driver per tab, and the tab the agent touches comes forward.
-// @state: keyed cache, adapter shape, front-on-switch.
+// @state: keyed cache, adapter shape, front-on-switch (background for a tab the caller owns outright).
 // @dependencies: none.
 
 // WHY THIS FILE EXISTS
@@ -114,14 +114,17 @@ export function createSessionStore({ openSession, port, browserId, viaBridge = n
   let fronted = null;
 
   async function open(options = {}) {
-    const { url: targetUrl, targetId: named, ...rest } = options;
+    const { url: targetUrl, targetId: named, background, ...rest } = options;
     const key = targetUrl ?? named ?? '';
     if (!sessions.has(key)) {
       const session = await openSession({ port, id: browserId, launch: false, tabUrl: targetUrl ?? null, targetId: named ?? null, viaBridge, ...rest });
       sessions.set(key, asDriver(session));
     }
     const driver = sessions.get(key);
-    if (key !== fronted) {
+    // WHY A SEARCH OPENS ITS TAB WITHOUT FRONTING IT.
+    // The local search opens and closes its own background tab in one call, and bringing that tab forward for its brief life is the one focus jump the caller did not ask for.
+    // The tab is closed before the answer returns, so no window is left in a state the person did not choose; everything else keeps the front-on-switch rule.
+    if (background !== true && key !== fronted) {
       fronted = key;
       await driver.front().catch(() => null);
     }

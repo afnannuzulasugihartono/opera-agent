@@ -1,4 +1,4 @@
-// @last-edited: 2026-11-12 UTC+7.
+// @last-edited: 2026-11-13 UTC+7.
 // @title: boundary-locks - the frozen locks on the public boundary, shared by the checkpoint tests.
 // @state: ten pins over four stacks; each line says why the current pin exists, and nothing else.
 // @dependencies: none.
@@ -95,12 +95,18 @@
 // WHY these three were re-pinned on 2026-11-12: the 1.6.50 release rode them.
 // The version constants moved (manifest.json version, index.ts SERVER_VERSION); nothing about the public contract moved with them.
 
+// WHY these two were re-pinned on 2026-11-13: the surface gained search_bing, and it gained it as a workflow over the primitives, not as a new one.
+// The relay opens one background tab on the Bing SERP, reads up to three result pages with page.dump following Bing's own pagination links, zips the external anchors into rank, title, url, site and the snippet each card renders, dedupes across pages and closes the tab.
+// The extension gained nothing: tabs.open, tabs.navigate, page.dump and tabs.close are the whole road, so the 36-method protocol and its pins above did not move.
+// The local stdio road carries the same tool over its own tab broker, reading the one parser (supabase/functions/_shared/bing-serp.js), generated into the package by scripts/pack-mcp.mjs and never committed.
+// The evaluator that walks the SERP lives in local/page-expressions.js; the tools.ts schema and the tools.ts registration moved with it.
+
 export const PUBLIC_SURFACE_LOCKS = Object.freeze([
   ['../extension/content.js', 'fd75fc8ba524c201294b4919603fb478400865039f46d5a00730b0f1b937ecb3'],
   ['../extension/background.js', 'c222723151c856e0051b67ac8b489d97096ed6605da080fff1c8bb859a05fe01'],
   ['../extension/manifest.json', 'aaad334ded5c8febe60127a01b8ccfeddb5e0f191f42800a1567b1c9ec6fc84e'],
-  ['../supabase/functions/opera-agent-mcp/index.ts', 'c805688f4ba85a2f6ff1f104bdf58e982de0c6b7b80fa29ff0d5b2999a9967ab'],
-  ['../supabase/functions/opera-agent-mcp/tools.ts', '4675349f0bf22cfed166699c02c7ebb53bf0c24a2ca48d8a919e52a3ae2ff48d'],
+  ['../supabase/functions/opera-agent-mcp/index.ts', '11bcfd7d9961f4a16e50234ec97b0007c6d0db63d6d970490744126ebc610f80'],
+  ['../supabase/functions/opera-agent-mcp/tools.ts', 'c9cd22f2b5d2c272e82f5bb9297b37492693c910ffcd8d2c95447ca33fe75176'],
 ]);
 
 export const OBSERVATION_STACK_LOCKS = Object.freeze([

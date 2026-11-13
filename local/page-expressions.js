@@ -1,5 +1,5 @@
-// @last-edited: 2026-11-05 UTC+7.
-// @title: page-expressions — the JavaScript the page runs, and the helpers that build it.
+// @last-edited: 2026-11-13 UTC+7.
+// @title: page-expressions - the JavaScript the page runs, and the helpers that build it.
 // @state: the snapshot, focus, caret, scroll, upload and edit expressions, and the pure helpers around them.
 // @dependencies: node:buffer.
 
@@ -848,3 +848,16 @@ export const SETTLE_READ_EXPRESSION = `(() => {
 // WHY THE APPEND WAITS AFTER THE END KEY.
 // The end key asks the editor to move its caret and scroll to it; a document that scrolls answers the next insert before the view has caught up, and text lands where the caret used to be.
 // The wait is the settle, so the view arriving is measured instead of assumed and a settled page pays one beat rather than a fixed 120 ms.
+
+// WHY THE SERP WALK EMITS ONLY WHAT THE PARSER CONSUMES.
+// text is the page's innerText, links are every anchor with a text-render of its label: the hosted road feeds the same parser from page.dump, so both roads answer with the same shape whatever this page happens to render.
+// Headings are deliberately absent: Bing titles are anchors here, and People-Also-Ask headings carry no href, so anchors are the only reliable spine.
+
+export const SERP_EXPRESSION = `(() => {
+  const links = [...document.querySelectorAll('a[href]')].map((anchor) => ({
+    href: anchor.getAttribute('href') || '',
+    text: (anchor.innerText || anchor.textContent || '').replace(/\\s+/g, ' ').trim()
+  }));
+  const text = document.body ? document.body.innerText : '';
+  return { text, url: location.href, title: document.title, links };
+})()`;

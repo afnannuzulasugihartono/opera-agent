@@ -1,5 +1,5 @@
-// @last-edited: 2026-11-12 UTC+7.
-// @title: tools - the 41 tools this MCP server offers, and the schemas they take.
+// @last-edited: 2026-11-13 UTC+7.
+// @title: tools - the 42 tools this MCP server offers, and the schemas they take.
 // @state: every tool the surface advertises, with the input shape each one answers.
 // @dependencies: @modelcontextprotocol/sdk, zod/v4, ../_shared/seal-vm-program.js.
 
@@ -184,7 +184,7 @@ type ExecutionMode = "background" | "foreground";
 
 export function registerTools(server: McpServer, deps: ToolDeps) {
   const {
-    execute, executeScreenshot, executeRecordStart, executeRecordStop, executeScan, executeMap, executeStatus, executeUpdateStatus, runWorkflow, runAdhoc, rpc, textResult, toolError,
+    execute, executeScreenshot, executeRecordStart, executeRecordStop, executeScan, executeMap, executeSearchBing, executeStatus, executeUpdateStatus, runWorkflow, runAdhoc, rpc, textResult, toolError,
     callVmHost, vmRunResult, rpcErrorParts, db, deviceName, provider, caller, deviceResolution
   } = deps;
 
@@ -603,6 +603,19 @@ export function registerTools(server: McpServer, deps: ToolDeps) {
     maxBytes?: number;
     timeoutMs?: number;
   }) => executeScan({ tabId, ...(filename ? { filename } : {}), ...(maxBytes != null ? { maxBytes } : {}) }, timeoutMs ?? 55000, deviceName, provider));
+
+  server.registerTool("search_bing", {
+    title: "Search Bing",
+    description: "Search Bing in one call and get the results as structured data, not a page to read: for each result its rank, the title Bing shows, the URL, the site (host without www.) and the snippet Bing renders next to it, in Bing's own order, deduplicated across the pages fetched. pages: 1 (default) fetches only the first results page; pass 2 or 3 to follow Bing's own pagination links (ten results per page at the time of writing). truncated is true exactly when Bing still has a page beyond the ones fetched, so an agent can ask for more deliberately instead of mistaking the first ten for everything there is. One background tab is opened, read and closed; nothing is left on the browser. Returns: ok, kind \"search\", the page read, and search { query, engine, pages, count, truncated, results[] }.",
+    inputSchema: {
+      query: z.string().min(1).max(400)
+        .describe("What to search for; handed to Bing verbatim as the query."),
+      pages: z.number().int().min(1).max(3).optional()
+        .describe("How many result pages to fetch, following Bing's own pagination links. Defaults to 1; at most 3."),
+      timeoutMs: timeoutSchema
+    },
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true }
+  }, ({ query, pages, timeoutMs }: { query: string; pages?: number; timeoutMs?: number }) => executeSearchBing({ query, ...(pages != null ? { pages } : {}) }, timeoutMs, deviceName, provider));
 
   server.registerTool("find_elements", {
     title: "Find page elements",

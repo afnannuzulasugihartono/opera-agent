@@ -1,5 +1,5 @@
-// @last-edited: 2026-10-25 UTC+7.
-// @title: tools — the MCP tool surface of the local driver, with the schema each call is answered against.
+// @last-edited: 2026-11-13 UTC+7.
+// @title: tools - the MCP tool surface of the local driver, with the schema each call is answered against.
 // @state: every tool name, its description and its input schema, frozen in one table.
 // @dependencies: ./burst.js.
 
@@ -114,6 +114,18 @@ export const TOOLS = Object.freeze([
         tabId: tabArg,
         allowCaretMove: { type: 'boolean', description: 'consent, recorded on this call only, for a read that borrows the selection on a canvas editor. Without it that step is skipped and the reason is reported, because a canvas caret is not in the DOM and cannot be promised back.' }
       }
+    }
+  },
+  {
+    name: 'search_bing',
+    description: 'Search Bing in one call and get the results as structured data, not a page to read: for each result its rank, the title Bing shows, the URL, the site (host without www.) and the snippet Bing renders next to it, in Bing\'s own order, deduplicated across the pages fetched. pages: 1 (default) fetches only the first results page; pass 2 or 3 to follow Bing\'s own pagination links (ten results per page at the time of writing). truncated is true exactly when Bing still has a page beyond the ones fetched. One background tab is opened, read and closed; nothing is left on the browser.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        query: stringArg('what to search for; handed to Bing verbatim as the query'),
+        pages: { type: 'integer', minimum: 1, maximum: 3, description: 'how many result pages to fetch, following Bing\'s own pagination links. Defaults to 1; at most 3.' }
+      },
+      required: ['query']
     }
   },
   {

@@ -13,7 +13,7 @@
 
   const TYPE_PACE = 26;
   const HOT = { x: 4.6, y: 2.8 };
-  const TOAST = 'opera-agent · 41 tools';
+  const TOAST = 'opera-agent · 42 tools';
 
   if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
@@ -556,7 +556,7 @@
           await wait(1000, token);
           await press(demo.querySelector('#kiloConsentAllow'), token);
           demo.classList.add('is-authed');
-          if (kiloMeta) kiloMeta.textContent = 'Connected · 41 tools';
+          if (kiloMeta) kiloMeta.textContent = 'Connected · 42 tools';
           await wait(1500, token);
           demo.classList.remove('is-browser', 'is-authed');
           demo.classList.add('is-connected');

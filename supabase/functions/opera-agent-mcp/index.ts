@@ -1,4 +1,4 @@
-// @last-edited: 2026-11-09 UTC+7.
+// @last-edited: 2026-11-13 UTC+7.
 // @title: opera-agent-mcp - the MCP surface: the tools an agent calls, over the protocol it declares.
 // @state: the transport, the tool registry, and the program sealing every VM call passes through.
 // @dependencies: edge-runtime, mcp, webStandardStreamableHttp, supabase-js, v4, edge-log, cors.
@@ -18,6 +18,7 @@ import { compileAdhocGraph } from "../_shared/adhoc-compile.js";
 import { registerTools } from "./tools.ts";
 import { tidyForAi } from "./tidy.ts";
 import { resolveDevice, type DeviceResolution } from "./device.ts";
+import { parseBingSerp } from "../_shared/bing-serp.js";
 
 // WHY THE DEPS ARE TYPED FROM THE FUNCTIONS THEMSELVES.
 // A hand-written type beside a function is a second version of that function, and the two drift.
@@ -30,6 +31,7 @@ export type ToolDeps = {
   executeRecordStop: typeof executeRecordStop;
   executeScan: typeof executeScan;
   executeMap: typeof executeMap;
+  executeSearchBing: typeof executeSearchBing;
   executeStatus: typeof executeStatus;
   executeUpdateStatus: typeof executeUpdateStatus;
   runWorkflow: typeof runWorkflow;
@@ -690,6 +692,103 @@ function executeMap(params: Record<string, unknown>, timeoutMs: number, deviceNa
     .catch(toolError);
 }
 
+// WHY SEARCH IS A WORKFLOW OVER THE PRIMITIVES AND NOT A NEW PRIMITIVE.
+// Everything search_bing needs already exists on the device: tabs.open, tabs.navigate, page.dump and tabs.close.
+// A dedicated primitive would grow the 36-method protocol for one consumer, so the search lives here instead, as an ordinary call plan; the extension stays ignorant of Bing.
+// WHY ONE BACKGROUND TAB AND WHY IT IS ALWAYS CLOSED.
+// The user's everyday browser is visible while an agent works: an extra foreground tab steals the screen and a leaked tab steals it forever.
+// The search opens one background tab, walks at most three pages, and closes the tab on every exit path; what remains is one structured answer, never a pile of tabs.
+// A failed tabs.open can mean the command failed or the outcome is unknown to this process; in the second case the tab may exist on the device, so the refusal names the unconfirmed open instead of letting the agent believe nothing happened.
+
+async function executeSearchBing(params: Record<string, unknown>, timeoutMs: number | undefined, deviceName: string = DEVICE_NAME, provider = "") {
+  const query = typeof params.query === "string" ? params.query.trim() : "";
+  if (!query) {
+    return textResult({ ok: false, error: { code: "SEARCH_QUERY_REQUIRED", message: "search_bing needs a non-empty query string." } });
+  }
+  const pages = Math.min(3, Math.max(1, Math.floor(Number(params.pages) || 1)));
+  const timeout = Math.max(5000, Math.min(30000, timeoutMs ?? 30000));
+  const firstUrl = `https://www.bing.com/search?q=${encodeURIComponent(query)}`;
+
+  const opened = await runCommand("tabs.open", { url: firstUrl, active: false, wait: true }, timeout, deviceName, provider)
+    .then((value) => value.result as Record<string, unknown> | undefined)
+    .catch(() => undefined);
+  const tabId = Number(opened?.tab && typeof opened.tab === "object" ? (opened.tab as Record<string, unknown>).id : undefined);
+  if (!Number.isFinite(tabId)) {
+    return textResult({ ok: false, error: { code: "SEARCH_TAB_UNCONFIRMED", message: "The search tab could not be confirmed on the paired device. The browser may be asleep - check browser_status - and the open may have happened without this process hearing back; list_tabs shows whether a Bing tab is sitting there." } });
+  }
+
+  let merged: Array<Record<string, unknown>> = [];
+  let truncated = false;
+  let textTruncated = false;
+  let fetched = 0;
+  let currentFirst = 1;
+  let pageUrl = firstUrl;
+  let pageTitle = "";
+  let failure: ReturnType<typeof toolError> | null = null;
+  // WHY THE LOOP BOUNDS ITSELF BY WHAT BING SAYS, NOT BY THE ASKED PAGES ALONE.
+  // A SERP with no next-page link is done even if the caller asked for three pages; answering with invented pages after the real ones ran out would be a lie dressed as diligence.
+  try {
+    for (let page = 0; page < pages; page += 1) {
+      if (page > 0) {
+        await runCommand("tabs.navigate", { tabId, url: `${firstUrl}&first=${currentFirst}`, wait: true }, timeout, deviceName, provider);
+      }
+      const dump = await runCommand("page.dump", { tabId, offset: 0, limit: 200000 }, 20000, deviceName, provider)
+        .then((value) => {
+          const result = value.result && typeof value.result === "object" ? value.result as Record<string, unknown> : {};
+          return result.dump && typeof result.dump === "object" ? result.dump as Record<string, unknown> : {};
+        });
+      const parsed = parseBingSerp(
+        { text: String(dump.text ?? ""), links: Array.isArray(dump.links) ? dump.links as Array<Record<string, unknown>> : [] },
+        { currentFirst }
+      );
+      merged = merged.concat(parsed.results as Array<Record<string, unknown>>);
+      fetched += 1;
+      truncated = parsed.nextFirst !== null;
+      textTruncated = textTruncated || dump.truncated === true;
+      // WHY THE REPORTED PAGE IS THE FIRST ONE.
+      // The caller asked about a query; the first results page is the answer Bing shows for it.
+      // The later pages fetched are more of the same answer, not a different page.
+      if (fetched === 1) {
+        pageUrl = String(dump.url ?? firstUrl);
+        pageTitle = String(dump.title ?? "");
+      }
+      if (parsed.nextFirst === null) break;
+      currentFirst = parsed.nextFirst;
+    }
+  } catch (error) {
+    failure = toolError(error);
+  } finally {
+    await runCommand("tabs.close", { tabId }, 8000, deviceName, provider).catch(() => null);
+  }
+  if (failure) return failure;
+
+  // WHY THE MERGE DEDUPES ACROSS PAGES.
+  // Bing can re-serve a card on a later page; a search that reports the same mcpmarket.com link twice reads as a bigger answer than it is.
+  const seenUrls = new Set<string>();
+  merged = merged
+    .filter((result) => {
+      const url = String(result.url ?? "");
+      if (!url || seenUrls.has(url)) return false;
+      seenUrls.add(url);
+      return true;
+    })
+    .map((result, index) => ({ ...result, rank: index + 1 }));
+  return textResult({
+    ok: true,
+    kind: "search",
+    page: { url: pageUrl, title: pageTitle },
+    search: {
+      query,
+      engine: "bing",
+      pages: fetched,
+      count: merged.length,
+      truncated,
+      ...(textTruncated ? { textTruncated: true } : {}),
+      results: merged
+    }
+  });
+}
+
 function screenshotResult(value: Record<string, unknown>) {
   const result = value.result && typeof value.result === "object" ? value.result as Record<string, unknown> : {};
   const screenshot = result.screenshot && typeof result.screenshot === "object" ? result.screenshot as Record<string, unknown> : {};
@@ -1161,6 +1260,7 @@ function createServer(deviceName: string = DEVICE_NAME, provider = "", caller: V
     executeRecordStop,
     executeScan,
     executeMap,
+    executeSearchBing,
     executeStatus,
     executeUpdateStatus,
     runWorkflow,
