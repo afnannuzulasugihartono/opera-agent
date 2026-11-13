@@ -56,6 +56,14 @@ const files = [
   ...collectRuntimeFiles('hosted/migrations', new Set(['.sql'])),
 ].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
 
+// WHY THIS FLAG EXISTS.
+// The census is the one thing a human cannot see from green alone; --list prints the files exactly as the scans read them, so a test can assert the census and an operator can audit one.
+
+if (process.argv.includes('--list')) {
+  for (const file of files) console.log(file);
+  process.exit(0);
+}
+
 for (const file of files) {
   const text = fs.readFileSync(path.join(root, file), 'utf8');
   assert.doesNotMatch(text, /\beval\s*\(/, `${file} must not use eval`);

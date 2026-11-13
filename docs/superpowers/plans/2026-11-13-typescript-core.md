@@ -95,7 +95,7 @@ Expected: the emitted `shared/canonical-order.js` exists, is untracked, has its 
 
 Temporarily `git add -f shared/canonical-order.js`, run the gate, expect FAIL with `tracked .js in a folder that carries .ts`, then `git rm --cached` it and re-run to see PASS. Leave the tree clean.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit** (the deploy-functions commit landed first as its own; the census commit lands with this edit)
 
 ```bash
 git add tsconfig.base.json tsconfig.shared.json package.json .gitignore tests/tooling/architecture.test.mjs shared/canonical-order.ts scripts/pack/build-shared.mjs
@@ -155,7 +155,7 @@ git commit -m "types(shared): all 14 modules are TypeScript - the pins freeze th
 - Consumes: `npm run build:shared`, `npm run types`.
 - Produces: `npm test` green from a clean checkout; a census that counts the TypeScript sources; a deploy that carries the emitted files.
 
-- [ ] **Step 1: Write the failing test for the census**
+- [x] **Step 1: Write the failing test for the census** (done 2026-11-13: tests/tooling/types-census.test.mjs; check.mjs `--list` prints the census; the red run failed at the gate layer, see the ledger)
 
 In `tests/tooling/professional.test.mjs` (it already reads the check output) or a new `tests/tooling/types-census.test.mjs`, assert that `npm run check`'s runtime-file count is taken over files **including `.ts`**, by asserting the census lists at least one `shared/*.ts` path:
 
@@ -168,12 +168,12 @@ test('the runtime census sees TypeScript sources, not only .js', () => {
 
 (Add the `--list` flag to `check.mjs` in Step 3 — it prints the census it already computes and exits.)
 
-- [ ] **Step 2: Run it and watch it fail**
+- [x] **Step 2: Run it and watch it fail** (done 2026-11-13; red confirmed: gates drift stopped check.mjs from even listing until its pin moved, then it passed)
 
 Run: `node --test tests/tooling/types-census.test.mjs`
 Expected: FAIL — no `--list` flag, and the census does not carry `.ts`.
 
-- [ ] **Step 3: Implement the wiring**
+- [x] **Step 3: Implement the wiring** (done 2026-11-13: check.mjs collects .js+.ts and gained `--list`; scope.mjs already carried `**/*.ts`; pack-mcp unchanged; pretest builds; deploy-functions builds; structure-gates scans both; sonarcloud excludes the uncommitted twins with the written reason; the stale `supabase` condition is gone; extension exceptions stay .js, the retarget to .ts is stage 3)
 
 - `check.mjs`: `collectRuntimeFiles('extension', new Set(['.js', '.ts']))`, same for `shared` and `local`; keep `node --check` on `.js` only (the compile is the parse check for `.ts`); delete the dead `file.startsWith('supabase')` condition; add `--list`.
 - `scope.mjs`: `git ls-files` patterns gain `**/*.ts`.
@@ -183,11 +183,11 @@ Expected: FAIL — no `--list` flag, and the census does not carry `.ts`.
 - `deploy-functions.yml`: a step `npm ci && npm run build:shared` before the deploy step (the functions import `../../../shared/*.js`).
 - `.sonarcloud.properties`: exclusion for generated output (`shared/**/*.js` and, in later stages, `local/**/*.js`, `extension/**/*.js`) with the written reason: the compiled copy is the source's duplicate by construction.
 
-- [ ] **Step 4: Prove the build is honest about removals**
+- [x] **Step 4: Prove the build is honest about removals** (done 2026-11-13, stricter than drawn: a stale `shared/zzz-temp.js` with no source REFUSES the build and names itself instead of being deleted silently, and the hygiene gate refuses it too - nothing is destroyed without a human; the twin was removed by hand and the build went green)
 
 `touch shared/zzz-temp.ts` with `export const x: number = 1;`, `npm run build:shared`, confirm `shared/zzz-temp.js` exists; `rm shared/zzz-temp.ts`, `npm run build:shared`, confirm `shared/zzz-temp.js` is gone. This is the clean-before-compile rule doing its job.
 
-- [ ] **Step 5: Run the gates**
+- [x] **Step 5: Run the gates** (done 2026-11-13: npm run types, npm test, npm run check all green)
 
 Run: `npm test && npm run check && npm run types`
 Expected: all green; the census prints the `.ts` sources.
@@ -204,18 +204,18 @@ git commit -m "types(shared): every path that needs the build gets it - pretest,
 **Files:**
 - Modify: none (this task only proves; if it finds a hole, that hole is a bug in Task 1–3)
 
-- [ ] **Step 1: Break a type on purpose**
+- [x] **Step 1: Break a type on purpose** (done 2026-11-13: `const nope: number = 'nope'` in shared/canonical-order.ts)
 
 Change `shared/canonical-order.ts` to call a function with the wrong argument count (or add `const x: number = 'nope';`).
 
-- [ ] **Step 2: Watch both gates refuse**
+- [x] **Step 2: Watch both gates refuse** (done 2026-11-13: `npm run types` exits 2 at shared/canonical-order.ts(14,7) TS2322; `npm test` exits 1 at pretest with the same error - nothing reached the suite)
 
 Run: `npm run types`
 Expected: FAIL with the exact file and line.
 Run: `npm test`
 Expected: FAIL at `pretest` (the build refuses before the suite runs). This is the property the owner asked for: a wrong field or a wrong path cannot reach a user unnoticed.
 
-- [ ] **Step 3: Restore and confirm green**
+- [x] **Step 3: Restore and confirm green** (done 2026-11-13: git checkout; types, test, check green)
 
 `git checkout -- shared/canonical-order.ts`, run `npm test && npm run check && npm run types`, expect all green.
 
