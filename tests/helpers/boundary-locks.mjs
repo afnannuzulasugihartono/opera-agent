@@ -110,10 +110,12 @@
 // The pins move with the reviewed conversion, and the CRX is built from the same source they guard.
 // tools.ts and manifest.json did not move; the tool schemas and the manifest are the contract.
 
-// WHY content.ts moved again: the manifest loads content.js as a classic script, and no ES-module boundary of any kind may exist inside it.
+// WHY content.ts moved four times: the manifest loads content.js as a classic script, and no ES-module boundary of any kind may exist inside it.
 // The converted source imported isRecord from lib/guards.js; an MV3 classic script cannot parse that, so the import became a local copy of the same guard and the module marker the build appends is stripped from the classic-script files.
 // Behaviour is unchanged - the primitives are the same ones the suite drives; only the stub broke the load, and only the load noticed.
-// WHY content.ts moved twice more: the ReDoS round replaced the two character-class-alternating patterns with a single class and with split/join, and the best-effort close paths now use .catch(() => {}) with no comment inside the body - a gate reads comments as belonging above what they document.
+// WHY the second move: the ReDoS round replaced the two character-class-alternating patterns with one class and with split/join, normalized lines via trim(), and the best-effort close paths use .catch(() => {}) with no comment inside the body (the comment-placement gate holds comments above what they document).
+// WHY the third move: the last super-linear regex left the file — every line is normalized by line.trim(), and nothing in this file requires a backtracking regex.
+// The byte pin moves with the contract review.
 
 // WHY control-flow and collect moved: the frozen VM went to TypeScript, and the two pure cores moved with it.
 // The runtime validator and the collection engine are the same programs the suite already proves; the pins move with the reviewed conversion.
@@ -126,7 +128,7 @@
 // WHY the comment-canonical spelling matters to this pin: the gate rewrites the activity.ts and background.ts comment lines, so bytes track the canonical form.
 
 export const PUBLIC_SURFACE_LOCKS = Object.freeze([
-  ['../extension/content.ts', 'f710fafa23478a2e28c63849bb7bce384c04c0bc86198fdaeb2fa1770d88f24d'],
+  ['../extension/content.ts', '02365ade2ed83b234e7056ff51c3b7b41b1cacf66c74fdad41e1009b8f464fa5'],
   ['../extension/background.ts', '8d700859a184591d6377c7f87aa582fe2404eb48e7e86f9c972b44a44771d5f5'],
   ['../extension/manifest.json', 'aaad334ded5c8febe60127a01b8ccfeddb5e0f191f42800a1567b1c9ec6fc84e'],
   ['../hosted/functions/opera-agent-mcp/index.ts', '9895b06e0abe7e7bbb222e5580c03d4065439db3284111fe3f8f7234b57b77b2'],

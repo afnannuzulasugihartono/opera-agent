@@ -122,4 +122,5 @@ extension/*.js
 extension/lib/*.js
 extension/worker/*.js
 extension/content/*.js
+extension-stage
 

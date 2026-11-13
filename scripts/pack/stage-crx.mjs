@@ -10,17 +10,11 @@ import assert from 'node:assert/strict';
 
 const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const source = path.join(repo, 'extension');
-const targetArg = process.argv[2];
-const destination = targetArg ? path.resolve(repo, targetArg) : path.join(repo, 'extension-crx-stage');
+const destination = path.join(repo, 'extension-stage');
 
-// WHY THE DESTINATION IS CONFINED.
-// The script deletes its destination before it writes to it, so an LLM-supplied path can make the staging step delete anything on the machine it runs on.
-// The staging folder is always inside the repository; anything else is refused loudly.
-
-if (destination === repo || !destination.startsWith(repo + path.sep)) {
-  console.error(`stage-crx: refusing a destination outside the repository: ${destination}`);
-  process.exit(1);
-}
+// WHY THE DESTINATION IS A CONSTANT.
+// The script deletes its destination before it writes to it, so any argument routed to this path would let a typo (or an LLM) delete arbitrary directories on the machine that runs it.
+// The staging folder is always the same directory inside the repository; there is no input to abuse.
 
 fs.rmSync(destination, { recursive: true, force: true });
 fs.mkdirSync(destination, { recursive: true });

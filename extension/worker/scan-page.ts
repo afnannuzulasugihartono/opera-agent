@@ -107,21 +107,36 @@ function utf8(bytes: Uint8Array): string {
   return new TextDecoder().decode(bytes);
 }
 
-// WHY THE PATTERN IS SPLIT.
-// A quoted URL, a double-quoted URL and a bare URL are three unambiguous alternatives; a single optional-quote pattern lets the character classes share characters and backtrack super-linearly on adversarial CSS.
+// WHY NO REGEX.
+// Super-linear CSS-URL backtracking is gone when the walk is a character scanner: find "url(", skip whitespace, honor an optional quote, then take everything up to the closing paren.
 
-const CSS_URL_PATTERN = new RegExp("url\\(\\s*(?:'([^']*)'|\"([^\"]*)\"|([^'\")\\s]*))\\s*\\)", 'g');
-const cssUrlAt = (match: RegExpMatchArray): string | undefined => match[1] ?? match[2] ?? match[3];
+function cssUrlTargets(css: string): Array<{ raw: string; start: number; end: number }> {
+  const urls: Array<{ raw: string; start: number; end: number }> = [];
+  let i = 0;
+  while (i < css.length) {
+    const at = css.indexOf('url(', i);
+    if (at === -1) break;
+    let cursor = at + 4;
+    while (cursor < css.length && /\s/.test(css[cursor] as string)) cursor += 1;
+    const quote = css[cursor] === "'" || css[cursor] === '"' ? css[cursor] : null;
+    const rawStart = quote ? cursor + 1 : cursor;
+    const limit = quote === "'" ? "'" : quote === '"' ? '"' : ')';
+    let rawEnd = rawStart;
+    while (rawEnd < css.length && css[rawEnd] !== limit) rawEnd += 1;
+    urls.push({ raw: css.slice(rawStart, rawEnd), start: at, end: limit === ')' ? rawEnd + 1 : rawEnd + 2 });
+    i = limit === ')' ? rawEnd + 1 : rawEnd + 2;
+  }
+  return urls;
+}
 
 function cssWithFonts(css: string, baseUrl: string, fontMap: Map<string, ScanAsset>): string {
-  let output = css;
-
-  const urls = [...css.matchAll(CSS_URL_PATTERN)];
+  const urls = cssUrlTargets(css);
 
   const seen = new Set();
+  const replacements: Array<{ start: number; end: number; value: string }> = [];
 
-  for (const match of urls) {
-    const raw = cssUrlAt(match)?.trim() ?? '';
+  for (const target of urls) {
+    const raw = target.raw.trim();
 
     if (!raw || /^(data:|#)/i.test(raw)) continue;
 
@@ -140,8 +155,16 @@ function cssWithFonts(css: string, baseUrl: string, fontMap: Map<string, ScanAss
     const fetched = fontMap.get(absolute);
 
     if (fetched && fetched.kind === 'data') {
-      output = output.split(match[0] ?? '').join(`url(${fetched.dataUrl})`);
+      replacements.push({ start: target.start, end: target.end, value: `url(${fetched.dataUrl})` });
     }
+  }
+
+  if (replacements.length === 0) return css;
+
+  const ordered = [...replacements].sort((left, right) => right.start - left.start);
+  let output = css;
+  for (const replacement of ordered) {
+    output = output.slice(0, replacement.start) + replacement.value + output.slice(replacement.end);
   }
 
   return output;
@@ -207,8 +230,8 @@ export async function scanPage(tabId: unknown, params: Record<string, unknown> |
     if (isCss) {
       const text = utf8(fetched.bytes);
 
-      const fontRefs = [...text.matchAll(CSS_URL_PATTERN)]
-        .map((match) => cssUrlAt(match)?.trim() ?? '')
+      const fontRefs = cssUrlTargets(text)
+        .map((target) => target.raw.trim())
         .filter((raw) => raw && !/^(data:|#)/i.test(raw))
         .map((raw) => {
           try {

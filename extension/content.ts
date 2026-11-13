@@ -332,7 +332,7 @@ interface ListenCaptureState {
       .replace(/\r\n?/g, '\n')
       .replace(/[\t\f\v ]+/g, ' ')
       .split('\n')
-      .map((line) => line.replace(/^ +| +$/g, ''))
+      .map((line) => line.trim())
       .join('\n')
       .replace(/\n{3,}/g, '\n\n')
       .trim();
@@ -2288,7 +2288,7 @@ interface ListenCaptureState {
           listenStop().catch(() => {});
         }
       } else if (listenCapture.ctx) {
-        try { listenCapture.ctx.close().catch(() => {}); } catch {}
+        listenCapture.ctx.close().catch(() => {});
         listenCapture.ctx = null;
       }
     };
@@ -2364,7 +2364,7 @@ interface ListenCaptureState {
     }
     listenCapture.recorder = null;
     if (listenCapture.ctx) {
-      try { listenCapture.ctx.close().catch(() => {}); } catch {}
+      listenCapture.ctx.close().catch(() => {});
       listenCapture.ctx = null;
     }
     return { ok: true, flushed: false };
