@@ -34,9 +34,9 @@ A private, local-browser control bridge.
 | | |
 | --- | --- |
 | Protocol | `1` |
-| Browser primitives | **36** allowlisted generic methods ([`extension/lib/protocol.js`](extension/lib/protocol.js)) plus device-local `watch.*`/`loop.*` async methods |
+| Browser primitives | **36** allowlisted generic methods ([`extension/lib/protocol.ts`](extension/lib/protocol.ts)) plus device-local `watch.*`/`loop.*` async methods |
 | Cloud MCP surface | **42** tools ([`hosted/functions/opera-agent-mcp/index.ts`](hosted/functions/opera-agent-mcp/index.ts)) |
-| Local MCP surface | **55** tools ([`local/mcp-server.js`](local/mcp-server.js)) - the operator's own signed-in Chrome, no cloud hop, plus the wallet that pays for the work |
+| Local MCP surface | **55** tools ([`local/mcp-server.ts`](local/mcp-server.ts)) - the operator's own signed-in Chrome, no cloud hop, plus the wallet that pays for the work |
 | Distribution | Signed CRX3 self-updates from the update service |
 
 ## One command, two modes

@@ -18,11 +18,11 @@ const repo = (p) => new URL(p, root);
 const read = (name) => fs.readFileSync(repo(name), 'utf8');
 const readme = read('README.md');
 
-// The primitives: the allowlist the protocol actually exports.
+// The primitives: the allowlist the protocol actually exports, read from the source, not the emit's indent style.
 
-const protocol = read('extension/lib/protocol.js');
-const specs = /METHOD_SPECS\s*=\s*Object\.freeze\(\{([\s\S]*?)\n\}\);/.exec(protocol)?.[1] ?? '';
-const primitives = [...specs.matchAll(/^\s{2}'([a-z_]+\.[a-z_]+)':/gm)].map((m) => m[1]);
+const protocol = read('extension/lib/protocol.ts');
+const specs = /METHOD_SPECS[^{]*\{([\s\S]*?)\n\}\)/.exec(protocol)?.[1] ?? '';
+const primitives = [...specs.matchAll(/^\s*'([a-z_]+\.[a-z_]+)':/gm)].map((m) => m[1]);
 
 // The cloud tools: the frozen contract, which the suite already holds byte-for-byte.
 

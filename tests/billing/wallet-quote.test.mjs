@@ -1,7 +1,7 @@
 // @last-edited: 2026-11-04 UTC+7.
 // @title: wallet-quote — a plan becomes one price, and a list becomes chunks before any money is held.
 // @state: the shape rules, the quote against a price list, and the split that keeps every reservation one bounded job.
-// @dependencies: node:test, node:assert/strict, ../hosted/functions/_shared/wallet.js.
+// @dependencies: node:test, node:assert/strict, ../hosted/functions/_shared/wallet.ts.
 
 // WHY THESE CASES AND NOT MORE.
 // Each one is a way the price could be wrong for a real customer: a list that is one job per ten items, a document priced as a report, a plan too long for one job, and a price list that does not name the kind the plan needs.
@@ -9,7 +9,7 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { ACTION_CAP, HOLD_MS, classifyPlan, quotePlan, splitBatch } from '../../hosted/functions/_shared/wallet.js';
+import { ACTION_CAP, HOLD_MS, classifyPlan, quotePlan, splitBatch } from '../../hosted/functions/_shared/wallet.ts';
 
 const PRICES = [
   { kind: 'wallet.deposit', amount_cents: 1000000, currency: 'IDR' },

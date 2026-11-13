@@ -7,8 +7,13 @@
   "type": "module",
   "scripts": {
     "build:shared": "node scripts/pack/build-shared.mjs",
-    "types": "tsc --noEmit -p tsconfig.shared.json",
-    "pretest": "node scripts/pack/build-shared.mjs && node scripts/pack/pack-mcp.mjs",
+    "build:local": "node scripts/pack/build-local.mjs",
+    "build:extension": "node scripts/pack/build-extension.mjs",
+    "build:extension:watch": "tsc -p tsconfig.extension.json --watch",
+    "types": "tsc --noEmit -p tsconfig.shared.json && tsc --noEmit -p tsconfig.local.json && tsc --noEmit -p tsconfig.extension.json",
+    "pretest": "npm run audit && npm run biome && npm run build:shared && npm run build:local && npm run build:extension && node scripts/pack/pack-mcp.mjs",
+    "audit": "node scripts/audit/audit-cheats.mjs",
+    "biome": "biome check .",
     "test": "node --test --test-timeout=120000 --test-reporter=dot tests/**/*.test.mjs",
     "test:unit": "node --test tests/extension/protocol.test.mjs tests/vm/workflow-dsl.test.mjs",
     "test:browser": "python tests/browser_extension_test.py",
@@ -30,6 +35,9 @@
     "node": ">=22"
   },
   "devDependencies": {
+    "@biomejs/biome": "2.6.7",
+    "@types/chrome": "^0.3.7",
+    "@types/node": "^22.20.5",
     "typescript": "^5.9.3"
   }
 }

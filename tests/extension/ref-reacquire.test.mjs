@@ -21,7 +21,7 @@ const source = await readFile(new URL('../../extension/content.js', import.meta.
 function resolveBlock() {
   const start = source.indexOf('function resolveActionRef(ref) {');
   assert.ok(start > 0, 'resolveActionRef must be locatable');
-  return source.slice(start, source.indexOf('\n  function ', start + 10));
+  return source.slice(start, source.indexOf('\n    function ', start + 10));
 }
 
 test('the geometry tolerance is unchanged and still unbroadened', () => {
@@ -55,13 +55,13 @@ test('a moved successor is still refused, and the stale ref is never revived', (
 test('recovery is bounded and only offers refs that are already safe to act on', () => {
   const block = resolveBlock();
 
-  assert.match(block, /const candidates = revalidationCandidates\(descriptor\);\s*if \(candidates\.length !== 1\) return null;/);
+  assert.match(block, /const candidates = revalidationCandidates\(descriptor\);\s*if \(candidates\.length !== 1\)\s*return null;/s);
   assert.match(block, /candidates\.slice\(0, 3\)\.map/);
 
   assert.match(block, /freshRef: getRef\(el\)/);
   assert.match(block, /actionable: s\.actionable/);
 
-  assert.match(block, /if \(candidates\.length !== 1\) return null;/);
+  assert.match(block, /if \(candidates\.length !== 1\)\s*return null;/s);
 });
 
 test('the refusal message is diagnostic and tells the model how to recover', () => {
@@ -78,7 +78,7 @@ test('the refusal message is diagnostic and tells the model how to recover', () 
 test('sensitive targets are never offered a fresh ref', () => {
   const block = resolveBlock();
 
-  assert.match(block, /if \(descriptor\.sensitive\) return null;/);
+  assert.match(block, /if \(descriptor\.sensitive\)\s*return null;/s);
   const pool = block.slice(block.indexOf('const candidates = revalidationCandidates'));
   assert.match(pool, /freshRef: getRef\(el\)/);
 

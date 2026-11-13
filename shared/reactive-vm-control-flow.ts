@@ -699,15 +699,16 @@ function limitContext(limit: string, context: JsonObject = {}): LimitContext {
 
 function findRetryFrameIndex(frames: readonly ControlFrame[]): number {
   for (let index = frames.length - 1; index >= 0; index -= 1) {
-    if (frames[index]!.kind === 'RETRY') return index;
+    const frame = frames[index];
+    if (frame && frame.kind === 'RETRY') return index;
   }
   return -1;
 }
 
 function activeRetryDelay(frames: readonly ControlFrame[]): { index: number; frame: RetryFrame } | null {
   for (let index = frames.length - 1; index >= 0; index -= 1) {
-    const frame = frames[index]!;
-    if (frame.kind === 'RETRY' && frame.notBeforeMs !== null) return { index, frame };
+    const frame = frames[index];
+    if (frame && frame.kind === 'RETRY' && frame.notBeforeMs !== null) return { index, frame };
   }
   return null;
 }
@@ -731,7 +732,8 @@ function startIteration(program: ReactiveProgram, state: VmState, frame: LoopFra
 function completeInstruction(program: ReactiveProgram, state: VmState): InstructionCompletion {
   const next: VmState = cloneJson<VmState>(state, 'state');
   while (next.frames.length) {
-    const frame = next.frames.pop()!;
+    // WHY the cast: the loop condition already proved a frame exists, so the pop is never undefined.
+    const frame = next.frames.pop() as ControlFrame;
 
     if (frame.kind === 'IF') continue;
 
@@ -844,8 +846,10 @@ async function finishCompleted(program: ReactiveProgram, state: VmState, transit
 function chargeWait(program: ReactiveProgram, state: VmState, logicalNowMs: number): WaitCharge {
   if (state.waitState === null) return { state };
   const next: VmState = cloneJson<VmState>(state, 'state');
-  const chargedUntil = Math.min(logicalNowMs, next.waitState!.deadlineAtMs);
-  const delta = Math.max(0, chargedUntil - next.waitState!.lastChargedAtMs);
+  const wait = next.waitState;
+  if (wait === null) return { state };
+  const chargedUntil = Math.min(logicalNowMs, wait.deadlineAtMs);
+  const delta = Math.max(0, chargedUntil - wait.lastChargedAtMs);
   const cumulative = next.counters.cumulativeWaitMs + delta;
   if (cumulative > program.budgets.cumulativeWaitMs) {
     return {
@@ -857,7 +861,7 @@ function chargeWait(program: ReactiveProgram, state: VmState, logicalNowMs: numb
     };
   }
   next.counters.cumulativeWaitMs = cumulative;
-  next.waitState!.lastChargedAtMs = chargedUntil;
+  wait.lastChargedAtMs = chargedUntil;
   return { state: next };
 }
 
@@ -874,7 +878,7 @@ async function issueEffect(program: ReactiveProgram, state: VmState, spec: Effec
   const request = await makeEffectRequest(program, next, spec);
   next.counters.commandLeaves += 1;
   next.pendingEffect = cloneJson(request);
-  if (spec.purpose === 'WAIT_EVENT') next.waitState!.polls += 1;
+  if (spec.purpose === 'WAIT_EVENT' && next.waitState !== null) next.waitState.polls += 1;
   return deepFreeze({
     state: deepFreeze(next),
     transition: deepFreeze({ kind: 'EFFECT_REQUEST', request, transitionIndex: next.transitionIndex }),
@@ -883,22 +887,26 @@ async function issueEffect(program: ReactiveProgram, state: VmState, spec: Effec
 
 async function issueWaitObservation(program: ReactiveProgram, state: VmState): Promise<VmStep> {
   // The cursor is only on a WAIT_EVENT when this is issued, and a non-terminal state carries an array cursorPath.
-  const node = nodeAtPath(program, state.cursorPath) as WaitEventNode;
+  const nodePath = state.cursorPath;
+  if (nodePath === null) fail('INVALID_SEMANTICS', 'wait observation requires a non-terminal cursor path.');
+  const node = nodeAtPath(program, nodePath) as WaitEventNode;
   return issueEffect(program, state, {
     purpose: 'WAIT_EVENT',
     method: node.observation.method,
     arguments: node.observation.arguments,
     resultBinding: null,
-    nodePath: state.cursorPath!,
+    nodePath,
   });
 }
 
 function waitTimeoutSuspension(node: WaitEventNode, state: VmState): LimitContext {
+  const waitState = state.waitState;
+  if (waitState === null) fail('INVALID_SEMANTICS', 'wait timeout requires a wait state.');
   return limitContext('WAIT_EVENT_TIMEOUT', {
-    nodePath: state.waitState!.nodePath,
+    nodePath: waitState.nodePath,
     timeoutMs: node.timeoutMs,
-    elapsedMs: Math.max(0, state.waitState!.lastChargedAtMs - state.waitState!.startedAtMs),
-    polls: state.waitState!.polls,
+    elapsedMs: Math.max(0, waitState.lastChargedAtMs - waitState.startedAtMs),
+    polls: waitState.polls,
     conditionMet: false,
   });
 }
@@ -909,13 +917,15 @@ function waitTimeoutSuspension(node: WaitEventNode, state: VmState): LimitContex
 // It is built once here.
 
 function suspendOnFailure(program: ReactiveProgram, state: VmState, disposition: FailureDisposition, errorCode: unknown): Promise<VmStep> {
+  const pending = state.pendingEffect;
+  if (pending === null) fail('INVALID_SEMANTICS', 'failure suspension requires a pending effect.');
   return terminalTransition(program, state, 'SUSPENDED', {
     result: null,
     suspension: {
       reason: disposition.reason,
       context: {
-        method: state.pendingEffect!.method,
-        requestDigest: state.pendingEffect!.requestDigest,
+        method: pending.method,
+        requestDigest: pending.requestDigest,
         errorCode: errorCode ?? 'EFFECT_FAILED',
         disposition: disposition.kind,
       },
@@ -925,55 +935,60 @@ function suspendOnFailure(program: ReactiveProgram, state: VmState, disposition:
 
 async function handleWaitEffectResult(program: ReactiveProgram, state: VmState, input: VmStepInput): Promise<VmStep> {
   // A wait handler only runs with an effect result in hand, and the cursor only sits on a WAIT_EVENT while its wait state exists.
-  const node = nodeAtPath(program, state.pendingEffect!.nodePath) as WaitEventNode;
-  const disposition = input.effectResult!.ok ? null : failureDisposition(input.effectResult!.errorCode);
-
-  if (!input.effectResult!.ok && disposition!.kind !== 'TRANSIENT') {
-    return suspendOnFailure(program, state, disposition!, input.effectResult!.errorCode);
+  const effectResult = input.effectResult;
+  if (effectResult === undefined) fail('INVALID_SEMANTICS', 'wait effect requires a result.');
+  const pending = state.pendingEffect;
+  if (pending === null) fail('INVALID_SEMANTICS', 'wait effect requires a pending effect.');
+  const waitState = state.waitState;
+  if (waitState === null) fail('INVALID_SEMANTICS', 'wait effect requires a wait state.');
+  const node = nodeAtPath(program, pending.nodePath) as WaitEventNode;
+  const disposition = effectResult.ok ? null : failureDisposition(effectResult.errorCode);
+  if (!effectResult.ok && (disposition === null || disposition.kind !== 'TRANSIENT')) {
+    return suspendOnFailure(program, state, disposition ?? failureDisposition(effectResult.errorCode), effectResult.errorCode);
   }
-
   const next: VmState = cloneJson<VmState>(state, 'state');
   next.pendingEffect = null;
   next.status = 'RUNNING';
   next.transitionIndex += 1;
-
-  if (input.effectResult!.ok) {
-    const predicateBindings = { ...next.bindings, observation: cloneJson(input.effectResult!.value, 'wait observation') };
+  if (effectResult.ok) {
+    const predicateBindings = { ...next.bindings, observation: cloneJson(effectResult.value, 'wait observation') };
     const matched = Boolean(evaluateReactiveExpression(node.predicate, predicateBindings));
     if (matched) {
       next.waitState = null;
       return finishCompleted(program, next, {
         kind: 'WAIT_EVENT_MATCHED',
-        polls: state.waitState!.polls,
+        polls: waitState.polls,
       });
     }
   }
-
-  if (input.logicalNowMs >= next.waitState!.deadlineAtMs) {
+  const nextWait = next.waitState;
+  if (nextWait === null) fail('INVALID_SEMANTICS', 'wait effect requires the wait state to survive across the clone.');
+  if (input.logicalNowMs >= nextWait.deadlineAtMs) {
     return terminalTransition(program, next, 'LIMIT_REACHED', {
       result: null,
       suspension: waitTimeoutSuspension(node, next),
     }, false);
   }
-
-  next.waitState!.nextPollAtMs = Math.min(
-    next.waitState!.deadlineAtMs,
+  nextWait.nextPollAtMs = Math.min(
+    nextWait.deadlineAtMs,
     input.logicalNowMs + node.intervalMs,
   );
   return deepFreeze({
     state: deepFreeze(next),
     transition: deepFreeze({
-      kind: input.effectResult!.ok ? 'WAIT_EVENT_OBSERVED' : 'WAIT_EVENT_RETRY',
+      kind: effectResult.ok ? 'WAIT_EVENT_OBSERVED' : 'WAIT_EVENT_RETRY',
       matched: false,
-      ...(input.effectResult!.ok ? {} : { errorCode: input.effectResult!.errorCode ?? 'EFFECT_FAILED' }),
-      nextPollAtMs: next.waitState!.nextPollAtMs,
+      ...(effectResult.ok ? {} : { errorCode: effectResult.errorCode ?? 'EFFECT_FAILED' }),
+      nextPollAtMs: nextWait.nextPollAtMs,
       transitionIndex: next.transitionIndex,
     }),
   });
 }
 
 async function handleCommandFailure(program: ReactiveProgram, state: VmState, input: VmStepInput): Promise<VmStep> {
-  const disposition = failureDisposition(input.effectResult!.errorCode);
+  const effectResult = input.effectResult;
+  if (effectResult === undefined) fail('INVALID_SEMANTICS', 'command effect failure requires a result.');
+  const disposition = failureDisposition(effectResult.errorCode);
   const retryIndex = findRetryFrameIndex(state.frames);
 
   if (disposition.kind === 'TRANSIENT' && retryIndex >= 0) {
@@ -987,7 +1002,7 @@ async function handleCommandFailure(program: ReactiveProgram, state: VmState, in
         suspension: limitContext('RETRY_ATTEMPTS', {
           nodePath: retryFrame.parentPath,
           attempts: retryNode.policy.attempts,
-          lastErrorCode: input.effectResult!.errorCode ?? 'EFFECT_FAILED',
+          lastErrorCode: effectResult.errorCode ?? 'EFFECT_FAILED',
           retryable: true,
         }),
       });
@@ -1012,21 +1027,26 @@ async function handleCommandFailure(program: ReactiveProgram, state: VmState, in
         attempt: frame.attempt,
         maxAttempts: retryNode.policy.attempts,
         notBeforeMs: frame.notBeforeMs,
-        errorCode: input.effectResult!.errorCode ?? 'EFFECT_FAILED',
+        errorCode: effectResult.errorCode ?? 'EFFECT_FAILED',
         transitionIndex: next.transitionIndex,
       }),
     });
   }
 
-  return suspendOnFailure(program, state, disposition, input.effectResult!.errorCode);
+  return suspendOnFailure(program, state, disposition, effectResult.errorCode);
 }
 
 async function handleCommandEffectResult(program: ReactiveProgram, state: VmState, input: VmStepInput): Promise<VmStep> {
-  if (!input.effectResult!.ok) return handleCommandFailure(program, state, input);
+  const effectResult = input.effectResult;
+  if (effectResult === undefined) fail('INVALID_SEMANTICS', 'command effect requires a result.');
+  if (!effectResult.ok) return handleCommandFailure(program, state, input);
 
   const next: VmState = cloneJson<VmState>(state, 'state');
+  const pending = next.pendingEffect;
+  const statePending = state.pendingEffect;
+  if (pending === null || statePending === null) fail('INVALID_SEMANTICS', 'command effect requires a pending effect.');
   // A COMMAND pending effect carries the string resultBinding its program node declared; the WAIT_EVENT branch never reaches here.
-  const binding = next.pendingEffect!.resultBinding as string;
+  const binding = pending.resultBinding as string;
   if (!Object.prototype.hasOwnProperty.call(next.bindings, binding)
       && Object.keys(next.bindings).length >= program.budgets.bindings) {
     return terminalTransition(program, next, 'LIMIT_REACHED', {
@@ -1034,13 +1054,13 @@ async function handleCommandEffectResult(program: ReactiveProgram, state: VmStat
       suspension: limitContext('BINDINGS', { budget: program.budgets.bindings }),
     });
   }
-  next.bindings[binding] = cloneJson(input.effectResult!.value, 'effect value');
+  next.bindings[binding] = cloneJson(effectResult.value, 'effect value');
   next.pendingEffect = null;
   next.status = 'RUNNING';
   next.transitionIndex += 1;
   return finishCompleted(program, next, {
     kind: 'EFFECT_ACCEPTED',
-    requestDigest: state.pendingEffect!.requestDigest,
+    requestDigest: statePending.requestDigest,
   });
 }
 
@@ -1141,18 +1161,21 @@ export async function advanceControlFlowVm(programInput: unknown, stateInput: un
   const retryDelay = activeRetryDelay(state.frames);
   if (retryDelay !== null) {
     // activeRetryDelay only returns a frame whose notBeforeMs is a number.
-    if (input.logicalNowMs < retryDelay.frame.notBeforeMs!) {
+    const notBeforeMs = retryDelay.frame.notBeforeMs;
+    if (typeof notBeforeMs !== 'number') fail('INVALID_SEMANTICS', 'retry delay requires a scheduled notBeforeMs.');
+    if (input.logicalNowMs < notBeforeMs) {
       return deepFreeze({
         state: deepFreeze(state),
         transition: deepFreeze({
           kind: 'WAITING_RETRY',
           attempt: retryDelay.frame.attempt,
-          notBeforeMs: retryDelay.frame.notBeforeMs!,
+          notBeforeMs,
           transitionIndex: state.transitionIndex,
         }),
       });
     }
-    state.frames[retryDelay.index]!.notBeforeMs = null;
+    const updated = state.frames[retryDelay.index] as RetryFrame | undefined;
+    if (updated !== undefined) updated.notBeforeMs = null;
   }
 
   if (state.waitState !== null) {
@@ -1179,7 +1202,9 @@ export async function advanceControlFlowVm(programInput: unknown, stateInput: un
     return issueWaitObservation(program, state);
   }
 
-  const node = nodeAtPath(program, state.cursorPath);
+  const cursorPath = state.cursorPath;
+  if (cursorPath === null) fail('INVALID_SEMANTICS', 'non-terminal dispatch requires a cursor path.');
+  const node = nodeAtPath(program, cursorPath);
   if (state.counters.executedNodes >= program.budgets.executedNodesPerRun) {
     return terminalTransition(program, state, 'LIMIT_REACHED', {
       result: null,
@@ -1196,8 +1221,8 @@ export async function advanceControlFlowVm(programInput: unknown, stateInput: un
     if (node.children.length === 0) {
       return finishCompleted(program, next, { kind: 'CONTINUE', instruction: 'SEQUENCE' });
     }
-    next.frames.push({ kind: 'SEQUENCE', parentPath: [...state.cursorPath!], nextIndex: 1 });
-    next.cursorPath = [...state.cursorPath!, 'children', 0];
+    next.frames.push({ kind: 'SEQUENCE', parentPath: [...cursorPath], nextIndex: 1 });
+    next.cursorPath = [...cursorPath, 'children', 0];
     return deepFreeze({
       state: deepFreeze(next),
       transition: deepFreeze({ kind: 'CONTINUE', instruction: 'SEQUENCE', transitionIndex: next.transitionIndex }),
@@ -1209,8 +1234,8 @@ export async function advanceControlFlowVm(programInput: unknown, stateInput: un
     if (!selected && node.else === undefined) {
       return finishCompleted(program, next, { kind: 'CONTINUE', instruction: 'IF', selected: 'NONE' });
     }
-    next.frames.push({ kind: 'IF', parentPath: [...state.cursorPath!] });
-    next.cursorPath = [...state.cursorPath!, selected ? 'then' : 'else'];
+    next.frames.push({ kind: 'IF', parentPath: [...cursorPath] });
+    next.cursorPath = [...cursorPath, selected ? 'then' : 'else'];
     return deepFreeze({
       state: deepFreeze(next),
       transition: deepFreeze({
@@ -1225,9 +1250,9 @@ export async function advanceControlFlowVm(programInput: unknown, stateInput: un
   if (node.type === 'LOOP') {
     const started = startIteration(program, next, {
       kind: 'LOOP',
-      parentPath: [...state.cursorPath!],
+      parentPath: [...cursorPath],
       iteration: 1,
-    }, [...state.cursorPath!, 'body']);
+    }, [...cursorPath, 'body']);
     if (started.limit) {
       return terminalTransition(program, next, 'LIMIT_REACHED', { result: null, suspension: started.limit }, false);
     }
@@ -1255,9 +1280,9 @@ export async function advanceControlFlowVm(programInput: unknown, stateInput: un
     }
     const started = startIteration(program, next, {
       kind: 'UNTIL',
-      parentPath: [...state.cursorPath!],
+      parentPath: [...cursorPath],
       iteration: 1,
-    }, [...state.cursorPath!, 'body']);
+    }, [...cursorPath, 'body']);
     if (started.limit) {
       return terminalTransition(program, next, 'LIMIT_REACHED', { result: null, suspension: started.limit }, false);
     }
@@ -1276,7 +1301,7 @@ export async function advanceControlFlowVm(programInput: unknown, stateInput: un
 
   if (node.type === 'WAIT_EVENT') {
     next.waitState = {
-      nodePath: [...state.cursorPath!],
+      nodePath: [...cursorPath],
       startedAtMs: input.logicalNowMs,
       deadlineAtMs: input.logicalNowMs + node.timeoutMs,
       lastChargedAtMs: input.logicalNowMs,
@@ -1307,12 +1332,12 @@ export async function advanceControlFlowVm(programInput: unknown, stateInput: un
   if (node.type === 'RETRY') {
     next.frames.push({
       kind: 'RETRY',
-      parentPath: [...state.cursorPath!],
+      parentPath: [...cursorPath],
       attempt: 1,
       notBeforeMs: null,
     });
     next.counters.retryAttempts += 1;
-    next.cursorPath = [...state.cursorPath!, 'body'];
+    next.cursorPath = [...cursorPath, 'body'];
     return deepFreeze({
       state: deepFreeze(next),
       transition: deepFreeze({
@@ -1362,7 +1387,7 @@ export async function advanceControlFlowVm(programInput: unknown, stateInput: un
       method: node.method,
       arguments: node.arguments,
       resultBinding: node.resultBinding,
-      nodePath: state.cursorPath!,
+      nodePath: cursorPath,
     });
   }
 

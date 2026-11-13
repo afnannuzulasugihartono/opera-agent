@@ -73,8 +73,16 @@ def build_zip(manifest):
         for name in os.listdir(EXT):
             source = os.path.join(EXT, name)
             if os.path.isdir(source) and name != "__pycache__":
-                shutil.copytree(source, os.path.join(stage, name))
-            elif os.path.isfile(source) and name != "manifest.json":
+                shutil.copytree(
+                    source,
+                    os.path.join(stage, name),
+                    ignore=shutil.ignore_patterns("*.ts"),
+                )
+            elif (
+                os.path.isfile(source)
+                and name != "manifest.json"
+                and not name.endswith(".ts")
+            ):
                 shutil.copy2(source, os.path.join(stage, name))
 
         with open(

@@ -31,6 +31,6 @@ test('a completion frame that cannot be sent fails its own command, not the drai
 
 test('the queue only ever holds entries it can run', () => {
   const onmessage = source.slice(source.indexOf('next.onmessage ='), source.indexOf('next.onclose'));
-  assert.match(onmessage, /const command = normalizeCommand\(message\);\s*\n\s*if \(command\?\.id\) takeQueue\.push\(command\);/,
+  assert.match(onmessage, /const command = normalizeCommand\(message\);\s*if \(command\?\.id\)\s*takeQueue\.push\(command\);/,
     'an unusable frame never enters the queue in the first place');
 });

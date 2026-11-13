@@ -6,19 +6,19 @@
 import { readFile } from 'node:fs/promises';
 
 const FILES = [
-  'extension/background.js',
-  'extension/lib/log.js',
-  'extension/lib/serialize.js',
-  'extension/worker/watch-registry.js',
-  'extension/worker/utils.js',
-  'extension/worker/capture.js',
-  'extension/worker/private-tabs.js',
-  'extension/worker/tab-content.js',
-  'extension/worker/listen.js',
-  'extension/worker/capture-page.js',
-  'extension/worker/action-focus.js',
-  'extension/worker/burst.js',
-  'extension/worker/execute-pull.js',
+  'extension/background.ts',
+  'extension/lib/log.ts',
+  'extension/lib/serialize.ts',
+  'extension/worker/watch-registry.ts',
+  'extension/worker/utils.ts',
+  'extension/worker/capture.ts',
+  'extension/worker/private-tabs.ts',
+  'extension/worker/tab-content.ts',
+  'extension/worker/listen.ts',
+  'extension/worker/capture-page.ts',
+  'extension/worker/action-focus.ts',
+  'extension/worker/burst.ts',
+  'extension/worker/execute-pull.ts',
 ];
 
 export async function extensionSource() {

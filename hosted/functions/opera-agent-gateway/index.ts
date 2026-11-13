@@ -5,10 +5,12 @@
 
 import "@supabase/edge-runtime";
 import { createClient } from "@supabase/supabase-js";
-import { CORS_DEFAULT_ORIGINS, resolveAllowedOrigin } from "../_shared/cors.js";
+import { CORS_DEFAULT_ORIGINS, resolveAllowedOrigin } from "../_shared/cors.ts";
 
-const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
-const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+import { requiredEnv } from "../_shared/required-env.ts";
+
+const SUPABASE_URL = requiredEnv("SUPABASE_URL");
+const SERVICE_ROLE_KEY = requiredEnv("SUPABASE_SERVICE_ROLE_KEY");
 const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
   auth: { persistSession: false, autoRefreshToken: false }
 });
@@ -96,7 +98,7 @@ async function command(req: Request, _url: URL) {
   if (raw === null) {
     return json(req, { ok: false, error: { code: "TOO_LARGE", message: "Request too large." } }, 413);
   }
-  let body: Record<string, unknown> | null = null;
+  let body: Record<string, unknown>;
   try {
     body = JSON.parse(raw) as Record<string, unknown>;
   } catch {
@@ -106,13 +108,13 @@ async function command(req: Request, _url: URL) {
   if (!token) {
     return json(req, { ok: false, error: { code: "UNAUTHORIZED", message: "Missing token (x-opera-agent-token header or body.apiKey)." } }, 401);
   }
-  const method = typeof body!.method === "string" ? body!.method.trim() : "";
+  const method = typeof body.method === "string" ? body.method.trim() : "";
   if (!METHOD_RE.test(method)) {
     return json(req, { ok: false, error: { code: "INVALID_METHOD", message: "Missing/invalid method." } }, 400);
   }
-  const params = (body!.params && typeof body!.params === "object") ? body!.params as Record<string, unknown> : {};
-  const timeoutMs = Math.max(WAIT_MIN, Math.min(WAIT_MAX, Number(body!.waitMs) || 12000));
-  const requestId = typeof body!.requestId === "string" && ID_RE.test(body!.requestId) ? body!.requestId : null;
+  const params = (body.params && typeof body.params === "object") ? body.params as Record<string, unknown> : {};
+  const timeoutMs = Math.max(WAIT_MIN, Math.min(WAIT_MAX, Number(body.waitMs) || 12000));
+  const requestId = typeof body.requestId === "string" && ID_RE.test(body.requestId) ? body.requestId : null;
 
   const tokenHash = await sha256Hex(token.toLowerCase());
 

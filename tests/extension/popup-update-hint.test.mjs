@@ -19,7 +19,7 @@ const css = fs.readFileSync(new URL('extension/styles.css', root), 'utf8');
 test('the popup asks the update service which version is served', () => {
   assert.match(popup, /import \{ servedVersion, newerThan \} from '\.\/lib\/self-update\.js'/, 'it asks, through the one served-version check the product owns');
   assert.match(popup, /UPDATE_BASE_URL/, 'and it knows where the update service lives');
-  assert.match(popup, /showServedVersion\(data\.version\)/, 'the answer is compared with the version that is running');
+  assert.match(popup, /showServedVersion\(String\(reply\.version\)\)/, 'the answer is compared with the version that is running');
 });
 
 test('the one served-version check asks the archive, not the legacy health page', () => {

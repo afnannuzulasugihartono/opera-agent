@@ -1,7 +1,7 @@
 // @last-edited: 2026-10-26 UTC+7.
 // @title: opera-agent-billing — the invoice a customer opens, and the callback that closes it.
 // @state: quotes a delivery into an amount, opens one payable transaction per invoice, serves the page in the state the row is in, closes it from a signed notification or the provider's own answer, records a transfer by hand, opens a new link when the customer asks, and answers a wallet's balance, quote, reserve, settle, refund and top-up.
-// @dependencies: edge-runtime, supabase-js, ../_shared/billing.js, ../_shared/wallet.js, ../_shared/wallet-api.js, ../_shared/invoice-page.js, ../_shared/cors.js, ../_shared/edge-log.js.
+// @dependencies: edge-runtime, supabase-js, ../_shared/billing.ts, ../_shared/wallet.ts, ../_shared/wallet-api.ts, ../_shared/invoice-page.ts, ../_shared/cors.ts, ../_shared/edge-log.ts.
 
 // WHY THIS FUNCTION EXISTS.
 // The product sells a delivered client-month, and a sale that nobody can pay for is a demo.
@@ -34,9 +34,10 @@
 // So the paid state is terminal here, and a later call is refused with the invoice's name.
 
 import "@supabase/edge-runtime";
-import { createEdgeLog } from "../_shared/edge-log.js";
-import { CORS_DEFAULT_ORIGINS, resolveAllowedOrigin } from "../_shared/cors.js";
-import { invoicePage } from "../_shared/invoice-page.js";
+import { createEdgeLog } from "../_shared/edge-log.ts";
+import { CORS_DEFAULT_ORIGINS, resolveAllowedOrigin } from "../_shared/cors.ts";
+import { sha256 } from "../_shared/sha256.ts";
+import { invoicePage } from "../_shared/invoice-page.ts";
 import {
   amountFor,
   invoiceToken,
@@ -62,11 +63,11 @@ import {
   PAY_LINK_EXPIRY,
   payLinkDeadline,
   payLinkState
-} from "../_shared/billing.js";
-import { DEPOSIT_KIND } from "../_shared/wallet.js";
-import { handleWalletAction, isWalletAction } from "../_shared/wallet-api.js";
-import { toDynamicQris } from "../_shared/qris.js";
-import { FEED_URL, TOKEN_URL, detectorPlan, feedHeaders, feedQuery, matchOpenInvoices, parseFeed, refreshBody, sessionHeaders } from "../_shared/qris-detector.js";
+} from "../_shared/billing.ts";
+import { DEPOSIT_KIND } from "../_shared/wallet.ts";
+import { handleWalletAction, isWalletAction } from "../_shared/wallet-api.ts";
+import { toDynamicQris } from "../_shared/qris.ts";
+import { FEED_URL, TOKEN_URL, detectorPlan, feedHeaders, feedQuery, matchOpenInvoices, parseFeed, refreshBody, sessionHeaders } from "../_shared/qris-detector.ts";
 
 type PriceRow = { kind: string; unit: string; amount_cents: number; currency: string; active: boolean };
 type Line = { kind: string; unit?: string; description?: string | null; quantity: number; amountCents: number; reason?: string };

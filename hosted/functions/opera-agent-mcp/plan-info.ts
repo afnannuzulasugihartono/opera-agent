@@ -8,7 +8,7 @@
 // The bridge refuses a command at its limit; the hosted caller ought to know where the limit is before it hits it.
 // browser_status is the tool every agent is told to call first, so the plan is answered there: plan, planQuota, planUsed, planStatus, planRemaining, planExhausted.
 
-import { PLANS } from '../_shared/plans.js';
+import { PLANS } from '../_shared/plans.ts';
 
 export async function planInfo(db, userId: string | null): Promise<Record<string, unknown> | null> {
   if (!userId) return null;

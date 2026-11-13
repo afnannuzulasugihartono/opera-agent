@@ -1,7 +1,7 @@
 // @last-edited: 2026-11-09 UTC+7.
 // @title: plans.test — what each plan allows, pinned to the one place that states it.
 // @state: both plans exist, the firm unlocks what the pilot refuses, the migration agrees with the module, and the default is the safe one.
-// @dependencies: node:test, strict, node:fs, ../../hosted/functions/_shared/plans.js.
+// @dependencies: node:test, strict, node:fs, ../../hosted/functions/_shared/plans.ts.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -9,7 +9,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { PLANS, DEFAULT_PLAN, planFor, allowsFeature, planQuota } from '../../hosted/functions/_shared/plans.js';
+import { PLANS, DEFAULT_PLAN, planFor, allowsFeature, planQuota } from '../../hosted/functions/_shared/plans.ts';
 
 const root = path.dirname(path.dirname(path.dirname(fileURLToPath(import.meta.url))));
 const migration = fs.readFileSync(path.join(root, 'hosted', 'migrations', '20261109090000_opera_account_plans.sql'), 'utf8');

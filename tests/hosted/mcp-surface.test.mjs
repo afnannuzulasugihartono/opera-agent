@@ -714,7 +714,7 @@ test('MCP defaults to background tabs and requires explicit automation targets',
 
 test('MCP preserves structured command failures for foreground permission handling', () => {
 
-  assert.match(source, /import \{ CommandFailure, sealVmProgram \} from "\.\.\/_shared\/seal-vm-program\.js"/);
+  assert.match(source, /import \{ CommandFailure, sealVmProgram \} from "\.\.\/_shared\/seal-vm-program\.ts"/);
   assert.match(source, /code: error\.code, message: error\.message/);
   assert.match(source, /throw new CommandFailure\(code, message/);
   assert.match(source, /structuredContent = \{ ok: false, error: failure \}/);

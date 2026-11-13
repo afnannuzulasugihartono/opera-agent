@@ -1,0 +1,57 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.6.7/schema.json",
+  "vcs": {
+    "enabled": true,
+    "clientKind": "git",
+    "useIgnoreFile": true
+  },
+  "files": {
+    "includes": ["shared/**/*.ts", "local/**/*.ts", "hosted/**/*.ts", "extension/**/*.ts", "scripts/**/*.ts"]
+  },
+  "javascript": {
+    "globals": ["chrome", "Deno", "EdgeRuntime", "OperaAgentHoverSettle", "OperaAgentLog", "OperaAgentStatementFile", "OperaAgentBrowserId"]
+  },
+  "formatter": {
+    "enabled": false
+  },
+  "assist": {
+    "enabled": false
+  },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "preset": "none",
+      "suspicious": {
+        "noExplicitAny": "error",
+        "noTsIgnore": "error",
+        "noImplicitAnyLet": "error",
+        "noConfusingVoidType": "error",
+        "noAssignInExpressions": "error",
+        "noDebugger": "error",
+        "noShadowRestrictedNames": "error",
+        "noUnsafeNegation": "error"
+      },
+      "style": {
+        "noNonNullAssertion": "error",
+        "useAsConstAssertion": "error",
+        "noParameterAssign": "error",
+        "useConst": "error"
+      },
+      "correctness": {
+        "noUnusedVariables": "error",
+        "noUnusedImports": "error",
+        "noUndeclaredVariables": "error",
+        "noUnreachable": "error",
+        "noSwitchDeclarations": "error"
+      },
+      "complexity": {
+        "noBannedTypes": "error",
+        "noUselessTypeConstraint": "error"
+      },
+      "security": {
+        "noGlobalEval": "error",
+        "noDangerouslySetInnerHtml": "error"
+      }
+    }
+  }
+}

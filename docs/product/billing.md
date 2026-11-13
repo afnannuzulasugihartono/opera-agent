@@ -62,7 +62,7 @@ priced lines (the price list)  ->  an invoice (one per customer per month)
   the method and provider transaction the money arrived by. The tables are readable by
   the server only: a customer reaches their invoice through a signed link, not through
   the table.
-- `hosted/functions/_shared/billing.js` — the rules, and nothing else: the amount of
+- `hosted/functions/_shared/billing.ts` — the rules, and nothing else: the amount of
   an invoice, the plan line and its overage, the manifest rows turned into lines, the
   invoice token, the provider's signature check and the shape of the stored key,
   the provider status request, the provider expire request, the rule that only a settled
@@ -70,7 +70,7 @@ priced lines (the price list)  ->  an invoice (one per customer per month)
   provider order id and the attempt number that makes a retry a new one, the link's
   expiry and the one rule that says whether a link is payable, and the QRIS-only rule
   for small invoices.
-- `hosted/functions/_shared/invoice-page.js` — the page: one function of the row, no
+- `hosted/functions/_shared/invoice-page.ts` — the page: one function of the row, no
   Deno API, no script and no asset, so a Node test can render every state a customer can
   open.
 - `hosted/functions/opera-agent-billing/index.ts` — the function: it opens an
@@ -136,7 +136,7 @@ call and raised a column error on every run, which is why the schedule moved not
 until it was fixed.
 
 The conversion from the printed code to a per-invoice code is in
-[`../../hosted/functions/_shared/qris.js`](../../hosted/functions/_shared/qris.js): tag
+[`../../hosted/functions/_shared/qris.ts`](../../hosted/functions/_shared/qris.ts): tag
 `01` becomes `12`, tag `54` carries the bare rupiah amount, and the CRC is recomputed.
 The category tag is left exactly as printed, because the acquirer refuses the other
 spelling.

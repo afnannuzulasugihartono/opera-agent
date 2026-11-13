@@ -12,7 +12,15 @@ import { readFileSync } from 'node:fs';
 import { stripTypeScriptTypes } from 'node:module';
 import { createHash } from 'node:crypto';
 import vm from 'node:vm';
-import { CORS_DEFAULT_ORIGINS, resolveAllowedOrigin } from '../../hosted/functions/_shared/cors.js';
+import { CORS_DEFAULT_ORIGINS, resolveAllowedOrigin } from '../../hosted/functions/_shared/cors.ts';
+import { requiredEnv } from '../../hosted/functions/_shared/required-env.ts';
+
+// WHY THE PROCESS GETS THE TWO THE BUNDLE DEMANDS.
+// required-env is the real module the edge bundle uses, not a stand-in; it reads Deno from its own closure, which is this process.
+
+process.env.SUPABASE_URL ??= 'test';
+process.env.SUPABASE_SERVICE_ROLE_KEY ??= 'test';
+globalThis.Deno = { env: { get: (key) => process.env[key] } };
 
 const source = stripTypeScriptTypes(readFileSync(new URL('../../hosted/functions/opera-agent-listen/index.ts', import.meta.url), 'utf8')
   .replace(/^import .*;\r?\n/gm, ''));
@@ -114,7 +122,7 @@ function harness(db, fetchImpl) {
   const edgeLog = { error: (svc, msg) => { errors.push(`${svc}: ${msg}`); } };
   vm.runInNewContext(source, {
     createClient: () => client, createEdgeLog: () => edgeLog,
-
+    requiredEnv,
     CORS_DEFAULT_ORIGINS, resolveAllowedOrigin,
     Deno: { env: { get: (key) => (key === 'SUPABASE_URL' || key === 'SUPABASE_SERVICE_ROLE_KEY' ? 'test' : (key === 'GROQ_API_KEY' ? 'test-key' : '')) }, serve: (fn) => { handler = fn; } },
     Request, Response, Headers, URL, TextEncoder, FormData, Blob, atob, fetch: fakeFetch, crypto

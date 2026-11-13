@@ -61,7 +61,7 @@ test('a per-step tabId must be a non-negative integer', () => {
 });
 
 test('requireTabId refuses booleans instead of coercing false to tab 0', () => {
-  const fn = sliceBetween('function requireTabId(value)', 'async function resolveTabId');
+  const fn = sliceBetween('function requireTabId(', 'async function resolveTabId');
   assert.match(fn, /typeof value === 'boolean'/);
 });
 
@@ -111,7 +111,7 @@ test('the debugger session is re-keyed when the active tab changes', () => {
 });
 
 test('withDebugger no longer refuses a different tab outright', () => {
-  const fn = sliceBetween('async function withDebugger(', 'function codedError(');
+  const fn = sliceBetween('async function withDebugger<', 'function codedError(');
   assert.doesNotMatch(fn, /cannot switch tabs/);
 
   assert.match(fn, /debuggerSession/);

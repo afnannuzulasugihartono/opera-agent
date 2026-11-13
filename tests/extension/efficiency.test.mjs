@@ -40,7 +40,7 @@ test('a missing page helper costs one feature, never the whole content script', 
 test('every popup message lands in a catch the user can read', () => {
   const popup = fs.readFileSync(new URL('../../extension/popup.js', import.meta.url), 'utf8');
 
-  const handlers = [...popup.matchAll(/\$\('(\w+)'\)\.addEventListener\('click', async \(\) => \{([\s\S]*?)\n\}\);/g)];
+  const handlers = [...popup.matchAll(/\$\('(\w+)'\)\??\.addEventListener\('click', (?:async )?\(\) => \{([\s\S]*?)\n\}\);/g)];
   assert.ok(handlers.length >= 4, 'no popup click handlers found to check');
 
   for (const [, id, body] of handlers) {
@@ -143,9 +143,9 @@ test('contentCall sends first and only re-establishes the bridge on transport fa
 
 test('page.read supports a backward-compatible text-only response', () => {
   assert.match(content, /args\.includeElements !== false/);
-  assert.match(content, /semanticIdentity\.observe\(regional\.items/);
+  assert.match(content, /(?:semanticIdentity|requireIdentityEngine\(\))\.observe\(regional\.items/);
   assert.match(content, /page\.elements = observation\.items/);
-  assert.match(content, /page\.semanticViews = semanticViews\.observe/);
+  assert.match(content, /page\.semanticViews = requireViewEngine\(\)\.observe/);
   assert.equal((content.match(/case 'page\.read'/g) || []).length, 1);
 });
 

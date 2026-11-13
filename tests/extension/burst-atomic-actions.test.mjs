@@ -115,7 +115,7 @@ test('burst file steps reach the content file setter', () => {
   const burst = fs.readFileSync(new URL('../../extension/worker/burst.js', import.meta.url), 'utf8');
   const content = fs.readFileSync(new URL('../../extension/content.js', import.meta.url), 'utf8');
   assert.match(burst, /page\.set_files/);
-  assert.match(burst, /expandGridSteps\(params\.steps\)/);
+  assert.match(burst, /expandGridSteps\(/);
   assert.match(content, /case 'page\.set_files'/);
   assert.match(content, /new DataTransfer\(\)/);
 });

@@ -5,9 +5,9 @@
 
 import "@supabase/edge-runtime";
 import { createClient } from "@supabase/supabase-js";
-import { CORS_DEFAULT_ORIGINS, resolveAllowedOrigin } from "../_shared/cors.js";
+import { CORS_DEFAULT_ORIGINS, resolveAllowedOrigin } from "../_shared/cors.ts";
 
-import { canonicalJson, digestCanonical } from "../_shared/goal-ledger.js";
+import { canonicalJson, digestCanonical } from "../_shared/goal-ledger.ts";
 import {
   advanceCollectVm,
   createCollectVm,
@@ -23,7 +23,7 @@ import {
   decodeVmHostKey,
   openVmHostToken,
   sealVmHostToken,
-} from "../_shared/vm-token.js";
+} from "../_shared/vm-token.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
@@ -263,7 +263,7 @@ async function authoritativeProgram(programInput: unknown, tenantId: string) {
   if (!programInput || typeof programInput !== "object" || Array.isArray(programInput)) throw new HostError("INVALID_PROGRAM", "program must be an object.");
   const candidate = programInput as Record<string, unknown>;
   if (candidate.tenantId !== tenantId) throw new HostError("CROSS_TENANT", "Program tenant differs from authenticated tenant.", 403);
-  let program;
+  let program: unknown;
   try {
     program = await validateCollectProgram(candidate);
   } catch (error) {
@@ -283,7 +283,7 @@ async function enqueueRun(body: Record<string, unknown>, tenantId: string) {
   const key = await cryptoKey();
   const runId = crypto.randomUUID();
   const logicalNowMs = Date.now();
-  let state;
+  let state: unknown;
   try {
     state = await createCollectVm(program, {
       runId,
@@ -571,7 +571,7 @@ async function processSlice(runId: string, tenantId: string) {
         break;
       }
 
-      let advanced;
+      let advanced: unknown;
       if (state.pendingEffect) {
         const effectResult = await executeEffect(validatedProgram, state, claim, workerId, tenantId, device, sliceDeadline);
         advanced = await advanceCollectVm(validatedProgram, state, { logicalNowMs, effectResult });

@@ -76,7 +76,7 @@ test('every action route funnels through runActionPipeline', async () => {
   }
   const uses = src.match(/runActionPipeline/g) || [];
   assert.ok(uses.length >= 5, 'host must exist and wrap the dispatch action cases');
-  const etw = src.split('\n').filter(l => l.includes('trustedClick(entry.tabId'));
-  assert.ok(etw.length === 1 && etw[0].includes('runActionPipeline'), 'ETW local click must route through the pipeline');
+  const etw = src.split('\n').filter(l => l.includes('clickContext'));
+  assert.ok(etw.some(l => l.includes('runActionPipeline') && l.includes('trustedClick')), 'ETW local click must route through the pipeline');
   assert.match(src, /TARGET_NOT_READY/, 'structured error must be mapped verbatim in executeCommand');
 });

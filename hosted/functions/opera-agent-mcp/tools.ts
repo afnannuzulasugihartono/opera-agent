@@ -1,7 +1,7 @@
 // @last-edited: 2026-11-13 UTC+7.
 // @title: tools - the 42 tools this MCP server offers, and the schemas they take.
 // @state: every tool the surface advertises, with the input shape each one answers.
-// @dependencies: @modelcontextprotocol/sdk, zod/v4, ../_shared/seal-vm-program.js.
+// @dependencies: @modelcontextprotocol/sdk, zod/v4, ../_shared/seal-vm-program.ts.
 
 // WHY THIS FILE EXISTS
 
@@ -19,7 +19,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import * as z from "zod/v4";
 
-import { CommandFailure } from "../_shared/seal-vm-program.js";
+import { CommandFailure } from "../_shared/seal-vm-program.ts";
 
 import type { ToolDeps } from "./index.ts";
 

@@ -62,8 +62,8 @@ test('page.fill gains retry/expect parity with page.click', async () => {
   const src = read('extension/content.js');
   const fillStart = src.indexOf('async function fill(');
   assert.ok(fillStart >= 0, 'synthetic fill must exist');
-  const fillBlock = src.slice(fillStart, src.indexOf('\n  function fillInfo'));
-  assert.match(fillBlock, /args\.retry\?\.attempts/, 'fill must honor retry.attempts');
+  const fillBlock = src.slice(fillStart, src.indexOf('\n    function fillInfo'));
+  assert.match(fillBlock, /retryAttemptsOf\(args\)/, 'fill must honor retry.attempts');
   assert.match(fillBlock, /postActionEvidence\(/, 'fill must verify through postActionEvidence');
   const bg = await extensionSource();
   assert.match(bg, /fillOptions/, 'page.fill dispatch must read expect/attempts options');

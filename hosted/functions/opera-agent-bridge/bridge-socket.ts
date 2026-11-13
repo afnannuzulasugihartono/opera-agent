@@ -94,7 +94,7 @@ export async function parseDeviceFrame(raw, maxBytes = MAX_FRAME_BYTES, maxDecom
     return { ok: false, error: 'Unknown binary frame.' };
   }
 
-  let text;
+  let text: string | undefined;
   try {
     text = await gunzipCapped(bytes.slice(1), maxDecompressed);
   } catch {
@@ -105,7 +105,7 @@ export async function parseDeviceFrame(raw, maxBytes = MAX_FRAME_BYTES, maxDecom
 }
 
 function parseTextFrame(raw) {
-  let message;
+  let message: unknown;
   try {
     message = JSON.parse(raw);
   } catch {

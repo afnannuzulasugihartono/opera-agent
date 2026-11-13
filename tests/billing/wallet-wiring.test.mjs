@@ -14,7 +14,7 @@ import fs from 'node:fs';
 const root = new URL('../../', import.meta.url);
 const fn = fs.readFileSync(new URL('hosted/functions/opera-agent-billing/index.ts', root), 'utf8');
 const sql = fs.readFileSync(new URL('hosted/migrations/20261104120000_opera_wallet.sql', root), 'utf8');
-const api = fs.readFileSync(new URL('hosted/functions/_shared/wallet-api.js', root), 'utf8');
+const api = fs.readFileSync(new URL('hosted/functions/_shared/wallet-api.ts', root), 'utf8');
 
 function called(source, rpc) {
   return [...source.matchAll(new RegExp(`${rpc}",\\s*\\{([\\s\\S]*?)\\}\\)`, 'g'))].map((match) => match[1]);

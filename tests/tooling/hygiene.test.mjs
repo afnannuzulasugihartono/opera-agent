@@ -216,9 +216,9 @@ test('a read is serialized once, not once per size check', () => {
     'the result-sizing block must have a live end marker after boundedResult'
   );
   assert.equal((block.match(/JSON\.stringify\(/g) || []).length, 1, 'exactly one stringify in the result-sizing path');
-  assert.match(background, /function serializeResult\(value\)/);
+  assert.match(background, /function serializeResult\(value(: unknown)?\)/);
   assert.match(background, /if \(serializedResult\.value === value\) return serializedResult\.text;/);
-  assert.match(block, /function oversized\(value\) \{\s*return serializeResult\(value\)\.length > RESULT_BUDGET_BYTES;/);
+  assert.match(block, /function oversized\(value(: unknown)?\) \{\s*return serializeResult\(value\)\.length > RESULT_BUDGET_BYTES;/);
   const bounded = block.slice(block.indexOf('function boundedResult'), block.indexOf('function oversized'));
   assert.match(bounded, /const text = serializeResult\(value\)/);
 
@@ -227,7 +227,7 @@ test('a read is serialized once, not once per size check', () => {
 
 test('the memo cannot retain a large result between commands', () => {
 
-  assert.match(background, /let serializedResult = \{ value: null, text: '' \};/);
+  assert.match(background, /let serializedResult(:\s*\{[^}]*\})?\s*= \{ value: null, text: '' \};/);
   const executor = background.slice(background.indexOf('async function executeCommand'));
   assert.match(executor.slice(0, 900), /clearSerializedResult\(\);/);
 });
@@ -284,9 +284,11 @@ test('the R9 modules expose no unused surface', async () => {
   assert.doesNotMatch(keyboard, /MODIFIER_ALLOWLIST/);
 
   assert.doesNotMatch(background, /export function isPlainObject/);
-  const protocol = await readFile(new URL('../../extension/lib/protocol.js', import.meta.url), 'utf8');
-  assert.match(protocol, /^function isPlainObject\(value\)/m);
-  assert.equal((protocol.match(/isPlainObject/g) || []).length, 7, 'declared once and used six times');
+  const protocol = await readFile(new URL('../../extension/lib/protocol.ts', import.meta.url), 'utf8');
+  assert.doesNotMatch(protocol, /isPlainObject/, 'the sentinel moved to extension/lib/guards.ts as isRecord');
+  const guards = await readFile(new URL('../../extension/lib/guards.ts', import.meta.url), 'utf8');
+  assert.match(guards, /export function isRecord\(value: unknown\): value is Record<string, unknown>/);
+  assert.equal((protocol.match(/isRecord/g) || []).length, 8, 'imported once and used seven times');
 });
 
 test('no module under extension/, shared/, scripts/ or hosted/functions/ exports a symbol nothing reaches', async () => {
@@ -377,7 +379,7 @@ test('no module under extension/, shared/, scripts/ or hosted/functions/ exports
 
 const STAGED_FOR_THE_OPEN_TASK = new Map([
   ['shared/ax-menu.ts', 'Task 9 of docs/superpowers/plans/2026-10-14-docs-paper-plan.md: the AX road reads live row names to compare against the label map'],
-  ['hosted/functions/_shared/docs-ui-map.js', 'Task 9 of docs/superpowers/plans/2026-10-14-docs-paper-plan.md: the map the AX road is compared against'],
+  ['hosted/functions/_shared/docs-ui-map.ts', 'Task 9 of docs/superpowers/plans/2026-10-14-docs-paper-plan.md: the map the AX road is compared against'],
 ]);
 
 test('a module with its own code is reached by the product, not only by its own test', async () => {
@@ -444,13 +446,12 @@ test('a module with its own code is reached by the product, not only by its own 
     edges.set(file, [...targets]);
   }
 
-  // The build emits shared/<stem>.js from shared/<stem>.ts, and both roads
-  // import the artifact by construction; the source is reached exactly when
-  // its artifact is, so the census counts the pair as one module.
+  // The build emits shared/<stem>.js from shared/<stem>.ts, and every road imports the artifact by construction; the source is reached exactly when its artifact is, so the census counts the pair as one module.
+  // The browser half compiles beside sources too (extension/lib, extension/worker, ...).
   for (const [file, targets] of edges) {
     for (const target of [...targets]) {
-      const match = /^shared\/(.+)\.js$/.exec(target);
-      if (match && textOf.has(`shared/${match[1]}.ts`)) targets.push(`shared/${match[1]}.ts`);
+      const match = /^(shared|local|extension)\/(.+)\.js$/.exec(target);
+      if (match && textOf.has(`${match[1]}/${match[2]}.ts`)) targets.push(`${match[1]}/${match[2]}.ts`);
     }
   }
 
@@ -481,6 +482,12 @@ test('a module with its own code is reached by the product, not only by its own 
     }
   }
 
+  // A root that names the emitted copy also reaches its source; a lifecycle script or bin stub is the same module as its .ts twin, and the census judges the source.
+  for (const file of [...roots]) {
+    const match = /^(local|shared|extension)\/(.+)\.js$/.exec(file);
+    if (match && textOf.has(`${match[1]}/${match[2]}.ts`)) roots.add(`${match[1]}/${match[2]}.ts`);
+  }
+
   const reached = new Set();
   const queue = [...roots];
   while (queue.length) {
@@ -499,7 +506,9 @@ test('a module with its own code is reached by the product, not only by its own 
 
   // Ambient type-declaration files are types, never runtime code, so they are not modules that can be reached.
   // shared/<stem>.js is the build's copy of shared/<stem>.ts and cannot be judged on its own; its source is, and the artifact-to-source mapping above carries the reach.
-  const runtimeFiles = codeFiles.filter((file) => /^(extension|shared|local|hosted\/functions|scripts)\//.test(file)
+  const runtimeFiles = codeFiles.filter((file) =>
+    (/^(shared|hosted\/functions|scripts)\//.test(file)
+      || (/^(extension|local)\//.test(file) && file.endsWith('.ts')))
     && !file.endsWith('.d.ts')
     && !/^shared\/[^/]+\.js$/.test(file));
   const unreachable = runtimeFiles.filter((file) => !reached.has(file) && !isShim(textOf.get(file)));

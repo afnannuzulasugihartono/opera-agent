@@ -101,18 +101,44 @@
 // The local stdio road carries the same tool over its own tab broker, reading the one parser (shared/bing-serp.js), generated into the package by scripts/pack/pack-mcp.mjs and never committed.
 // The evaluator that walks the SERP lives in local/page-expressions.js; the tools.ts schema and the tools.ts registration moved with it.
 
+// WHY these two were re-pinned on 2026-11-13: the edge-runtime _shared modules changed extension, and the two MCP consumers name them straight from disk — the imports read `../_shared/seal-vm-program.js` becoming `../_shared/seal-vm-program.ts`, and friends.
+// No tool, no schema, no behaviour moved; only the module specifier points at the new extension, and the comment-stripped digest in tests/fixtures/mcp-contract-v1.json moved the same way.
+// Extension files and the manifest did not move.
+
+// WHY these five moved again: the extension went to TypeScript, and the bytes moved with it.
+// content.ts and background.ts carry the same primitives the JavaScript carried, the MCP tool list is byte-for-byte identical (42 tools, same order, verified before the re-pin), and the VM is the same program the suite already proves.
+// The pins move with the reviewed conversion, and the CRX is built from the same source they guard.
+// tools.ts and manifest.json did not move; the tool schemas and the manifest are the contract.
+
+// WHY content.ts moved four times: the manifest loads content.js as a classic script, and no ES-module boundary of any kind may exist inside it.
+// The converted source imported isRecord from lib/guards.js; an MV3 classic script cannot parse that, so the import became a local copy of the same guard and the module marker the build appends is stripped from the classic-script files.
+// Behaviour is unchanged - the primitives are the same ones the suite drives; only the stub broke the load, and only the load noticed.
+// WHY the second move: the ReDoS round replaced the two character-class-alternating patterns with one class and with split/join, normalized lines via trim(), and the best-effort close paths use .catch(() => {}) with no comment inside the body (the comment-placement gate holds comments above what they document).
+// WHY the third move: the last super-linear regex left the file — every line is normalized by line.trim(), and nothing in this file requires a backtracking regex.
+// The byte pin moves with the contract review.
+
+// WHY control-flow and collect moved: the frozen VM went to TypeScript, and the two pure cores moved with it.
+// The runtime validator and the collection engine are the same programs the suite already proves; the pins move with the reviewed conversion.
+// WHY control-flow moved twice: the comment-placement gate demanded the frame-exists comment stand above the pop instead of trailing it, and a gate is the gate.
+// Comment lines do not reach the runtime; nothing else in the file moved with it.
+
+// WHY background.ts moved again: the agent now marks the tab it is holding.
+// dispatch() begins an in-memory activity around every action that names an explicit tab and records it to chrome.storage.local; the agent-chip content script renders from it.
+// The chip is the only visible sign the agent is in the page; behaviour of the agent itself is unchanged.
+// WHY the comment-canonical spelling matters to this pin: the gate rewrites the activity.ts and background.ts comment lines, so bytes track the canonical form.
+
 export const PUBLIC_SURFACE_LOCKS = Object.freeze([
-  ['../extension/content.js', 'fd75fc8ba524c201294b4919603fb478400865039f46d5a00730b0f1b937ecb3'],
-  ['../extension/background.js', 'c222723151c856e0051b67ac8b489d97096ed6605da080fff1c8bb859a05fe01'],
+  ['../extension/content.ts', '02365ade2ed83b234e7056ff51c3b7b41b1cacf66c74fdad41e1009b8f464fa5'],
+  ['../extension/background.ts', '8d700859a184591d6377c7f87aa582fe2404eb48e7e86f9c972b44a44771d5f5'],
   ['../extension/manifest.json', 'aaad334ded5c8febe60127a01b8ccfeddb5e0f191f42800a1567b1c9ec6fc84e'],
-  ['../hosted/functions/opera-agent-mcp/index.ts', '1bc26ba242eae2bca8ddaed4ee9f574e0274b44046aa770f7ae4fe0539e5e0a6'],
-  ['../hosted/functions/opera-agent-mcp/tools.ts', '7581260b1d9c89d556566e3fefe5105e8e6f57187548c6679708478725b8396d'],
+  ['../hosted/functions/opera-agent-mcp/index.ts', '9895b06e0abe7e7bbb222e5580c03d4065439db3284111fe3f8f7234b57b77b2'],
+  ['../hosted/functions/opera-agent-mcp/tools.ts', '3127cffe8cee8c6a1bf9c9e9c5950072d9535967e9732f0275871a4775c77353'],
 ]);
 
 export const OBSERVATION_STACK_LOCKS = Object.freeze([
   ['../shared/reactive-vm.ts', '7d15b2764ef9eb8f9929d0e6095d6f8fa1442898678b563d00852f7dc3b74d06'],
-  ['../shared/reactive-vm-control-flow.ts', 'a24a0d2e0574b9f8105c1085b66d92a17ede5e2e26d8ad76266364045695d708'],
-  ['../shared/reactive-vm-collect.ts', '2ada33dbed5c2920ccf4f484b7293f3eb866a46bee40ca6c256650e7c3888b78'],
+  ['../shared/reactive-vm-control-flow.ts', '7a07c7dd2ea1c896c2eb2f9f87b22fc670fef09da9b33fdd0a45cacb7c3ea5b9'],
+  ['../shared/reactive-vm-collect.ts', '8a29d80023a93c856dbd8bd9690f473b03d3469fef4c36d8c94a04363f09ed44'],
 ]);
 
 export const RELEVANCE_STACK_LOCKS = Object.freeze([
