@@ -90,6 +90,8 @@ async function tabExists(tabId: number) {
   try { await chrome.tabs.get(tabId); return true; } catch (error) { log.debug('TAB_EXISTS_PROBE_FAILED', error instanceof Error ? error.message : String(error)); return false; }
 }
 
+// A watcher with no target tab can never arm and can never have armed.
+
 export async function armWatchersForTab(tabId: number | undefined) {
   const w = await pruneWatchers();
   const entries = watcherIdsForTab(w, tabId)
@@ -97,8 +99,9 @@ export async function armWatchersForTab(tabId: number | undefined) {
     .filter((e): e is WatchEntry => e !== undefined);
   const rules = entries.map((e) => e.rule);
   if (!rules.length) return { armed: 0 };
+  if (tabId == null) return { armed: 0, error: 'ARM_FAILED' };
   try {
-    const r = await executeInTab(tabId as number, 'watch.arm', { rules: rules.slice(0, WATCH_MAX_RULES_PER_ARM) });
+    const r = await executeInTab(tabId, 'watch.arm', { rules: rules.slice(0, WATCH_MAX_RULES_PER_ARM) });
     if (!r?.ok) return { armed: 0, error: typeof r?.error === 'object' && r?.error && 'code' in r.error ? String((r.error as { code?: string }).code) : 'ARM_FAILED' };
     return { armed: rules.length, facts: (r as { facts?: unknown }).facts || null };
   } catch (error) {
