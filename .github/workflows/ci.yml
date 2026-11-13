@@ -13,6 +13,7 @@ name: CI
 # The stack in this repository is a chain of branches, and a gate that only runs against main runs for none of them: the pull requests that carry the work would show no gate at all, and the owner would be the only check.
 # WHY THE TOOLCHAIN INSTALLS FIRST.
 # The shared core is strict TypeScript, and `npm test` compiles it at pretest (build-shared); a clean checkout carries no node_modules, so the compile cannot even start until the toolchain is on the runner.
+# The install is `npm install` by design: the tree never tracks package-lock.json, a dependency is resolved fresh from package.json rather than pinned to a lock it does not carry.
 
 on:
   push:
@@ -45,7 +46,7 @@ jobs:
         with:
           node-version: 22.20.0
       - name: Install the toolchain
-        run: npm ci --no-audit --no-fund
+        run: npm install --no-audit --no-fund
       - name: Unit and static tests
         run: |
           npm test
