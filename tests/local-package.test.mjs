@@ -20,6 +20,12 @@ const shipped = JSON.parse(readFileSync(join(local, 'package.json'), 'utf8')).fi
 
 const IMPORT = /from '(\.{1,2}\/[^']+)'/g;
 
+// An import that resolves outside the package does not exist on the machine the user installs to, and a run-time read of a file outside the package dies with ENOENT.
+// The local server once died exactly this way on tidy.ts.
+// Skipping such an import silently let a package that cannot start keep the gate green, so they are collected and failed here instead.
+
+const outside = [];
+
 // WHY THE IMPORT IS RESOLVED AGAINST THE FILE THAT NAMES IT.
 // A module in a folder imports its neighbour by a path relative to itself, so "./zip.js" inside office/ is office/zip.js and not a missing file at the package root.
 
@@ -35,7 +41,10 @@ const reachable = (entry) => {
     const source = readFileSync(file, 'utf8');
     for (const [, specifier] of source.matchAll(IMPORT)) {
       const absolute = resolve(dirname(file), specifier).replace(/\\/g, '/');
-      if (!absolute.startsWith(`${local}/`) && absolute !== local) continue;
+      if (!absolute.startsWith(`${local}/`) && absolute !== local) {
+        outside.push(`${name} imports ${specifier}`);
+        continue;
+      }
       const next = absolute.slice(local.length + 1).replace(/\.js$/, '');
       walk(next);
     }
@@ -50,6 +59,14 @@ const reachable = (entry) => {
 // WHY EVERY FILE IN bin/ IS WALKED AND NOT ONLY opera-local.js.
 // Measured: dev-shim.js sat on disk, was imported by bin/opera-local-dev.js, and was absent from the files list, so the dev binary shipped and died on its first import with ERR_MODULE_NOT_FOUND while this test passed.
 // The list was only ever walked from one entry point, and a second entry point in the same directory is exactly the shape that hides.
+
+test('every relative import stays inside the package, so an installed copy can boot', () => {
+  const bins = readdirSync(join(local, 'bin')).filter((name) => name.endsWith('.js'));
+  const entries = bins.map((name) => `bin/${name.replace(/\.js$/, '')}`);
+  for (const entry of entries) reachable(entry);
+  reachable('mcp-server');
+  assert.deepEqual(outside, [], `these imports die on an installed copy:\n${outside.join('\n')}`);
+});
 
 test('every module the bin can reach is inside the published files', () => {
   const bins = readdirSync(join(local, 'bin')).filter((name) => name.endsWith('.js'));

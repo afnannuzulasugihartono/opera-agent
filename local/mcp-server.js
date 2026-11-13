@@ -37,6 +37,12 @@ import { detectGate, waitForGateClear, loginWithCredentials } from './gates.js';
 import { captchaAllowed, solverSettings, solveImageCaptcha } from './captcha-solver.js';
 import { BURST_INPUT_ACTIONS, normalizeBurst, runLocalBurst } from './burst.js';
 import { leaseTab, releaseTab } from './bridge.js';
+
+// WHY THE SAME TIDY FUNCTION THE HOSTED SURFACE USES, AND WHY IT RIDES THE PACKAGE.
+// The rejections that keep a model from wasting tokens on envelopes, transport keys and duplicated chain fields apply to the local stdio surface too - a rule that lives in one place stays consistent and changes for one reason.
+// The copy is written at pack time (scripts/pack-mcp.mjs) because a path outside the package does not exist on the machine that runs the install: reading ../supabase at run time died with ENOENT for every installed user.
+
+import { tidyForAi } from './lib/tidy.js';
 import { TOOLS, ASKABLE, askParams, STRAY_FILE_TAB } from './tools.js';
 import { pairDevice, taskRefund, taskReserve, taskSettle, walletBalance, walletQuote, walletTopUp } from './wallet-client.js';
 
@@ -167,16 +173,7 @@ function diffElements(prev, curr) {
 }
 
 import { withAdvice } from './advice.js';
-import { readFileSync } from 'node:fs';
-import { stripTypeScriptTypes } from 'node:module';
 
-// WHY THE SAME TIDY FUNCTION THE HOSTED SURFACE USES.
-// The rejections that keep a model from wasting tokens on envelopes, transport keys and duplicated chain fields should apply to the local stdio surface too - a rule that lives in one place stays consistent and changes for one reason.
-
-const tidySource = stripTypeScriptTypes(
-  readFileSync(new URL('../supabase/functions/opera-agent-mcp/tidy.ts', import.meta.url), 'utf8')
-);
-const { tidyForAi } = await import(`data:text/javascript;base64,${Buffer.from(tidySource).toString('base64')}`);
 
 const lastAuto = new WeakMap();
 const lastPage = new WeakMap();

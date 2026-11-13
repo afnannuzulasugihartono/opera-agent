@@ -100,3 +100,7 @@ __pycache__/
 skills-lock.json
 graphify-out/
 .taste-skill/
+
+# The local package's vendored copies are written by scripts/pack-mcp.mjs at pack time, so the repository carries exactly one copy of each shared module.
+
+local/lib/tidy.js
