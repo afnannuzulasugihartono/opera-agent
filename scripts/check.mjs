@@ -50,7 +50,7 @@ function collectRuntimeFiles(relativeDir, extensions) {
 
 const files = [
   ...collectRuntimeFiles('extension', new Set(['.js'])),
-  ...collectRuntimeFiles('lib', new Set(['.js'])),
+  ...collectRuntimeFiles('shared', new Set(['.js'])),
   ...collectRuntimeFiles('supabase/functions', new Set(['.js', '.ts'])),
   ...collectRuntimeFiles('supabase/migrations', new Set(['.sql'])),
 ].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));

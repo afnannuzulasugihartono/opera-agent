@@ -13,7 +13,6 @@ The shortest possible round-trip from "I know what to search for" to "here are t
 {
   "ok": true,
   "kind": "search",
-  "tabId": 10923500,
   "page": { "url": "...", "title": "..." },
   "search": {
     "query": "...",

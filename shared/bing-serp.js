@@ -1,18 +1,23 @@
 // @last-edited: 2026-11-13 UTC+7.
 // @title: bing-serp - the Bing SERP as data: external results, in order, with their snippets.
-// @state: the one SERP parser behind search_bing, on both roads; the local package reads a generated copy of this file, written by scripts/pack-mcp.mjs and never committed.
+// @state: the one SERP parser behind search_bing, on both roads; the local package reads a generated copy of this file, written by scripts/pack/pack-mcp.mjs and never committed.
 // @dependencies: none.
 
-// WHY THIS FILE LIVES IN _shared.
-// The hosted road (edge function, Deno) bundles this folder into the deploy, and the local road (stdio server, Node) carries a copy written at pack time: one file in this tree, two consumers at build time, no drift to guard.
+// WHY THIS FILE LIVES IN shared/.
+// The hosted road (edge function, Deno) bundles this folder via static import, and the local road (stdio server, Node) carries a copy written at pack time: one file in this tree, two consumers at build time, no drift to guard.
 
 const BING_HOST = /(^|\.)bing\.com$/i;
 const MICROSOFT_FW_LINK = /(^|\.)go\.microsoft\.com$/i;
 
-// A display URL, as Bing renders it inside a result card: bare host, host with a path, or the anchor text that embeds the address.
+// A display URL, as Bing renders it inside a result card: bare host, host with a path, or "host.tld/path https://host.tld/path".
 
 const DISPLAY_URL_LINE = /^[\w-]+(\.[\w-]+)+(:[0-9]+)?(\/[\w./-]*)?$/;
-const DISPLAYISH = /(https?:\/\/|›)/i;
+const DISPLAY_MIXED = /^[\w-]+(\.[\w-]+)+(:[0-9]+)?(\/[\w./-]*)?\s+https?:\/\//i;
+const DISPLAYISH = /^https?:\/\//i;
+
+function isDisplayText(text) {
+  return DISPLAY_URL_LINE.test(text) || DISPLAYISH.test(text) || DISPLAY_MIXED.test(text);
+}
 
 /**
  * @param {string} href
@@ -35,6 +40,40 @@ function isExternal(href) {
   return true;
 }
 
+/**
+ * Bing wraps organic cards in a redirect: https://www.bing.com/ck/a?...&u=a1<base64url-target>.
+ * WHY THE UNWRAP IS RE-VALIDATED.
+ * A redirect wrapper promises nothing about its target; the target is attacker-controlled.
+ * Returning it without the same checks every other href goes through would let javascript: or file: leak out as "results".
+ * So the target passes through isExternal before it is ever returned, and anything that fails stays dropped, exactly like the wrapper itself.
+ * @param {string} href
+ * @returns {string | null} the decoded target, or null when there is nothing to unwrap
+ */
+
+function unwrapBingRedirect(href) {
+  const host = hostOf(href);
+  if (!host || !BING_HOST.test(host)) return null;
+  let url;
+  try {
+    url = new URL(href);
+  } catch {
+    return null;
+  }
+  if (!url.pathname.startsWith('/ck/')) return null;
+  const packed = url.searchParams.get('u');
+  if (!packed) return null;
+  const encoded = packed.replace(/^a1/i, '').replace(/-/g, '+').replace(/_/g, '/');
+  const padded = encoded.padEnd(encoded.length + ((4 - (encoded.length % 4)) % 4), '=');
+  let target;
+  try {
+    const binary = atob(padded);
+    target = new TextDecoder().decode(Uint8Array.from(binary, (c) => c.charCodeAt(0)));
+  } catch {
+    return null;
+  }
+  return isExternal(target) ? target : null;
+}
+
 // WHY RESULTS ARE ZIPPED FROM THE ANCHORS, NOT FROM THE HEADINGS.
 // Bing emits two anchors per organic card and they share one href: first the display URL ("example.com https://example.com › a › b"), then the title, which is the same text as the h2/h3.
 // Headings also catch People-Also-Ask questions and the "Related searches" and "Pagination" blocks, which have no external href - anchors cannot produce them.
@@ -50,23 +89,28 @@ export function parseBingSerp({ text = '', links = [] } = {}, { currentFirst = 1
   const byHref = new Map();
   for (const link of links) {
     const href = String(link?.href ?? '').trim();
-    if (!isExternal(href)) continue;
+    const external = unwrapBingRedirect(href) ?? href;
+    if (!isExternal(external)) continue;
     const anchorText = String(link?.text ?? '').replace(/\s+/g, ' ').trim();
-    const group = byHref.get(href) ?? { url: href, site: hostOf(href).replace(/^www\./, ''), texts: [] };
+    const group = byHref.get(external) ?? { url: external, site: hostOf(external).replace(/^www\./, ''), texts: [] };
     if (anchorText) group.texts.push(anchorText);
-    byHref.set(href, group);
+    byHref.set(external, group);
   }
 
   const results = [];
   for (const group of byHref.values()) {
-    const nonDisplay = group.texts.filter((t) => !DISPLAYISH.test(t));
-    const fallback = (nonDisplay[nonDisplay.length - 1] ?? group.texts[group.texts.length - 1] ?? '')
-      .replace(/\s*›.*$/, '')
-      .replace(/https?:\/\/\S+/g, '')
-      .replace(/\s+/g, ' ')
-      .trim()
-      .slice(0, 300);
-    const title = fallback || group.site;
+    const nonDisplay = group.texts.filter((t) => !isDisplayText(t));
+    let title;
+    if (nonDisplay.length) {
+      title = nonDisplay[nonDisplay.length - 1].replace(/\s+/g, ' ').trim().slice(0, 300);
+    } else {
+      title = (group.texts[group.texts.length - 1] ?? '')
+        .replace(/\s*›.*$/, '')
+        .replace(/https?:\/\/\S+/g, '')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .slice(0, 300);
+    }
     if (!title || !group.url) continue;
     results.push({ title, url: group.url, site: group.site, snippet: '' });
   }
@@ -87,8 +131,13 @@ export function parseBingSerp({ text = '', links = [] } = {}, { currentFirst = 1
 
   // WHY THE SNIPPET WALK SKIPS LEADING BLANK LINES.
   // Bing puts a blank line between the title and its description, and a line that is only spaces counts as blank once trimmed: a parser that stopped at the first blank would return an empty snippet for every result.
+  // WHY DUPLICATE TITLES CARRY A COUNT, NOT A DELETE.
+  // Two cards may render the same title; a Set with one entry per title would drop the boundary for the second card after the first card's walk, and the snippet would bleed across cards.
+  // A multiset keeps one boundary per remaining occurrence.
   const lines = String(text).split(/\r?\n/).map((line) => line.trim());
-  const pending = new Set(results.map((result) => result.title));
+  const pending = new Map();
+  for (const result of results) pending.set(result.title, (pending.get(result.title) ?? 0) + 1);
+  const hasPending = (line) => (pending.get(line) ?? 0) > 0;
   let cursor = 0;
   const findTitle = (from, title) => {
     for (let i = from; i < lines.length; i += 1) if (lines[i] === title) return i;
@@ -96,7 +145,7 @@ export function parseBingSerp({ text = '', links = [] } = {}, { currentFirst = 1
     return -1;
   };
   for (const result of results) {
-    pending.delete(result.title);
+    pending.set(result.title, (pending.get(result.title) ?? 1) - 1);
     const at = findTitle(cursor, result.title);
     if (at < 0) continue;
     let k = at + 1;
@@ -106,7 +155,7 @@ export function parseBingSerp({ text = '', links = [] } = {}, { currentFirst = 1
       const line = lines[k];
       if (!line) break;
       if (DISPLAY_URL_LINE.test(line) || line.includes('›')) break;
-      if (pending.has(line)) break;
+      if (hasPending(line)) break;
       buf.push(line);
       if (buf.join(' ').length >= 600) break;
       k += 1;

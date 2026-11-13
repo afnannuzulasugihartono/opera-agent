@@ -604,22 +604,35 @@ const windowMatch = async (tab, driver) => (tab ? String(tab.title ?? '') : page
         if (!query) throw new Error('search_bing needs a non-empty query string.');
         const pages = Math.min(3, Math.max(1, Math.floor(Number(args.pages) || 1)));
         const firstUrl = `https://www.bing.com/search?q=${encodeURIComponent(query)}`;
-        const opened = await fallback.open(firstUrl);
-        const tabId = String(opened?.id ?? '');
-        if (!tabId) throw new Error('the search tab could not be opened; the browser may be refusing new tabs.');
-        // WHY ONE BACKGROUND TAB AND WHY IT IS ALWAYS CLOSED.
-        // The everyday browser is visible while an agent works: an extra foreground tab steals the screen, and a leaked tab steals it forever.
-        // The search walks at most three pages in one background tab and closes it on every exit path; what remains is one structured answer.
-        const withDeadline = (promise, ms, what) => Promise.race([
-          promise,
-          new Promise((_, reject) => setTimeout(() => reject(new Error(`${what} did not answer in ${ms}ms - the browser may be busy or asleep; the search tab was closed either way.`)), ms))
-        ]);
+        // WHY ONE TAB AND WHY IT IS ALWAYS CLOSED.
+        // The everyday browser is visible while an agent works: the search walks at most three pages in one background tab (foreground on the direct-CDP fallback, which cannot order one) and closes it on every exit path; what remains is one structured answer.
+        const withDeadline = (promise, ms, what) => {
+          let timer;
+          const clock = new Promise((_, reject) => {
+            timer = setTimeout(() => reject(new Error(`${what} did not answer in ${ms}ms - the browser may be busy or asleep; the search tab was closed either way.`)), ms);
+          });
+          return Promise.race([
+            Promise.resolve(promise).then(
+              (value) => { clearTimeout(timer); return value; },
+              (error) => { clearTimeout(timer); throw error; }
+            ),
+            clock
+          ]);
+        };
+        let tabId = '';
+        let failure = null;
+        let closeFailed = false;
+        let answer = null;
         try {
+          const opened = await fallback.open(firstUrl);
+          tabId = String(opened?.id ?? '');
+          if (!tabId) throw new Error('the search tab could not be confirmed; the browser may be asleep - check browser_status - and the open may have happened without this process hearing back; list_tabs shows whether a Bing tab is sitting there.');
           const searchDriver = await driverFor(tabId, { background: true });
           await searchDriver.waitForStill?.({ timeoutMs: 4000, quietMs: 150 })?.catch(() => null);
           const merged = [];
           let currentFirst = 1;
           let truncated = false;
+          let textTruncated = false;
           let fetched = 0;
           let pageUrl = firstUrl;
           let pageTitle = '';
@@ -630,6 +643,7 @@ const windowMatch = async (tab, driver) => (tab ? String(tab.title ?? '') : page
             merged.push(...parsed.results);
             fetched += 1;
             truncated = parsed.nextFirst !== null;
+            textTruncated = textTruncated || raw?.truncated === true;
             if (fetched === 1) {
               pageUrl = String(raw?.url ?? firstUrl);
               pageTitle = String(raw?.title ?? '');
@@ -644,13 +658,26 @@ const windowMatch = async (tab, driver) => (tab ? String(tab.title ?? '') : page
             seen.add(result.url);
             results.push({ ...result, rank: results.length + 1 });
           }
-          return asText({ ok: true, kind: 'search', tabId, page: { url: pageUrl, title: pageTitle }, search: { query, engine: 'bing', pages: fetched, count: results.length, truncated, results } });
+          answer = { ok: true, kind: 'search', page: { url: pageUrl, title: pageTitle }, search: { query, engine: 'bing', pages: fetched, count: results.length, truncated, ...(textTruncated ? { textTruncated: true } : {}), results } };
+        } catch (error) {
+          failure = error;
         } finally {
-          sessions.get(tabId)?.close?.();
-          sessions.delete(tabId);
-          await lease.release(tabId, OWNER).catch(() => null);
-          await fallback.close(tabId).catch(() => null);
+          if (tabId) {
+            sessions.get(tabId)?.close?.();
+            sessions.delete(tabId);
+            await lease.release(tabId, OWNER).catch(() => null);
+            await fallback.close(tabId).then(() => { closeFailed = false; }).catch(() => { closeFailed = true; });
+          }
         }
+        if (failure) {
+          if (closeFailed) {
+            const message = failure instanceof Error ? failure.message : String(failure);
+            throw new Error(message + ' The search tab may still be open on the browser; check list_tabs.');
+          }
+          throw failure;
+        }
+        if (closeFailed && answer) answer.tabClosed = false;
+        return asText(answer);
       }
       case 'find_elements':
         return asText(await driver.find(args.query));

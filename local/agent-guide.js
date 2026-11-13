@@ -163,7 +163,7 @@ export const SIDE_EFFECTS = Object.freeze({
   list_tabs: [],
   open_url: ['opens a new tab in the same browser'],
   close_tab: ['closes a tab the caller may still be holding'],
-  search_bing: ['opens one background tab on the Bing results and closes it before the answer returns - nothing is left on the browser, and the machine\'s own window is never brought forward'],
+  search_bing: ['opens one background tab on the Bing results on the bridged path (the direct CDP fallback opens it in the foreground) and closes it before the answer returns - nothing is left on the browser, and the machine\'s own window is never brought forward'],
   read_page: ['with allowCaretMove, borrows the selection on a canvas editor to read the text through it, and answers caretRestored as what was measured rather than what was hoped', 'without it, that step is skipped and the reason is reported, because a canvas caret is not in the DOM and cannot be promised back'],
   surface_profile: [],
   find_elements: [],

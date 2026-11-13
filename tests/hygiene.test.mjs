@@ -376,7 +376,7 @@ test('no module under extension/, shared/, scripts/ or supabase/functions/ expor
 // One module is staged for the one open task of the paper plan, and it is named here with that reason.
 
 const STAGED_FOR_THE_OPEN_TASK = new Map([
-  ['lib/ax-menu.js', 'Task 9 of docs/superpowers/plans/2026-10-14-docs-paper-plan.md: the AX road reads live row names to compare against the label map'],
+  ['shared/ax-menu.js', 'Task 9 of docs/superpowers/plans/2026-10-14-docs-paper-plan.md: the AX road reads live row names to compare against the label map'],
   ['supabase/functions/_shared/docs-ui-map.js', 'Task 9 of docs/superpowers/plans/2026-10-14-docs-paper-plan.md: the map the AX road is compared against'],
 ]);
 
@@ -393,7 +393,7 @@ test('a module with its own code is reached by the product, not only by its own 
     }
     return out;
   };
-  const present = ['extension', 'lib', 'local', 'scripts', 'supabase', 'tests', 'landing'].flatMap(walk);
+  const present = ['extension', 'shared', 'local', 'scripts', 'supabase', 'tests', 'landing'].flatMap(walk);
   const codeFiles = present.filter((file) => /\.(js|mjs|cjs|ts)$/.test(file));
   const edgeFiles = present.filter((file) => /\.(js|mjs|cjs|ts|html)$/.test(file));
   const textOf = new Map(edgeFiles.map((file) => [file, fsSync.readFileSync(path.join(dir, file), 'utf8')]));
@@ -487,7 +487,7 @@ test('a module with its own code is reached by the product, not only by its own 
     return withoutReexports === '';
   };
 
-  const runtimeFiles = codeFiles.filter((file) => /^(extension|lib|local|supabase\/functions|scripts)\//.test(file));
+  const runtimeFiles = codeFiles.filter((file) => /^(extension|shared|local|supabase\/functions|scripts)\//.test(file));
   const unreachable = runtimeFiles.filter((file) => !reached.has(file) && !isShim(textOf.get(file)));
   const unexpected = unreachable.filter((file) => !STAGED_FOR_THE_OPEN_TASK.has(file));
   assert.deepEqual(unexpected, [],
@@ -534,7 +534,7 @@ test('every source file carries a header that says what the file is and what it 
     }
     return out;
   };
-  const roots = ['extension', 'lib', 'local', 'scripts', 'supabase', 'tests', 'landing', '.github'];
+  const roots = ['extension', 'shared', 'local', 'scripts', 'supabase', 'tests', 'landing', '.github'];
   const files = roots.flatMap(walk)
     .filter((file) => /\.(?:js|mjs|cjs|ts|py|html|css|yml|yaml|toml|cmd|example)$/.test(file))
     .filter((file) => !file.startsWith('supabase/migrations/'));

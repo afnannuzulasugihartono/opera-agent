@@ -175,7 +175,7 @@
       "readers": "every local MCP client, every agent reading locally",
       "wrongIfConfused": "a local tool answers with an envelope - { action: {..}, window: .., page: .. } - where the hosted wire answers with { ..page facts }; a model that learned one shape fails on the other and re-reads every answer",
       "decision": "model",
-      "why": "one shape both wires, already what tidy.ts pins on the hosted side - this is local-to-hosted convergence with no new state, only deletion of the divergence",
+      "why": "one shape both wires, already what shared/tidy.js pins on the hosted side - this is local-to-hosted convergence with no new state, only deletion of the divergence",
       "rank": 1
     },
     {

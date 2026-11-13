@@ -854,10 +854,14 @@ export const SETTLE_READ_EXPRESSION = `(() => {
 // Headings are deliberately absent: Bing titles are anchors here, and People-Also-Ask headings carry no href, so anchors are the only reliable spine.
 
 export const SERP_EXPRESSION = `(() => {
-  const links = [...document.querySelectorAll('a[href]')].map((anchor) => ({
-    href: anchor.getAttribute('href') || '',
+  const MAX_TEXT = 200000;
+  const MAX_LINKS = 500;
+  const links = [...document.querySelectorAll('a[href]')].slice(0, MAX_LINKS).map((anchor) => ({
+    href: anchor.href,
     text: (anchor.innerText || anchor.textContent || '').replace(/\\s+/g, ' ').trim()
   }));
-  const text = document.body ? document.body.innerText : '';
-  return { text, url: location.href, title: document.title, links };
+  const rawText = document.body ? document.body.innerText : '';
+  const truncated = rawText.length > MAX_TEXT || document.querySelectorAll('a[href]').length > MAX_LINKS;
+  const text = rawText.slice(0, MAX_TEXT);
+  return { text, url: location.href, title: document.title, links, truncated };
 })()`;

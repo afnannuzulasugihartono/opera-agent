@@ -1,12 +1,12 @@
 // @last-edited: 2026-11-13 UTC+7.
 // @title: bing-serp.test - the Bing SERP parser: one source, two consumers, gates on the real page it was built from.
-// @state: the one parser lives in supabase/functions/_shared/bing-serp.js; the local package reads a generated copy of it (scripts/pack-mcp.mjs, never committed); these locks hold the parser to the real page and fail if it drifts.
-// @dependencies: node:test, strict, node:fs, ../supabase/functions/_shared/bing-serp.js.
+// @state: the one parser lives in shared/bing-serp.js; the local package reads a generated copy of it (scripts/pack/pack-mcp.mjs, never committed); these locks hold the parser to the real page and fail if it drifts.
+// @dependencies: node:test, strict, node:fs, ../shared/bing-serp.js.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { parseBingSerp, hostOf } from '../supabase/functions/_shared/bing-serp.js';
+import { parseBingSerp, hostOf } from '../shared/bing-serp.js';
 
 const fixture = JSON.parse(
   await readFile(new URL('./fixtures/bing-serp-page1.json', import.meta.url), 'utf8')
