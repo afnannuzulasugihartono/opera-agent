@@ -3,7 +3,7 @@
 // @state: the ledger shape, its limits, and the canonical digest every revision carries.
 // @dependencies: none.
 
-import { SECRET_VALUE } from '../../../lib/secret-pattern.js';
+import { SECRET_VALUE } from '../../../shared/secret-pattern.js';
 
 const SCHEMA_VERSION = 1;
 const DIGEST_PREFIX = 'sha256:';

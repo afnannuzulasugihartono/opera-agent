@@ -72,7 +72,7 @@ drifts fails the suite instead of ageing in the file.
 | Directory | Role |
 |---|---|
 | `extension/` | MV3 runtime — background worker, content scripts, popup, options |
-| `lib/` | Shared pure modules the server and extension both read |
+| `shared/` | Shared pure modules the server and extension both read |
 | `local/` | The local MCP server: CDP straight to the browser on this machine, plus the statement job |
 | `supabase/functions/` | Deno edge: auth, billing, bridge, gateway, listen, MCP, runner, update, VM (9 deployed) plus `_shared/` |
 | `supabase/migrations/` | SQL in timestamp order, never rewritten |

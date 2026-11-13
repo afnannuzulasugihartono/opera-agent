@@ -289,9 +289,9 @@ test('the R9 modules expose no unused surface', async () => {
   assert.equal((protocol.match(/isPlainObject/g) || []).length, 7, 'declared once and used six times');
 });
 
-test('no module under extension/, lib/, scripts/ or supabase/functions/ exports a symbol nothing reaches', async () => {
+test('no module under extension/, shared/, scripts/ or supabase/functions/ exports a symbol nothing reaches', async () => {
 
-  const runtimeRoots = ['../extension', '../lib'];
+  const runtimeRoots = ['../extension', '../shared'];
   const collect = async (dir, match) => {
     const out = [];
     for (const entry of await readdir(new URL(dir, import.meta.url), { withFileTypes: true })) {
@@ -367,7 +367,7 @@ test('no module under extension/, lib/, scripts/ or supabase/functions/ exports 
     }
   }
   assert.deepEqual(dead, [], 'these exports are referenced nowhere at all');
-  assert.deepEqual(noCaller, [], 'these extension/ and lib/ exports have no caller in another file');
+  assert.deepEqual(noCaller, [], 'these extension/ and shared/ exports have no caller in another file');
 });
 
 // WHY A MODULE ONLY ITS OWN TEST IMPORTS IS DEAD.

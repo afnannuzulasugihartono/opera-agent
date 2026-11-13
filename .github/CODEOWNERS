@@ -32,4 +32,4 @@ gates.lock
 /.github/ @afnannuzulasugihartono
 /supabase/migrations/ @afnannuzulasugihartono
 /extension/ @afnannuzulasugihartono
-/lib/ @afnannuzulasugihartono
+/shared/ @afnannuzulasugihartono

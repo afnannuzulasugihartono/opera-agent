@@ -106,9 +106,9 @@ assert.match(mcp, /\{ name: "opera-agent", version: SERVER_VERSION \}/, 'the dec
 
 const secretLiteral = /const SECRET_VALUE = \/\(\?:-----BEGIN/;
 for (const file of files) {
-  if (file.replace(/\\/g, '/') === 'lib/secret-pattern.js') continue;
+  if (file.replace(/\\/g, '/') === 'shared/secret-pattern.js') continue;
   const text = fs.readFileSync(path.join(root, file), 'utf8');
-  assert.doesNotMatch(text, secretLiteral, `${file} must import SECRET_VALUE from lib/secret-pattern.js, not declare it`);
+  assert.doesNotMatch(text, secretLiteral, `${file} must import SECRET_VALUE from shared/secret-pattern.js, not declare it`);
 }
 
 const storeManifest = JSON.parse(fs.readFileSync(path.join(root, 'store/store-manifest.json'), 'utf8'));

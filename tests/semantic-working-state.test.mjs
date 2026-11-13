@@ -8,7 +8,7 @@ import assert from 'node:assert/strict';
 import {
   SemanticWorkingStateError,
   createSemanticWorkingStateStore,
-} from '../lib/semantic-working-state.js';
+} from '../shared/semantic-working-state.js';
 
 const identity = (overrides = {}) => ({
   tenantId: 'tenant-a',
