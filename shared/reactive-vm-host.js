@@ -3,7 +3,7 @@
 // @state: the persistence classification, the idempotency key, and the limits every host request holds.
 // @dependencies: goal-ledger, multi-signal-relevance.
 
-import { digestCanonical } from '../supabase/functions/_shared/goal-ledger.js';
+import { digestCanonical } from '../hosted/functions/_shared/goal-ledger.js';
 import { SECRET_VALUE } from './secret-pattern.js';
 import { createMultiSignalRelevancePipeline } from './multi-signal-relevance.js';
 import { SECRET_FIELD } from './reactive-vm-core.js';

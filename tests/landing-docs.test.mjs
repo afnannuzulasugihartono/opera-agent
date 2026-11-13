@@ -50,7 +50,7 @@ test('the docs page states the counts the code proves', () => {
 test('the docs page leaves the money to the price page, and the code proves that page', () => {
   const html = read('landing/docs.html');
   const price = read('landing/harga.html');
-  const wallet = read('supabase/functions/_shared/wallet.js');
+  const wallet = read('hosted/functions/_shared/wallet.js');
   assert.ok(html.includes('href="./harga.html"'), 'the docs page points at the price page');
   for (const money of [/Rp10\.000/, /10 aksi/, /30 menit/, /dikembalikan penuh/]) {
     assert.doesNotMatch(html, money, 'the docs page repeats no money fact');

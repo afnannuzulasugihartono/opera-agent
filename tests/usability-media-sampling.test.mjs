@@ -14,7 +14,7 @@ import { mcpSurfaceSourceSync } from './helpers/mcp-surface-source.mjs';
 
 
 const migrationUrl = new URL(
-  '../supabase/migrations/20260919171500_pre_8e_r5_media_fast_path.sql',
+  '../hosted/migrations/20260919171500_pre_8e_r5_media_fast_path.sql',
   import.meta.url
 );
 const migrationExists = fs.existsSync(migrationUrl);

@@ -1,7 +1,7 @@
 // @last-edited: 2026-10-26 UTC+7.
 // @title: invoice-page — every state a customer can open, as one readable and honest page.
 // @state: paid, live, expired, unknown, no link and cancelled, each said in words, escaped, and carrying the token only where a form needs it.
-// @dependencies: node:test, strict, ../supabase/functions/_shared/invoice-page.js.
+// @dependencies: node:test, strict, ../hosted/functions/_shared/invoice-page.js.
 
 // WHY THE PAGE IS DRIVEN BY A TEST RATHER THAN LOOKED AT ONCE.
 // The page is the only part of the money path a customer sees, and a state that renders nothing, a dead Pay button or an unescaped name is a failure nobody notices until it is in someone's inbox.
@@ -10,7 +10,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { invoicePage } from '../supabase/functions/_shared/invoice-page.js';
+import { invoicePage } from '../hosted/functions/_shared/invoice-page.js';
 
 const NOW = Date.parse('2026-10-26T09:00:00Z');
 const TOKEN = 'tok-1234';

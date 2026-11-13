@@ -12,9 +12,9 @@ import { readFileSync } from 'node:fs';
 import { stripTypeScriptTypes } from 'node:module';
 import { createHash } from 'node:crypto';
 import vm from 'node:vm';
-import { CORS_DEFAULT_ORIGINS, resolveAllowedOrigin } from '../supabase/functions/_shared/cors.js';
+import { CORS_DEFAULT_ORIGINS, resolveAllowedOrigin } from '../hosted/functions/_shared/cors.js';
 
-const source = stripTypeScriptTypes(readFileSync(new URL('../supabase/functions/opera-agent-listen/index.ts', import.meta.url), 'utf8')
+const source = stripTypeScriptTypes(readFileSync(new URL('../hosted/functions/opera-agent-listen/index.ts', import.meta.url), 'utf8')
   .replace(/^import .*;\r?\n/gm, ''));
 
 const TOKEN = 'a'.repeat(64);
@@ -179,7 +179,7 @@ test('a concurrent second start takes the live session, never a duplicate', asyn
 
 test('the transcriber uses Groq Whisper verbose_json, not Gemini', async () => {
   const { readFile } = await import('node:fs/promises');
-  const source = await readFile(new URL('../supabase/functions/opera-agent-listen/index.ts', import.meta.url), 'utf8');
+  const source = await readFile(new URL('../hosted/functions/opera-agent-listen/index.ts', import.meta.url), 'utf8');
 
   assert.match(source, /api\.groq\.com\/openai\/v1\/audio\/transcriptions/);
   assert.match(source, /whisper-large-v3/);
@@ -190,19 +190,19 @@ test('the transcriber uses Groq Whisper verbose_json, not Gemini', async () => {
 
 test('the live-session uniqueness is a partial unique index, not application logic', async () => {
   const { readFile } = await import('node:fs/promises');
-  const sql = await readFile(new URL('../supabase/migrations/20261009000003_opera_agent_listen_live_uniq.sql', import.meta.url), 'utf8');
+  const sql = await readFile(new URL('../hosted/migrations/20261009000003_opera_agent_listen_live_uniq.sql', import.meta.url), 'utf8');
 
   assert.match(sql, /create unique index if not exists opera_listen_sessions_device_live_uniq/);
   assert.match(sql, /on public\.opera_listen_sessions\(device_id\) where status = 'live'/);
   assert.doesNotMatch(sql, /^\s*(grant|revoke)\s/im, 'index-only change carries no grant statement');
-  const fn = await readFile(new URL('../supabase/functions/opera-agent-listen/index.ts', import.meta.url), 'utf8');
+  const fn = await readFile(new URL('../hosted/functions/opera-agent-listen/index.ts', import.meta.url), 'utf8');
   assert.match(fn, /"23505"/, 'the start path maps the unique violation');
   assert.match(fn, /Stop it first\.", sessionId:/, 'the loser carries the live session id');
 });
 
 test('the migration stores transcripts owner-scoped with no grants', async () => {
   const { readFile } = await import('node:fs/promises');
-  const sql = await readFile(new URL('../supabase/migrations/20261007100000_opera_listen_sessions.sql', import.meta.url), 'utf8');
+  const sql = await readFile(new URL('../hosted/migrations/20261007100000_opera_listen_sessions.sql', import.meta.url), 'utf8');
   assert.match(sql, /create table if not exists public\.opera_listen_sessions/);
   assert.match(sql, /unique \(session_id, seq\)/);
   assert.doesNotMatch(sql, /grant (select|all)/i);

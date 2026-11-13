@@ -1,7 +1,7 @@
 // @last-edited: 2026-11-04 UTC+7.
 // @title: qris-detector — the feed query the API accepts, the parser for the feed it really returns, and amount-FIFO matching on settled dynamic QRIS money.
 // @state: query validation with the server-side filters, header shape with one stable x-uniqueid, the token route's own headers and nested body, feed normalization on the measured field names, exact-amount FIFO matching with a clock check, and dry mode that closes nothing.
-// @dependencies: node:test, node:assert/strict, ../supabase/functions/_shared/qris-detector.js.
+// @dependencies: node:test, node:assert/strict, ../hosted/functions/_shared/qris-detector.js.
 
 // WHY THESE TESTS PIN MEASURED FACTS.
 // The feed was read for real on 2026-11-04: a Rp1.000 payment arrives as gross_amount 100000, the payment scanned from our own page is channel_type DYNAMIC_QR, the printed static QR is STATIC_QR, size=200 is refused with 422 and size=100 is accepted, and the token route answers 400 for a flat body and 201 for the nested one.
@@ -9,7 +9,7 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { FEED_URL, TOKEN_URL, feedQuery, feedHeaders, parseFeed, matchOpenInvoices, detectorPlan, sessionHeaders, refreshBody } from '../supabase/functions/_shared/qris-detector.js';
+import { FEED_URL, TOKEN_URL, feedQuery, feedHeaders, parseFeed, matchOpenInvoices, detectorPlan, sessionHeaders, refreshBody } from '../hosted/functions/_shared/qris-detector.js';
 
 const MERCHANT = 'G274351871';
 

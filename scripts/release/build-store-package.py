@@ -10,7 +10,7 @@ assigns the extension id itself, and `update_url`, because the store owns update
 once an extension is listed. So this writes a separate manifest and a separate
 zip rather than editing the one the sideload path depends on.
 
-Run: py scripts/build-store-package.py
+Run: py scripts/release/build-store-package.py
 """
 
 import hashlib
@@ -23,8 +23,8 @@ import zipfile
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 EXT = os.path.join(REPO, "extension")
-OUT_ZIP = os.path.join(REPO, "store", "opera-agent-store.zip")
-OUT_MANIFEST = os.path.join(REPO, "store", "store-manifest.json")
+OUT_ZIP = os.path.join(REPO, "docs", "store", "opera-agent-store.zip")
+OUT_MANIFEST = os.path.join(REPO, "docs", "store", "store-manifest.json")
 
 STORE_NAME = "Opera Agent"
 
@@ -32,6 +32,7 @@ STORE_DESC = (
     "Bawa asisten AI Anda mengemudikan browser: klik, ketik, isi formulir, "
     "baca halaman. Anda pilih modelnya."
 )
+
 
 def store_manifest():
     """The sideload manifest with the two store-rejected fields removed."""
@@ -56,11 +57,13 @@ def store_manifest():
     }
     return manifest
 
+
 def write_manifest(manifest):
     os.makedirs(os.path.dirname(OUT_MANIFEST), exist_ok=True)
     with open(OUT_MANIFEST, "w", encoding="utf-8", newline="\n") as handle:
         json.dump(manifest, handle, indent=2, ensure_ascii=False)
         handle.write("\n")
+
 
 def build_zip(manifest):
     os.makedirs(os.path.dirname(OUT_ZIP), exist_ok=True)
@@ -74,7 +77,9 @@ def build_zip(manifest):
             elif os.path.isfile(source) and name != "manifest.json":
                 shutil.copy2(source, os.path.join(stage, name))
 
-        with open(os.path.join(stage, "manifest.json"), "w", encoding="utf-8", newline="\n") as handle:
+        with open(
+            os.path.join(stage, "manifest.json"), "w", encoding="utf-8", newline="\n"
+        ) as handle:
             json.dump(manifest, handle, indent=2, ensure_ascii=False)
             handle.write("\n")
 
@@ -95,6 +100,7 @@ def build_zip(manifest):
     finally:
         shutil.rmtree(stage, ignore_errors=True)
 
+
 def verify(manifest):
     """Check the package against the store's rejection rules before it is uploaded."""
     with zipfile.ZipFile(OUT_ZIP) as archive:
@@ -114,9 +120,12 @@ def verify(manifest):
         problems.append("the store wants a description of at most 132 characters")
     for size in inner.get("icons", {}).values():
         if size not in names:
-            problems.append(f"the manifest names an icon the package does not contain: {size}")
+            problems.append(
+                f"the manifest names an icon the package does not contain: {size}"
+            )
 
     return problems, inner, names
+
 
 def main():
     manifest = store_manifest()
@@ -141,6 +150,7 @@ def main():
         return 1
     print("store-ready: no rejected field, MV3, version and icons check out")
     return 0
+
 
 if __name__ == "__main__":
     sys.exit(main())

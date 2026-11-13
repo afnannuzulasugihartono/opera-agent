@@ -7,14 +7,14 @@ import fs from 'node:fs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-const migrationDir = new URL('../supabase/migrations/', import.meta.url);
+const migrationDir = new URL('../hosted/migrations/', import.meta.url);
 const r7MigrationName = fs.readdirSync(migrationDir)
   .filter((name) => name.endsWith('.sql') && name.includes('pre_8e_r7_transcript_cleanup'))
   .sort()
   .pop();
 
 const workflow = JSON.parse(
-  fs.readFileSync(new URL(`../supabase/migrations/${r7MigrationName}`, import.meta.url), 'utf8')
+  fs.readFileSync(new URL(`../hosted/migrations/${r7MigrationName}`, import.meta.url), 'utf8')
     .match(/\$wf\$([\s\S]*?)\$wf\$::jsonb/)[1]
 );
 
@@ -123,7 +123,7 @@ test('structural cost reduction is deterministic: commands and payload (T037)', 
 test('records the honest T037 boundary: single-run baseline is non-distributional', () => {
 
   const migrationSql = fs.readFileSync(
-    new URL(`../supabase/migrations/${r7MigrationName}`, import.meta.url), 'utf8'
+    new URL(`../hosted/migrations/${r7MigrationName}`, import.meta.url), 'utf8'
   );
   assert.match(migrationSql, /Pre-8E repair R7/);
   assert.match(migrationSql, /bounded fallback/);

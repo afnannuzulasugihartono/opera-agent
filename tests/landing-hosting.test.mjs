@@ -188,8 +188,8 @@ test('the edge is told not to hold a page, because Cache-Control alone does not'
 
 test('the site is reachable at the path GoTrue asks for, from the site root directory', () => {
 
-  assert.match(read('supabase/config.toml'), /site_url = "https:\/\/opera-agent\.pages\.dev"/);
-  assert.match(read('supabase/config.toml'), /authorization_path = "\/oauth\/consent"/);
+  assert.match(read('hosted/config.toml'), /site_url = "https:\/\/opera-agent\.pages\.dev"/);
+  assert.match(read('hosted/config.toml'), /authorization_path = "\/oauth\/consent"/);
   assert.ok(fs.existsSync(new URL('landing/oauth/consent.html', root)), 'the page is at that path');
   const covered = new Set(rules.flatMap((rule) => rule.paths));
   for (const source of ['/oauth/consent', '/oauth/consent.html']) {

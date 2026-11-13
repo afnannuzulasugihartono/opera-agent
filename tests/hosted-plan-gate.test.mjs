@@ -1,13 +1,13 @@
 // @last-edited: 2026-11-09 UTC+7.
 // @title: hosted-plan-gate.test — the hosted caller learns its plan at the door, not at the wall.
 // @state: the plan, its quota, today's usage for the account that owns the device, and the safe answer when the database cannot.
-// @dependencies: node:test, strict, ../supabase/functions/opera-agent-mcp/plan-info.ts, ../supabase/functions/_shared/plans.js.
+// @dependencies: node:test, strict, ../hosted/functions/opera-agent-mcp/plan-info.ts, ../hosted/functions/_shared/plans.js.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { PLANS } from '../supabase/functions/_shared/plans.js';
-import { planInfo } from '../supabase/functions/opera-agent-mcp/plan-info.ts';
+import { PLANS } from '../hosted/functions/_shared/plans.js';
+import { planInfo } from '../hosted/functions/opera-agent-mcp/plan-info.ts';
 
 function fakeDb({ plan = null, status = 'active', count = 0, reports = [], fail = false, expires = null } = {}) {
   const calls = [];

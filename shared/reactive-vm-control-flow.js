@@ -3,7 +3,7 @@
 // @state: the state machine that advances a program, and the budget, tenant and secret rules it obeys.
 // @dependencies: goal-ledger, reactive-vm.
 
-import { canonicalJson, digestCanonical } from '../supabase/functions/_shared/goal-ledger.js';
+import { canonicalJson, digestCanonical } from '../hosted/functions/_shared/goal-ledger.js';
 import {
   ReactiveVmError,
   evaluateReactiveExpression,

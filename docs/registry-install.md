@@ -1,13 +1,13 @@
 # @last-edited: 2026-11-12 UTC+7.
 # @title: registry install - the extension appears in Chrome, Brave and Edge with one double-click, no store review waiting.
 # @state: measured 2026-11-12 on Windows against isolated throwaway profiles: Chrome 153.0.8010.36, Brave 157.1.99.56 and Edge (x86) each installed the extension automatically after the first browser start, from the public update URL.
-# @dependencies: `store/extension-registry-install.reg`, `store/extension-registry-uninstall.reg`, `docs/install.md`, `docs/releases/1.6.44.md`.
+# @dependencies: `docs/store/extension-registry-install.reg`, `docs/store/extension-registry-uninstall.reg`, `docs/install.md`, `docs/releases/1.6.44.md`.
 
 # WHAT IT DOES
 
 **The interactive path lives in [`docs/install.md`](./install.md)** — this page is the `.reg` route for people who want the keys without the npm package (or whose package is unreachable).
 
-`store/extension-registry-install.reg` writes three keys, one per browser
+`docs/store/extension-registry-install.reg` writes three keys, one per browser
 (Windows `HKCU`, per-user, no administrator rights):
 
 - `HKCU\Software\Google\Chrome\Extensions\ofgemipoobcnbjkfanmofjbdonjapmgl`
@@ -57,7 +57,7 @@ first-time install on a machine that does not have it yet.
 
 # HOW TO USE IT
 
-1. Download or locate `store/extension-registry-install.reg` from this
+1. Download or locate `docs/store/extension-registry-install.reg` from this
    repository (or the release artifact that carries it).
 2. Double-click it, or run `reg import store\extension-registry-install.reg`.
 3. Restart any open Chrome, Brave or Edge window the first time.
@@ -68,7 +68,7 @@ first-time install on a machine that does not have it yet.
 
 # HOW TO REMOVE IT
 
-`store/extension-registry-uninstall.reg` deletes the three keys, so no
+`docs/store/extension-registry-uninstall.reg` deletes the three keys, so no
 browser re-installs the extension on later starts. An extension already
 installed stays installed; remove it from `chrome://extensions`,
 `brave://extensions` or `edge://extensions` like any other extension.

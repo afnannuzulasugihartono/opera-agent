@@ -33,7 +33,7 @@
 
 // WHY manifest.json was re-pinned on 2026-11-11: it now names its icons.
 // The action carried a popup and no icon, so the toolbar showed the browser's generic extension glyph - the product had no face in the one place every reader sees.
-// The icon is the site icon, drawn by scripts/draw-icon.py from the same path the website uses; nothing else in the manifest moved.
+// The icon is the site icon, drawn by scripts/dev/draw-icon.py from the same path the website uses; nothing else in the manifest moved.
 
 // WHY manifest.json was re-pinned a second time on 2026-11-11: the release bump.
 // 1.6.40 to 1.6.41; nothing else in the manifest moved.
@@ -98,15 +98,15 @@
 // WHY these two were re-pinned on 2026-11-13: the surface gained search_bing, and it gained it as a workflow over the primitives, not as a new one.
 // The relay opens one background tab on the Bing SERP, reads up to three result pages with page.dump following Bing's own pagination links, zips the external anchors into rank, title, url, site and the snippet each card renders, dedupes across pages and closes the tab.
 // The extension gained nothing: tabs.open, tabs.navigate, page.dump and tabs.close are the whole road, so the 36-method protocol and its pins above did not move.
-// The local stdio road carries the same tool over its own tab broker, reading the one parser (shared/bing-serp.js), generated into the package by scripts/pack-mcp.mjs and never committed.
+// The local stdio road carries the same tool over its own tab broker, reading the one parser (shared/bing-serp.js), generated into the package by scripts/pack/pack-mcp.mjs and never committed.
 // The evaluator that walks the SERP lives in local/page-expressions.js; the tools.ts schema and the tools.ts registration moved with it.
 
 export const PUBLIC_SURFACE_LOCKS = Object.freeze([
   ['../extension/content.js', 'fd75fc8ba524c201294b4919603fb478400865039f46d5a00730b0f1b937ecb3'],
   ['../extension/background.js', 'c222723151c856e0051b67ac8b489d97096ed6605da080fff1c8bb859a05fe01'],
   ['../extension/manifest.json', 'aaad334ded5c8febe60127a01b8ccfeddb5e0f191f42800a1567b1c9ec6fc84e'],
-  ['../supabase/functions/opera-agent-mcp/index.ts', '1bc26ba242eae2bca8ddaed4ee9f574e0274b44046aa770f7ae4fe0539e5e0a6'],
-  ['../supabase/functions/opera-agent-mcp/tools.ts', '7581260b1d9c89d556566e3fefe5105e8e6f57187548c6679708478725b8396d'],
+  ['../hosted/functions/opera-agent-mcp/index.ts', '1bc26ba242eae2bca8ddaed4ee9f574e0274b44046aa770f7ae4fe0539e5e0a6'],
+  ['../hosted/functions/opera-agent-mcp/tools.ts', '7581260b1d9c89d556566e3fefe5105e8e6f57187548c6679708478725b8396d'],
 ]);
 
 export const OBSERVATION_STACK_LOCKS = Object.freeze([

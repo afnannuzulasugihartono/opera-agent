@@ -1,6 +1,6 @@
 // @last-edited: 2026-11-06 UTC+7.
 // @title: hosted-mcp-check — what the hosted MCP surface answers a client that has no token, and whether the pinned OAuth client is still accepted.
-// @state: the discovery document, the 401 and the challenge, the authorize probe for the pinned client, written to proof/hosted-mcp.json with token-shaped strings redacted.
+// @state: the discovery document, the 401 and the challenge, the authorize probe for the pinned client, written to docs/proof/hosted-mcp.json with token-shaped strings redacted.
 // @dependencies: node:crypto, node:fs, node:path, node:url.
 
 // WHY THIS SCRIPT EXISTS.
@@ -161,7 +161,7 @@ export async function checkHostedMcp({ base = BASE, authority = null } = {}) {
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+  const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
   try {
     const record = await checkHostedMcp();
     fs.mkdirSync(path.join(root, 'proof'), { recursive: true });

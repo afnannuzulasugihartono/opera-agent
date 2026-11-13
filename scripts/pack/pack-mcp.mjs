@@ -12,7 +12,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const target = path.join(repo, 'local', 'lib');
 
 const FILES = [

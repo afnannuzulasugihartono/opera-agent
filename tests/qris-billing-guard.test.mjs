@@ -11,8 +11,8 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
 const root = new URL('..', import.meta.url);
-const sql = fs.readFileSync(new URL('supabase/migrations/20261104140000_opera_billing_guard.sql', root), 'utf8');
-const fn = fs.readFileSync(new URL('supabase/functions/opera-agent-billing/index.ts', root), 'utf8');
+const sql = fs.readFileSync(new URL('hosted/migrations/20261104140000_opera_billing_guard.sql', root), 'utf8');
+const fn = fs.readFileSync(new URL('hosted/functions/opera-agent-billing/index.ts', root), 'utf8');
 
 test('one provider transaction id can sit on one invoice only', () => {
   assert.match(sql, /create unique index if not exists opera_invoices_provider_transaction_id_idx/, 'the index is created');

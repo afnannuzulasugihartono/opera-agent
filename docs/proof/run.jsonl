@@ -1,0 +1,12 @@
+{"n":1,"tool":"initialize","ok":true,"note":"server opera-local"}
+{"n":2,"tool":"tools/list","ok":true,"note":"54 tools"}
+{"n":3,"tool":"open_url","ms":176,"ok":true,"note":"tab D2C222B207AE26C168F6322844A94F55 · http://127.0.0.1:53548/portal.html"}
+{"n":4,"tool":"read_page","ms":28,"ok":true,"note":"423 characters read"}
+{"n":5,"tool":"download","ms":712,"ok":true,"note":"1109 bytes landed","file":"docs/proof/downloads/transaksi-2026-09.csv","bytes":1109,"sha256":"8e0f64810fd70e91101051afb85a814df12a87b1eafde048272049ed6a3667a2","sameAs":"tests/fixtures/mock-company/transaksi-2026-09.csv"}
+{"n":6,"tool":"stage","ok":true,"note":"3 paper sources copied beside the CSV"}
+{"n":7,"tool":"spreadsheet_build","ms":31,"note":"3 sheets, 7 figures checked","ok":true,"file":"docs/proof/out/laporan-keuangan-2026-09.xlsx","bytes":21066,"sha256":"a4f12765b77329eb5ec37dae3ad4323ac1d1d6659cd6261bb689c2736c931922","matches":"landing/contoh/laporan-keuangan-2026-09.xlsx"}
+{"n":8,"tool":"deck_build","ms":7,"note":"4 content slides and a cover","ok":true,"file":"docs/proof/out/rencana-strategis-2027.pptx","bytes":32871,"sha256":"6f3f42a4dd2465fa8e77bf33572ac3949b5097eaec1aaebaeda074ac4a71806e","matches":"landing/contoh/rencana-strategis-2027.pptx"}
+{"n":9,"tool":"document_write","ms":5,"note":"13 blocks, Dampak Promosi terhadap Kinerja Kanal Sinar Jaya","ok":true,"file":"docs/proof/out/riset-promo.docx","bytes":23485,"sha256":"1758824cd0cf0b15a6f9531cd13ff5d42de277776b8a0cd87b8d927184ba38e1","matches":"landing/contoh/riset-promo.docx"}
+{"n":10,"tool":"document_write","ms":3,"note":"13 blocks, Rencana Pemasaran 2027 - Sinar Jaya","ok":true,"file":"docs/proof/out/rencana-pemasaran-2027.docx","bytes":18509,"sha256":"104e43eac8e80e1860e1bc52c61414e81dcac43a1bea2f424537e4754517b8b6","matches":"landing/contoh/rencana-pemasaran-2027.docx"}
+{"n":11,"tool":"capture_page","ms":39,"ok":true,"note":"48210 picture bytes"}
+{"n":12,"tool":"close_tab","ms":8,"ok":true,"note":"tab D2C222B207AE26C168F6322844A94F55 closed"}

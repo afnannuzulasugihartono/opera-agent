@@ -188,7 +188,7 @@ test('a device that connects but answers nothing fails on the proof, not the com
   await startDevice(() => [], { deaf: true });
 
   const started = Date.now();
-  await assert.rejects(() => listBridgeTargets({ timeoutMs: 30000 }), /liveness proof/);
+  await assert.rejects(() => listBridgeTargets({ timeoutMs: 30000 }), /liveness docs/proof/);
   const waited = Date.now() - started;
   assert.ok(waited < 12000, `the proof named it in ${waited} ms, not the 30000 ms command timeout`);
 });
@@ -360,7 +360,7 @@ test('a driver that loses the port adopts the bridge that won it', async () => {
 
     await device.stop();
     const started = Date.now();
-    await assert.rejects(() => listBridgeTargets(), /extension is not connected|liveness proof/,
+    await assert.rejects(() => listBridgeTargets(), /extension is not connected|liveness docs/proof/,
       'a dead device is named instead of waited out');
     assert.ok(Date.now() - started < 5000, 'and named without burning the command budget');
 

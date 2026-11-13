@@ -8,8 +8,8 @@ import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
-const root = fileURLToPath(new URL('..', import.meta.url));
-const RUNTIME_DIRS = ['extension', 'lib', 'supabase/functions'];
+const root = fileURLToPath(new URL('../..', import.meta.url));
+const RUNTIME_DIRS = ['extension', 'shared', 'hosted/functions'];
 const RUNTIME_EXT = /\.(js|ts)$/;
 const LARGE_FILE_LINES = 500;
 const CHARS_PER_TOKEN = 4;

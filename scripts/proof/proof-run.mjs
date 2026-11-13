@@ -15,8 +15,8 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { launchArgs } from '../local/browsers.js';
-import { waitForBrowser } from '../local/transport.js';
+import { launchArgs } from '../../local/browsers.js';
+import { waitForBrowser } from '../../local/transport.js';
 
 // WHY THE SERVER ANSWERS FROM A WHITELIST.
 // The portal is two files, and a server that joined the request into a folder would be a door nothing needs.

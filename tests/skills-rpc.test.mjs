@@ -8,7 +8,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
 const migration = fs.readFileSync(
-  new URL('../supabase/migrations/20261009000004_opera_agent_skill_memory_rpcs.sql', import.meta.url), 'utf8'
+  new URL('../hosted/migrations/20261009000004_opera_agent_skill_memory_rpcs.sql', import.meta.url), 'utf8'
 );
 
 test('both skill RPCs exist and reject empty input', () => {

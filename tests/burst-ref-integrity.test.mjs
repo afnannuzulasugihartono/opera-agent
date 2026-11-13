@@ -12,7 +12,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile, readdir } from 'node:fs/promises';
 
-const DIR = new URL('../supabase/migrations/', import.meta.url);
+const DIR = new URL('../hosted/migrations/', import.meta.url);
 
 async function workflowMigrations() {
   const files = await readdir(DIR);

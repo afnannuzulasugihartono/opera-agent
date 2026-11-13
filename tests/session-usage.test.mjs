@@ -1,7 +1,7 @@
 // @last-edited: 2026-11-09 UTC+7.
 // @title: session-usage.test - one daily count across both surfaces, pinned to the numbers the module states.
 // @state: the report table is sealed, both RPCs are service-role doors, the daily count adds the two surfaces, and the restated numbers match the module.
-// @dependencies: node:test, strict, node:fs, ../supabase/functions/_shared/plans.js.
+// @dependencies: node:test, strict, node:fs, ../hosted/functions/_shared/plans.js.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -9,7 +9,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { PLANS } from '../supabase/functions/_shared/plans.js';
+import { PLANS } from '../hosted/functions/_shared/plans.js';
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const migration = fs.readFileSync(path.join(root, 'supabase', 'migrations', '20261109130000_opera_session_usage.sql'), 'utf8');

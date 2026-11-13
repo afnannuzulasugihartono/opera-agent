@@ -12,7 +12,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { execFileSync } from 'node:child_process';
-import { applyEntries, buildEnumeration, countOccurrences } from '../scripts/bump-version-lib.mjs';
+import { applyEntries, buildEnumeration, countOccurrences } from '../scripts/release/bump-version-lib.mjs';
 
 const root = new URL('..', import.meta.url);
 const current = JSON.parse(fs.readFileSync(new URL('extension/manifest.json', root), 'utf8')).version;
@@ -20,16 +20,16 @@ const currentLine = current.split('.').slice(0, 2).map((part) => part.replace(/[
 const currentPattern = new RegExp(`\\b${currentLine}\\.\\d+(\\.\\d+)?\\b`, 'g');
 const allowedFourPart = `${current}.0`;
 
-// The files scripts/bump-version.mjs rewrites; each must carry the current version at least once.
+// The files scripts/release/bump-version.mjs rewrites; each must carry the current version at least once.
 
 const ENUMERATED = [
   'extension/lib/protocol.js',
   'extension/manifest.json',
-  'store/store-manifest.json',
+  'docs/store/store-manifest.json',
   'package.json',
   'local/package.json',
-  'scripts/check.mjs',
-  'supabase/functions/opera-agent-mcp/index.ts',
+  'scripts/verify/check.mjs',
+  'hosted/functions/opera-agent-mcp/index.ts',
   'tests/burst-atomic-actions.test.mjs',
   'tests/hover-settle.test.mjs',
   'tests/mcp-surface.test.mjs',
@@ -98,7 +98,7 @@ test('an entry whose expected count is not met fails loudly and names the file',
 
 test('a file with several clocks moves them all in one pass', () => {
   const script = "assert.equal(a, '1.2.3'); assert.equal(b, '1.2.3'); assert.equal(c, '1.2.3');";
-  const entries = buildEnumeration('1.2.3', '4.5.6').filter((entry) => entry.file === 'scripts/check.mjs');
+  const entries = buildEnumeration('1.2.3', '4.5.6').filter((entry) => entry.file === 'scripts/verify/check.mjs');
   const out = applyEntries(script, entries);
   assert.equal(countOccurrences(out, '4.5.6'), 3);
   assert.equal(countOccurrences(out, '1.2.3'), 0);

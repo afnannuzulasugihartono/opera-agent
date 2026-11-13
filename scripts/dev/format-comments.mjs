@@ -11,9 +11,9 @@
 import { readFile, writeFile, readdir } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { formatComments } from '../tests/helpers/comment-format.mjs';
+import { formatComments } from '../../tests/helpers/comment-format.mjs';
 
-const root = fileURLToPath(new URL('..', import.meta.url));
+const root = fileURLToPath(new URL('../..', import.meta.url));
 
 const EXTENSIONS = new Set([
   '.js', '.mjs', '.cjs', '.ts', '.jsx', '.tsx',
@@ -53,7 +53,7 @@ async function walk(dir, prefix = '') {
 }
 
 function shouldFormat(file) {
-  if (SKIP_FILES.has(file) || file.startsWith('supabase/.temp/')) return false;
+  if (SKIP_FILES.has(file) || file.startsWith('hosted/.temp/')) return false;
   const ext = path.extname(file).toLowerCase();
   if (ext) return EXTENSIONS.has(ext);
   return NAMES.has(path.basename(file));
@@ -101,6 +101,6 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
   console.error(`comment format: ${changed.length} of ${total} files are not canonical`);
   for (const file of changed.slice(0, 40)) console.error(`  ${file}`);
   if (changed.length > 40) console.error(`  ... and ${changed.length - 40} more`);
-  console.error('run: node scripts/format-comments.mjs --write');
+  console.error('run: node scripts/dev/format-comments.mjs --write');
   process.exit(1);
 }

@@ -15,7 +15,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { sha256ContractSource } from '../tests/helpers/canonical-source-hash.mjs';
+import { sha256ContractSource } from '../../tests/helpers/canonical-source-hash.mjs';
 import { buildEnumeration, applyEntries, buildWhyBlock, buildChangelogRow, buildReleaseNote } from './bump-version-lib.mjs';
 
 const GIT_CANDIDATES = process.platform === 'win32'
@@ -26,7 +26,7 @@ if (!GIT_BIN) {
   console.error('bump-version: git not found at a fixed, unwriteable path; install Git there or run on the CI runner');
   process.exit(1);
 }
-const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const dryRun = process.argv.includes('--dry-run');
 const arg = process.argv.slice(2).find((value) => value !== '--dry-run');
 
@@ -37,7 +37,7 @@ function fail(message) {
 
 try {
 
-if (!arg || !/^\d+\.\d+\.\d+$/.test(arg)) fail('pass one version, e.g. node scripts/bump-version.mjs X.Y.Z');
+if (!arg || !/^\d+\.\d+\.\d+$/.test(arg)) fail('pass one version, e.g. node scripts/release/bump-version.mjs X.Y.Z');
   const newVersion = arg;
 
   const manifestPath = path.join(repo, 'extension/manifest.json');
@@ -70,8 +70,8 @@ if (!arg || !/^\d+\.\d+\.\d+$/.test(arg)) fail('pass one version, e.g. node scri
   }
 
   const lockFile = path.join(repo, 'tests/helpers/boundary-locks.mjs');
-  const rePinned = ['extension/manifest.json', 'supabase/functions/opera-agent-mcp/index.ts', 'supabase/functions/opera-agent-mcp/tools.ts']
-    .map((file) => [file.replace(/^extension\//, '../extension/').replace(/^supabase\//, '../supabase/'), sha256BlobText(contentOf(file))]);
+  const rePinned = ['extension/manifest.json', 'hosted/functions/opera-agent-mcp/index.ts', 'hosted/functions/opera-agent-mcp/tools.ts']
+    .map((file) => [file.replace(/^extension\//, '../extension/').replace(/^hosted\//, '../hosted/'), sha256BlobText(contentOf(file))]);
   const boundarySource = fs.readFileSync(lockFile, 'utf8');
   let boundaryNext = boundarySource;
   for (const [relativePath, sha] of rePinned) {
@@ -85,7 +85,7 @@ if (!arg || !/^\d+\.\d+\.\d+$/.test(arg)) fail('pass one version, e.g. node scri
 
   const contractPath = path.join(repo, 'tests/fixtures/mcp-contract-v1.json');
   const contract = JSON.parse(fs.readFileSync(contractPath, 'utf8'));
-  const sourceForHash = contentOf('supabase/functions/opera-agent-mcp/index.ts') + '\n' + contentOf('supabase/functions/opera-agent-mcp/tools.ts');
+  const sourceForHash = contentOf('hosted/functions/opera-agent-mcp/index.ts') + '\n' + contentOf('hosted/functions/opera-agent-mcp/tools.ts');
   const contractNext = { ...contract, sourceSha256: sha256ContractSource(sourceForHash) };
   if (contractNext.sourceSha256 !== contract.sourceSha256) {
     writes.set('tests/fixtures/mcp-contract-v1.json', `${JSON.stringify(contractNext, null, 2)}\n`);

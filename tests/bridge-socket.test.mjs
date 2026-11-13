@@ -1,7 +1,7 @@
 // @last-edited: 2026-10-13 UTC+7.
 // @title: bridge-socket — the push transport is checkable without a socket, a database, or a browser.
 // @state: 8 locks; the handshake gate, the frame shapes, and the failure modes that must close the socket.
-// @dependencies: node:test, strict, ../supabase/functions/opera-agent-bridge/bridge-socket.js.
+// @dependencies: node:test, strict, ../hosted/functions/opera-agent-bridge/bridge-socket.js.
 
 // WHY THIS FILE EXISTS
 
@@ -25,7 +25,7 @@ import {
   parseDeviceFrame,
   handshakePayload,
   serveDeviceSocket
-} from '../supabase/functions/opera-agent-bridge/bridge-socket.ts';
+} from '../hosted/functions/opera-agent-bridge/bridge-socket.ts';
 import { FRAME_MAX_BYTES, handshakeFrame } from '../extension/lib/socket-protocol.js';
 import { RESULT_BUDGET_BYTES, RESULT_ENVELOPE_BYTES } from '../extension/lib/serialize.js';
 

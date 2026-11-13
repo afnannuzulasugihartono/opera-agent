@@ -19,7 +19,7 @@ import { readFileSync } from 'node:fs';
 import { stripTypeScriptTypes } from 'node:module';
 
 const source = stripTypeScriptTypes(readFileSync(
-  new URL('../supabase/functions/_shared/command-stream.ts', import.meta.url), 'utf8'
+  new URL('../hosted/functions/_shared/command-stream.ts', import.meta.url), 'utf8'
 ).replace(/^import .*;\r?\n/gm, ''));
 
 const { streamCommandEvents, TERMINAL_COMMAND_STATUSES } = await import(
@@ -123,7 +123,7 @@ test('a command that never terminates exits on the deadline instead of spinning 
 
 test('the SQL returns a status, because a consumer with no status cannot know when to stop', () => {
   const sql = readFileSync(
-    new URL('../supabase/migrations/20261011150000_opera_agent_command_event_status.sql', import.meta.url), 'utf8'
+    new URL('../hosted/migrations/20261011150000_opera_agent_command_event_status.sql', import.meta.url), 'utf8'
   );
   assert.match(sql, /'status', v_status/, 'the wait does not report the command status');
   assert.match(sql, /select status into v_status from public\.opera_commands where id = p_command_id/);

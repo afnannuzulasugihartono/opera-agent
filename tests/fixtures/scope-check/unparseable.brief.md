@@ -5,4 +5,4 @@
 - Modify: 17 berkas — satu baris masing-masing (daftar lengkap di Step 3)
 
 **Interfaces:**
-- Consumes: `scripts/check.mjs`
+- Consumes: `scripts/verify/check.mjs`

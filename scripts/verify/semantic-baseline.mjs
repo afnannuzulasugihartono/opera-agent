@@ -9,7 +9,7 @@ import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
-const root = fileURLToPath(new URL('..', import.meta.url));
+const root = fileURLToPath(new URL('../..', import.meta.url));
 const corpusPath = path.join(root, 'tests', 'fixtures', 'semantic-replay-v1.json');
 const corpusBytes = fs.readFileSync(corpusPath);
 const corpus = JSON.parse(corpusBytes.toString('utf8'));

@@ -11,8 +11,8 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
 const root = new URL('..', import.meta.url);
-const sql = fs.readFileSync(new URL('supabase/migrations/20261104130000_opera_qris_detect_cron.sql', root), 'utf8');
-const fix = fs.readFileSync(new URL('supabase/migrations/20261104150000_opera_qris_detect_cron_fix.sql', root), 'utf8');
+const sql = fs.readFileSync(new URL('hosted/migrations/20261104130000_opera_qris_detect_cron.sql', root), 'utf8');
+const fix = fs.readFileSync(new URL('hosted/migrations/20261104150000_opera_qris_detect_cron_fix.sql', root), 'utf8');
 
 test('the cron function reads the operator token from vault, never from the file', () => {
   assert.match(sql, /vault\.decrypted_secrets/, 'the token is read from vault');

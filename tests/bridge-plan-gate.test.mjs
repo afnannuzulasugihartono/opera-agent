@@ -1,19 +1,19 @@
 // @last-edited: 2026-11-09 UTC+7.
 // @title: bridge-plan-gate.test — refuse who cannot pay, name the plan when refusing, and let the firm through.
 // @state: paused plans cannot connect, the quota refuses at the last command, the firm-only page keeps the firm, and everything else passes.
-// @dependencies: node:test, strict, ../supabase/functions/opera-agent-bridge/plan-gate.ts, ../supabase/functions/_shared/plans.js.
+// @dependencies: node:test, strict, ../hosted/functions/opera-agent-bridge/plan-gate.ts, ../hosted/functions/_shared/plans.js.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { PLANS } from '../supabase/functions/_shared/plans.js';
+import { PLANS } from '../hosted/functions/_shared/plans.js';
 import {
   capabilityAllowed,
   gateVerdict,
   handshakeVerdict,
   planIsActive,
   quotaAllowance
-} from '../supabase/functions/opera-agent-bridge/plan-gate.ts';
+} from '../hosted/functions/opera-agent-bridge/plan-gate.ts';
 
 const pilot = { plan: 'plan.pilot', status: 'active', dailyQuota: 200, usedToday: 0 };
 const firm = { plan: 'plan.firm', status: 'active', dailyQuota: 5000, usedToday: 0 };

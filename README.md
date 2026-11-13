@@ -35,7 +35,7 @@ A private, local-browser control bridge.
 | --- | --- |
 | Protocol | `1` |
 | Browser primitives | **36** allowlisted generic methods ([`extension/lib/protocol.js`](extension/lib/protocol.js)) plus device-local `watch.*`/`loop.*` async methods |
-| Cloud MCP surface | **42** tools ([`supabase/functions/opera-agent-mcp/index.ts`](supabase/functions/opera-agent-mcp/index.ts)) |
+| Cloud MCP surface | **42** tools ([`hosted/functions/opera-agent-mcp/index.ts`](hosted/functions/opera-agent-mcp/index.ts)) |
 | Local MCP surface | **55** tools ([`local/mcp-server.js`](local/mcp-server.js)) - the operator's own signed-in Chrome, no cloud hop, plus the wallet that pays for the work |
 | Distribution | Signed CRX3 self-updates from the update service |
 
@@ -74,11 +74,11 @@ drifts fails the suite instead of ageing in the file.
 | `extension/` | MV3 runtime — background worker, content scripts, popup, options |
 | `shared/` | Shared pure modules the server and extension both read |
 | `local/` | The local MCP server: CDP straight to the browser on this machine, plus the statement job |
-| `supabase/functions/` | Deno edge: auth, billing, bridge, gateway, listen, MCP, runner, update, VM (9 deployed) plus `_shared/` |
-| `supabase/migrations/` | SQL in timestamp order, never rewritten |
+| `hosted/functions/` | Deno edge: auth, billing, bridge, gateway, listen, MCP, runner, update, VM (9 deployed) plus `_shared/` |
+| `hosted/migrations/` | SQL in timestamp order, never rewritten |
 | `tests/` | Fast suite is `npm test`; `cloud` and `postgres` are live-only |
 | `landing/` | The site Cloudflare Pages serves |
-| `store/` | Generated Chrome Web Store form: `scripts/build-store-package.py` writes the manifest and the zip from `extension/` |
+| `docs/store/` | Generated Chrome Web Store form: `scripts/release/build-store-package.py` writes the manifest and the zip from `extension/` |
 
 ## Commands
 

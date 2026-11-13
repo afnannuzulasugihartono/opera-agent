@@ -8,7 +8,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
 const read = (name) => {
-  const migration = fs.readFileSync(new URL(`../supabase/migrations/${name}`, import.meta.url), 'utf8');
+  const migration = fs.readFileSync(new URL(`../hosted/migrations/${name}`, import.meta.url), 'utf8');
   const match = migration.match(/\$wf\$(.*?)\$wf\$/s);
   assert.ok(match, `${name} must embed the workflow JSON`);
   return JSON.parse(match[1]);

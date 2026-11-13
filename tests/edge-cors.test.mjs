@@ -8,8 +8,8 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { stripTypeScriptTypes } from 'node:module';
 import vm from 'node:vm';
-import { CORS_DEFAULT_ORIGINS, resolveAllowedOrigin } from '../supabase/functions/_shared/cors.js';
-import { isUpgradeRequest, serveDeviceSocket } from '../supabase/functions/opera-agent-bridge/bridge-socket.ts';
+import { CORS_DEFAULT_ORIGINS, resolveAllowedOrigin } from '../hosted/functions/_shared/cors.js';
+import { isUpgradeRequest, serveDeviceSocket } from '../hosted/functions/opera-agent-bridge/bridge-socket.ts';
 
 const req = (origin) => ({ headers: { get: (name) => (name.toLowerCase() === 'origin' ? origin : null) } });
 
@@ -55,7 +55,7 @@ const EDGE_FUNCTIONS = [
 
 test('no edge function answers a wildcard origin any more', () => {
   for (const name of EDGE_FUNCTIONS) {
-    const source = readFileSync(new URL(`../supabase/functions/${name}/index.ts`, import.meta.url), 'utf8');
+    const source = readFileSync(new URL(`../hosted/functions/${name}/index.ts`, import.meta.url), 'utf8');
     assert.doesNotMatch(source, /"Access-Control-Allow-Origin":\s*"\*"/, `${name} must not answer a wildcard origin`);
     assert.match(source, /from "\.\.\/_shared\/cors\.js"/, `${name} must resolve the origin through the shared allowlist`);
     assert.match(source, /resolveAllowedOrigin\(req, CORS_DEFAULT_ORIGINS\)/, `${name} must decide the origin per request`);
@@ -64,13 +64,13 @@ test('no edge function answers a wildcard origin any more', () => {
 
 test('the config endpoint is not a publicly cacheable copy of the anon key', () => {
 
-  const source = readFileSync(new URL('../supabase/functions/opera-agent-auth/index.ts', import.meta.url), 'utf8');
+  const source = readFileSync(new URL('../hosted/functions/opera-agent-auth/index.ts', import.meta.url), 'utf8');
   assert.doesNotMatch(source, /"Cache-Control":\s*"public/);
   assert.match(source, /"Cache-Control":\s*"no-store"/);
 });
 
 function loadBridge() {
-  const source = stripTypeScriptTypes(readFileSync(new URL('../supabase/functions/opera-agent-bridge/index.ts', import.meta.url), 'utf8')
+  const source = stripTypeScriptTypes(readFileSync(new URL('../hosted/functions/opera-agent-bridge/index.ts', import.meta.url), 'utf8')
     .replace(/^import .*;\r?\n/gm, ''));
   let handler;
   vm.runInNewContext(source, {

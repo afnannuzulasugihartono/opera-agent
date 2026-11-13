@@ -455,7 +455,7 @@ test('the verification command types itself, with the whole line kept for no-scr
 });
 
 test('the dev server serves the whitelist and nothing else, even on loopback', () => {
-  const src = fs.readFileSync(new URL('../scripts/landingserve.mjs', import.meta.url), 'utf8');
+  const src = fs.readFileSync(new URL('../scripts/dev/landingserve.mjs', import.meta.url), 'utf8');
   assert.match(src, /new Set\(\[/, 'the servable files are named in the code');
   assert.match(src, /!FILES\.has\(name\)/, 'a name outside the list is refused');
 });

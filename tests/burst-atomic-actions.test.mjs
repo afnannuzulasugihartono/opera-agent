@@ -70,10 +70,10 @@ test('mcp exposes run_workflow tool bound to the audited start/get RPCs', () => 
 });
 
 test('skip_ads workflow migration registers a re-querying loop workflow', () => {
-  const migrations = fs.readdirSync(new URL('../supabase/migrations', import.meta.url));
+  const migrations = fs.readdirSync(new URL('../hosted/migrations', import.meta.url));
   const name = migrations.find((file) => file.includes('opera_agent_youtube_skip_ads_workflow'));
   assert.ok(name, 'a youtube skip_ads workflow migration must exist');
-  const sql = fs.readFileSync(new URL(`../supabase/migrations/${name}`, import.meta.url), 'utf8');
+  const sql = fs.readFileSync(new URL(`../hosted/migrations/${name}`, import.meta.url), 'utf8');
   assert.match(sql, /opera_register_workflow\(\s*'youtube\.skip_ads'/);
   assert.match(sql, /ytp-ad-skip-button-modern/, 'must target the modern skip control');
   assert.match(sql, /"type":"repeat"/, 'must re-query in a bounded loop instead of reusing stale refs');

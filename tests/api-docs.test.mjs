@@ -9,7 +9,7 @@ import { readFile } from 'node:fs/promises';
 import { SUPABASE_PROJECT_REF } from '../extension/lib/endpoints.js';
 import { stripComments } from './helpers/source-scan.mjs';
 
-const gatewayPath = new URL('../supabase/functions/opera-agent-gateway/index.ts', import.meta.url);
+const gatewayPath = new URL('../hosted/functions/opera-agent-gateway/index.ts', import.meta.url);
 const docPath = new URL('../docs/api.md', import.meta.url);
 
 function tableRows(doc) {

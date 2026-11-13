@@ -79,7 +79,7 @@ test('the guide names the things it will not pretend to do', () => {
   assert.equal(refusals.length, 6);
   assert.ok(refusals.some((line) => /native operating-system dialog/i.test(line)));
   assert.ok(refusals.some((line) => /ask_page refuses/i.test(line)));
-  assert.ok(refusals.some((line) => /not proof/i.test(line)));
+  assert.ok(refusals.some((line) => /not docs/proof/i.test(line)));
   assert.ok(refusals.some((line) => /cannot see whether the window in front/i.test(line)));
   assert.ok(refusals.some((line) => /focus_window with no match/i.test(line)));
   assert.ok(refusals.some((line) => /complex document or report/i.test(line)));

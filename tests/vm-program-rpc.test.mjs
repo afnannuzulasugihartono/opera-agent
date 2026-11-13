@@ -7,10 +7,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
-const dir = new URL('../supabase/migrations/', import.meta.url);
+const dir = new URL('../hosted/migrations/', import.meta.url);
 const body = fs.readdirSync(dir)
   .filter((n) => /vm/i.test(n))
-  .map((n) => fs.readFileSync(new URL(`../supabase/migrations/${n}`, import.meta.url), 'utf8'))
+  .map((n) => fs.readFileSync(new URL(`../hosted/migrations/${n}`, import.meta.url), 'utf8'))
   .join('\n');
 
 const RPCS = ['opera_vm_enqueue', 'opera_vm_get', 'opera_vm_cancel'];

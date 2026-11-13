@@ -4,7 +4,7 @@
 // @dependencies: none.
 // It reads files, so the exact bytes in the tree are what the database receives.
 
-// Usage: node scripts/apply-migrations.mjs <file-or-glob> [...] Needs SUPABASE_ACCESS_TOKEN and SUPABASE_PROJECT_REF.
+// Usage: node scripts/release/apply-migrations.mjs <file-or-glob> [...] Needs SUPABASE_ACCESS_TOKEN and SUPABASE_PROJECT_REF.
 
 import { readFile } from 'node:fs/promises';
 import { basename } from 'node:path';
@@ -19,7 +19,7 @@ if (!token) {
 
 const files = process.argv.slice(2);
 if (!files.length) {
-  process.stderr.write('usage: node scripts/apply-migrations.mjs <file> [...]\n');
+  process.stderr.write('usage: node scripts/release/apply-migrations.mjs <file> [...]\n');
   process.exit(2);
 }
 

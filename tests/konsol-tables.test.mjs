@@ -12,7 +12,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
 const root = new URL('..', import.meta.url);
-const sql = fs.readFileSync(new URL('supabase/migrations/20261010090000_opera_agent_konsol_tables.sql', root), 'utf8');
+const sql = fs.readFileSync(new URL('hosted/migrations/20261010090000_opera_agent_konsol_tables.sql', root), 'utf8');
 const html = fs.readFileSync(new URL('landing/dashboard.html', root), 'utf8');
 
 const mapRows = [...sql.matchAll(/^ {4}\('([a-z0-9_]+)', '(owner|operator)', '(.*)'\),?$/gm)]

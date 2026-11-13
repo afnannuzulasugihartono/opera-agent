@@ -35,9 +35,9 @@ const localTools = new Set([...read('local/tools.js').matchAll(/name:\s*'([a-z_]
 
 // The edge functions: the directories that hold an entrypoint.
 
-const edgeFunctions = fs.readdirSync(repo('supabase/functions'))
+const edgeFunctions = fs.readdirSync(repo('hosted/functions'))
   .filter((name) => name !== '_shared')
-  .filter((name) => fs.readdirSync(repo(`supabase/functions/${name}`)).includes('index.ts'));
+  .filter((name) => fs.readdirSync(repo(`hosted/functions/${name}`)).includes('index.ts'));
 
 // The row of the contract table that says what this is.
 
@@ -71,7 +71,7 @@ test('the README states the number of local MCP tools the server registers', () 
 });
 
 test('the README states how many edge functions are deployed, and names them', () => {
-  const layout = readme.split('\n').find((line) => line.startsWith('| `supabase/functions/` |'));
+  const layout = readme.split('\n').find((line) => line.startsWith('| `hosted/functions/` |'));
   assert.ok(layout, 'the README must have a row for the edge functions');
   const claimed = /\((\d+) deployed\)/.exec(layout);
   assert.ok(claimed, 'the README must say how many edge functions are deployed');

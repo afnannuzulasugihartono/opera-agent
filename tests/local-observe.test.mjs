@@ -63,7 +63,7 @@ test('a scroll that reached no end says so, and names what it moved instead', as
   assert.equal(out.movedPx, 0);
   assert.equal(out.root, 'div.kix-canvas-tile-content', 'and the scroller it found is named');
   assert.match(out.why, /as far as it goes/);
-  assert.match(out.why, /capture_page\(\) or read_page\(\) is the proof/, 'and it names the call that can actually confirm the end');
+  assert.match(out.why, /capture_page\(\) or read_page\(\) is the docs/proof/, 'and it names the call that can actually confirm the end');
 });
 
 

@@ -1,9 +1,9 @@
 // @last-edited: 2026-11-13 UTC+7.
 // @title: reactive-vm-core - the one guard factory the VM family shares.
 // @state: the three VM modules (collect, control-flow, host) carried the same eleven helpers verbatim; this is the only copy.
-// @dependencies: ./secret-pattern.js, ../supabase/functions/_shared/goal-ledger.js.
+// @dependencies: ./secret-pattern.js, ../hosted/functions/_shared/goal-ledger.js.
 
-import { canonicalJson } from '../supabase/functions/_shared/goal-ledger.js';
+import { canonicalJson } from '../hosted/functions/_shared/goal-ledger.js';
 import { SECRET_VALUE } from './secret-pattern.js';
 
 // WHY A FACTORY AND NOT A DEFAULT CODE ARGUMENT.

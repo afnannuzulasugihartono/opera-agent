@@ -194,7 +194,7 @@ test('append admits it cannot see where the text went rather than claiming the e
 
   assert.equal(out.landed, true);
   assert.equal(out.atEnd, false, 'a page that cannot be seen into cannot be claimed for');
-  assert.match(out.atEndWhy, /read_page\(\) is the proof/);
+  assert.match(out.atEndWhy, /read_page\(\) is the docs/proof/);
 });
 
 // WHY A SCROLL TOOL AND NOT A KEY.

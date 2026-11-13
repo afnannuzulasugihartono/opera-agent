@@ -28,7 +28,7 @@ test('the plugin bundle exists and names the hosted files', async () => {
 });
 
 test('the gateway accepts a user JWT and resolves the caller device', async () => {
-  const source = await read('supabase/functions/opera-agent-gateway/index.ts');
+  const source = await read('hosted/functions/opera-agent-gateway/index.ts');
 
   assert.match(source, /await supabase\.auth\.getUser\(token\)/);
   assert.match(source, /\.from\("opera_devices"\)/);

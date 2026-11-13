@@ -1,7 +1,7 @@
 // @last-edited: 2026-11-06 UTC+7.
 // @title: proof-run — a real browser drive that has to leave the same four files the site ships.
 // @state: the fixture portal over loopback, a throwaway browser, the MCP client, the four artifacts, and the record the suite rechecks.
-// @dependencies: node:test, strict, node:fs, node:os, node:path, ../local/driver.js, ../scripts/proof-run.mjs.
+// @dependencies: node:test, strict, node:fs, node:os, node:path, ../local/driver.js, ../scripts/proof/proof-run.mjs.
 
 // WHY THIS FILE EXISTS.
 // The product claims it drives a browser and hands back designed office files, and until this run the claim rested on separate tests: one drove a fake page, another wrote a workbook.
@@ -15,7 +15,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { installedBrowsers } from '../local/driver.js';
-import { launchProofBrowser, runProof, serveCompany, sha256, speakMcp } from '../scripts/proof-run.mjs';
+import { launchProofBrowser, runProof, serveCompany, sha256, speakMcp } from '../scripts/proof/proof-run.mjs';
 
 const root = path.resolve(fileURLToPath(new URL('..', import.meta.url)));
 const company = path.join(root, 'tests', 'fixtures', 'mock-company');
@@ -125,7 +125,7 @@ test('one drive downloads the CSV and leaves the four files the site ships', { s
 
 test('the recorded run still leaves the files the site ships', () => {
   const record = path.join(root, 'proof', 'run.jsonl');
-  assert.ok(fs.existsSync(record), 'the proof record exists; run node scripts/proof-run.mjs');
+  assert.ok(fs.existsSync(record), 'the proof record exists; run node scripts/proof/proof-run.mjs');
   const rows = fs.readFileSync(record, 'utf8').split('\n').filter(Boolean).map((line) => JSON.parse(line));
 
   assert.ok(rows.every((row) => row.ok === true), 'every recorded step said ok');

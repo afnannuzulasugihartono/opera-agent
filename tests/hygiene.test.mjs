@@ -16,7 +16,7 @@ import { readFile, readdir } from 'node:fs/promises';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { FOCUS_GATE_ATTEMPTS } from '../extension/lib/focus-gate.js';
-import { checkFormat } from '../scripts/format-comments.mjs';
+import { checkFormat } from '../scripts/dev/format-comments.mjs';
 import { extensionSource } from './helpers/extension-source.mjs';
 
 const collectTests = async (dir) => {
@@ -289,7 +289,7 @@ test('the R9 modules expose no unused surface', async () => {
   assert.equal((protocol.match(/isPlainObject/g) || []).length, 7, 'declared once and used six times');
 });
 
-test('no module under extension/, shared/, scripts/ or supabase/functions/ exports a symbol nothing reaches', async () => {
+test('no module under extension/, shared/, scripts/ or hosted/functions/ exports a symbol nothing reaches', async () => {
 
   const runtimeRoots = ['../extension', '../shared'];
   const collect = async (dir, match) => {
@@ -304,12 +304,12 @@ test('no module under extension/, shared/, scripts/ or supabase/functions/ expor
   const jsFiles = /\.js$/;
   const runtimeModules = (await Promise.all(runtimeRoots.map((d) => collect(d, jsFiles)))).flat();
 
-  const edgeModules = (await Promise.all(['../supabase/functions'].map((d) => collect(d, jsFiles)))).flat();
+  const edgeModules = (await Promise.all(['../hosted/functions'].map((d) => collect(d, jsFiles)))).flat();
   const scriptModules = await collect('../scripts', /\.mjs$/);
   const modules = [...runtimeModules, ...edgeModules, ...scriptModules];
 
   const testDir = await collectTests('../tests');
-  const edgeDir = await collectTests('../supabase/functions');
+  const edgeDir = await collectTests('../hosted/functions');
   const scripts = (await readdir(new URL('../scripts', import.meta.url)))
     .filter((n) => n.endsWith('.mjs'))
     .map((n) => `../scripts/${n}`);
@@ -377,7 +377,7 @@ test('no module under extension/, shared/, scripts/ or supabase/functions/ expor
 
 const STAGED_FOR_THE_OPEN_TASK = new Map([
   ['shared/ax-menu.js', 'Task 9 of docs/superpowers/plans/2026-10-14-docs-paper-plan.md: the AX road reads live row names to compare against the label map'],
-  ['supabase/functions/_shared/docs-ui-map.js', 'Task 9 of docs/superpowers/plans/2026-10-14-docs-paper-plan.md: the map the AX road is compared against'],
+  ['hosted/functions/_shared/docs-ui-map.js', 'Task 9 of docs/superpowers/plans/2026-10-14-docs-paper-plan.md: the map the AX road is compared against'],
 ]);
 
 test('a module with its own code is reached by the product, not only by its own test', async () => {
@@ -537,7 +537,7 @@ test('every source file carries a header that says what the file is and what it 
   const roots = ['extension', 'shared', 'local', 'scripts', 'supabase', 'tests', 'landing', '.github'];
   const files = roots.flatMap(walk)
     .filter((file) => /\.(?:js|mjs|cjs|ts|py|html|css|yml|yaml|toml|cmd|example)$/.test(file))
-    .filter((file) => !file.startsWith('supabase/migrations/'));
+    .filter((file) => !file.startsWith('hosted/migrations/'));
 
   const problems = [];
   for (const file of files) {

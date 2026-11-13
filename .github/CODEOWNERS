@@ -22,7 +22,7 @@ gates.lock
 # The verifier.
 # It cannot pin its own hash, so this entry is its only guard.
 
-/scripts/gates.mjs
+/scripts/verify/gates.mjs
 
 # Default owner for everything.
 # Release automation paths get the same owner explicitly so no path is ever unowned.
@@ -30,6 +30,6 @@ gates.lock
 * @afnannuzulasugihartono
 /.github/workflows/release.yml @afnannuzulasugihartono
 /.github/ @afnannuzulasugihartono
-/supabase/migrations/ @afnannuzulasugihartono
+/hosted/migrations/ @afnannuzulasugihartono
 /extension/ @afnannuzulasugihartono
 /shared/ @afnannuzulasugihartono

@@ -138,7 +138,7 @@ test('a payload with no ok flag gets one', () => {
 
 test('the server tidies every answer and keeps the raw envelope one flag away', () => {
   const index = readFileSync(
-    new URL('../supabase/functions/opera-agent-mcp/index.ts', import.meta.url), 'utf8'
+    new URL('../hosted/functions/opera-agent-mcp/index.ts', import.meta.url), 'utf8'
   );
 
   assert.match(index, /import \{ tidyForAi \} from "\.\.\/\.\.\/\.\.\/shared\/tidy\.js";/);

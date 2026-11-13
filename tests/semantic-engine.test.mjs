@@ -18,7 +18,7 @@ const { COMPLETION_STATUSES, classifyCompletion, createViewEngine } = globalThis
 
 const corpus = JSON.parse(fs.readFileSync(new URL('./fixtures/semantic-replay-v1.json', import.meta.url), 'utf8'));
 const thresholds = JSON.parse(fs.readFileSync(new URL('./fixtures/semantic-baseline-thresholds-v1.json', import.meta.url), 'utf8'));
-const benchmark = fs.readFileSync(new URL('../scripts/semantic-baseline.mjs', import.meta.url), 'utf8');
+const benchmark = fs.readFileSync(new URL('../scripts/verify/semantic-baseline.mjs', import.meta.url), 'utf8');
 const pkg = JSON.parse(fs.readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
 
 function keysDeep(value, output = []) {
@@ -76,7 +76,7 @@ test('semantic baseline corpus and runner persist metadata only', () => {
   assert.match(benchmark, /semanticViewUnrelatedStable/);
   assert.match(benchmark, /semanticCausalProof/);
   assert.match(benchmark, /baselineSemanticIdentityStatus/);
-  assert.equal(pkg.scripts['benchmark:semantic'], 'node scripts/semantic-baseline.mjs --runs=3');
+  assert.equal(pkg.scripts['benchmark:semantic'], 'node scripts/verify/semantic-baseline.mjs --runs=3');
 });
 
 test('semantic baseline thresholds are bounded before identity work begins', () => {

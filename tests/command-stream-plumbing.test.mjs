@@ -22,11 +22,11 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { stripTypeScriptTypes } from 'node:module';
 import vm from 'node:vm';
-import { CORS_DEFAULT_ORIGINS, resolveAllowedOrigin } from '../supabase/functions/_shared/cors.js';
-import { isUpgradeRequest, serveDeviceSocket } from '../supabase/functions/opera-agent-bridge/bridge-socket.ts';
+import { CORS_DEFAULT_ORIGINS, resolveAllowedOrigin } from '../hosted/functions/_shared/cors.js';
+import { isUpgradeRequest, serveDeviceSocket } from '../hosted/functions/opera-agent-bridge/bridge-socket.ts';
 
 const bridgeSource = stripTypeScriptTypes(readFileSync(
-  new URL('../supabase/functions/opera-agent-bridge/index.ts', import.meta.url), 'utf8'
+  new URL('../hosted/functions/opera-agent-bridge/index.ts', import.meta.url), 'utf8'
 ).replace(/^import .*;\r?\n/gm, ''));
 
 const COMMAND_ID = 'a2f0f239-aa99-4d1c-a168-4a5ca51be777';

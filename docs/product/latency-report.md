@@ -5,7 +5,7 @@
 # Latency, measured
 
 The local driver's cost was measured on 2026-11-03 with
-`node scripts/latency-benchmark.mjs --runs=15`: Google Chrome, headless, a 100-row
+`node scripts/bench/latency-benchmark.mjs --runs=15`: Google Chrome, headless, a 100-row
 fixture, the real driver and the real MCP surface. Both runs are the same command on
 the same machine, so the difference is the change and not the hardware.
 
@@ -49,7 +49,7 @@ that really moves, the wait is the price of being right instead of fast.
 ## Reproducing it
 
 ```bash
-node scripts/latency-benchmark.mjs --runs=30
+node scripts/bench/latency-benchmark.mjs --runs=30
 ```
 
 The script launches its own headless browser on a throwaway profile, serves its own

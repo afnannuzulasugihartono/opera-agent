@@ -44,7 +44,7 @@ id = "generic-api-key"
   [[rules.allowlists]]
   description = "Migration feature-flag key names are identifiers, not secrets."
   condition = "AND"
-  paths = ['''^supabase/migrations/.*\.sql$''']
+  paths = ['''^hosted/migrations/.*\.sql$''']
   regexTarget = "line"
   regexes = [
     '''key = .milestone[67]_(ledger|vm)_enabled.''',
@@ -77,7 +77,7 @@ id = "generic-api-key"
 
   description = "The same publishable key inside one reverted experiment migration, kept as history. The live tree carries no key in migrations; a secret here in any other migration file is still flagged."
   condition = "AND"
-  paths = ['''^supabase/migrations/20261012100000_opera_agent_command_insert_signal\.sql$''']
+  paths = ['''^hosted/migrations/20261012100000_opera_agent_command_insert_signal\.sql$''']
   regexTarget = "line"
   regexes = [
     '''apikey., .sb_publishable_''',

@@ -8,7 +8,7 @@
 // The extension finds the bridge by probing the candidate ports and asking the bridge's own question, so the bridge has to be running before the browser is driven locally.
 // This is that running, in one command, and it prints the address it holds.
 
-import { createBridgeServer } from '../local/bridge-ws.js';
+import { createBridgeServer } from '../../local/bridge-ws.js';
 
 const PORT = Number(process.env.OPERA_BRIDGE_PORT || 9451);
 

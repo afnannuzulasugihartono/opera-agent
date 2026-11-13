@@ -1,7 +1,7 @@
 // @last-edited: 2026-11-06 UTC+7.
 // @title: extension-run — the shipped extension drove a real browser, and the record says so.
 // @state: the recorded call sequence, the transport it used, the press and the download hash, the picture, and the markdown that must match the jsonl.
-// @dependencies: node:test, strict, node:crypto, node:fs, node:path, node:url, scripts/extension-run.mjs.
+// @dependencies: node:test, strict, node:crypto, node:fs, node:path, node:url, scripts/dev/extension-run.mjs.
 
 // WHY THIS FILE EXISTS.
 // The product ships a browser extension and claims it drives the everyday browser without a debugging port.
@@ -15,7 +15,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { chromeIgnoresLoadExtension, majorOf, recordMarkdown, roadFor } from '../scripts/extension-run.mjs';
+import { chromeIgnoresLoadExtension, majorOf, recordMarkdown, roadFor } from '../scripts/dev/extension-run.mjs';
 
 const root = path.resolve(fileURLToPath(new URL('..', import.meta.url)));
 const proof = (name) => path.join(root, 'proof', name);

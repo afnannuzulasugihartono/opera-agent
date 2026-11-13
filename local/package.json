@@ -85,7 +85,7 @@
   ],
   "license": "MIT",
   "scripts": {
-    "prepack": "node ../scripts/pack-mcp.mjs",
+    "prepack": "node ../scripts/pack/pack-mcp.mjs",
     "postinstall": "node postinstall.js"
   }
 }

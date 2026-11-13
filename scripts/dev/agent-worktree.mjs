@@ -21,7 +21,7 @@ import { existsSync, readdirSync, copyFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join, resolve } from 'node:path';
 
-const repo = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+const repo = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 
 const git = (...args) => execFileSync('git', args, { cwd: repo, encoding: 'utf8' }).trim();
 
@@ -85,7 +85,7 @@ const commands = {
 };
 
 if (!commands[name]) {
-  console.log('usage: node scripts/agent-worktree.mjs <create|list|remove> [name] [base] [topic]');
+  console.log('usage: node scripts/dev/agent-worktree.mjs <create|list|remove> [name] [base] [topic]');
   console.log('  create <name> [base] [topic]  a worktree at ../opera-agent-<name> on agent/<name>/<topic>');
   console.log('  list                          every worktree, and which branch it holds');
   console.log('  remove <name>                 archive the merged branch, drop the worktree');

@@ -8,10 +8,10 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { stripTypeScriptTypes } from 'node:module';
 import vm from 'node:vm';
-import { CORS_DEFAULT_ORIGINS, resolveAllowedOrigin } from '../supabase/functions/_shared/cors.js';
-import { isUpgradeRequest, serveDeviceSocket } from '../supabase/functions/opera-agent-bridge/bridge-socket.ts';
+import { CORS_DEFAULT_ORIGINS, resolveAllowedOrigin } from '../hosted/functions/_shared/cors.js';
+import { isUpgradeRequest, serveDeviceSocket } from '../hosted/functions/opera-agent-bridge/bridge-socket.ts';
 
-const source = stripTypeScriptTypes(readFileSync(new URL('../supabase/functions/opera-agent-bridge/index.ts', import.meta.url), 'utf8')
+const source = stripTypeScriptTypes(readFileSync(new URL('../hosted/functions/opera-agent-bridge/index.ts', import.meta.url), 'utf8')
   .replace(/^import .*;\r?\n/gm, ''));
 
 // The upgrade path is stripped out of the harness source so a body test cannot be dragged into socket territory, and is supplied here instead.

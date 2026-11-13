@@ -16,7 +16,7 @@
 // That was true and still wrong — "which files count" is the question a gate exists to stop having.
 // So the scope is every tracked and untracked file, in every language.
 
-// WHAT IT COST: 705 lines of migration notes in supabase/migrations/, which recorded why each migration exists.
+// WHAT IT COST: 705 lines of migration notes in hosted/migrations/, which recorded why each migration exists.
 // That history is now only in git.
 // Recorded here rather than left to be discovered.
 

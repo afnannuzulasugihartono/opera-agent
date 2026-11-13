@@ -167,7 +167,7 @@ test('the download page offers one archive and says how to verify it', () => {
 });
 
 test('the file a reader downloads is named after the browser it belongs to', () => {
-  const src = fs.readFileSync(new URL('supabase/functions/opera-agent-update/index.ts', root), 'utf8');
+  const src = fs.readFileSync(new URL('hosted/functions/opera-agent-update/index.ts', root), 'utf8');
   assert.match(src, /url\.searchParams\.get\("for"\)/, 'the endpoint reads which browser the download came from');
   assert.match(src, /opera-agent\$\{browser \? `-\$\{browser\}` : ""\}-\$\{current\.version\}/,
     'and the name carries the browser and the version, so two browsers never leave two files with one name');
@@ -175,7 +175,7 @@ test('the file a reader downloads is named after the browser it belongs to', () 
 
 test('the endpoint serves the newest build, so a release needs no edit to the site', () => {
 
-  const src = fs.readFileSync(new URL('supabase/functions/opera-agent-update/index.ts', root), 'utf8');
+  const src = fs.readFileSync(new URL('hosted/functions/opera-agent-update/index.ts', root), 'utf8');
   assert.match(src, /\/download\/opera-agent\.crx/, 'a version-less CRX path exists');
   assert.match(src, /\/download\/opera-agent\.zip/, 'and a version-less archive path exists');
 

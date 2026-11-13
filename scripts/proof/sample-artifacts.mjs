@@ -13,9 +13,9 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-import { spreadsheetFromFile } from '../local/spreadsheets.js';
-import { deckFromFile } from '../local/decks.js';
-import { documentDocxFromFile } from '../local/documents.js';
+import { spreadsheetFromFile } from '../../local/spreadsheets.js';
+import { deckFromFile } from '../../local/decks.js';
+import { documentDocxFromFile } from '../../local/documents.js';
 
 const company = path.resolve('tests/fixtures/mock-company');
 const outDir = path.resolve(process.argv[2] ?? 'landing/contoh');

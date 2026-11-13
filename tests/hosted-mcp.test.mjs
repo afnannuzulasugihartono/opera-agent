@@ -1,7 +1,7 @@
 // @last-edited: 2026-11-06 UTC+7.
 // @title: hosted-mcp — what the hosted MCP surface answers a client that has no token, and what its checker refuses to keep.
 // @state: the recorded discovery document, the 401, the challenge that names where the token comes from, the authorize probe for the pinned client, and the token scrub.
-// @dependencies: node:test, strict, node:http, node:fs, node:url, ../scripts/hosted-mcp-check.mjs.
+// @dependencies: node:test, strict, node:http, node:fs, node:url, ../scripts/verify/hosted-mcp-check.mjs.
 
 // WHY THE RECORD EXISTS.
 // The hosted server is the surface a reader is told to point a client at.
@@ -12,7 +12,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import http from 'node:http';
 
-import { OAUTH_CLIENT_ID, OAUTH_REDIRECT_URI, checkHostedMcp, scrubbed } from '../scripts/hosted-mcp-check.mjs';
+import { OAUTH_CLIENT_ID, OAUTH_REDIRECT_URI, checkHostedMcp, scrubbed } from '../scripts/verify/hosted-mcp-check.mjs';
 
 // WHY A JWT-SHAPED STRING IS BUILT, NOT WRITTEN.
 // The scrub has to be tested against the shape of a real credential, and the tree scans itself with gitleaks, which reads a whole literal as one.

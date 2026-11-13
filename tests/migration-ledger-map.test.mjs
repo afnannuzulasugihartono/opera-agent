@@ -13,7 +13,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
 const root = new URL('..', import.meta.url);
-const map = JSON.parse(fs.readFileSync(new URL('supabase/migrations/ledger-map.json', root), 'utf8'));
+const map = JSON.parse(fs.readFileSync(new URL('hosted/migrations/ledger-map.json', root), 'utf8'));
 
 const EVIDENCE = [
   'version-and-name',
@@ -26,7 +26,7 @@ const EVIDENCE = [
   'applied-then-recorded'
 ];
 
-const treeFiles = fs.readdirSync(new URL('supabase/migrations/', root))
+const treeFiles = fs.readdirSync(new URL('hosted/migrations/', root))
   .filter((file) => file.endsWith('.sql'))
   .sort();
 

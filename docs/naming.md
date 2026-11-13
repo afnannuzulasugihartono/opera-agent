@@ -35,9 +35,9 @@ The wire contract is one file, `extension/lib/protocol.js`, and it is the source
 The tool surface is data, in two places for two surfaces:
 
 - `local/tools.js` — the local stdio server's tools.
-- `supabase/functions/opera-agent-mcp/tools.ts` — the cloud server's tools, registered one `registerTool` call each.
+- `hosted/functions/opera-agent-mcp/tools.ts` — the cloud server's tools, registered one `registerTool` call each.
 
-The Postgres names are in the migrations, and the edge functions refuse anything that is not a bare identifier before it reaches the database: `supabase/functions/opera-agent-mcp/index.ts` and `supabase/functions/opera-agent-bridge/index.ts` both reject a function or argument name that fails `^[a-z_][a-z0-9_]*$`.
+The Postgres names are in the migrations, and the edge functions refuse anything that is not a bare identifier before it reaches the database: `hosted/functions/opera-agent-mcp/index.ts` and `hosted/functions/opera-agent-bridge/index.ts` both reject a function or argument name that fails `^[a-z_][a-z0-9_]*$`.
 
 ## What enforces it
 

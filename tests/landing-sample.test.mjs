@@ -54,7 +54,7 @@ test('the artifacts the site offers are a fresh build of the mock company', () =
       const name = path.basename(artifact.out);
       const fresh = fs.readFileSync(artifact.out);
       const onDisk = fs.readFileSync(path.join(shipped, name));
-      assert.deepEqual(onDisk, fresh, `${name} on the site differs from a fresh build; run node scripts/sample-artifacts.mjs`);
+      assert.deepEqual(onDisk, fresh, `${name} on the site differs from a fresh build; run node scripts/proof/sample-artifacts.mjs`);
     }
   } finally {
     fs.rmSync(out, { recursive: true, force: true });

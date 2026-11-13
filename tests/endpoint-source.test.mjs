@@ -30,7 +30,7 @@ test('the consent screen is a page of the site, not a deployment of its own', as
   assert.doesNotMatch(consentCode, /esm\.sh|unpkg|jsdelivr|cdn\./i, 'the page loads no library from another origin');
   assert.doesNotMatch(consentCode, /<(script|img|link)[^>]+(src|href)="https?:/i, 'no tag points at a remote origin');
 
-  const config = await readFile(new URL('../supabase/config.toml', import.meta.url), 'utf8');
+  const config = await readFile(new URL('../hosted/config.toml', import.meta.url), 'utf8');
   const siteUrl = /site_url\s*=\s*"([^"]+)"/.exec(config)?.[1];
   assert.equal(endpoints.SITE_ORIGIN, siteUrl, 'the extension names the same site origin the platform is configured with');
   assert.match(config, /authorization_path = "\/oauth\/consent"/, 'the consent path matches the page the site serves');
@@ -38,7 +38,7 @@ test('the consent screen is a page of the site, not a deployment of its own', as
 });
 
 test('update function derives base from SUPABASE_URL, no literal ref', async () => {
-  const src = await readFile(new URL('../supabase/functions/opera-agent-update/index.ts', import.meta.url), 'utf8');
+  const src = await readFile(new URL('../hosted/functions/opera-agent-update/index.ts', import.meta.url), 'utf8');
 
   assert.doesNotMatch(src, /nenmkmtvjremqphfqnfw/);
 

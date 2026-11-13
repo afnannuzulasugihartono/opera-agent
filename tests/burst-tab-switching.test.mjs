@@ -146,7 +146,7 @@ test('the burst-level tabId is still resolved and still reported', () => {
 
 test('the VM cross-tab fence is untouched', () => {
   const vm = fs.readFileSync(
-    new URL('../supabase/functions/opera-agent-vm/index.ts', import.meta.url),
+    new URL('../hosted/functions/opera-agent-vm/index.ts', import.meta.url),
     'utf8'
   );
   assert.match(vm, /HostError\("CROSS_TAB", "Effect arguments target another tab\."/);

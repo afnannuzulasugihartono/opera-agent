@@ -3,8 +3,8 @@
 // @state: the collection state, the evidence it builds, and the bounds every collection holds.
 // @dependencies: goal-ledger, proof-engine, reactive-vm, reactive-vm-control-flow.
 
-import { canonicalJson, digestCanonical } from '../supabase/functions/_shared/goal-ledger.js';
-import { createEvidence } from '../supabase/functions/_shared/proof-engine.js';
+import { canonicalJson, digestCanonical } from '../hosted/functions/_shared/goal-ledger.js';
+import { createEvidence } from '../hosted/functions/_shared/proof-engine.js';
 import {
   evaluateReactiveExpression,
   validateReactiveProgram,

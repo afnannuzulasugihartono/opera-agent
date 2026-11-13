@@ -39,7 +39,7 @@ test('the parser this gate uses can catch a duplicate declaration', () => {
 });
 
 test('every edge function entrypoint parses', async () => {
-  const dir = new URL('../supabase/functions/', import.meta.url);
+  const dir = new URL('../hosted/functions/', import.meta.url);
   const names = (await readdir(dir, { withFileTypes: true }))
     .filter((entry) => entry.isDirectory())
     .map((entry) => entry.name)

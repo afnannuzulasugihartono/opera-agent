@@ -29,7 +29,7 @@
 # itself pass. Only `npm run gates:refresh` re-pins; it prints what moved and
 # refuses to write a pin for a file it cannot find.
 #
-# KNOWN LIMIT, stated rather than hidden: scripts/gates.mjs is the program that
+# KNOWN LIMIT, stated rather than hidden: scripts/verify/gates.mjs is the program that
 # reads this file, and it is deliberately NOT pinned here. A verifier cannot
 # check its own hash without writing it, and writing it changes the hash — so
 # listing itself would either fail forever or need an exemption, and an
@@ -132,7 +132,7 @@
 #    stop having. The scope is the repository.
 #
 #    WHAT WAS LOST, SAID PLAINLY: removing the comments also removed 705 lines of
-#    migration notes in supabase/migrations/ that recorded why each migration
+#    migration notes in hosted/migrations/ that recorded why each migration
 #    exists, including the measurements behind them. That history is now only in
 #    git. This is the accepted cost of the rule, not an oversight.
 #
@@ -156,29 +156,29 @@
 #    tests/helpers/canonical-source-hash.mjs strips the comment lines and collapses
 #    the whitespace before hashing a tool schema, so the pin holds the tool's
 #    contract and not its indentation.
-scripts/check.mjs f6eb8abb6d57abe829f86b76bd9ecf124cb4da0f
-scripts/scope.mjs 2293857de17bf0077a368729555f3af5a13a6ff5
-scripts/scope-check.mjs d6359cc409244f0fdc13cc7ef496daddd5981910
+scripts/verify/check.mjs 3befd73a4d3a75ccb22943e9234c1505590104b5
+scripts/verify/scope.mjs f5895703e958e67c79a1f2f4392b037a84c26220
+scripts/verify/scope-check.mjs 2a4ba5563b68a9979c40165363235f72cac0d4df
 
 # --- the pins themselves: editing these is how a drift goes unnoticed ---
-tests/helpers/boundary-locks.mjs 5885113ceebe58c350eb58d8ab11dffe854e7cd5
+tests/helpers/boundary-locks.mjs d9291dd95c5bedc2038c81f99a974d8ff9bc4af9
 tests/helpers/canonical-source-hash.mjs a4ebaa0d40122afce47a52cba39309d7dfdb1af1
 tests/helpers/comment-format.mjs bced9e4c9b7a58b56e3317067d5e6717dd2040bf
 tests/comment-format.test.mjs 0231619043033b07c22f725feee511d6ebb34bd4
 tests/comment-claims.test.mjs 09b2944f3ca73f2304752df2423ab67a35a462e6
 
 # --- structural rules a human reviewer would otherwise have to remember ---
-tests/hygiene.test.mjs 9ca7e6ad6f2bb0729f1eb10a52fee49cbfd94cf3
+tests/hygiene.test.mjs f9294b93b206c651e2825181f9c5489727dd08da
 tests/structure-gates.test.mjs 3ebf0d1b62858e67d7f6fb441461be85e7158a63
 tests/boundary-locks.test.mjs b652662d40f21b495e80cca134f46f4337448d57
 
 # --- controls that decide what the product accepts at runtime ---
 extension/lib/protocol.js 14d9a778570a1b789c80e6fe6e5f37d68031013c
-shared/secret-pattern.js 06386015c5756f83c08ee06cc571b9ae897d850a
-supabase/functions/_shared/cors.js dead4552d786ef0fdbaf71ad5bfb3c99e647b575
+shared/secret-pattern.js 5392a31127fa25df3d9f55d0a9fa87562200418d
+hosted/functions/_shared/cors.js dead4552d786ef0fdbaf71ad5bfb3c99e647b575
 
 # --- surfaces an owner, not an agent, should have to look at ---
 extension/manifest.json 47789c72fa3876d4a9d94104f7da94b72e25bcb2
-.gitleaks.toml 4cdb3f1b759def776beeb77df39ea4cd52513e64
-.github/CODEOWNERS 6d80376cc27b5a47e56a454b958f43944c681c2c
+.gitleaks.toml 3a1748a2ad7425ec6cab444916b62a860292d5e1
+.github/CODEOWNERS ca0271e08aadabe56f86ae17620b36073df44cfb
 .github/workflows/ci.yml bf241518b3aea12b4fbc49ab102552cea139c1e5

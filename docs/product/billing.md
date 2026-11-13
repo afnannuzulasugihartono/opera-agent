@@ -51,7 +51,7 @@ priced lines (the price list)  ->  an invoice (one per customer per month)
 - A transfer is recorded by `settle-manual`: the operator token, the exact amount, and
   a note naming who confirmed it. It writes the same terminal paid state as the
   provider, and the invoice page shows the note and the time.
-- `supabase/migrations/20261015090000_opera_billing.sql` — `opera_price_list` (what a
+- `hosted/migrations/20261015090000_opera_billing.sql` — `opera_price_list` (what a
   kind of delivery is worth) and `opera_invoices` (one per customer per month, with
   the priced lines inside). `20261021120000_opera_provider_order_id.sql` adds the
   provider's own order id, because the readable invoice id has characters Midtrans
@@ -62,7 +62,7 @@ priced lines (the price list)  ->  an invoice (one per customer per month)
   the method and provider transaction the money arrived by. The tables are readable by
   the server only: a customer reaches their invoice through a signed link, not through
   the table.
-- `supabase/functions/_shared/billing.js` — the rules, and nothing else: the amount of
+- `hosted/functions/_shared/billing.js` — the rules, and nothing else: the amount of
   an invoice, the plan line and its overage, the manifest rows turned into lines, the
   invoice token, the provider's signature check and the shape of the stored key,
   the provider status request, the provider expire request, the rule that only a settled
@@ -70,10 +70,10 @@ priced lines (the price list)  ->  an invoice (one per customer per month)
   provider order id and the attempt number that makes a retry a new one, the link's
   expiry and the one rule that says whether a link is payable, and the QRIS-only rule
   for small invoices.
-- `supabase/functions/_shared/invoice-page.js` — the page: one function of the row, no
+- `hosted/functions/_shared/invoice-page.js` — the page: one function of the row, no
   Deno API, no script and no asset, so a Node test can render every state a customer can
   open.
-- `supabase/functions/opera-agent-billing/index.ts` — the function: it opens an
+- `hosted/functions/opera-agent-billing/index.ts` — the function: it opens an
   invoice, serves the invoice page, closes it from a signed notification or from the
   provider's own answer when the signature does not match, writes every notification
   down, opens a new link when the customer asks for one, and records a transfer with the
@@ -81,7 +81,7 @@ priced lines (the price list)  ->  an invoice (one per customer per month)
 - `landing/_worker.js` — the site's path to the page: a proxy for `/invoice` that keeps
   the page's headers, labels the HTML as HTML, and rewrites the refresh redirect back to
   `/invoice`; every other path goes to the static site unchanged.
-- `supabase/functions/opera-agent-mcp/tools.ts` — the `invoice_create` tool, so the
+- `hosted/functions/opera-agent-mcp/tools.ts` — the `invoice_create` tool, so the
   agent that delivered the statements can hand the operator the bill for them. It is
   the one door for both kinds of bill: pass the deliveries for a per-delivery invoice,
   or pass the same deliveries with `plan` (`plan.pilot` or `plan.firm`) for a plan
@@ -136,7 +136,7 @@ call and raised a column error on every run, which is why the schedule moved not
 until it was fixed.
 
 The conversion from the printed code to a per-invoice code is in
-[`../../supabase/functions/_shared/qris.js`](../../supabase/functions/_shared/qris.js): tag
+[`../../hosted/functions/_shared/qris.js`](../../hosted/functions/_shared/qris.js): tag
 `01` becomes `12`, tag `54` carries the bare rupiah amount, and the CRC is recomputed.
 The category tag is left exactly as printed, because the acquirer refuses the other
 spelling.

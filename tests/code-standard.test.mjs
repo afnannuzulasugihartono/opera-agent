@@ -45,7 +45,7 @@ test('the tab argument accepts every shape list_tabs answers with', () => {
 });
 
 test('the hosted wire keeps tidyForAi wired into index.ts for every tool path', () => {
-  const index = source('supabase/functions/opera-agent-mcp/index.ts');
+  const index = source('hosted/functions/opera-agent-mcp/index.ts');
   assert.match(index, /tidyForAi\(shaped\)/, 'hosted tool results stay flat - same shape the local tools now print');
   assert.match(index, /tidyForAi\(value\)/, 'the direct enqueue path tidies the same way');
 });

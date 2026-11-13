@@ -1,7 +1,7 @@
 // @last-edited: 2026-11-06 UTC+7.
 // @title: extension-run — drive a real browser through the shipped extension, and write down what happened.
 // @state: the fixture portal, the loopback bridge, a Chrome with the extension loaded, seven calls, and the record.
-// @dependencies: node:crypto, node:fs, node:os, node:path, node:url, ./proof-run.mjs.
+// @dependencies: node:crypto, node:fs, node:os, node:path, node:url, ../proof/proof-run.mjs.
 
 // WHY THIS FILE EXISTS.
 // The product ships a browser extension and promises it drives the everyday browser without a debugging port.
@@ -14,7 +14,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { launchProofBrowser, serveCompany, sha256, speakMcp } from './proof-run.mjs';
+import { launchProofBrowser, serveCompany, sha256, speakMcp } from '../proof/proof-run.mjs';
 
 // WHY THE BRIDGE PORT IS THE ONE THE EXTENSION PROBES FIRST.
 // extension/worker/bridge-link.js dials ws://127.0.0.1:9451 before it guesses at any other port, so a run on a port of its own would have the extension talking to somebody else's bridge.

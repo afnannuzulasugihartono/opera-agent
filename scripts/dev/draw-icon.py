@@ -11,7 +11,7 @@ coverage test, which is slow and exact, and the small sizes are box-filtered
 down from the 128px master so a 16px icon is a real reduction rather than a
 separate drawing that could drift.
 
-Run: py scripts/draw-icon.py
+Run: py scripts/dev/draw-icon.py
 """
 
 import math

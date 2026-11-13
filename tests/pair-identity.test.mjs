@@ -75,13 +75,13 @@ test('the dashboard writes the identity cookie with the pairing-safe flags', () 
 });
 
 test('the bridge forwards the cookie identity to the 10-argument overload', () => {
-  const bridge = fs.readFileSync(new URL('../supabase/functions/opera-agent-bridge/index.ts', import.meta.url), 'utf8');
+  const bridge = fs.readFileSync(new URL('../hosted/functions/opera-agent-bridge/index.ts', import.meta.url), 'utf8');
   assert.match(bridge, /p_cookie_instance_id/);
   assert.match(bridge, /cookieInstanceId/);
 });
 
 test('the 10-argument overload exists and keeps the old guards', () => {
-  const sql = fs.readFileSync(new URL('../supabase/migrations/20261110160000_opera_pair_cookie_identity.sql', import.meta.url), 'utf8');
+  const sql = fs.readFileSync(new URL('../hosted/migrations/20261110160000_opera_pair_cookie_identity.sql', import.meta.url), 'utf8');
   assert.match(sql, /p_cookie_instance_id text default ''/);
   assert.match(sql, /public\.opera_sha256\(upper\(trim\(p_code\)\)\)/);
   assert.match(sql, /v_device\.user_id is distinct from v_pair\.issued_by/);
@@ -92,13 +92,13 @@ test('the 10-argument overload exists and keeps the old guards', () => {
 });
 
 test('the legacy overload is left untouched for older bridges', () => {
-  const old = fs.readFileSync(new URL('../supabase/migrations/20261109120000_opera_device_instance.sql', import.meta.url), 'utf8');
+  const old = fs.readFileSync(new URL('../hosted/migrations/20261109120000_opera_device_instance.sql', import.meta.url), 'utf8');
   assert.match(old, /p_instance_id text default ''\)/);
   assert.doesNotMatch(old, /p_cookie_instance_id/);
 });
 
 test('the fresh pairing formula rides both roads: cookie first, legacy adopted', () => {
-  const sql = fs.readFileSync(new URL('../supabase/migrations/20261110160000_opera_pair_cookie_identity.sql', import.meta.url), 'utf8');
+  const sql = fs.readFileSync(new URL('../hosted/migrations/20261110160000_opera_pair_cookie_identity.sql', import.meta.url), 'utf8');
   const adoptAt = sql.indexOf('update public.opera_devices set instance_id = v_cookie');
   assert.ok(adoptAt > 0, 'the adoption branch exists');
   const cookiePath = sql.slice(0, adoptAt);

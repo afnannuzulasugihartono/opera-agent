@@ -8,9 +8,9 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { stripTypeScriptTypes } from 'node:module';
 import vm from 'node:vm';
-import { CORS_DEFAULT_ORIGINS, resolveAllowedOrigin } from '../supabase/functions/_shared/cors.js';
+import { CORS_DEFAULT_ORIGINS, resolveAllowedOrigin } from '../hosted/functions/_shared/cors.js';
 
-const source = stripTypeScriptTypes(readFileSync(new URL('../supabase/functions/opera-agent-gateway/index.ts', import.meta.url), 'utf8')
+const source = stripTypeScriptTypes(readFileSync(new URL('../hosted/functions/opera-agent-gateway/index.ts', import.meta.url), 'utf8')
   .replace(/^import .*;\r?\n/gm, ''));
 const commandId = '00000000-0000-4000-8000-000000000001';
 

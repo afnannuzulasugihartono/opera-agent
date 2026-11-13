@@ -1,7 +1,7 @@
 // @last-edited: 2026-11-11 UTC+7.
 // @title: hosted-device-resolution - the browser the caller pinned answers, or the relay says why it cannot.
 // @state: a live pin answers every call; a pin that names a sleeping browser is a named refusal with the live alternatives; X-Opera-Device: any opts into the freshest browser; a stored provider pin decides only when no header names a browser, and a header beats it.
-// @dependencies: node:test, strict, ../supabase/functions/opera-agent-mcp/device.ts.
+// @dependencies: node:test, strict, ../hosted/functions/opera-agent-mcp/device.ts.
 
 // WHY THIS FILE IS A GATE AND NOT A THOUGHT.
 // The hosted road used to enqueue every command to whatever the config pinned at the day it was written; a seven-hour-stale pin blackholed every command into AWAIT_OUTCOME_UNKNOWN.
@@ -14,7 +14,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { resolveDevice } from '../supabase/functions/opera-agent-mcp/device.ts';
+import { resolveDevice } from '../hosted/functions/opera-agent-mcp/device.ts';
 
 const NOW = Date.parse('2026-11-09T06:03:00.000Z');
 const fresh = (name, lastSeenAt = '2026-11-09T06:02:30.000Z') => ({ device_name: name, last_seen_at: lastSeenAt, status: 'online' });

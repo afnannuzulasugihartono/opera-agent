@@ -11,7 +11,7 @@ import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { extname, resolve, sep } from 'node:path';
 
-const root = new URL('../landing/', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1').replace(/\//g, sep);
+const root = new URL('../../landing/', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1').replace(/\//g, sep);
 const rootWithSep = root.endsWith(sep) ? root : root + sep;
 const types = { '.css': 'text/css', '.js': 'text/javascript', '.html': 'text/html; charset=utf-8', '.woff2': 'font/woff2', '.svg': 'image/svg+xml', '.jpg': 'image/jpeg' };
 const port = Number(process.argv[2] || 8777);

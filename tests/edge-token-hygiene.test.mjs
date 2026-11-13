@@ -71,7 +71,7 @@ function errorBodies(source, statuses) {
 }
 
 async function functionSource(name) {
-  const source = await readFile(new URL(`../supabase/functions/${name}/index.ts`, import.meta.url), 'utf8');
+  const source = await readFile(new URL(`../hosted/functions/${name}/index.ts`, import.meta.url), 'utf8');
   assert.ok(source.length > 0, `${name} source must be non-empty`);
   return source;
 }

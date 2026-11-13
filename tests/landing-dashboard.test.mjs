@@ -270,7 +270,7 @@ test('the account and device pages are separate files, not one page with tabs', 
 });
 
 test('pairing issuance is rate limited per issuing account', () => {
-  const sql = fs.readFileSync(new URL('supabase/migrations/20261005150000_opera_agent_pairing_rate_limit.sql', root), 'utf8');
+  const sql = fs.readFileSync(new URL('hosted/migrations/20261005150000_opera_agent_pairing_rate_limit.sql', root), 'utf8');
 
   assert.match(sql, /where issued_by = v_issuer and created_at > now\(\) - interval '1 hour'/, 'the window is per issuer over an hour');
   assert.match(sql, /if v_recent >= 5 then/, 'five an hour is the cap');
@@ -279,7 +279,7 @@ test('pairing issuance is rate limited per issuing account', () => {
 });
 
 test('pairing cannot take a device name another account owns, and the issuer is the session', () => {
-  const sql = fs.readFileSync(new URL('supabase/migrations/20261007030000_opera_agent_pairing_ownership.sql', root), 'utf8');
+  const sql = fs.readFileSync(new URL('hosted/migrations/20261007030000_opera_agent_pairing_ownership.sql', root), 'utf8');
 
   assert.match(sql, /v_issuer := case when auth\.uid\(\) is not null then auth\.uid\(\) else p_issued_by end/, 'only a caller with no session may name an issuer');
   assert.doesNotMatch(sql, /coalesce\(p_issued_by, auth\.uid\(\)\)/, 'a caller-supplied issuer never wins over the session');
@@ -291,7 +291,7 @@ test('pairing cannot take a device name another account owns, and the issuer is 
 });
 
 test('commands and runs carry their harness provider for the dashboard', () => {
-  const sql = fs.readFileSync(new URL('supabase/migrations/20261007070000_opera_commands_provider.sql', root), 'utf8');
+  const sql = fs.readFileSync(new URL('hosted/migrations/20261007070000_opera_commands_provider.sql', root), 'utf8');
 
   assert.match(sql, /alter table public\.opera_commands add column if not exists provider text not null default ''/, 'commands carry a provider with a safe default');
   assert.match(sql, /alter table public\.opera_workflow_runs add column if not exists provider text not null default ''/, 'runs carry one too');
@@ -299,7 +299,7 @@ test('commands and runs carry their harness provider for the dashboard', () => {
 });
 
 test('consents can be listed and revoked by their owner only', () => {
-  const sql = fs.readFileSync(new URL('supabase/migrations/20261007080000_opera_my_consents.sql', root), 'utf8');
+  const sql = fs.readFileSync(new URL('hosted/migrations/20261007080000_opera_my_consents.sql', root), 'utf8');
 
   assert.match(sql, /join auth\.oauth_clients cl on cl\.id = c\.client_id/, 'the list names the application');
   assert.match(sql, /where c\.user_id = v_uid and c\.revoked_at is null/, 'only live consents of the caller are listed');
@@ -311,7 +311,7 @@ test('consents can be listed and revoked by their owner only', () => {
 });
 
 test('listening sessions keep transcripts owner-scoped with no grants', () => {
-  const sql = fs.readFileSync(new URL('supabase/migrations/20261007100000_opera_listen_sessions.sql', root), 'utf8');
+  const sql = fs.readFileSync(new URL('hosted/migrations/20261007100000_opera_listen_sessions.sql', root), 'utf8');
 
   assert.match(sql, /create table if not exists public\.opera_listen_sessions/);
   assert.match(sql, /create table if not exists public\.opera_listen_segments/);
@@ -322,8 +322,8 @@ test('listening sessions keep transcripts owner-scoped with no grants', () => {
 });
 
 test('the pairing issuer has exactly one signature, or PostgREST refuses it', () => {
-  const binding = fs.readFileSync(new URL('supabase/migrations/20261005120000_opera_agent_account_device_binding.sql', root), 'utf8');
-  const drop = fs.readFileSync(new URL('supabase/migrations/20261005160000_opera_agent_pairing_issuer_unambiguous.sql', root), 'utf8');
+  const binding = fs.readFileSync(new URL('hosted/migrations/20261005120000_opera_agent_account_device_binding.sql', root), 'utf8');
+  const drop = fs.readFileSync(new URL('hosted/migrations/20261005160000_opera_agent_pairing_issuer_unambiguous.sql', root), 'utf8');
 
   assert.match(binding, /create or replace function public\.opera_create_pairing_code\(p_device_name text default 'opera', p_ttl_minutes integer default 10, p_issued_by uuid default null\)/, 'the three-argument issuer is declared once');
   assert.match(drop, /drop function if exists public\.opera_create_pairing_code\(text, integer\)/, 'the ambiguous two-argument form is dropped');
@@ -335,7 +335,7 @@ test('the pairing issuer has exactly one signature, or PostgREST refuses it', ()
 });
 
 test('account isolation rests on two layers, and both are asserted', () => {
-  const binding = fs.readFileSync(new URL('supabase/migrations/20261005120000_opera_agent_account_device_binding.sql', root), 'utf8');
+  const binding = fs.readFileSync(new URL('hosted/migrations/20261005120000_opera_agent_account_device_binding.sql', root), 'utf8');
 
   assert.doesNotMatch(binding, /grant select/i, 'no SELECT is granted to any role');
   assert.match(binding, /create policy opera_devices_owner_read/, 'ownership filtering exists for devices');
@@ -345,7 +345,7 @@ test('account isolation rests on two layers, and both are asserted', () => {
 });
 
 test('the v2 migration only adds: revoke, counts, and self-issuing codes', () => {
-  const sql = fs.readFileSync(new URL('supabase/migrations/20261005130000_opera_agent_dashboard_actions.sql', root), 'utf8');
+  const sql = fs.readFileSync(new URL('hosted/migrations/20261005130000_opera_agent_dashboard_actions.sql', root), 'utf8');
   assert.match(sql, /opera_revoke_my_device/, 'revocation is a new function');
   assert.match(sql, /completedCommands/, 'counts ride the existing reader');
   assert.match(sql, /coalesce\(p_issued_by, auth\.uid\(\)\)/, 'issuance defaults to the caller');
@@ -355,7 +355,7 @@ test('the v2 migration only adds: revoke, counts, and self-issuing codes', () =>
 });
 
 test('every account RPC is unreachable to anon, not merely guarded by an IF', () => {
-  const sql = fs.readFileSync(new URL('supabase/migrations/20261005140000_opera_agent_account_run.sql', root), 'utf8');
+  const sql = fs.readFileSync(new URL('hosted/migrations/20261005140000_opera_agent_account_run.sql', root), 'utf8');
   for (const fn of ['opera_run_on_my_device', 'opera_revoke_my_device', 'opera_my_devices', 'opera_create_pairing_code']) {
     assert.match(sql, new RegExp(`revoke execute on function public\\.${fn}\\([^)]*\\) from public, anon`), `${fn} is revoked from anon`);
     assert.match(sql, new RegExp(`grant execute on function public\\.${fn}\\([^)]*\\) to authenticated`), `${fn} is granted to signed-in callers`);
@@ -363,14 +363,14 @@ test('every account RPC is unreachable to anon, not merely guarded by an IF', ()
 });
 
 test('the run RPC resolves the device by the caller, never by a name argument', () => {
-  const sql = fs.readFileSync(new URL('supabase/migrations/20261005140000_opera_agent_account_run.sql', root), 'utf8');
+  const sql = fs.readFileSync(new URL('hosted/migrations/20261005140000_opera_agent_account_run.sql', root), 'utf8');
   assert.match(sql, /where user_id = auth\.uid\(\)/, 'the device comes from the session');
   assert.doesNotMatch(sql, /p_device_name/, 'no device name parameter can name another account browser');
   assert.match(sql, /opera_methods where method = p_method and enabled/, 'the method is checked against the enabled allowlist');
 });
 
 test('the migration binds devices without touching existing grants', () => {
-  const sql = fs.readFileSync(new URL('supabase/migrations/20261005120000_opera_agent_account_device_binding.sql', root), 'utf8');
+  const sql = fs.readFileSync(new URL('hosted/migrations/20261005120000_opera_agent_account_device_binding.sql', root), 'utf8');
   assert.match(sql, /add column if not exists user_id/, 'devices gain an owner column');
   assert.match(sql, /coalesce\(public\.opera_devices\.user_id, excluded\.user_id\)/, 'pairing never steals an owned device');
   assert.match(sql, /for select to authenticated using/, 'owners read their own rows');
@@ -935,7 +935,7 @@ test('the plan hero answers the screen’s one question, with the real numbers',
 });
 
 test('the plan RPC answers with the session allowance too, in the shape the SQL states', () => {
-  const migration = fs.readFileSync(new URL('supabase/migrations/20261109130000_opera_session_usage.sql', root), 'utf8');
+  const migration = fs.readFileSync(new URL('hosted/migrations/20261109130000_opera_session_usage.sql', root), 'utf8');
   assert.match(migration, /'sessionAllowance', case when v_plan = 'plan\.firm' then 500 else 50 end/, 'the firm session allowance in SQL is the session allowance in JavaScript');
   assert.match(migration, /jsonb_build_object\([\s\S]*?'ok', true,/, 'and the answer is one object the dashboard can read once');
 });

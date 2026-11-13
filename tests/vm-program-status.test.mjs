@@ -8,7 +8,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
 const vm = fs.readFileSync(
-  new URL('../supabase/functions/opera-agent-vm/index.ts', import.meta.url), 'utf8'
+  new URL('../hosted/functions/opera-agent-vm/index.ts', import.meta.url), 'utf8'
 );
 
 test('terminal states distinguish success, limits, and failure', () => {

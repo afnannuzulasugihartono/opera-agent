@@ -203,11 +203,11 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   const head = flag(args, '--head') ?? 'HEAD';
 
   if (!briefPath) {
-    console.error('usage: node scripts/scope-check.mjs <brief> --base <sha> [--head <sha>]');
+    console.error('usage: node scripts/verify/scope-check.mjs <brief> --base <sha> [--head <sha>]');
     process.exit(2);
   }
 
-  const root = fileURLToPath(new URL('..', import.meta.url));
+  const root = fileURLToPath(new URL('../..', import.meta.url));
   const brief = parseBrief(fs.readFileSync(path.resolve(root, briefPath), 'utf8'));
   const actual = base ? changedFiles(root, base, head) : [];
   const result = classify(brief, actual);

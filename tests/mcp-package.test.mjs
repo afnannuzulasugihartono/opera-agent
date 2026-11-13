@@ -205,6 +205,6 @@ test('the package lists every module the server needs, and its shared copies are
   for (const name of ['socket-protocol.js', 'endpoints.js']) {
     const source = await readFile(new URL(`extension/lib/${name}`, root), 'utf8');
     const copy = await readFile(new URL(`local/lib/${name}`, root), 'utf8');
-    assert.equal(copy, source, `local/lib/${name} has drifted from extension/lib/${name}; run node scripts/pack-mcp.mjs`);
+    assert.equal(copy, source, `local/lib/${name} has drifted from extension/lib/${name}; run node scripts/pack/pack-mcp.mjs`);
   }
 });

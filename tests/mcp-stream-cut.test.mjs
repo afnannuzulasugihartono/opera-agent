@@ -10,7 +10,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { cutStreamAtTheAnswer } from '../supabase/functions/_shared/cut-stream.ts';
+import { cutStreamAtTheAnswer } from '../hosted/functions/_shared/cut-stream.ts';
 
 const encoder = new TextEncoder();
 

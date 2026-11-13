@@ -12,11 +12,11 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
 const root = new URL('..', import.meta.url);
-const fn = fs.readFileSync(new URL('supabase/functions/opera-agent-billing/index.ts', root), 'utf8');
-const page = fs.readFileSync(new URL('supabase/functions/_shared/invoice-page.js', root), 'utf8');
-const tree = fs.readdirSync(new URL('supabase/functions', root), { recursive: true })
+const fn = fs.readFileSync(new URL('hosted/functions/opera-agent-billing/index.ts', root), 'utf8');
+const page = fs.readFileSync(new URL('hosted/functions/_shared/invoice-page.js', root), 'utf8');
+const tree = fs.readdirSync(new URL('hosted/functions', root), { recursive: true })
   .filter((name) => typeof name === 'string' && /\.(ts|js|json)$/.test(name))
-  .map((name) => fs.readFileSync(new URL(`supabase/functions/${name}`, root), 'utf8'));
+  .map((name) => fs.readFileSync(new URL(`hosted/functions/${name}`, root), 'utf8'));
 
 test('the rail comes from env and defaults to midtrans', () => {
   assert.match(fn, /BILLING_RAIL.*\|\| "midtrans"/, 'an unset BILLING_RAIL must behave exactly as before');
@@ -51,7 +51,7 @@ test('the detector is operator-gated, dry by default, and credits the wallet whe
   assert.ok(gate > 0 && call > gate, 'the operator token is checked before the detector runs');
   assert.match(fn, /\.is\("paid_at", null\)/, 'a feed close is guarded against a second close');
   assert.match(fn, /await creditTopUp\(closed\)/, 'a feed-paid top-up credits the wallet on the same path as a notification');
-  const detector = fs.readFileSync(new URL('supabase/functions/_shared/qris-detector.js', root), 'utf8');
+  const detector = fs.readFileSync(new URL('hosted/functions/_shared/qris-detector.js', root), 'utf8');
   assert.match(detector, /grant_type: 'refresh_token'/, 'a 401 from the feed triggers one refresh retry');
 });
 

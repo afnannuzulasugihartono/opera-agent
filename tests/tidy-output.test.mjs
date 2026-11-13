@@ -34,6 +34,6 @@ test('the hub names this gate, so the rules cannot rot silently', () => {
 });
 
 test('the check surface keeps its one-line success', () => {
-  const check = read('scripts/check.mjs');
+  const check = read('scripts/verify/check.mjs');
   assert.match(check, /check ok:/, 'a green check prints a single summary line, not a log');
 });

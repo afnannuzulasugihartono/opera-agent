@@ -72,7 +72,7 @@ test('an authorization that is already decided is followed, not re-asked', () =>
 
 test('the consent page is served at the path GoTrue actually asks for', () => {
 
-  const config = read('supabase/config.toml');
+  const config = read('hosted/config.toml');
   assert.match(config, /authorization_path = "\/oauth\/consent"/, 'the path GoTrue uses');
   assert.ok(fs.existsSync(new URL('landing/oauth/consent.html', root)), 'the page is at that path on disk');
   const site = siteHeaders();
@@ -125,7 +125,7 @@ test('the consent screen carries the same navigation as every other page', () =>
 });
 
 test('nothing the runtime reads still points at the separate consent deployment', () => {
-  for (const file of ['supabase/config.toml', 'supabase/functions/opera-agent-auth/index.ts', 'supabase/functions/_shared/cors.js', 'tests/edge-cors.test.mjs', 'extension/lib/endpoints.js']) {
+  for (const file of ['hosted/config.toml', 'hosted/functions/opera-agent-auth/index.ts', 'hosted/functions/_shared/cors.js', 'tests/edge-cors.test.mjs', 'extension/lib/endpoints.js']) {
     assert.doesNotMatch(read(file), /oauth-consent-three/, `${file} no longer names the separate deployment`);
   }
 

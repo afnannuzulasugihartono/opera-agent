@@ -31,7 +31,7 @@ const migrationName = '20261011140000_opera_agent_command_events.sql';
 
 const migration = () => {
   try {
-    return read(`supabase/migrations/${migrationName}`);
+    return read(`hosted/migrations/${migrationName}`);
   } catch {
     return '';
   }

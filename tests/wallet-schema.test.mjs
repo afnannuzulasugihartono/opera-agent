@@ -12,7 +12,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
 const root = new URL('..', import.meta.url);
-const sql = fs.readFileSync(new URL('supabase/migrations/20261104120000_opera_wallet.sql', root), 'utf8')
+const sql = fs.readFileSync(new URL('hosted/migrations/20261104120000_opera_wallet.sql', root), 'utf8')
   .split('\n')
   .filter((line) => !line.trimStart().startsWith('--'))
   .join('\n');

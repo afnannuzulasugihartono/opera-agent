@@ -1,7 +1,7 @@
 // @last-edited: 2026-11-11 UTC+7.
 // @title: device-revoke-state - a revoked device leaves the account's device list.
 // @state: the revoke writes the revoked state, the device list leaves it out, and the relay never chooses it.
-// @dependencies: node:test, node:assert/strict, node:fs, ../supabase/functions/opera-agent-mcp/device.ts.
+// @dependencies: node:test, node:assert/strict, node:fs, ../hosted/functions/opera-agent-mcp/device.ts.
 
 // WHY THIS GATE READS THE MIGRATION AND THE RESOLVER.
 // The button in the dashboard said "cut this device off" and the device stayed on the page wearing an offline badge, because the revoke only cut the token and set the row offline while the account's list carried every row.
@@ -12,12 +12,12 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
-import { resolveDevice } from '../supabase/functions/opera-agent-mcp/device.ts';
+import { resolveDevice } from '../hosted/functions/opera-agent-mcp/device.ts';
 
 const root = new URL('..', import.meta.url);
-const sql = fs.readFileSync(new URL('supabase/migrations/20261110210000_opera_device_revoked_state.sql', root), 'utf8');
-const resolver = fs.readFileSync(new URL('supabase/functions/opera-agent-mcp/device.ts', root), 'utf8');
-const gateway = fs.readFileSync(new URL('supabase/functions/opera-agent-mcp/index.ts', root), 'utf8');
+const sql = fs.readFileSync(new URL('hosted/migrations/20261110210000_opera_device_revoked_state.sql', root), 'utf8');
+const resolver = fs.readFileSync(new URL('hosted/functions/opera-agent-mcp/device.ts', root), 'utf8');
+const gateway = fs.readFileSync(new URL('hosted/functions/opera-agent-mcp/index.ts', root), 'utf8');
 
 test('the revoke writes a state of its own, and cuts the token with it', () => {
   assert.match(sql, /status = 'revoked'/, 'the row is marked revoked');

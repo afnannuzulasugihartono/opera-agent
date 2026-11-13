@@ -9,7 +9,7 @@ Two agents editing one working tree take turns overwriting each other's files, a
 ## The setup, for any agent
 
 ```bash
-node scripts/agent-worktree.mjs create <name> [base-branch] [topic]
+node scripts/dev/agent-worktree.mjs create <name> [base-branch] [topic]
 ```
 
 That one command:
@@ -20,13 +20,13 @@ That one command:
 - runs the install, so the worktree is immediately usable.
 
 ```bash
-node scripts/agent-worktree.mjs list
+node scripts/dev/agent-worktree.mjs list
 ```
 
 Shows every worktree and the branch it holds, and marks the main checkout so nothing drives from it by accident.
 
 ```bash
-node scripts/agent-worktree.mjs remove <name>
+node scripts/dev/agent-worktree.mjs remove <name>
 ```
 
 Archives the branch as a tag — `archive/<branch>-<date>`, with the merge state in the tag message — and only then deletes the branch and the worktree. A branch that was never merged is reachable from nothing else, so its tag is the only thing standing between the delete and losing a session's reasoning.

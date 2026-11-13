@@ -17,9 +17,9 @@
 
 import { createServer } from 'node:http';
 
-import { openSession } from '../local/driver.js';
-import { asDriver } from '../local/sessions.js';
-import { createMcpServer } from '../local/mcp-server.js';
+import { openSession } from '../../local/driver.js';
+import { asDriver } from '../../local/sessions.js';
+import { createMcpServer } from '../../local/mcp-server.js';
 
 const RUNS = Number(process.argv.find((value) => value.startsWith('--runs='))?.split('=')[1] || 9);
 const PORT = Number(process.env.OPERA_BENCHMARK_PORT || 9477);

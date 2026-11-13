@@ -122,7 +122,7 @@ test('background exposes watch primitives and caps; bridge ingests events', asyn
   assert.match(bg, /watch\.stop_all/);
   assert.match(bg, /MAX_WATCHERS_PER_TAB|WATCHERS_PER_TAB/);
   assert.match(bg, /lib\/watch\.js/);
-  const bridge = read('supabase/functions/opera-agent-bridge/index.ts');
+  const bridge = read('hosted/functions/opera-agent-bridge/index.ts');
   assert.match(bridge, /watch_event/);
   assert.match(bridge, /opera_watch_event_ingest/);
   assert.match(bridge, /start_workflow/);
@@ -130,7 +130,7 @@ test('background exposes watch primitives and caps; bridge ingests events', asyn
 });
 
 test('migration adds events table, adaptive await, run_fast with service_role grants', () => {
-  const src = read('supabase/migrations/20260922000000_opera_agent_ut_etw.sql');
+  const src = read('hosted/migrations/20260922000000_opera_agent_ut_etw.sql');
   assert.match(src, /create table if not exists public\.opera_watch_events/);
   assert.match(src, /create or replace function public\.opera_watch_events_wait\(p_watcher text, ?p_after_seq bigint, ?p_timeout_ms integer/);
   assert.match(src, /pg_sleep\(0\.005\)/);
@@ -141,7 +141,7 @@ test('migration adds events table, adaptive await, run_fast with service_role gr
 });
 
 test('gateway is one-hop universal ingress with GPT-Actions-compatible auth', () => {
-  const src = read('supabase/functions/opera-agent-gateway/index.ts');
+  const src = read('hosted/functions/opera-agent-gateway/index.ts');
   assert.match(src, /Deno\.serve/);
   assert.match(src, /x-opera-agent-token/, 'header auth');
   assert.match(src, /apiKey/, 'body auth because GPT Actions cannot set headers');
@@ -165,7 +165,7 @@ test('MCP start_watch schema preserves adSelectors for adState rules', () => {
 
 test('migration seeds watch methods into the opera_methods enqueue allowlist', () => {
 
-  const src = read('supabase/migrations/20260923010000_opera_agent_watch_methods.sql');
+  const src = read('hosted/migrations/20260923010000_opera_agent_watch_methods.sql');
   assert.match(src, /insert into public\.opera_methods/i);
   for (const method of ['watch.start', 'watch.stop', 'watch.stop_all']) {
     assert.match(src, new RegExp(`'${method.replace('.', '\\.')}'`), `${method} must be seeded`);

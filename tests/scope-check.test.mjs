@@ -8,7 +8,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { fileURLToPath } from 'node:url';
 
-import { parseBrief, classify } from '../scripts/scope-check.mjs';
+import { parseBrief, classify } from '../scripts/verify/scope-check.mjs';
 
 const fixture = (name) =>
   fs.readFileSync(fileURLToPath(new URL('./fixtures/scope-check/' + name, import.meta.url)), 'utf8');

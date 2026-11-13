@@ -14,10 +14,10 @@ import { ALLOWED_METHODS, PRODUCT_VERSION } from '../extension/lib/protocol.js';
 import { mcpSurfaceSource } from './helpers/mcp-surface-source.mjs';
 import { siteHeaders } from './helpers/site-headers.mjs';
 
-const configUrl = new URL('../supabase/functions/opera-agent-mcp/deno.json', import.meta.url);
-const authUrl = new URL('../supabase/functions/opera-agent-mcp/../opera-agent-auth/index.ts', import.meta.url);
+const configUrl = new URL('../hosted/functions/opera-agent-mcp/deno.json', import.meta.url);
+const authUrl = new URL('../hosted/functions/opera-agent-mcp/../opera-agent-auth/index.ts', import.meta.url);
 const consentUrl = new URL('../landing/oauth/consent.html', import.meta.url);
-const supabaseConfigUrl = new URL('../supabase/config.toml', import.meta.url);
+const supabaseConfigUrl = new URL('../hosted/config.toml', import.meta.url);
 
 const source = await mcpSurfaceSource();
 const config = JSON.parse(await readFile(configUrl, 'utf8'));
@@ -29,15 +29,15 @@ const contract = JSON.parse(
   fs.readFileSync(new URL('./fixtures/mcp-contract-v1.json', import.meta.url), 'utf8')
 );
 const core = fs.readFileSync(
-  new URL('../supabase/migrations/20260907204146_opera_agent_1_0_0_core.sql', import.meta.url),
+  new URL('../hosted/migrations/20260907204146_opera_agent_1_0_0_core.sql', import.meta.url),
   'utf8'
 );
 const etw = fs.readFileSync(
-  new URL('../supabase/migrations/20260922000000_opera_agent_ut_etw.sql', import.meta.url),
+  new URL('../hosted/migrations/20260922000000_opera_agent_ut_etw.sql', import.meta.url),
   'utf8'
 );
 const screenshot = fs.readFileSync(
-  new URL('../supabase/migrations/20260910121107_opera_agent_adaptive_screenshot.sql', import.meta.url),
+  new URL('../hosted/migrations/20260910121107_opera_agent_adaptive_screenshot.sql', import.meta.url),
   'utf8'
 );
 
@@ -362,7 +362,7 @@ test('advertised media capabilities are invocable tools, not just status text', 
 });
 
 test('the OAuth client name resolves the provider when headers cannot', () => {
-  const sql = fs.readFileSync(new URL('../supabase/migrations/20261007090000_opera_client_name.sql', import.meta.url), 'utf8');
+  const sql = fs.readFileSync(new URL('../hosted/migrations/20261007090000_opera_client_name.sql', import.meta.url), 'utf8');
 
   assert.match(sql, /select client_name into v_name from auth\.oauth_clients where id = p_client_id/);
   assert.match(sql, /revoke execute on function public\.opera_client_name\(uuid\) from public, anon/);

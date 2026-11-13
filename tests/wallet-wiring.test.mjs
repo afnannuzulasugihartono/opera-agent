@@ -12,9 +12,9 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
 const root = new URL('..', import.meta.url);
-const fn = fs.readFileSync(new URL('supabase/functions/opera-agent-billing/index.ts', root), 'utf8');
-const sql = fs.readFileSync(new URL('supabase/migrations/20261104120000_opera_wallet.sql', root), 'utf8');
-const api = fs.readFileSync(new URL('supabase/functions/_shared/wallet-api.js', root), 'utf8');
+const fn = fs.readFileSync(new URL('hosted/functions/opera-agent-billing/index.ts', root), 'utf8');
+const sql = fs.readFileSync(new URL('hosted/migrations/20261104120000_opera_wallet.sql', root), 'utf8');
+const api = fs.readFileSync(new URL('hosted/functions/_shared/wallet-api.js', root), 'utf8');
 
 function called(source, rpc) {
   return [...source.matchAll(new RegExp(`${rpc}",\\s*\\{([\\s\\S]*?)\\}\\)`, 'g'))].map((match) => match[1]);
@@ -31,9 +31,9 @@ test('every argument the function sends is a parameter the migration declares', 
   // WHY EVERY MIGRATION IS READ AND NOT ONLY THE WALLET ONE.
   // The function also calls the guarded secret writer, and its parameters are declared in the migration that created it.
   // A parameter declared nowhere is still a deploy that fails on the first call.
-  const migrations = fs.readdirSync(new URL('supabase/migrations/', root))
+  const migrations = fs.readdirSync(new URL('hosted/migrations/', root))
     .filter((file) => file.endsWith('.sql'))
-    .map((file) => fs.readFileSync(new URL(`supabase/migrations/${file}`, root), 'utf8')).join('\n');
+    .map((file) => fs.readFileSync(new URL(`hosted/migrations/${file}`, root), 'utf8')).join('\n');
   const declared = new Set([...migrations.matchAll(/p_[a-z_]+/g)].map((match) => match[0]));
   const sent = new Set([...fn.matchAll(/^\s+(p_[a-z_]+):/gm)].map((match) => match[1]));
   assert.ok(sent.size >= 9, 'the function should send the wallet parameters');

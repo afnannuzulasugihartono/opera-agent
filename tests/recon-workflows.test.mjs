@@ -8,7 +8,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
 const migration = fs.readFileSync(
-  new URL('../supabase/migrations/20261009000001_opera_agent_browse_recon.sql', import.meta.url), 'utf8'
+  new URL('../hosted/migrations/20261009000001_opera_agent_browse_recon.sql', import.meta.url), 'utf8'
 );
 
 function definition() {
