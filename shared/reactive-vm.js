@@ -4,7 +4,7 @@
 // @dependencies: goal-ledger.
 
 import { canonicalJson, digestCanonical } from '../supabase/functions/_shared/goal-ledger.js';
-import { SECRET_VALUE } from './secret-pattern.js';
+import { makeGuards, ReactiveVmError } from './reactive-vm-core.js';
 
 const PROGRAM_VERSION = 'OA_REACTIVE_VM_V1';
 const DIGEST_RE = /^sha256:[0-9a-f]{64}$/;
@@ -19,8 +19,6 @@ const READ_ONLY_METHODS = new Set([
   'page.read', 'page.query', 'page.find', 'page.collect_links', 'page.capture',
   'page.wait_for', 'media.state',
 ]);
-const SECRET_FIELD = /(?:password|passcode|otp|secret|credential|private.?key|access.?token|refresh.?token|card.?number|cvv|payment.?data|pairing.?code|signing.?key)/i;
-
 const REACTIVE_VM_LIMITS = Object.freeze({
   serializedProgramBytes: 131072,
   astNodes: 256,
@@ -33,80 +31,15 @@ const REACTIVE_VM_LIMITS = Object.freeze({
   runDeadlineMs: 300000,
 });
 
-export class ReactiveVmError extends Error {
-  constructor(code, message, details = undefined) {
-    super(message);
-    this.name = 'ReactiveVmError';
-    this.code = code;
-    if (details !== undefined) this.details = details;
-  }
-}
+// WHY A GUARD FACTORY AND NOT A LIBRARY OF NINETY EXPORTS.
+// The collect, control-flow and host modules used to carry these helpers verbatim; the factory hands each module the exact same guards with its own default code, and the semantics stay byte-identical.
 
-function fail(code, message, details) {
-  throw new ReactiveVmError(code, message, details);
-}
+const { fail, isPlainObject, assertPlainObject, assertExactKeys, byteLength, assertSafeInteger, cloneJson, deepFreeze, assertNoSensitive } = makeGuards('INVALID_SCHEMA');
 
-function isPlainObject(value) {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
-  const proto = Object.getPrototypeOf(value);
-  return proto === Object.prototype || proto === null;
-}
-
-function assertPlainObject(value, path, code = 'INVALID_SCHEMA') {
-  if (!isPlainObject(value)) fail(code, `${path} must be a plain object.`);
-}
-
-function assertExactKeys(value, required, optional, path, code = 'INVALID_SCHEMA') {
-  assertPlainObject(value, path, code);
-  const allowed = new Set([...required, ...optional]);
-  for (const key of Object.keys(value)) {
-    if (!allowed.has(key)) fail(code, `${path}.${key} is not allowed.`);
-  }
-  for (const key of required) {
-    if (!(key in value)) fail(code, `${path}.${key} is required.`);
-  }
-}
-
-function byteLength(value) {
-  return new TextEncoder().encode(value).length;
-}
-
-function cloneJson(value, path = '$') {
-  try {
-    return JSON.parse(canonicalJson(value));
-  } catch {
-    fail('INVALID_SEMANTICS', `${path} must be acyclic canonical JSON data.`);
-  }
-}
-
-function deepFreeze(value) {
-  if (!value || typeof value !== 'object' || Object.isFrozen(value)) return value;
-  for (const child of Object.values(value)) deepFreeze(child);
-  return Object.freeze(value);
-}
-
-function assertNoSensitive(value, path = '$', seen = new WeakSet()) {
-  if (typeof value === 'string') {
-    if (SECRET_VALUE.test(value)) fail('SENSITIVE_VALUE', `${path} contains a secret-like value.`);
-    return;
-  }
-  if (!value || typeof value !== 'object') return;
-  if (seen.has(value)) fail('INVALID_SEMANTICS', `${path} contains a cycle.`);
-  seen.add(value);
-  const entries = Array.isArray(value) ? value.entries() : Object.entries(value);
-  for (const [key, child] of entries) {
-    if (!Array.isArray(value) && SECRET_FIELD.test(key)) fail('SENSITIVE_VALUE', `${path}.${key} is a forbidden sensitive field.`);
-    assertNoSensitive(child, `${path}.${key}`, seen);
-  }
-  seen.delete(value);
-}
+export { ReactiveVmError };
 
 function assertId(value, path) {
   if (typeof value !== 'string' || value.length < 1 || byteLength(value) > 128) fail('INVALID_SCHEMA', `${path} must be a bounded string.`);
-}
-
-function assertSafeInteger(value, path, min, max, code = 'INVALID_SCHEMA') {
-  if (!Number.isSafeInteger(value) || value < min || value > max) fail(code, `${path} is outside its bounds.`);
 }
 
 function withoutProgramDigest(program) {

@@ -4,10 +4,8 @@
 // @dependencies: goal-ledger, proof-engine, reactive-vm, reactive-vm-control-flow.
 
 import { canonicalJson, digestCanonical } from '../supabase/functions/_shared/goal-ledger.js';
-import { SECRET_VALUE } from './secret-pattern.js';
 import { createEvidence } from '../supabase/functions/_shared/proof-engine.js';
 import {
-  ReactiveVmError,
   evaluateReactiveExpression,
   validateReactiveProgram,
 } from './reactive-vm.js';
@@ -16,6 +14,12 @@ import {
   createControlFlowVm,
   validateControlFlowProgram,
 } from './reactive-vm-control-flow.js';
+import { makeGuards, SECRET_FIELD } from './reactive-vm-core.js';
+
+// WHY A GUARD FACTORY AND NOT A LIBRARY OF NINETY EXPORTS.
+// The collect, control-flow and host modules used to carry these helpers verbatim; the factory hands each module the exact same guards with its own default code, and the semantics stay byte-identical.
+
+const { fail, isPlainObject, assertPlainObject, assertExactKeys, byteLength, assertSafeInteger, cloneJson, deepFreeze, assertNoSensitive } = makeGuards('INVALID_SEMANTICS');
 
 const CONTROL_FLOW_STATE_VERSION = 'OA_REACTIVE_VM_CONTROL_FLOW_STATE_V1';
 const STATE_VERSION = 'OA_REACTIVE_VM_COLLECT_STATE_V1';
@@ -36,71 +40,6 @@ const WEAK_KEY_FIELDS = new Set([
   'name', 'label', 'text', 'x', 'y', 'width', 'height', 'rect', 'inViewport',
   'geometryRevision', 'index', 'position',
 ]);
-const SECRET_FIELD = /(?:password|passcode|otp|secret|credential|private.?key|access.?token|refresh.?token|card.?number|cvv|payment.?data|pairing.?code|signing.?key)/i;
-
-function fail(code, message, details) {
-  throw new ReactiveVmError(code, message, details);
-}
-
-function isPlainObject(value) {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
-  const proto = Object.getPrototypeOf(value);
-  return proto === Object.prototype || proto === null;
-}
-
-function assertPlainObject(value, path, code = 'INVALID_SEMANTICS') {
-  if (!isPlainObject(value)) fail(code, `${path} must be a plain object.`);
-}
-
-function assertExactKeys(value, required, optional, path, code = 'INVALID_SEMANTICS') {
-  assertPlainObject(value, path, code);
-  const allowed = new Set([...required, ...optional]);
-  for (const key of Object.keys(value)) {
-    if (!allowed.has(key)) fail(code, `${path}.${key} is not allowed.`);
-  }
-  for (const key of required) {
-    if (!(key in value)) fail(code, `${path}.${key} is required.`);
-  }
-}
-
-function byteLength(value) {
-  return new TextEncoder().encode(value).length;
-}
-
-function assertSafeInteger(value, path, min, max, code = 'INVALID_SEMANTICS') {
-  if (!Number.isSafeInteger(value) || value < min || value > max) fail(code, `${path} is outside its bounds.`);
-}
-
-function cloneJson(value, path = '$') {
-  try {
-    return JSON.parse(canonicalJson(value));
-  } catch {
-    fail('INVALID_SEMANTICS', `${path} must be acyclic canonical JSON data.`);
-  }
-}
-
-function deepFreeze(value) {
-  if (!value || typeof value !== 'object' || Object.isFrozen(value)) return value;
-  for (const child of Object.values(value)) deepFreeze(child);
-  return Object.freeze(value);
-}
-
-function assertNoSensitive(value, path = '$', seen = new WeakSet()) {
-  if (typeof value === 'string') {
-    if (SECRET_VALUE.test(value)) fail('SENSITIVE_VALUE', `${path} contains a secret-like value.`);
-    return;
-  }
-  if (!value || typeof value !== 'object') return;
-  if (seen.has(value)) fail('INVALID_SEMANTICS', `${path} contains a cycle.`);
-  seen.add(value);
-  const entries = Array.isArray(value) ? value.entries() : Object.entries(value);
-  for (const [key, child] of entries) {
-    if (!Array.isArray(value) && SECRET_FIELD.test(key)) fail('SENSITIVE_VALUE', `${path}.${key} is a forbidden sensitive field.`);
-    assertNoSensitive(child, `${path}.${key}`, seen);
-  }
-  seen.delete(value);
-}
-
 function assertSafeBindingName(value, path) {
   if (typeof value !== 'string' || !SAFE_SEGMENT.test(value) || FORBIDDEN_PATH_SEGMENTS.has(value)) {
     fail('INVALID_SEMANTICS', `${path} is not a safe binding name.`);

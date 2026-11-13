@@ -135,6 +135,34 @@ const ctx = (driver = fakeDriver(), lease = openLease()) => ({
   open: async () => fakeSearchSession(driver.calls)
 });
 
+// The /health fake the two browser_status tests share: one bridge, one health payload, one port, always closed.
+
+const withHealthBridge = async (health, fn) => {
+  const http = await import('node:http');
+  const bridge = http.createServer((req, res) => {
+    if (req.url === '/health') { res.writeHead(200, { 'content-type': 'application/json' }); res.end(JSON.stringify(health)); return; }
+    res.writeHead(404); res.end();
+  });
+  await new Promise((resolve) => bridge.listen(0, '127.0.0.1', resolve));
+  const ephemeral = bridge.address().port;
+  try {
+    return await fn(ephemeral);
+  } finally {
+    await new Promise((resolve) => bridge.close(resolve));
+  }
+};
+
+// The document-job papers share one skeleton; only the graph blocks differ.
+
+const insertMenuPaper = (graphs) => ({
+  title: 'Menu inventory',
+  sections: [{
+    heading: 'Insert menu',
+    tables: [{ headers: ['Item', 'Shortcut'], rows: [['Image', 'Ctrl+Alt+I'], ['Table', '']] }],
+    ...(graphs ? { graphs } : {})
+  }]
+});
+
 test('initialize answers with a protocol version and who this server is', async () => {
   const server = createMcpServer(ctx());
   const res = await server.handle({ jsonrpc: '2.0', id: 1, method: 'initialize', params: {} });
@@ -172,7 +200,6 @@ test('the surface covers what the driver can actually do', async () => {
 // The status answer used to hand that promise straight to the caller, and JSON turned it into an empty object, so an agent asking "where am I" was told nothing at all - and the answer that names the road is the one an agent reads first.
 
 test('browser_status carries the meter of every linked device', async () => {
-  const http = await import('node:http');
   const health = {
     ok: true, linked: true, queued: 0, waiting: 0, meterRefusal: null,
     devices: [
@@ -180,13 +207,7 @@ test('browser_status carries the meter of every linked device', async () => {
       { slot: 2, id: 'dev-b', instanceId: 'inst-b', deviceName: 'opera-b', extensionVersion: '1.6.35', connectedAt: 2, meter: { plan: 'plan.firm', allowance: 500, dailyQuota: 5000, sent: 0, usedToday: 5000, remaining: 0 } }
     ]
   };
-  const bridge = http.createServer((req, res) => {
-    if (req.url === '/health') { res.writeHead(200, { 'content-type': 'application/json' }); res.end(JSON.stringify(health)); return; }
-    res.writeHead(404); res.end();
-  });
-  await new Promise((resolve) => bridge.listen(0, '127.0.0.1', resolve));
-  const ephemeral = bridge.address().port;
-  try {
+  return withHealthBridge(health, async (ephemeral) => {
     const server = createMcpServer({ ...ctx(), port: async () => ephemeral });
     const res = await server.handle({ jsonrpc: '2.0', id: 91, method: 'tools/call', params: { name: 'browser_status', arguments: {} } });
     const payload = JSON.parse(res.result.content[0].text);
@@ -201,13 +222,10 @@ test('browser_status carries the meter of every linked device', async () => {
     assert.equal(byName['opera-b'].plan.remaining, 0);
     assert.equal(payload.planExhausted, true);
     assert.deepEqual(payload.planExhaustedDevices, ['opera-b']);
-  } finally {
-    await new Promise((resolve) => bridge.close(resolve));
-  }
+  });
 });
 
 test('browser_status stays quiet when every linked device has headroom', async () => {
-  const http = await import('node:http');
   const usedToday = 206;
   const health = {
     ok: true, linked: true, queued: 0, waiting: 0, meterRefusal: null,
@@ -215,22 +233,14 @@ test('browser_status stays quiet when every linked device has headroom', async (
       { slot: 1, id: 'dev-a', instanceId: 'inst-a', deviceName: 'opera-a', extensionVersion: '1.6.35', connectedAt: 1, meter: { plan: 'plan.firm', allowance: 500, dailyQuota: 5000, sent: 0, usedToday, remaining: 4794 } }
     ]
   };
-  const bridge = http.createServer((req, res) => {
-    if (req.url === '/health') { res.writeHead(200, { 'content-type': 'application/json' }); res.end(JSON.stringify(health)); return; }
-    res.writeHead(404); res.end();
-  });
-  await new Promise((resolve) => bridge.listen(0, '127.0.0.1', resolve));
-  const ephemeral = bridge.address().port;
-  try {
+  return withHealthBridge(health, async (ephemeral) => {
     const server = createMcpServer({ ...ctx(), port: async () => ephemeral });
     const res = await server.handle({ jsonrpc: '2.0', id: 92, method: 'tools/call', params: { name: 'browser_status', arguments: {} } });
     const payload = JSON.parse(res.result.content[0].text);
     assert.equal(payload.planExhausted, undefined, 'no device at zero means no exhaustion claim');
     assert.equal(payload.planExhaustedDevices, undefined);
     assert.equal(payload.devices[0].plan.remaining, 4794);
-  } finally {
-    await new Promise((resolve) => bridge.close(resolve));
-  }
+  });
 });
 
 test('browser_status names the port the drive is on', async () => {
@@ -281,19 +291,12 @@ test('report_build turns an exported sheet into a checked report without a brows
 test('document_build turns a JSON paper into a checked document without a browser', async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'opera-document-tool-'));
   const source = path.join(dir, 'paper.json');
-  fs.writeFileSync(source, JSON.stringify({
-    title: 'Menu inventory',
-    sections: [{
-      heading: 'Insert menu',
-      tables: [{ headers: ['Item', 'Shortcut'], rows: [['Image', 'Ctrl+Alt+I'], ['Table', '']] }],
-      graphs: [{
-        kind: 'count',
-        title: 'Items',
-        source: { table: 0, labelColumn: 'Item', aggregate: 'count' },
-        data: [{ label: 'Image', value: 1 }, { label: 'Table', value: 1 }]
-      }]
-    }]
-  }));
+  fs.writeFileSync(source, JSON.stringify(insertMenuPaper([{
+    kind: 'count',
+    title: 'Items',
+    source: { table: 0, labelColumn: 'Item', aggregate: 'count' },
+    data: [{ label: 'Image', value: 1 }, { label: 'Table', value: 1 }]
+  }])));
   try {
     const server = createMcpServer(ctx());
     const res = await server.handle({
@@ -316,18 +319,11 @@ test('document_build turns a JSON paper into a checked document without a browse
 test('document_build refuses a graph with no source and writes nothing', async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'opera-document-invalid-'));
   const source = path.join(dir, 'bad.json');
-  fs.writeFileSync(source, JSON.stringify({
-    title: 'Menu inventory',
-    sections: [{
-      heading: 'Insert menu',
-      tables: [{ headers: ['Item', 'Shortcut'], rows: [['Image', 'Ctrl+Alt+I'], ['Table', '']] }],
-      graphs: [{
-        kind: 'count',
-        title: 'Items',
-        data: [{ label: 'Image', value: 1 }, { label: 'Table', value: 1 }]
-      }]
-    }]
-  }));
+  fs.writeFileSync(source, JSON.stringify(insertMenuPaper([{
+    kind: 'count',
+    title: 'Items',
+    data: [{ label: 'Image', value: 1 }, { label: 'Table', value: 1 }]
+  }])));
   try {
     const server = createMcpServer(ctx());
     const res = await server.handle({
