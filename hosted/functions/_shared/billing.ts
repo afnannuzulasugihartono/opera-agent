@@ -138,10 +138,12 @@ export function providerOrderId(invoiceId, amountCents, currency = 'IDR', attemp
     .update(`${invoiceId}\u0000${Number(amountCents) || 0}\u0000${currency || 'IDR'}${retry}`)
     .digest('hex')
     .slice(0, 10);
-  const readable = String(invoiceId || '')
-    .replace(/[^A-Za-z0-9._~-]+/g, '-')
-    .replace(/^[-.]+|[-.]+$/g, '')
-    .slice(0, 36);
+  const readableRaw = String(invoiceId || '').replace(/[^A-Za-z0-9._~-]+/g, '-').slice(0, 36);
+  // WHY A LOOP AND NOT /^[-.]+|[-.]+$/ FOR THE EDGE STRIP.
+  // The alternation is the shape flagged for variable-length backtracking on hostile strings; two one-pass scans trim the ends without that shape.
+  let readable = readableRaw;
+  while (readable.startsWith('-') || readable.startsWith('.')) readable = readable.slice(1);
+  while (readable.endsWith('-') || readable.endsWith('.')) readable = readable.slice(0, -1);
   return `oa-${stamp}-${readable}`.slice(0, 50);
 }
 
