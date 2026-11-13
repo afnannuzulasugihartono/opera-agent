@@ -244,7 +244,7 @@ export function normalizeBurst(args: unknown): { steps: BurstStep[]; timeoutMs: 
   const timeoutMs = Number.isFinite(asked)
     ? Math.min(BURST_MAX_TIMEOUT_MS, Math.max(500, Math.round(asked)))
     : BURST_MAX_TIMEOUT_MS;
-  return { steps: bag.steps.map(normalizeStep), timeoutMs };
+  return { steps: bag.steps.map((step, index) => normalizeStep(step, index)), timeoutMs };
 }
 
 type BurstResult = Record<string, unknown> & { action: string };

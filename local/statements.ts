@@ -60,16 +60,25 @@ export interface ManifestRow extends StatementJobInput {
   deliveredAt: string;
 }
 
+// WHY A LOOP AND NOT /^-+|-+$/ FOR THE TRIM.
+// The alternation is the shape the linter flags for variable-length backtracking on long strings; two one-pass scans trim the ends without that shape.
+
+function trimHyphens(value: string): string {
+  let from = 0;
+  let to = value.length;
+  while (from < to && value[from] === '-') from += 1;
+  while (to > from && value[to - 1] === '-') to -= 1;
+  return value.slice(from, to);
+}
+
 export function slug(text: unknown): string {
   const cleaned = String(text ?? '')
     .normalize('NFKD')
     .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 60)
-    .replace(/-+$/g, '');
-  return cleaned || 'untitled';
+    .replace(/[^a-z0-9]+/g, '-');
+  const trimmed = trimHyphens(cleaned).slice(0, 60);
+  return trimHyphens(trimmed) || 'untitled';
 }
 
 // WHY THE DEFAULT FOLDER IS UNDER DOWNLOADS AND NOT IN THE REPO.

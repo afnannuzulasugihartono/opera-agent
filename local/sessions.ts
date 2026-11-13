@@ -152,7 +152,7 @@ export function createSessionStore({ openSession, port, browserId, viaBridge = n
   const attach = () => open({});
 
   async function closeTab(tabId: unknown, closeTransport: (id: unknown) => Promise<unknown>) {
-    sessions.get(tabId)?.close?.();
+    void sessions.get(tabId)?.close?.();
     sessions.delete(tabId);
     if (fronted === tabId) fronted = null;
     return closeTransport(tabId);

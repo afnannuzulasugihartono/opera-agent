@@ -201,7 +201,8 @@ function validateGraph(graph: JsonRecord, sectionIndex: number, graphIndex: numb
     data: computed.data
   };
 }
-export function buildDocument({ doc }: { doc: JsonRecord } = { doc: {} }) {
+export function buildDocument(options?: { doc?: JsonRecord }) {
+  const doc: JsonRecord = options?.doc ?? {};
   if (!doc || typeof doc !== 'object' || Array.isArray(doc)) {
     throw new Error('document_build needs a document object.');
   }

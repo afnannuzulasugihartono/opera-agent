@@ -22,7 +22,10 @@ export interface CaptchaSettings {
 }
 
 export function solverSettings(env: NodeJS.ProcessEnv = {}): CaptchaSettings {
-  const baseUrl = String(env.OPERA_CAPTCHA_API_URL ?? '').trim().replace(/\/+$/, '');
+  // WHY A LOOP AND NOT A REGEX FOR THE TRAILING SLASHES.
+  // /\/+$/ is the shape the linter flags for variable-length backtracking on long strings; a loop strips the tail in one pass and says exactly that.
+  let baseUrl = String(env.OPERA_CAPTCHA_API_URL ?? '').trim();
+  while (baseUrl.endsWith('/')) baseUrl = baseUrl.slice(0, -1);
   const apiKey = String(env.OPERA_CAPTCHA_API_KEY ?? '').trim();
   const domains = String(env.OPERA_CAPTCHA_DOMAINS ?? '')
     .split(',')

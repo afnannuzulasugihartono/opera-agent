@@ -59,7 +59,9 @@ function readableNumber(value: unknown): string {
   if (/^-?\d{4,}$/.test(text)) {
     const negative = text.startsWith('-');
     const digits = negative ? text.slice(1) : text;
-    return `${negative ? '-' : ''}${digits.replace(/\B(?=(\d{3})+(?!\d))/g, '.')}`;
+    const fromRight: string[] = [];
+    for (let from = digits.length; from > 0; from -= 3) fromRight.unshift(digits.slice(Math.max(0, from - 3), from));
+    return `${negative ? '-' : ''}${fromRight.join('.')}`;
   }
   if (/^-?\d+\.\d+$/.test(text)) return text.replace('.', ',');
   return text;

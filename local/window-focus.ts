@@ -17,6 +17,7 @@
 // Returning a bare false would leave the agent guessing between "the window is behind something" and "this platform is not supported here".
 
 import { execFile, spawn } from 'node:child_process';
+import path from 'node:path';
 
 export interface ShellAnswer {
   stdout: string;
@@ -167,9 +168,14 @@ process.once('exit', () => {
   }
 });
 
+// WHY AN ABSOLUTE PATH AND NOT A PATH LOOKUP.
+// A bare 'powershell' resolves through the PATH environment, which a directory writable by anyone but the owner can shadow with a fake; %SystemRoot% is where Windows actually keeps the real one, and the built-in default keeps the stock install working.
+
+const POWERSHELL = path.join(process.env.SystemRoot ?? process.env.windir ?? 'C:\\Windows', 'System32', 'WindowsPowerShell', 'v1.0', 'powershell.exe');
+
 function warmReader(): WarmReader {
   if (reader) return reader;
-  const child = spawn('powershell', [
+  const child = spawn(POWERSHELL, [
     '-NoProfile',
     '-NonInteractive',
     '-EncodedCommand',

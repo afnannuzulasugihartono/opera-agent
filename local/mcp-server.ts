@@ -644,7 +644,7 @@ const windowMatch = async (tab: JsonRecord | null, driver: Driver): Promise<stri
           : await driver.open(args.url));
       case 'close_tab': {
         const out = await driver.close(args.tabId);
-        sessions.get(args.tabId)?.close?.();
+        void sessions.get(args.tabId)?.close?.();
         sessions.delete(args.tabId);
         await lease.release(args.tabId, OWNER).catch(() => null);
         return asText(out);
@@ -722,7 +722,7 @@ const windowMatch = async (tab: JsonRecord | null, driver: Driver): Promise<stri
           failure = error;
         } finally {
           if (tabId) {
-            sessions.get(tabId)?.close?.();
+            void sessions.get(tabId)?.close?.();
             sessions.delete(tabId);
             await lease.release(tabId, OWNER).catch(() => null);
             await opener.close(tabId).then(() => { closeFailed = false; }).catch(() => { closeFailed = true; });
@@ -925,7 +925,7 @@ const windowMatch = async (tab: JsonRecord | null, driver: Driver): Promise<stri
 
   return {
     async close() {
-      for (const session of sessions.values()) session.close?.();
+      for (const session of sessions.values()) void session.close?.();
       sessions.clear();
     },
     async handle(request: unknown) {
