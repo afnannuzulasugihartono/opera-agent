@@ -1,9 +1,9 @@
 // @last-edited: 2026-10-21 UTC+7.
 // @title: reactive-vm-control-flow — the reactive VM's control flow: one step, one transition, one state.
 // @state: the state machine that advances a program, and the budget, tenant and secret rules it obeys.
-// @dependencies: goal-ledger, reactive-vm.
+// @dependencies: digest, reactive-vm.
 
-import { canonicalJson, digestCanonical } from '../hosted/functions/_shared/goal-ledger.js';
+import { canonicalJson, digestCanonical } from './digest.js';
 import {
   ReactiveVmError,
   evaluateReactiveExpression,

@@ -8,7 +8,7 @@
 // WHY THIS EXISTS.
 // A release writes the version into more than fifteen files by hand, and the one forgotten clock reads as a broken release until CI catches it.
 // The engine applies exactly the entries the library names, recomputes the pins from the rewritten contents, scaffolds what a human must still read, and fails loudly naming the file that disagrees.
-// The button that calls this is .github/workflows/release-bump.yml; the guards that keep the table honest are tests/bump-version.test.mjs and the gates themselves.
+// The button that calls this is .github/workflows/release-bump.yml; the guards that keep the table honest are tests/release/bump-version.test.mjs and the gates themselves.
 
 import fs from 'node:fs';
 import path from 'node:path';

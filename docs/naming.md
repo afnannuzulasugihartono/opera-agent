@@ -1,5 +1,5 @@
 @last-edited: 2026-10-23 UTC+7.
-@related: [`AGENTS.md`](../AGENTS.md) - [`agent-map.md`](agent-map.md) - [`api.md`](api.md) - [`product/browser-latency.md`](product/browser-latency.md)
+@related: [`AGENTS.md`](../AGENTS.md) - [`../ARCHITECTURE.md`](../ARCHITECTURE.md) - [`api.md`](api.md) - [`product/browser-latency.md`](product/browser-latency.md)
 
 # Naming
 
@@ -43,9 +43,9 @@ The Postgres names are in the migrations, and the edge functions refuse anything
 
 The shapes are pinned by tests, so a name in the wrong shape fails a gate rather than reaching a user:
 
-- `tests/readme.test.mjs` reads the local tool names out of `local/tools.js` and counts them against the number the README claims.
-- `tests/ax-observation.test.mjs` counts the cloud tools by matching `server.registerTool("([a-z_]+)"`, and pins the total at 35.
-- `docs/api.md` documents the gateway's `method` parameter and the pattern it must match, and `tests/api-docs.test.mjs` fails when that document stops covering the routed paths.
+- `tests/docs/readme.test.mjs` reads the local tool names out of `local/tools.js` and counts them against the number the README claims.
+- `tests/extension/ax-observation.test.mjs` counts the cloud tools by matching `server.registerTool("([a-z_]+)"`, and pins the total at 35.
+- `docs/api.md` documents the gateway's `method` parameter and the pattern it must match, and `tests/docs/api-docs.test.mjs` fails when that document stops covering the routed paths.
 
 ## Adding a name
 

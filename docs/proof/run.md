@@ -27,4 +27,4 @@ Browser: Google Chrome. Deck slides: 5.
 | `docs/proof/out/riset-promo.docx` | 23485 | `1758824cd0cf0b15a6f9531cd13ff5d42de277776b8a0cd87b8d927184ba38e1` | `landing/contoh/riset-promo.docx` |
 | `docs/proof/out/rencana-pemasaran-2027.docx` | 18509 | `104e43eac8e80e1860e1bc52c61414e81dcac43a1bea2f424537e4754517b8b6` | `landing/contoh/rencana-pemasaran-2027.docx` |
 
-The hashes in `run.jsonl` are rechecked against `landing/contoh/` by `tests/proof-run.test.mjs`, so this record cannot drift away from what the code makes.
+The hashes in `run.jsonl` are rechecked against `landing/contoh/` by `tests/tooling/proof-run.test.mjs`, so this record cannot drift away from what the code makes.

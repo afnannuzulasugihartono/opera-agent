@@ -1,7 +1,7 @@
 # @last-edited: 2026-11-12 UTC+7.
 # @title: release-bump - one dispatch moves every clock; the PR it opens is the review.
 # @state: workflow_dispatch with one input; runs the bump engine on main and stops at a pull request.
-# @dependencies: scripts/release/bump-version.mjs, tests/bump-version.test.mjs, .github/workflows/publish-*.yml for the deliberate dispatches after merge.
+# @dependencies: scripts/release/bump-version.mjs, tests/release/bump-version.test.mjs, .github/workflows/publish-*.yml for the deliberate dispatches after merge.
 
 name: Release bump
 

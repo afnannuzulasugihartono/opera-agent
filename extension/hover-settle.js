@@ -9,7 +9,7 @@
 // Multi-level menus were the most fragile interaction in the live Google Docs test: the caller had to hand-build a burst of hover -> wait -> hover -> wait, because hovering and settling were separate unbounded steps.
 // This module owns the decision of when a hover has "landed", so one hover per level can be a single step.
 
-// Semantics locked by tests/hover-settle.test.mjs:
+// Semantics locked by tests/extension/hover-settle.test.mjs:
 // - a hover with an expected submenu name settles only when that name is actually observed
 // - otherwise it settles on DOM mutation stability for the required rounds
 // - an `aria-expanded` flip is itself a settle signal

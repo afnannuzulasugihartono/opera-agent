@@ -1,10 +1,9 @@
 // @last-edited: 2026-10-21 UTC+7.
 // @title: reactive-vm-collect — the collector that turns a run of a program into the evidence it leaves.
 // @state: the collection state, the evidence it builds, and the bounds every collection holds.
-// @dependencies: goal-ledger, proof-engine, reactive-vm, reactive-vm-control-flow.
+// @dependencies: digest, proof-engine, reactive-vm, reactive-vm-control-flow.
 
-import { canonicalJson, digestCanonical } from '../hosted/functions/_shared/goal-ledger.js';
-import { createEvidence } from '../hosted/functions/_shared/proof-engine.js';
+import { canonicalJson, digestCanonical } from './digest.js';
 import {
   evaluateReactiveExpression,
   validateReactiveProgram,

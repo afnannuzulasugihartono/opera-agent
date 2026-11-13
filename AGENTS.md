@@ -21,8 +21,9 @@ These ride with every job. Read them before acting, not once per session.
 - Audit everything, delete the trash, simplify the program: sweep for dead files, dead exports, and stale scaffolds, remove what you find, and leave the tree simpler than you met it.
 - Never ask any human for signing keys or any secret material: publisher secrets live only in GitHub Secrets - verify presence with `gh secret list` (names only, values never print), and treat publishing as your own dispatch task, not a question for the owner.
 - Read the lines you need, never the file: ranges through `Select-Object -Skip n -First m` or `Select-String -Context`, logs through their tails. Printing a file whole to find one line is a failed search done in public.
-- Filter before you display. A command that can produce hundreds of lines runs through a bounded filter or the machinery the tree already carries - `npm test` ends in the dot reporter, one dot per test, failures printed in full at the end, nothing else. The gate is `tests/tidy-output.test.mjs`.
-- Find every implicit state machine you touch and decide its fate before you ship: model it, delete it, or tolerate it with a written reason - ranked user > developer > agent, always. The register is `docs/state-machines.json`; the gate is `tests/implicit-state-machines.test.mjs`.
+- Filter before you display. A command that can produce hundreds of lines runs through a bounded filter or the machinery the tree already carries - `npm test` ends in the dot reporter, one dot per test, failures printed in full at the end, nothing else. The gate is `tests/tooling/tidy-output.test.mjs`.
+- Find every implicit state machine you touch and decide its fate before you ship: model it, delete it, or tolerate it with a written reason - ranked user > developer > agent, always. The register is `docs/state-machines.json`; the gate is `tests/tooling/implicit-state-machines.test.mjs`.
+- Where a file lives is decided by `ARCHITECTURE.md`; create nothing at a path the map does not bless.
 
 ## Goals
 

@@ -65,8 +65,8 @@ id = "generic-api-key"
   description = "The RFC 6455 sample handshake nonce in the bridge tests. It is the specification's own example - 'the sample nonce', base64 - and it authenticates nothing: the server accepts any sixteen-byte key. The live tree uses sixteen zero bytes; these entries exist because `detect --source .` reads the commits that carried the spec literal."
   condition = "AND"
   paths = [
-    '''^tests/bridge-ws\.test\.mjs$''',
-    '''^tests/local-bridge\.test\.mjs$''',
+    '''^tests/extension/bridge-ws\.test\.mjs$''',
+    '''^tests/local/local-bridge\.test\.mjs$''',
   ]
   regexTarget = "line"
   regexes = [

@@ -1,10 +1,10 @@
 // @last-edited: 2026-10-13 UTC+7.
 // @title: endpoints — the single source of deployment endpoint truth for the deploy unit.
-// @state: the Supabase project ref, the function URLs derived from it, and the Cloudflare Pages site origin; tests/endpoint-source.test.mjs asserts the derivation.
+// @state: the Supabase project ref, the function URLs derived from it, and the Cloudflare Pages site origin; tests/extension/endpoint-source.test.mjs asserts the derivation.
 // @dependencies: none.
 
 // Single source of deployment endpoint truth for the extension deploy unit.
-// The OAuth consent screen is a page of the site rather than its own deployment, so the site origin below is its only literal, locked equal by tests/endpoint-source.test.mjs.
+// The OAuth consent screen is a page of the site rather than its own deployment, so the site origin below is its only literal, locked equal by tests/extension/endpoint-source.test.mjs.
 // manifest.json update_url is static by platform rule (documented exception), as are applied migrations (never rewritten), release.yml, and historical docs.
 
 export const SUPABASE_PROJECT_REF = 'nenmkmtvjremqphfqnfw';

@@ -86,9 +86,9 @@ priced lines (the price list)  ->  an invoice (one per customer per month)
   the one door for both kinds of bill: pass the deliveries for a per-delivery invoice,
   or pass the same deliveries with `plan` (`plan.pilot` or `plan.firm`) for a plan
   month. There is no second path for an operator to learn.
-- `tests/billing.test.mjs` — the money rules, proved (47 tests).
-- `tests/invoice-page.test.mjs` — every page state, escaped and read (11 tests).
-- `tests/invoice-worker.test.mjs` — the page proxy, its relabel, its redirect, its asset
+- `tests/billing/billing.test.mjs` — the money rules, proved (47 tests).
+- `tests/billing/invoice-page.test.mjs` — every page state, escaped and read (11 tests).
+- `tests/billing/invoice-worker.test.mjs` — the page proxy, its relabel, its redirect, its asset
   fallback and its failure page (9 tests).
 
 ## The QRIS self-rail: our own merchant code, settled by our own detector
@@ -109,7 +109,7 @@ Measured on 2026-11-04 against the live merchant account:
 | `opera_qris_detect_cron()` | queued request `31009`; the answer `{"ok":true,"mode":"dry","wouldClose":[],"transactions":1,"seen":2,"spent":2}` in `net._http_response` |
 | the same job after the flip to live | `{"ok":true,"mode":"live","closed":[],"transactions":1}` — no new money, so nothing closed |
 
-The rules the detector follows, each one a test in `tests/qris-detector.test.mjs`:
+The rules the detector follows, each one a test in `tests/billing/qris-detector.test.mjs`:
 
 - Only money scanned from our own page counts: `payment_type QRIS`, `channel_type
   DYNAMIC_QR`, `transaction_status SETTLEMENT`. A payment against the printed static

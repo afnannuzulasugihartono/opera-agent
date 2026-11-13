@@ -298,8 +298,8 @@ const PAPERS = ['strategi.json', 'riset-promo.json', 'pemasaran.json'];
 
 export async function runProof({
   root = process.cwd(),
-  out = path.join(root, 'proof', 'out'),
-  downloads = path.join(root, 'proof', 'downloads')
+  out = path.join(root, 'docs', 'proof', 'out'),
+  downloads = path.join(root, 'docs', 'proof', 'downloads')
 } = {}) {
   const company = path.join(root, 'tests', 'fixtures', 'mock-company');
   const portal = await serveCompany(company);
@@ -471,14 +471,14 @@ export function recordMarkdown({ steps, browser, slides }) {
     '| --- | --- | --- | --- |',
     ...files,
     '',
-    'The hashes in `run.jsonl` are rechecked against `landing/contoh/` by `tests/proof-run.test.mjs`, so this record cannot drift away from what the code makes.',
+    'The hashes in `run.jsonl` are rechecked against `landing/contoh/` by `tests/tooling/proof-run.test.mjs`, so this record cannot drift away from what the code makes.',
     ''
   ].join('\n');
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const result = await runProof();
-  const dir = path.join(process.cwd(), 'proof');
+  const dir = path.join(process.cwd(), 'docs', 'proof');
   fs.mkdirSync(dir, { recursive: true });
   fs.writeFileSync(path.join(dir, 'portal.jpg'), Buffer.from(result.jpeg, 'base64'));
   fs.writeFileSync(path.join(dir, 'run.jsonl'), `${result.steps.map((step) => JSON.stringify(step)).join('\n')}\n`);

@@ -9,7 +9,7 @@
 // Two surfaces read it: the hosted MCP for the account's plan, and the loopback bridge for the session allowance a paired device gets for that account.
 
 // WHY THE NUMBERS ARE MIRRORED IN SQL.
-// The RPC in the migration cannot import JavaScript, so the quotas are restated there; tests/plans.test.mjs pins the two copies to the same numbers, which is how the two readers stay one plan.
+// The RPC in the migration cannot import JavaScript, so the quotas are restated there; tests/billing/plans.test.mjs pins the two copies to the same numbers, which is how the two readers stay one plan.
 
 export const PLANS = Object.freeze({
   'plan.pilot': Object.freeze({

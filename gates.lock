@@ -136,10 +136,10 @@
 #    exists, including the measurements behind them. That history is now only in
 #    git. This is the accepted cost of the rule, not an oversight.
 #
-#    ENFORCED BY: tests/comment-placement.test.mjs — every tracked AND untracked
+#    ENFORCED BY: tests/docs/comment-placement.test.mjs — every tracked AND untracked
 #    file, in every language, with a scanner that tells a comment from a string and
 #    from a regex literal. The form of a comment is a separate rule with its own
-#    gate, tests/comment-format.test.mjs; two gates asserting one property is one
+#    gate, tests/docs/comment-format.test.mjs; two gates asserting one property is one
 #    gate too many to keep honest.
 #
 # 7. A LOCK ANCHORS ON CODE, NEVER ON A COMMENT.
@@ -161,16 +161,16 @@ scripts/verify/scope.mjs f5895703e958e67c79a1f2f4392b037a84c26220
 scripts/verify/scope-check.mjs 2a4ba5563b68a9979c40165363235f72cac0d4df
 
 # --- the pins themselves: editing these is how a drift goes unnoticed ---
-tests/helpers/boundary-locks.mjs d9291dd95c5bedc2038c81f99a974d8ff9bc4af9
+tests/helpers/boundary-locks.mjs 96d447b064055c88ae21e40beef015dae39946d4
 tests/helpers/canonical-source-hash.mjs a4ebaa0d40122afce47a52cba39309d7dfdb1af1
 tests/helpers/comment-format.mjs bced9e4c9b7a58b56e3317067d5e6717dd2040bf
-tests/comment-format.test.mjs 0231619043033b07c22f725feee511d6ebb34bd4
-tests/comment-claims.test.mjs 09b2944f3ca73f2304752df2423ab67a35a462e6
+tests/docs/comment-format.test.mjs f8e65a5d6d50cd5ea609c5ba1646d2cb8bcc487f
+tests/docs/comment-claims.test.mjs 27e1d1218b036ef7dd028b33cb63236ae325c442
 
 # --- structural rules a human reviewer would otherwise have to remember ---
-tests/hygiene.test.mjs f9294b93b206c651e2825181f9c5489727dd08da
-tests/structure-gates.test.mjs 3ebf0d1b62858e67d7f6fb441461be85e7158a63
-tests/boundary-locks.test.mjs b652662d40f21b495e80cca134f46f4337448d57
+tests/tooling/hygiene.test.mjs 8ad356b430063570361f4644536cd6de35c04754
+tests/tooling/structure-gates.test.mjs be0a148b50f6996befb7968ca4979ae60ab9f73c
+tests/tooling/boundary-locks.test.mjs 7d33c80db5c4a07f659387fbae6fcf172d758757
 
 # --- controls that decide what the product accepts at runtime ---
 extension/lib/protocol.js 14d9a778570a1b789c80e6fe6e5f37d68031013c
@@ -179,6 +179,6 @@ hosted/functions/_shared/cors.js dead4552d786ef0fdbaf71ad5bfb3c99e647b575
 
 # --- surfaces an owner, not an agent, should have to look at ---
 extension/manifest.json 47789c72fa3876d4a9d94104f7da94b72e25bcb2
-.gitleaks.toml 3a1748a2ad7425ec6cab444916b62a860292d5e1
+.gitleaks.toml c86e2ad6f0f7b76e512fda11f76e533b807dc883
 .github/CODEOWNERS ca0271e08aadabe56f86ae17620b36073df44cfb
 .github/workflows/ci.yml bf241518b3aea12b4fbc49ab102552cea139c1e5

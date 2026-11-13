@@ -24,7 +24,7 @@
 //    Where the DOM still says nothing, fall back to the accessibility role of a control that shares an unambiguous accessible name with an AX entry.
 //    This handles custom widgets whose semantics live in the AX tree rather than in attributes.
 
-// Safety invariants (regression-locked in tests/role-reconcile.test.mjs):
+// Safety invariants (regression-locked in tests/extension/role-reconcile.test.mjs):
 // - A real, explicit DOM role is never downgraded or overwritten.
 //   AX only ever fills a gap.
 // - Reconciliation is read-only.

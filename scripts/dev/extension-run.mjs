@@ -303,14 +303,14 @@ export function recordMarkdown({ rows, browser, extensionId: id }) {
     '| --- | --- | --- | --- |',
     `| \`${download?.file}\` | ${download?.bytes} | \`${download?.sha256}\` | \`${download?.sameAs}\` |`,
     '',
-    '`tests/extension-run.test.mjs` re-hashes the fixture in the tree and compares it with the hash in `extension-run.jsonl`, so the record cannot claim bytes the fixture does not hold. It does not drive a browser again, so the calls themselves are proven by the run and not by the test.',
+    '`tests/extension/extension-run.test.mjs` re-hashes the fixture in the tree and compares it with the hash in `extension-run.jsonl`, so the record cannot claim bytes the fixture does not hold. It does not drive a browser again, so the calls themselves are proven by the run and not by the test.',
     ''
   ].join('\n');
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const result = await runExtensionProof();
-  const dir = path.join(process.cwd(), 'proof');
+  const dir = path.join(process.cwd(), 'docs', 'proof');
   fs.mkdirSync(dir, { recursive: true });
   fs.writeFileSync(path.join(dir, 'extension-portal.jpg'), Buffer.from(result.jpeg, 'base64'));
   fs.writeFileSync(path.join(dir, 'extension-run.jsonl'), `${result.rows.map((row) => JSON.stringify(row)).join('\n')}\n`);

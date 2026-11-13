@@ -35,7 +35,7 @@ the proof is the reason the charge is defensible.
 
 The proof is not a log line. It is an object another agent can hand to its own user
 and be believed, so it is frozen: [`tests/fixtures/statement-proof-v1.json`](../../tests/fixtures/statement-proof-v1.json)
-names every field and its type, and `tests/statement-proof.test.mjs` fails when the
+names every field and its type, and `tests/hosted/statement-proof.test.mjs` fails when the
 record drifts from it.
 
 What it deliberately does **not** claim: that the balance inside the PDF equals the
