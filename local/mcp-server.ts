@@ -284,8 +284,8 @@ const afterAction = async (driver: Driver, action: unknown, limit?: number): Pro
       removed: diff.removed,
       reshaped: diff.reshaped,
       baseline: prev === null,
-      url: bothStates ? (prevState!.url === stateRecord!.url ? 'same' : stateRecord!.url) : null,
-      textGrew: bothStates ? Number(stateRecord!.textChars) - Number(prevState!.textChars) : null
+      url: bothStates && prevState !== null && stateRecord !== null && prevState.url === stateRecord.url ? 'same' : bothStates ? stateRecord?.url ?? null : null,
+      textGrew: bothStates && prevState !== null && stateRecord !== null ? Number(stateRecord.textChars) - Number(prevState.textChars) : null
     }
   });
 };
@@ -791,7 +791,7 @@ const windowMatch = async (tab: JsonRecord | null, driver: Driver): Promise<stri
         }
         return asText({ method, result: await driver.ask(method, askParams(args)) });
       }
-      case 'wait_for_row':
+      case 'wait_for_row': {
         const rowOut = await driver.waitForRow({
           role: args.role,
           name: args.name,
@@ -800,12 +800,14 @@ const windowMatch = async (tab: JsonRecord | null, driver: Driver): Promise<stri
           intervalMs: gapOf(args.intervalMs, 50, 50)
         });
         return afterAction(driver, { ...(isObject(rowOut) ? rowOut : {}), settled: true });
-      case 'wait_still':
+      }
+      case 'wait_still': {
         const stillOut = await driver.waitForStill({
           timeoutMs: budgetOf(args.timeoutMs, 8000),
           quietMs: quietOf(args.quietMs, 120)
         });
         return afterAction(driver, { ...(isObject(stillOut) ? stillOut : {}), settled: true });
+      }
       case 'guide':
         return asText(await driver.guide(args.topic));
       case 'list_menus':

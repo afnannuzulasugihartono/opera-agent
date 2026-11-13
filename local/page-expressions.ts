@@ -288,8 +288,10 @@ export const centreOf = (quad: readonly number[]) => {
   const xs: number[] = [];
   const ys: number[] = [];
   for (let i = 0; i + 1 < quad.length; i += 2) {
-    xs.push(quad[i]!);
-    ys.push(quad[i + 1]!);
+    const x = quad[i];
+    const y = quad[i + 1];
+    if (x !== undefined) xs.push(x);
+    if (y !== undefined) ys.push(y);
   }
   return {
     x: Math.round(xs.reduce((a, b) => a + b, 0) / xs.length),

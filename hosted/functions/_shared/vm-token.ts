@@ -69,7 +69,7 @@ async function importKey(keyBytes) {
 
 export async function sealVmHostToken(payload, keyBytes, { kind } = {}) {
   const checkedKind = assertKind(kind);
-  let serialized;
+  let serialized: string | undefined;
   try {
     serialized = JSON.stringify({ version: 1, kind: checkedKind, payload });
   } catch {

@@ -54,7 +54,9 @@ async function openBridgeSession({ tabUrl, targetId, timeoutMs, primitivesOption
   } else {
     const pages = await listBridgeTargets();
     if (!pages.length) throw new Error('bridge: the browser has no page to drive');
-    numericId = pages[0]!.id;
+    const firstPage = pages[0];
+    if (firstPage === undefined) throw new Error('bridge: the browser has no page to drive');
+    numericId = firstPage.id;
   }
   const cdp = createCdpClient(connectBridgeTarget(numericId));
   return {

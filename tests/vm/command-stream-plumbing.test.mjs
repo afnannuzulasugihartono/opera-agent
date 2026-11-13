@@ -23,6 +23,8 @@ import { readFileSync } from 'node:fs';
 import { stripTypeScriptTypes } from 'node:module';
 import vm from 'node:vm';
 import { CORS_DEFAULT_ORIGINS, resolveAllowedOrigin } from '../../hosted/functions/_shared/cors.ts';
+import { requiredEnv } from '../../hosted/functions/_shared/required-env.ts';
+import { sha256 } from '../../hosted/functions/_shared/sha256.ts';
 import { isUpgradeRequest, serveDeviceSocket } from '../../hosted/functions/opera-agent-bridge/bridge-socket.ts';
 
 const bridgeSource = stripTypeScriptTypes(readFileSync(
@@ -38,7 +40,10 @@ const COMMAND_ID = 'a2f0f239-aa99-4d1c-a168-4a5ca51be777';
 const upgradedSockets = [];
 const upgradeOptions = [];
 const realDeno = globalThis.Deno;
+process.env.SUPABASE_URL ??= 'test';
+process.env.SUPABASE_SERVICE_ROLE_KEY ??= 'test';
 globalThis.Deno = {
+  env: { get: (key) => process.env[key] },
   upgradeWebSocket(req, options) {
     upgradeOptions.push(options);
     const socket = {
@@ -122,6 +127,7 @@ function harness(emit = { ok: true, eventId: 7 }) {
     createClient: () => client,
     createEdgeLog: () => ({ error() {} }),
     gateVerdict: () => ({ ok: true, plan: 'plan.pilot', quota: 200, used: 1 }),
+    requiredEnv, sha256,
     CORS_DEFAULT_ORIGINS, resolveAllowedOrigin,
     isUpgradeRequest, serveDeviceSocket,
     WebSocket: { OPEN: 1 },
@@ -397,7 +403,7 @@ test('the device emits without awaiting, so a slow bridge cannot slow a burst st
   const emitter = pull.match(/function emitCommandEvent[\s\S]*?\n}/);
 
   assert.ok(emitter, 'no emitCommandEvent helper on the device');
-  assert.match(emitter[0], /\.catch\(\(\) => \{\}\)/,
+  assert.match(emitter[0], /\.catch\(\(\) => \{\s*\}\)/,
     'the emit is awaited or its rejection is propagated, so a slow bridge becomes burst latency');
   assert.doesNotMatch(emitter[0], /await\s+fetchJson/, 'the helper awaits the network call itself');
 });

@@ -62,7 +62,16 @@ export function canonicalJson(value: unknown): string {
         }
         return left.length - right.length;
       });
-      encoded = `{${keys.map((key) => `${JSON.stringify(key)}:${encode(item[key]!, `${path}.${key}`)}`).join(',')}}`;
+      const record = item as Record<string, JsonValue>;
+      const checked: Record<string, JsonValue> = {};
+      for (const key of keys) {
+        const child = record[key] as JsonValue;
+        checked[key] = child;
+      }
+      encoded = `{${keys.map((key) => {
+        const child = checked[key] as JsonValue;
+        return `${JSON.stringify(key)}:${encode(child, `${path}.${key}`)}`;
+      }).join(',')}}`;
     }
     active.delete(item);
     return encoded;

@@ -119,9 +119,9 @@ test('the features page states the counts and the permissions the product has', 
   // Measured on 2026-10-26: the page said 31 tools and 29 primitives, its meta said 39 and 28, and it named five permissions while the manifest declares six.
   // A marketing page that undercounts its own permissions is not a rounding error: it describes a product with less access than the one it ships.
 
-  const protocol = read('extension/lib/protocol.js');
-  const specs = /METHOD_SPECS\s*=\s*Object\.freeze\(\{([\s\S]*?)\n\}\);/.exec(protocol)?.[1] ?? '';
-  const primitives = [...specs.matchAll(/^\s{2}'([a-z_]+\.[a-z_]+)':/gm)].length;
+  const protocol = read('extension/lib/protocol.ts');
+  const specs = /METHOD_SPECS[^{]*\{([\s\S]*?)\n\}\)/.exec(protocol)?.[1] ?? '';
+  const primitives = [...specs.matchAll(/^\s*'([a-z_]+\.[a-z_]+)':/gm)].length;
   const contract = JSON.parse(read('tests/fixtures/mcp-contract-v1.json'));
   const manifest = JSON.parse(read('extension/manifest.json'));
   const fitur = read('landing/fitur.html');

@@ -105,18 +105,32 @@
 // No tool, no schema, no behaviour moved; only the module specifier points at the new extension, and the comment-stripped digest in tests/fixtures/mcp-contract-v1.json moved the same way.
 // Extension files and the manifest did not move.
 
+// WHY these five moved again: the extension went to TypeScript, and the bytes moved with it.
+// content.ts and background.ts carry the same primitives the JavaScript carried, the MCP tool list is byte-for-byte identical (42 tools, same order, verified before the re-pin), and the VM is the same program the suite already proves.
+// The pins move with the reviewed conversion, and the CRX is built from the same source they guard.
+// tools.ts and manifest.json did not move; the tool schemas and the manifest are the contract.
+
+// WHY content.ts moved again: the manifest loads content.js as a classic script, and no ES-module boundary of any kind may exist inside it.
+// The converted source imported isRecord from lib/guards.js; an MV3 classic script cannot parse that, so the import became a local copy of the same guard and the module marker the build appends is stripped from the classic-script files.
+// behaviour is unchanged - the primitives are the same ones the suite drives; only the stub broke the load, and only the load noticed.
+
+// WHY control-flow and collect moved: the frozen VM went to TypeScript, and the two pure cores moved with it.
+// The runtime validator and the collection engine are the same programs the suite already proves; the pins move with the reviewed conversion.
+// WHY control-flow moved twice: the comment-placement gate demanded the frame-exists comment stand above the pop instead of trailing it, and a gate is the gate.
+// Comment lines do not reach the runtime; nothing else in the file moved with it.
+
 export const PUBLIC_SURFACE_LOCKS = Object.freeze([
-  ['../extension/content.js', 'fd75fc8ba524c201294b4919603fb478400865039f46d5a00730b0f1b937ecb3'],
-  ['../extension/background.js', 'c222723151c856e0051b67ac8b489d97096ed6605da080fff1c8bb859a05fe01'],
+  ['../extension/content.ts', 'da18f164973807db25effbf29b8d71a53732eb7605efe0c19be80a7c024fd2f3'],
+  ['../extension/background.ts', '1d345ff86bd86cdfdcba137f6d5dbb995467b3dd4080d0324b0544cb24e05a93'],
   ['../extension/manifest.json', 'aaad334ded5c8febe60127a01b8ccfeddb5e0f191f42800a1567b1c9ec6fc84e'],
-  ['../hosted/functions/opera-agent-mcp/index.ts', '32b6b219095341b501aa856d1768a13d67c1e80e7e3072745f54d2d0208738a8'],
+  ['../hosted/functions/opera-agent-mcp/index.ts', '9895b06e0abe7e7bbb222e5580c03d4065439db3284111fe3f8f7234b57b77b2'],
   ['../hosted/functions/opera-agent-mcp/tools.ts', '3127cffe8cee8c6a1bf9c9e9c5950072d9535967e9732f0275871a4775c77353'],
 ]);
 
 export const OBSERVATION_STACK_LOCKS = Object.freeze([
   ['../shared/reactive-vm.ts', '7d15b2764ef9eb8f9929d0e6095d6f8fa1442898678b563d00852f7dc3b74d06'],
-  ['../shared/reactive-vm-control-flow.ts', 'a24a0d2e0574b9f8105c1085b66d92a17ede5e2e26d8ad76266364045695d708'],
-  ['../shared/reactive-vm-collect.ts', '2ada33dbed5c2920ccf4f484b7293f3eb866a46bee40ca6c256650e7c3888b78'],
+  ['../shared/reactive-vm-control-flow.ts', '7a07c7dd2ea1c896c2eb2f9f87b22fc670fef09da9b33fdd0a45cacb7c3ea5b9'],
+  ['../shared/reactive-vm-collect.ts', '8a29d80023a93c856dbd8bd9690f473b03d3469fef4c36d8c94a04363f09ed44'],
 ]);
 
 export const RELEVANCE_STACK_LOCKS = Object.freeze([

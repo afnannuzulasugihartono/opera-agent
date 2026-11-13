@@ -116,3 +116,10 @@ local/*.js
 local/bin/*.js
 local/office/*.js
 
+# The compiled twin of every TypeScript source: written by scripts/pack/build-extension.mjs beside the .ts, never committed; the map gate fails on a tracked .js in a folder that carries .ts.
+
+extension/*.js
+extension/lib/*.js
+extension/worker/*.js
+extension/content/*.js
+

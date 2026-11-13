@@ -35,9 +35,9 @@ test('the docs page states the counts the code proves', () => {
   const tools = (mcp.match(/registerTool\("/g) || []).length;
   assert.match(html, new RegExp(`\\b${tools} tool`), `the page states ${tools} tools`);
 
-  const protocol = read('extension/lib/protocol.js');
-  const specs = /METHOD_SPECS\s*=\s*Object\.freeze\(\{([\s\S]*?)\n\}\);/.exec(protocol)?.[1] ?? '';
-  const primitives = [...specs.matchAll(/^\s{2}'([a-z_]+\.[a-z_]+)':/gm)].length;
+  const protocol = read('extension/lib/protocol.ts');
+  const specs = /METHOD_SPECS[^{]*\{([\s\S]*?)\n\}\)/.exec(protocol)?.[1] ?? '';
+  const primitives = [...specs.matchAll(/^\s*'([a-z_]+\.[a-z_]+)':/gm)].length;
   assert.match(html, new RegExp(`\\b${primitives} primitive`), `the page states ${primitives} primitives`);
 
   const manifest = JSON.parse(read('extension/manifest.json'));

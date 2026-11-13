@@ -185,7 +185,7 @@ const parse = async (mode: string, ...rest: unknown[]) => {
   }
   try {
     const { stdout } = await powershell(mode, ...rest);
-    const parsed = JSON.parse(String(stdout ?? '').trim().split('\n').pop()!);
+    const parsed = JSON.parse(String(stdout ?? '').trim().split('\n').pop() ?? '');
     return { ...parsed, mode };
   } catch (error: unknown) {
     return { open: false, platform, mode, why: String((error as Error)?.message ?? error).split('\n')[0] };

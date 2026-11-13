@@ -10,8 +10,11 @@ import { CORS_DEFAULT_ORIGINS, resolveAllowedOrigin } from "../_shared/cors.ts";
 import { gateVerdict } from "./plan-gate.ts";
 import { isUpgradeRequest, serveDeviceSocket } from "./bridge-socket.ts";
 
-const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
-const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+import { requiredEnv } from "../_shared/required-env.ts";
+import { sha256 } from "../_shared/sha256.ts";
+
+const SUPABASE_URL = requiredEnv("SUPABASE_URL");
+const SERVICE_ROLE_KEY = requiredEnv("SUPABASE_SERVICE_ROLE_KEY");
 const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
   auth: { persistSession: false, autoRefreshToken: false }
 });
@@ -42,12 +45,6 @@ function json(data: unknown, status = 200) {
 function clamp(value: unknown, min: number, max: number, fallback: number) {
   const n = Number(value);
   return Number.isFinite(n) ? Math.min(max, Math.max(min, n)) : fallback;
-}
-
-async function sha256(value: string) {
-  const bytes = new TextEncoder().encode(value);
-  const digest = await crypto.subtle.digest("SHA-256", bytes);
-  return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
 function validToken(token: unknown): token is string {

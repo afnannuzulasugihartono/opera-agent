@@ -1,0 +1,423 @@
+// @last-edited: 2026-10-13 UTC+7.
+// @title: protocol — the wire contract: primitive allowlist, parameter schemas, burst vocabulary.
+// @state: exports the method spec table, the allowlist derived from it, and the burst and command validators; npm run check reads this file for the primitive count.
+// @dependencies: keyboard.
+
+// The wire contract: the allowlist of browser primitives, their parameter schemas, and the burst step vocabulary.
+// This file is what `npm run check` reads to report the primitive count, and it is frozen by tests/fixtures and the boundary locks.
+
+// WHY one file: the service worker, the MCP server, and the Node tests must agree on exactly which primitives exist.
+// A second copy of the list would eventually disagree.
+
+export const PRODUCT_VERSION = '1.6.50';
+export const PROTOCOL_VERSION = 1;
+
+import { resolveKeyInput } from './keyboard.js';
+import { isRecord } from './guards.js';
+
+export const BURST_MAX_STEPS = 8;
+export const BURST_MAX_TIMEOUT_MS = 12000;
+export const EXECUTION_MODES: ReadonlyArray<string> = Object.freeze(['background', 'foreground']);
+export const BURST_ACTION_METHODS: Readonly<Record<string, string>> = Object.freeze({
+  read: 'page.read',
+  find: 'page.find',
+  click: 'page.click',
+  fill: 'page.fill',
+  key: 'page.key',
+  scroll: 'page.scroll',
+  wait: 'page.wait_for',
+  hover: 'page.hover',
+  pointer: 'page.pointer',
+
+  navigate: 'tabs.navigate'
+});
+export const BURST_STEP_KEYS: Readonly<Record<string, string[]>> = Object.freeze({
+  read: ['action', 'offset', 'limit', 'includeElements', 'maxElements', 'tabId'],
+  find: ['action', 'text', 'role', 'tag', 'exact', 'limit', 'tabId'],
+  click: ['action', 'ref', 'refFromStep', 'refIndex', 'tabId'],
+  fill: ['action', 'ref', 'value', 'refFromStep', 'refIndex', 'tabId'],
+  key: ['action', 'key', 'modifiers', 'text', 'keyEvents', 'tabId'],
+  scroll: ['action', 'x', 'y', 'absolute', 'smooth', 'tabId'],
+  wait: ['action', 'ref', 'selector', 'text', 'visibleOnly', 'timeoutMs', 'intervalMs', 'tabId'],
+  hover: ['action', 'ref', 'refFromStep', 'refIndex', 'text', 'timeoutMs', 'tabId'],
+  pointer: ['action', 'pointerAction', 'x', 'y', 'endX', 'endY', 'deltaX', 'deltaY', 'tabId'],
+  navigate: ['action', 'url', 'tabId']
+});
+
+// WHY THE DOWNLOAD IS A PRIMITIVE AND NOT A STEP.
+// A statement is a file that has to land on the person's own disk under a name the card chose, and a file that is still being written is not a delivery.
+// The device therefore owns the download, the wait and the name, and answers with the proof; the manifest is read from the same place.
+
+export const METHOD_SPECS: Readonly<Record<string, { timeoutMs: number }>> = Object.freeze({
+  'browser.ping': { timeoutMs: 3000 },
+  'browser.burst': { timeoutMs: BURST_MAX_TIMEOUT_MS },
+  'tabs.list': { timeoutMs: 5000 },
+  'tabs.get': { timeoutMs: 5000 },
+  'tabs.find': { timeoutMs: 5000 },
+  'tabs.open': { timeoutMs: 10000 },
+  'tabs.activate': { timeoutMs: 5000 },
+  'tabs.close': { timeoutMs: 5000 },
+  'tabs.navigate': { timeoutMs: 15000 },
+  'tabs.reload': { timeoutMs: 15000 },
+  'page.read': { timeoutMs: 30000 },
+  'page.query': { timeoutMs: 8000 },
+  'page.find': { timeoutMs: 8000 },
+  'page.collect_links': { timeoutMs: 10000 },
+  'page.click': { timeoutMs: 8000 },
+  'page.pointer': { timeoutMs: 8000 },
+  'page.capture': { timeoutMs: 30000 },
+  'page.record_start': { timeoutMs: 10000 },
+  'page.record_stop': { timeoutMs: 30000 },
+  'page.scan': { timeoutMs: 55000 },
+  'page.dump': { timeoutMs: 20000 },
+  'page.fill': { timeoutMs: 8000 },
+  'page.focus': { timeoutMs: 5000 },
+  'page.scroll': { timeoutMs: 5000 },
+  'page.key': { timeoutMs: 5000 },
+  'page.stream': { timeoutMs: 30000 },
+  'page.wait_for': { timeoutMs: 15000 },
+  'media.state': { timeoutMs: 5000 },
+  'media.play': { timeoutMs: 5000 },
+  'media.pause': { timeoutMs: 5000 },
+  'media.seek': { timeoutMs: 5000 },
+  'media.stream_start': { timeoutMs: 15000 },
+  'media.stream_stop': { timeoutMs: 15000 },
+  'statement.download': { timeoutMs: 55000 },
+  'statement.manifest': { timeoutMs: 5000 },
+  'extension.update': { timeoutMs: 55000 }
+});
+
+export const ALLOWED_METHODS = Object.freeze(Object.keys(METHOD_SPECS));
+
+export function clamp(value: unknown, min: number, max: number, fallback: number = min): number {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return fallback;
+  return Math.min(max, Math.max(min, n));
+}
+
+function validRef(value: unknown): boolean {
+  return typeof value === 'string' && value.length >= 1 && value.length <= 300;
+}
+
+function validateBurstStep(step: unknown): string | null {
+  if (!isRecord(step)) return 'Each burst step must be an object.';
+  const action = String(step.action || '');
+  if (action === 'grid') return validateGridStep(step);
+  if (action === 'file') return validateFileStep(step);
+  if (!BURST_ACTION_METHODS[action]) return 'Burst action is not allowlisted.';
+  const allowedKeys = new Set(BURST_STEP_KEYS[action]);
+  const unexpectedKey = Object.keys(step).find((key) => !allowedKeys.has(key));
+  if (unexpectedKey) return `Burst ${action} does not allow ${unexpectedKey}.`;
+
+  if (step.tabId !== undefined && step.tabId !== null) {
+    const tabId = Number(step.tabId);
+    if (!Number.isInteger(tabId) || tabId < 0 || typeof step.tabId === 'boolean') return 'Invalid burst step tabId.';
+  }
+
+  if (action === 'click' && !validRef(step.ref) && step.refFromStep === undefined) return 'Burst click requires a valid ref or refFromStep.';
+  if (action === 'fill' && !validRef(step.ref) && step.refFromStep === undefined) return 'Burst fill requires a valid ref or refFromStep and a value of at most 20000 characters.';
+
+  if (action === 'fill' && (typeof step.value !== 'string' || step.value.length > 20000)) {
+    return 'Burst fill requires a valid ref or refFromStep and a value of at most 20000 characters.';
+  }
+  if (action === 'key') {
+    if (step.keyEvents !== undefined && typeof step.keyEvents !== 'boolean') {
+      return 'Burst key keyEvents must be a boolean.';
+    }
+
+    try {
+      resolveKeyInput({ key: step.key, modifiers: step.modifiers, text: step.text });
+    } catch (error) {
+      return `Burst key is not allowlisted: ${error instanceof Error ? error.message : String(error)}`;
+    }
+  }
+  if (action === 'scroll' && !Number.isFinite(Number(step.y))) return 'Burst scroll requires a finite y value.';
+  if (action === 'wait' && !validRef(step.ref) && !(typeof step.selector === 'string' && step.selector.length >= 1 && step.selector.length <= 500) && !(typeof step.text === 'string' && step.text.length >= 1 && step.text.length <= 300)) {
+    return 'Burst wait requires a ref, selector, or text target.';
+  }
+
+  if (action === 'hover' && !validRef(step.ref) && step.refFromStep === undefined) {
+    return 'Burst hover requires a valid ref or refFromStep.';
+  }
+  if (action === 'pointer') {
+    const pointerAction = String(step.pointerAction || 'click');
+    if (!['move', 'click', 'drag', 'wheel'].includes(pointerAction)) return 'Invalid burst pointer action.';
+    for (const key of ['x', 'y']) if (!Number.isFinite(Number(step[key]))) return `Invalid burst pointer ${key}.`;
+    if (pointerAction === 'drag') for (const key of ['endX', 'endY']) if (!Number.isFinite(Number(step[key]))) return `Invalid burst pointer ${key}.`;
+    if (pointerAction === 'wheel' && !Number.isFinite(Number(step.deltaY))) return 'Invalid burst pointer deltaY.';
+  }
+
+  if (action === 'navigate' && (typeof step.url !== 'string' || !step.url)) return 'Burst navigate requires a URL.';
+  return null;
+}
+
+const BURST_GRID_MAX = 20;
+const BURST_FILE_DATA_MAX = 2000000;
+
+function validateGridStep(step: Record<string, unknown>): string | null {
+  const unexpectedKey = Object.keys(step).find((key) => !['action', 'rows', 'cols', 'tabId'].includes(key));
+  if (unexpectedKey) return `Burst grid does not allow ${unexpectedKey}.`;
+  for (const key of ['rows', 'cols']) {
+    const value = Number(step[key]);
+    if (!Number.isInteger(value) || value < 1 || value > BURST_GRID_MAX) return `Invalid burst grid ${key}.`;
+  }
+  return null;
+}
+
+function validateFileStep(step: Record<string, unknown>): string | null {
+  const unexpectedKey = Object.keys(step).find((key) => !['action', 'filename', 'data', 'tabId'].includes(key));
+  if (unexpectedKey) return `Burst file does not allow ${unexpectedKey}.`;
+  if (typeof step.filename !== 'string' || !step.filename || step.filename.length > 300) return 'Burst file requires a filename.';
+  if (typeof step.data !== 'string' || !step.data || step.data.length > BURST_FILE_DATA_MAX) return 'Burst file requires data within the byte cap.';
+  return null;
+}
+
+export function expandGridSteps(steps: ReadonlyArray<unknown>): Array<Record<string, unknown>> {
+  const out: Array<Record<string, unknown>> = [];
+  const startOf: number[] = [];
+  for (const step of steps) {
+    startOf.push(out.length);
+    if (!isRecord(step) || step.action !== 'grid') {
+      out.push(isRecord(step) ? step : {});
+      continue;
+    }
+    const at = step.tabId === undefined || step.tabId === null ? {} : { tabId: step.tabId };
+    for (let c = 1; c < Number(step.cols); c += 1) out.push({ action: 'key', key: 'ArrowRight', ...at });
+    for (let r = 1; r < Number(step.rows); r += 1) out.push({ action: 'key', key: 'ArrowDown', ...at });
+    out.push({ action: 'key', key: 'Enter', ...at });
+  }
+  return out.map((step) => {
+    if (step == null || typeof step !== 'object' || !('refFromStep' in step) || (step as Record<string, unknown>).refFromStep === undefined || (step as Record<string, unknown>).refFromStep === null) return step;
+    const from = Number((step as Record<string, unknown>).refFromStep);
+    if (!Number.isInteger(from) || from < 0 || from >= startOf.length) return step;
+    return { ...step, refFromStep: startOf[from] };
+  });
+}
+
+export function validateBurst(params: unknown): { ok: boolean; error?: string } {
+  if (!isRecord(params)) return { ok: false, error: 'Burst params must be an object.' };
+  const unexpectedParam = Object.keys(params).find((key) => !['tabId', 'steps', 'executionMode'].includes(key));
+  if (unexpectedParam) return { ok: false, error: `Burst params do not allow ${unexpectedParam}.` };
+  if (params.tabId != null && (typeof params.tabId === 'boolean' || String(params.tabId).trim() === '' || !Number.isInteger(Number(params.tabId)) || Number(params.tabId) < 0)) {
+    return { ok: false, error: 'Invalid burst tabId.' };
+  }
+  if (!Array.isArray(params.steps) || params.steps.length < 1 || params.steps.length > BURST_MAX_STEPS) {
+    return { ok: false, error: `Burst requires 1-${BURST_MAX_STEPS} steps.` };
+  }
+  if (params.executionMode != null && !(typeof params.executionMode === 'string' && EXECUTION_MODES.includes(params.executionMode))) {
+    return { ok: false, error: 'Invalid executionMode.' };
+  }
+  for (let index = 0; index < params.steps.length; index += 1) {
+    const error = validateBurstStep(params.steps[index]);
+    if (error) return { ok: false, error: `Invalid burst step ${index}: ${error}` };
+    const passthrough = params.steps[index].refFromStep;
+    if (passthrough !== undefined && passthrough !== null) {
+      const fromIndex = Number(passthrough);
+      if (!Number.isInteger(fromIndex) || fromIndex < 0 || fromIndex >= index) {
+        return { ok: false, error: `Invalid burst step ${index}: refFromStep must reference an earlier burst step.` };
+      }
+      const refIndex = params.steps[index].refIndex;
+      if (refIndex !== undefined && refIndex !== null && (!Number.isInteger(Number(refIndex)) || Number(refIndex) < 0)) {
+        return { ok: false, error: `Invalid burst step ${index}: refIndex must be a non-negative integer.` };
+      }
+    }
+  }
+  return { ok: true };
+}
+
+export function burstStaleRef(results: unknown, from: unknown, stepTabId: unknown): boolean {
+  const list = Array.isArray(results) ? results : [];
+  for (let index = Number(from); index < list.length; index += 1) {
+    const entry = list[index] as Record<string, unknown> | undefined;
+    if (entry && entry.action === 'navigate' && entry.tabId === stepTabId) return true;
+  }
+  return false;
+}
+
+export function burstCrossTabRef(results: unknown, from: unknown, stepTabId: unknown): boolean {
+  const source = (Array.isArray(results) ? results : [])[Number(from)] as Record<string, unknown> | undefined;
+  const sourceTab = source ? source.tabId : undefined;
+  if (sourceTab === undefined || sourceTab === null) return false;
+  return sourceTab !== stepTabId;
+}
+
+export interface NormalizedCommand {
+  ok: boolean;
+  params?: Record<string, unknown>;
+  method?: string;
+  executionMode?: string;
+  error?: string;
+  command?: { id: string; method: string; params: Record<string, unknown>; timeoutMs: number };
+}
+
+export function validateCommand(command: unknown): NormalizedCommand {
+  if (!isRecord(command)) return { ok: false, error: 'Command must be an object.' };
+  if (typeof command.id !== 'string' || command.id.length < 8 || command.id.length > 128) {
+    return { ok: false, error: 'Invalid command id.' };
+  }
+  if (typeof command.method !== 'string' || !METHOD_SPECS[command.method]) {
+    return { ok: false, error: 'Method is not allowlisted.' };
+  }
+  if (command.params != null && !isRecord(command.params)) {
+    return { ok: false, error: 'Command params must be an object.' };
+  }
+  if (command.method === 'page.pointer') {
+    const params = command.params || {};
+    const action = String(params.action || 'click');
+    if (!['move', 'click', 'drag', 'wheel', 'hover'].includes(action)) return { ok: false, error: 'Invalid pointer action.' };
+    if (action === 'hover') {
+      if (typeof params.ref !== 'string' || !params.ref) return { ok: false, error: 'Invalid pointer ref.' };
+    } else {
+      for (const key of ['x', 'y']) if (!Number.isFinite(Number(params[key]))) return { ok: false, error: `Invalid pointer ${key}.` };
+      if (action === 'drag') for (const key of ['endX', 'endY']) if (!Number.isFinite(Number(params[key]))) return { ok: false, error: `Invalid pointer ${key}.` };
+      if (action === 'wheel' && !Number.isFinite(Number(params.deltaY))) return { ok: false, error: 'Invalid pointer deltaY.' };
+    }
+  }
+  if (command.method === 'page.capture') {
+    const params = command.params || {};
+    const allowedKeys = new Set(['tabId', 'crop', 'quality', 'maxWidth', 'maxHeight', 'previousHash', 'fullPage', 'tileOffset']);
+    const unexpectedKey = Object.keys(params).find((key) => !allowedKeys.has(key));
+    if (unexpectedKey) return { ok: false, error: `Capture params do not allow ${unexpectedKey}.` };
+    if (params.crop != null) {
+      if (!isRecord(params.crop)) return { ok: false, error: 'Capture crop must be an object.' };
+      const cropKeys = new Set(['x', 'y', 'width', 'height']);
+      const unexpectedCropKey = Object.keys(params.crop).find((key) => !cropKeys.has(key));
+      if (unexpectedCropKey) return { ok: false, error: `Capture crop does not allow ${unexpectedCropKey}.` };
+      for (const key of ['x', 'y']) {
+        if (!Number.isFinite(Number(params.crop[key])) || Number(params.crop[key]) < 0) return { ok: false, error: `Invalid capture crop ${key}.` };
+      }
+      for (const key of ['width', 'height']) {
+        if (!Number.isFinite(Number(params.crop[key])) || Number(params.crop[key]) <= 0) return { ok: false, error: `Invalid capture crop ${key}.` };
+      }
+    }
+    if (params.quality != null && (!Number.isInteger(Number(params.quality)) || Number(params.quality) < 40 || Number(params.quality) > 80)) {
+      return { ok: false, error: 'Capture quality must be an integer from 40 to 80.' };
+    }
+    if (params.maxWidth != null && (!Number.isInteger(Number(params.maxWidth)) || Number(params.maxWidth) < 320 || Number(params.maxWidth) > 1600)) {
+      return { ok: false, error: 'Capture maxWidth must be an integer from 320 to 1600.' };
+    }
+    if (params.maxHeight != null && (!Number.isInteger(Number(params.maxHeight)) || Number(params.maxHeight) < 240 || Number(params.maxHeight) > 1200)) {
+      return { ok: false, error: 'Capture maxHeight must be an integer from 240 to 1200.' };
+    }
+    if (params.previousHash != null && !/^[a-f0-9]{64}$/i.test(String(params.previousHash))) {
+      return { ok: false, error: 'Capture previousHash must be a SHA-256 hex digest.' };
+    }
+    if (params.fullPage != null && typeof params.fullPage !== 'boolean') {
+      return { ok: false, error: 'Capture fullPage must be a boolean.' };
+    }
+    if (params.tileOffset != null && (!Number.isInteger(Number(params.tileOffset)) || Number(params.tileOffset) < 0)) {
+      return { ok: false, error: 'Invalid capture tile offset.' };
+    }
+  }
+  if (command.method === 'page.record_start') {
+    const params = command.params || {};
+    const allowedKeys = new Set(['tabId', 'filename', 'fps', 'maxWidth', 'quality', 'scroll']);
+    const unexpectedKey = Object.keys(params).find((key) => !allowedKeys.has(key));
+
+    if (unexpectedKey) return { ok: false, error: 'Record start params do not allow ' + unexpectedKey + '.' };
+
+    if (params.fps != null && (!Number.isInteger(Number(params.fps)) || Number(params.fps) < 5 || Number(params.fps) > 30)) {
+      return { ok: false, error: 'Record fps must be an integer from 5 to 30.' };
+    }
+
+    if (params.maxWidth != null && (!Number.isInteger(Number(params.maxWidth)) || Number(params.maxWidth) < 320 || Number(params.maxWidth) > 1600)) {
+      return { ok: false, error: 'Record maxWidth must be an integer from 320 to 1600.' };
+    }
+
+    if (params.quality != null && (!Number.isInteger(Number(params.quality)) || Number(params.quality) < 40 || Number(params.quality) > 80)) {
+      return { ok: false, error: 'Record quality must be an integer from 40 to 80.' };
+    }
+
+    if (params.scroll != null && typeof params.scroll !== 'boolean') {
+      return { ok: false, error: 'Record scroll must be a boolean.' };
+    }
+
+    if (params.filename != null && (typeof params.filename !== 'string' || params.filename.length > 120 || params.filename.includes('"') || /[\\/:*?<>|]/.test(params.filename))) {
+      return { ok: false, error: 'Record filename must be a file name of at most 120 characters, with no path separators.' };
+    }
+  }
+  if (command.method === 'page.record_stop') {
+    const params = command.params || {};
+    const allowedKeys = new Set(['tabId']);
+    const unexpectedKey = Object.keys(params).find((key) => !allowedKeys.has(key));
+
+    if (unexpectedKey) return { ok: false, error: 'Record stop params do not allow ' + unexpectedKey + '.' };
+  }
+  if (command.method === 'page.dump') {
+    const params = command.params || {};
+    const allowedKeys = new Set(['tabId', 'offset', 'limit']);
+    const unexpectedKey = Object.keys(params).find((key) => !allowedKeys.has(key));
+    if (unexpectedKey) return { ok: false, error: 'Dump params do not allow ' + unexpectedKey + '.' };
+
+    if (params.limit != null && (!Number.isInteger(Number(params.limit)) || Number(params.limit) < 0 || Number(params.limit) > 200000)) {
+      return { ok: false, error: 'Dump limit must be an integer from 0 to 200000.' };
+    }
+
+    if (params.offset != null && (!Number.isInteger(Number(params.offset)) || Number(params.offset) < 0)) {
+      return { ok: false, error: 'Dump offset must be an integer at least 0.' };
+    }
+  }
+  if (command.method === 'page.scan') {
+    const params = command.params || {};
+    const allowedKeys = new Set(['tabId', 'filename', 'maxBytes']);
+    const unexpectedKey = Object.keys(params).find((key) => !allowedKeys.has(key));
+
+    if (unexpectedKey) return { ok: false, error: 'Mirror params do not allow ' + unexpectedKey + '.' };
+
+    if (params.maxBytes != null && (!Number.isInteger(Number(params.maxBytes)) || Number(params.maxBytes) < 524288 || Number(params.maxBytes) > 26214400)) {
+      return { ok: false, error: 'Mirror maxBytes must be an integer from 524288 to 26214400.' };
+    }
+
+    if (params.filename != null && (typeof params.filename !== 'string' || params.filename.length > 120 || params.filename.includes('"') || /[\\/:*?<>|]/.test(params.filename))) {
+      return { ok: false, error: 'Mirror filename must be a file name of at most 120 characters, with no path separators.' };
+    }
+  }
+  if (command.method === 'page.fill') {
+
+    const value = (command.params || {}).value;
+    if (typeof value !== 'string') {
+      return { ok: false, error: 'page.fill requires a string value. Use "" to clear the field.' };
+    }
+    if (value.length > 20000) {
+      return { ok: false, error: 'page.fill value must be at most 20000 characters.' };
+    }
+  }
+  if (command.params?.executionMode != null && !(typeof command.params.executionMode === 'string' && EXECUTION_MODES.includes(command.params.executionMode))) {
+    return { ok: false, error: 'Invalid executionMode.' };
+  }
+  if (command.method === 'browser.burst') {
+    const burst = validateBurst(command.params || {});
+    if (!burst.ok) return burst;
+  }
+  const timeoutMax = command.method === 'browser.burst' ? BURST_MAX_TIMEOUT_MS : 55000;
+  return {
+    ok: true,
+    command: {
+      id: command.id,
+      method: command.method,
+      params: command.params || {},
+      timeoutMs: clamp(command.timeoutMs, 500, timeoutMax, command.method == null ? 3000 : METHOD_SPECS[command.method]?.timeoutMs ?? 3000)
+    }
+  };
+}
+
+export function normalizeError(error: unknown, code: string = 'EXECUTION_ERROR'): { code: string; message: string; details?: Record<string, unknown> } {
+  const message = error instanceof Error ? error.message : String(error || 'Unknown error');
+  const record = typeof error === 'object' && error !== null ? (error as Record<string, unknown>) : {};
+  const errorCode = typeof record.code === 'string' && record.code ? (record.code as string) : code;
+  const normalized: { code: string; message: string; details?: Record<string, unknown> } = { code: errorCode.slice(0, 100), message: message.slice(0, 1000) };
+  if (record.details && typeof record.details === 'object' && !Array.isArray(record.details)) normalized.details = record.details as Record<string, unknown>;
+  return normalized;
+}
+
+export function safeUrl(value: unknown): string | null {
+  try {
+    const url = new URL(String(value));
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') return null;
+    return url.toString();
+  } catch (error) {
+
+    globalThis.OperaAgentLog?.debug?.('SAFE_URL_PARSE_FAILED', error instanceof Error ? error.message : String(error));
+    return null;
+  }
+}

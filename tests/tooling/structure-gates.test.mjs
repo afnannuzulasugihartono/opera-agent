@@ -36,13 +36,18 @@ function chromeCodeLines(text) {
   return hits;
 }
 
-const CHROME_FREE_EXCEPTIONS = new Set(['debugger-session.js']);
+// WHY THE SCAN READS SOURCES, NOT EMITS.
+// The migration emits beside the sources, with the CR line endings of the compiler, and a .js beside a .ts is an artefact, not the source.
+// The gates below read the .ts the author wrote.
 
-const WORKER_CHROME_REQUIRED_EXCEPTIONS = new Set(['burst.js']);
+const CHROME_FREE_EXCEPTIONS = new Set(['debugger-session.ts']);
+
+const WORKER_CHROME_REQUIRED_EXCEPTIONS = new Set(['burst.ts']);
+const sourceNames = (names) => names.filter((name) => name.endsWith('.ts')).sort();
 
 test('extension/lib is free of chrome.* as code, except the written exception', async () => {
   const dir = new URL('extension/lib/', root);
-  const names = (await readdir(dir)).filter((n) => /\.(js|ts)$/.test(n)).sort();
+  const names = sourceNames(await readdir(dir));
   const offenders = [];
   for (const name of names) {
     if (CHROME_FREE_EXCEPTIONS.has(name)) continue;
@@ -55,22 +60,22 @@ test('extension/lib is free of chrome.* as code, except the written exception', 
 
 test('the documented chrome.* exceptions are still real, and no more have crept in', async () => {
 
-  const text = await readFile(new URL('extension/lib/debugger-session.js', root), 'utf8');
+  const text = await readFile(new URL('extension/lib/debugger-session.ts', root), 'utf8');
   assert.ok(chromeCodeLines(text).length > 0,
-    'debugger-session.js no longer uses chrome.*; drop it from CHROME_FREE_EXCEPTIONS');
+    'debugger-session.ts no longer uses chrome.*; drop it from CHROME_FREE_EXCEPTIONS');
 
   assert.equal(CHROME_FREE_EXCEPTIONS.size, 1,
     'CHROME_FREE_EXCEPTIONS grew; every new exception needs a written reason');
   assert.equal(WORKER_CHROME_REQUIRED_EXCEPTIONS.size, 1,
     'WORKER_CHROME_REQUIRED_EXCEPTIONS grew; every new exception needs a written reason');
-  const burst = await readFile(new URL('extension/worker/burst.js', root), 'utf8');
+  const burst = await readFile(new URL('extension/worker/burst.ts', root), 'utf8');
   assert.equal(chromeCodeLines(burst).length, 0,
-    'burst.js now uses chrome.*; drop it from WORKER_CHROME_REQUIRED_EXCEPTIONS');
+    'burst.ts now uses chrome.*; drop it from WORKER_CHROME_REQUIRED_EXCEPTIONS');
 });
 
 test('a worker module with no chrome.* belongs in lib/, with one written exception', async () => {
   const dir = new URL('extension/worker/', root);
-  const names = (await readdir(dir)).filter((n) => /\.(js|ts)$/.test(n)).sort();
+  const names = sourceNames(await readdir(dir));
   const offenders = [];
   for (const name of names) {
     if (WORKER_CHROME_REQUIRED_EXCEPTIONS.has(name)) continue;

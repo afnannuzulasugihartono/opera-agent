@@ -263,7 +263,7 @@ async function authoritativeProgram(programInput: unknown, tenantId: string) {
   if (!programInput || typeof programInput !== "object" || Array.isArray(programInput)) throw new HostError("INVALID_PROGRAM", "program must be an object.");
   const candidate = programInput as Record<string, unknown>;
   if (candidate.tenantId !== tenantId) throw new HostError("CROSS_TENANT", "Program tenant differs from authenticated tenant.", 403);
-  let program;
+  let program: unknown;
   try {
     program = await validateCollectProgram(candidate);
   } catch (error) {
@@ -283,7 +283,7 @@ async function enqueueRun(body: Record<string, unknown>, tenantId: string) {
   const key = await cryptoKey();
   const runId = crypto.randomUUID();
   const logicalNowMs = Date.now();
-  let state;
+  let state: unknown;
   try {
     state = await createCollectVm(program, {
       runId,
@@ -571,7 +571,7 @@ async function processSlice(runId: string, tenantId: string) {
         break;
       }
 
-      let advanced;
+      let advanced: unknown;
       if (state.pendingEffect) {
         const effectResult = await executeEffect(validatedProgram, state, claim, workerId, tenantId, device, sliceDeadline);
         advanced = await advanceCollectVm(validatedProgram, state, { logicalNowMs, effectResult });

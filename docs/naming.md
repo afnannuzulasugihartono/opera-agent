@@ -27,7 +27,7 @@ The same reasoning holds one layer down, which is why the wire protocol uses an 
 
 ## Where each shape lives
 
-The wire contract is one file, `extension/lib/protocol.js`, and it is the source both the service worker and the Node tests read:
+The wire contract is one file, `extension/lib/protocol.ts`, and it is the source both the service worker and the Node tests read:
 
 - `METHOD_SPECS` holds the dotted methods: `browser.ping`, `browser.burst`, `tabs.list`, `tabs.open`, `tabs.navigate`, `page.read`, `page.click`, `page.key`, `page.wait_for`.
 - `BURST_ACTION_METHODS` maps a burst step's short verb to the dotted method it runs: `read` to `page.read`, `wait` to `page.wait_for`, `navigate` to `tabs.navigate`.
@@ -53,4 +53,4 @@ A new name belongs to exactly one of the three spaces, and the shape follows fro
 
 A cloud tool that wraps one wire method is named for the job the caller asks for, never for the method it sends: the surface calls it `click_element` while the method underneath is `page.click`, `fill_element` for `page.fill`, and `run_browser_burst` for `browser.burst`. The local surface names the same jobs the same way — `click_row`, `browser_burst`, `read_page` — and it sends no wire method at all, because it drives the browser over CDP directly.
 
-A new wire method is added to `METHOD_SPECS` in `extension/lib/protocol.js` and nowhere else. That file is the one the service worker, the MCP server and the Node tests all read, which is why a second copy of the list has never been allowed to exist.
+A new wire method is added to `METHOD_SPECS` in `extension/lib/protocol.ts` and nowhere else. That file is the one the service worker, the MCP server and the Node tests all read, which is why a second copy of the list has never been allowed to exist.

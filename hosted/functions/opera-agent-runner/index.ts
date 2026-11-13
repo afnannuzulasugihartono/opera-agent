@@ -9,8 +9,9 @@ import { createEdgeLog } from "../_shared/edge-log.ts";
 import { commandFailure } from "../_shared/command-result.ts";
 import { CORS_DEFAULT_ORIGINS, resolveAllowedOrigin } from "../_shared/cors.ts";
 
-const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
-const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+import { requiredEnv } from "../_shared/required-env.ts";
+const SUPABASE_URL = requiredEnv("SUPABASE_URL");
+const SERVICE_ROLE_KEY = requiredEnv("SUPABASE_SERVICE_ROLE_KEY");
 const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
   auth: { persistSession: false, autoRefreshToken: false }
 });

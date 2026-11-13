@@ -314,7 +314,7 @@ export function filePrimitives(primitives: import('./types.js').JsonRecord, { cd
             fs.rmSync(where, { force: true });
             try {
               fs.renameSync(full, where);
-            } catch (error: unknown) {
+            } catch {
               try {
                 fs.copyFileSync(full, where);
                 fs.unlinkSync(full);
@@ -368,7 +368,9 @@ export function filePrimitives(primitives: import('./types.js').JsonRecord, { cd
           }
           if (fresh.length) {
             // fresh.length was just checked, so the first entry exists.
-            const { file, full } = fresh[0]!;
+            const firstFresh = fresh[0];
+            if (firstFresh === undefined) continue;
+            const { file, full } = firstFresh;
             const size = fs.statSync(full).size;
             if (size > 0) {
               if (!growing || growing.size !== size || growing.file !== file) {

@@ -255,17 +255,23 @@ export function distanceBetween(wanted: unknown, offered: unknown): number {
   const b = String(offered ?? '').toLowerCase();
   const rows = a.length + 1;
   const cols = b.length + 1;
-  // Every index here is bounded by rows and cols, so the assertions are the loops' proof, not a guess.
+  // Every index here is bounded by rows and cols, and the matrix is created locally above; the cost cells that the inner loop reads are all written before they are read.
   const cost: number[][] = Array.from({ length: rows }, () => new Array<number>(cols).fill(0));
-  for (let i = 0; i < rows; i += 1) cost[i]![0] = i;
-  for (let j = 0; j < cols; j += 1) cost[0]![j] = j;
+  const cell = (row: number, col: number) => cost[row]?.[col] ?? 0;
+  for (let i = 0; i < rows; i += 1) { const row = cost[i]; if (row !== undefined) row[0] = i; }
+  for (let j = 0; j < cols; j += 1) { const row = cost[0]; if (row !== undefined) row[j] = j; }
   for (let i = 1; i < rows; i += 1) {
+    const cur = cost[i];
+    const prev = cost[i - 1];
+    if (cur === undefined || prev === undefined) continue;
     for (let j = 1; j < cols; j += 1) {
       const costHere = a[i - 1] === b[j - 1] ? 0 : 1;
-      cost[i]![j] = Math.min(cost[i - 1]![j]! + 1, cost[i]![j - 1]! + 1, cost[i - 1]![j - 1]! + costHere);
+      cur[j] = Math.min(cell(i - 1, j) + 1, (cur[j - 1] ?? 0) + 1, cell(i - 1, j - 1) + costHere);
     }
   }
-  return cost[rows - 1]![cols - 1]!;
+  const lastRow = cost[rows - 1];
+  if (lastRow === undefined) return 0;
+  return lastRow[cols - 1] ?? 0;
 }
 
 // WHY THE WALKER REPORTS THE LEVEL IT BROKE ON.

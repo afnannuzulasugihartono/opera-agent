@@ -17,8 +17,8 @@
 // WHY the port comes from the environment.
 // npx must work without a config file, so the two things a user may need to override, which port and which browser, are environment variables rather than arguments a client would have to know about.
 
-import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
+import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { openSession, installedBrowsers } from '../driver.js';
 import { windowState, focusWindow } from '../window-focus.js';
@@ -31,7 +31,7 @@ import { startStdio } from '../mcp-server.js';
 import type { Driver, JsonRecord } from '../types.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
-const pkg = createRequire(join(here, '..', 'package.json'))('./package.json');
+const pkg = JSON.parse(readFileSync(join(here, '..', 'package.json'), 'utf8')) as { version?: string; [key: string]: unknown };
 
 const PORT = Number(process.env.OPERA_LOCAL_PORT || 9333);
 

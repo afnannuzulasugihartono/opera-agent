@@ -9,7 +9,7 @@ import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
-import { ALLOWED_METHODS, PRODUCT_VERSION } from '../../extension/lib/protocol.js';
+import { ALLOWED_METHODS, PRODUCT_VERSION } from '../../extension/lib/protocol.ts';
 import { extensionSource } from '../../tests/helpers/extension-source.mjs';
 
 const root = fileURLToPath(new URL('../..', import.meta.url));
@@ -49,7 +49,8 @@ function collectRuntimeFiles(relativeDir, extensions) {
 }
 
 const files = [
-  ...collectRuntimeFiles('extension', new Set(['.js', '.ts'])),
+  // The browser half compiles into bespoke .js beside each .ts; the emitted twin is always present after pretest, but the scan judges the source, never the copy.
+  ...collectRuntimeFiles('extension', new Set(['.js', '.ts'])).filter((file) => !/^extension[\/\\].*\.js$/.test(file)),
   // Untracked build artifacts are copies of the .ts sources; the scan judges the source, not the copy.
   ...collectRuntimeFiles('shared', new Set(['.js', '.ts'])).filter((file) => !/^shared[\/\\][^\/\\]+\.js$/.test(file)),
   // Same rule for the npm product: the emitted twins under local/ are copies of the .ts sources, and the .d.ts under local/lib/ are declarations, never runtime code; the scan judges the sources.
@@ -90,7 +91,7 @@ for (const marker of ['pendingCompletion', 'flushPendingCompletion', 'createSock
 }
 assert.doesNotMatch(background, /action: 'complete'/, 'the device must not report over HTTP again');
 assert.doesNotMatch(background, /action: 'pull'/, 'the device must not ask for work over HTTP');
-const content = fs.readFileSync(path.join(root, 'extension/content.js'), 'utf8');
+const content = fs.readFileSync(path.join(root, 'extension/content.ts'), 'utf8');
 for (const marker of ['password','one-time-code','cvv','cvc','type === \'file\'']) assert.ok(content.toLowerCase().includes(marker.toLowerCase()), marker);
 const ensureContent = background.slice(background.indexOf('async function ensureContent'), background.indexOf('async function contentCall'));
 assert.match(ensureContent, /method: 'content\.ping'/);

@@ -159,7 +159,7 @@ export function compileAdhocGraph(graph) {
   if (!isPlainObject(graph) || !Array.isArray(graph.nodes)) {
     return fail('GRAPH_NOT_OBJECT', 'graph must be an object with a nodes array.');
   }
-  let raw;
+  let raw: string | undefined;
   try {
     raw = JSON.stringify(graph);
   } catch (_error) {

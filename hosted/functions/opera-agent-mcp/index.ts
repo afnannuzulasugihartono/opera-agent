@@ -1,7 +1,7 @@
 // @last-edited: 2026-11-13 UTC+7.
 // @title: opera-agent-mcp - the MCP surface: the tools an agent calls, over the protocol it declares.
 // @state: the transport, the tool registry, and the program sealing every VM call passes through.
-// @dependencies: edge-runtime, mcp, webStandardStreamableHttp, supabase-js, v4, edge-log, cors.
+// @dependencies: edge-runtime, mcp, webStandardStreamableHttp, supabase-js, zod, v4, edge-log, cors.
 
 import "@supabase/edge-runtime";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -9,7 +9,6 @@ import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/
 import { AsyncLocalStorage } from "node:async_hooks";
 import { streamCommandEvents, TERMINAL_COMMAND_STATUSES } from "../_shared/command-stream.ts";
 import { cutStreamAtTheAnswer } from "../_shared/cut-stream.ts";
-import * as z from "zod/v4";
 import { planInfo } from "./plan-info.ts";
 import { createEdgeLog } from "../_shared/edge-log.ts";
 import { CORS_DEFAULT_ORIGINS, resolveAllowedOrigin } from "../_shared/cors.ts";
@@ -378,7 +377,7 @@ async function rpc(name: string, args: Record<string, unknown>) {
 
 type ProgressEmitter = {
   _meta?: { progressToken?: string | number };
-  sendNotification?: (n: unknown) => Promise<unknown> | void;
+  sendNotification?: (n: unknown) => Promise<unknown> | Promise<void>;
 };
 
 const progressScope = new AsyncLocalStorage<ProgressEmitter>();
@@ -614,7 +613,7 @@ async function executeUpdateStatus(timeoutMs: number | undefined, deviceName: st
     const response = await fetch(`${UPDATE_BASE_URL}/download/opera-agent.zip`, { method: "HEAD" });
     const version = String(response.headers.get("x-opera-version") ?? "").trim();
     served = /^\d+\.\d+\.\d+$/.test(version) ? version : null;
-  } catch (error) {
+  } catch {
     served = null;
   }
   const answer = await execute("browser.ping", {}, timeoutMs, deviceName, provider);
@@ -723,6 +722,10 @@ async function executeSearchBing(params: Record<string, unknown>, timeoutMs: num
   let fetched = 0;
   let currentFirst = 1;
   let pageUrl = firstUrl;
+  // WHY THE CLOSE IS ATTRIBUTED, NOT ASSUMED.
+  // The answer says a tab was closed; a silent failure there means a Bing tab may be sitting on the user's browser while the tool reports success.
+  // The flag travels with the answer instead.
+  let closeFailed = false;
   let pageTitle = "";
   let failure: ReturnType<typeof toolError> | null = null;
   // WHY THE LOOP BOUNDS ITSELF BY WHAT BING SAYS, NOT BY THE ASKED PAGES ALONE.
@@ -779,10 +782,6 @@ async function executeSearchBing(params: Record<string, unknown>, timeoutMs: num
     }
   } catch (error) {
     failure = toolError(error);
-  let closeFailed = false;
-  // WHY THE CLOSE IS ATTRIBUTED, NOT ASSUMED.
-  // The answer says a tab was closed; a silent failure there means a Bing tab may be sitting on the user's browser while the tool reports success.
-  // The flag travels with the answer instead.
   } finally {
     await runCommand("tabs.close", { tabId }, 8000, deviceName, provider)
       .then(() => { closeFailed = false; })

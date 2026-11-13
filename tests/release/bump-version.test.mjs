@@ -23,7 +23,7 @@ const allowedFourPart = `${current}.0`;
 // The files scripts/release/bump-version.mjs rewrites; each must carry the current version at least once.
 
 const ENUMERATED = [
-  'extension/lib/protocol.js',
+  'extension/lib/protocol.ts',
   'extension/manifest.json',
   'docs/store/store-manifest.json',
   'package.json',

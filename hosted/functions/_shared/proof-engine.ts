@@ -311,7 +311,7 @@ export async function evaluateProof(ledgerInput, claimIdInput, evidenceInput, op
   }
   const supporting = accepted.filter((item) => item.supports);
   const exhaustive = supporting.some((item) => item.exhaustive);
-  let status;
+  let status: string | undefined;
   if (contradictions.length) status = 'BLOCKED';
   else if (!supporting.length) status = 'UNKNOWN';
   else if (unresolved.length) status = 'PARTIAL';

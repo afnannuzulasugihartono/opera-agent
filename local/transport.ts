@@ -94,7 +94,9 @@ export async function pageWebSocketById(port: number, targetId: unknown, options
   if (!pages.length) throw new Error(`Browser on port ${port} has no page target to drive.`);
   // pages[0]!: the length check above just proved one exists.
   if (targetId === undefined || targetId === null || targetId === '') {
-    return { url: pages[0]!.webSocketDebuggerUrl, targetId: pages[0]!.id, pages };
+    const firstPage = pages[0];
+    if (firstPage === undefined) throw new Error('bridge: the browser has no page to drive');
+    return { url: firstPage.webSocketDebuggerUrl, targetId: firstPage.id, pages };
   }
 
   const match = pages.find((page) => page.id === targetId);

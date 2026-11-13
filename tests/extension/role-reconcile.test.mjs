@@ -167,7 +167,7 @@ test('a semantic gap justifies the accessibility walk even on a text-rich page',
   const start = background.indexOf("case 'page.read': {");
   const end = background.indexOf("case 'page.query':", start);
   const block = background.slice(start, end);
-  assert.match(block, /hasRoleGap\(result\?\.page\?\.elements\)/);
+  assert.match(block, /hasRoleGap\?\.\(axPage\?\.elements\)/);
   assert.match(block, /AX_SUMMARY_TEXT_POVERTY_CHARS \|\| r9SemanticGap/);
 
   assert.equal((block.match(/collectAxSummary\(/g) || []).length, 1);
@@ -180,7 +180,7 @@ test('R9: an oversized read degrades instead of failing the whole call', async (
   const block = background.slice(start, end);
 
   assert.match(block, /if \(result\?\.page && oversized\(result\)\)/);
-  assert.match(block, /const \{ elements, \.\.\.withoutElements \} = result\.page/);
+  assert.match(block, /const \{ elements, \.\.\.withoutElements \} = page\b/);
   assert.match(block, /truncated: true/);
   assert.match(block, /omittedElementCount/);
   assert.match(block, /includeElements disabled/);
@@ -191,15 +191,15 @@ test('R9: an oversized read degrades instead of failing the whole call', async (
 test('serialize derives roles from markup instead of only the role attribute', async () => {
   const source = await readFile(new URL('../../extension/content.js', import.meta.url), 'utf8');
 
-  assert.match(source, /const roleRuntime = globalThis\.OperaAgentRoleReconcile \|\| \{\}/,
-    'the runtime is no longer read straight into a bare binding');
+  assert.match(source, /const roleRuntime = globalThis\.OperaAgentRoleReconcile;/,
+    'the runtime is read once and guarded by type before it is used');
   assert.match(source, /typeof roleRuntime\.implicitRole === 'function'/,
     'implicitRole is not checked before it is used');
   assert.doesNotMatch(source, /^\s*import\s/m);
 
   const start = source.indexOf('function serialize(el, options = {}) {');
   assert.ok(start > 0, 'serialize must be locatable');
-  const block = source.slice(start, source.indexOf('\n  function ', start + 10));
+  const block = source.slice(start, source.indexOf('\n    function ', start + 10));
   assert.match(block, /const explicitRole = clean\(el\.getAttribute\?\.\('role'\), 80\)/);
   assert.match(block, /const role = explicitRole \|\| implicitRole\(/);
   assert.doesNotMatch(block, /^\s*role: clean\(el\.getAttribute/m);
@@ -210,7 +210,7 @@ test('the role attribute stays authoritative where it defines identity, not acti
 
   const identityStart = source.indexOf('function stableElementIdentity(el) {');
   assert.ok(identityStart > 0, 'stableElementIdentity must be locatable');
-  const identity = source.slice(identityStart, source.indexOf('\n  function ', identityStart + 10));
+  const identity = source.slice(identityStart, source.indexOf('\n    function ', identityStart + 10));
   assert.match(identity, /const role = clean\(el\.getAttribute\?\.\('role'\), 80\)/);
   assert.doesNotMatch(identity, /implicitRole/);
 

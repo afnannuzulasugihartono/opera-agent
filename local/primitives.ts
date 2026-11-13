@@ -50,6 +50,8 @@ export function createPrimitives(cdp: PrimitivesCdp, { chunkSize = 2000, sleep =
   // WHY THE RECORD VALUES ARE ANY AND NOT unknown.
   // The drive is one object assembled by Object.assign across nine files; a closed record would refuse every method those files add.
   // This is the second of the two documented open records in the local road (the first is JsonRecord); nothing leaves the drive through this type either - callers go through the driver manifest in types.ts.
+  // The `any` claim belongs to the drive's composition boundary, not to any consumer; the manifest in types.ts is the typed surface.
+  // biome-ignore lint/suspicious/noExplicitAny: the drive is assembled by Object.assign across nine files; a closed record would refuse every method those files add, and nothing leaves the drive untyped — callers go through the manifest in types.ts.
   const primitives: Record<string, any> = {
     async navigate(url: string) {
       await cdp.send('Page.enable');

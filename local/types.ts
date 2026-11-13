@@ -8,6 +8,7 @@
 // Typed `unknown`, every one of those reads needs a narrowing the schema already proved, and the noise would bury the few reads that genuinely need a check.
 // This is the one place in `local/` where the type is deliberately open; everything that is not the argument bag is narrowed.
 
+// biome-ignore lint/suspicious/noExplicitAny: WHY THE RECORD IS OPEN. The MCP argument bag is composed by a model and read by fifty tool branches, and the tool schema has already promised the key and its type before the branch runs; every other read narrows. This is the one place in `local/` where the type is deliberately open.
 export type JsonRecord = Record<string, any>;
 
 // WHY THE DRIVER IS A NAMED INTERFACE AND NOT AN INDEX SIGNATURE.

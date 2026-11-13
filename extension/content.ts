@@ -1,0 +1,2566 @@
+// @last-edited: 2026-11-08 UTC+7.
+// @title: content — the content script: the page half of every browser primitive.
+// @state: marks documentElement so a page can detect the extension, even when the document is not ready yet; page.action_state reports expired, detached or unresolvable for a ref that cannot act; view=map scans every meaningful element into seventeen classes with document coordinates, cached until the page mutates.
+// @dependencies: none.
+
+// WHY THIS MAY NOT IMPORT.
+// The manifest loads content.js as a classic script before any other content module: an import statement is a SyntaxError at parse time, and it would take the whole page half with it.
+// The guard is a local copy of the same check lib/guards.ts owns.
+
+const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value);
+
+// WHY THIS FILE DECLARES ITS OWN PAYLOAD SHAPES.
+// The content script receives every payload from chrome messaging, where nothing is checked at the boundary.
+// These interfaces name the shapes the code already assumes, and the message handler accepts them as unknown before narrowing.
+
+declare global {
+  interface Window {
+    readonly webkitAudioContext?: typeof AudioContext | undefined;
+    __operaAgentCursorIdle?: number | undefined;
+  }
+}
+
+type ContentArgs = Record<string, unknown>;
+
+interface DocRect {
+  readonly x: number;
+  readonly y: number;
+  readonly width: number;
+  readonly height: number;
+}
+
+interface RectOf extends DocRect {
+  readonly centerX: number;
+  readonly centerY: number;
+}
+
+interface SerializedElement {
+  readonly ref: string | null;
+  readonly stableKey: string;
+  readonly stableKeySource: string;
+  readonly tag: string;
+  readonly role: string;
+  readonly text: string;
+  readonly label: string;
+  readonly href: string;
+  readonly type: string;
+  readonly name: string;
+  readonly placeholder: string;
+  readonly checked?: boolean | undefined;
+  readonly selected?: boolean | undefined;
+  readonly disabled?: boolean | undefined;
+  readonly ariaPressed: string | null;
+  readonly ariaChecked: string | null;
+  readonly ariaExpanded: string | null;
+  readonly ariaSelected: string | null;
+  readonly accessibleName?: string | undefined;
+  readonly visible: boolean;
+  readonly inViewport: boolean;
+  readonly fullyInViewport: boolean;
+  readonly viewportClipped: boolean;
+  readonly sensitive: boolean;
+  readonly actionable: boolean;
+  readonly rect: RectOf;
+  value?: string | undefined;
+  logicalId?: string | undefined;
+  regionKey?: string | undefined;
+}
+
+interface ActionRefDescriptor {
+  readonly documentId: string;
+  readonly routeKey: string;
+  readonly stableKey: string;
+  readonly stableKeySource: string;
+  readonly id: string;
+  readonly tag: string;
+  readonly role: string;
+  readonly name: string;
+  readonly type: string;
+  readonly label: string;
+  readonly href: string;
+  readonly sensitive: boolean;
+  readonly rectAtMint: DocRect | null;
+  readonly mutationVersionAtMint: number | null;
+}
+
+interface ActionRefDescriptorOptions {
+  readonly rectAtMint?: DocRect | null | undefined;
+  readonly mutationVersionAtMint?: number | null | undefined;
+}
+
+interface PageMapItem {
+  readonly ref: string | null;
+  readonly stableKey: string;
+  readonly stableKeySource: string;
+  readonly tag: string;
+  readonly role: string;
+  readonly label: string;
+  readonly text: string;
+  readonly type: string;
+  readonly checked?: boolean | undefined;
+  readonly selected?: boolean | undefined;
+  readonly disabled?: boolean | undefined;
+  readonly ariaPressed: string | null;
+  readonly ariaChecked: string | null;
+  readonly ariaExpanded: string | null;
+  readonly ariaSelected: string | null;
+  readonly rect: DocRect;
+  readonly inViewport: boolean;
+  logicalId?: string | undefined;
+}
+
+interface CollectedEntry {
+  readonly el: Element;
+  readonly kind: string;
+  readonly tag: string;
+  readonly role: string;
+  readonly type: string;
+  readonly href: string;
+  readonly rect: DOMRect;
+  readonly text: string;
+  readonly style: CSSStyleDeclaration;
+  readonly visible: boolean;
+  readonly label: string;
+}
+
+interface PageMapSkeleton {
+  readonly documentId: string;
+  readonly url: string;
+  readonly title: string;
+  readonly documentWidth: number;
+  readonly documentHeight: number;
+  readonly viewport: { readonly width: number; readonly height: number; readonly scrollX: number; readonly scrollY: number; readonly zoomFactor: number };
+  readonly scannedAt: string;
+  readonly mutationVersion: number;
+  readonly totalElements: number;
+  readonly truncated?: boolean | undefined;
+  readonly classes: unknown[];
+  readonly regions: unknown[];
+  readonly outline: unknown[];
+  readonly tables: unknown[];
+  readonly images: unknown[];
+}
+
+interface PageMapCache {
+  readonly mutationVersion: number;
+  readonly skeleton: PageMapSkeleton;
+  readonly groups: Map<string, OperaAgentPageMapElement[]>;
+  readonly elements: OperaAgentPageMapElement[];
+}
+
+interface ExpectSpec {
+  readonly urlChanged?: boolean | undefined;
+  readonly urlContains?: string | undefined;
+  readonly selectorAppears?: string | undefined;
+  readonly selectorGone?: string | undefined;
+  readonly textGone?: string | undefined;
+  readonly minMutationDelta?: number | undefined;
+}
+
+interface Expectation {
+  readonly key: string;
+  readonly pass: boolean;
+}
+
+interface ExpectVerification {
+  readonly verified: boolean;
+  readonly expectations: Expectation[];
+}
+
+interface ScrollPosition {
+  readonly kind: string;
+  readonly ref: string | null;
+  readonly tag: string;
+  readonly role: string;
+  readonly label: string;
+  readonly scrollTop: number;
+  readonly scrollLeft: number;
+  readonly scrollHeight: number;
+  readonly scrollWidth: number;
+  readonly clientHeight: number;
+  readonly clientWidth: number;
+  readonly maxScrollTop: number;
+  readonly maxScrollLeft: number;
+  readonly canScrollY: boolean;
+  readonly canScrollX: boolean;
+  readonly reachedTop: boolean;
+  readonly reachedBottom: boolean;
+  readonly reachedLeft: boolean;
+  readonly reachedRight: boolean;
+}
+
+interface WatchRule {
+  readonly ruleId: string;
+  readonly trigger?: { readonly kind?: string | undefined; readonly selector?: string | undefined; readonly adSelectors?: unknown[] | undefined } | undefined;
+}
+
+interface ListenCaptureState {
+  ctx: AudioContext | null;
+  stream: MediaStream | null;
+  recorder: MediaRecorder | null;
+  seq: number;
+  active: boolean;
+  mime: string;
+  scheduleEnd?: (() => void) | undefined;
+}
+
+// WHY the page helpers degrade rather than throw.
+// A throw at module scope takes down every capability on the page at once: no read, no find, no click, nothing.
+// Observed live on a Google Docs tab after a reload, where the extension reported "Role reconcile runtime is unavailable" and the whole content script was gone from that document.
+// A missing helper is a missing feature, so it is recorded in semanticRuntime and the rest of the page keeps working.
+// Each helper then falls back to a shape that answers rather than one that throws: implicitRole returns an empty role, and the hover planner reports that it is off instead of breaking the call.
+
+(() => {
+  'use strict';
+  if (globalThis.__operaAgentContentV1) return;
+  globalThis.__operaAgentContentV1 = true;
+
+  function markInstalled() {
+
+    if (!document.documentElement) return;
+    document.documentElement.setAttribute('data-opera-agent', 'installed');
+    const browser = globalThis.OperaAgentBrowserId?.browserName || '';
+    if (browser) document.documentElement.setAttribute('data-opera-agent-browser', browser);
+  }
+
+  markInstalled();
+
+  if (!document.documentElement) document.addEventListener('DOMContentLoaded', markInstalled, { once: true });
+
+  const roleRuntime = globalThis.OperaAgentRoleReconcile;
+  const hoverRuntime = globalThis.OperaAgentHoverSettle;
+  const pageMap = globalThis.OperaAgentPageMap;
+  const semanticRuntime = !!roleRuntime
+    && typeof roleRuntime.implicitRole === 'function'
+    && !!hoverRuntime
+    && typeof hoverRuntime.plan === 'function';
+
+  if (!semanticRuntime) {
+    console.warn('[opera-agent] semantic helpers unavailable; role and hover features are off on this page');
+  }
+
+  const implicitRole: (item: unknown) => string = roleRuntime && typeof roleRuntime.implicitRole === 'function'
+    ? roleRuntime.implicitRole
+    : () => '';
+  const hoverSettle: OperaAgentHoverSettle = hoverRuntime && typeof hoverRuntime.plan === 'function'
+    ? hoverRuntime
+    : {
+        DEFAULTS: { timeoutMs: 0, intervalMs: 0, stableRounds: 0 },
+        normalize: (args): OperaAgentHoverSettleNormalized => ({
+          timeoutMs: Number(args?.timeoutMs) || 0,
+          intervalMs: Number(args?.intervalMs) || 0,
+          stableRounds: Number(args?.stableRounds) || 0,
+          text: typeof args?.text === 'string' ? args.text : String(args?.text ?? '')
+        }),
+        plan: () => ({ done: false, reason: 'hover-settle-unavailable' })
+      };
+
+  const MAX_TEXT_CHUNK = 12000;
+  const MAX_ELEMENTS = 200;
+  const MAX_QUERY = 100;
+  const MAX_LINKS = 500;
+  const documentId = crypto.randomUUID();
+  const semanticIdentity = globalThis.OperaAgentSemanticIdentity?.createIdentityEngine({ documentId });
+  if (!semanticIdentity) throw new Error('Semantic identity runtime is unavailable.');
+  const semanticViews = globalThis.OperaAgentSemanticViews?.createViewEngine();
+  if (!semanticViews) throw new Error('Semantic view runtime is unavailable.');
+  const requireSemanticIdentity = (): OperaAgentSemanticIdentity => {
+    const engine = globalThis.OperaAgentSemanticIdentity;
+    if (!engine) throw new Error('Semantic identity runtime is unavailable.');
+    return engine;
+  };
+  const requireIdentityEngine = (): OperaAgentIdentityEngine => {
+    if (!semanticIdentity) throw new Error('Semantic identity runtime is unavailable.');
+    return semanticIdentity;
+  };
+  const requireViewEngine = (): OperaAgentViewEngine => {
+    if (!semanticViews) throw new Error('Semantic view runtime is unavailable.');
+    return semanticViews;
+  };
+  let refCounter = 0;
+  let refs = new WeakMap<Element, string>();
+  let reverseRefs = new Map<string, Element>();
+  let actionRefDescriptors = new Map<string, ActionRefDescriptor>();
+  let semanticRouteKey = requireSemanticIdentity().stableHash(`${location.origin}${location.pathname}${location.search}`);
+  let semanticRuntimeEpoch: string | null = null;
+  let disposed = false;
+  let mutationVersion = 0;
+  let pageMapCache: PageMapCache | null = null;
+  let pageMapIdentity: OperaAgentIdentityEngine | null = null;
+
+  const mutationObserver = new MutationObserver(() => {
+    mutationVersion += 1;
+    scheduleWatchCheck();
+  });
+  mutationObserver.observe(document, { subtree: true, childList: true, attributes: true, characterData: true });
+
+  const NAV_KEYS = new Set([
+    'Enter', 'Tab', 'Escape', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight',
+    'Home', 'End', 'PageUp', 'PageDown', 'Space', ' '
+  ]);
+
+  const SENSITIVE_RE = /(?:password|passwd|passcode|pin\b|one[-_ ]?time|otp\b|2fa|two[-_ ]?factor|verification\s*code|security\s*code|cvv|cvc|card\s*(?:code|number)|credit\s*card|expiry|expiration|payment)/i;
+
+  function innerTextOf(el: Element): string {
+    return 'innerText' in el && typeof el.innerText === 'string' ? el.innerText : '';
+  }
+
+  function clamp(value: unknown, min: number, max: number, fallback = min): number {
+    const n = Number(value);
+    if (!Number.isFinite(n)) return fallback;
+    return Math.min(max, Math.max(min, n));
+  }
+
+  function clean(value: unknown, max = 500): string {
+    return String(value ?? '').replace(/\s+/g, ' ').trim().slice(0, max);
+  }
+
+  const PUA_GLYPH_RE = /[\uE000-\uF8FF\u200B\u200C\uFEFF]|\u200D/g;
+  const VISITED_SUFFIX_RE = /\s*visited link\s*$/i;
+  function normalizeObservableText(value: unknown, max = 500): string {
+    const text = clean(value, max + 40).replace(PUA_GLYPH_RE, ' ').replace(/\s+/g, ' ').trim();
+    const untagged = VISITED_SUFFIX_RE.test(text) ? text.replace(VISITED_SUFFIX_RE, '').trim() : text;
+    return untagged.slice(0, max);
+  }
+
+  function normalizeText(value: unknown): string {
+    return String(value ?? '')
+      .replace(/\r\n?/g, '\n')
+      .replace(/[\t\f\v ]+/g, ' ')
+      .replace(/ *\n */g, '\n')
+      .replace(/\n{3,}/g, '\n\n')
+      .trim();
+  }
+
+  function currentRouteKey(): string {
+    return requireSemanticIdentity().stableHash(
+      `${location.origin}${location.pathname}${location.search}`
+    );
+  }
+
+  function actionRefDescriptor(el: Element, options: ActionRefDescriptorOptions = {}): ActionRefDescriptor {
+    const identity = stableElementIdentity(el);
+    return {
+      documentId,
+      routeKey: currentRouteKey(),
+      stableKey: identity.stableKey,
+      stableKeySource: identity.stableKeySource,
+      id: clean(el.id, 200),
+      tag: String(el.tagName || '').toLowerCase(),
+      role: clean(el.getAttribute?.('role'), 80),
+      name: clean(el.getAttribute?.('name'), 120),
+      type: clean(el.getAttribute?.('type'), 80),
+      label: getAssociatedLabel(el),
+      href: el instanceof HTMLAnchorElement ? clean(el.href, 1200) : '',
+      sensitive: !!sensitiveDescriptor(el),
+      rectAtMint: options.rectAtMint ?? null,
+      mutationVersionAtMint: options.mutationVersionAtMint ?? null
+    };
+  }
+
+  function descriptorMatchesElement(descriptor: ActionRefDescriptor | null, el: Element | null): boolean {
+    if (!descriptor || !el?.isConnected) return false;
+    if (descriptor.documentId !== documentId || descriptor.routeKey !== currentRouteKey()) return false;
+    const current = actionRefDescriptor(el);
+    return (
+      current.documentId === descriptor.documentId
+      && current.routeKey === descriptor.routeKey
+      && current.stableKey === descriptor.stableKey
+      && current.stableKeySource === descriptor.stableKeySource
+      && current.id === descriptor.id
+      && current.tag === descriptor.tag
+      && current.role === descriptor.role
+      && current.name === descriptor.name
+      && current.type === descriptor.type
+      && current.label === descriptor.label
+      && current.href === descriptor.href
+      && current.sensitive === descriptor.sensitive
+    );
+  }
+
+  const GEOMETRY_DRIFT_TOLERANCE_PX = 24;
+
+  function documentRectOf(el: Element): DocRect {
+    const rect = el.getBoundingClientRect();
+    return { x: rect.x + scrollX, y: rect.y + scrollY, width: rect.width, height: rect.height };
+  }
+
+  function geometryMatchesMint(el: Element, descriptor: ActionRefDescriptor | null): boolean {
+    if (!descriptor?.rectAtMint) return true;
+    const rect = documentRectOf(el);
+    const mint = descriptor.rectAtMint;
+    return (
+      Math.abs(rect.x - mint.x) <= GEOMETRY_DRIFT_TOLERANCE_PX
+      && Math.abs(rect.y - mint.y) <= GEOMETRY_DRIFT_TOLERANCE_PX
+      && Math.abs(rect.width - mint.width) <= GEOMETRY_DRIFT_TOLERANCE_PX
+      && Math.abs(rect.height - mint.height) <= GEOMETRY_DRIFT_TOLERANCE_PX
+    );
+  }
+
+  function signatureRebindCandidates(descriptor: ActionRefDescriptor): HTMLElement[] {
+    const descriptorText = 'text' in descriptor ? descriptor.text : undefined;
+    const expectedKey = clean(descriptor.label || descriptorText, 300);
+    if (!expectedKey) return [];
+    let pool: HTMLElement[] = [];
+    try {
+      pool = [...document.querySelectorAll<HTMLElement>(INTERACTIVE_SELECTOR)].slice(0, 500);
+    } catch (error) {
+      globalThis.OperaAgentLog?.warn?.('SIGNATURE_REBIND_POOL_FAILED', error instanceof Error ? error.message : String(error));
+      return [];
+    }
+    return pool.filter((el) => {
+      const visibleKey = clean(getAssociatedLabel(el) || innerTextOf(el) || el.textContent || '', 300);
+      if (visibleKey !== expectedKey) return false;
+      if (String(el.tagName || '').toLowerCase() !== descriptor.tag) return false;
+      if (descriptor.href && !(el instanceof HTMLAnchorElement && clean(el.href, 1200) === descriptor.href)) return false;
+      if (descriptor.role && clean(el.getAttribute?.('role'), 80) !== descriptor.role) return false;
+      if (descriptor.type && clean(el.getAttribute?.('type'), 80) !== descriptor.type) return false;
+      if (descriptor.name && clean(el.getAttribute?.('name'), 120) !== descriptor.name) return false;
+      const state = actionabilityState(el);
+      return state.actionable && !state.sensitive;
+    });
+  }
+
+  function revalidationCandidates(descriptor: ActionRefDescriptor | null): HTMLElement[] {
+    if (!descriptor || descriptor.documentId !== documentId || descriptor.routeKey !== currentRouteKey()) return [];
+    let pool: HTMLElement[] = [];
+    if (descriptor.stableKeySource === 'id' && descriptor.id) {
+      try {
+        pool = [...document.querySelectorAll<HTMLElement>(`#${CSS.escape(descriptor.id)}`)];
+      } catch (error) {
+        globalThis.OperaAgentLog?.warn?.('REVALIDATION_POOL_FAILED', error instanceof Error ? error.message : String(error));
+        return [];
+      }
+    } else if (descriptor.stableKeySource === 'href' && descriptor.href) {
+      pool = [...document.querySelectorAll<HTMLAnchorElement>('a[href]')].filter(
+        (el) => clean(el.href, 1200) === descriptor.href
+      );
+    } else {
+      const maxScan = 500;
+      pool = [...document.querySelectorAll<HTMLElement>(INTERACTIVE_SELECTOR)].slice(0, maxScan);
+    }
+    const keyed = pool.filter((el) => {
+      if (!descriptorMatchesElement(descriptor, el)) return false;
+      const state = actionabilityState(el);
+      return state.actionable && !state.sensitive;
+    });
+    if (keyed.length > 0 || descriptor.stableKeySource === 'semantic') return keyed;
+
+    return keyed.concat(signatureRebindCandidates(descriptor));
+  }
+
+  function getRef(el: Element | null): string | null {
+    if (!el || el.nodeType !== Node.ELEMENT_NODE) return null;
+    let ref = refs.get(el);
+    if (!ref) {
+      refCounter += 1;
+      ref = `oa_${documentId.slice(0, 8)}_${refCounter.toString(36)}`;
+      refs.set(el, ref);
+      reverseRefs.set(ref, el);
+      actionRefDescriptors.set(ref, actionRefDescriptor(el, { rectAtMint: documentRectOf(el), mutationVersionAtMint: mutationVersion }));
+    }
+    return ref;
+  }
+
+  function resolveRef(ref: unknown): Element | null {
+    const key = String(ref || '');
+    const el = reverseRefs.get(key);
+    return el && el.isConnected ? el : null;
+  }
+
+  function refStateFor(ref: unknown): string {
+    const key = String(ref || '');
+    const descriptor = actionRefDescriptors.get(key);
+    if (!descriptor || descriptor.documentId !== documentId || descriptor.routeKey !== currentRouteKey()) {
+      return 'expired';
+    }
+    const minted = reverseRefs.get(key);
+    return minted && !minted.isConnected ? 'detached' : 'unresolvable';
+  }
+
+  function resolveActionRef(ref: unknown): Element | null {
+    const key = String(ref || '');
+    const descriptor = actionRefDescriptors.get(key);
+    if (!descriptor) return null;
+    if (descriptor.documentId !== documentId || descriptor.routeKey !== currentRouteKey()) return null;
+
+    const connected = resolveRef(key);
+    if (connected) {
+      if (!descriptorMatchesElement(descriptor, connected)) return null;
+
+      if (descriptor.sensitive) {
+        return sensitiveDescriptor(connected) === 'file' ? connected : null;
+      }
+      return connected;
+    }
+
+    if (descriptor.sensitive) return null;
+    const candidates = revalidationCandidates(descriptor);
+    if (candidates.length !== 1) return null;
+
+    const replacement = candidates[0];
+    if (!replacement) return null;
+    if (!geometryMatchesMint(replacement, descriptor)) {
+
+      const mintAt = descriptor.rectAtMint;
+      const driftPx = Math.max(
+        Math.abs(documentRectOf(replacement).x - (mintAt ? mintAt.x : 0)),
+        Math.abs(documentRectOf(replacement).y - (mintAt ? mintAt.y : 0))
+      );
+      const currentCandidates = candidates.slice(0, 3).map((el) => {
+        const s = serialize(el);
+        return {
+          label: s.label || s.text,
+          tag: s.tag,
+          role: s.role,
+
+          rect: rectOf(el),
+          freshRef: getRef(el),
+          actionable: s.actionable,
+          driftFromMintPx: Math.round(driftPx)
+        };
+      });
+      throw new Error(
+        `Ref target moved beyond the geometry tolerance since mint `
+        + `(mutationVersion ${descriptor.mutationVersionAtMint ?? 'unknown'} -> ${mutationVersion}, `
+        + `drift ${Math.round(driftPx)}px, tolerance ${GEOMETRY_DRIFT_TOLERANCE_PX}px); `
+        + `refusing automatic rebind of the stale ref. `
+        + `These fresh refs are already validated and may be acted on directly without re-running find: `
+        + `${JSON.stringify(currentCandidates)}. `
+        + `Otherwise re-run page.find and use a fresh ref.`
+      );
+    }
+    const existingRef = refs.get(replacement);
+    if (existingRef && existingRef !== key) reverseRefs.delete(existingRef);
+    refs.set(replacement, key);
+    reverseRefs.set(key, replacement);
+    actionRefDescriptors.set(key, actionRefDescriptor(replacement));
+    return replacement;
+  }
+
+  function getAssociatedLabel(el: Element): string {
+    const parts: string[] = [];
+    const aria = el.getAttribute?.('aria-label');
+    if (aria) parts.push(aria);
+    const labelledBy = el.getAttribute?.('aria-labelledby');
+    if (labelledBy) {
+      for (const id of labelledBy.split(/\s+/)) {
+        const node = document.getElementById(id);
+        if (node) parts.push(innerTextOf(node) || node.textContent || '');
+      }
+    }
+    const labelled = el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement || el instanceof HTMLSelectElement
+      || el instanceof HTMLOutputElement || el instanceof HTMLMeterElement || el instanceof HTMLProgressElement ? el : null;
+    if (labelled?.labels) {
+      for (const label of labelled.labels) parts.push(innerTextOf(label) || label.textContent || '');
+    }
+    const title = el.getAttribute?.('title');
+    if (title) parts.push(title);
+    const placeholder = el.getAttribute?.('placeholder');
+    if (placeholder) parts.push(placeholder);
+    if (!parts.length) parts.push(innerTextOf(el) || el.textContent || '');
+    return clean(parts.filter(Boolean).join(' '), 300);
+  }
+
+  function isVisible(el: Element | null): boolean {
+    if (!el?.isConnected) return false;
+    const style = getComputedStyle(el);
+    if (style.display === 'none' || style.visibility === 'hidden' || Number(style.opacity) === 0) return false;
+    const rect = el.getBoundingClientRect();
+    return rect.width > 0 && rect.height > 0;
+  }
+
+  function rectOf(el: Element): RectOf {
+    const rect = el.getBoundingClientRect();
+    return {
+      x: rect.x,
+      y: rect.y,
+      width: rect.width,
+      height: rect.height,
+      centerX: rect.x + rect.width / 2,
+      centerY: rect.y + rect.height / 2
+    };
+  }
+
+  function composedHostChain(el: Element): Element[] {
+    const hosts: Element[] = [];
+    let node: Element | null = el;
+    while (node) {
+      const root = node.getRootNode();
+      if (!(root instanceof ShadowRoot)) break;
+      hosts.push(root.host);
+      node = root.host;
+    }
+    return hosts;
+  }
+
+  function hitTestAcceptable(el: Element, hit: Element | null): boolean {
+    if (!hit) return false;
+    if (hit === el || el.contains(hit)) return true;
+    for (const host of composedHostChain(el)) {
+      if (hit === host || host.contains(hit) || hit.contains(host)) return true;
+    }
+    return false;
+  }
+
+  function hitTestReachable(el: Element, rect: DOMRect): boolean {
+    const left = Math.max(0, rect.left);
+    const right = Math.min(innerWidth, rect.right);
+    const top = Math.max(0, rect.top);
+    const bottom = Math.min(innerHeight, rect.bottom);
+    if (right <= left || bottom <= top) return false;
+    const insetX = Math.min(1, (right - left) / 4);
+    const insetY = Math.min(1, (bottom - top) / 4);
+    const points: Array<readonly [number, number]> = [
+      [(left + right) / 2, (top + bottom) / 2],
+      [left + insetX, top + insetY],
+      [right - insetX, top + insetY],
+      [left + insetX, bottom - insetY],
+      [right - insetX, bottom - insetY]
+    ];
+    return points.some(([x, y]) => {
+      const hit = document.elementFromPoint(x, y);
+      return hitTestAcceptable(el, hit);
+    });
+  }
+
+  function viewportFlags(el: Element): { inViewport: boolean; fullyInViewport: boolean; viewportClipped: boolean } {
+    if (!isVisible(el)) return { inViewport: false, fullyInViewport: false, viewportClipped: false };
+    const rect = el.getBoundingClientRect();
+    if (rect.right <= 0 || rect.bottom <= 0 || rect.left >= innerWidth || rect.top >= innerHeight) {
+      return { inViewport: false, fullyInViewport: false, viewportClipped: false };
+    }
+    let left = rect.left;
+    let right = rect.right;
+    let top = rect.top;
+    let bottom = rect.bottom;
+    let clippedByAncestor = false;
+    for (let parent = el.parentElement; parent; parent = parent.parentElement) {
+      const style = getComputedStyle(parent);
+      const clipsX = /^(?:auto|scroll|hidden|clip)$/.test(style.overflowX);
+      const clipsY = /^(?:auto|scroll|hidden|clip)$/.test(style.overflowY);
+      if (!clipsX && !clipsY) continue;
+      const parentRect = parent.getBoundingClientRect();
+      const newLeft = clipsX ? Math.max(left, parentRect.left) : left;
+      const newRight = clipsX ? Math.min(right, parentRect.right) : right;
+      const newTop = clipsY ? Math.max(top, parentRect.top) : top;
+      const newBottom = clipsY ? Math.min(bottom, parentRect.bottom) : bottom;
+      if (newRight <= newLeft || newBottom <= newTop) {
+        if (hitTestReachable(el, rect)) {
+          const fully = rect.left >= 0 && rect.top >= 0 && rect.right <= innerWidth && rect.bottom <= innerHeight;
+          return { inViewport: true, fullyInViewport: fully, viewportClipped: false };
+        }
+        return { inViewport: false, fullyInViewport: false, viewportClipped: true };
+      }
+      if (newLeft !== left || newRight !== right || newTop !== top || newBottom !== bottom) clippedByAncestor = true;
+      left = newLeft;
+      right = newRight;
+      top = newTop;
+      bottom = newBottom;
+    }
+    const fully = left >= 0 && top >= 0 && right <= innerWidth && bottom <= innerHeight;
+    return { inViewport: true, fullyInViewport: fully, viewportClipped: clippedByAncestor };
+  }
+
+  function actionabilityState(el: Element | null, sensitiveReason?: string | null): {
+    visible: boolean;
+    inViewport: boolean;
+    fullyInViewport: boolean;
+    viewportClipped: boolean;
+    enabled: boolean;
+    sensitive: boolean;
+    pointerEnabled: boolean;
+    actionable: boolean;
+  } {
+    const visible = isVisible(el);
+    const viewport = visible && el ? viewportFlags(el) : { inViewport: false, fullyInViewport: false, viewportClipped: false };
+    const sensitive = sensitiveReason === undefined ? (el ? !!sensitiveDescriptor(el) : false) : !!sensitiveReason;
+    const ariaDisabled = clean(el?.getAttribute?.('aria-disabled'), 20).toLowerCase() === 'true';
+    const nativeDisabled = !!(el && 'disabled' in el && el.disabled);
+    const readOnly = !!(el && 'readOnly' in el && el.readOnly);
+    const enabled = !nativeDisabled && !readOnly && !ariaDisabled;
+    const pointerEnabled = visible && el !== null && getComputedStyle(el).pointerEvents !== 'none';
+    return {
+      visible,
+      inViewport: viewport.inViewport,
+      fullyInViewport: viewport.fullyInViewport,
+      viewportClipped: viewport.viewportClipped,
+      enabled,
+      sensitive,
+      pointerEnabled,
+      actionable: visible && viewport.inViewport && enabled && !sensitive && pointerEnabled
+    };
+  }
+
+  function actionabilityRank(el: Element | null): number {
+    const state = actionabilityState(el);
+    if (state.actionable) return 0;
+    if (state.sensitive) return 5;
+    if (!state.visible) return 4;
+    if (state.inViewport) return 1;
+    if (state.enabled) return 2;
+    return 3;
+  }
+
+  function prioritizeActionableNodes(nodes: Element[]): Element[] {
+    return nodes
+      .map((el, index) => ({ el, index, rank: actionabilityRank(el) }))
+      .sort((left, right) => left.rank - right.rank || left.index - right.index)
+      .map((entry) => entry.el);
+  }
+
+  function stableHash(value: string): string {
+    let first = 2166136261;
+    let second = 5381;
+    for (let index = 0; index < value.length; index += 1) {
+      const code = value.charCodeAt(index);
+      first ^= code;
+      first = Math.imul(first, 16777619);
+      second = Math.imul(second, 33) ^ code;
+    }
+    return `${(first >>> 0).toString(16).padStart(8, '0')}${(second >>> 0).toString(16).padStart(8, '0')}`;
+  }
+
+  // WHY AN ELEMENT IS NAMED BY THE STRONGEST THING IT HAS.
+  // A key has to survive the page redrawing the same element, so it is built from what is most stable about it: a link's address, then its id, then what it says.
+  // The order is a ranking rather than a formula, and a reader checking that the ranking is right should not have to parse a ternary inside a ternary inside a template literal.
+  function stableElementIdentity(el: Element): { stableKey: string; stableKeySource: string } {
+    const tag = String(el.tagName || '').toLowerCase();
+    const href = el instanceof HTMLAnchorElement ? clean(el.href, 1200) : '';
+    const id = clean(el.id, 200);
+    const role = clean(el.getAttribute?.('role'), 80);
+    const name = clean(el.getAttribute?.('name'), 120);
+    const label = getAssociatedLabel(el);
+    const text = clean(innerTextOf(el) || el.textContent || '', 300);
+    const semantic = `semantic:${tag}|${role}|${name}|${label}|${text}`;
+    const [source, sourceKind] = href
+      ? [`href:${href}`, 'href']
+      : id ? [`id:${id}`, 'id'] : [semantic, 'semantic'];
+    return { stableKey: `oa_${stableHash(source)}`, stableKeySource: sourceKind };
+  }
+
+  function viewportState() {
+    const root = document.scrollingElement || document.documentElement;
+    const visual = globalThis.visualViewport;
+    const visualScale = visual && Number.isFinite(visual.scale) ? visual.scale : 1;
+    const visualOffsetX = visual && Number.isFinite(visual.offsetLeft) ? visual.offsetLeft : 0;
+    const visualOffsetY = visual && Number.isFinite(visual.offsetTop) ? visual.offsetTop : 0;
+    return {
+      width: innerWidth,
+      height: innerHeight,
+      scrollX,
+      scrollY,
+      documentWidth: Math.max(root?.scrollWidth || 0, document.documentElement?.scrollWidth || 0),
+      documentHeight: Math.max(root?.scrollHeight || 0, document.documentElement?.scrollHeight || 0),
+      devicePixelRatio,
+      visualScale,
+      visualOffsetX,
+      visualOffsetY
+    };
+  }
+
+  let lastUserInputAt = 0;
+  for (const type of ['pointerdown', 'keydown', 'wheel', 'touchstart', 'input']) {
+    addEventListener(type, () => { lastUserInputAt = Date.now(); }, { capture: true, passive: true });
+  }
+
+  function userInputState() {
+    return {
+
+      lastInputMs: lastUserInputAt ? Date.now() - lastUserInputAt : null
+    };
+  }
+
+  function sensitiveDescriptor(el: Element): string | null {
+    const type = clean(el.getAttribute?.('type'), 50).toLowerCase();
+    const autocomplete = clean(el.getAttribute?.('autocomplete'), 120).toLowerCase();
+    const descriptor = [
+      type,
+      autocomplete,
+      el.getAttribute?.('name'),
+      el.getAttribute?.('id'),
+      el.getAttribute?.('placeholder'),
+      el.getAttribute?.('aria-label'),
+      getAssociatedLabel(el)
+    ].filter(Boolean).join(' ');
+    if (type === 'password') return 'password';
+    if (type === 'file') return 'file';
+    if (/(?:current-password|new-password|one-time-code)/i.test(autocomplete)) return 'credential';
+    if (SENSITIVE_RE.test(descriptor)) return 'sensitive';
+    return null;
+  }
+
+  function assertEditableSafe(el: Element | null): asserts el is Element {
+    if (!el) throw new Error('Element not found or reference is stale.');
+    const blocked = sensitiveDescriptor(el);
+    if (blocked) throw new Error(`Sensitive field blocked (${blocked}).`);
+    if (el instanceof HTMLInputElement && el.type === 'file') throw new Error('File upload fields are blocked.');
+    if (!(el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement || ('isContentEditable' in el && el.isContentEditable))) {
+      throw new Error('Element is not editable.');
+    }
+    if ('disabled' in el && el.disabled) throw new Error('Element is disabled or read-only.');
+    if ('readOnly' in el && el.readOnly) throw new Error('Element is disabled or read-only.');
+  }
+
+  function serialize(el: Element, options: { includeValue?: boolean | undefined } = {}): SerializedElement {
+    const includeValue = !!options.includeValue;
+    const blocked = sensitiveDescriptor(el);
+    const actionability = actionabilityState(el, blocked);
+    const text = normalizeObservableText(innerTextOf(el) || el.textContent || '', 300);
+    const label = normalizeObservableText(getAssociatedLabel(el), 300);
+
+    const accessibleName = computeAccessibleName(el);
+
+    const tag = String(el.tagName || '').toLowerCase();
+    const explicitRole = clean(el.getAttribute?.('role'), 80);
+    const role = explicitRole || implicitRole({
+      tag,
+      type: clean(el.getAttribute?.('type'), 80),
+      href: el instanceof HTMLAnchorElement ? clean(el.href, 1200) : '',
+      contenteditable: 'isContentEditable' in el && el.isContentEditable === true
+    });
+    const data: SerializedElement = {
+      ...stableElementIdentity(el),
+      ref: getRef(el),
+      tag,
+      role,
+      text,
+      label,
+      href: el instanceof HTMLAnchorElement ? clean(el.href, 1200) : '',
+      type: clean(el.getAttribute?.('type'), 80),
+      name: normalizeObservableText(el.getAttribute?.('name'), 120),
+      placeholder: normalizeObservableText(el.getAttribute?.('placeholder'), 200),
+      checked: 'checked' in el ? !!el.checked : undefined,
+      selected: 'selected' in el ? !!el.selected : undefined,
+      disabled: 'disabled' in el ? !!el.disabled : undefined,
+      ariaPressed: el.getAttribute?.('aria-pressed') ?? null,
+      ariaChecked: el.getAttribute?.('aria-checked') ?? null,
+      ariaExpanded: el.getAttribute?.('aria-expanded') ?? null,
+      ariaSelected: el.getAttribute?.('aria-selected') ?? null,
+      accessibleName: accessibleName && accessibleName !== label && accessibleName !== text
+        ? accessibleName
+        : undefined,
+      visible: actionability.visible,
+      inViewport: actionability.inViewport,
+      fullyInViewport: actionability.fullyInViewport,
+      viewportClipped: actionability.viewportClipped,
+      sensitive: actionability.sensitive,
+      actionable: actionability.actionable,
+      rect: rectOf(el)
+    };
+    const editable = 'isContentEditable' in el && el.isContentEditable === true;
+    if (includeValue && !blocked && (('value' in el) || editable)) {
+      data.value = clean(editable ? el.textContent : ('value' in el ? el.value : undefined), 2000);
+    }
+    return data;
+  }
+
+  const INTERACTIVE_SELECTOR = [
+    'a[href]', 'button', 'input', 'textarea', 'select', 'option', 'summary',
+    '[role="button"]', '[role="link"]', '[role="checkbox"]', '[role="radio"]',
+    '[role="menuitem"]', '[role="menuitemradio"]', '[role="tab"]', '[contenteditable="true"]'
+  ].join(',');
+
+  const MAX_SHADOW_ROOTS = 120;
+  const MAX_COLLECTED_NODES = 600;
+  function collectInteractiveNodes(): HTMLElement[] {
+    const nodes: HTMLElement[] = [];
+    const seen = new Set<HTMLElement>();
+    let shadowRoots = 0;
+    const visit = (root: Document | ShadowRoot): void => {
+      let matches: HTMLElement[];
+      try { matches = [...root.querySelectorAll<HTMLElement>(INTERACTIVE_SELECTOR)]; } catch (error) { globalThis.OperaAgentLog?.debug?.('SHADOW_COLLECT_FAILED', error instanceof Error ? error.message : String(error)); return; }
+      for (const el of matches) {
+        if (!el.isConnected || seen.has(el)) continue;
+        seen.add(el);
+        nodes.push(el);
+        if (nodes.length >= MAX_COLLECTED_NODES) return;
+      }
+      for (const el of root.querySelectorAll('*')) {
+        const shadow = el.shadowRoot;
+        if (!shadow) continue;
+        shadowRoots += 1;
+        if (shadowRoots > MAX_SHADOW_ROOTS || nodes.length >= MAX_COLLECTED_NODES) return;
+        visit(shadow);
+      }
+    };
+    visit(document);
+    return nodes;
+  }
+
+  function computeAccessibleName(el: Element): string {
+    const primary = normalizeObservableText(getAssociatedLabel(el), 300);
+    if (primary) return primary;
+    const parts: string[] = [];
+    for (const img of el?.querySelectorAll('img[alt]') || []) {
+      const alt = clean(img.getAttribute('alt'), 120);
+      if (alt) parts.push(alt);
+      if (parts.length >= 5) break;
+    }
+    for (const title of el?.querySelectorAll('svg title') || []) {
+      const text = normalizeObservableText(title.textContent, 120);
+      if (text) parts.push(text);
+      if (parts.length >= 10) break;
+    }
+    return parts.join(' ');
+  }
+
+  function semanticRegionObservation(maxElements: unknown = 120): { regions: Array<Record<string, unknown>>; items: SerializedElement[] } {
+    const max = clamp(maxElements, 1, MAX_ELEMENTS, 120);
+    const nodes = prioritizeActionableNodes(collectInteractiveNodes()).slice(0, max);
+    const regionNodes = new Set<Element>([document.body || document.documentElement]);
+    const semanticSelector = 'main,nav,aside,header,footer,form,dialog,[role="dialog"],[role="feed"],[role="list"],[role="listbox"],[role="grid"],[role="table"]';
+    for (const node of document.querySelectorAll(semanticSelector)) {
+      regionNodes.add(node);
+      if (regionNodes.size >= 30) break;
+    }
+    const inspectedAncestors = new Set<Element>();
+    for (const node of nodes) {
+      for (let parent = node.parentElement; parent; parent = parent.parentElement) {
+        if (inspectedAncestors.has(parent)) continue;
+        inspectedAncestors.add(parent);
+        const style = getComputedStyle(parent);
+        if (/^(?:auto|scroll)$/.test(style.overflowY) && parent.scrollHeight - parent.clientHeight > 2) regionNodes.add(parent);
+      }
+    }
+    const boundedRegions = [...regionNodes].filter(Boolean).slice(0, 50);
+    const regionIds = new Map<Element, string>();
+    const regionKeyCounts = new Map<string, number>();
+    const regions = boundedRegions.map((node) => {
+      if (node === document.body || node === document.documentElement) {
+        regionIds.set(node, 'rg_document');
+        return { regionId: 'rg_document', kind: 'document', role: 'document', label: document.title, scroll: scrollState(node) };
+      }
+      const tag = String(node.tagName || '').toLowerCase();
+      const role = clean(node.getAttribute?.('role'), 80);
+      const label = getAssociatedLabel(node);
+      const kind = tag === 'form' ? 'form' : tag === 'dialog' || role === 'dialog' ? 'dialog'
+        : ['feed', 'list', 'listbox', 'grid', 'table'].includes(role) ? 'repeated'
+          : ['main', 'nav', 'aside', 'header', 'footer'].includes(tag) ? 'landmark' : 'scroll';
+      const intrinsic = clean(node.id, 120);
+      const regionKey = intrinsic ? `id:${intrinsic}` : `${tag}|${role}|${label}`;
+      const ordinal = regionKeyCounts.get(regionKey) || 0;
+      regionKeyCounts.set(regionKey, ordinal + 1);
+      const regionId = `rg_${stableHash(ordinal ? `${regionKey}|${ordinal}` : regionKey)}`;
+      regionIds.set(node, regionId);
+      const scrollable = node.scrollHeight - node.clientHeight > 2 || node.scrollWidth - node.clientWidth > 2;
+      return { regionId, kind, role: role || tag, label, scroll: scrollable ? scrollState(node) : null };
+    });
+    const items = nodes.map((node) => {
+      const item = serialize(node);
+      let region = node.parentElement;
+      while (region && !regionIds.has(region)) region = region.parentElement;
+      const regionId = region ? regionIds.get(region) : undefined;
+      item.regionKey = regionId || 'rg_document';
+      return item;
+    });
+    return { regions, items };
+  }
+
+  function resetActionRefs() {
+
+    refs = new WeakMap<Element, string>();
+    reverseRefs = new Map<string, Element>();
+    actionRefDescriptors = new Map<string, ActionRefDescriptor>();
+    pageMapCache = null;
+    pageMapIdentity = null;
+  }
+
+  function syncSemanticScope(args: ContentArgs): string | null {
+    let resetReason: string | null = null;
+    const routeKey = requireSemanticIdentity().stableHash(`${location.origin}${location.pathname}${location.search}`);
+    if (routeKey !== semanticRouteKey) {
+      semanticRouteKey = routeKey;
+      requireIdentityEngine().reset('SPA_ROUTE');
+      requireViewEngine().reset();
+      resetActionRefs();
+      resetReason = 'SPA_ROUTE';
+    }
+    const epoch = clean(args.__semanticRuntimeEpoch, 120);
+    if (epoch && semanticRuntimeEpoch && epoch !== semanticRuntimeEpoch) {
+      requireIdentityEngine().reset('EXTENSION_RESTART');
+      requireViewEngine().reset();
+      resetActionRefs();
+      resetReason = 'EXTENSION_RESTART';
+    }
+    if (epoch) semanticRuntimeEpoch = epoch;
+    return resetReason;
+  }
+
+  function observeSemanticBounded(maxElements: unknown = 120) {
+    const regional = semanticRegionObservation(maxElements);
+    const observation = requireIdentityEngine().observe(regional.items);
+    const views = requireViewEngine().observe({
+      regions: regional.regions,
+      items: observation.items,
+      semanticState: observation.state,
+      delta: observation.delta,
+    });
+    return { regional, observation, views };
+  }
+
+  function compactElementProjection(item: Record<string, unknown>): Record<string, unknown> {
+    const projected = {
+      ref: item.ref,
+      logicalId: item.logicalId,
+      stableKey: item.stableKey,
+      tag: item.tag,
+      role: item.role,
+      text: item.text,
+      label: item.label,
+      accessibleName: item.accessibleName,
+      href: item.href,
+      type: item.type,
+      name: item.name,
+      placeholder: item.placeholder,
+      checked: item.checked,
+      selected: item.selected,
+      disabled: item.disabled,
+      ariaPressed: item.ariaPressed,
+      ariaChecked: item.ariaChecked,
+      ariaExpanded: item.ariaExpanded,
+      ariaSelected: item.ariaSelected,
+      visible: !!item.visible,
+      inViewport: !!item.inViewport,
+      actionable: !!item.actionable,
+      rect: item.rect
+    };
+    return Object.fromEntries(
+      Object.entries(projected).filter(([, value]) => value !== undefined && value !== null && value !== '')
+    );
+  }
+
+  function compactObservationElements(items: unknown[], delta: unknown, limit = 16): Array<Record<string, unknown>> {
+    const changes = isRecord(delta) && Array.isArray(delta.changes) ? delta.changes : [];
+    const changed = new Set(
+      changes
+        .map((change) => String(isRecord(change) ? (change.logicalId ?? '') : ''))
+        .filter(Boolean)
+    );
+    const selected: Array<Record<string, unknown>> = [];
+    const selectedIds = new Set<string>();
+    const add = (item: Record<string, unknown>) => {
+      if (item.sensitive || item.stale) return;
+      const key = String(item.logicalId || item.ref || item.stableKey || '');
+      if (!key || selectedIds.has(key) || selected.length >= limit) return;
+      selectedIds.add(key);
+      selected.push(compactElementProjection(item));
+    };
+
+    for (const item of items) {
+      if (isRecord(item) && changed.has(String(item.logicalId ?? ''))) add(item);
+    }
+    for (const item of items) {
+      if (isRecord(item) && item.actionable && item.inViewport) add(item);
+    }
+    for (const item of items) {
+      if (isRecord(item) && item.visible && item.inViewport) add(item);
+    }
+    return selected;
+  }
+
+  async function hoverSettleState(args: ContentArgs) {
+    const options = hoverSettle.normalize(args);
+    const startedAt = Date.now();
+    const ref = clean(args.ref, 80);
+    const el = ref ? resolveRef(ref) : null;
+    const beforeMutationVersion = mutationVersion;
+    const previousAriaExpanded = el ? el.getAttribute?.('aria-expanded') ?? null : null;
+    let rounds = 0;
+    while (true) {
+      const elapsedMs = Date.now() - startedAt;
+      const decision = hoverSettle.plan({
+        text: options.text,
+        observedText: options.text ? containsVisibleText(options.text) : '',
+        ariaExpanded: el ? el.getAttribute?.('aria-expanded') ?? null : null,
+        previousAriaExpanded,
+        mutationVersion,
+
+        previousMutationVersion: rounds > 0 ? beforeMutationVersion : -1,
+        elapsedMs,
+        timeoutMs: options.timeoutMs,
+        stableRounds: options.stableRounds
+      });
+      if (decision.done) {
+        return {
+          ok: true,
+          settled: true,
+          reason: decision.reason,
+          expectedText: decision.expectedText,
+          targetVisible: el ? isVisible(el) : false,
+          ariaExpanded: el ? el.getAttribute?.('aria-expanded') ?? null : null,
+          elapsedMs
+        };
+      }
+      rounds += 1;
+      await new Promise((resolve) => setTimeout(resolve, options.intervalMs));
+    }
+  }
+
+  function containsVisibleText(wanted: unknown): boolean {
+    const needle = String(wanted || '').trim().toLowerCase();
+    if (!needle) return false;
+    const body = document.body;
+    if (!body) return false;
+    const walker = document.createTreeWalker(body, NodeFilter.SHOW_TEXT);
+    const maxTextNodes = 400;
+    let node: Node | null;
+    let scanned = 0;
+    for (;;) {
+      node = walker.nextNode();
+      if (node === null || scanned >= maxTextNodes) break;
+      scanned += 1;
+      if ((node.nodeValue || '').toLowerCase().includes(needle)) return true;
+    }
+    return false;
+  }
+
+  const PAGE_MAP_SHADOW_LIMIT = 120;
+  const PAGE_MAP_TEXT_FREE = new Set(['region', 'form', 'table', 'list']);
+  const PAGE_MAP_SENSITIVE_SURFACE = 'input,textarea,select,button,[contenteditable="true"],[contenteditable=""]';
+
+  // A container's own text repeats the text of everything inside it, so the map carries text where it says something new.
+
+  function pageMapLabel(el: Element): string {
+    return clean(el.getAttribute?.('aria-label'), 300)
+      || clean(el.getAttribute?.('title'), 300)
+      || clean(el.getAttribute?.('alt'), 300);
+  }
+
+  function pageMapEngine() {
+    if (!pageMapIdentity && pageMap) {
+      pageMapIdentity = requireSemanticIdentity().createIdentityEngine({
+        documentId,
+        maxEntities: pageMap.PAGE_MAP_MAX_ELEMENTS,
+        maxCacheBytes: 8 * 1024 * 1024
+      });
+    }
+    return pageMapIdentity;
+  }
+
+  function pageMapListDepth(el: Element): number {
+    let depth = 0;
+    for (let node = el.parentElement; node; node = node.parentElement) {
+      if (node.tagName === 'UL' || node.tagName === 'OL') depth += 1;
+    }
+    return depth;
+  }
+
+  function pageMapCellPosition(el: Element): { row?: number; col?: number } {
+    if (!(el instanceof HTMLTableCellElement)) return {};
+    const row = el.parentElement;
+    const table = el.closest('table');
+    if (!(row instanceof HTMLTableRowElement) || !(table instanceof HTMLTableElement)) return {};
+    const rowIndex = [...table.rows].indexOf(row);
+    const colIndex = [...row.cells].indexOf(el);
+    return { ...(rowIndex >= 0 ? { row: rowIndex } : {}), ...(colIndex >= 0 ? { col: colIndex } : {}) };
+  }
+
+  function pageMapSensitive(el: Element): boolean {
+    return el.matches?.(PAGE_MAP_SENSITIVE_SURFACE) ? !!sensitiveDescriptor(el) : false;
+  }
+
+  function pageMapExtras(el: Element, entry: CollectedEntry & { sensitive?: boolean | undefined }): Record<string, unknown> {
+    const { tag, role, type, kind } = entry;
+    const extras: Record<string, unknown> = {};
+    if (kind === 'choice') {
+      extras.checked = 'checked' in el && !!el.checked;
+      extras.name = clean(el.getAttribute?.('name'), 120);
+      extras.type = type;
+    } else if (kind === 'input') {
+      extras.type = type;
+      extras.name = clean(el.getAttribute?.('name'), 120);
+      extras.placeholder = clean(el.getAttribute?.('placeholder'), 200);
+      if (!entry.sensitive && entry.visible) extras.value = clean('isContentEditable' in el && el.isContentEditable ? el.textContent : ('value' in el ? el.value : undefined), 300);
+    } else if (kind === 'select') {
+      extras.name = clean(el.getAttribute?.('name'), 120);
+      const options = el instanceof HTMLSelectElement ? el.options : null;
+      extras.options = [...(options ?? [])].slice(0, 50).map((option) => normalizeObservableText(option.textContent, 60));
+    } else if (kind === 'heading') {
+      extras.level = Number(el.getAttribute?.('aria-level')) || Number(tag.slice(1)) || 2;
+    } else if (kind === 'link') {
+      extras.href = entry.href;
+    } else if (kind === 'media') {
+      const media = el instanceof HTMLMediaElement ? el : null;
+      extras.src = clean(media?.currentSrc || media?.src, 1200);
+      extras.paused = !!media?.paused;
+      extras.currentTime = Number(media?.currentTime) || 0;
+      extras.duration = Number(media?.duration) || 0;
+    } else if (kind === 'iframe') {
+      extras.src = clean(el instanceof HTMLIFrameElement ? el.src : undefined, 1200);
+      extras.title = clean(el.getAttribute?.('title'), 200);
+    } else if (kind === 'picture' || kind === 'icon') {
+      const source = el instanceof HTMLImageElement || el instanceof HTMLMediaElement ? el : null;
+      extras.src = clean(source?.currentSrc || source?.src, 1200);
+      extras.alt = clean(el.getAttribute?.('alt'), 200);
+    } else if (kind === 'table') {
+      const table = el instanceof HTMLTableElement ? el : null;
+      const rows = [...(table?.rows ?? [])];
+      extras.rows = rows.length;
+      extras.cols = rows.length ? Math.max(...rows.map((row) => row.cells.length)) : 0;
+      extras.headers = rows.length && rows[0] ? [...rows[0].cells].slice(0, 12).map((cell) => normalizeObservableText(cell.textContent, 80)) : [];
+    } else if (kind === 'list') {
+      extras.itemCount = [...el.children].filter((child) => child.tagName === 'LI').length;
+    } else if (kind === 'form') {
+      extras.fieldCount = el.querySelectorAll('input,select,textarea,button').length;
+    } else if (kind === 'region') {
+      extras.kind = tag === 'dialog' || role === 'dialog' ? 'dialog' : 'landmark';
+    } else if (kind === 'status') {
+      extras.value = clean(('value' in el ? el.value : undefined) ?? el.textContent, 200);
+    } else if (kind === 'text') {
+      extras.for = clean(el.getAttribute?.('for'), 120);
+      Object.assign(extras, pageMapCellPosition(el));
+    }
+    return extras;
+  }
+
+  function pageMapCollect(el: Element, collected: CollectedEntry[]): void {
+    if (!pageMap) throw new Error('The page map runtime is unavailable on this page.');
+    const tag = String(el.tagName || '').toLowerCase();
+    if (!tag) return;
+    const type = clean(el.getAttribute?.('type'), 80).toLowerCase();
+    const href = el instanceof HTMLAnchorElement || el instanceof HTMLAreaElement ? clean(el.href, 1200) : '';
+    const role = clean(el.getAttribute?.('role'), 80)
+      || implicitRole({ tag, type, href, contenteditable: 'isContentEditable' in el && el.isContentEditable === true });
+    const rect = el.getBoundingClientRect();
+    const kind = pageMap.classify({ tag, role, type, href, width: rect.width, height: rect.height });
+    if (!kind) return;
+    const text = PAGE_MAP_TEXT_FREE.has(kind) ? '' : normalizeObservableText(el.textContent || '', 300);
+    if (kind === 'text' && !text) return;
+    const style = getComputedStyle(el);
+    const visible = el.isConnected
+      && style.display !== 'none' && style.visibility !== 'hidden' && Number(style.opacity) !== 0
+      && rect.width > 0 && rect.height > 0;
+    collected.push({ el, kind, tag, role, type, href, rect, text, style, visible, label: pageMapLabel(el) });
+  }
+
+  function scanPageMap(): PageMapCache {
+    if (!pageMap) throw new Error('The page map runtime is unavailable on this page.');
+    if (pageMapCache && pageMapCache.mutationVersion === mutationVersion) return pageMapCache;
+    const scannedAt = new Date().toISOString();
+    const collected: CollectedEntry[] = [];
+    let truncated = false;
+    let shadowRoots = 0;
+
+    const visit = (root: Node): void => {
+      const walker = document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT);
+      for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+        if (collected.length >= pageMap.PAGE_MAP_MAX_ELEMENTS) { truncated = true; return; }
+        if (!(node instanceof Element)) continue;
+        pageMapCollect(node, collected);
+        if (node.shadowRoot && shadowRoots < PAGE_MAP_SHADOW_LIMIT) {
+          shadowRoots += 1;
+          visit(node.shadowRoot);
+        }
+      }
+    };
+
+    if (document.body) visit(document.body);
+
+    const regionIds = new Map<Element, string>();
+    const regionOrdinals = new Map<string, number>();
+    const entryByElement = new Map(collected.map((entry) => [entry.el, entry]));
+    for (const entry of collected) {
+      if (entry.kind !== 'region') continue;
+      const key = [entry.tag, entry.role, entry.label].join('|');
+      const ordinal = regionOrdinals.get(key) || 0;
+      regionOrdinals.set(key, ordinal + 1);
+      regionIds.set(entry.el, `rg_${stableHash(ordinal ? `${key}|${ordinal}` : key)}`);
+    }
+    const regionOf = (el: Element): string => {
+      const own = regionIds.get(el);
+      if (own) return own;
+      for (let node = el.parentElement; node; node = node.parentElement) {
+        const id = regionIds.get(node);
+        if (id) return id;
+      }
+      return 'rg_document';
+    };
+
+    const items: PageMapItem[] = collected.map((entry) => {
+      const identity = stableElementIdentity(entry.el);
+      const rect = entry.rect;
+      const x = rect.left + scrollX;
+      const y = rect.top + scrollY;
+      return {
+        ref: getRef(entry.el),
+        stableKey: identity.stableKey,
+        stableKeySource: identity.stableKeySource,
+        tag: entry.tag,
+        role: entry.role,
+        label: entry.label,
+        text: entry.text,
+        type: entry.type,
+        checked: 'checked' in entry.el ? !!entry.el.checked : undefined,
+        selected: 'selected' in entry.el ? !!entry.el.selected : undefined,
+        disabled: 'disabled' in entry.el ? !!entry.el.disabled : undefined,
+        ariaPressed: entry.el.getAttribute?.('aria-pressed') ?? null,
+        ariaChecked: entry.el.getAttribute?.('aria-checked') ?? null,
+        ariaExpanded: entry.el.getAttribute?.('aria-expanded') ?? null,
+        ariaSelected: entry.el.getAttribute?.('aria-selected') ?? null,
+        rect: { x, y, width: rect.width, height: rect.height },
+        inViewport: rect.bottom > 0 && rect.right > 0 && rect.left < innerWidth && rect.top < innerHeight
+      };
+    });
+    pageMapEngine()?.observe(items);
+
+    const groups = new Map<string, OperaAgentPageMapElement[]>(pageMap.PAGE_MAP_CLASSES.map((name) => [name, []]));
+    const elements: OperaAgentPageMapElement[] = [];
+    collected.forEach((entry, index) => {
+      const item = items[index];
+      if (!item) return;
+      const sensitive = pageMapSensitive(entry.el);
+      const ariaDisabled = clean(entry.el.getAttribute?.('aria-disabled'), 20).toLowerCase() === 'true';
+      const enabled = !('disabled' in entry.el && entry.el.disabled)
+        && !('readOnly' in entry.el && entry.el.readOnly) && !ariaDisabled;
+      const raw = {
+        class: entry.kind,
+        ref: item.ref,
+        tag: entry.tag,
+        role: entry.role,
+        text: entry.text,
+        label: entry.label,
+        x: item.rect.x,
+        y: item.rect.y,
+        width: item.rect.width,
+        height: item.rect.height,
+        order: index,
+        depth: pageMapListDepth(entry.el),
+        regionId: regionOf(entry.el),
+        visible: entry.visible,
+        actionable: entry.visible && enabled && !sensitive && pageMap.isActionableClass(entry.kind) && entry.style.pointerEvents !== 'none',
+        disabled: !enabled,
+        logicalId: item.logicalId,
+        stableKey: item.stableKey,
+        ...pageMapExtras(entry.el, { ...entry, sensitive })
+      };
+      const element = pageMap.projectElement(raw);
+      elements.push(element);
+      groups.get(entry.kind)?.push(element);
+    });
+
+    const regionCounts = new Map<unknown, number>();
+    for (const element of elements) regionCounts.set(element.regionId, (regionCounts.get(element.regionId) || 0) + 1);
+    const regions: Array<Record<string, unknown>> = [];
+    for (const [el, regionId] of regionIds) {
+      const entry = entryByElement.get(el);
+      if (!entry) continue;
+      regions.push({
+        regionId,
+        kind: entry.tag === 'dialog' || entry.role === 'dialog' ? 'dialog' : 'landmark',
+        role: entry.role || entry.tag,
+        ...(entry.label ? { label: entry.label } : {}),
+        bbox: {
+          x: entry.rect.left + scrollX,
+          y: entry.rect.top + scrollY,
+          width: entry.rect.width,
+          height: entry.rect.height
+        },
+        elementCount: regionCounts.get(regionId) || 0
+      });
+    }
+
+    const outline: Array<{ level: number; text: string; y: number; ref: string | null }> = [];
+    const tables: Array<{ ref: string | null; rows: number; cols: number; headers: string[]; bbox: DocRect }> = [];
+    const images: Array<{ ref: string | null; alt: string; bbox: DocRect; caption?: string | undefined }> = [];
+    collected.forEach((entry, index) => {
+      const item = items[index];
+      if (!item) return;
+      if (entry.kind === 'heading') {
+        outline.push({
+          level: Number(entry.el.getAttribute?.('aria-level')) || Number(entry.tag.slice(1)) || 2,
+          text: entry.text,
+          y: Math.round(item.rect.y),
+          ref: item.ref
+        });
+      }
+      if (entry.kind === 'table' && entry.el instanceof HTMLTableElement) {
+        const rows = [...entry.el.rows];
+        tables.push({
+          ref: item.ref,
+          rows: rows.length,
+          cols: rows.length ? Math.max(...rows.map((row) => row.cells.length)) : 0,
+          headers: rows.length && rows[0] ? [...rows[0].cells].slice(0, 12).map((cell) => normalizeObservableText(cell.textContent, 80)) : [],
+          bbox: { x: item.rect.x, y: item.rect.y, width: item.rect.width, height: item.rect.height }
+        });
+      }
+      if (entry.kind === 'picture') {
+        const caption = entry.el.closest?.('figure')?.querySelector?.('figcaption');
+        images.push({
+          ref: item.ref,
+          alt: clean(entry.el.getAttribute?.('alt'), 200),
+          bbox: { x: item.rect.x, y: item.rect.y, width: item.rect.width, height: item.rect.height },
+          ...(caption ? { caption: normalizeObservableText(caption.textContent, 200) } : {})
+        });
+      }
+    });
+
+    const classes = pageMap.PAGE_MAP_CLASSES.map((name) => {
+      const summary = pageMap.summarizeClass(name, groups.get(name) ?? []);
+      return summary.bbox ? summary : { class: name, count: summary.count };
+    });
+    const state = viewportState();
+    const skeleton: PageMapSkeleton = {
+      documentId,
+      url: location.href,
+      title: document.title,
+      documentWidth: state.documentWidth,
+      documentHeight: state.documentHeight,
+      viewport: { width: state.width, height: state.height, scrollX: state.scrollX, scrollY: state.scrollY, zoomFactor: 1 },
+      scannedAt,
+      mutationVersion,
+      totalElements: elements.length,
+      ...(truncated ? { truncated: true } : {}),
+      classes,
+      regions,
+      outline,
+      tables,
+      images
+    };
+    pageMapCache = { mutationVersion, skeleton, groups, elements };
+    return pageMapCache;
+  }
+
+  function pageMapRead(args: ContentArgs) {
+    if (!pageMap) return { ok: false, error: 'The page map runtime is unavailable on this page.' };
+    const wanted = args.class == null ? '' : String(args.class);
+    if (wanted && !pageMap.isMapClass(wanted)) throw new Error(`Unknown page map class: ${wanted}`);
+    const map = scanPageMap();
+    if (args.all === true) {
+      const pull = pageMap.paginate(map.elements, args.offset, args.limit);
+      return {
+        ok: true,
+        page: {
+          all: true,
+          ...pull,
+          totalElements: map.elements.length,
+          classes: map.skeleton.classes,
+          scannedAt: map.skeleton.scannedAt,
+          mutationVersion: map.skeleton.mutationVersion,
+          ...(map.skeleton.truncated ? { truncated: true } : {})
+        }
+      };
+    }
+    if (!wanted) return { ok: true, page: map.skeleton };
+    const source = args.all === true ? map.elements : (map.groups.get(wanted) || []);
+    const pull = pageMap.paginate(source, args.offset, args.limit);
+    return {
+      ok: true,
+      page: {
+        ...(args.all === true ? { all: true, classes: map.skeleton.classes } : { class: wanted }),
+        ...pull,
+        totalElements: map.elements.length,
+        scannedAt: map.skeleton.scannedAt,
+        mutationVersion: map.skeleton.mutationVersion,
+        ...(map.skeleton.truncated ? { truncated: true } : {})
+      }
+    };
+  }
+
+  function pageRead(args: ContentArgs) {
+    syncSemanticScope(args);
+    if (args.view === 'map') return pageMapRead(args);
+    const fullText = normalizeText(document.body?.innerText || document.documentElement?.innerText || '');
+    const offset = clamp(args.offset, 0, Math.max(0, fullText.length), 0);
+    const limit = clamp(args.limit ?? args.maxText, 300, MAX_TEXT_CHUNK, 6000);
+    const text = fullText.slice(offset, offset + limit);
+    const nextOffset = offset + text.length;
+    const page: Record<string, unknown> = {
+      documentId,
+      title: document.title,
+      url: location.href,
+      readyState: document.readyState,
+      text,
+      textOffset: offset,
+      textChars: text.length,
+      totalTextChars: fullText.length,
+      nextOffset: nextOffset < fullText.length ? nextOffset : null,
+      hasMore: nextOffset < fullText.length
+    };
+    page.viewport = viewportState();
+    page.mutationVersion = mutationVersion;
+    page.userInput = userInputState();
+    const compactView = args.view === 'compact';
+    if (compactView) page.compactView = true;
+    if (args.includeElements !== false) {
+      const regional = semanticRegionObservation(args.maxElements);
+      const observation = requireIdentityEngine().observe(regional.items);
+      if (compactView) {
+
+        requireViewEngine().observe({
+          regions: regional.regions,
+          items: observation.items,
+          semanticState: observation.state,
+          delta: observation.delta,
+        });
+        page.elements = compactObservationElements(observation.items, observation.delta);
+        page.semanticDelta = observation.delta;
+      } else {
+        page.elements = observation.items;
+        page.semanticState = observation.state;
+        page.semanticDelta = observation.delta;
+        page.semanticViews = requireViewEngine().observe({
+          regions: regional.regions,
+          items: observation.items,
+          semanticState: observation.state,
+          delta: observation.delta,
+        });
+      }
+    }
+    return {
+      ok: true,
+      page
+    };
+  }
+
+  function pageQuery(args: ContentArgs) {
+    const selector = String(args.selector || '');
+    if (!selector || selector.length > 500) throw new Error('Invalid selector.');
+    const limit = clamp(args.limit, 1, MAX_QUERY, 30);
+    let nodes: Element[];
+    try {
+      nodes = [...document.querySelectorAll(selector)];
+    } catch (error) {
+      globalThis.OperaAgentLog?.warn?.('PAGE_QUERY_INVALID_SELECTOR', error instanceof Error ? error.message : String(error));
+      throw new Error('Invalid CSS selector.');
+    }
+    if (args.visibleOnly !== false) nodes = nodes.filter(isVisible);
+    nodes = prioritizeActionableNodes(nodes);
+    const items = nodes.slice(0, limit).map((el) => serialize(el, { includeValue: !!args.includeValue }));
+    const index = typeof args.index === 'number' && Number.isInteger(args.index) ? args.index : null;
+    return {
+      ok: true,
+      count: nodes.length,
+      item: index != null && index >= 0 ? items[index] ?? null : items[0] ?? null,
+      items
+    };
+  }
+
+  function findDisambiguationHint(el: Element | null, position: number): string {
+    const state = actionabilityState(el);
+    const facts: string[] = [];
+    facts.push(state.actionable ? 'actionable' : 'not actionable');
+    facts.push(state.inViewport ? 'in viewport' : 'outside viewport');
+    if (state.sensitive) facts.push('sensitive');
+    return `chose:${position + 1} — ${facts.join(', ')}; select explicitly with index:${position} or narrow the query`;
+  }
+
+  function findVisibleTextCandidate(text: string): Element | null {
+    const body = document.body;
+    if (!body) return null;
+    const walker = document.createTreeWalker(body, NodeFilter.SHOW_TEXT);
+    const maxTextNodes = 2000;
+    let node: Node | null;
+    let scanned = 0;
+    for (;;) {
+      node = walker.nextNode();
+      if (node === null || scanned >= maxTextNodes) break;
+      scanned += 1;
+      if (!(node.nodeValue || '').toLowerCase().includes(text)) continue;
+      const anchor = node.parentElement?.getBoundingClientRect?.();
+      if (!anchor || (anchor.width === 0 && anchor.height === 0)) continue;
+      const centerX = anchor.left + anchor.width / 2;
+      const centerY = anchor.top + anchor.height / 2;
+      let best: HTMLElement | null = null;
+      let bestDistance = Number.POSITIVE_INFINITY;
+      for (const el of collectInteractiveNodes()) {
+        if (!actionabilityState(el).actionable) continue;
+        const rect = el.getBoundingClientRect();
+        const distance = Math.hypot(rect.left + rect.width / 2 - centerX, rect.top + rect.height / 2 - centerY);
+        if (distance < bestDistance) {
+          best = el;
+          bestDistance = distance;
+        }
+      }
+      if (best) return best;
+    }
+    return null;
+  }
+
+  function pageFind(args: ContentArgs) {
+    const text = clean(args.text, 300).toLowerCase();
+    const role = clean(args.role, 80).toLowerCase();
+    const tag = clean(args.tag, 80).toLowerCase();
+    const exact = !!args.exact;
+    const limit = clamp(args.limit, 1, MAX_QUERY, 30);
+    let entries: Array<{ el: HTMLElement; index: number; s: SerializedElement; fields: string[]; hay: string; exactTextMatch: boolean; rank?: number | undefined }> = collectInteractiveNodes().map((el, index) => {
+      const s = serialize(el);
+      const fields = [s.label, s.text, s.placeholder, s.accessibleName].map((value) => String(value || '').trim().toLowerCase());
+      return { el, index, s, fields, hay: fields.join(' '), exactTextMatch: !!text && fields.includes(text) };
+    });
+    if (args.visibleOnly !== false) entries = entries.filter(({ el }) => isVisible(el));
+    entries = entries.filter(({ s, hay, exactTextMatch }) => {
+      if (role && String(s.role).toLowerCase() !== role) return false;
+      if (tag && String(s.tag).toLowerCase() !== tag) return false;
+      if (!text) return true;
+      return exact ? exactTextMatch || hay.trim() === text : hay.includes(text);
+    });
+    entries = entries
+      .map((entry) => ({ ...entry, rank: actionabilityRank(entry.el) }))
+      .sort((left, right) => left.rank - right.rank || left.index - right.index);
+    const dominant = entries.filter((entry) => entry.exactTextMatch && entry.rank === 0);
+    let projected = entries;
+    if (args.limit == null && args.index == null && dominant.length === 1) projected = dominant;
+    const rawItems = projected.slice(0, limit).map(({ el }) => serialize(el, { includeValue: !!args.includeValue }));
+
+    const items = rawItems.length > 1
+      ? rawItems.map((entry, position) => {
+          const projectedEntry = projected[position];
+          return {
+            ...entry,
+            candidateRank: position + 1,
+            hint: findDisambiguationHint(projectedEntry ? projectedEntry.el : null, position)
+          };
+        })
+      : rawItems;
+    const index = typeof args.index === 'number' && Number.isInteger(args.index) ? args.index : 0;
+    const dominantEntry = dominant[0];
+    const item = args.index == null && dominant.length === 1 && dominantEntry
+      ? serialize(dominantEntry.el, { includeValue: !!args.includeValue })
+      : items[index] ?? null;
+
+    if (text && entries.length === 0) {
+      const fuzzyMatch = collectInteractiveNodes()
+        .find((el) => serialize(el).text.toLowerCase().includes(text));
+      const fallbackEl = fuzzyMatch || findVisibleTextCandidate(text);
+      if (fallbackEl) {
+        const serialized = serialize(fallbackEl, { includeValue: !!args.includeValue });
+        return {
+          ok: true,
+          count: 0,
+          item: { ...serialized, candidateRank: 1, hint: findDisambiguationHint(fallbackEl, 0) },
+          items: [],
+          fuzzy: true,
+          hint: 'No exact field match; exact-match fallback from fuzzy text match. Verify the target before acting.'
+        };
+      }
+    }
+    return { ok: true, count: entries.length, item, items };
+  }
+
+  function collectLinks(args: ContentArgs) {
+    const max = clamp(args.limit, 1, MAX_LINKS, 200);
+    const sameOrigin = !!args.sameOrigin;
+    const seen = new Set<string>();
+    const links: Array<{ url: string; text: string }> = [];
+    for (const a of document.querySelectorAll<HTMLAnchorElement>('a[href]')) {
+      let url: URL;
+      try { url = new URL(a.href, location.href); } catch (error) { globalThis.OperaAgentLog?.debug?.('LINK_URL_PARSE_FAILED', error instanceof Error ? error.message : String(error)); continue; }
+      if (!['http:', 'https:'].includes(url.protocol)) continue;
+      if (sameOrigin && url.origin !== location.origin) continue;
+      url.hash = '';
+      const key = url.toString();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      links.push({ url: key, text: clean(innerTextOf(a) || a.textContent || a.getAttribute('aria-label') || '', 300) });
+      if (links.length >= max) break;
+    }
+    return { ok: true, links, count: links.length };
+  }
+
+  function nativeSetValue(el: Element, value: string): void {
+    if ('isContentEditable' in el && el.isContentEditable) {
+      if (el instanceof HTMLElement) el.focus();
+      el.textContent = value;
+      el.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'insertText', data: value }));
+      el.dispatchEvent(new Event('change', { bubbles: true }));
+      return;
+    }
+    const proto = el instanceof HTMLTextAreaElement ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype;
+    const setter = Object.getOwnPropertyDescriptor(proto, 'value')?.set;
+    if (setter) setter.call(el, value); else if ('value' in el) el.value = value;
+    el.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'insertText', data: value }));
+    el.dispatchEvent(new Event('change', { bubbles: true }));
+  }
+
+  function preparePostAction(ref: unknown) {
+    syncSemanticScope({});
+    const baseline = observeSemanticBounded(120).observation;
+    return {
+      schemaVersion: 1,
+      documentId,
+      routeKey: currentRouteKey(),
+      ref: String(ref || ''),
+      url: String(location.href),
+      beforeMutationVersion: mutationVersion,
+      semanticRevision: baseline.state.observationRevision
+    };
+  }
+
+  function normalizeExpectSpec(raw: unknown): ExpectSpec | null {
+    if (!isRecord(raw)) return null;
+    const spec: { -readonly [K in keyof ExpectSpec]?: ExpectSpec[K] } = {};
+    if (raw.urlChanged === true) spec.urlChanged = true;
+    if (typeof raw.urlContains === 'string' && raw.urlContains.trim()) spec.urlContains = raw.urlContains.trim().toLowerCase().slice(0, 300);
+    if (typeof raw.selectorAppears === 'string' && raw.selectorAppears.trim() && raw.selectorAppears.length <= 500) spec.selectorAppears = raw.selectorAppears.trim();
+    if (typeof raw.selectorGone === 'string' && raw.selectorGone.trim() && raw.selectorGone.length <= 500) spec.selectorGone = raw.selectorGone.trim();
+    if (typeof raw.textGone === 'string' && raw.textGone.trim()) spec.textGone = raw.textGone.trim().toLowerCase().slice(0, 300);
+    const minDelta = Number(raw.minMutationDelta);
+    if (Number.isFinite(minDelta) && minDelta >= 0) spec.minMutationDelta = Math.floor(minDelta);
+    return Object.keys(spec).length ? spec : null;
+  }
+
+  function evaluateExpectations(spec: ExpectSpec, before: Record<string, unknown>): ExpectVerification {
+    const expectations: Expectation[] = [];
+    let verified = true;
+    const check = (key: string, pass: unknown): void => {
+      expectations.push({ key, pass: pass === true });
+      verified = verified && pass === true;
+    };
+    const url = String(location.href);
+    if (spec.urlContains !== undefined) check('urlContains', url.toLowerCase().includes(spec.urlContains));
+    if (spec.urlChanged !== undefined) check('urlChanged', url !== String(before.url || ''));
+    if (spec.selectorAppears !== undefined) {
+      const selector = spec.selectorAppears;
+      try { check('selectorAppears', document.querySelector(selector) != null); } catch (error) { globalThis.OperaAgentLog?.debug?.('EXPECT_SELECTOR_APPEARS_FAILED', error instanceof Error ? error.message : String(error)); check('selectorAppears', false); }
+    }
+    if (spec.selectorGone !== undefined) {
+      const selector = spec.selectorGone;
+      try { check('selectorGone', document.querySelector(selector) == null); } catch (error) { globalThis.OperaAgentLog?.debug?.('EXPECT_SELECTOR_GONE_FAILED', error instanceof Error ? error.message : String(error)); check('selectorGone', false); }
+    }
+    if (spec.textGone !== undefined) check('textGone', !(document.body?.innerText || '').toLowerCase().includes(spec.textGone));
+    if (spec.minMutationDelta !== undefined) check('minMutationDelta', (mutationVersion - Number(before.beforeMutationVersion ?? mutationVersion)) >= spec.minMutationDelta);
+    return { verified, expectations };
+  }
+
+  async function waitForPostActionSettle(maxWaitMs = 400, stableRoundsRequired = 2) {
+    const startedAt = performance.now();
+    let stableRounds = 0;
+    let previousMutationVersion = mutationVersion;
+    while (performance.now() - startedAt < maxWaitMs && stableRounds < stableRoundsRequired) {
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      if (mutationVersion === previousMutationVersion) stableRounds += 1;
+      else stableRounds = 0;
+      previousMutationVersion = mutationVersion;
+    }
+    return {
+      settled: stableRounds >= stableRoundsRequired,
+      stabilizationMs: Math.round((performance.now() - startedAt) * 100) / 100
+    };
+  }
+
+  const EXPECT_VERIFY_WINDOW_MS = 2000;
+
+  async function waitForExpectVerification(spec: ExpectSpec, before: Record<string, unknown>, budgetMs = EXPECT_VERIFY_WINDOW_MS): Promise<ExpectVerification> {
+    const startedAt = performance.now();
+    let verification = evaluateExpectations(spec, before);
+    while (!verification.verified && performance.now() - startedAt < budgetMs) {
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      verification = evaluateExpectations(spec, before);
+    }
+    return verification;
+  }
+
+
+
+  async function postActionEvidence(args: ContentArgs) {
+    const before = isRecord(args.before) ? args.before : {};
+    const settled = await waitForPostActionSettle();
+    const resetReason = syncSemanticScope({});
+
+    const semanticState = requireIdentityEngine().inspect();
+    const semantic = {
+      schemaVersion: 1,
+      sourceRevision: semanticState.observationRevision,
+      resultingRevision: semanticState.observationRevision,
+      classification: resetReason ? 'RESET' : 'NO_RELEVANT_CHANGE',
+      changeTypes: [],
+      changedEntityIds: [],
+      completeSnapshotRequired: !!resetReason,
+      ...(resetReason ? { resetReason } : {})
+    };
+    const target = resolveRef(args.ref);
+    const sameContinuity = before.documentId === documentId && before.routeKey === currentRouteKey();
+    const beforeMutationVersion = Number.isFinite(Number(before.beforeMutationVersion))
+      ? Number(before.beforeMutationVersion)
+      : mutationVersion;
+    const expectSpec = normalizeExpectSpec(args.expect);
+    let verification = expectSpec ? evaluateExpectations(expectSpec, before) : null;
+    if (expectSpec && verification && !verification.verified) {
+      verification = await waitForExpectVerification(expectSpec, before);
+    }
+    const fallbackHref = verification && !verification.verified && target instanceof HTMLAnchorElement && target.href
+      ? String(target.href)
+      : null;
+    return {
+      schemaVersion: 1,
+      documentId,
+      continuity: sameContinuity ? 'SAME_DOCUMENT_ROUTE' : 'RESET_OR_ROUTE_CHANGE',
+      beforeMutationVersion,
+      mutationVersion,
+      mutationChanged: mutationVersion !== beforeMutationVersion,
+      settled: settled.settled,
+      stabilizationMs: settled.stabilizationMs,
+      semantic,
+      target: {
+        ref: String(args.ref || ''),
+        present: !!target
+      },
+      completionClaim: false,
+      ...(verification ? { verified: verification.verified, expectations: verification.expectations } : {}),
+      ...(fallbackHref ? { fallbackHref } : {})
+    };
+  }
+
+  function retryAttemptsOf(args: ContentArgs): number {
+    const retry = isRecord(args.retry) ? args.retry : {};
+    return Math.max(1, Math.min(3, Number(retry.attempts) || 1));
+  }
+
+  async function clickSynthetic(args: ContentArgs) {
+    const attempts = retryAttemptsOf(args);
+    let el = resolveActionRef(args.ref);
+    if (!el) throw new Error('Element not found or reference is stale.');
+    if (sensitiveDescriptor(el) === 'file') throw new Error('File upload fields are blocked.');
+    if (!isVisible(el)) throw new Error('Element is not visible.');
+    let result: Record<string, unknown> | null = null;
+    for (let attempt = 1; attempt <= attempts; attempt += 1) {
+      el = resolveActionRef(args.ref);
+      if (!el) break;
+      const before = preparePostAction(args.ref);
+      el.scrollIntoView({ block: 'center', inline: 'center', behavior: 'instant' });
+      if (el instanceof HTMLElement) {
+        el.focus?.({ preventScroll: true });
+        el.click();
+      }
+      const postAction = await postActionEvidence({ ref: args.ref, before, expect: args.expect });
+      result = { ok: true, ref: args.ref, method: 'synthetic', attempts: attempt, postAction };
+      if (postAction.verified !== false) break;
+      if (el instanceof HTMLAnchorElement && el.href) result.fallbackHref = String(el.href);
+      if (attempt < attempts) await new Promise((resolve) => setTimeout(resolve, 150));
+    }
+    return result;
+  }
+
+  async function fill(args: ContentArgs) {
+    const attempts = retryAttemptsOf(args);
+    const value = String(args.value ?? '').slice(0, 20000);
+    let result: Record<string, unknown> | null = null;
+    for (let attempt = 1; attempt <= attempts; attempt += 1) {
+      const el = resolveRef(args.ref);
+      assertEditableSafe(el);
+      const before = preparePostAction(args.ref);
+      el.scrollIntoView({ block: 'center', inline: 'center', behavior: 'instant' });
+      if (el instanceof HTMLElement) el.focus({ preventScroll: true });
+      nativeSetValue(el, value);
+      const postAction = await postActionEvidence({ ref: args.ref, before, expect: args.expect });
+      result = { ok: true, ref: args.ref, valueLength: value.length, attempts: attempt, postAction };
+      if (postAction.verified !== false) break;
+      if (attempt < attempts) await new Promise((resolve) => setTimeout(resolve, 150));
+    }
+    return result;
+  }
+
+  async function setFiles(args: ContentArgs) {
+    const name = String(args.filename || '');
+    const dataUrl = String(args.data || '');
+    if (!name || !dataUrl.startsWith('data:')) throw new Error('set_files needs a filename and a data: URL.');
+    const input = document.querySelector<HTMLInputElement>('input[type="file"]');
+    if (!input) throw new Error('No file input on this page.');
+    const blob = await (await fetch(dataUrl)).blob();
+    const transfer = new DataTransfer();
+    transfer.items.add(new File([blob], name.slice(0, 300), { type: blob.type || 'application/octet-stream' }));
+    input.files = transfer.files;
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+    return { ok: true, files: input.files.length };
+  }
+
+  function fillInfo(args: ContentArgs) {
+    const el = resolveRef(args.ref);
+    assertEditableSafe(el);
+    el.scrollIntoView({ block: 'center', inline: 'center', behavior: 'instant' });
+    if (el instanceof HTMLElement) el.focus({ preventScroll: true });
+    if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) {
+      el.select();
+    } else if ('isContentEditable' in el && el.isContentEditable) {
+      const selection = getSelection();
+      const range = document.createRange();
+      range.selectNodeContents(el);
+      selection?.removeAllRanges();
+      selection?.addRange(range);
+    }
+    return { ok: true, ref: args.ref, contentEditable: 'isContentEditable' in el && !!el.isContentEditable, postActionBefore: preparePostAction(args.ref) };
+  }
+
+  function focus(args: ContentArgs) {
+    const el = resolveRef(args.ref);
+    if (!el) throw new Error('Element not found or reference is stale.');
+    if (sensitiveDescriptor(el) === 'file') throw new Error('File upload fields are blocked.');
+    el.scrollIntoView({ block: 'center', inline: 'center', behavior: 'instant' });
+    if (el instanceof HTMLElement) el.focus({ preventScroll: true });
+    return { ok: true, ref: args.ref, sensitive: !!sensitiveDescriptor(el) };
+  }
+
+  function clickInfo(args: ContentArgs) {
+    const el = resolveActionRef(args.ref);
+    if (!el) throw new Error('Element not found or reference is stale.');
+    if (sensitiveDescriptor(el) === 'file') throw new Error('File upload fields are blocked.');
+    if (!isVisible(el)) throw new Error('Element is not visible.');
+    const postActionBefore = preparePostAction(args.ref);
+    el.scrollIntoView({ block: 'center', inline: 'center', behavior: 'instant' });
+    const rect = rectOf(el);
+    return { ok: true, ref: args.ref, rect, sensitive: !!sensitiveDescriptor(el), postActionBefore };
+  }
+
+  function actionState(args: ContentArgs) {
+    const key = String(args?.ref || '');
+    const before = resolveRef(key);
+    let el: Element | null = null;
+    try {
+      el = resolveActionRef(key);
+    } catch (error) {
+      const msg = String(error instanceof Error ? error.message : error);
+      if (msg.includes('refusing automatic rebind')) {
+        const m = msg.match(/candidates: (\[.*?\])/);
+        let candidates: unknown[] = [];
+        try {
+          const json = m?.[1];
+          candidates = json ? JSON.parse(json) : [];
+        } catch (parseError) {
+          globalThis.OperaAgentLog?.debug?.('REBIND_CANDIDATES_PARSE_FAILED', parseError instanceof Error ? parseError.message : String(parseError));
+          candidates = [];
+        }
+        return { present: true, actionable: false, ambiguous: true, candidates, refusal: msg };
+      }
+      throw error;
+    }
+    if (!el) {
+
+      if (before && sensitiveDescriptor(before)) {
+        return { present: true, actionable: false, ambiguous: false, masked: true };
+      }
+      return { present: false, actionable: false, ambiguous: false, refState: refStateFor(key) };
+    }
+    const state = actionabilityState(el);
+
+    return {
+      present: true,
+
+      actionable: state.visible && state.enabled && state.pointerEnabled,
+      ambiguous: false,
+      gates: { visible: state.visible, enabled: state.enabled, sensitive: state.sensitive, pointerEnabled: state.pointerEnabled, inViewport: state.inViewport },
+
+      ...(before == null && el != null ? { rebound: true } : {})
+    };
+  }
+
+  function pointerTarget(args: ContentArgs) {
+    const x = Number(args.x);
+    const y = Number(args.y);
+    if (!Number.isFinite(x) || !Number.isFinite(y) || x < 0 || y < 0 || x >= innerWidth || y >= innerHeight) {
+      throw new Error('Pointer coordinates must be inside the visible viewport.');
+    }
+    const el = document.elementFromPoint(x, y);
+    const blocked = el && sensitiveDescriptor(el);
+    if (blocked) throw new Error(`Pointer blocked on sensitive target (${blocked}).`);
+    if (args.showCursor) {
+
+      let cursor = document.getElementById('__opera_agent_pointer_cursor');
+      if (!cursor) {
+        cursor = document.createElement('div');
+        cursor.id = '__opera_agent_pointer_cursor';
+        cursor.setAttribute('aria-hidden', 'true');
+        cursor.style.cssText = 'position:fixed;width:16px;height:16px;border:2px solid #ef4444;border-radius:50%;background:#ef444433;transform:translate(-50%,-50%);pointer-events:none;z-index:2147483647;transition:left 90ms linear,top 90ms linear,opacity 200ms linear;';
+        document.documentElement.append(cursor);
+      }
+      cursor.style.left = `${x}px`;
+      cursor.style.top = `${y}px`;
+      cursor.style.opacity = '1';
+      clearTimeout(window.__operaAgentCursorIdle);
+      window.__operaAgentCursorIdle = setTimeout(() => {
+        const idle = document.getElementById('__opera_agent_pointer_cursor');
+        if (idle) idle.style.opacity = '0.3';
+      }, 2500);
+    }
+    return {
+      ok: true,
+      x,
+      y,
+      documentId,
+      viewport: viewportState(),
+      mutationVersion,
+      target: el ? { ref: getRef(el), tag: el.tagName.toLowerCase(), label: getAssociatedLabel(el), ...stableElementIdentity(el) } : null,
+      scrollTarget: scrollState(findScrollTarget(el))
+    };
+  }
+
+  function capturePolicy() {
+    const sensitiveFields = [...document.querySelectorAll('input, textarea, [contenteditable="true"]')]
+      .filter(isVisible)
+      .map((el) => sensitiveDescriptor(el))
+      .filter(Boolean);
+    return {
+      ok: true,
+      allowed: sensitiveFields.length === 0,
+      reason: sensitiveFields.length ? 'SENSITIVE_SURFACE' : null,
+      documentId,
+      viewport: viewportState(),
+      sensitiveFieldCount: sensitiveFields.length
+    };
+  }
+
+  function isScrollable(el: Element | null): boolean {
+    if (!el || el === document.body || el === document.documentElement) return false;
+    const style = getComputedStyle(el);
+    const canY = /^(?:auto|scroll|overlay)$/.test(style.overflowY) && el.scrollHeight > el.clientHeight + 1;
+    const canX = /^(?:auto|scroll|overlay)$/.test(style.overflowX) && el.scrollWidth > el.clientWidth + 1;
+    return canX || canY;
+  }
+
+  function findScrollTarget(el: Element | null): Element {
+    for (let current = el; current && current !== document.documentElement; current = current.parentElement) {
+      if (isScrollable(current)) return current;
+    }
+    return document.scrollingElement || document.documentElement;
+  }
+
+  function scrollState(target: Element | null): ScrollPosition {
+    const root = document.scrollingElement || document.documentElement;
+    const isDocument = !target || target === root || target === document.body || target === document.documentElement;
+    const node = isDocument ? root : target;
+    const top = isDocument ? scrollY : node.scrollTop;
+    const left = isDocument ? scrollX : node.scrollLeft;
+    const clientHeight = isDocument ? innerHeight : node.clientHeight;
+    const clientWidth = isDocument ? innerWidth : node.clientWidth;
+    const scrollHeight = node?.scrollHeight || clientHeight;
+    const scrollWidth = node?.scrollWidth || clientWidth;
+    const maxTop = Math.max(0, scrollHeight - clientHeight);
+    const maxLeft = Math.max(0, scrollWidth - clientWidth);
+    const epsilon = 2;
+    return {
+      kind: isDocument ? 'document' : 'element',
+      ref: isDocument ? null : getRef(node),
+      tag: isDocument ? 'document' : String(node.tagName || '').toLowerCase(),
+      role: isDocument ? '' : clean(node.getAttribute?.('role'), 80),
+      label: isDocument ? 'document' : getAssociatedLabel(node),
+      scrollTop: Math.round(top * 100) / 100,
+      scrollLeft: Math.round(left * 100) / 100,
+      scrollHeight,
+      scrollWidth,
+      clientHeight,
+      clientWidth,
+      maxScrollTop: maxTop,
+      maxScrollLeft: maxLeft,
+      canScrollY: maxTop > epsilon,
+      canScrollX: maxLeft > epsilon,
+      reachedTop: top <= epsilon,
+      reachedBottom: top >= maxTop - epsilon,
+      reachedLeft: left <= epsilon,
+      reachedRight: left >= maxLeft - epsilon
+    };
+  }
+
+  function sameScrollPosition(left: ScrollPosition, right: ScrollPosition): boolean {
+    return !!left && !!right && left.kind === right.kind && left.ref === right.ref &&
+      Math.abs(left.scrollTop - right.scrollTop) <= 1 && Math.abs(left.scrollLeft - right.scrollLeft) <= 1 &&
+      left.scrollHeight === right.scrollHeight && left.scrollWidth === right.scrollWidth;
+  }
+
+  async function settleScroll(args: ContentArgs) {
+    const startedAt = performance.now();
+    const maxWaitMs = clamp(args.maxWaitMs, 100, 1200, 800);
+    const requiredStableRounds = clamp(args.stableRounds, 1, 5, 3);
+    const intervalMs = 50;
+    const before = isRecord(args.before) ? args.before : null;
+    const beforeMutationVersion = Number(args.beforeMutationVersion ?? mutationVersion);
+    const point = Number.isFinite(Number(args.x)) && Number.isFinite(Number(args.y))
+      ? document.elementFromPoint(Number(args.x), Number(args.y))
+      : null;
+    let target = before?.kind === 'element' && before.ref ? resolveRef(before.ref) : findScrollTarget(point);
+    if (!target) target = document.scrollingElement || document.documentElement;
+    let previous = scrollState(target);
+    let previousMutationVersion = mutationVersion;
+    let stableRounds = 0;
+    while (performance.now() - startedAt < maxWaitMs && stableRounds < requiredStableRounds) {
+      await new Promise((resolve) => setTimeout(resolve, intervalMs));
+      const current = scrollState(target);
+      stableRounds = sameScrollPosition(previous, current) && mutationVersion === previousMutationVersion ? stableRounds + 1 : 0;
+      previous = current;
+      previousMutationVersion = mutationVersion;
+    }
+    const after = scrollState(target);
+    return {
+      ok: true,
+      before,
+      after,
+      scrollX,
+      scrollY,
+      moved: before ? Math.abs(after.scrollTop - Number(before.scrollTop || 0)) > 1 || Math.abs(after.scrollLeft - Number(before.scrollLeft || 0)) > 1 : null,
+      contentChanged: mutationVersion !== beforeMutationVersion,
+      beforeMutationVersion,
+      mutationVersion,
+      settled: stableRounds >= requiredStableRounds,
+      stabilizationMs: Math.round((performance.now() - startedAt) * 100) / 100
+    };
+  }
+
+  async function scrollTargetBy(args: ContentArgs) {
+    const point = Number.isFinite(Number(args.x)) && Number.isFinite(Number(args.y))
+      ? document.elementFromPoint(Number(args.x), Number(args.y))
+      : null;
+    const requestedBefore = isRecord(args.before) ? args.before : null;
+    const root = document.scrollingElement || document.documentElement;
+    let target = requestedBefore?.kind === 'document' ? root : args.ref ? resolveRef(args.ref) : findScrollTarget(point);
+    if (!target) target = document.scrollingElement || document.documentElement;
+    const before = requestedBefore || scrollState(target);
+    const beforeMutationVersion = Number(args.beforeMutationVersion ?? mutationVersion);
+    const x = clamp(args.deltaX, -1200, 1200, 0);
+    const y = clamp(args.deltaY, -1200, 1200, 0);
+    if (target === root || target === document.body || target === document.documentElement) {
+      scrollBy({ left: x, top: y, behavior: 'instant' });
+      document.dispatchEvent(new Event('scroll'));
+    } else {
+      target.scrollBy({ left: x, top: y, behavior: 'instant' });
+      target.dispatchEvent(new Event('scroll'));
+    }
+    return settleScroll({ before, beforeMutationVersion, x: args.x, y: args.y, maxWaitMs: 600, stableRounds: 3 });
+  }
+
+  // WHY A SCROLL POSITION IS SANITIZED RATHER THAN PASSED THROUGH.
+  // args comes from the bridge, where a value can be any string; scrollIntoView types the block/inline parameters as a closed union and the browser throws on anything else.
+  const scrollPos = (value: unknown): ScrollLogicalPosition => (value === 'start' || value === 'nearest' || value === 'end' ? value : 'center');
+
+  async function scroll(args: ContentArgs) {
+    const x = clamp(args.x, -1000000, 1000000, 0);
+    const y = clamp(args.y, -1000000, 1000000, 0);
+    const behavior = args.behavior === 'smooth' ? 'smooth' : 'instant';
+    let target = document.scrollingElement || document.documentElement;
+    const beforeMutationVersion = mutationVersion;
+    if (args.ref) {
+      const el = resolveRef(args.ref);
+      if (!el) throw new Error('Element not found or reference is stale.');
+      target = findScrollTarget(el.parentElement);
+      const before = scrollState(target);
+      el.scrollIntoView({ block: scrollPos(args.block), inline: scrollPos(args.inline), behavior });
+      return settleScroll({ before, beforeMutationVersion, maxWaitMs: behavior === 'smooth' ? 1000 : 500 });
+    } else if (args.absolute) {
+      const before = scrollState(target);
+      scrollTo({ left: x, top: y, behavior });
+      return settleScroll({ before, beforeMutationVersion, maxWaitMs: behavior === 'smooth' ? 1000 : 500 });
+    } else {
+      const before = scrollState(target);
+      scrollBy({ left: x, top: y, behavior });
+      return settleScroll({ before, beforeMutationVersion, maxWaitMs: behavior === 'smooth' ? 1000 : 500 });
+    }
+  }
+
+  function key(args: ContentArgs) {
+
+    if (args?.modifiers != null || args?.text != null) {
+      throw new Error('Key chords and text entry require the trusted path.');
+    }
+    const rawKey = typeof args.key === 'string' ? args.key : '';
+    const keyName = rawKey === 'Space' ? ' ' : rawKey;
+    if (!NAV_KEYS.has(rawKey) && !NAV_KEYS.has(keyName)) {
+
+      throw new Error(
+        'Key is not allowlisted for the synthetic path. Chords, text, and '
+        + 'non-navigation keys require the trusted path (page.key with trusted: true).'
+      );
+    }
+    const target = document.activeElement || document.body;
+    const blocked = target && sensitiveDescriptor(target);
+    if (blocked) throw new Error(`Keyboard input blocked on sensitive field (${blocked}).`);
+    const common = { key: keyName, code: String(args.code ?? ''), bubbles: true, cancelable: true };
+    target.dispatchEvent(new KeyboardEvent('keydown', common));
+    target.dispatchEvent(new KeyboardEvent('keyup', common));
+    return { ok: true, key: args.key };
+  }
+
+  function stateMatches(el: Element, state: unknown): boolean {
+    if (!isRecord(state)) return true;
+    for (const [key, expected] of Object.entries(state)) {
+      let actual: unknown = false;
+      if (key === 'visible') actual = isVisible(el);
+      else if (key === 'enabled') actual = !('disabled' in el && el.disabled);
+      else if (key === 'checked') actual = 'checked' in el && !!el.checked;
+      else if (key === 'selected') actual = 'selected' in el && !!el.selected;
+      else if (key === 'ariaPressed') actual = el.getAttribute('aria-pressed');
+      else if (key === 'ariaChecked') actual = el.getAttribute('aria-checked');
+      else if (key === 'ariaExpanded') actual = el.getAttribute('aria-expanded');
+      else if (key === 'ariaSelected') actual = el.getAttribute('aria-selected');
+      else actual = el.getAttribute?.(key);
+      if (String(actual) !== String(expected)) return false;
+    }
+    return true;
+  }
+
+  async function waitFor(args: ContentArgs) {
+    const timeoutMs = clamp(args.timeoutMs, 50, 30000, 8000);
+    const intervalMs = clamp(args.intervalMs, 25, 1000, 75);
+    const absent = args.absent === true;
+    if (absent && !args.ref && !args.selector && !args.text) {
+      throw new Error('absent wait requires ref, selector, or text.');
+    }
+    const startedAt = Date.now();
+    const deadline = startedAt + timeoutMs;
+
+    const text = clean(args.text, 300).toLowerCase();
+    while (Date.now() <= deadline) {
+      let candidates: Element[] = [];
+      if (args.ref) {
+        const el = resolveRef(args.ref);
+        if (el) candidates = [el];
+      } else if (args.selector) {
+        try { candidates = [...document.querySelectorAll(String(args.selector))]; } catch (error) { globalThis.OperaAgentLog?.warn?.('WAIT_INVALID_SELECTOR', error instanceof Error ? error.message : String(error)); throw new Error('Invalid CSS selector.'); }
+      } else {
+        candidates = collectInteractiveNodes();
+      }
+      const found = candidates.find((el) => {
+        if (args.visibleOnly !== false && !isVisible(el)) return false;
+        if (text) {
+          const s = serialize(el);
+          const hay = `${s.label} ${s.text} ${s.placeholder} ${s.accessibleName || ''}`.toLowerCase();
+          if (!hay.includes(text)) return false;
+        }
+        return stateMatches(el, args.state);
+      });
+      if (absent) {
+        if (!found) return { ok: true, waitedMs: Date.now() - startedAt, absent: true };
+      } else if (found) {
+        return {
+          ok: true,
+          waitedMs: Date.now() - startedAt,
+          item: serialize(found, { includeValue: !!args.includeValue })
+        };
+      }
+      await new Promise((resolve) => setTimeout(resolve, intervalMs));
+    }
+    const waitedMs = Date.now() - startedAt;
+    return absent
+      ? { ok: false, waitedMs, error: 'wait_for timeout', stillPresent: true }
+      : { ok: false, waitedMs, error: 'wait_for timeout' };
+  }
+
+  function mediaElement(index: unknown = 0): HTMLMediaElement | null {
+    return [...document.querySelectorAll<HTMLMediaElement>('video,audio')][clamp(index, 0, 50, 0)] || null;
+  }
+
+  const LISTEN_WINDOW_MS = 10000;
+
+  const listenCapture: ListenCaptureState = { ctx: null, stream: null, recorder: null, seq: 0, active: false, mime: 'audio/webm' };
+
+  function listenArmedRecorder(): MediaRecorder {
+    const stream = listenCapture.stream;
+    if (!stream) throw new Error('No media stream armed.');
+    const recorder = new MediaRecorder(stream, { mimeType: listenCapture.mime, audioBitsPerSecond: 64000 });
+    recorder.ondataavailable = (event) => {
+      if (!event.data || event.data.size === 0) return;
+      const blob = event.data;
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const dataUrl = String(reader.result || '');
+        const base64 = dataUrl.includes(',') ? dataUrl.slice(dataUrl.indexOf(',') + 1) : '';
+        if (!base64) return;
+        listenCapture.seq += 1;
+        try {
+          chrome.runtime.sendMessage({
+            scope: 'opera-agent-listen-chunk',
+            seq: listenCapture.seq,
+            audio: base64,
+            mime: blob.type || 'audio/webm'
+          })?.catch?.(() => {});
+        } catch (sendError) {
+          globalThis.OperaAgentLog?.debug?.('MEDIA_TRANSCRIPT_SEND_FAILED', sendError instanceof Error ? sendError.message : String(sendError));
+        }
+      };
+      reader.readAsDataURL(blob);
+    };
+    recorder.onerror = () => {
+      listenStop().catch(() => {});
+    };
+    recorder.onstop = () => {
+      listenCapture.recorder = null;
+
+      if (listenCapture.active) {
+        try {
+          listenCapture.recorder = listenArmedRecorder();
+          listenCapture.recorder.start();
+          listenCapture.scheduleEnd?.();
+        } catch {
+          listenStop().catch(() => {});
+        }
+      } else if (listenCapture.ctx) {
+        try { listenCapture.ctx.close(); } catch {}
+        listenCapture.ctx = null;
+      }
+    };
+    return recorder;
+  }
+
+  async function listenStart(args: ContentArgs) {
+    if (listenCapture.recorder) throw new Error('A capture is already running on this page.');
+    const el = mediaElement(args.index);
+    if (!el) throw new Error('No media element found.');
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    if (!Ctx) throw new Error('WebAudio is not available on this page.');
+    const ctx = new Ctx();
+    let stream: MediaStream;
+    try {
+      const source = ctx.createMediaElementSource(el);
+      const dest = ctx.createMediaStreamDestination();
+      source.connect(ctx.destination);
+      source.connect(dest);
+      stream = dest.stream;
+    } catch (error) {
+      try { ctx.close(); } catch {}
+      throw new Error(`This media cannot be tapped: ${error instanceof Error ? error.message : String(error)}`);
+    }
+
+    try {
+      ctx.resume().catch(() => {});
+    } catch {}
+    const mimeType = (window.MediaRecorder && MediaRecorder.isTypeSupported('audio/webm;codecs=opus'))
+      ? 'audio/webm;codecs=opus'
+      : 'audio/webm';
+    listenCapture.ctx = ctx;
+    listenCapture.seq = 0;
+    listenCapture.active = true;
+    listenCapture.mime = mimeType;
+    listenCapture.stream = stream;
+    const scheduleEnd = () => {
+      setTimeout(() => {
+        if (!listenCapture.active) return;
+        try { listenCapture.recorder?.stop(); } catch {}
+      }, LISTEN_WINDOW_MS);
+    };
+    listenCapture.scheduleEnd = scheduleEnd;
+    let recorder: MediaRecorder;
+    try {
+      recorder = listenArmedRecorder();
+    } catch (error) {
+      try { ctx.close(); } catch {}
+      listenCapture.ctx = null;
+      listenCapture.active = false;
+      throw new Error(`Recording is not supported here: ${error instanceof Error ? error.message : String(error)}`);
+    }
+    listenCapture.recorder = recorder;
+    try {
+      recorder.start();
+    } catch (error) {
+      listenCapture.recorder = null;
+      listenCapture.active = false;
+      try { ctx.close(); } catch {}
+      listenCapture.ctx = null;
+      throw new Error(`Capture did not start: ${error instanceof Error ? error.message : String(error)}`);
+    }
+    scheduleEnd();
+    return { ok: true, mime: mimeType, chunkMs: LISTEN_WINDOW_MS, audioState: ctx.state };
+  }
+
+  async function listenStop() {
+
+    const recorder = listenCapture.recorder;
+    if (recorder && recorder.state !== 'inactive') {
+      try { recorder.stop(); } catch {}
+      return { ok: true, flushed: true };
+    }
+    listenCapture.recorder = null;
+    if (listenCapture.ctx) {
+      try { listenCapture.ctx.close(); } catch {}
+      listenCapture.ctx = null;
+    }
+    return { ok: true, flushed: false };
+  }
+
+  function mediaState(args: ContentArgs) {
+    const all = [...document.querySelectorAll<HTMLMediaElement>('video,audio')];
+    const el = all[clamp(args.index, 0, Math.max(0, all.length - 1), 0)] || null;
+    if (!el) return { ok: true, media: { present: false, count: 0 } };
+    return {
+      ok: true,
+      media: {
+        present: true,
+        count: all.length,
+        tag: el.tagName.toLowerCase(),
+        paused: el.paused,
+        ended: el.ended,
+        currentTime: Number.isFinite(el.currentTime) ? el.currentTime : null,
+        duration: Number.isFinite(el.duration) ? el.duration : null,
+        muted: el.muted,
+        volume: el.volume,
+        readyState: el.readyState
+      }
+    };
+  }
+
+  async function mediaAction(method: string, args: ContentArgs) {
+    const el = mediaElement(args.index);
+    if (!el) throw new Error('No media element found.');
+    if (method === 'media.play') {
+      try {
+        await el.play();
+      } catch (error) {
+
+        if (isRecord(error) && error.name === 'NotAllowedError') {
+          throw new Error(
+            'The browser blocked playback because the document has no user gesture. '
+            + "Retry media.play with executionMode 'foreground', which clicks the player."
+          );
+        }
+        throw error;
+      }
+    } else if (method === 'media.pause') el.pause();
+    else if (method === 'media.seek') {
+      const seconds = Number(args.seconds);
+      if (!Number.isFinite(seconds)) throw new Error('Invalid seek time.');
+      const max = Number.isFinite(el.duration) ? el.duration : Math.max(seconds, 0);
+      el.currentTime = Math.max(0, Math.min(max, seconds));
+    }
+    return mediaState(args);
+  }
+
+  const watchRules: WatchRule[] = [];
+  let watchState: Record<string, unknown> = {};
+  let watchChecking = false;
+  let watchCheckQueued = false;
+
+  function watchFacts(rules: WatchRule[]): { facts: Record<string, { present: boolean; invalidSelector?: boolean | undefined }>; text: string | null } {
+    const facts: Record<string, { present: boolean; invalidSelector?: boolean | undefined }> = {};
+    for (const rule of rules) {
+      const sel = rule.trigger?.selector;
+      if (!sel) continue;
+      try {
+        const el = document.querySelector(sel);
+        facts[rule.ruleId] = { present: !!el };
+      } catch (error) {
+        globalThis.OperaAgentLog?.warn?.('WATCH_FACTS_SELECTOR_FAILED', error instanceof Error ? error.message : String(error));
+        facts[rule.ruleId] = { present: false, invalidSelector: true };
+      }
+    }
+    let text: string | null = null;
+    if (rules.some((r) => r.trigger?.kind === 'textMatch')) {
+      try { text = String(document.body?.innerText || '').slice(0, 20000); } catch (error) { globalThis.OperaAgentLog?.debug?.('WATCH_TEXT_SNAPSHOT_FAILED', error instanceof Error ? error.message : String(error)); text = ''; }
+    }
+    return { facts, text };
+  }
+
+  function adShowingNow(adSelectors: unknown): boolean {
+    const list = Array.isArray(adSelectors) ? adSelectors.filter((s): s is string => typeof s === 'string').slice(0, 8) : [];
+    return list.some((sel) => {
+      try { return !!document.querySelector(sel); } catch (error) { globalThis.OperaAgentLog?.debug?.('AD_SELECTOR_PROBE_FAILED', error instanceof Error ? error.message : String(error)); return false; }
+    });
+  }
+
+  function mediaTimeNow() {
+    const v = document.querySelector<HTMLMediaElement>('video');
+    return v ? (Number(v.currentTime) || 0) : 0;
+  }
+
+  async function checkWatches() {
+    if (disposed || watchChecking || !watchRules.length) return;
+    watchChecking = true;
+    try {
+      const { facts, text } = watchFacts(watchRules);
+      const snapshot = {
+        rules: watchRules,
+        facts,
+        text,
+        url: location.href,
+        adState: adShowingNow(watchRules.flatMap((r) => (r.trigger?.kind === 'adState' && Array.isArray(r.trigger.adSelectors)) ? r.trigger.adSelectors : [])),
+        mediaTime: mediaTimeNow(),
+        now: Date.now(),
+        state: watchState
+      };
+      const r = await chrome.runtime.sendMessage({ scope: 'opera-agent-watch', method: 'watch.facts', params: snapshot });
+      if (isRecord(r) && isRecord(r.state)) watchState = r.state;
+    } catch (watchError) {
+      globalThis.OperaAgentLog?.debug?.('WATCH_FACTS_FAILED', watchError instanceof Error ? watchError.message : String(watchError));
+    } finally {
+      watchChecking = false;
+    }
+  }
+
+  function scheduleWatchCheck() {
+    if (watchChecking || !watchRules.length) return;
+    if (watchCheckQueued) return;
+    watchCheckQueued = true;
+    setTimeout(() => {
+      watchCheckQueued = false;
+      checkWatches().catch(() => {
+
+      });
+    }, 100);
+  }
+
+  async function handle(method: string, args: ContentArgs = {}) {
+    if (disposed) throw new Error('Extension context invalidated.');
+    switch (method) {
+      case 'watch.arm': {
+        const incoming = Array.isArray(args.rules) ? args.rules : [];
+        watchRules.length = 0;
+        for (const r of incoming) {
+          if (isRecord(r) && typeof r.ruleId === 'string') {
+            const trigger = isRecord(r.trigger) ? r.trigger : undefined;
+            watchRules.push({ ...r, ruleId: r.ruleId, trigger: trigger && {
+              kind: typeof trigger.kind === 'string' ? trigger.kind : undefined,
+              selector: typeof trigger.selector === 'string' ? trigger.selector : undefined,
+              adSelectors: Array.isArray(trigger.adSelectors) ? trigger.adSelectors : undefined
+            } });
+          }
+        }
+        watchState = isRecord(args.state) ? args.state : {};
+        scheduleWatchCheck();
+        return { ok: true, armed: watchRules.length };
+      }
+      case 'content.ping': return { ok: true, documentId, readyState: document.readyState };
+      case 'page.read': return pageRead(args);
+      case 'page.query': return pageQuery(args);
+      case 'page.find': return pageFind(args);
+      case 'page.collect_links': return collectLinks(args);
+      case 'page.click': return clickSynthetic(args);
+      case 'page.click_info': return clickInfo(args);
+      case 'page.action_state': return actionState(args);
+      case 'page.post_action': return postActionEvidence(args);
+      case 'page.pointer_target': return pointerTarget(args);
+      case 'page.scroll_settle': return settleScroll(args);
+    case 'page.hover_settle': return hoverSettleState(args);
+      case 'page.scroll_target': return scrollTargetBy(args);
+      case 'page.capture_policy': return capturePolicy();
+      case 'page.fill': return fill(args);
+      case 'page.fill_info': return fillInfo(args);
+      case 'page.set_files': return setFiles(args);
+      case 'page.focus': return focus(args);
+      case 'page.scroll': return scroll(args);
+      case 'page.key': return key(args);
+      case 'page.wait_for': return waitFor(args);
+      case 'page.active_state': {
+        const el = document.activeElement;
+        return { ok: true, active: el ? serialize(el, { includeValue: false }) : null, sensitive: !!(el && sensitiveDescriptor(el)) };
+      }
+      case 'media.state': return mediaState(args);
+      case 'media.play':
+      case 'media.pause':
+      case 'media.seek': return mediaAction(method, args);
+      case 'media.listen_start': return listenStart(args);
+      case 'media.listen_stop': return listenStop();
+      default: throw new Error('Unsupported content method.');
+    }
+  }
+
+  function onMessage(message: unknown, _sender: chrome.runtime.MessageSender, sendResponse: (response?: unknown) => void): boolean {
+    if (!isRecord(message) || message.scope !== 'opera-agent-content') return false;
+    const method = typeof message.method === 'string' ? message.method : '';
+    const params = isRecord(message.params) ? message.params : {};
+    Promise.resolve(handle(method, params))
+      .then((result) => sendResponse(result))
+      .catch((error) => sendResponse({ ok: false, error: String(error instanceof Error ? error.message : error).slice(0, 1000) }));
+    return true;
+  }
+
+  try {
+    chrome.runtime.onMessage.addListener(onMessage);
+  } catch (error) {
+    globalThis.OperaAgentLog?.warn?.('MESSAGE_LISTENER_REGISTER_FAILED', error instanceof Error ? error.message : String(error));
+    disposed = true;
+    mutationObserver.disconnect();
+  }
+
+  window.addEventListener('pagehide', () => {
+    disposed = true;
+    mutationObserver.disconnect();
+    reverseRefs.clear();
+    watchRules.length = 0;
+  }, { once: true });
+})();

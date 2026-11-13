@@ -115,7 +115,8 @@ export function createSupervisor({
     return (chunk: unknown) => {
       rest += String(chunk);
       const lines = rest.split('\n');
-      rest = lines.pop()!;
+      const lastLine = lines.pop();
+      rest = lastLine ?? '';
       for (const line of lines) onLine(line);
     };
   };
@@ -197,7 +198,7 @@ export function createSupervisor({
   const noteDeath = () => {
     const at = now();
     deaths.push(at);
-    while (deaths.length > 0 && deaths[0]! < at - respawnWindowMs) deaths.shift();
+    while (deaths.length > 0 && (deaths[0] ?? at) < at - respawnWindowMs) deaths.shift();
   };
 
   const startChild = () => {

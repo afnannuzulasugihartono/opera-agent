@@ -142,7 +142,10 @@ const documentRegion = (nodes: AxNode[]): RegionSummary & { deepest: number } =>
     return { count: 1, length: name.length, parts: [name] };
   };
   const total = (id: string, seen: Set<string>): RegionSummary => {
-    if (measured.has(id)) return measured.get(id)!;
+    if (measured.has(id)) {
+      const cached = measured.get(id);
+      if (cached !== undefined) return cached;
+    }
     if (seen.has(id)) return { count: 0, length: 0, parts: [] };
     seen.add(id);
     let sum = textOf(id);
@@ -181,7 +184,8 @@ const documentRegion = (nodes: AxNode[]): RegionSummary & { deepest: number } =>
     const leader = kids[0];
     if (!leader) break;
     kids.sort((a, b) => b.sum.count - a.sum.count);
-    const winning = kids[0]!;
+    const winning = kids[0];
+    if (winning === undefined) break;
     const siblings = kids.reduce((sum, kid) => sum + kid.sum.count, 0);
     if (winning.sum.count * 2 <= siblings) break;
     hereRow = winning;

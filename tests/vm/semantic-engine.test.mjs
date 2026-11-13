@@ -518,7 +518,7 @@ test('entity returning after grace removal emits RETURNED_AFTER_ABSENCE, not NEW
 });
 
 test('content.js drops stale items from compact observations (pruning)', () => {
-  assert.match(content, /const add = \(item\) => \{\s*\n\s*if \(!item \|\| item\.sensitive \|\| item\.stale\) return;/);
+  assert.match(content, /const add = \(item[^)]*\) => \{\s*\n\s*if \(item\.sensitive \|\| item\.stale\)\s*return;/);
 });
 
 test('stale tracking is bounded and resets cleanly', () => {

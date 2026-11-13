@@ -6,7 +6,6 @@
 import { SECRET_VALUE } from '../../../shared/secret-pattern.js';
 
 const SCHEMA_VERSION = 1;
-const DIGEST_PREFIX = 'sha256:';
 const SHA256_HEX = /^sha256:[0-9a-f]{64}$/;
 const ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/;
 const UTC_TIMESTAMP = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?Z$/;

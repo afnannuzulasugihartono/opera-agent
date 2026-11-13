@@ -353,7 +353,9 @@ export async function runLocalBurst({ driver, steps, timeoutMs = BURST_MAX_TIMEO
   });
 
   for (let index = 0; index < steps.length; index += 1) {
-    const step = steps[index]!;
+    // WHY THE CAST IS SAFE HERE.
+    // the array is a local snapshot; nothing in this loop resizes it.
+    const step = steps[index] as BurstStep;
     const remaining = deadline - clock();
     if (remaining < 50) {
       return failure(index, step, new Error(`browser_burst ran out of its ${timeoutMs} ms budget before step ${index}`), true);

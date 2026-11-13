@@ -9,6 +9,15 @@ import { readFileSync } from 'node:fs';
 import { stripTypeScriptTypes } from 'node:module';
 import vm from 'node:vm';
 import { CORS_DEFAULT_ORIGINS, resolveAllowedOrigin } from '../../hosted/functions/_shared/cors.ts';
+import { requiredEnv } from '../../hosted/functions/_shared/required-env.ts';
+
+// WHY THE PROCESS GETS A Deno AND THESE TWO.
+// required-env is the real module the edge bundle uses, not a stand-in; it reads Deno from its own closure, which is this process.
+// The bundle demands the same two vars the deploy demands; everything else unset, so the CORS default path runs.
+
+process.env.SUPABASE_URL ??= 'test';
+process.env.SUPABASE_SERVICE_ROLE_KEY ??= 'test';
+globalThis.Deno = { env: { get: (key) => process.env[key] } };
 
 const source = stripTypeScriptTypes(readFileSync(new URL('../../hosted/functions/opera-agent-gateway/index.ts', import.meta.url), 'utf8')
   .replace(/^import .*;\r?\n/gm, ''));
@@ -18,6 +27,11 @@ function harness({ merged = { ok: true, commandId }, user = null, enqueue = { ok
   const calls = [];
   let handler;
   let committed = false;
+  const savedEnv = {};
+  for (const [key, value] of Object.entries(env)) {
+    savedEnv[key] = process.env[key];
+    process.env[key] = value;
+  }
   const client = {
     auth: {
       async getUser() {
@@ -60,7 +74,10 @@ function harness({ merged = { ok: true, commandId }, user = null, enqueue = { ok
     }
   };
 
-  vm.runInNewContext(source, { createClient: () => client, CORS_DEFAULT_ORIGINS, resolveAllowedOrigin, Deno: { env: { get: (key) => (key in env ? env[key] : 'test') }, serve: (fn) => { handler = fn; } }, Request, Response, URL, TextEncoder, TextDecoder, crypto });
+  vm.runInNewContext(source, { createClient: () => client, CORS_DEFAULT_ORIGINS, resolveAllowedOrigin, requiredEnv, Deno: { env: { get: (key) => (key in env ? env[key] : process.env[key]) }, serve: (fn) => { handler = fn; } }, Request, Response, URL, TextEncoder, TextDecoder, crypto });
+  for (const [key, value] of Object.entries(savedEnv)) {
+    if (value === undefined) delete process.env[key]; else process.env[key] = value;
+  }
   return { calls, request: (body = {}, headers = {}) => handler(new Request('https://example.test/functions/v1/opera-agent-gateway/command', {
     method: 'POST', headers: { 'Content-Type': 'application/json', ...headers },
     body: JSON.stringify({ apiKey: 'TEST-TOKEN', method: 'tabs.list', ...body })

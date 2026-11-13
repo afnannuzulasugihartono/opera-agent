@@ -78,6 +78,15 @@ jobs:
         shell: bash
     steps:
       - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22.20.0
+
+      - name: Build the extension before the browser opens it
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npm run build:extension
+
       - uses: actions/setup-python@v7
         with:
           python-version: '3.12'

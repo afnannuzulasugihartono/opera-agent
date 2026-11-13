@@ -335,8 +335,10 @@ export async function loginWithCredentials(driver: GateDriver, { credentialsPath
   }
 
   const usernameField = before.fields.text[0] ?? null;
-  // The length check above this line proves at least one password box exists; the bang is that proof, not a guess.
-  const passwordField = before.fields.password[0]!;
+  // The length check above this line proves at least one password box exists.
+  const firstPassword = before.fields.password[0];
+  if (firstPassword === undefined) throw new Error('gates: the browser reported a password field with no value');
+  const passwordField = firstPassword;
   const submit = before.fields.submit[0] ?? null;
 
   // WHY A GET FORM IS REFUSED.

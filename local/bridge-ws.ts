@@ -446,8 +446,9 @@ export function createBridgeServer({ port = 9451, host = '127.0.0.1', heartbeatM
     if (!live.length) live = await waitForReady(timeoutMs);
     if (!live.length) throw new Error('no linked device answers tabs.open');
     // live[0]!
-    // is the device the length check above just proved exists.
-    const target = live[0]!;
+    const [first] = live;
+    if (first === undefined) throw new Error('bridge: no verified paired targets remain');
+    const target = first;
     const opened = (await commandToDevice(target, 'tabs.open', params, timeoutMs)) as Record<string, unknown>;
     if (!opened.ok) return opened;
     const openedResult = typeof opened.result === 'object' && opened.result !== null ? (opened.result as Record<string, unknown>) : {};

@@ -65,7 +65,8 @@ export function spreadsheetFromFile({
 
   const groups = report.figures.filter((figure) => figure.id.startsWith('group:'));
   // buildReport always writes the total figure first; a report without one is a buildReport bug, not a caller error.
-  const total = report.figures.find((figure) => figure.id === 'total')!;
+  const total = report.figures.find((figure) => figure.id === 'total');
+  if (total === undefined) throw new Error('buildReport did not write the total figure; this is a bug in the report builder, not in your call.');
 
   const reportRows: unknown[][] = [[HEAD(groupBy), HEAD('Total')]];
   for (const figure of groups) reportRows.push([figure.label, MONEY(figure.cents)]);

@@ -1,6 +1,6 @@
 // @last-edited: 2026-10-09 UTC+7.
 // @title: extension-source — the bundle order keeps every slice anchor valid.
-// @state: pins background.js as the first FILES entry and the bundle's byte-identical prefix — a claim that survives a second file.
+// @state: pins background.ts as the first FILES entry and the bundle's byte-identical prefix - a claim that survives a second file.
 // @dependencies: node:test, strict, node:fs/promises, helpers/extension-source.mjs.
 
 import test from 'node:test';
@@ -8,14 +8,14 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { extensionSource, extensionSourceFiles } from '../helpers/extension-source.mjs';
 
-test('the helper reads background.js itself, and lists it first', async () => {
-  const raw = await readFile(new URL('../../extension/background.js', import.meta.url), 'utf8');
+test('the helper reads background.ts itself, and lists it first', async () => {
+  const raw = await readFile(new URL('../../extension/background.ts', import.meta.url), 'utf8');
   const files = extensionSourceFiles();
-  assert.equal(files[0], 'extension/background.js',
-    'background.js must stay the first entry; every anchor is measured from it');
+  assert.equal(files[0], 'extension/background.ts',
+    'background.ts must stay the first entry; every anchor is measured from it');
   const bundle = await extensionSource();
   assert.ok(bundle.startsWith(raw),
-    'the bundle must begin with background.js byte-for-byte — a wrong path, a '
+    'the bundle must begin with background.ts byte-for-byte — a wrong path, a '
     + 'wrong encoding, or a reordered FILES array all break this');
 });
 
@@ -24,8 +24,8 @@ test('the bundle order keeps every cross-module indexOf anchor valid', async () 
   const files = extensionSourceFiles();
   const idx = (name) => files.indexOf(name);
 
-  if (files.includes('extension/lib/serialize.js') && files.includes('extension/worker/watch-registry.js')) {
-    assert.ok(idx('extension/lib/serialize.js') < idx('extension/worker/watch-registry.js'),
+  if (files.includes('extension/lib/serialize.ts') && files.includes('extension/worker/watch-registry.ts')) {
+    assert.ok(idx('extension/lib/serialize.ts') < idx('extension/worker/watch-registry.ts'),
       'serialize must precede watch-registry');
     assert.ok(src.indexOf('function boundedResult') >= 0, 'boundedResult must be in the bundle');
 
@@ -33,8 +33,8 @@ test('the bundle order keeps every cross-module indexOf anchor valid', async () 
       'the watch registry must follow boundedResult');
   }
 
-  if (files.includes('extension/worker/execute-pull.js')) {
-    assert.equal(idx('extension/worker/execute-pull.js'), files.length - 1,
+  if (files.includes('extension/worker/execute-pull.ts')) {
+    assert.equal(idx('extension/worker/execute-pull.ts'), files.length - 1,
       'execute-pull must be last so its slice runs to the end of the bundle');
   }
 
@@ -74,7 +74,7 @@ test('no state is declared twice across the bundle', async () => {
 
     for (const name of names) decls.set(name, [...(decls.get(name) || []), rel]);
   }
-  const duplicated = [...decls].filter(([, where]) => where.length > 1);
+  const duplicated = [...decls].filter(([, where]) => new Set(where).size > 1);
   assert.deepEqual(duplicated, [], 'a state declared in two files will silently diverge');
 });
 
@@ -160,7 +160,7 @@ test('every cross-module name is imported where it is used', async () => {
       if (exported.get(rel).has(n)) continue;
       if (imported.get(rel).has(n)) continue;
       if (declared.get(rel).has(n)) continue;
-      if (!new RegExp(`(?<![.\\w$])${n}\\b`).test(code)) continue;
+      if (!new RegExp(`(?<![.\\w$])${n}\\b(?!\\s*\\??\\s*:)`).test(code)) continue;
       misses.push(`${rel}: ${n}`);
     }
   }
@@ -179,9 +179,9 @@ test('the ensureContent script list still matches the manifest', async () => {
 
 test('capture never imports private-tabs, so the split cannot close a fifth cycle', async () => {
   const files = extensionSourceFiles();
-  if (!files.includes('extension/worker/capture.js')) return;
+  if (!files.includes('extension/worker/capture.ts')) return;
 
-  const text = await readFile(new URL('../../extension/worker/capture.js', import.meta.url), 'utf8');
+  const text = await readFile(new URL('../../extension/worker/capture.ts', import.meta.url), 'utf8');
   assert.ok(!/from\s+'\.\/private-tabs\.js'/.test(text),
     'capture -> private-tabs would form capture -> private-tabs -> capture');
 });

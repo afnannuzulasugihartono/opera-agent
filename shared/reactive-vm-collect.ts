@@ -525,7 +525,9 @@ function effectDigestBody(programDigest: string, state: { runId: string; frames:
 async function rewritePendingDigest<T extends PendingDigestHost>(state: T, programDigest: string): Promise<T> {
   if (state.pendingEffect === null) return state;
   const next = cloneJson<T>(state);
-  next.pendingEffect!.requestDigest = await digestCanonical(effectDigestBody(programDigest, next, next.pendingEffect!));
+  const nextPending = next.pendingEffect;
+  if (nextPending === null) return next;
+  nextPending.requestDigest = await digestCanonical(effectDigestBody(programDigest, next, nextPending));
   return next;
 }
 
@@ -567,7 +569,7 @@ async function fromInnerState(program: ReactiveProgram, innerState: unknown, obs
 async function externalizeTransition(_program: ReactiveProgram, innerTransition: unknown, publicState: CollectState, previousPublicPending: PendingEffect | null = null): Promise<VmTransition> {
   const transition = cloneJson<VmTransition>(innerTransition);
   if (transition.kind === 'EFFECT_REQUEST' && publicState.pendingEffect) {
-    transition.request!.requestDigest = publicState.pendingEffect.requestDigest;
+    if (transition.request !== undefined) transition.request.requestDigest = publicState.pendingEffect.requestDigest;
   }
   if (transition.kind === 'AWAITING_EFFECT' && publicState.pendingEffect) {
     transition.requestDigest = publicState.pendingEffect.requestDigest;
@@ -639,7 +641,11 @@ function normalizeCollectionMeta(observationMeta: ObservationMetaEntry | null | 
       sourceBinding: sourceBinding ?? null,
       fingerprint: observationMeta.dependencyFingerprint,
       kinds: [...observationMeta.dependencyKinds],
-      documentGeneration: observationMeta.provenance!.documentGeneration ?? null,
+      documentGeneration: (() => {
+      const provenance = observationMeta.provenance;
+      if (provenance === null) fail('INVALID_SEMANTICS', 'observation meta provenance required.');
+      return provenance.documentGeneration;
+    })() ?? null,
     },
   };
 }
@@ -839,9 +845,13 @@ function fingerprintCollisionKeys(items: JsonObject[], keySpec: string[]): Set<s
     const fingerprintField = keySpec.find((field) => FINGERPRINT_FIELDS.has(field) && usableString(item[field]));
     if (!fingerprintField) continue;
     const fingerprint = `${fingerprintField}:${item[fingerprintField]}`;
-    if (!groups.has(fingerprint)) groups.set(fingerprint, new Set());
-    if (usableString(item.logicalId)) groups.get(fingerprint)!.add(`logicalId:${item.logicalId}`);
-    else if (usableString(item.canonicalId)) groups.get(fingerprint)!.add(`canonicalId:${item.canonicalId}`);
+    let group = groups.get(fingerprint);
+    if (!group) {
+      group = new Set();
+      groups.set(fingerprint, group);
+    }
+    if (usableString(item.logicalId)) group.add(`logicalId:${item.logicalId}`);
+    else if (usableString(item.canonicalId)) group.add(`canonicalId:${item.canonicalId}`);
   }
   return new Set([...groups.entries()].filter(([, ids]) => ids.size > 1).map(([key]) => key));
 }
@@ -873,7 +883,8 @@ function dedupSemanticRecords(sourceInput: unknown, keySpec: string[], options: 
   let duplicatesRemoved = 0;
 
   for (let index = 0; index < items.length; index += 1) {
-    const item = items[index]!;
+    const item = items[index];
+    if (item === undefined) continue;
     const identity = canonicalIdentity(item, keySpec);
     const fingerprintField = keySpec.find((field) => FINGERPRINT_FIELDS.has(field) && usableString(item[field]));
     const fingerprintKey = fingerprintField ? `${fingerprintField}:${item[fingerprintField]}` : null;
@@ -891,8 +902,10 @@ function dedupSemanticRecords(sourceInput: unknown, keySpec: string[], options: 
       continue;
     }
     // The identity map only holds keys it was given, so the entry and its output slot are both present.
-    const prior = identities.get(identity.key)!;
-    const existing = output[prior.outputIndex]!;
+    const prior = identities.get(identity.key);
+    if (prior === undefined) continue;
+    const existing = output[prior.outputIndex];
+    if (existing === undefined) continue;
     if (conflictingCanonicalIdentity(existing, item)) {
       output.push(item);
       ambiguities.push({ kind: 'IDENTITY_COLLISION', indexes: [...prior.sourceIndexes, index], keyTier: identity.tier });
@@ -1110,7 +1123,9 @@ export async function advanceCollectVm(programInput: unknown, stateInput: unknow
   if (!TERMINAL_STATUSES.has(state.status)) assertUnifiedBindingBudget(state.bindings, state.observationMeta, program, 'state');
 
   if (!TERMINAL_STATUSES.has(state.status) && state.pendingEffect === null && state.waitState === null) {
-    const node = nodeAtPath(program, state.cursorPath);
+    const cursorPath = state.cursorPath;
+    if (cursorPath === null) fail('INVALID_SEMANTICS', 'non-terminal state requires cursor path.');
+    const node = nodeAtPath(program, cursorPath);
     if (node.type === 'COLLECT' || node.type === 'DEDUP') {
       return executeCollectionNode(program, shadow, state, input, node);
     }
@@ -1118,12 +1133,17 @@ export async function advanceCollectVm(programInput: unknown, stateInput: unknow
 
   const previousPublicPending = state.pendingEffect ? cloneJson<PendingEffect>(state.pendingEffect) : null;
   const innerState = await toInnerState(program, shadow, state);
-  let innerInput = cloneJson<AdvanceCollectInput>(input);
+  const innerInput = cloneJson<AdvanceCollectInput>(input);
   if (previousPublicPending && input.effectResult !== undefined) {
-    if (input.effectResult.requestDigest !== previousPublicPending.requestDigest) {
+    const innerInputResult = innerInput.effectResult;
+    const innerPending = innerState.pendingEffect;
+    if (innerInputResult === undefined || innerPending === null) {
+      fail('INVALID_SEMANTICS', 'Effect result requires an inner pending effect.');
+    }
+    if (innerInputResult.requestDigest !== previousPublicPending.requestDigest) {
       fail('INVALID_SEMANTICS', 'Effect result does not match the pending 7D request.');
     }
-    innerInput.effectResult!.requestDigest = innerState.pendingEffect!.requestDigest;
+    innerInputResult.requestDigest = innerPending.requestDigest;
   }
   const pendingBinding = innerState.pendingEffect?.purpose === 'COMMAND' ? innerState.pendingEffect.resultBinding : null;
   const pendingMethod = innerState.pendingEffect?.purpose === 'COMMAND' ? innerState.pendingEffect.method : null;

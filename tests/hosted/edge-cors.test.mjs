@@ -9,7 +9,18 @@ import { readFileSync } from 'node:fs';
 import { stripTypeScriptTypes } from 'node:module';
 import vm from 'node:vm';
 import { CORS_DEFAULT_ORIGINS, resolveAllowedOrigin } from '../../hosted/functions/_shared/cors.ts';
+import { requiredEnv } from '../../hosted/functions/_shared/required-env.ts';
+import { sha256 } from '../../hosted/functions/_shared/sha256.ts';
 import { isUpgradeRequest, serveDeviceSocket } from '../../hosted/functions/opera-agent-bridge/bridge-socket.ts';
+import { gateVerdict } from '../../hosted/functions/opera-agent-bridge/plan-gate.ts';
+
+// WHY THE PROCESS GETS A Deno AND THESE TWO.
+// required-env is the real module the edge bundle uses, not a stand-in; it reads Deno from its own closure, which is this process.
+// The bundle demands the same two vars the deploy demands; everything else unset, so the CORS default path runs.
+
+process.env.SUPABASE_URL ??= 'test';
+process.env.SUPABASE_SERVICE_ROLE_KEY ??= 'test';
+globalThis.Deno = { env: { get: (key) => process.env[key] } };
 
 const req = (origin) => ({ headers: { get: (name) => (name.toLowerCase() === 'origin' ? origin : null) } });
 
@@ -77,7 +88,9 @@ function loadBridge() {
     createClient: () => ({ async rpc() { return { data: { ok: false } }; } }),
     createEdgeLog: () => ({ error() {} }),
     CORS_DEFAULT_ORIGINS, resolveAllowedOrigin,
+    requiredEnv, sha256,
     isUpgradeRequest, serveDeviceSocket,
+    gateVerdict,
     Deno: { env: { get: () => 'test' }, serve: (fn) => { handler = fn; } },
     Request, Response, Headers, URL, TextEncoder, TextDecoder, crypto
   });

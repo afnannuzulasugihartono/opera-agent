@@ -266,7 +266,7 @@ export function createCanvasMethods({ primitives, readState }: { primitives: Jso
     await primitives.settle();
     await primitives.key('End', ['Shift']);
     await primitives.settle();
-    let line = await copySelection();
+    const line = await copySelection();
     await primitives.key('End').catch(() => null);
     const back = await guard.verdict(mark);
     return {

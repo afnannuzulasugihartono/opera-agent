@@ -36,6 +36,7 @@
 import "@supabase/edge-runtime";
 import { createEdgeLog } from "../_shared/edge-log.ts";
 import { CORS_DEFAULT_ORIGINS, resolveAllowedOrigin } from "../_shared/cors.ts";
+import { sha256 } from "../_shared/sha256.ts";
 import { invoicePage } from "../_shared/invoice-page.ts";
 import {
   amountFor,

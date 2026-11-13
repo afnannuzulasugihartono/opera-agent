@@ -97,8 +97,9 @@ export function createFrameReader(onText: (text: string) => void, onControl: (ki
     buffer = Buffer.concat([buffer, chunk]);
     for (;;) {
       if (buffer.length < 2) return;
-      const first = buffer[0]!;
-      const second = buffer[1]!;
+      const first = buffer[0];
+      const second = buffer[1];
+      if (first === undefined || second === undefined) return;
       const fin = (first & 0x80) === 0x80;
       const opcode = first & 0x0f;
       const masked = (second & 0x80) === 0x80;
@@ -136,7 +137,13 @@ export function createFrameReader(onText: (text: string) => void, onControl: (ki
       }
       const payload = Buffer.from(buffer.subarray(offset, offset + length));
       buffer = buffer.subarray(offset + length);
-      if (mask) for (let i = 0; i < payload.length; i += 1) payload[i] = payload[i]! ^ mask[i % 4]!;
+      if (mask) {
+        for (let i = 0; i < payload.length; i += 1) {
+          const byte = payload[i];
+          const maskByte = mask[i % 4];
+          if (byte !== undefined && maskByte !== undefined) payload[i] = byte ^ maskByte;
+        }
+      }
       if (opcode === 0x8) { onControl('close', 1000); return; }
       if (opcode === 0x9) { onControl('ping'); continue; }
       if (opcode === 0xa) continue;
