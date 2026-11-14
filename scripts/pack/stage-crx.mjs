@@ -20,13 +20,13 @@ fs.rmSync(destination, { recursive: true, force: true });
 fs.mkdirSync(destination, { recursive: true });
 
 const copied = [];
+// WHY THERE IS NO ASSERT ON skipped.
+// Since the migration the tree carries a TypeScript source beside every emitted .js, so walking extension/ always meets sources; refusing them is the job, not a failure.
+// The destination never receives a .ts (this branch only), which is the invariant the CRX ships on; the manifest check below proves the emitted set is complete.
 const walk = (dir) => {
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
     const full = path.join(dir, entry.name);
     if (entry.isDirectory()) { walk(full); continue; }
-    // WHY THERE IS NO ASSERT ON skipped.
-    // The tree carries a TypeScript source beside every emitted .js since 1.6.51, so walking extension/ always meets .ts: refusing them is the job, not a failure.
-    // The destination never receives a .ts (this branch only), which is the invariant the CRX ships on; the manifest check below proves the emitted set is complete.
     if (/\.ts$/i.test(entry.name)) continue;
     const to = path.join(destination, path.relative(source, full));
     fs.mkdirSync(path.dirname(to), { recursive: true });
