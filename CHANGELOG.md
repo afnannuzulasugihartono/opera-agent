@@ -8,6 +8,7 @@ What each release contained, and why. The notes live in
 
 | Release | Date | Notes |
 | --- | --- | --- |
+| 1.6.51 | 2026-11-14 | [the release notes are written in the PR that carries this bump](docs/releases/1.6.51.md) |
 | 1.6.50 | 2026-11-12 | [the release notes are written in the PR that carries this bump](docs/releases/1.6.50.md) |
 | 1.6.49 | 2026-11-12 | [the release notes are written in the PR that carries this bump](docs/releases/1.6.49.md) |
 | 1.6.48 | 2026-11-12 | [provider pins: switch_device and per-provider routing; everything aligns at 1.6.48](docs/releases/1.6.48.md) |

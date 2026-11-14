@@ -127,11 +127,14 @@
 // The chip is the only visible sign the agent is in the page; behaviour of the agent itself is unchanged.
 // WHY the comment-canonical spelling matters to this pin: the gate rewrites the activity.ts and background.ts comment lines, so bytes track the canonical form.
 
+// WHY these three were re-pinned on 2026-11-14: the 1.6.51 release rode them.
+// The version constants moved (manifest.json version, index.ts SERVER_VERSION); nothing about the public contract moved with them.
+
 export const PUBLIC_SURFACE_LOCKS = Object.freeze([
   ['../extension/content.ts', '02365ade2ed83b234e7056ff51c3b7b41b1cacf66c74fdad41e1009b8f464fa5'],
   ['../extension/background.ts', '8d700859a184591d6377c7f87aa582fe2404eb48e7e86f9c972b44a44771d5f5'],
-  ['../extension/manifest.json', 'aaad334ded5c8febe60127a01b8ccfeddb5e0f191f42800a1567b1c9ec6fc84e'],
-  ['../hosted/functions/opera-agent-mcp/index.ts', '9895b06e0abe7e7bbb222e5580c03d4065439db3284111fe3f8f7234b57b77b2'],
+  ['../extension/manifest.json', 'f1644ef85f8a0eeb4fd7e8a13d4d48719fc800664a8860126f005cf2b5109ba0'],
+  ['../hosted/functions/opera-agent-mcp/index.ts', '0d345c1b93ec339357bda0b181da45d44ca38f6633854d6c9ab416516c1316f4'],
   ['../hosted/functions/opera-agent-mcp/tools.ts', '3127cffe8cee8c6a1bf9c9e9c5950072d9535967e9732f0275871a4775c77353'],
 ]);
 
