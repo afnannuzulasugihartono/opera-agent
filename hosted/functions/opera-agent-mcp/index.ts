@@ -1321,6 +1321,11 @@ function createServer(deviceName: string = DEVICE_NAME, provider = "", caller: V
   return server;
 }
 
+// WHY THE HTTP ROAD WARMS ITS DATABASE AFTER AUTH.
+// The socket road warms its direct connection after the token verified, so a guess never buys a connection it will not use; the HTTP road did the opposite by never warming at all, which left every RPC on PostgREST forever at 162 ms against 603 ms for the same work.
+// The warm starts in the handler after the token has proven itself; the request rides PostgREST, and every later request in this isolate rides the socket.
+// A failure leaves directDb null and the road unchanged, which is the only fallback the RPC already knows.
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeadersFor(req) });
   if (isWsUpgrade(req)) return serveMcpSocket(req);
@@ -1347,6 +1352,7 @@ Deno.serve(async (req: Request) => {
   const requestStartedAt = Date.now();
   const authContext = await authenticate(req);
   if (!authContext) return unauthorized(req);
+  connectDirectDb().catch(() => { directDb = null; });
   const provider = await resolveProvider(req, authContext);
   const resolution = await resolveDeviceFresh(authContext, req, provider);
   if (!resolution.name) {

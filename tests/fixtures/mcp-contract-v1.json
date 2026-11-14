@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "protocolVersion": 1,
   "toolCount": 42,
-  "sourceSha256": "c577238c882f5699fb63cfb3364508ac3115bfa6d5aac813727da36171f4f61f",
+  "sourceSha256": "9902892ef3cc9cd223662d47133f09aa3e48a35ed718cfaff17aa711a2b01626",
   "tools": [
     "browser_status",
     "check_update",
