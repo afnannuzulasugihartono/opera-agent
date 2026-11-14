@@ -37,7 +37,7 @@ export function applyEntries(text, entries) {
 export function buildEnumeration(current, newVersion) {
   const q = (value) => `'${value}'`;
   return [
-    { file: 'extension/lib/protocol.js', from: `PRODUCT_VERSION = '${current}'`, to: `PRODUCT_VERSION = '${newVersion}'`, expect: 1 },
+    { file: 'extension/lib/protocol.ts', from: `PRODUCT_VERSION = '${current}'`, to: `PRODUCT_VERSION = '${newVersion}'`, expect: 1 },
     { file: 'extension/manifest.json', from: `"version": "${current}"`, to: `"version": "${newVersion}"`, expect: 1 },
     { file: 'docs/store/store-manifest.json', from: `"version": "${current}.0"`, to: `"version": "${newVersion}.0"`, expect: 1 },
     { file: 'package.json', from: `"version": "${current}"`, to: `"version": "${newVersion}"`, expect: 1 },
