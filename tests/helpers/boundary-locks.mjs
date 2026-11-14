@@ -130,11 +130,13 @@
 // WHY these three were re-pinned on 2026-11-14: the 1.6.51 release rode them.
 // The version constants moved (manifest.json version, index.ts SERVER_VERSION); nothing about the public contract moved with them.
 
+// WHY index.ts was re-pinned on 2026-11-14: the HTTP road warms its direct database after auth, one line in the handler, the pattern the socket road already proved; no tool, schema or dispatch moved.
+
 export const PUBLIC_SURFACE_LOCKS = Object.freeze([
   ['../extension/content.ts', '02365ade2ed83b234e7056ff51c3b7b41b1cacf66c74fdad41e1009b8f464fa5'],
   ['../extension/background.ts', '8d700859a184591d6377c7f87aa582fe2404eb48e7e86f9c972b44a44771d5f5'],
   ['../extension/manifest.json', 'f1644ef85f8a0eeb4fd7e8a13d4d48719fc800664a8860126f005cf2b5109ba0'],
-  ['../hosted/functions/opera-agent-mcp/index.ts', '0d345c1b93ec339357bda0b181da45d44ca38f6633854d6c9ab416516c1316f4'],
+  ['../hosted/functions/opera-agent-mcp/index.ts', 'ce21b3654fb1cac518610510d4cb553534f6686863cb303d2943d2177123a9bb'],
   ['../hosted/functions/opera-agent-mcp/tools.ts', '3127cffe8cee8c6a1bf9c9e9c5950072d9535967e9732f0275871a4775c77353'],
 ]);
 
