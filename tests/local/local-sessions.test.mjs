@@ -62,7 +62,7 @@ test('the adapter speaks the dialog verbs too', async () => {
 
 // WHY surfaceProfile IS DRIVEN HERE.
 // The MCP server calls driver.surfaceProfile(), and the driver is this adapter: a primitive that exists but is not spoken here answers a tool call with "not a function" on a real browser, which is exactly what shipped.
-// Measured: surface_profile failed against a live Google Doc while every unit test passed, because no test drove the adapter with a profile call.
+// Measured: scan_page failed against a live Google Doc while every unit test passed, because no test drove the adapter with a profile call.
 // So the profile is driven through the adapter like every other verb, and the fake session has to carry the primitive for the call to reach it.
 
 test('the adapter speaks driver verbs over primitive nouns', async () => {

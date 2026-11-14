@@ -36,7 +36,7 @@ import { documentFromFile, documentDocxFromFile } from './documents.js';
 import { detectGate, waitForGateClear, loginWithCredentials } from './gates.js';
 import { captchaAllowed, solverSettings, solveImageCaptcha } from './captcha-solver.js';
 import { BURST_INPUT_ACTIONS, normalizeBurst, runLocalBurst } from './burst.js';
-import { leaseTab, releaseTab, listBridgeDevices, preferBridgeDevice } from './bridge.js';
+import { leaseTab, releaseTab, preferBridgeDevice } from './bridge.js';
 
 // WHY THE SAME TIDY FUNCTION THE HOSTED SURFACE USES, AND WHY IT RIDES THE PACKAGE.
 // The rejections that keep a model from wasting tokens on envelopes, transport keys and duplicated chain fields apply to the local stdio surface too - a rule that lives in one place stays consistent and changes for one reason.
@@ -129,7 +129,7 @@ function planFrom(args: JsonRecord): { artifact: string; estSteps: number; items
 // Measured on a real eight-call job: the actions alone spent 25,089 characters, because sixty rows and the page text rode along after every click, and most of that text was the part that did not move.
 // An agent pays for that in tokens and in attention, and re-reads it a turn later.
 // So the answer carries where the page is (url, title, how much text it holds, what has focus), how many rows it has, and the rows that changed.
-// The rest is one deliberate ax_snapshot away, which is a look the agent chose to take.
+// The rest is one deliberate snapshot_page away, which is a look the agent chose to take.
 
 // WHY A WAIT POLLS THE FULL READ.
 // The point of waiting is to end on the same evidence an agent would read by hand — including the document on a Google Doc, which the bare page text does not hold.
@@ -334,18 +334,19 @@ const nextUtcMidnight = (): string => {
 // WHY THE METER RIDES THE SAME READ.
 // The bridge already knows each device's plan headroom; a caller that could only learn it after the first refused command would waste the very commands the check exists to protect.
 
-const linkedDevices = async (port: number): Promise<Array<Record<string, unknown>> | null> => {
+const linkedDevices = async (port: number): Promise<{ devices: Array<Record<string, unknown>>; preferredSlot: number | null } | null> => {
   if (!Number.isInteger(port) || port <= 0) return null;
   try {
     const response = await fetch(`http://127.0.0.1:${port}/health`, { signal: AbortSignal.timeout(1000) });
     if (!response.ok) return null;
-    const health = (await response.json()) as { devices?: unknown[] } | null;
+    const health = (await response.json()) as { devices?: unknown[]; preferredSlot?: unknown } | null;
     if (!health || !Array.isArray(health.devices)) return null;
-    return health.devices.map((value) => {
+    const devices = health.devices.map((value) => {
       const device = isObject(value) ? value : {};
       const meter = isObject(device.meter) ? device.meter : null;
       return { name: device.deviceName ?? null, id: device.id ?? null, instanceId: device.instanceId ?? null, extensionVersion: device.extensionVersion ?? null, slot: device.slot ?? null, port, plan: meter ? { plan: meter.plan ?? null, allowance: Number(meter.allowance) || 0, dailyQuota: Number(meter.dailyQuota) || 0, usedToday: Number(meter.usedToday) || 0, remaining: Number(meter.remaining) || 0, resetsAt: nextUtcMidnight() } : null };
     });
+    return { devices, preferredSlot: typeof health.preferredSlot === 'number' && Number.isInteger(health.preferredSlot) ? health.preferredSlot : null };
   } catch {
     return null;
   }
@@ -506,7 +507,7 @@ const windowMatch = async (tab: JsonRecord | null, driver: Driver): Promise<stri
     requireArguments(args, TOOLS.find((t) => t.name === name)?.inputSchema.required ?? []);
 
     // The burst is checked before a tab is resolved, so a malformed step list cannot touch a browser, and a caller learns which step was wrong before any page is changed.
-    const burst = name === 'browser_burst' ? normalizeBurst(args) : null;
+    const burst = name === 'run_steps' ? normalizeBurst(args) : null;
 
     if (name === 'statement_card') {
       return asText(statementCard({
@@ -527,12 +528,6 @@ const windowMatch = async (tab: JsonRecord | null, driver: Driver): Promise<stri
         balance: args.balance ?? null,
         manifest: args.manifest ?? null,
         replace: args.replace === true
-      }));
-    }
-    if (name === 'document_build') {
-      return asText(documentFromFile({
-        source: args.source,
-        out: args.out ?? null
       }));
     }
     if (name === 'report_build') {
@@ -567,10 +562,15 @@ const windowMatch = async (tab: JsonRecord | null, driver: Driver): Promise<stri
       }));
     }
     if (name === 'document_write') {
-      return asText(documentDocxFromFile({
+      const plan = documentFromFile({
+        source: args.source,
+        out: null
+      });
+      const written = documentDocxFromFile({
         source: args.source,
         out: args.out ?? null
-      }));
+      });
+      return asText({ ...written, plan: plan.out, planVerified: plan.verified });
     }
 
     // WHY THESE CALLS NEVER RESOLVE A TAB.
@@ -618,12 +618,14 @@ const windowMatch = async (tab: JsonRecord | null, driver: Driver): Promise<stri
         const window = await driver.windowState();
         const pages = await driver.tabs().then((list) => (list as JsonRecord[])).catch(() => [] as JsonRecord[]);
         const live = Number(await livePort(context));
-        const devices = await linkedDevices(live);
+        const linked = await linkedDevices(live);
+        const devices = linked?.devices ?? null;
         const exhausted = devices?.filter((d) => isObject(d.plan) && Number(d.plan.remaining) <= 0).map((d) => d.name);
         return asText({
           browsers: context.browsers,
           port: live,
           ...(devices ? { devices } : {}),
+          ...(linked ? { preferredSlot: linked.preferredSlot } : {}),
           ...(exhausted?.length ? { planExhausted: true, planExhaustedDevices: exhausted } : {}),
           window: windowTruth(isObject(window) ? window : {}, context.browsers, pages)
         });
@@ -638,9 +640,7 @@ const windowMatch = async (tab: JsonRecord | null, driver: Driver): Promise<stri
         return asText(await driver.dialogPress(args.name ?? ''));
       case 'list_tabs':
         return asText(await driver.tabs());
-      case 'list_devices':
-        return asText(await listBridgeDevices());
-      case 'switch_device':
+      case 'use_browser':
         return asText(await preferBridgeDevice(args.device));
       case 'open_url':
         return afterAction(driver, tab
@@ -653,7 +653,7 @@ const windowMatch = async (tab: JsonRecord | null, driver: Driver): Promise<stri
         await lease.release(args.tabId, OWNER).catch(() => null);
         return asText(out);
       }
-      case 'surface_profile':
+      case 'scan_page':
         return asText(await driver.surfaceProfile());
       case 'read_page':
         return asText(await driver.read({ allowCaretMove: args.allowCaretMove === true }));
@@ -758,7 +758,7 @@ const windowMatch = async (tab: JsonRecord | null, driver: Driver): Promise<stri
         return afterAction(driver, await driver.key(args.key, args.modifiers ?? []));
       case 'type':
         return afterAction(driver, await driver.type(args.text));
-      case 'append':
+      case 'append_text':
         return afterAction(driver, await driver.append(args.text));
       case 'get_computed':
         return asText(await driver.computed({ x: args.x, y: args.y, selector: args.selector }));
@@ -771,14 +771,14 @@ const windowMatch = async (tab: JsonRecord | null, driver: Driver): Promise<stri
         }));
       case 'stream_keys':
         return afterAction(driver, await driver.keys(args.events));
-      case 'browser_burst':
-        if (!burst) throw new Error('browser_burst reached the run without its normalized steps');
+      case 'run_steps':
+        if (!burst) throw new Error('run_steps reached the run without its normalized steps');
         return afterAction(driver, await runLocalBurst({
           driver,
           steps: burst.steps,
           timeoutMs: burst.timeoutMs
         }));
-      case 'wait_for': {
+      case 'wait_for_text': {
         const started = Date.now();
         const rawTimeout = Number(args.timeoutMs ?? 8000);
         const timeoutMs = Number.isFinite(rawTimeout) ? Math.min(30000, Math.max(500, rawTimeout)) : 8000;
@@ -788,10 +788,10 @@ const windowMatch = async (tab: JsonRecord | null, driver: Driver): Promise<stri
         const read = isObject(state) ? state : {};
         return afterAction(driver, { found: String(read.text ?? '').includes(args.text), ms: Date.now() - started, settled: true });
       }
-      case 'ask_page': {
+      case 'query_page': {
         const method = String(args.method ?? '');
         if (!ASKABLE.includes(method)) {
-          throw new Error(`ask_page is read-only. Allowed: ${ASKABLE.join(', ')}. Asked for: ${method || '(none)'}`);
+          throw new Error(`query_page is read-only. Allowed: ${ASKABLE.join(', ')}. Asked for: ${method || '(none)'}`);
         }
         return asText({ method, result: await driver.ask(method, askParams(args)) });
       }
@@ -805,7 +805,15 @@ const windowMatch = async (tab: JsonRecord | null, driver: Driver): Promise<stri
         });
         return afterAction(driver, { ...(isObject(rowOut) ? rowOut : {}), settled: true });
       }
-      case 'wait_still': {
+      case 'wait_for_url': {
+        const urlOut = await driver.waitForUrl({
+          contains: typeof args.contains === 'string' ? args.contains : null,
+          matches: typeof args.matches === 'string' ? args.matches : null,
+          timeoutMs: Math.min(Math.max(Number(args.timeoutMs) || 8000, 500), 60000)
+        });
+        return afterAction(driver, { ...(isObject(urlOut) ? urlOut : {}), settled: true });
+      }
+      case 'wait_for_stable': {
         const stillOut = await driver.waitForStill({
           timeoutMs: budgetOf(args.timeoutMs, 8000),
           quietMs: quietOf(args.quietMs, 120)
@@ -825,9 +833,9 @@ const windowMatch = async (tab: JsonRecord | null, driver: Driver): Promise<stri
           limit: args.limit
         }));
       }
-      case 'ax_snapshot':
+      case 'snapshot_page':
         return asText({ rows: await driver.snapshot(args.limit) });
-      case 'caret_line':
+      case 'read_caret_line':
         return asText(await driver.caretLine());
       case 'upload': {
         const uploaded = await driver.upload({ filename: args.filename, data: args.data ?? null, path: args.path ?? null });

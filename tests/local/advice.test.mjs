@@ -19,7 +19,7 @@ test('every move names a call the server actually has', () => {
   const rows = [];
   for (const rule of RULES) {
     const asked = {
-      'ask_page is read-only. Allowed: Page.getFrameTree': {},
+      'query_page is read-only. Allowed: Page.getFrameTree': {},
       'bridge: extension is not connected': {},
       'Browser on port 9450 is not reachable: fetch failed': {},
       'No page target 7. Open pages: 1 | 2': {},
@@ -90,7 +90,7 @@ test('a missing button is not sent to the menu tools', () => {
   const out = withAdvice(new Error('no button matching "Save". Visible: none'), { rows: [] });
 
   assert.ok(!/list_menus/.test(out), 'a button is not a menu row');
-  assert.match(out, /ax_snapshot\(\)/);
+  assert.match(out, /snapshot_page\(\)/);
 });
 
 // WHY THE FILE-CHOOSER RULE EXISTED.
@@ -142,7 +142,7 @@ test('text the page did not take leads with the element that had focus', () => {
 
   assert.match(out, /click_row/);
   assert.match(out, /Escape/, 'because a dialog over the field is the case that looks like a lost caret');
-  assert.match(out, /caret_line\(\)/);
+  assert.match(out, /read_caret_line\(\)/);
   assert.match(out, /read_page\(\) before typing again/, 'because on a canvas page the text may have landed after the check');
 });
 
@@ -150,7 +150,7 @@ test('a page with nothing to type into gets the same moves', () => {
   const out = withAdvice(new Error('typed 5 characters into a page that holds no text and no field to receive them'), { rows: [] });
 
   assert.match(out, /click_row/);
-  assert.match(out, /caret_line\(\)/);
+  assert.match(out, /read_caret_line\(\)/);
 });
 
 // WHY THE LINK RULES ARE SEPARATE.

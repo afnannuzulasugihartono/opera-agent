@@ -62,6 +62,7 @@ export interface Driver {
   waitForRow: DriverMethod;
   waitForStill: DriverMethod;
   waitForText: DriverMethod;
+waitForUrl: DriverMethod;
   windowState: DriverMethod;
 }
 

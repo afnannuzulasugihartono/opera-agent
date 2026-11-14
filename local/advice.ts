@@ -62,12 +62,12 @@ const rowAdvice = (role: string, name: unknown, rows: AdviceRow[]) => {
       `wait_for_row({role: "${role}", name: "..."}) if it has not appeared yet`
     ];
   }
-  return [`ax_snapshot() to see what is on the page now`];
+  return [`snapshot_page() to see what is on the page now`];
 };
 
 const HANDLE_GONE = [
   'resolve_row() again — the element it named is gone, and the row may now be somewhere else',
-  'ax_snapshot() to find the row under its new name or place'
+  'snapshot_page() to find the row under its new name or place'
 ];
 
 const NOT_A_HANDLE = [
@@ -110,7 +110,7 @@ const EMPTY_FILE_INPUT = [
 const EDIT_GONE = [
   'the failure names the element that had focus: if it is not a field, click_row({role, name}) that field and type again',
   'if a dialog or overlay is over the page, press_key({key: \u201cEscape\u201d}) or click its dismiss button first - measured live, a cookie wall sat over a search box and swallowed the click',
-  'caret_line() to see where the caret is, or read_page() to see what the page holds',
+  'read_caret_line() to see where the caret is, or read_page() to see what the page holds',
   'read_page() before typing again on a canvas page - the text may have landed after the check, and retyping duplicates it'
 ];
 
@@ -129,11 +129,11 @@ const EXTENSION_PAGE = [
 ];
 
 // WHY THE FIRST RULE THAT FITS WINS.
-// A refusal and a missing row can both be true at once — ask_page refusing a method it does not allow is also "no such thing" — and a caller is better served by the most specific thing that is wrong, which is the first rule in this order.
+// A refusal and a missing row can both be true at once — query_page refusing a method it does not allow is also "no such thing" — and a caller is better served by the most specific thing that is wrong, which is the first rule in this order.
 
 export const RULES: ReadonlyArray<AdviceRule> = Object.freeze([
   {
-    when: (text: string) => /ask_page is read-only/.test(text),
+    when: (text: string) => /query_page is read-only/.test(text),
     next: READ_ONLY
   },
   {

@@ -562,7 +562,7 @@ test('keeps the R4-authorized read_page projection inside the frozen public boun
   }
   const tools = readFileSync(new URL('../../local/tools.ts', import.meta.url), 'utf8');
   assert.match(tools, /name: 'read_page'/);
-  assert.match(tools, /name: 'ax_snapshot'/);
+  assert.match(tools, /name: 'snapshot_page'/);
   assert.doesNotMatch(tools, /delta-first-observation/);
 });
 

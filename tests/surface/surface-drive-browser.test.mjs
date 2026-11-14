@@ -32,7 +32,7 @@ test('the profile answers a real surface and moves nothing', { skip }, async () 
     for (const forbidden of ['docs.google', 'kix']) {
       assert.ok(!profile.description.includes(forbidden), 'the description names no site');
     }
-    console.log(`surface_profile: ${profile.description} in ${elapsed}ms`);
+    console.log(`scan_page: ${profile.description} in ${elapsed}ms`);
   } finally {
     await session.close();
   }

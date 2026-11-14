@@ -63,7 +63,7 @@ export const STRAY_FILE_TAB = 'file://';
 export const TOOLS = Object.freeze([
   {
     name: 'browser_status',
-    description: 'Report which Chromium browsers are installed, which port is live, and which browsers the loopback bridge holds linked - by name, id, slot and port. A page cannot see whether the window in front of it is the one the operating system has in front, so when clicks and keys go nowhere this is the call that says why.',
+    description: 'Report which Chromium browsers are installed, which port is live, and which browsers the loopback bridge holds linked - by name, id, slot, port, and each one\'s plan allowance. It also names the browser tab-less commands currently follow, when one is pinned. A page cannot see whether the window in front of it is the one the operating system has in front, so when clicks and keys go nowhere this is the call that says why.',
     inputSchema: { type: 'object', properties: {}, required: [] }
   },
   {
@@ -87,14 +87,9 @@ export const TOOLS = Object.freeze([
     inputSchema: { type: 'object', properties: { name: stringArg('button on the dialog, e.g. Open or Cancel') }, required: ['name'] }
   },
   {
-    name: 'list_devices',
-    description: 'List the browsers paired to this machine\'s bridge: slot, name, version, the plan each is metered on, and which one tab-less commands currently follow. When nothing is pinned, the first ready browser answers.',
-    inputSchema: { type: 'object', properties: {}, required: [] }
-  },
-  {
-    name: 'switch_device',
-    description: 'Choose which paired browser answers tab-less commands (open_url is the one that matters) until another switch says otherwise. Pass a slot number from list_devices, a device name, or "any" to follow the first ready browser again. Tab-scoped calls still route by their tab id, so a drive already in one browser never jumps mid-drive. Refused loudly when the named browser is not awake, so the drive never types into a window nobody asked for.',
-    inputSchema: { type: 'object', properties: { device: stringArg('a slot number from list_devices, a device name, or "any" to clear the preference') }, required: ['device'] }
+    name: 'use_browser',
+    description: 'Choose which paired browser answers tab-less commands (open_url is the one that matters) until another switch says otherwise. Pass a slot number from browser_status, a device name, or "any" to follow the first ready browser again. Tab-scoped calls still route by their tab id, so a drive already in one browser never jumps mid-drive. Refused loudly when the named browser is not awake, so the drive never types into a window nobody asked for.',
+    inputSchema: { type: 'object', properties: { device: stringArg('a slot number from browser_status, a device name, or "any" to clear the preference') }, required: ['device'] }
   },
   {
     name: 'list_tabs',
@@ -112,13 +107,13 @@ export const TOOLS = Object.freeze([
     inputSchema: { type: 'object', properties: { tabId: stringArg('which tab to close, from list_tabs') }, required: ['tabId'] }
   },
   {
-    name: 'surface_profile',
+    name: 'scan_page',
     description: 'Report what a surface is, measured, before reading it: whether its text lives in the DOM and how many characters, how much of the viewport a canvas covers, whether an editable host exists, whether the page has focus, and which accessibility subtree carries the document. Every claim carries the number it was measured from, and no site is named anywhere in the answer. truncated is true when the accessibility tree came back as deep as it was asked for, so its text may be cut. It reads no document text and moves no caret, so it is the one call that is always safe. Use it first on a site you have not seen, and read the strategy it returns to know what a read will cost.',
     inputSchema: { type: 'object', properties: { tabId: tabArg }, required: [] }
   },
   {
     name: 'read_page',
-    description: 'Read one tab: url, title and text, plus whether that text had stopped moving. settled and grewBy come from two reads a beat apart, because readyState lies: measured live, a page reported complete with a tenth of its text and reached the rest 600 ms later - a read that says settled:false is a page still filling in, so read again or wait_still() before acting; on the accessibility and selection steps settled is null with the reason, because one sample cannot say the text stopped. The read walks a ladder chosen from what the surface measures as: the accessibility tree first where a canvas covers the viewport, then the DOM, then a selection copy, then a picture. Every step but the selection copy asks nothing of the page, and the answer names which step it used, what that step cost, and anything it skipped. A canvas editor holds its caret in its own model rather than in the DOM, so a selection copy cannot promise to put the caret back - without allowCaretMove it is skipped and the reason is reported, and with it the answer carries caretRestored and viewRestored as what was measured rather than what was hoped: a consented borrow also leaves the view scrolled to the end of the document. A selection copy that returns nothing is not reported as an empty document; the ladder moves on to the picture. On canvas-rendered pages the tree is cut at a depth cap, and surface.truncated says so.',
+    description: 'Read one tab: url, title and text, plus whether that text had stopped moving. settled and grewBy come from two reads a beat apart, because readyState lies: measured live, a page reported complete with a tenth of its text and reached the rest 600 ms later - a read that says settled:false is a page still filling in, so read again or wait_for_stable() before acting; on the accessibility and selection steps settled is null with the reason, because one sample cannot say the text stopped. The read walks a ladder chosen from what the surface measures as: the accessibility tree first where a canvas covers the viewport, then the DOM, then a selection copy, then a picture. Every step but the selection copy asks nothing of the page, and the answer names which step it used, what that step cost, and anything it skipped. A canvas editor holds its caret in its own model rather than in the DOM, so a selection copy cannot promise to put the caret back - without allowCaretMove it is skipped and the reason is reported, and with it the answer carries caretRestored and viewRestored as what was measured rather than what was hoped: a consented borrow also leaves the view scrolled to the end of the document. A selection copy that returns nothing is not reported as an empty document; the ladder moves on to the picture. On canvas-rendered pages the tree is cut at a depth cap, and surface.truncated says so.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -146,7 +141,7 @@ export const TOOLS = Object.freeze([
   },
   {
     name: 'click',
-    description: 'Click in one tab. Give x and y for a point in the viewport (CSS pixels), at with fractions of the viewport (0 to 1) when the window may be resized between looking and clicking, or a handle to click that element wherever it is by then. A fraction is resolved against the viewport as it is at the moment of the click, so a window that changed size between turns does not move the aim; a handle cannot go stale at all, because the box is measured from the node at the click. The reply carries where the page now stands - url, title, text length, focus - and the rows that changed; ax_snapshot() lists every row when the next move needs more than the change set.',
+    description: 'Click in one tab. Give x and y for a point in the viewport (CSS pixels), at with fractions of the viewport (0 to 1) when the window may be resized between looking and clicking, or a handle to click that element wherever it is by then. A fraction is resolved against the viewport as it is at the moment of the click, so a window that changed size between turns does not move the aim; a handle cannot go stale at all, because the box is measured from the node at the click. The reply carries where the page now stands - url, title, text length, focus - and the rows that changed; snapshot_page() lists every row when the next move needs more than the change set.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -226,7 +221,7 @@ export const TOOLS = Object.freeze([
     }
   },
   {
-    name: 'append',
+    name: 'append_text',
     description: 'Add text at the very end of one tab: the caret is asked for the end, the text goes in, and the answer says whether anything follows it. atEnd is measured, not assumed - it is true only when the page shows no text after what was inserted, and it is found:false on canvas pages that mirror late, where read_page() is the proof. Use this instead of clicking and pressing End yourself: that road put a whole batch inside a table cell once, measured live. On a canvas editor atEnd is usually false for a good reason - the text the page reports ends with the editor chrome rather than with the document - so atEndWhy names what followed, and read_page() is the proof that the append reached the end of the document.',
     inputSchema: { type: 'object', properties: { tabId: tabArg, text: stringArg('text to add at the end') }, required: ['text'] }
   },
@@ -243,7 +238,7 @@ export const TOOLS = Object.freeze([
     }
   },
   {
-    name: 'browser_burst',
+    name: 'run_steps',
     description: 'Run 1-8 dependent steps on one tab in a single call: click, click_row, hover, press_key, type, append, scroll, stream_keys, resolve, wait, or wait_for_row. Steps run in order and the first failure stops the burst, keeping the steps that finished. The page is settled and read once at the end, not after every step, so a menu walk costs one page look instead of four. A wait or a wait_for_row step looks until the page stops moving, so click → wait_for_row → wait is one call for a job that used to be three, and the burst passes that settle on instead of paying it again. refFromStep carries a handle from an earlier resolve into a later click, or a point into a later hover; there is no cross-tab step, no navigation, and no script. Use the named tools for upload, download, open_url, or anything that changes which page this is.',
     inputSchema: {
       type: 'object',
@@ -283,7 +278,7 @@ export const TOOLS = Object.freeze([
     }
   },
   {
-    name: 'wait_for',
+    name: 'wait_for_text',
     description: 'Wait until a tab shows a text, then return the page as it now stands. Polls the same page state a read would show — including the document on a Google Doc — so the wait ends on the same evidence, without paying a full two-sample read on every check. Returns found:false with the current page instead of failing when the budget runs out.',
     inputSchema: {
       type: 'object',
@@ -297,7 +292,7 @@ export const TOOLS = Object.freeze([
     }
   },
   {
-    name: 'ask_page',
+    name: 'query_page',
     description: `Ask the browser a structured, read-only question about one tab and get the raw answer: the frame tree, the node behind a row, what a frame's document holds, a selector's matches, an element's box or outer HTML, a screenshot as png. This is how an agent finds out what a page actually is instead of inferring it from behaviour. Methods are allowlisted to reads only — ${ASKABLE.join(', ')} — so nothing here can change the page; anything that acts stays a named tool.`,
     inputSchema: {
       type: 'object',
@@ -326,7 +321,20 @@ export const TOOLS = Object.freeze([
     }
   },
   {
-    name: 'wait_still',
+    name: 'wait_for_url',
+    description: 'Wait until a tab\'s url contains a string, or matches a regular expression, then answer with the page as it stands. Use it after a form submit, a sign-in or a click that navigates - a text wait cannot see a url move, and a still wait answers on the page that used to be there. Pass contains for a substring, or matches for a regular expression; at least one is required. found:false with the page as it stands when the budget runs out, instead of failing.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        tabId: tabArg,
+        contains: stringArg('substring the url must contain, e.g. "/dashboard"'),
+        matches: stringArg('regular expression the url must match'),
+        timeoutMs: { type: 'number', description: 'budget in milliseconds; defaults to 8000, capped at 60000' }
+      }
+    }
+  },
+  {
+    name: 'wait_for_stable',
     description: 'Wait until the page stops changing. Two identical reads in a row is the signal, so this ends on evidence rather than on a guess: use it after anything that moves on its own - a menu opening, a save running, an upload landing - and then act on what is actually there.',
     inputSchema: {
       type: 'object',
@@ -339,7 +347,7 @@ export const TOOLS = Object.freeze([
     }
   },
   {
-    name: 'caret_line',
+    name: 'read_caret_line',
     description: 'Report the text of the line the caret stands on. Selects its own line to read it, then answers caretRestored as what was measured rather than what was hoped: on a page whose caret lives in its own model rather than in the DOM, this is reported as not restored and never as restored. It also leaves the view scrolled to the end of the line, so viewRestored is false and the read is gated like the selection copy is - Dismiss any menu first; with one open the keys walk the menu instead of the text.',
     inputSchema: { type: 'object', properties: { tabId: tabArg } }
   },
@@ -439,8 +447,8 @@ export const TOOLS = Object.freeze([
     inputSchema: { type: 'object', properties: { tabId: tabArg, fullPage: { type: 'boolean', description: 'capture the whole page past the viewport' } } }
   },
   {
-    name: 'ax_snapshot',
-    description: 'Map one tab to clickable coordinates with names: role, name, x, y for every button, link, menu row and field, plus the current value where a field carries one (formula bar, name box, toolbar inputs). Call it when you want to study the whole page: an action answers with where the page stands and the rows that changed, not all of them. The text caret rides as a final caret row when visible; read its line with caret_line.',
+    name: 'snapshot_page',
+    description: 'Map one tab to clickable coordinates with names: role, name, x, y for every button, link, menu row and field, plus the current value where a field carries one (formula bar, name box, toolbar inputs). Call it when you want to study the whole page: an action answers with where the page stands and the rows that changed, not all of them. The text caret rides as a final caret row when visible; read its line with read_caret_line.',
     inputSchema: { type: 'object', properties: { tabId: tabArg, limit: { type: 'number', description: 'max rows, default 120, capped at 500' } } }
   },
   {
@@ -474,18 +482,6 @@ export const TOOLS = Object.freeze([
         replace: { type: 'boolean', description: 'replace an existing record for this client-month' }
       },
       required: ['client', 'portal', 'period', 'path']
-    }
-  },
-  {
-    name: 'document_build',
-    description: 'Turn a paper described as JSON (title, sections with tables, images and graphs) into a document plan whose every graph names the section and rows it came from, recheck the plan against those, and write it beside the source. Refuses a missing title, a section without a heading, a table with bad cells, an image without alt text, a graph with no source or no data, and a graph that disagrees with its tables - so a wrong number stops the paper instead of reaching a reader. No browser is touched: papers are planned on disk before they reach a page.',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        source: stringArg('the JSON file describing the paper'),
-        out: stringArg('where to write the document; defaults beside the source')
-      },
-      required: ['source']
     }
   },
   {
@@ -539,7 +535,7 @@ export const TOOLS = Object.freeze([
   },
   {
     name: 'document_write',
-    description: 'Turn a paper described as JSON into a Word file: the headings, paragraphs, tables and graphs of the checked plan, with a picture that is on this disk embedded and a picture that is not named by its own words. The plan is rechecked against the source rows before the file exists, so a number the check refuses cannot reach the reader. Writes the file beside the source. No browser is touched.',
+    description: 'Turn a paper described as JSON into a Word file in one call: build the plan whose every graph names the section and rows it came from, recheck the plan against the source rows, then write the file - a number the check refuses cannot reach the reader. Refuses a missing title, a section without a heading, a table with bad cells, an image without alt text, a graph with no source or no data, and a graph that disagrees with its tables. A picture on this disk is embedded; a picture that is not is named by its own words. Writes the Word file and the checked plan, each beside the source by default. No browser is touched.',
     inputSchema: {
       type: 'object',
       properties: {

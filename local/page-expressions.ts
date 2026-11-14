@@ -111,7 +111,7 @@ const SNAPSHOT_ROLES = new Set([
 // A wrong guess types into the wrong paragraph.
 // The caret therefore rides every snapshot as a final row, so the next keystroke's landing is read, not remembered.
 // A collapsed selection reports its point; a ranged one reports nothing, because a selection's focus end has no honest single point and reads collapse selections anyway.
-// The row carries no line text: the mirror a copy reads from only holds what a selection put there, so a line is read by selecting it first, and that dance lives in caret_line rather than in every map.
+// The row carries no line text: the mirror a copy reads from only holds what a selection put there, so a line is read by selecting it first, and that dance lives in read_caret_line rather than in every map.
 
 // WHY THE DRAWN CARET IS NOT READ.
 // The caret a canvas editor draws as an element was the only per-site selector this expression ever carried, and it is removed: on a shared document the page holds several carets, this client's and its collaborators', and picking the wrong one measured and clicked somebody else's cursor, which never moves - so every restore reported success while the real caret went to the end of the document.

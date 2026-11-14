@@ -179,6 +179,10 @@ const driver = {
     return (await attach()).waitForStill(options);
   },
 
+  async waitForUrl(options: unknown) {
+    return (await attach()).waitForUrl(options);
+  },
+
   async upload(options: unknown) {
     return (await attach()).upload(options);
   },

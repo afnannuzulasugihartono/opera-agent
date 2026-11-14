@@ -81,7 +81,7 @@ test('trustedFill evaluates post-action expectations', async () => {
 
 test('the local burst guidance covers dependent steps across state, not fixed refs', () => {
   const guide = fs.readFileSync(new URL('../../local/agent-guide.ts', import.meta.url), 'utf8');
-  const burstStart = guide.indexOf('browser_burst');
+  const burstStart = guide.indexOf('run_steps');
   assert.ok(burstStart >= 0, 'the burst capability must be documented in the guide');
   const slice = guide.slice(burstStart, burstStart + 600);
   assert.match(guide, /refFromStep/, 'the guide must name refFromStep for cross-step handles');

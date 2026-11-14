@@ -169,7 +169,7 @@ test('a tree whose nodes carry no ids answers empty rather than looping', async 
 
 // WHY A CYCLE IS THE ONE TEST WHOSE FAILURE IS A HANG AND NOT AN ASSERTION.
 // A tree whose nodes name each other as parents puts a cycle in the child map, and the descent has no visited set, so it oscillates between two nodes forever.
-// That hang is synchronous, so no timer inside this process can interrupt it - the only evidence of the defect is that the run never returns, which is what a caller would get: read, surface_profile and wait_for_text all stop.
+// That hang is synchronous, so no timer inside this process can interrupt it - the only evidence of the defect is that the run never returns, which is what a caller would get: read, scan_page and wait_for_text all stop.
 // The cycle has to hang off a real root to be reached at all: two nodes that name each other as parents are both non-roots, so the descent never enters them and a fixture built that way passes whether or not the defect is there.
 // Measured before the fix: this fixture never returned and the run had to be killed at the command timeout.
 

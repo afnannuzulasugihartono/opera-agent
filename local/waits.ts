@@ -185,5 +185,31 @@ export function createWaits({ cdp, sleep, readState, readRows, read, primitives,
     return { still: out.still, ms: out.ms, checks: out.checks, settled: out.still === true && out.checks > 1 };
   }
 
-  return { settle, waitForIdle, waitForMutation, waitForText, waitForRow, waitForStill };
+  // WHY A URL WAIT IS A PRIMITIVE AND NOT A POLL AT THE CALL SITE.
+  // A post-login redirect or a SPA route change is readable only when the page's own url is read again - a text wait cannot see it, a still wait answers on the wrong page.
+  // The poll lives here beside the other waits so one answer envelope covers every way a page can be given time to move.
+  async function waitForUrl({ contains, matches, timeoutMs = 10000, now: clock = now }: { contains?: string | null; matches?: string | null; timeoutMs?: number; now?: () => number } = {}) {
+    const want = String(contains ?? '').trim();
+    const pattern = String(matches ?? '').trim();
+    if (!want && !pattern) throw new Error('wait_for_url needs contains (substring) or matches (regular expression)');
+    let regex: RegExp | null = null;
+    if (pattern) {
+      try {
+        regex = new RegExp(pattern);
+      } catch {
+        throw new Error(`wait_for_url: matches is not a valid regular expression: ${pattern}`);
+      }
+    }
+    const urlOf = (state: Record<string, unknown>): string => String(state.url ?? '');
+    const hit = (url: string): boolean => (want !== '' && url.includes(want)) || (regex !== null && regex.test(url));
+    const state = await waitForMutation(
+      readState,
+      (settled: Record<string, unknown>) => hit(urlOf(settled)),
+      { timeoutMs, now: clock }
+    );
+    const url = urlOf(state);
+    return { found: hit(url), url, timeoutMs };
+  }
+
+  return { settle, waitForIdle, waitForMutation, waitForText, waitForRow, waitForStill, waitForUrl };
 }
