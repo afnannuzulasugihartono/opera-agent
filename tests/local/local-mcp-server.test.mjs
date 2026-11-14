@@ -123,6 +123,11 @@ function fakeSearchSession(calls) {
         ]
       };
     },
+    pageState: async () => {
+      const opened = [...calls].reverse().find((call) => call[0] === 'open');
+      return { url: opened ? opened[1] : 'https://docs.google.com/document/d/1', title: 'Sheets', textChars: 11, focus: null };
+    },
+    snapshot: async () => [{ role: 'menuitem', name: 'Sheet', x: 1, y: 1 }],
     close: () => { calls.push(['session-close']); },
   };
 }
@@ -817,21 +822,21 @@ test('a missing required argument is refused before the driver is touched', asyn
 test('every action hands back the page it acted on, so looking costs no extra call', async () => {
   const server = createMcpServer(ctx());
 
-  for (const [name, args] of [
-    ['click', { x: 10, y: 20 }],
-    ['click_row', { role: 'menuitem', name: 'Insert' }],
-    ['hover', { x: 30, y: 40 }],
-    ['press_key', { key: 'Enter' }],
-    ['type', { text: 'hi' }],
-    ['stream_keys', { events: [{ key: 'a' }] }],
-    ['open_url', { url: 'https://sheets.google.com/' }]
+  for (const [name, args, url] of [
+    ['click', { x: 10, y: 20 }, 'https://docs.google.com/document/d/1'],
+    ['click_row', { role: 'menuitem', name: 'Insert' }, 'https://docs.google.com/document/d/1'],
+    ['hover', { x: 30, y: 40 }, 'https://docs.google.com/document/d/1'],
+    ['press_key', { key: 'Enter' }, 'https://docs.google.com/document/d/1'],
+    ['type', { text: 'hi' }, 'https://docs.google.com/document/d/1'],
+    ['stream_keys', { events: [{ key: 'a' }] }, 'https://docs.google.com/document/d/1'],
+    ['open_url', { url: 'https://sheets.google.com/' }, 'https://sheets.google.com/']
   ]) {
     const res = await server.handle({ jsonrpc: '2.0', id: 9, method: 'tools/call', params: { name, arguments: args } });
     const payload = JSON.parse(res.result.content[0].text);
 
     assert.ok('action' in payload, `${name} returned no action result`);
     assert.ok(payload.page, `${name} returned no page state with the action`);
-    assert.equal(payload.page.url, 'https://docs.google.com/document/d/1', `${name} lost the url`);
+    assert.equal(payload.page.url, url, `${name} returned the wrong page state`);
     assert.equal(payload.page.rows, 1, `${name} lost the row count`);
     assert.ok(payload.changed, `${name} returned no change set`);
   }
@@ -1490,4 +1495,27 @@ test('search_bing refuses an empty query with the reason named', async () => {
 
   assert.match(failureOf(res), /non-empty query/);
   assert.ok(!c.driver.calls.some((call) => call[0] === 'open'), 'nothing reached the browser');
+});
+
+// WHY THE TAB IS ASKED WHERE IT IS BEFORE IT IS READ.
+// A background tab at about:blank reports zero rows and zero changes, which is the most still a page can be, so the call used to answer count: 0 before Bing had loaded.
+// The fake below never reaches bing.com; the call must answer with a named refusal, not with an empty list.
+
+test('search_bing refuses loudly when the tab never reaches Bing', async () => {
+  const c = ctx();
+  c.open = async () => ({
+    close: () => {},
+    waitForUrl: async () => ({ found: false, url: 'about:blank' }),
+    waitForStill: async () => ({ still: true }),
+    evaluate: async () => ({ text: '', url: 'about:blank', title: '', links: [], truncated: false })
+  });
+  const server = createMcpServer(c);
+
+  const res = await server.handle({
+    jsonrpc: '2.0', id: 63, method: 'tools/call',
+    params: { name: 'search_bing', arguments: { query: 'anything' } }
+  });
+
+  assert.ok(res.result?.isError, 'a tab that never reaches Bing is refused, not answered with silence');
+  assert.match(failureOf(res), /did not reach Bing/);
 });
