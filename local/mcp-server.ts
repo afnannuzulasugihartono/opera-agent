@@ -715,7 +715,8 @@ const windowMatch = async (tab: JsonRecord | null, driver: Driver): Promise<stri
           if (typeof searchDriver.pageState === 'function') {
             const contentDeadline = Date.now() + contentBudgetMs;
             for (;;) {
-              const probe = (await searchDriver.pageState().catch(() => null)) as { textChars?: unknown; title?: unknown } | null;
+              // A meter refusal or any hard page error is propagated as it is: an agent whose budget is spent must read the reason, not a timer's.
+              const probe = (await searchDriver.pageState().catch((error: unknown) => { throw error; })) as { textChars?: unknown; title?: unknown } | null;
               const chars = Number(probe?.textChars ?? 0);
               if (Number.isFinite(chars) && chars >= 500) break;
               if (Date.now() >= contentDeadline) {

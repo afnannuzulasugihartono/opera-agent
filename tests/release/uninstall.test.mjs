@@ -39,7 +39,7 @@ test('clean machine reports nothing removed and exits ok', async () => {
     });
     assert.equal(result.ok, true);
     assert.equal(spawned.yes, true, 'npm uninstall was spawned anyway');
-    for (const vendor of ['chrome', 'brave', 'edge']) assert.match(result.message, new RegExp(`registry key for ${vendor}`));
+    for (const vendor of ['chrome', 'chromeForTesting', 'brave', 'edge']) assert.match(result.message, new RegExp(`registry key for ${vendor}`));
     assert.match(result.message, /OperaAgent folder: not found/);
     assert.match(result.message, /device pairing: not found/);
   });
@@ -56,8 +56,8 @@ test('deletes all three registry keys', async () => {
       root: path.join(home, 'OperaAgent'),
       home,
     });
-    const vendors = calls.map(([op, key]) => String(key).includes('Google') ? 'chrome' : String(key).includes('Brave') ? 'brave' : 'edge');
-    assert.deepEqual(new Set(vendors), new Set(['chrome', 'brave', 'edge']));
+    const vendors = calls.map(([op, key]) => String(key).includes('Google\\Chrome for Testing') ? 'chromeForTesting' : String(key).includes('Google') ? 'chrome' : String(key).includes('Brave') ? 'brave' : 'edge');
+    assert.deepEqual(new Set(vendors), new Set(['chrome', 'brave', 'edge', 'chromeForTesting']));
     assert.match(result.message, /registry key for chrome/);
     assert.match(result.message, /registry key for edge/);
   });

@@ -34,15 +34,29 @@ test('finds edge when it exists', () => {
   assert.deepEqual(found.map((b) => b.id), ['edge']);
 });
 
-test('finds all three with the three-browser filter the installer uses', () => {
-  const paths = BROWSERS.filter((b) => ['chrome', 'brave', 'edge'].includes(b.id)).flatMap((b) => b.paths.win32).map((p) => lower(expandPath(p, {})));
-  const found = detectBrowsers({ platform: 'win32', exists: tree(paths), env: {} }).filter((b) => ['chrome', 'brave', 'edge'].includes(b.id));
-  assert.deepEqual(found.map((b) => b.id), ['chrome', 'edge', 'brave']);
+test('finds all four with the four-browser filter the installer uses', () => {
+  const paths = BROWSERS.filter((b) => ['chrome', 'brave', 'edge', 'chromeForTesting'].includes(b.id)).flatMap((b) => b.paths.win32).map((p) => lower(expandPath(p, {})));
+  const found = detectBrowsers({ platform: 'win32', exists: tree(paths), env: {} }).filter((b) => ['chrome', 'brave', 'edge', 'chromeForTesting'].includes(b.id));
+  assert.deepEqual(found.map((b) => b.id), ['chrome', 'edge', 'brave', 'chromeForTesting']);
+});
+
+test('finds chrome-for-testing through the playwright glob', () => {
+  const found = detectBrowsers({
+    platform: 'win32',
+    env: { LOCALAPPDATA: 'C:/Users/X/AppData/Local' },
+    exists: (p) => p === 'c:/users/x/appdata/local/ms-playwright/chromium-1243/chrome-win64/chrome.exe',
+    readdir: (p) => {
+      if (p === 'c:/users/x/appdata/local/ms-playwright') return [{ name: 'chromium-1243', isDirectory: () => true }];
+      if (p === 'c:/users/x/appdata/local/ms-playwright/chromium-1243') return [{ name: 'chrome-win64', isDirectory: () => true }];
+      return [];
+    },
+  });
+  assert.deepEqual(found.map((b) => b.id), ['chromeForTesting']);
 });
 
 test('ignores browsers the installer does not support', () => {
   const paths = BROWSERS.filter((b) => ['opera', 'vivaldi', 'chromium'].includes(b.id)).flatMap((b) => b.paths.win32).map((p) => lower(expandPath(p, {})));
-  const found = detectBrowsers({ platform: 'win32', exists: tree(paths), env: {} }).filter((b) => ['chrome', 'brave', 'edge'].includes(b.id));
+  const found = detectBrowsers({ platform: 'win32', exists: tree(paths), env: {} }).filter((b) => ['chrome', 'brave', 'edge', 'chromeForTesting'].includes(b.id));
   assert.deepEqual(found, []);
 });
 

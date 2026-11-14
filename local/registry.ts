@@ -14,6 +14,7 @@ export const UPDATE_URL = 'https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1
 
 const vendorKeys: Record<string, string> = {
   chrome: `HKCU\\Software\\Google\\Chrome\\Extensions\\${EXTENSION_ID}`,
+  chromeForTesting: `HKCU\\Software\\Google\\Chrome for Testing\\Extensions\\${EXTENSION_ID}`,
   brave: `HKCU\\Software\\BraveSoftware\\Brave-Browser\\Extensions\\${EXTENSION_ID}`,
   edge: `HKCU\\Software\\Microsoft\\Edge\\Extensions\\${EXTENSION_ID}`,
 };

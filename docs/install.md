@@ -8,9 +8,9 @@
 `opera-agent-mcp install` (and `npm i -g opera-agent-mcp`, via the postinstall hook):
 
 1. Only on Windows. On any other OS it prints the Web Store path and exits 0.
-2. Detects the Chromium browsers this machine carries - Chrome, Brave and Edge - by probing the exact paths Chrome, Brave and Edge live at (`local/browsers.ts`, the same table the driver uses; no second list).
+2. Detects the Chromium browsers this machine carries - Chrome, Brave, Edge and Chrome for Testing - by probing the install paths each one lives at (`local/browsers.ts`, the same table the driver uses; no second list). Chrome for Testing has no canonical install path - it ships as pinned `chromium-<rev>` zips - so the probe is a one-level wildcard over the usual cache folders instead of an exact-path guess.
 3. Writes one per-user registry key per detected browser (`HKCU\Software\<Vendor>\<product>\Extensions\ofgemipoobcnbjkfanmofjbdonjapmgl`) carrying `update_url` = the public update manifest. The browser installs the extension itself on its next start; no UAC, no admin, no download dialog.
-4. Creates `%LOCALAPPDATA%\OperaAgent\{Chrome,Brave,Edge}\` only for the browsers found, containing a **verified** copy of the build (`opera-agent.zip`, sha256 checked against the `x-opera-sha256` header of the public update endpoint before the bytes are written) plus a README that explains the whole mechanism and the manual fallback.
+4. Creates `%LOCALAPPDATA%\OperaAgent\{Chrome,Brave,Edge,ChromeForTesting}\` only for the browsers found, containing a **verified** copy of the build (`opera-agent.zip`, sha256 checked against the `x-opera-sha256` header of the public update endpoint before the bytes are written) plus a README that explains the whole mechanism and the manual fallback.
 5. Runs `opera-agent-mcp doctor` and prints what remains human: sign in with `opera-agent-mcp auth` (OAuth, one browser round trip) and pair the device in the extension (one code, on purpose - pairing is the one thing a machine may not fake).
 
 `npm i -g opera-agent-mcp` performs the same install silently from the
@@ -21,7 +21,7 @@ when `OPERA_AGENT_NO_INSTALL` is unset. `OPERA_AGENT_NO_INSTALL=1 npm i -g opera
 
 `opera-agent-mcp uninstall`, one command, maximum honesty:
 
-1. Deletes the three registry keys. Registry-installed copies of the extension **leave the browser on the next start** - verified the same day on the same three browsers (Secure Preferences read zero mentions of the extension after a relaunch).
+1. Deletes the four registry keys (Chrome, Brave, Edge, Chrome for Testing). Registry-installed copies of the extension **leave the browser on the next start** - verified the same day on the same three browsers (Secure Preferences read zero mentions of the extension after a relaunch).
 2. Deletes `%LOCALAPPDATA%\OperaAgent\` - the dedicated ChromeProfile, the verified build copies, the README, everything - unless `--keep-pair` is passed, in which case the paired-device file is the only thing kept.
 3. Spawns a detached `npm uninstall -g opera-agent-mcp`; the package removes itself after the process exits. If it cannot, the exact command to run is printed.
 4. Prints the one thing it cannot script away: the extension's `Remove` button at `chrome://extensions` (`edge://`, `brave://`), needed only for copies installed the manual developer-mode way (`Load unpacked`).
