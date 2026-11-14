@@ -57,7 +57,11 @@ jobs:
           fi
 
       - name: The gates are green before anything is published
+        # WHY THE INSTALL IS HERE FIRST.
+        # `npm test` compiles the TypeScript (pretest) and then biome and the auditors walk the tree; none of those binaries exist on a bare runner, and the job failed at exit 127 without the toolchain ever installing.
+        # CI installs first for the same reason (ci.yml "Install the toolchain"), and a publish that never reaches the registry is what a gate that cannot run proves.
         run: |
+          npm ci --ignore-scripts --no-audit --no-fund
           npm test
           npm run check
 
