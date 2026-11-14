@@ -15,8 +15,6 @@ const dir = path.join(root, 'local', 'lib');
 const exportNames = (text) => [...text.matchAll(/^export (?:async function|function|const|class) (\w+)/gm)].map((match) => match[1]);
 
 for (const spec of [
-  { js: 'tidy.js', def: 'tidy.d.ts' },
-  { js: 'bing-serp.js', def: 'bing-serp.d.ts' },
   { js: 'endpoints.js', def: 'endpoints.d.ts' },
   { js: 'socket-protocol.js', def: 'socket-protocol.d.ts' },
 ]) {

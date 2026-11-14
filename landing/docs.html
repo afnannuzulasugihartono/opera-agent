@@ -128,7 +128,7 @@
 
         <section data-reveal>
           <h2 id="tools">Tools MCP</h2>
-          <p>42 tool di atas 36 primitive browser. Tugas masing-masing:</p>
+          <p>55 tool di atas 36 primitive browser. Tugas masing-masing:</p>
 
           <h3>Peramban</h3>
           <dl class="toolList">
@@ -201,28 +201,23 @@
 
         <section data-reveal>
           <h2 id="mcp">Hubungkan AI harness</h2>
-          <p>Satu server MCP untuk ChatGPT, Claude, Codex, Claude Code, OpenCode, VS Code (Copilot), Kilo Code, Cursor, dan konektor lain.</p>
-          <p><a href="./mcp.html">Pasang MCP</a> — panduan lengkap per harness, termasuk cara pasang dari terminal dan prompt yang bisa ditempel ke AI Anda.</p>
-          <p>Server MCP:</p>
+          <p>Satu server MCP per mesin: driver lokal, jalan di mesin Anda sendiri, tanpa biaya per panggilan dan tanpa melewati server orang lain.</p>
+          <p><a href="./mcp.html">Pasang driver lokal</a> — panduan lengkap per harness, termasuk cara pasang dari terminal dan prompt yang bisa ditempel ke AI Anda.</p>
+          <p>Koneksi driver lokal:</p>
           <div class="copybox">
-            <pre><code id="mcp-url">https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp</code></pre>
+            <pre><code id="mcp-url">npx -y opera-agent-mcp local</code></pre>
             <button type="button" data-copy="mcp-url" data-i18n="copy">Salin</button>
           </div>
 
           <h3>OpenCode</h3>
-          <p>Tambah ke <code>opencode.json</code>, ganti <code>opera</code> dengan nama device Anda:</p>
+          <p>Tambah ke <code>opencode.json</code>:</p>
           <div class="copybox">
             <pre><code id="cfg-opencode">{
   "mcp": {
     "opera-agent": {
-      "type": "remote",
-      "url": "https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp",
-      "oauth": { "clientId": "bbc5eb76-f385-435b-8b13-8e339b45e633" },
-      "headers": {
-        "X-Opera-Device": "opera",
-        "X-Opera-Provider": "opencode",
-        "x-region": "ap-southeast-1"
-      }
+      "type": "local",
+      "command": "opera-agent-mcp",
+      "args": ["local"]
     }
   }
 }</code></pre>
@@ -230,37 +225,34 @@
           </div>
 
           <h3>Kilo Code</h3>
-          <p>Tambah ke MCP settings (JSON), ganti <code>opera</code> dengan nama device Anda:</p>
+          <p>Tambah ke MCP settings (JSON):</p>
           <div class="copybox">
             <pre><code id="cfg-kilo">{
   "mcpServers": {
     "opera-agent": {
-      "url": "https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp",
-      "headers": {
-        "X-Opera-Device": "opera",
-        "X-Opera-Provider": "kilo",
-        "x-region": "ap-southeast-1"
-      }
+      "command": "opera-agent-mcp",
+      "args": ["local"]
     }
   }
 }</code></pre>
             <button type="button" data-copy="cfg-kilo" data-i18n="copy">Salin</button>
           </div>
 
-          <h3>Claude Code</h3>
-          <p>Di terminal, ganti <code>opera</code> dengan nama device Anda:</p>
+          <h3>Claude Desktop</h3>
+          <p>Dialog konfig (Settings → MCP → Add local server):</p>
           <div class="copybox">
-            <pre><code id="cfg-claude">claude mcp add --transport http opera-agent https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp --header "X-Opera-Device: opera" --header "X-Opera-Provider: claude" --header "x-region: ap-southeast-1"</code></pre>
+            <pre><code id="cfg-claude">command: npx
+args: ["-y", "opera-agent-mcp", "local"]</code></pre>
             <button type="button" data-copy="cfg-claude" data-i18n="copy">Salin</button>
           </div>
 
-          <p>Server itu menambah 42 tool di atas 36 primitive browser.</p>
+          <p>Server lokal menambah 55 tool di atas 36 primitive browser.</p>
 
-          <p>Opera Agent bisa dipanggil lewat tiga jalan: server hosted di atas, server lokal di mesin sendiri, dan extension yang menjalankan peramban yang sedang dipakai. Ketiganya dijelaskan di satu panduan: <a href="https://github.com/afnannuzulasugihartono/opera-agent/blob/main/docs/agent-call.md">docs/agent-call.md</a>.</p>
+          <p>Tidak perlu login atau langganan untuk memakai driver lokal. Meter plan tetap jalan di bridge — sisa quota Anda bisa dilihat dengan <code>opera-agent-mcp doctor</code> kapan pun. Semua jalur dijelaskan di satu panduan: <a href="https://github.com/afnannuzulasugihartono/opera-agent/blob/main/docs/agent-call.md">docs/agent-call.md</a>.</p>
 
           <h3>ChatGPT dan konektor lain</h3>
-          <p>Cukup URL server di atas plus OAuth. Server memakai device pertama milik akun Anda dan menebak provider-nya. Untuk device lain, pair ulang.</p>
-          <p>Setelah terpasang: buka pengaturan konektor, pilih <strong>Allow all tools</strong>, lalu refresh atau buka chat baru. Daftar tool baru muncul sesudah itu — itu perilaku ChatGPT, bukan error koneksi.</p>
+          <p>Konektor mereka bicara remote-over-HTTP; itu sudah berhenti eksis — kami tidak menyediakan jalur hosted lagi. Untuk ChatGPT dan harness serupa, gunakan harness lokal (atau Claude Desktop/OpenCode yang menerima MCP stdio).</p>
+          <p>Setelah terpasang, alat baru muncul sesudah restart harness — itu perilaku harness, bukan error koneksi.</p>
         </section>
 
         <section data-reveal>

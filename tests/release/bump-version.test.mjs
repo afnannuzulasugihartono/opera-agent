@@ -30,14 +30,11 @@ const ENUMERATED = [
   'local/package.json',
   'package-lock.json',
   'scripts/verify/check.mjs',
-  'hosted/functions/opera-agent-mcp/index.ts',
   'tests/extension/burst-atomic-actions.test.mjs',
   'tests/extension/hover-settle.test.mjs',
-  'tests/hosted/mcp-surface.test.mjs',
   'tests/extension/protocol.test.mjs',
   'tests/extension/role-reconcile.test.mjs',
   'tests/extension/timeout-retry-popup-parity.test.mjs',
-  'landing/mcp.html',
   'docs/handoff.md'
 ];
 

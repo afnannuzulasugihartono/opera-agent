@@ -5,7 +5,7 @@
     "type": "git",
     "url": "git+https://github.com/afnannuzulasugihartono/opera-agent.git"
   },
-  "description": "Drive your own browser from an MCP client: the everyday profile over the loopback bridge, or the hosted server.",
+  "description": "Drive your own browser from an MCP client over the loopback bridge; metered per plan through the paired device.",
   "type": "module",
   "bin": {
     "opera-agent-mcp": "bin/opera-agent-mcp.js",
@@ -43,8 +43,8 @@
     "leases.js",
     "lib/endpoints.js",
     "lib/socket-protocol.js",
-    "lib/tidy.js",
-    "lib/bing-serp.js",
+    "bing-serp.js",
+    "tidy.js",
 
     "mcp-server.js",
     "menu-tree.js",

@@ -122,17 +122,17 @@ test('the features page states the counts and the permissions the product has', 
   const protocol = read('extension/lib/protocol.ts');
   const specs = /METHOD_SPECS[^{]*\{([\s\S]*?)\n\}\)/.exec(protocol)?.[1] ?? '';
   const primitives = [...specs.matchAll(/^\s*'([a-z_]+\.[a-z_]+)':/gm)].length;
-  const contract = JSON.parse(read('tests/fixtures/mcp-contract-v1.json'));
+  const toolsSource = read('local/tools.ts');
+  const tools = (toolsSource.match(/\bname: '[a-z_]+'/g) || []).length;
   const manifest = JSON.parse(read('extension/manifest.json'));
   const fitur = read('landing/fitur.html');
 
   assert.ok(primitives > 0, 'the protocol exports an allowlist to count');
-  assert.equal(contract.toolCount, contract.tools.length, 'the contract agrees with itself');
-  assert.match(fitur, new RegExp(`>${contract.toolCount} tool, ${primitives} primitive<`),
-    `the Indonesian heading states ${contract.toolCount} tools and ${primitives} primitives`);
-  assert.match(fitur, new RegExp(`"${contract.toolCount} tools, ${primitives} primitives"`),
+  assert.match(fitur, new RegExp(`>${tools} tool, ${primitives} primitive<`),
+    `the Indonesian heading states ${tools} tools and ${primitives} primitives`);
+  assert.match(fitur, new RegExp(`"${tools} tools, ${primitives} primitives"`),
     'the English heading states the same counts');
-  assert.match(fitur, new RegExp(`<meta name="description" content="[^"]*${contract.toolCount} tool dan ${primitives} primitive`),
+  assert.match(fitur, new RegExp(`<meta name="description" content="[^"]*${tools} tool dan ${primitives} primitive`),
     'the description a search engine reads states the same counts');
 
   for (const permission of manifest.permissions) {

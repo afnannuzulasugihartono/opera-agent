@@ -22,9 +22,9 @@ on:
   workflow_dispatch:
     inputs:
       functions:
-        description: "Edge functions to deploy, comma-separated (default: opera-agent-mcp)."
+        description: "Edge functions to deploy, comma-separated (default: opera-agent-bridge)."
         required: false
-        default: 'opera-agent-mcp'
+        default: 'opera-agent-bridge'
         type: string
       reason:
         description: What is being deployed and why, for the deployment log.
@@ -57,15 +57,15 @@ jobs:
           npm ci --ignore-scripts --no-audit --no-fund
           npm run build:shared
 
-      - name: The version matches the manifest
+      - name: The manifest exists and reads a three-part version
         shell: bash
         run: |
           MANIFEST="$(node -p "require('./extension/manifest.json').version")"
-          MCP="$(grep -o 'SERVER_VERSION = "[0-9.]*"' hosted/functions/opera-agent-mcp/index.ts | cut -d'"' -f2)"
+          MCP="$(node -p "require('./local/package.json').version")"
           echo "extension manifest: ${MANIFEST}"
-          echo "edge function SERVER_VERSION: ${MCP}"
+          echo "local package: ${MCP}"
           if [ "${MANIFEST}" != "${MCP}" ]; then
-            echo "::error::the extension manifest says ${MANIFEST} and the edge function carries SERVER_VERSION ${MCP}; refusing to deploy a mismatched pair"
+            echo "::error::the extension manifest says ${MANIFEST} and the local package carries ${MCP}; refusing to deploy a mismatched pair"
             exit 1
           fi
 
@@ -89,10 +89,10 @@ jobs:
             echo "::endgroup::"
           done
 
-      - name: Confirm the MCP health answers
+      - name: Confirm the update service answers
         shell: bash
         run: |
           curl --fail --silent --show-error --retry 5 --retry-delay 5 \
             --proto '=https' --proto-redir '=https' \
             --output /dev/null --write-out 'status %{http_code}\n' \
-            https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp/health
+            https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-update/health

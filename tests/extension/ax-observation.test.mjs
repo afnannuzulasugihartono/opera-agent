@@ -8,12 +8,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { buildAxSummary, AX_SUMMARY_LIMITS } from '../../extension/lib/ax-summary.js';
 import { extensionSource } from '../helpers/extension-source.mjs';
-import { mcpSurfaceSourceSync } from '../helpers/mcp-surface-source.mjs';
-
 const read = (relative) => fs.readFileSync(new URL(relative, import.meta.url), 'utf8');
 const content = read('../../extension/content.js');
 const background = await extensionSource();
-const mcp = mcpSurfaceSourceSync();
 
 function axNode(partial = {}) {
   return {
@@ -144,11 +141,10 @@ test('background.js attaches a poverty-triggered, fail-open CDP axSummary (Layer
   assert.match(background, /catch \(error\) \{\s*log\.error\('AX_SUMMARY_COLLECTION_FAILED',[\s\S]*?return null;/);
 });
 
-test('MCP guidance documents the accessibility surface without new tools', () => {
-  assert.match(mcp, /accessibleName/);
-  assert.match(mcp, /axSummary/);
-  assert.doesNotMatch(mcp, /registerTool\("(?:read_ax|ax_summary|accessibility)/);
-
-  const tools = [...mcp.matchAll(/server\.registerTool\("([a-z_]+)"/g)].map((m) => m[1]);
-  assert.equal(tools.length, 42);
+test('the local guidance documents the accessibility surface without new tools', () => {
+  const guide = fs.readFileSync(new URL('../../local/agent-guide.ts', import.meta.url), 'utf8');
+  const tools = fs.readFileSync(new URL('../../local/tools.ts', import.meta.url), 'utf8');
+  assert.match(guide, /ax_snapshot/);
+  assert.doesNotMatch(tools, /name: '(read_ax|ax_summary|accessibility)'/);
+  assert.match(tools, /name: 'ax_snapshot'/);
 });

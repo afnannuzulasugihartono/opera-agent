@@ -1,6 +1,6 @@
 // @last-edited: 2026-10-22 UTC+7.
 // @title: readme — the README's numbers are measured, so the file cannot drift from the code.
-// @state: four gates: the primitive count, the cloud tool count, the local tool count, and the deployed edge functions.
+// @state: three gates: the primitive count, the local tool count, and the deployed edge functions.
 // @dependencies: node:test, node:assert/strict, node:fs, node:path.
 
 // WHY THE README IS CHECKED.
@@ -23,10 +23,6 @@ const readme = read('README.md');
 const protocol = read('extension/lib/protocol.ts');
 const specs = /METHOD_SPECS[^{]*\{([\s\S]*?)\n\}\)/.exec(protocol)?.[1] ?? '';
 const primitives = [...specs.matchAll(/^\s*'([a-z_]+\.[a-z_]+)':/gm)].map((m) => m[1]);
-
-// The cloud tools: the frozen contract, which the suite already holds byte-for-byte.
-
-const contract = JSON.parse(read('tests/fixtures/mcp-contract-v1.json'));
 
 // The local tools: what the local server registers.
 
@@ -56,12 +52,6 @@ test('the README states the number of browser primitives the protocol allows', (
   assert.ok(primitives.length > 0, 'the protocol must export an allowlist to count');
   assert.equal(countIn('Browser primitives'), primitives.length,
     `the README must say the protocol allows ${primitives.length} primitives`);
-});
-
-test('the README states the number of cloud MCP tools the contract freezes', () => {
-  assert.equal(contract.toolCount, contract.tools.length, 'the contract must agree with itself');
-  assert.equal(countIn('Cloud MCP surface'), contract.toolCount,
-    `the README must say the cloud surface has ${contract.toolCount} tools`);
 });
 
 test('the README states the number of local MCP tools the server registers', () => {

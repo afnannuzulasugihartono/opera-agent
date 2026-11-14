@@ -7,12 +7,12 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
+import { readFileSync } from 'node:fs';
 import { PUBLIC_SURFACE_LOCKS } from '../helpers/boundary-locks.mjs';
 import {
   createDeltaFirstObservationPipeline,
   reasoningPayloadBytes,
 } from '../../shared/delta-first-observation.js';
-import { mcpSurfaceSource } from '../helpers/mcp-surface-source.mjs';
 
 const identity = (overrides = {}) => ({
   tenantId: 'tenant-a',
@@ -553,18 +553,17 @@ test('does not synthesize completion or foreground/browser authority', () => {
   assert.doesNotMatch(encoded, /activate_tab|executionMode|foreground|page\.click|page\.fill|pointer/i);
 });
 
-test('keeps the R4-authorized read_page projection inside the frozen public MCP boundary', async () => {
+test('keeps the R4-authorized read_page projection inside the frozen public boundary', async () => {
 
   const files = new Map(PUBLIC_SURFACE_LOCKS);
   for (const [relativePath, expected] of files) {
     const bytes = await readFile(new URL(relativePath.replace(/^\.\.\//, '../../'), import.meta.url));
     assert.equal(sha256Blob(bytes), expected, `${relativePath} must remain byte-for-byte unchanged in P2`);
   }
-  const mcp = await mcpSurfaceSource();
-  assert.match(mcp, /server\.registerTool\("read_page"/);
-  assert.match(mcp, /return execute\("page\.read", \{ \.\.\.briefArgs/);
-  assert.match(mcp, /view: z\.enum\(\["brief", "map"\]\)/);
-  assert.doesNotMatch(mcp, /delta-first-observation/);
+  const tools = readFileSync(new URL('../../local/tools.ts', import.meta.url), 'utf8');
+  assert.match(tools, /name: 'read_page'/);
+  assert.match(tools, /name: 'ax_snapshot'/);
+  assert.doesNotMatch(tools, /delta-first-observation/);
 });
 
 test('paired controlled small-change benchmark reduces median reasoning payload >= 75% with exact state agreement and zero safety regressions', () => {

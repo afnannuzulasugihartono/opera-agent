@@ -14,7 +14,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { mcpSurfaceSource } from '../helpers/mcp-surface-source.mjs';
+
 
 const source = await readFile(new URL('../../extension/content.js', import.meta.url), 'utf8');
 
@@ -89,13 +89,12 @@ test('sensitive targets are never offered a fresh ref', () => {
   assert.match(revalidation, /state\.actionable && !state\.sensitive/);
 });
 
-test('the model is told the fresh refs are directly actionable', async () => {
-  const mcp = await mcpSurfaceSource();
-  assert.match(mcp, /that stale ref is refused on purpose/);
+test('the local guidance teaches the same refusal instead of a fresh snapshot each time', async () => {
+  const guide = await readFile(new URL('../../local/agent-guide.ts', import.meta.url), 'utf8');
+  const tools = await readFile(new URL('../../local/tools.ts', import.meta.url), 'utf8');
 
-  assert.match(mcp, /the error carries candidates, each entry holding a freshRef/);
-  assert.match(mcp, /act on one of those freshRef values directly/);
-  assert.doesNotMatch(mcp, /carries freshRefs/);
+  assert.match(guide, /resolved and clicked in the same call/);
+  assert.match(tools, /a handle cannot go stale at all/i);
 
-  assert.doesNotMatch(mcp, /increase the geometry tolerance|widen the tolerance/);
+  assert.doesNotMatch(guide, /increase the geometry tolerance|widen the tolerance/);
 });

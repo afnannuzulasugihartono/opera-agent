@@ -115,10 +115,10 @@ claim, not a delivery. The site says so in the permission list.
 
 ## Then bill it
 
-The manifest is the record, so it is also the bill. `invoice_create` takes the rows the
-manifest returned and turns each delivered client-month into one line priced from
-`opera_price_list`; the customer gets a signed link to a page that lists those lines and
-the amount, and nothing is charged for a month that is not in the manifest. The same
-client-month twice is refused rather than billed twice, and a paid invoice cannot be
-reopened by a later call. The page, the signature and the drill that drove them are in
+The manifest is the record, so it is also the bill. The hosted MCP that carried
+the `invoice_create` tool is deleted (2026-11-14); the agent that delivered the
+statements now has no tool that opens the invoice, and the billing surface
+(hosted/functions/opera-agent-billing) is the remaining door for the page, the
+signature and the settled-notification path. There is no second path for an
+operator to learn. The drill that drove them is in
 [`docs/product/billing.md`](../product/billing.md).

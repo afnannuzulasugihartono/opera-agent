@@ -32,19 +32,18 @@ The wire contract is one file, `extension/lib/protocol.ts`, and it is the source
 - `METHOD_SPECS` holds the dotted methods: `browser.ping`, `browser.burst`, `tabs.list`, `tabs.open`, `tabs.navigate`, `page.read`, `page.click`, `page.key`, `page.wait_for`.
 - `BURST_ACTION_METHODS` maps a burst step's short verb to the dotted method it runs: `read` to `page.read`, `wait` to `page.wait_for`, `navigate` to `tabs.navigate`.
 
-The tool surface is data, in two places for two surfaces:
+The tool surface is data, in one place:
 
-- `local/tools.ts` — the local stdio server's tools.
-- `hosted/functions/opera-agent-mcp/tools.ts` — the cloud server's tools, registered one `registerTool` call each.
+- `local/tools.ts` — the local stdio server's tools; the only MCP surface in this tree.
 
-The Postgres names are in the migrations, and the edge functions refuse anything that is not a bare identifier before it reaches the database: `hosted/functions/opera-agent-mcp/index.ts` and `hosted/functions/opera-agent-bridge/index.ts` both reject a function or argument name that fails `^[a-z_][a-z0-9_]*$`.
+The Postgres names are in the migrations, and the edge functions refuse anything that is not a bare identifier before it reaches the database: `hosted/functions/opera-agent-bridge/index.ts` rejects a function or argument name that fails `^[a-z_][a-z0-9_]*$`.
 
 ## What enforces it
 
 The shapes are pinned by tests, so a name in the wrong shape fails a gate rather than reaching a user:
 
 - `tests/docs/readme.test.mjs` reads the local tool names out of `local/tools.ts` and counts them against the number the README claims.
-- `tests/extension/ax-observation.test.mjs` counts the cloud tools by matching `server.registerTool("([a-z_]+)"`, and pins the total at 35.
+- `tests/extension/ax-observation.test.mjs` matches the local tools against the accessible-name allowlist the runtime answers.
 - `docs/api.md` documents the gateway's `method` parameter and the pattern it must match, and `tests/docs/api-docs.test.mjs` fails when that document stops covering the routed paths.
 
 ## Adding a name

@@ -10,7 +10,6 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { extensionSource } from '../helpers/extension-source.mjs';
-import { mcpSurfaceSourceSync } from '../helpers/mcp-surface-source.mjs';
 
 const root = new URL('../../', import.meta.url);
 const read = (name) => fs.readFileSync(new URL(name, root), 'utf8');
@@ -25,7 +24,7 @@ const site = sitePages.join('\n');
 const publicFiles = siteFiles.filter((file) => !file.includes('dashboard') && !file.includes('consent'));
 
 const manifest = JSON.parse(read('extension/manifest.json'));
-const mcp = mcpSurfaceSourceSync();
+const tools = fs.readFileSync(new URL('../../local/tools.ts', import.meta.url), 'utf8');
 const content = read('extension/content.js');
 const background = await extensionSource();
 
@@ -40,9 +39,9 @@ test('no page states a version, because a stated version is a promise nothing ke
   assert.match(manifest.version, /^\d+\.\d+\.\d+$/, 'and the manifest carries a version to check against');
 });
 
-test('the tool count on the site equals the tools the MCP server registers', () => {
-  const registered = (mcp.match(/registerTool\(/g) || []).length;
-  assert.ok(registered > 0, 'the MCP server must register tools for this to mean anything');
+test('the tool count on the site equals the tools the local driver registers', () => {
+  const registered = (tools.match(/\bname: '[a-z_]+'/g) || []).length;
+  assert.ok(registered > 0, 'the local driver must register tools for this to mean anything');
   assert.match(site, new RegExp(`\\b${registered} tool`), `the site must state ${registered} tools`);
 });
 

@@ -43,8 +43,9 @@ test('the packed tarball carries no .ts source, keeps the generated copies, and 
     const forbidden = files.filter((file) => /\.ts$/i.test(file) || !/\.(js|json|md|cmd)$/i.test(file));
     assert.deepEqual(forbidden, [], `the tarball ships files it must not: ${forbidden.join(', ')}`);
 
-    for (const shipped of ['lib/bing-serp.js', 'lib/endpoints.js', 'lib/socket-protocol.js', 'lib/tidy.js']) {
-      assert.ok(files.includes(shipped), `the tarball carries the generated copy ${shipped}`);
+    // The package carries the generated protocol pair in local/lib and the tools in package root; .ts never ships.
+    for (const shipped of ['lib/endpoints.js', 'lib/socket-protocol.js', 'bing-serp.js', 'tidy.js']) {
+      assert.ok(files.includes(shipped), `the tarball carries ${shipped}`);
     }
 
     // The shebang must survive packing; without it `npx opera-agent-mcp` dies on a machine that cannot guess the interpreter.

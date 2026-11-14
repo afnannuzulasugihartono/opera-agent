@@ -41,7 +41,6 @@ test('popup attribution claims background-tab popups for the acted-on tab', () =
 });
 
 import fs from 'node:fs';
-import { mcpSurfaceSourceSync } from '../helpers/mcp-surface-source.mjs';
 const read = (p) => fs.readFileSync(new URL(`../../${p}`, import.meta.url), 'utf8');
 
 test('command timeout carries outcome:"unknown" instead of a plain failure', async () => {
@@ -80,21 +79,13 @@ test('trustedFill evaluates post-action expectations', async () => {
   assert.match(fillBlock, /expect: options\.expect/, 'trusted fill must pass the expect spec');
 });
 
-test('MCP maps AWAIT_TIMEOUT to the unknown-outcome envelope', () => {
-  const src = mcpSurfaceSourceSync();
-  assert.match(src, /AWAIT_TIMEOUT/, 'await deadline signal must be recognized');
-  const branch = src.slice(src.indexOf('if (code === "AWAIT_TIMEOUT"'));
-  assert.ok(branch.length > 0, 'AWAIT_TIMEOUT branch must exist');
-  assert.match(branch, /AWAIT_OUTCOME_UNKNOWN/, 'AWAIT_TIMEOUT must map to the unknown-outcome envelope');
-  assert.match(branch, /outcome: "unknown"/, 'unknown outcome must be reported');
-});
-
-test('MCP instructions cover OAuth popups and openedTabs follow-through', () => {
-  const src = mcpSurfaceSourceSync();
-  const instructions = src.slice(src.indexOf('instructions: "'));
-  assert.match(instructions, /openedTabs/, 'guidance must name the openedTabs action result');
-  assert.match(instructions, /OAuth|SSO/, 'guidance must cover OAuth/login flows');
-  assert.match(instructions, /expect/, 'guidance must mention expect-based verification');
+test('the local burst guidance covers dependent steps across state, not fixed refs', () => {
+  const guide = fs.readFileSync(new URL('../../local/agent-guide.ts', import.meta.url), 'utf8');
+  const burstStart = guide.indexOf('browser_burst');
+  assert.ok(burstStart >= 0, 'the burst capability must be documented in the guide');
+  const slice = guide.slice(burstStart, burstStart + 600);
+  assert.match(guide, /refFromStep/, 'the guide must name refFromStep for cross-step handles');
+  assert.match(guide, /stops at the first failure|first failure/, 'the guide must name the stop-on-failure semantics');
 });
 
 test('U-R line ships as release 1.6.32', () => {

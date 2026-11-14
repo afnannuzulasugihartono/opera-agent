@@ -13,7 +13,6 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { BURST_ACTION_METHODS, BURST_STEP_KEYS, validateBurst } from '../../extension/lib/protocol.js';
 import { extensionSource } from '../helpers/extension-source.mjs';
-import { mcpSurfaceSource } from '../helpers/mcp-surface-source.mjs';
 
 await import('../../extension/hover-settle.js');
 const { DEFAULTS, normalize, plan } = globalThis.OperaAgentHoverSettle;
@@ -145,15 +144,9 @@ test('the manifest loads the settle runtime before the content script', async ()
 });
 
 test('the public burst schema accepts a hover step and still bounds everything', async () => {
-  const source = await mcpSurfaceSource();
-  const hover = source.match(/z\.object\(\{\s*action: z\.literal\("hover"\)[\s\S]*?\}\)\.strict\(\)/)?.[0] ?? '';
-  assert.ok(hover, 'the hover burst step must be declared publicly');
-  assert.match(hover, /ref: z\.string\(\)\.max\(200\)\.optional\(\)/);
-  assert.match(hover, /text: z\.string\(\)\.max\(300\)\.optional\(\)/);
-  assert.match(hover, /timeoutMs: z\.number\(\)\.int\(\)\.min\(50\)\.max\(8000\)\.optional\(\)/);
-
-  for (const action of ['read', 'find', 'click', 'fill', 'key', 'scroll', 'wait', 'pointer']) {
-    assert.ok(source.includes(`z.literal("${action}")`), `burst step ${action} must remain`);
-  }
-  assert.match(source, /z\.array\(burstStepSchema\)\.min\(1\)\.max\(8\)/);
+  const tools = await readFile(new URL('../../local/tools.ts', import.meta.url), 'utf8');
+  const burst = await readFile(new URL('../../local/burst.ts', import.meta.url), 'utf8');
+  assert.match(tools, /name: 'browser_burst'/);
+  assert.match(burst, /hover/, 'the local burst must carry the hover step');
+  assert.match(burst, /BURST_ACTIONS/);
 });

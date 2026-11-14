@@ -1,4 +1,4 @@
-// @last-edited: 2026-11-09 UTC+7.
+// @last-edited: 2026-11-14 UTC+7.
 // @title: agent-call-docs — the guide a reader is sent to must name the surfaces that exist and the tools that are registered.
 // @state: the call guide, the local README, the pilot runbook, and the tool list they must agree with.
 // @dependencies: node:test, strict, node:fs, node:url, local/tools.js.
@@ -16,11 +16,11 @@ import { TOOLS } from '../../local/tools.js';
 const read = (name) => fs.readFileSync(new URL(`../../${name}`, import.meta.url), 'utf8');
 const tools = TOOLS.map((entry) => entry.name);
 
-test('the call guide names every surface that exists', () => {
+test('the call guide names the one surface, and no dead one', () => {
   const guide = read('docs/agent-call.md');
   assert.ok(guide.includes('opera-agent-mcp'), 'the installed command is named');
   assert.match(guide, /opera-agent-mcp local/, 'the local mode is named');
-  assert.match(guide, /opera-agent-mcp cloud/, 'the cloud mode is named');
+  assert.doesNotMatch(guide, /opera-agent-mcp cloud/, 'the deleted cloud mode is not named');
   assert.match(guide, /extension/, 'the extension road is named');
 });
 
@@ -55,7 +55,7 @@ test('the guide says the bridge is the one road, with no transport flag left', (
 });
 
 // WHY THE DOCTOR IS THE GATE FOR A BROKEN INSTALL.
-// The everyday browser was the silently failing case: a refuse with no reason reads as a broken extension.
+// The everyday browser was the silently failing case: a refuse with no reason read as a broken extension.
 // The one command that answers what is connected, the plan, and the quota is the doctor.
 
 test('the guide names the doctor as the answer for a broken install', () => {
@@ -65,26 +65,15 @@ test('the guide names the doctor as the answer for a broken install', () => {
   assert.doesNotMatch(guide, /No browser is listening on port 9333/, 'the dead port refusal is gone');
 });
 
-// WHY THE HOSTED CLAIM IS DATED.
-// The record is one run against one server at one moment; the guide must say when it was taken, and the date must be the record's own.
-
-test('the hosted section is dated from the record and calls it a snapshot', () => {
-  const guide = read('docs/agent-call.md');
-  const record = JSON.parse(fs.readFileSync(new URL('../../docs/proof/hosted-mcp.json', import.meta.url), 'utf8'));
-  const day = String(record.checkedAt).slice(0, 10);
-  assert.ok(guide.includes(day), `the hosted claim carries the record's date ${day}`);
-  assert.match(guide, /snapshot/, 'the guide calls the record a snapshot');
-});
-
 // WHY THE CONFIG SHAPE IS LOCKED.
-// OpenCode's schema puts servers under mcp.servers and takes snake_case oauth fields; the old mcp.<name> + clientId shape is silently ignored.
+// OpenCode's schema puts servers under mcp.servers; the guide must give the shape the reader's harness actually reads.
 
 test('the guide gives the OpenCode config in the shape OpenCode reads', () => {
   const guide = read('docs/agent-call.md');
   assert.match(guide, /"mcp"\s*:\s*\{\s*"servers"/s, 'servers live under mcp.servers');
-  assert.match(guide, /"client_id"\s*:/, 'oauth uses the snake_case client_id field');
-  assert.doesNotMatch(guide, /"clientId"/, 'the camelCase field current OpenCode ignores is gone');
-  assert.ok(guide.includes('http://127.0.0.1:19876/mcp/oauth/callback'), 'the guide names the redirect the registered client accepts');
+  assert.match(guide, /"type"\s*:\s*"local"/, 'the server type is local, not remote');
+  assert.doesNotMatch(guide, /"type"\s*:\s*"remote"/, 'the deleted remote verb is gone');
+  assert.match(guide, /"args"\s*:\s*\[\s*"local"/, 'the local mode is what is passed');
 });
 
 // WHY THE PROOF CLAIM IS LOCKED.
@@ -96,18 +85,16 @@ test('the guide says what the proof test actually re-checks', () => {
   assert.ok(guide.includes('re-hashes'), 'the guide says the test re-hashes the fixture');
 });
 
-test('the guide teaches the whole-page read and the full-page capture', () => {
+test('the guide teaches the capture ladder and the settled flag', () => {
   const guide = read('docs/agent-call.md');
-  assert.match(guide, /view: "map"/, 'the map view of read_page is named');
-  assert.match(guide, /skeleton/, 'the first call is described as the skeleton');
-  assert.match(guide, /nextOffset/, 'the pull is described with its cursor');
-  assert.match(guide, /tileOffset/, 'the tile walk is described');
-  assert.match(guide, /document coordinates/, 'the rect is stated as document coordinates');
+  assert.match(guide, /settled/, 'the settled flag is named');
+  assert.match(guide, /allowCaretMove/, 'the consented borrow for canvas editors is named');
+  assert.match(guide, /grewBy/, 'the two-reads growth bound is named');
+  assert.match(guide, /surface_profile/, 'the measuring call is named');
 });
 
-test('the guide says where the worker faults are read', () => {
+test('the guide says how a device out of quota answers', () => {
   const guide = read('docs/agent-call.md');
-  assert.match(guide, /browser_status/, 'the tool that answers the faults is named');
-  assert.match(guide, /errorCount/, 'the running total is named');
-  assert.match(guide, /worker/, 'and the guide says whose faults they are');
+  assert.match(guide, /planExhaustedDevices/, 'the exhaustion marker is named');
+  assert.match(guide, /5000 and 500|one daily count/i, 'the shape of the meter is named');
 });
