@@ -13,8 +13,8 @@
 # WHY THE SHA, NOT A TAG: supabase/setup-cli is pinned to 689adcfb80d947100a1eab127289b97d1fb07b13 (v3.2.0); move it deliberately.
 
 # WHY THE DEPLOY STEP BUILDS A COMPATIBILITY LAYOUT.
-# The CLI bundles each function from <cwd>/supabase/functions/<name>/index.ts and resolves the shared core as <cwd>/shared since the restructure flattened it to the repository root, so the deploy could not open its entrypoint and exited 1 on a tree that was correct.
-# The compatibility layout is built in the runner, not committed to the repo: hosted/supabase/functions is a symlink to hosted/functions and hosted/shared is a symlink to the repository root's shared, both created and discarded inside the one step, so the repo stays one layout and the runner speaks the CLI's dialect.
+# The CLI bundles each function from <cwd>/supabase/functions/<name>/index.ts and resolves the shared core as <cwd>/shared, both flattened to the repository root since the restructure, so the deploy could not open its entrypoint or its shared imports and exited 1 on a tree that was correct.
+# The compatibility layout is assembled in the runner, not committed to the repo: hosted/supabase/functions gets a real copy of hosted/functions, and hosted/shared gets a real copy of the root shared, both created and discarded inside the one step, so the repo stays one layout and the runner speaks the CLI's dialect.
 
 name: Deploy functions
 
@@ -80,8 +80,7 @@ jobs:
         shell: bash
         run: |
           mkdir -p supabase
-          ln -sfn ../functions supabase/functions
-          ln -sfn ../../shared shared
+          rm -rf supabase/functions shared && cp -r functions supabase/functions && cp -r ../shared shared
           IFS=',' read -ra ARRAY <<< "$FUNCTIONS"
           for f in "${ARRAY[@]}"; do
             f="$(echo "$f" | xargs)"
