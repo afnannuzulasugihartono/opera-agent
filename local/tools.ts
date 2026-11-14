@@ -129,7 +129,8 @@ export const TOOLS = Object.freeze([
       type: 'object',
       properties: {
         query: stringArg('what to search for; handed to Bing verbatim as the query'),
-        pages: { type: 'integer', minimum: 1, maximum: 3, description: 'how many result pages to fetch, following Bing\'s own pagination links. Defaults to 1; at most 3.' }
+        pages: { type: 'integer', minimum: 1, maximum: 3, description: 'how many result pages to fetch, following Bing\'s own pagination links. Defaults to 1; at most 3.' },
+        timeoutMs: { type: 'number', description: 'budget for the results page to render in the background tab, default 10000, capped at 30000' }
       },
       required: ['query']
     }
