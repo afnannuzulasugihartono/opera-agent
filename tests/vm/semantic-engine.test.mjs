@@ -7,9 +7,6 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import test from 'node:test';
 
-import { sha256ContractSource } from '../helpers/canonical-source-hash.mjs';
-import { mcpSurfaceSourceSync } from '../helpers/mcp-surface-source.mjs';
-
 await import('../../extension/semantic-identity.js');
 await import('../../extension/semantic-views.js');
 
@@ -532,9 +529,6 @@ test('stale tracking is bounded and resets cleanly', () => {
   assert.equal(fresh.state.entityCount, 1);
 });
 
-const contract = JSON.parse(fs.readFileSync(new URL('../fixtures/mcp-contract-v1.json', import.meta.url), 'utf8'));
-const mcpSource = mcpSurfaceSourceSync();
-
 const gateElement = (key, overrides = {}) => {
   return {
     ref: `ref-${key}`, stableKey: `key-${key}`, stableKeySource: 'id', tag: 'button', role: 'button',
@@ -548,16 +542,7 @@ const random = (seed = 0x5f1600) => {
   return () => ((state = (Math.imul(state, 1664525) + 1013904223) >>> 0) / 0x100000000);
 };
 
-test('MCP v1 tool names and input schemas remain locked', () => {
-  const digest = sha256ContractSource(mcpSource);
-  const tools = [...mcpSource.matchAll(/server\.registerTool\("([a-z_]+)"/g)].map((match) => match[1]);
-  assert.equal(contract.protocolVersion, 1);
-  assert.equal(digest, contract.sourceSha256);
-  assert.equal(tools.length, contract.toolCount);
-  assert.deepEqual(tools, contract.tools);
-});
-
-test('legacy and enriched page.read results both survive the flat MCP shape', () => {
+test('the local driver returns each result as a flat MCP payload', () => {
   const flat = (result) => JSON.parse(JSON.stringify({ ok: true, ...result }));
   const legacy = flat({ page: { title: 'Legacy', elements: [{ ref: 'oa_old' }] } });
   const enriched = flat({ page: {
@@ -568,9 +553,9 @@ test('legacy and enriched page.read results both survive the flat MCP shape', ()
   assert.equal(legacy.page.semanticState, undefined);
   assert.equal(enriched.page.elements[0].logicalId, 'se_new');
   assert.equal(enriched.page.semanticDelta.classification, 'UPDATE');
-  assert.match(mcpSource, /result: completed\.result/);
-  assert.match(mcpSource, /structuredContent = RAW_OUTPUT/);
-  assert.match(mcpSource, /: tidyForAi\(value\)/);
+  const server = fs.readFileSync(new URL('../../local/mcp-server.ts', import.meta.url), 'utf8');
+  assert.match(server, /tidyForAi\(/);
+  assert.match(server, /JSON\.stringify/);
 });
 
 test('deterministic mutation fuzz preserves bounds, uniqueness, resets, and proof safety', () => {

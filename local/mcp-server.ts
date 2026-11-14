@@ -42,10 +42,10 @@ import { leaseTab, releaseTab } from './bridge.js';
 // The rejections that keep a model from wasting tokens on envelopes, transport keys and duplicated chain fields apply to the local stdio surface too - a rule that lives in one place stays consistent and changes for one reason.
 // The copy is written at pack time (scripts/pack/pack-mcp.mjs) because a path outside the package does not exist on the machine that runs the install: reading ../supabase at run time died with ENOENT for every installed user.
 
-import { tidyForAi } from './lib/tidy.js';
+import { tidyForAi } from './tidy.js';
 import { TOOLS, ASKABLE, askParams, STRAY_FILE_TAB } from './tools.js';
 import { SERP_EXPRESSION } from './page-expressions.js';
-import { parseBingSerp } from './lib/bing-serp.js';
+import { parseBingSerp } from './bing-serp.js';
 import { pairDevice, taskRefund, taskReserve, taskSettle, walletBalance, walletQuote, walletTopUp } from './wallet-client.js';
 
 // The tool table lives in tools.js: the surface is data, and this file is the protocol that answers it.
@@ -185,7 +185,7 @@ function diffElements(prev: AxRow[], curr: AxRow[]) {
 import { withAdvice } from './advice.js';
 import type { AdviceContext } from './advice.js';
 import type { Driver, JsonRecord } from './types.js';
-import type { SerpResult } from './lib/bing-serp.js';
+import type { SerpResult } from './bing-serp.js';
 
 
 const lastAuto = new WeakMap<object, AxRow[]>();

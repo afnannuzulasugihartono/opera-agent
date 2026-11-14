@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generated": "2026-11-12 UTC+7",
+  "generated": "2026-11-14T00:00:00+07:00",
   "source": "Two read-only sweeps, 2026-11-09 UTC: extension/|local/|shared/ (~200 files) and hosted/|landing/|scripts/|docs/store/|.github/",
   "why": "An implicit state machine is code whose behavior hangs on state nobody declared. It is the shape of every silent failure in this product: the 'connected but dead' bridge, the ghost listen session, the command that completes after its timeout, the plan that runs out mid-run. The register names each one, and the gate (tests/tooling/implicit-state-machines.test.mjs) refuses hidden state nobody can point at. The decision order is fixed: UX > DX > AX — a failure the user can feel is fixed before a convenience for either of us.",
   "machines": [
@@ -93,21 +93,6 @@
       "wrongIfConfused": "a revoked device renders as plain 'offline' — the user cannot tell rebooting from revoked, and re-pairing is the only cure, never said on the page; a disabled device can never pair again",
       "decision": "model",
       "why": "three death paths with one status column; revoke needs a visible state, not a rotated hash",
-      "rank": 1
-    },
-    {
-      "id": "hosted-provider-pin",
-      "kind": "edge",
-      "where": "hosted/functions/opera-agent-mcp/index.ts (resolveDeviceFresh) and tools.ts (switch_device)",
-      "states": [
-        "unpinned",
-        "pinned"
-      ],
-      "writers": "the switch_device tool (upsert and delete on opera_provider_pins); nothing else writes the table",
-      "readers": "resolveDeviceFresh on every POST and every websocket auth; pinnedDeviceNotLive on refusal; browser_status device object for pinSource",
-      "wrongIfConfused": "a pin naming a sleeping or deleted browser makes every call from that provider answer 503 pinned_device_not_live while the account's other browsers sit awake and healthy; the fix is one switch_device call or one X-Opera-Device header, and the refusal names both",
-      "decision": "model",
-      "why": "the pin is per (account, provider) and outranks the freshest-awake default; the header outranks the pin for the one call it rides on; one writer, one table, one precedence rule, and a refusal that names the exit - the machine exists so a multi-harness setup can bind providers to browsers deterministically without client config edits",
       "rank": 1
     },
     {
@@ -353,23 +338,6 @@
       "wrongIfConfused": "an attached session whose tab closed never reaps → the 'started debugging this browser' bar stays pinned on a tab that is gone; DevTools-open silently invalidates attach and every later call pays a detach/attach churn",
       "decision": "model",
       "why": "the flag, the registry and the alarm-reap are one lifecycle with three clocks; one declared model with one release path — UX of the always-on bar wins",
-      "rank": 2
-    },
-    {
-      "id": "hosted-tab-ownership-rank",
-      "kind": "edge",
-      "where": "hosted/functions/opera-agent-mcp/device.ts:66",
-      "states": [
-        "pin-live",
-        "pin-asleep-refused",
-        "pin-unknown-refused",
-        "no-pin-freshest"
-      ],
-      "writers": "resolveDevice - the pin decides while that browser is live; a sleeping pin is refused by name and never replaced by another browser, and X-Opera-Device: any is the caller's own request for the freshest browser",
-      "readers": "every page tool: open_url, read_page, find_elements, fill_element, click_element, capture_page, activate_tab, navigate_tab",
-      "wrongIfConfused": "find_elements succeeded for a tab, fill_element one call later returned \"No tab with id\" because routing picked the other browser on the same everyday profile; the tab id is device-local and the call doesn't carry the device that minted it",
-      "decision": "model",
-      "why": "the relay answered one call against whichever browser was freshest at that millisecond; tab ids are minted on one browser, so the call before fill succeeded and the call after fail were routed to different everyday browsers wearing identical profiles - the user saw a healthy tool that died for no reason and could only retry; now the pin answers every call while it is live, a sleeping pin is a named 503 that names the awake browsers and the header that reaches one, and the fallback is only reachable when the caller asks for it",
       "rank": 2
     },
     {

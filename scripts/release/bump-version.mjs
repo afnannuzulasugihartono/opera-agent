@@ -15,7 +15,6 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { sha256ContractSource } from '../../tests/helpers/canonical-source-hash.mjs';
 import { buildEnumeration, applyEntries, buildWhyBlock, buildChangelogRow, buildReleaseNote } from './bump-version-lib.mjs';
 
 const GIT_CANDIDATES = process.platform === 'win32'
@@ -70,8 +69,8 @@ if (!arg || !/^\d+\.\d+\.\d+$/.test(arg)) fail('pass one version, e.g. node scri
   }
 
   const lockFile = path.join(repo, 'tests/helpers/boundary-locks.mjs');
-  const rePinned = ['extension/manifest.json', 'hosted/functions/opera-agent-mcp/index.ts', 'hosted/functions/opera-agent-mcp/tools.ts']
-    .map((file) => [file.replace(/^extension\//, '../extension/').replace(/^hosted\//, '../hosted/'), sha256BlobText(contentOf(file))]);
+  const rePinned = ['extension/manifest.json']
+    .map((file) => [file.replace(/^extension\//, '../extension/'), sha256BlobText(contentOf(file))]);
   const boundarySource = fs.readFileSync(lockFile, 'utf8');
   let boundaryNext = boundarySource;
   for (const [relativePath, sha] of rePinned) {
@@ -82,14 +81,6 @@ if (!arg || !/^\d+\.\d+\.\d+$/.test(arg)) fail('pass one version, e.g. node scri
   boundaryNext = boundaryNext.replace('export const PUBLIC_SURFACE_LOCKS', `${buildWhyBlock(today, newVersion)}export const PUBLIC_SURFACE_LOCKS`);
   if (boundaryNext === boundarySource) fail('tests/helpers/boundary-locks.mjs: re-pin produced no change; refusing to continue');
   writes.set('tests/helpers/boundary-locks.mjs', boundaryNext);
-
-  const contractPath = path.join(repo, 'tests/fixtures/mcp-contract-v1.json');
-  const contract = JSON.parse(fs.readFileSync(contractPath, 'utf8'));
-  const sourceForHash = contentOf('hosted/functions/opera-agent-mcp/index.ts') + '\n' + contentOf('hosted/functions/opera-agent-mcp/tools.ts');
-  const contractNext = { ...contract, sourceSha256: sha256ContractSource(sourceForHash) };
-  if (contractNext.sourceSha256 !== contract.sourceSha256) {
-    writes.set('tests/fixtures/mcp-contract-v1.json', `${JSON.stringify(contractNext, null, 2)}\n`);
-  }
 
   const changelogPath = path.join(repo, 'CHANGELOG.md');
   const changelog = fs.readFileSync(changelogPath, 'utf8');

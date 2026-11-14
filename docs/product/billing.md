@@ -81,11 +81,7 @@ priced lines (the price list)  ->  an invoice (one per customer per month)
 - `landing/_worker.js` — the site's path to the page: a proxy for `/invoice` that keeps
   the page's headers, labels the HTML as HTML, and rewrites the refresh redirect back to
   `/invoice`; every other path goes to the static site unchanged.
-- `hosted/functions/opera-agent-mcp/tools.ts` — the `invoice_create` tool, so the
-  agent that delivered the statements can hand the operator the bill for them. It is
-  the one door for both kinds of bill: pass the deliveries for a per-delivery invoice,
-  or pass the same deliveries with `plan` (`plan.pilot` or `plan.firm`) for a plan
-  month. There is no second path for an operator to learn.
+- the invoice door that rode the hosted MCP function — its one tool, `invoice_create`, taking the manifest rows for a per-delivery invoice or a `plan` (`plan.pilot` or `plan.firm`) for a plan month — is not in the tree (2026-11-14): the remote MCP surface was deleted, and the door closed with it until a replacement is built
 - `tests/billing/billing.test.mjs` — the money rules, proved (47 tests).
 - `tests/billing/invoice-page.test.mjs` — every page state, escaped and read (11 tests).
 - `tests/billing/invoice-worker.test.mjs` — the page proxy, its relabel, its redirect, its asset
@@ -339,7 +335,7 @@ $0.50 fixed fee alone is larger than the whole invoice.
 | Value | What it is | Without it |
 |---|---|---|
 | `BILLING_SECRET` | the key that signs invoice links | no invoice can be opened; the function refuses |
-| `OPERA_BILLING_TOKEN` | the operator's token for opening invoices and recording a transfer | the `invoice_create` tool and `settle-manual` refuse |
+| `OPERA_BILLING_TOKEN` | the operator's token for opening invoices and recording a transfer | `settle-manual` refuses (the invoice door that read it, the hosted MCP `invoice_create`, is deleted) |
 | `MIDTRANS_SERVER_KEY` | the payment provider's server key | invoices are created and served, but the pay button is replaced by a transfer instruction, and no notification is believed |
 | `MIDTRANS_ENVIRONMENT` | `sandbox` or `production`: which host the charge and the status question go to | the function assumes `production`, and a sandbox key is refused by that host |
 | `BILLING_BANK` | the account line printed on an unpaid invoice | the invoice says to transfer but does not name the account |
@@ -369,12 +365,10 @@ it carries, never by a field name the provider might not send.
 
 ## How a plan invoice is made
 
-`invoice_create` takes a `plan` with the delivered rows, and it is the same door the
-per-delivery invoice goes through. It prices one plan line and adds an overage line
-only for the rows above the cap; a plan with no delivered row is refused. The value is
+A plan month is priced the way a plan line was priced when the hosted MCP existed: the `plan` value (`plan.pilot` or `plan.firm`) picks the price list row; the operator's delivered rows add an overage line only for the rows above the cap, and a plan with no delivered row is refused. The value is
 the price-list kind (`plan.pilot` or `plan.firm`), so a plan nobody priced is refused
-rather than billed as zero. The command is in
-[`first-three-bookkeepers.md`](first-three-bookkeepers.md#8-perintah-operator).
+rather than billed as zero. The plan ledger content is in
+[`first-three-bookkeepers.md`](first-three-bookkeepers.md#8-perintah-operator); the MCP door that opened the invoice is deleted, so this prose describes the billing surface, not a live tool.
 
 ## What is not decided
 

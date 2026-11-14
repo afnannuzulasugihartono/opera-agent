@@ -1,6 +1,6 @@
 # @last-edited: 2026-11-14 UTC+7.
 # @title: mcp latency — the measured cost of the Opera Agent MCP tools, and where the floor really sits.
-# @state: the numbers as measured on 2026-11-14 for the current release on the remote MCP path, the transport floor from docs/api.md, and the two tools that could not be measured.
+# @state: the numbers as measured on 2026-11-14 for the current release on the remote MCP path, the transport floor from docs/api.md, and the two tools that could not be measured. That road is historical: the hosted MCP surface was deleted from the tree on 2026-11-14, the live road is `opera-agent-mcp local`, and every table below holds for the deleted remote surface.
 # @dependencies: none.
 
 # The benchmark
@@ -8,7 +8,7 @@
 Measured 2026-11-14 on the everyday browser, release commit 410658b0: Opera on LAPTOP-6OU03OTB, paired device `opera-9` (plan.firm), driven through the **remote MCP path** that this machine's OpenCode actually uses:
 
 ```
-https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp
+the deleted hosted MCP surface (see git history for `opera-agent-mcp` in `gates.lock` and the function source)
 ```
 
 One call per tool, wall-clock around the call, on a fresh test tab (`example.com`, then `https://httpbin.org/forms/post`) that was created for this run and closed afterwards. Not a controlled lab: latencies include the network, the edge, the change channel and the page's own settle waits. Each number is one sample, indicative not rigorous — reruns move by hundreds of milliseconds.
@@ -85,7 +85,7 @@ Two further notes the record should keep:
 
 ## After the direct-DB warm (2026-11-14, same path, deploy landed in production)
 
-The hosted road carried every RPC on PostgREST, ~603 ms against ~162 ms for the same work; the HTTP handler never warmed the direct socket the WebSocket road had used since October. One line in `hosted/functions/opera-agent-mcp/index.ts` (after the token verified; the warming request rides PostgREST as before, every later request in the isolate rides the socket) closed that gap. The deploy exposed and fixed three stale steps in `.github/workflows/deploy-functions.yml` that the restructure had broken (the CLI's entrypoint layout, then the shared-core resolution, then symlinks the bundler would not follow), each as its own reviewed PR: `abdc5826` (the fix), `a76cbc76`, `5abf01c9`, `061b2d9c` (the workflow repairs). Deploy run `43551554056` landed green; the MCP health answers 200.
+The hosted road carried every RPC on PostgREST, ~603 ms against ~162 ms for the same work; the HTTP handler never warmed the direct socket the WebSocket road had used since October. One line in the hosted MCP function (after the token verified; the warming request rides PostgREST as before, every later request in the isolate rides the socket) closed that gap. The deploy exposed and fixed three stale steps in `.github/workflows/deploy-functions.yml` that the restructure had broken (the CLI's entrypoint layout, then the shared-core resolution, then symlinks the bundler would not follow), each as its own reviewed PR: `abdc5826` (the fix), `a76cbc76`, `5abf01c9`, `061b2d9c` (the workflow repairs). Deploy run `43551554056` landed green; the MCP health answers 200.
 
 Warm-call re-measurement, same machine, same path, multiple samples each (the first call after the redeploy was cold — 8.6 s and 11.2 s — and is excluded):
 

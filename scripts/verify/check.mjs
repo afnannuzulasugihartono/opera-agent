@@ -109,13 +109,6 @@ const runner = fs.readFileSync(path.join(root, 'hosted/functions/opera-agent-run
 for (const marker of ['opera_await', 'normalizeAwaitTiming', 'SAFE_RETRY_DELAY_MS', 'transientFailure', 'MAX_PARALLEL_ITEMS', 'createWorkflowMetrics', 'recordCommandMetrics', 'intentionalWaitMs']) assert.ok(runner.includes(marker), marker);
 assert.doesNotMatch(runner, /\.from\("opera_commands"\)/);
 assert.doesNotMatch(runner, /COMMAND_POLL_(?:MIN|MAX)_MS/);
-const mcp = fs.readFileSync(path.join(root, 'hosted/functions/opera-agent-mcp/index.ts'), 'utf8');
-
-const mcpVersion = /const SERVER_VERSION = "([0-9]+\.[0-9]+\.[0-9]+)"/.exec(mcp);
-assert.ok(mcpVersion, 'the MCP server must declare a three-part version it can be compared on');
-assert.equal(mcpVersion[1], manifest.version, 'the version the MCP server reports must be the released one');
-assert.match(mcp, /\{ name: "opera-agent", version: SERVER_VERSION \}/, 'the declared version must be the one handed to the MCP server');
-
 const secretLiteral = /const SECRET_VALUE = \/\(\?:-----BEGIN/;
 for (const file of files) {
   if (file.replace(/\\/g, '/') === 'shared/secret-pattern.ts') continue;
@@ -131,9 +124,6 @@ for (const field of ['permissions', 'host_permissions', 'content_scripts', 'back
   'options_page', 'externally_connectable', 'content_security_policy']) {
   assert.deepEqual(storeManifest[field], manifest[field], `docs/store/store-manifest.json ${field} drifted from extension/manifest.json`);
 }
-assert.match(mcp, /method === "page\.capture" \? "opera_await_capture" : "opera_await_adaptive"/);
-
-assert.doesNotMatch(mcp, /: "opera_await"/);
 const efficiency = fs.readFileSync(path.join(root, 'hosted/migrations/20260908233759_opera_agent_efficiency_workflows.sql'), 'utf8');
 for (const marker of ['research.read_current_full', 'research.read_url_full', 'youtube.get_transcript', '"limit":12000', '"maxElements":1']) assert.ok(efficiency.includes(marker), marker);
 const parallel = fs.readFileSync(path.join(root, 'hosted/migrations/20260908233810_opera_agent_parallel_crawl_workflow.sql'), 'utf8');

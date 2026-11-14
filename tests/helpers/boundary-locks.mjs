@@ -98,11 +98,11 @@
 // WHY these two were re-pinned on 2026-11-13: the surface gained search_bing, and it gained it as a workflow over the primitives, not as a new one.
 // The relay opens one background tab on the Bing SERP, reads up to three result pages with page.dump following Bing's own pagination links, zips the external anchors into rank, title, url, site and the snippet each card renders, dedupes across pages and closes the tab.
 // The extension gained nothing: tabs.open, tabs.navigate, page.dump and tabs.close are the whole road, so the 36-method protocol and its pins above did not move.
-// The local stdio road carries the same tool over its own tab broker, reading the one parser (shared/bing-serp.js), generated into the package by scripts/pack/pack-mcp.mjs and never committed.
+// The local stdio road carries the same tool over its own tab broker, reading the one parser (local/bing-serp.js), shipped as source in the package since the parser moved into local/.
 // The evaluator that walks the SERP lives in local/page-expressions.js; the tools.ts schema and the tools.ts registration moved with it.
 
-// WHY these two were re-pinned on 2026-11-13: the edge-runtime _shared modules changed extension, and the two MCP consumers name them straight from disk — the imports read `../_shared/seal-vm-program.js` becoming `../_shared/seal-vm-program.ts`, and friends.
-// No tool, no schema, no behaviour moved; only the module specifier points at the new extension, and the comment-stripped digest in tests/fixtures/mcp-contract-v1.json moved the same way.
+// WHY these two were re-pinned on 2026-11-14: the hosted MCP function is gone from the tree.
+// The local driver carries the surface byte-for-byte on its own road (55 tools), and the extension's pin stayed untouched with it.
 // Extension files and the manifest did not move.
 
 // WHY these five moved again: the extension went to TypeScript, and the bytes moved with it.
@@ -130,14 +130,13 @@
 // WHY these three were re-pinned on 2026-11-14: the 1.6.51 release rode them.
 // The version constants moved (manifest.json version, index.ts SERVER_VERSION); nothing about the public contract moved with them.
 
-// WHY index.ts was re-pinned on 2026-11-14: the HTTP road warms its direct database after auth, one line in the handler, the pattern the socket road already proved; no tool, schema or dispatch moved.
+// The hosted MCP server is gone from the tree: the opencode entrypoint moved to the local driver, and the driver carries the paywall through the paired device + the bridge's session open/report pair.
+// The extension's own pins stay; the tool surface verification is the local TOOLS table, which the local-side gates read, not a frozen digest of a file that no longer exists.
 
 export const PUBLIC_SURFACE_LOCKS = Object.freeze([
   ['../extension/content.ts', '02365ade2ed83b234e7056ff51c3b7b41b1cacf66c74fdad41e1009b8f464fa5'],
   ['../extension/background.ts', '8d700859a184591d6377c7f87aa582fe2404eb48e7e86f9c972b44a44771d5f5'],
   ['../extension/manifest.json', 'f1644ef85f8a0eeb4fd7e8a13d4d48719fc800664a8860126f005cf2b5109ba0'],
-  ['../hosted/functions/opera-agent-mcp/index.ts', 'ce21b3654fb1cac518610510d4cb553534f6686863cb303d2943d2177123a9bb'],
-  ['../hosted/functions/opera-agent-mcp/tools.ts', '3127cffe8cee8c6a1bf9c9e9c5950072d9535967e9732f0275871a4775c77353'],
 ]);
 
 export const OBSERVATION_STACK_LOCKS = Object.freeze([

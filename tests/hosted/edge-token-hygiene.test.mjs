@@ -9,7 +9,6 @@ import { readFile } from 'node:fs/promises';
 
 const FUNCTIONS = [
   'opera-agent-gateway',
-  'opera-agent-mcp',
   'opera-agent-bridge',
   'opera-agent-runner',
 ];
@@ -85,7 +84,7 @@ for (const name of FUNCTIONS) {
   });
 }
 
-for (const name of ['opera-agent-gateway', 'opera-agent-mcp']) {
+for (const name of ['opera-agent-gateway']) {
   test(`${name}: 401/405 bodies contain no Bearer echo`, async () => {
     const source = await functionSource(name);
     const bodies = errorBodies(source, [401, 405]);

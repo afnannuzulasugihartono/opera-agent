@@ -110,8 +110,7 @@ $env:OPERA_BILLING_TOKEN = "..."   # token operator, bukan password bank
 
 Buat invoice pilot. Edge function menghitung nominal dari price list; plan tanpa delivery ditolak.
 Nilai `plan` adalah kind di price list (`plan.pilot` atau `plan.firm`), bukan kata "pilot".
-Agen yang sudah mengantar statement memakai pintu yang sama: tool `invoice_create` dengan
-`plan` dan daftar delivery yang sama.
+Pintu MCP `invoice_create` yang dulu menjalankan langkah ini bersama delivery yang sama **sudah dihapus bersama hosted MCP-nya** — yang tersisa adalah panggilan HTTP ke billing surface di bawah; agen yang mengantar statement tidak lagi membuat invoice sendiri.
 
 ```powershell
 $body = @{

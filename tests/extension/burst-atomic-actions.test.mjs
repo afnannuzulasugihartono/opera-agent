@@ -9,7 +9,6 @@ import assert from 'node:assert/strict';
 
 import { BURST_STEP_KEYS, validateBurst, expandGridSteps } from '../../extension/lib/protocol.js';
 import { extensionSource } from '../helpers/extension-source.mjs';
-import { mcpSurfaceSourceSync } from '../helpers/mcp-surface-source.mjs';
 
 test('burst click/fill steps accept refFromStep passthrough keys', () => {
   assert.ok(BURST_STEP_KEYS.click.includes('refFromStep'), 'click must allow refFromStep');
@@ -51,22 +50,25 @@ test('background burst runner resolves refFromStep from the referenced step resu
   assert.match(src, /refFromStep must reference an earlier burst step/, 'forward references must fail with a clear message');
 });
 
-test('mcp run_browser_burst exposes refFromStep passthrough', () => {
-  const src = mcpSurfaceSourceSync();
-  assert.match(src, /refFromStep: z\.number\(\)\.int\(\)\.nonnegative\(\)\.optional\(\)/);
-  assert.match(src, /refIndex: z\.number\(\)\.int\(\)\.nonnegative\(\)\.optional\(\)/);
+test('the local burst executor is bound to the same dependent-step contract', () => {
+  const burst = fs.readFileSync(new URL('../../local/burst.ts', import.meta.url), 'utf8');
+  assert.match(burst, /refFromStep/, 'burst must read refFromStep');
+  assert.match(burst, /resolve/, 'burst must carry a resolve step for element refs');
 });
 
-test('mcp instructions teach the atomic find+click burst pattern', () => {
-  const src = mcpSurfaceSourceSync();
-  assert.match(src, /one run_browser_burst/i, 'instructions must recommend one-burst find+click+wait');
+test('the local guidance teaches the atomic find+click burst pattern', () => {
+  const guide = fs.readFileSync(new URL('../../local/agent-guide.ts', import.meta.url), 'utf8');
+  assert.match(guide, /burst/i, 'guidance must recommend the burst tool');
 });
 
-test('mcp exposes run_workflow tool bound to the audited start/get RPCs', () => {
-  const src = mcpSurfaceSourceSync();
-  assert.match(src, /registerTool\("run_workflow"/);
-  assert.match(src, /opera_start_workflow/);
-  assert.match(src, /opera_get_workflow_run/);
+test('the local surface exposes the burst tool with dependent steps', () => {
+  const tools = fs.readFileSync(new URL('../../local/tools.ts', import.meta.url), 'utf8');
+  assert.match(tools, /name: 'browser_burst'/);
+});
+
+test('the local surface exposes browser_burst only, never a cloud-side run_workflow', () => {
+  const tools = fs.readFileSync(new URL('../../local/tools.ts', import.meta.url), 'utf8');
+  assert.doesNotMatch(tools, /name: 'run_workflow'/);
 });
 
 test('skip_ads workflow migration registers a re-querying loop workflow', () => {

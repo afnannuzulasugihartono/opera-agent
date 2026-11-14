@@ -1,12 +1,12 @@
-// @last-edited: 2026-11-13 UTC+7.
-// @title: pack-mcp - writes the shared modules into the package, so a published install carries them.
+// @last-edited: 2026-11-14 UTC+7.
+// @title: pack-mcp - writes the extension protocol pair into the package, so a published install carries them.
 // @state: the generated copies under local/lib, and the package's prepack step that refreshes them.
 // @dependencies: node:fs, node:path, node:module.
 
 // WHY THE COPIES ARE GENERATED AND NOT HAND-WRITTEN.
 // The package has to carry every module it imports, and a hand-written second copy would drift from the first.
-// So each shared module stays in one file in this tree - extension/lib/ for the protocol pair, shared/ for the pure core - the copy is written here, and .gitignore keeps local/lib/ out of the repository.
-// One rule, one generator, one mode: byte copies, never a hand-edit, never a transform.
+// So the protocol pair stays in one file in this tree — extension/lib/ — the copy is written here, and .gitignore keeps local/lib/ out of the repository.
+// The former vendored core (bing-serp, tidy) moved into local/ as source; nothing else comes from shared/.
 
 import fs from 'node:fs';
 import path from 'node:path';
@@ -17,7 +17,6 @@ const target = path.join(repo, 'local', 'lib');
 
 const FILES = [
   { from: path.join('extension', 'lib'), names: ['socket-protocol.js', 'endpoints.js'] },
-  { from: path.join('shared'), names: ['bing-serp.js', 'tidy.js'] },
 ];
 
 fs.mkdirSync(target, { recursive: true });
@@ -30,4 +29,4 @@ for (const { from, names } of FILES) {
   }
 }
 
-process.stderr.write(`pack-mcp: wrote ${written} shared modules into local/lib\n`);
+process.stderr.write(`pack-mcp: wrote ${written} modules into local/lib\n`);

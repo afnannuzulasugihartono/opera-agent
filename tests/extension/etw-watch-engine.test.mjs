@@ -7,7 +7,6 @@ import fs from 'node:fs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { extensionSource } from '../helpers/extension-source.mjs';
-import { mcpSurfaceSourceSync } from '../helpers/mcp-surface-source.mjs';
 
 const read = (p) => fs.readFileSync(new URL(`../../${p}`, import.meta.url), 'utf8');
 const { validateRule, evaluateRules, TRIGGER_KINDS } = await import('../../extension/lib/watch.js');
@@ -150,26 +149,13 @@ test('gateway is one-hop universal ingress with GPT-Actions-compatible auth', ()
   assert.match(src, /p_request_id/, 'idempotency key passthrough');
 });
 
-test('MCP gains start_watch/wait_events/stop_watch wired to the device path', () => {
-  const src = mcpSurfaceSourceSync();
-  assert.match(src, /start_watch/);
-  assert.match(src, /wait_events/);
-  assert.match(src, /stop_watch/);
-});
-
-test('MCP start_watch schema preserves adSelectors for adState rules', () => {
-
-  const src = mcpSurfaceSourceSync();
-  assert.match(src, /adSelectors:\s*z\.array\(z\.string\(\)\.min\(1\)\.max\(500\)\)\.max\(8\)\.optional\(\)/, 'trigger schema must carry adSelectors');
-});
-
-test('migration seeds watch methods into the opera_methods enqueue allowlist', () => {
+test('the migration seeds watch methods into the opera_methods enqueue allowlist', () => {
 
   const src = read('hosted/migrations/20260923010000_opera_agent_watch_methods.sql');
   assert.match(src, /insert into public\.opera_methods/i);
   for (const method of ['watch.start', 'watch.stop', 'watch.stop_all']) {
     assert.match(src, new RegExp(`'${method.replace('.', '\\.')}'`), `${method} must be seeded`);
   }
-  assert.match(src, /true/, 'watch methods must be enabled so the MCP start/stop path can enqueue them');
-  assert.doesNotMatch(src, /'watch\.list'/, 'watch.list stays extension-internal (no MCP tool needs it)');
+  assert.match(src, /true/, 'watch methods must be enabled so the bridge start/stop path can enqueue them');
+  assert.doesNotMatch(src, /'watch\.list'/, 'watch.list stays extension-internal (no tool needs it)');
 });

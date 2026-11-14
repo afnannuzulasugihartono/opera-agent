@@ -10,7 +10,6 @@
 import fs from 'node:fs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mcpSurfaceSourceSync } from '../helpers/mcp-surface-source.mjs';
 
 
 const migrationUrl = new URL(
@@ -19,7 +18,7 @@ const migrationUrl = new URL(
 );
 const migrationExists = fs.existsSync(migrationUrl);
 const migration = migrationExists ? fs.readFileSync(migrationUrl, 'utf8') : '';
-const mcpSource = mcpSurfaceSourceSync();
+const localSource = fs.readFileSync(new URL('../../local/tools.ts', import.meta.url), 'utf8');
 
 test('adds a versioned internal media.sample_at workflow with local seek semantics', () => {
   assert.equal(
@@ -42,13 +41,9 @@ test('media sampling does not seek by navigation or reload', () => {
   assert.doesNotMatch(migration, /(?:[?&#](?:t|start)=|time_continue)/i);
 });
 
-test('advertised media capabilities are invocable tools (decision superseded by measurement)', () => {
+test('media tools stay off the local driver; the migration path remains for the hosted road only', () => {
 
-  const registered = [
-    ...mcpSource.matchAll(/server\.registerTool\("([a-z_]+)"/g)
-  ].map((match) => match[1]);
-  assert.equal(registered.length, 42);
   for (const name of ['media_state', 'media_play', 'media_pause', 'media_seek']) {
-    assert.ok(registered.includes(name), `${name} is exposed`);
+    assert.doesNotMatch(localSource, new RegExp(`name: '${name}'`), `'${name}' is not on the local surface`);
   }
 });

@@ -6,7 +6,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { mcpSurfaceSourceSync } from '../helpers/mcp-surface-source.mjs';
 
 const root = new URL('../../', import.meta.url);
 const read = (name) => fs.readFileSync(new URL(name, root), 'utf8');
@@ -31,8 +30,8 @@ test('the docs page carries six sections and one map', () => {
 
 test('the docs page states the counts the code proves', () => {
   const html = read('landing/docs.html');
-  const mcp = mcpSurfaceSourceSync();
-  const tools = (mcp.match(/registerTool\("/g) || []).length;
+  const toolsSource = read('local/tools.ts');
+  const tools = (toolsSource.match(/\bname: '[a-z_]+'/g) || []).length;
   assert.match(html, new RegExp(`\\b${tools} tool`), `the page states ${tools} tools`);
 
   const protocol = read('extension/lib/protocol.ts');

@@ -27,7 +27,6 @@ const SANCTIONED = new Map([
   ['local/transport.ts', { count: 1, reason: 'globalThis.WebSocket is only typed for the browser surface; the cast names the shape the CDP transport actually uses.' }],
   ['local/window-focus.ts', { count: 2, reason: 'child.stdout and child.stdin are typed as streams without .unref(); the two casts name the shape node gives these pipes on the platform.' }],
   ['hosted/functions/opera-agent-bridge/index.ts', { count: 1, reason: 'pg.unsafe returns Promise<any> at the boundary where the query shape is a constant; the cast names the Promise<unknown[]> the handler consumes.' }],
-  ['hosted/functions/opera-agent-mcp/index.ts', { count: 2, reason: 'pg.unsafe returns Promise<any> at the boundary where the query shape is a constant, and registerTool is shadowed to have the same signature as the original; the casts name both shapes.' }],
   ['hosted/functions/opera-agent-update/index.ts', { count: 1, reason: 'crypto.subtle.digest accepts BufferSource; the cast restores the ArrayBuffer the byte array already holds.' }],
 ]);
 

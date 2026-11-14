@@ -5,9 +5,9 @@
 
 // WHY THIS FILE EXISTS
 
-// The MCP edge function is stateless: every POST builds a fresh server and transport, then blocks in opera_await_adaptive until a command finishes.
+// A command is one opaque wait for the model.
 // The device is the only thing that knows what happened in between, and it had no way to say so.
-// A burst of eight steps, or a workflow running for twenty seconds, was one opaque wait for the model.
+// A burst of eight steps, or a workflow running for twenty seconds, needed that channel to speak before finishing.
 
 // The watch-event channel already solved this exact shape — a cursor long-poll that returns the moment rows appear (opera_watch_events_wait, 5ms sleep).
 // This file locks the same discipline applied to command execution, where the rows carry the consequence of typing into somebody's document.
@@ -22,7 +22,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { mcpSurfaceSourceSync } from '../helpers/mcp-surface-source.mjs';
 
 const root = new URL('../../', import.meta.url);
 const read = (p) => fs.readFileSync(new URL(p, root), 'utf8');
@@ -115,8 +114,8 @@ test('events are swept, because nothing else prunes this table', () => {
     'no retention sweep; the table grows by one row per action forever');
 });
 
-test('the MCP transport can actually carry a stream, so the channel is not dead code', () => {
-  const mcp = mcpSurfaceSourceSync();
-  assert.ok(/enableJsonResponse:\s*false/.test(mcp),
-    'enableJsonResponse:true answers with one JSON body at the end, so progress can never reach the model');
+test('the bridge carries the command-event ingress, so the channel is not dead code', () => {
+  const bridge = read('hosted/functions/opera-agent-bridge/index.ts');
+  assert.match(bridge, /commandEvent/);
+  assert.match(bridge, /opera_emit_command_event/);
 });

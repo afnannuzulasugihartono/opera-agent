@@ -156,12 +156,12 @@
 #    tests/helpers/canonical-source-hash.mjs strips the comment lines and collapses
 #    the whitespace before hashing a tool schema, so the pin holds the tool's
 #    contract and not its indentation.
-scripts/verify/check.mjs d0b289601cb88eba03802754e7f60ba41a127b98
+scripts/verify/check.mjs 737902e4b914d042d2dfca612ca7dd119b06f574
 scripts/verify/scope.mjs f5895703e958e67c79a1f2f4392b037a84c26220
 scripts/verify/scope-check.mjs 2a4ba5563b68a9979c40165363235f72cac0d4df
 
 # --- the pins themselves: editing these is how a drift goes unnoticed ---
-tests/helpers/boundary-locks.mjs d595c0e41eb38248e826dd2dfb69fd00371dc78f
+tests/helpers/boundary-locks.mjs 13f5a08f25633550fa4a02bf37e80de6ccb4255f
 tests/helpers/canonical-source-hash.mjs a4ebaa0d40122afce47a52cba39309d7dfdb1af1
 tests/helpers/comment-format.mjs bced9e4c9b7a58b56e3317067d5e6717dd2040bf
 tests/docs/comment-format.test.mjs f8e65a5d6d50cd5ea609c5ba1646d2cb8bcc487f
@@ -170,7 +170,7 @@ tests/docs/comment-claims.test.mjs 27e1d1218b036ef7dd028b33cb63236ae325c442
 # --- structural rules a human reviewer would otherwise have to remember ---
 tests/tooling/hygiene.test.mjs da2fc709635d0f8bc3c95320a26745a314f0b739
 tests/tooling/structure-gates.test.mjs 9c95d75ddd7e76c8952a75ff2098dce4059bbb32
-tests/tooling/boundary-locks.test.mjs 7d33c80db5c4a07f659387fbae6fcf172d758757
+tests/tooling/boundary-locks.test.mjs 948f2c0637576bba79f11e526b99cd0b0cf2f644
 
 # --- controls that decide what the product accepts at runtime ---
 extension/lib/protocol.ts 2ccd6e2e9272beafffdbf6e7ce25cd442cda8a90

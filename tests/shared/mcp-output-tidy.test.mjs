@@ -9,7 +9,7 @@ import { readFileSync } from 'node:fs';
 import { stripTypeScriptTypes } from 'node:module';
 
 const source = stripTypeScriptTypes(readFileSync(
-  new URL('../../shared/tidy.ts', import.meta.url), 'utf8'
+  new URL('../../local/tidy.ts', import.meta.url), 'utf8'
 ));
 
 const { tidyForAi } = await import(
@@ -136,13 +136,11 @@ test('a payload with no ok flag gets one', () => {
   assert.deepEqual(tidyForAi({ id: 'lesson-1' }), { ok: true, id: 'lesson-1' });
 });
 
-test('the server tidies every answer and keeps the raw envelope one flag away', () => {
-  const index = readFileSync(
-    new URL('../../hosted/functions/opera-agent-mcp/index.ts', import.meta.url), 'utf8'
+test('the local driver tidies every answer', () => {
+  const server = readFileSync(
+    new URL('../../local/mcp-server.ts', import.meta.url), 'utf8'
   );
 
-  assert.match(index, /import \{ tidyForAi \} from "\.\.\/\.\.\/\.\.\/shared\/tidy\.js";/);
-  assert.match(index, /OPERA_AGENT_MCP_RAW/);
-  assert.match(index, /tidyForAi\(value\)/);
-  assert.match(index, /tidyForAi\(shaped\)/);
+  assert.match(server, /import \{ tidyForAi \} from '\.\/tidy\.js'/);
+  assert.match(server, /tidyForAi\(/);
 });

@@ -11,7 +11,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { mcpSurfaceSourceSync } from '../helpers/mcp-surface-source.mjs';
 
 const root = new URL('../../', import.meta.url);
 const read = (name) => fs.readFileSync(new URL(`landing/${name}`, root), 'utf8');
@@ -96,7 +95,7 @@ test('the canvas is cobalt, with navy panels above it', () => {
 test('the hero sells the product instead of apologizing for it', () => {
   const html = read('beranda.html');
   assert.doesNotMatch(html, /Sembilan dua/, 'the broken sentence is gone');
-  assert.match(html, /<dt>\d+<\/dt><dd data-i18n="hero\.stat\.tools">tool MCP/, 'the tool count is stated as a number beside its name');
+  assert.match(html, /<dt>\d+<\/dt><dd data-i18n="hero\.stat\.tools">tool<\/dd>/, 'the tool count is stated as a number beside its name');
   assert.match(html, /<div class="runWindow[^"]*" role="img" aria-label="[^"]+"[^>]*>/, 'a product window answers what the words claim');
   assert.match(html, /id="heroStats"/, 'numbers sit under the call to action, not in prose');
 });
@@ -104,8 +103,8 @@ test('the hero sells the product instead of apologizing for it', () => {
 test('the hero stats equal live source counts, never stale copy', () => {
 
   const html = read('beranda.html');
-  const mcp = mcpSurfaceSourceSync();
-  const tools = (mcp.match(/registerTool\("/g) || []).length;
+  const toolsSource = fs.readFileSync(new URL('../../local/tools.ts', import.meta.url), 'utf8');
+  const tools = (toolsSource.match(/\bname: '[a-z_]+'/g) || []).length;
   const proto = fs.readFileSync(new URL('../../extension/lib/protocol.js', import.meta.url), 'utf8');
   const specs = proto.slice(proto.indexOf('METHOD_SPECS = Object.freeze({'), proto.indexOf('});', proto.indexOf('METHOD_SPECS')));
   const prims = (specs.match(/^\s*'[a-z][a-z0-9_.]*': \{ timeoutMs:/gm) || []).length;
@@ -114,7 +113,7 @@ test('the hero stats equal live source counts, never stale copy', () => {
 
   const stats = [...block.matchAll(/<div\b[^>]*><dt\b[^>]*>(\d+)<\/dt><dd\b[^>]*>([^<]+)<\/dd><\/div>/g)];
   const byLabel = Object.fromEntries(stats.map((m) => [m[2].trim(), Number(m[1])]));
-  assert.equal(byLabel['tool MCP'], tools, 'tool stat matches the registered count');
+  assert.equal(byLabel['tool'], tools, 'tool stat matches the registered count');
   assert.equal(byLabel['primitive browser'], prims, 'primitive stat matches the allowlist');
 });
 
