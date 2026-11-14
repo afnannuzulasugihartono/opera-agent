@@ -642,10 +642,18 @@ const windowMatch = async (tab: JsonRecord | null, driver: Driver): Promise<stri
         return asText(await driver.tabs());
       case 'use_browser':
         return asText(await preferBridgeDevice(args.device));
-      case 'open_url':
-        return afterAction(driver, tab
-          ? { navigated: await driver.navigate(args.url), tab: args.tabId }
-          : await driver.open(args.url));
+      case 'open_url': {
+        if (tab) {
+          return afterAction(driver, { navigated: await driver.navigate(args.url), tab: args.tabId });
+        }
+        const opened = await driver.open(args.url);
+        // WHY THE LOOK AFTER THE OPEN READS THE TAB THAT WAS OPENED.
+        // The fallback driver keeps whatever page it was last pointed at, so reading through it after a bridge-opened tab read a chrome:// extensions page and failed instead of answering - the tab had opened fine, and the agent was told otherwise.
+        // The per-tab driverFor names the new tab by its own id, so the look after the open sees the page the caller asked for.
+        const openedId = isObject(opened) ? opened.id : null;
+        const openedDriver = openedId === null || openedId === undefined ? driver : await driverFor(String(openedId));
+        return afterAction(openedDriver, opened);
+      }
       case 'close_tab': {
         const out = await driver.close(args.tabId);
         void sessions.get(args.tabId)?.close?.();
@@ -690,6 +698,15 @@ const windowMatch = async (tab: JsonRecord | null, driver: Driver): Promise<stri
           tabId = String(isObject(opened) ? opened.id ?? '' : '');
           if (!tabId) throw new Error('the search tab could not be confirmed; the browser may be asleep - check browser_status - and the open may have happened without this process hearing back; list_tabs shows whether a Bing tab is sitting there.');
           const searchDriver = await driverFor(tabId, { background: true });
+          // WHY THE TAB IS ASKED WHERE IT IS BEFORE IT IS READ.
+          // A background tab at about:blank reports zero rows and zero changes, which is the most still a page can be, so the old wait reported "settled" immediately and the Bing read ran before Bing loaded - every search answered count: 0.
+          // Waiting for the url to carry bing.com/search closes the race, and a page that never reaches it is refused by name instead of answered with silence.
+          if (typeof searchDriver.waitForUrl === 'function') {
+            const loaded = (await searchDriver.waitForUrl({ contains: 'bing.com/search', timeoutMs: 8000 }).catch(() => null)) as { found?: unknown } | null;
+            if (!loaded || loaded.found !== true) {
+              throw new Error('the search tab did not reach Bing within 8 seconds; the everyday browser may throttle or discard background tabs - open a visible Bing search or retry');
+            }
+          }
           await searchDriver.waitForStill?.({ timeoutMs: 4000, quietMs: 150 })?.catch(() => null);
           const merged: SerpResult[] = [];
           let currentFirst = 1;
