@@ -243,10 +243,23 @@ export async function openBridgeTarget(url: string): Promise<{ id: unknown; url:
 // WHY THE PREFERENCE RIDES THE HTTP DOOR AND NOT THE COMMAND QUEUE.
 // Tab-less commands must know the pin before they are routed, and both of this machine's drivers meet at the HTTP door - the owner through its own socket, the guest through the loopback port - so the pin is read and written there, not on the wire the extension owns.
 
+// WHY A DEAD OWNER IS ASKED, NOT REMEMBERED, ON THE HTTP DOORS.
+// The tools below fetch the health and preference doors straight through the loopback port instead of the command queue; a guest pinned to a host that has since died would keep getting "fetch failed" forever instead of taking the port itself.
+// The command path recovers that way (drop the guest, bind again); these two do the same before they ask, so a reload can never wedge the drive.
+
+async function ensureLiveServer(): Promise<BridgeTransport> {
+  const first = await ensureServer();
+  if (!first.adopted) return first;
+  const alive = await (first.probe ?? (async () => false))().catch(() => false);
+  if (alive) return first;
+  server = null;
+  return ensureServer();
+}
+
 const PREFER_TIMEOUT_MS = 2000;
 
 export async function listBridgeDevices(): Promise<Record<string, unknown>> {
-  const srv = await ensureServer();
+  const srv = await ensureLiveServer();
   const address = srv.address();
   if (!address) throw new Error('bridge: the driver is not bound to any port');
   const response = await fetch(`http://127.0.0.1:${address.port}/health`, { signal: AbortSignal.timeout(PREFER_TIMEOUT_MS) });
@@ -257,7 +270,7 @@ export async function listBridgeDevices(): Promise<Record<string, unknown>> {
 }
 
 export async function preferBridgeDevice(target: unknown): Promise<Record<string, unknown>> {
-  const srv = await ensureServer();
+  const srv = await ensureLiveServer();
   const address = srv.address();
   if (!address) throw new Error('bridge: the driver is not bound to any port');
   const wanted = String(target ?? '').trim();
