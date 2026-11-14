@@ -1,11 +1,11 @@
 # @last-edited: 2026-11-14 UTC+7.
 # @title: mcp latency — the measured cost of the Opera Agent MCP tools, and where the floor really sits.
-# @state: the numbers as measured on 2026-11-14 for release 1.6.51 on the remote MCP path, the transport floor from docs/api.md, and the two tools that could not be measured.
+# @state: the numbers as measured on 2026-11-14 for the current release on the remote MCP path, the transport floor from docs/api.md, and the two tools that could not be measured.
 # @dependencies: none.
 
 # The benchmark
 
-Measured 2026-11-14, release 1.6.51, on the everyday browser: Opera on LAPTOP-6OU03OTB, paired device `opera-9` (plan.firm), driven through the **remote MCP path** that this machine's OpenCode actually uses:
+Measured 2026-11-14 on the everyday browser, release commit 410658b0: Opera on LAPTOP-6OU03OTB, paired device `opera-9` (plan.firm), driven through the **remote MCP path** that this machine's OpenCode actually uses:
 
 ```
 https://nenmkmtvjremqphfqnfw.supabase.co/functions/v1/opera-agent-mcp
@@ -28,7 +28,7 @@ One call per tool, wall-clock around the call, on a fresh test tab (`example.com
 | `record_start` | 1.7 s | warm; 10.9 s on the first ever arm |
 | `list_tabs` | 1.9 s | 47 tabs |
 | `media_state` | 6.4 s | page without a media element; answered `count: 0` |
-| `check_update` | 2.5 s | installed 1.6.51, served 1.6.51, no update available |
+| `check_update` | 2.5 s | installed equals served, no update available |
 | `find_elements` (role) | 1.9 s | five textboxes |
 | `find_elements` (text) | 2.1 s | |
 | `fill_element` | 2.4 s | |
@@ -51,7 +51,7 @@ One call per tool, wall-clock around the call, on a fresh test tab (`example.com
 | `record_stop` | `record_start` armed twice (10.9 s cold, 1.7 s warm) but the stop path never returned a result: one `COMMAND_TIMEOUT` against `page.record_stop`, one `SESSION_NOT_ARMED`. No `latensi-test2.webm` was written; the first cycle's 2 KB `latensi-test.webm` was produced and then deleted. The armed session appears to have evaporated between calls on this machine — a real anomaly, not a latency number. |
 | `statement_manifest` | the server stopped waiting before the browser reported back (`AWAIT_OUTCOME_UNKNOWN`); not retried, per the tool's own guidance |
 | `activate_tab` | forces a tab to the foreground; the everyday window was in use, so this was not taken without explicit permission |
-| `apply_update` | writes the next build over the folder and reloads the extension — the machine had just been updated to 1.6.51; not a measurement, a state change |
+| `apply_update` | writes the next build over the folder and reloads the extension — the machine had just been updated to the current release; not a measurement, a state change |
 | `skill_save` | writes the shared skill memory; not a read |
 | `statement_deliver`, `invoice_create` | real deliveries and real billing; not for measurement |
 | `media_play`, `media_pause`, `media_seek`, `media_listen_read`, `media_stream_start`, `media_stream_stop` | no media element on the test tab; on an empty page these behave like `media_state` or fail with the same shape |
@@ -71,7 +71,7 @@ The ~380 ms figure for a command through the hosted MCP function is the honest e
 Sub-256 ms for the whole surface is not available on the remote path: the transport alone spends ~380 ms before the page is asked anything, and the README's own figure for the cloud path is ~380 ms per action. The one road that gets there is the local driver on this machine:
 
 ```
-npm i -g opera-agent-mcp@1.6.51   # replaces the stale 1.6.46 install
+npm i -g opera-agent-mcp@latest  # replaces the stale 1.6.46 install on this machine
 ```
 
 then point the OpenCode MCP entry for `opera-agent` at `opera-agent-mcp local` instead of the remote URL (as of 2026-11 this machine's `~/.config/opencode/opencode.json` registers the remote one), and restart the session. The README measures the same action as under 1 ms through that road — the remaining milliseconds are the device's settle waits, not the transport.
