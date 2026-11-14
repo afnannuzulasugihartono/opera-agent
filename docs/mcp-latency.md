@@ -101,7 +101,7 @@ The honest read: the fix removes the PostgREST tax on every RPC in the request (
 
 ## The latest complete run (2026-11-14, after the direct-DB warm, same machine)
 
-All tools that had been measured before were measured again; failures from the first run re-tested. Conditions: Opera on LAPTOP-6OU03OTB, paired device `opera-9` (plan.firm), release 1.6.51 with the direct-DB warm in production; the machine was behind ProtonVPN (exit US) with jitter up to ~1.8 s, so cross-comparison with the pre-fix run mixes network drift with the fix. One sample each.
+All tools that had been measured before were measured again; failures from the first run re-tested. Conditions: Opera on LAPTOP-6OU03OTB, paired device `opera-9` (plan.firm), the 2026-11-14 release, commit abdc5826, with the direct-DB warm in production; the machine was behind ProtonVPN (exit US) with jitter up to ~1.8 s, so cross-comparison with the pre-fix run mixes network drift with the fix. One sample each.
 
 | Tool | Latest | Note |
 |---|---|---|
