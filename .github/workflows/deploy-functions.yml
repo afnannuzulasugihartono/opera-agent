@@ -12,6 +12,10 @@
 # The functions statically import ../../../shared/*.js; the tree carries only the strict .ts sources - the emitted twins are never committed, so a fresh checkout must compile them before the CLI bundles a function that reads them.
 # WHY THE SHA, NOT A TAG: supabase/setup-cli is pinned to 689adcfb80d947100a1eab127289b97d1fb07b13 (v3.2.0); move it deliberately.
 
+# WHY THE DEPLOY STEP BUILDS A COMPATIBILITY LAYOUT.
+# The CLI bundles each function from <cwd>/supabase/functions/<name>/index.ts; the tree keeps the functions at hosted/functions since the restructure, so the deploy could not open its entrypoint and exited 1 on a tree that was correct.
+# The compatibility layout is built in the runner, not committed to the repo: hosted/supabase/functions is a symlink to hosted/functions, created and discarded inside the one step, so the repo stays one layout and the runner speaks the CLI's dialect.
+
 name: Deploy functions
 
 on:
@@ -75,6 +79,8 @@ jobs:
           FUNCTIONS: ${{ inputs.functions }}
         shell: bash
         run: |
+          mkdir -p supabase
+          ln -sfn ../functions supabase/functions
           IFS=',' read -ra ARRAY <<< "$FUNCTIONS"
           for f in "${ARRAY[@]}"; do
             f="$(echo "$f" | xargs)"
