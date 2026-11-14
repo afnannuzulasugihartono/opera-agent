@@ -25,7 +25,7 @@ import { BROWSERS, detectBrowsers, expandPath, findBrowser, launchArgs, protocol
 
 test('the Chromium family is declared as one protocol, because it is one protocol', () => {
   assert.deepEqual(BROWSERS.map((b) => b.id).sort(),
-    ['brave', 'chrome', 'chromium', 'edge', 'opera', 'vivaldi']);
+    ['brave', 'chrome', 'chromeForTesting', 'chromium', 'edge', 'opera', 'vivaldi']);
 
   for (const entry of BROWSERS) {
     assert.equal(entry.protocol, 'cdp', `${entry.id} is Chromium and must speak cdp`);

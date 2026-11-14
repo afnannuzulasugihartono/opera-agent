@@ -64,7 +64,7 @@ import { writeExtensionKey } from './registry.js';
 
 const NON_WINDOWS = 'Opera Agent installs its extension only into Windows browsers. On this platform, install from the Chrome Web Store or the Opera Agent download page (https://opera-agent.pages.dev/unduh).';
 
-const NO_BROWSER = 'No Chrome, Brave or Edge was found on this machine. Install one of them, or grab the signed build from https://opera-agent.pages.dev/unduh.';
+const NO_BROWSER = 'No Chrome, Brave, Edge or Chrome for Testing was found on this machine. Install one of them, or grab the signed build from https://opera-agent.pages.dev/unduh.';
 
 // The registry rows are told the same caveat: the exec answers utf8 strings or throws.
 
@@ -98,7 +98,7 @@ export async function install({
   print = () => {},
 }: InstallOptions = {}) {
   if (platform !== 'win32') return { ok: false, browsers: [], message: NON_WINDOWS };
-  const found = detectBrowsers({ platform: 'win32', exists: existsAt, env }).filter((entry) => ['chrome', 'brave', 'edge'].includes(entry.id));
+  const found = detectBrowsers({ platform: 'win32', exists: existsAt, env }).filter((entry) => ['chrome', 'brave', 'edge', 'chromeForTesting'].includes(entry.id));
   if (found.length === 0) return { ok: false, browsers: [], message: NO_BROWSER };
 
   const results: BrowserInstallRow[] = [];
@@ -170,7 +170,7 @@ export async function uninstall({
   print = () => {},
 }: UninstallOptions = {}) {
   const steps: Array<{ step: string; result: string }> = [];
-  for (const vendor of ['chrome', 'brave', 'edge']) {
+  for (const vendor of ['chrome', 'brave', 'edge', 'chromeForTesting']) {
     const result = deleteExtensionKey({ vendor, exec });
     steps.push({ step: `registry key for ${vendor}`, result: result.ok ? 'deleted; the registry-installed extension removes itself on next browser start' : `not removed (${result.error})` });
   }
@@ -210,7 +210,7 @@ export async function uninstall({
   const instructions = [
     'A registry-installed extension leaves the browser on its next start.',
     'Copies installed the manual developer-mode way (Load unpacked) stay until you remove them in the browser itself:',
-    'chrome://extensions, brave://extensions, edge://extensions -> Remove.',
+    'chrome://extensions, brave://extensions, edge://extensions -> Remove (Chrome for Testing: chrome://extensions in the testing browser).',
   ].join('\n');
   const message = [...steps.map((entry) => `${entry.step}: ${entry.result}`), instructions].join('\n');
   print(message);

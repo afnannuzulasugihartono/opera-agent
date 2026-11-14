@@ -1,9 +1,9 @@
-// @last-edited: 2026-10-11 UTC+7.
-// @title: browsers — the Chromium browsers the local driver launches, where each lives, and the flags that make its port work.
-// @state: six Chromium browsers on one protocol; paths normalised so a caller's separator does not matter.
-// @dependencies: none.
+// @last-edited: 2026-11-14 UTC+7.
+// @title: browsers - the Chromium browsers the local driver launches, where each lives, and the flags that make its port work.
+// @state: seven Chromium browsers on one protocol; paths normalised so a caller's separator does not matter.
+// @dependencies: node:fs.
 
-// Scope is the Chromium family, and the reason is not tidiness: Chrome, Edge, Brave, Opera, Vivaldi and Chromium are one engine speaking one protocol, so one driver genuinely covers all six.
+// Scope is the Chromium family, and the reason is not tidiness: Chrome, Edge, Brave, Opera, Vivaldi and Chromium are one engine speaking one protocol, so one driver genuinely covers all seven.
 // Firefox and Safari are deliberately absent rather than listed as partial.
 // A browser named in a list is a promise, and a partial entry would still be a promise this driver does not keep yet.
 
@@ -11,6 +11,8 @@
 
 // The launch flags are locked because getting them wrong is silent.
 // A browser started against a profile that already has a running instance opens a second window and ignores the debugging port, and the only symptom is a connection refused with no hint as to why.
+
+import { readdirSync } from 'node:fs';
 
 const CHROMIUM_FLAGS = Object.freeze([
   '--no-first-run',
@@ -65,10 +67,58 @@ export const BROWSERS = Object.freeze([
     win32: ['C:\\Program Files\\Chromium\\Application\\chrome.exe'],
     darwin: ['/Applications/Chromium.app/Contents/MacOS/Chromium'],
     linux: ['/usr/bin/chromium', '/usr/bin/chromium-browser']
+  }),
+  // Chrome for Testing has no installer and no canonical path: it is a set of pinned test binaries, usually unzipped somewhere the person keeping it decided - most commonly Playwright's cache (chromium-<rev>/chrome-win[64]) or a tool folder.
+  // The wildcard covers any chromium-<rev> folder the person may have; the Google folder is the official zip unzipped by hand.
+  browser('chromeForTesting', 'Chrome for Testing', {
+    win32: [
+      '%LOCALAPPDATA%\\ms-playwright\\chromium-*\\chrome-win64\\chrome.exe',
+      '%LOCALAPPDATA%\\ms-playwright\\chromium-*\\chrome-win\\chrome.exe',
+      '%LOCALAPPDATA%\\Google\\Chrome for Testing\\Application\\chrome.exe',
+      '%LOCALAPPDATA%\\Google\\Chrome for Testing\\chrome.exe',
+      'C:\\Program Files\\Google\\Chrome for Testing\\chrome.exe'
+    ],
+    darwin: ['/Applications/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing',
+      '/opt/google/chrome-for-testing/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing'],
+    linux: ['/usr/bin/chrome-for-testing', '/opt/google/chrome-for-testing/chrome', '%HOME%/.local/bin/chrome-for-testing/chrome']
   })
 ]);
 
 const normalise = (value: unknown) => String(value).replace(/\\/g, '/').toLowerCase();
+
+const escapeRe = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+const joinPath = (base: string, segment: string): string => `${base === '' || base.endsWith('/') ? base : `${base}/`}${segment}`;
+
+// A segment carrying `*` is a one-level glob (`chromium-*`), because Chrome for Testing ships only as pinned zips addressed by their revision.
+// Matching it needs the parent directory listing, not a static exists check, so the check walks the pattern segment by segment.
+
+function globPathExists(pattern: string, exists: (path: string) => boolean, readdir: (path: string) => import('node:fs').Dirent[]): boolean {
+  const posix = pattern.startsWith('/');
+  const winDrive = /^[a-z]:[\\/]/i.test(pattern);
+  if (!posix && !winDrive) return exists(pattern);
+  const rest = posix ? pattern.slice(1) : pattern.slice(3);
+  const segments = rest.split('/').filter((part) => part && part !== '.');
+  let dirs = [posix ? '/' : pattern.slice(0, 2)];
+  for (let index = 0; index < segments.length; index++) {
+    const segment = segments[index] as string;
+    const isLast = index === segments.length - 1;
+    const next: string[] = [];
+    if (segment.includes('*')) {
+      const re = new RegExp('^' + segment.split('*').map(escapeRe).join('.*') + '$');
+      for (const dir of dirs) {
+        let entries: import('node:fs').Dirent[] = [];
+        try { entries = readdir(dir); } catch { continue; }
+        for (const entry of entries) if (re.test(entry.name) && (isLast || entry.isDirectory())) next.push(joinPath(dir, entry.name));
+      }
+    } else {
+      for (const dir of dirs) next.push(joinPath(dir, segment));
+    }
+    dirs = next;
+    if (dirs.length === 0) return false;
+  }
+  return dirs.some((path) => exists(path));
+}
 
 export function expandPath(path: unknown, env: NodeJS.ProcessEnv = process.env): string {
   return String(path).replace(/%([A-Za-z_][A-Za-z0-9_]*)%/g, (whole: string, name: string) => {
@@ -77,9 +127,15 @@ export function expandPath(path: unknown, env: NodeJS.ProcessEnv = process.env):
   });
 }
 
-export function detectBrowsers({ platform, exists, env = process.env }: { platform: string; exists: (path: string) => boolean; env?: NodeJS.ProcessEnv }): BrowserEntry[] {
+const defaultReaddir = (path: string): import('node:fs').Dirent[] => readdirSync(path, { withFileTypes: true });
+
+export function detectBrowsers({ platform, exists, env = process.env, readdir = defaultReaddir }: { platform: string; exists: (path: string) => boolean; env?: NodeJS.ProcessEnv; readdir?: (path: string) => import('node:fs').Dirent[] }): BrowserEntry[] {
   return BROWSERS.filter((entry) =>
-    (entry.paths[platform] ?? []).some((path) => exists(normalise(expandPath(path, env))))
+    (entry.paths[platform] ?? []).some((path) => {
+      const expanded = normalise(expandPath(path, env));
+      if (expanded.includes('*')) return globPathExists(expanded, exists, readdir);
+      return exists(expanded);
+    })
   ).map((entry) => entry);
 }
 

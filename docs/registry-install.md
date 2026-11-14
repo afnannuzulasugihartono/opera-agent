@@ -7,7 +7,7 @@
 
 **The interactive path lives in [`docs/install.md`](./install.md)** — this page is the `.reg` route for people who want the keys without the npm package (or whose package is unreachable).
 
-`docs/store/extension-registry-install.reg` writes three keys, one per browser
+`docs/store/extension-registry-install.reg` writes four keys, one per browser
 (Windows `HKCU`, per-user, no administrator rights):
 
 - `HKCU\Software\Google\Chrome\Extensions\ofgemipoobcnbjkfanmofjbdonjapmgl`
@@ -68,7 +68,7 @@ first-time install on a machine that does not have it yet.
 
 # HOW TO REMOVE IT
 
-`docs/store/extension-registry-uninstall.reg` deletes the three keys, so no
+`docs/store/extension-registry-uninstall.reg` deletes the four keys, so no
 browser re-installs the extension on later starts. An extension already
 installed stays installed; remove it from `chrome://extensions`,
 `brave://extensions` or `edge://extensions` like any other extension.

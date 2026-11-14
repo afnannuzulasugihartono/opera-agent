@@ -9,6 +9,7 @@ import { writeExtensionKey, deleteExtensionKey, EXTENSION_ID, UPDATE_URL } from 
 
 const KEYS = {
   chrome: 'HKCU\\Software\\Google\\Chrome\\Extensions\\ofgemipoobcnbjkfanmofjbdonjapmgl',
+  chromeForTesting: 'HKCU\\Software\\Google\\Chrome for Testing\\Extensions\\ofgemipoobcnbjkfanmofjbdonjapmgl',
   brave: 'HKCU\\Software\\BraveSoftware\\Brave-Browser\\Extensions\\ofgemipoobcnbjkfanmofjbdonjapmgl',
   edge: 'HKCU\\Software\\Microsoft\\Edge\\Extensions\\ofgemipoobcnbjkfanmofjbdonjapmgl',
 };

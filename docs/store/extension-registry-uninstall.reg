@@ -1,6 +1,6 @@
 ; Opera Agent - removes the registry trigger keys, nothing else.
-; @last-edited: 2026-11-12 UTC+7.
-; @title: extension registry uninstall - deletes the three keys that ask Chrome, Brave and Edge to install the extension.
+; @last-edited: 2026-11-14 UTC+7.
+; @title: extension registry uninstall - deletes the four keys that ask Chrome, Brave, Edge and Chrome for Testing to install the extension.
 ; @state: Windows; per-user (HKCU). Verified 2026-11-12 alongside extension-registry-install.reg.
 ; @dependencies: none.
 ; NOTE: this removes only the "please install" request. An extension already installed stays installed until you remove it at chrome://extensions (or brave://extensions, edge://extensions), per browser.
@@ -8,6 +8,8 @@
 Windows Registry Editor Version 5.00
 
 [-HKEY_CURRENT_USER\Software\Google\Chrome\Extensions\ofgemipoobcnbjkfanmofjbdonjapmgl]
+
+[-HKEY_CURRENT_USER\Software\Google\Chrome for Testing\Extensions\ofgemipoobcnbjkfanmofjbdonjapmgl]
 
 [-HKEY_CURRENT_USER\Software\BraveSoftware\Brave-Browser\Extensions\ofgemipoobcnbjkfanmofjbdonjapmgl]
 
