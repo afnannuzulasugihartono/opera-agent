@@ -16,6 +16,7 @@ import fs from 'node:fs';
 // WHY THE SPAWN RETRIES ONCE AND THEN DUMPS EVIDENCE.
 // A handful of fresh GitHub runner VMs has thrown a census whose spawn lost whole top-level directories between the build step and the test, with no code change anywhere; the gate is right to assert the sources, it just must not say nothing about what it saw.
 // One retry separates a fluke from a real tree, and if both attempts lose the directory the test prints the directory itself so the next failure arrives with the runner's own eyes.
+
 const census = () => {
   const listed = execFileSync(process.execPath, ['scripts/verify/check.mjs', '--list'], { cwd: repo, encoding: 'utf8' });
   return listed.split(/\r?\n/).map((line) => line.replace(/\\/g, '/'));
