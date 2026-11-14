@@ -30,12 +30,12 @@ export const RECIPES = Object.freeze([
   },
   {
     task: 'Meet a site you have never seen',
-    do: ['surface_profile', 'read_page'],
-    note: 'surface_profile costs one call and moves nothing, so it is the safe first step anywhere. Read the strategy it returns before paying for a read.'
+    do: ['scan_page', 'read_page'],
+    note: 'scan_page costs one call and moves nothing, so it is the safe first step anywhere. Read the strategy it returns before paying for a read.'
   },
   {
     task: 'See what can be clicked, with coordinates',
-    do: ['ax_snapshot'],
+    do: ['snapshot_page'],
     note: 'Menus and dialogs come first, so a menu the agent just opened is never past the cap.'
   },
   {
@@ -55,7 +55,7 @@ export const RECIPES = Object.freeze([
   },
   {
     task: 'Do several dependent moves in one call',
-    do: ['browser_burst'],
+    do: ['run_steps'],
     note: 'Up to eight steps on one tab, in order. The first failure stops the burst and keeps the steps that finished; the page is settled and read once at the end instead of after every move. A refFromStep carries a handle from an earlier resolve into a later click.'
   },
   {
@@ -64,8 +64,13 @@ export const RECIPES = Object.freeze([
     note: 'Add absent:true to wait for a row to leave. Returns found:false with the page rather than hanging.'
   },
   {
+    task: 'Wait until a navigation has happened',
+    do: ['wait_for_url'],
+    note: 'Follows a submit or a sign-in by waiting for the url to contain a string (or match a regular expression) instead of polling the text. A text wait cannot see a url move.'
+  },
+  {
     task: 'Wait until the page has stopped moving',
-    do: ['wait_still'],
+    do: ['wait_for_stable'],
     note: 'For anything that moves on its own: a menu animating, a save running, an upload landing.'
   },
   {
@@ -90,7 +95,7 @@ export const RECIPES = Object.freeze([
   },
   {
     task: 'Ask the page a question instead of guessing',
-    do: ['ask_page'],
+    do: ['query_page'],
     note: 'Frames, the node behind a row, a frame document, a selector, a box, a screenshot as png. Reads only — anything that acts stays a named tool.'
   },
   {
@@ -100,8 +105,8 @@ export const RECIPES = Object.freeze([
   },
   {
     task: 'Build a paper from JSON tables, images, and graphs',
-    do: ['document_build'],
-    note: 'JSON in, a checked document plan out, written beside the source. No browser is touched. Every graph names its table and columns, and the graph is recomputed from those rows before the file exists — a graph without a source, or one whose number disagrees with the table, stops the paper instead of reaching a reader.'
+    do: ['document_write'],
+    note: 'JSON in, a .docx out in one call: the checked plan (written beside the source) and the Word file built from it. Every graph names its table and columns, and the graph is recomputed from those rows before the file exists - a graph without a source, or one whose number disagrees with the table, stops the paper instead of reaching a reader.'
   },
   {
     task: 'Turn an exported sheet into an Excel workbook',
@@ -113,11 +118,7 @@ export const RECIPES = Object.freeze([
     do: ['deck_build'],
     note: 'JSON in, a .pptx out. A slide names a figure from the checked report and carries its value; a name the report does not hold stops the deck. The provenance of every figure is written beside the presentation, so the author can answer "where did this number come from" without opening the slide.'
   },
-  {
-    task: 'Turn a paper into a Word file',
-    do: ['document_write'],
-    note: 'JSON in, a .docx out: the headings, paragraphs, tables and graphs of the checked plan, with a picture on this disk embedded. The plan is rechecked against the source rows before the file exists.'
-  },
+
   {
     task: 'Sign in to a portal',
     do: ['gate_detect', 'login', 'gate_wait'],
@@ -160,14 +161,13 @@ export const SIDE_EFFECTS = Object.freeze({
   guide: [],
   list_menus: [],
   open_menu: ['opens menus by hovering and clicking levels on the way to the path you gave'],
-  list_devices: [],
-  switch_device: ['pins tab-less commands to the named browser until another switch says otherwise; moves no tab by itself and steers no running drive'],
+  use_browser: ['pins tab-less commands to the named browser until another switch says otherwise; moves no tab by itself and steers no running drive'],
   list_tabs: [],
   open_url: ['opens a new tab in the same browser'],
   close_tab: ['closes a tab the caller may still be holding'],
   search_bing: ['opens one background tab on the Bing results on the bridged path (the direct CDP fallback opens it in the foreground) and closes it before the answer returns - nothing is left on the browser, and the machine\'s own window is never brought forward'],
   read_page: ['with allowCaretMove, borrows the selection on a canvas editor to read the text through it, and answers caretRestored as what was measured rather than what was hoped', 'without it, that step is skipped and the reason is reported, because a canvas caret is not in the DOM and cannot be promised back'],
-  surface_profile: [],
+  scan_page: [],
   find_elements: [],
   click: ['moves the pointer and presses'],
   resolve_row: ['leaves the page alone'],
@@ -175,18 +175,19 @@ export const SIDE_EFFECTS = Object.freeze({
   hover: ['moves the pointer'],
   press_key: ['sends a key to whatever is focused'],
   type: ['inserts text into whatever is focused'],
-  append: ['moves the caret to the end before inserting, so text lands at the end instead of wherever the caret was left'],
+  append_text: ['moves the caret to the end before inserting, so text lands at the end instead of wherever the caret was left'],
   scroll: ['moves the view, which can load more of a lazy page and move the page out from under coordinates you already hold'],
   get_computed: [],
 
 
   stream_keys: ['sends a key sequence to whatever is focused'],
-  browser_burst: ['runs every step in order and stops at the first failure', 'settles and reads the page once at the end, not after each step'],
-  wait_for: [],
-  ask_page: [],
+  run_steps: ['runs every step in order and stops at the first failure', 'settles and reads the page once at the end, not after each step'],
+  wait_for_url: [],
+  wait_for_text: [],
+  query_page: [],
   wait_for_row: [],
-  wait_still: [],
-  caret_line: ['selects the caret line to read it, and answers caretRestored as what was measured rather than what was hoped'],
+  wait_for_stable: [],
+  read_caret_line: ['selects the caret line to read it, and answers caretRestored as what was measured rather than what was hoped'],
   upload: ['fills a file input, which fires the change the page listens for'],
   drop_file: ['brings the tab to front and drops a file on it'],
   intercept_file_chooser: ['changes whether the native file picker appears on this tab'],
@@ -194,16 +195,15 @@ export const SIDE_EFFECTS = Object.freeze({
   statement_card: [],
   statement_delivered: ['writes the client-month into the manifest on disk, replacing the record only when asked'],
   report_build: ['writes a checked report file beside the source; no page is touched'],
-  document_build: ['writes a checked document file beside the source; no page is touched'],
+  document_write: ['writes a checked document plan and the Word file built from it beside the source; no page is touched'],
   spreadsheet_build: ['writes an Excel workbook and a checked report plan beside the source; no page is touched'],
   deck_build: ['writes a PowerPoint presentation and the provenance of its figures beside the source; no page is touched'],
-  document_write: ['writes a Word file beside the source; no page is touched'],
   gate_detect: [],
   gate_wait: [],
   login: ['fills the username and password fields from the credential file and submits; the secret never returns in the answer'],
   captcha_solve: ['reads a captcha image through the configured solver, which spends the person\'s money at that service, then types the answer into the captcha field'],
   capture_page: [],
-  ax_snapshot: []
+  snapshot_page: []
 });
 
 // WHY THE GUIDE ANSWERS ONE QUESTION AND NOT SEVERAL.
@@ -220,11 +220,11 @@ export function guide(topic: unknown) {
     sideEffects: Object.entries(SIDE_EFFECTS).map(([tool, effects]) => ({ tool, effects })),
     refusals: [
       'A native operating-system dialog cannot be opened, closed or filled from here — it is outside the browser.',
-      'ask_page refuses anything that could change the page; the list is in its description.',
+      'query_page refuses anything that could change the page; the list is in its description.',
       'A tool that reports success is not proof. The page saying so is.',
       'A page cannot see whether the window in front of it is the one the machine has in front. Clicks and keys go nowhere while browser_status says the window is not focused.',
       'focus_window with no match answers the state without moving anything — pass a piece of the window title. An empty match used to bring an arbitrary window forward.',
-      'A complex document or report is built as a plan on disk (report_build, document_build, spreadsheet_build, deck_build, document_write) before it reaches a page, not by driving cells one by one.'
+      'A complex document or report is built as a plan on disk (report_build, document_write, spreadsheet_build, deck_build) before it reaches a page, not by driving cells one by one.'
     ]
   };
 }

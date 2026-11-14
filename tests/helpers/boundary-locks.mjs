@@ -81,8 +81,8 @@
 // background.js imports dump-page.js and dispatches page.dump so the agent can read a whole page as one structured object instead of one viewport; the public contract gained exactly that method and nothing else moved.
 
 // WHY these three were re-pinned on 2026-11-12: the 1.6.48 provider pins and the version constants.
-// The relay gained per-provider routing (`resolveDeviceFresh` reads `opera_provider_pins` when no X-Opera-Device header names a browser; index.ts) and the switch_device tool (tools.ts), so a multi-harness account can bind opencode to one browser and claude to another without editing client configs.
-// The refusal for a sleeping provider pin names switch_device; the browser_status device object reports pinSource.
+// The relay gained per-provider routing (`resolveDeviceFresh` reads `opera_provider_pins` when no X-Opera-Device header names a browser; index.ts) and the use_browser tool (tools.ts), so a multi-harness account can bind opencode to one browser and claude to another without editing client configs.
+// The refusal for a sleeping provider pin names use_browser; the browser_status device object reports pinSource.
 // manifest.json and index.ts also carry the version bump to 1.6.48; the contract moved, so the pin moves with it - content.js and background.js did not.
 
 // WHY these ten moved on 2026-11-12 a fourth time: the hash is now SHA-256.
@@ -102,7 +102,7 @@
 // The evaluator that walks the SERP lives in local/page-expressions.js; the tools.ts schema and the tools.ts registration moved with it.
 
 // WHY these two were re-pinned on 2026-11-14: the hosted MCP function is gone from the tree.
-// The local driver carries the surface byte-for-byte on its own road (57 tools), and the extension's pin stayed untouched with it.
+// The local driver carries the surface byte-for-byte on its own road (56 tools), and the extension's pin stayed untouched with it.
 // Extension files and the manifest did not move.
 
 // WHY these five moved again: the extension went to TypeScript, and the bytes moved with it.

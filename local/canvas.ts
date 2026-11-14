@@ -62,8 +62,8 @@ const VIEW_WHY = 'the borrow selected the whole document, so the view is left wh
 // settled means one thing on the DOM path - the text stood still across two samples - and cannot mean it anywhere else: the tree was sampled once and the copy cannot be repeated without moving the caret twice.
 // So the other two paths answer settled:null and name what would prove it, and the sentence a caller reads is the same sentence every time rather than one written inline at each return.
 
-const SETTLED_WHY_AX = 'this read sampled the accessibility tree once, so it can say what the text is and not that it stopped moving; wait_still() is the proof of that';
-const SETTLED_WHY_COPY = 'the text came from a selection copy; a second copy would move the caret twice, so read again after wait_still() or take capture_page() as the proof';
+const SETTLED_WHY_AX = 'this read sampled the accessibility tree once, so it can say what the text is and not that it stopped moving; wait_for_stable() is the proof of that';
+const SETTLED_WHY_COPY = 'the text came from a selection copy; a second copy would move the caret twice, so read again after wait_for_stable() or take capture_page() as the proof';
 
 // WHY A BORROW THAT RETURNED NOTHING IS NOT AN EMPTY DOCUMENT.
 // A canvas editor that selects and copies nothing either has an empty document or a mirror that did not fill, and the two are not the same thing.

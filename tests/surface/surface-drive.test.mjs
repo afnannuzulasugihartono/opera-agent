@@ -54,7 +54,7 @@ const canvasProbe = {
   focused: { value: true, evidence: 'document.hasFocus() is true' }
 };
 
-test('surface_profile answers without reading the document', async () => {
+test('scan_page answers without reading the document', async () => {
   const cdp = fakeCdp({ probe: canvasProbe, ax: richAx, copy: '' });
   const primitives = createPrimitives(cdp, { sleep: async () => {} });
   const out = await primitives.surfaceProfile();

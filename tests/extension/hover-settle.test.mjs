@@ -146,7 +146,7 @@ test('the manifest loads the settle runtime before the content script', async ()
 test('the public burst schema accepts a hover step and still bounds everything', async () => {
   const tools = await readFile(new URL('../../local/tools.ts', import.meta.url), 'utf8');
   const burst = await readFile(new URL('../../local/burst.ts', import.meta.url), 'utf8');
-  assert.match(tools, /name: 'browser_burst'/);
+  assert.match(tools, /name: 'run_steps'/);
   assert.match(burst, /hover/, 'the local burst must carry the hover step');
   assert.match(burst, /BURST_ACTIONS/);
 });

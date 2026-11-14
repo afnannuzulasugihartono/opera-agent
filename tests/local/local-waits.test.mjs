@@ -1,4 +1,4 @@
-// @last-edited: 2026-11-05 UTC+7.
+﻿// @last-edited: 2026-11-05 UTC+7.
 // @title: local-waits — a wait ends on evidence, not on a clock that guessed how long a page takes.
 // @state: the page settle, the mutation wait, and the text, row and stillness waits built on it.
 // @dependencies: node:test, strict, ../local/primitives.js.
@@ -310,7 +310,7 @@ test('createWaits assembles the settle and the shared waits in one place', () =>
   });
 
   assert.deepEqual(Object.keys(methods).sort(),
-    ['settle', 'waitForIdle', 'waitForMutation', 'waitForRow', 'waitForStill', 'waitForText']);
+    ['settle', 'waitForIdle', 'waitForMutation', 'waitForRow', 'waitForStill', 'waitForText', 'waitForUrl']);
 });
 
 
@@ -439,3 +439,51 @@ test('stillness watches the rows an agent acts on, not the whole document', asyn
 // The bridge road carries commands and not CDP events, so an implementation that waited for downloadProgress would pass on a debugging port and hang on the signed-in profile.
 // These tests therefore give the primitive a fake filesystem and check what an observer would check: a file appeared, it stopped growing, the folder was armed before the click, and the browser-wide behavior was handed back.
 
+
+
+test('a url wait ends on the first read that holds the url it asked for', async () => {
+  const urls = ['https://example.test/login', 'https://example.test/dashboard'];
+  let ask = 0;
+  const cdp = {
+    calls: [],
+    send: async (method, params = {}) => {
+      cdp.calls.push({ method, params });
+      const expression = String(params?.expression ?? '');
+      if (method === 'Runtime.evaluate' && expression.includes('document.title')) {
+        return { result: { value: { title: 't', url: urls[Math.min(ask++, urls.length - 1)], text: 'x', ready: 'complete' } } };
+      }
+      if (expression.includes('opera-settle-arm')) return { result: { value: true } };
+      if (expression.includes('opera-settle-read')) return { result: { value: { changes: 0, quietMs: 40, elapsedMs: 40, visibility: 'visible' } } };
+      return { result: {} };
+    }
+  };
+  const p = createPrimitives(cdp, { sleep: async () => {} });
+
+  const out = await p.waitForUrl({ contains: '/dashboard', timeoutMs: 200 });
+
+  assert.equal(out.found, true);
+  assert.match(out.url, /dashboard/);
+  assert.ok(!out.url.includes('/login') || out.url.includes('/dashboard'), 'the answer names the page that moved');
+});
+
+
+test('a url wait that runs out reports instead of failing', async () => {
+  const cdp = {
+    calls: [],
+    send: async (method, params = {}) => {
+      const expression = String(params?.expression ?? '');
+      if (method === 'Runtime.evaluate' && expression.includes('document.title')) {
+        return { result: { value: { title: 't', url: 'https://example.test/login', text: 'x', ready: 'complete' } } };
+      }
+      if (expression.includes('opera-settle-arm')) return { result: { value: true } };
+      if (expression.includes('opera-settle-read')) return { result: { value: { changes: 0, quietMs: 40, elapsedMs: 40, visibility: 'visible' } } };
+      return { result: {} };
+    }
+  };
+  const p = createPrimitives(cdp, { sleep: async () => {} });
+
+  const out = await p.waitForUrl({ contains: '/never-here', timeoutMs: 250 });
+
+  assert.equal(out.found, false);
+  assert.match(out.url, /login/, 'the budget ran out on the page that never moved');
+});

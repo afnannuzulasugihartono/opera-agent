@@ -219,7 +219,7 @@ test('a computed read that finds nothing says so, with the call that would find 
   const out = await createPrimitives(cdp).computed({ x: 5, y: 5 });
 
   assert.equal(out.found, false);
-  assert.match(out.why, /ax_snapshot\(\)/);
+  assert.match(out.why, /snapshot_page\(\)/);
 });
 
 
@@ -406,7 +406,7 @@ test('the text caret rides the snapshot so the next keystroke lands knowingly', 
   assert.ok(expression.includes('getSelection'), 'the caret row comes from this client\'s own selection');
   assert.ok(expression.includes("role: 'caret'"), 'rides as a final row, past the limit');
   assert.ok(expression.includes('isCollapsed'), 'a ranged selection reports nothing rather than a dishonest point');
-  assert.ok(!expression.includes('docs-texteventtarget-iframe'), 'the line lives behind caret_line, which selects first; the map carries coordinates only');
+  assert.ok(!expression.includes('docs-texteventtarget-iframe'), 'the line lives behind read_caret_line, which selects first; the map carries coordinates only');
 });
 
 // WHY THE BEAT IS PINNED, NOT THE TIMING.

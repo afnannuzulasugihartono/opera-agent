@@ -213,7 +213,7 @@ export function createBridgeServer({ port = 9451, host = '127.0.0.1', heartbeatM
     if (preferredSlot === null) return null;
     if (preferredDevice()) return null;
     const awake = readyDevices().map((device) => `slot ${String(device.slot)} (${device.deviceName || device.id})`).join(', ');
-    return { ok: false, error: { code: 'PREFERRED_DEVICE_NOT_READY', message: `the preferred browser (slot ${String(preferredSlot)}) is not ready; awake: ${awake || 'none'} - switch_device to an awake slot or "any" to follow the first ready browser` } };
+    return { ok: false, error: { code: 'PREFERRED_DEVICE_NOT_READY', message: `the preferred browser (slot ${String(preferredSlot)}) is not ready; awake: ${awake || 'none'} - use_browser to an awake slot or "any" to follow the first ready browser` } };
   };
   const deviceRows = () => readyDevices().map((device) => ({ slot: device.slot, id: device.id, instanceId: device.instanceId || null, deviceName: device.deviceName || null, extensionVersion: device.extensionVersion || null, connectedAt: device.connectedAt, meter: meterOf(device) }));
 

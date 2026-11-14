@@ -144,7 +144,7 @@ test('background.js attaches a poverty-triggered, fail-open CDP axSummary (Layer
 test('the local guidance documents the accessibility surface without new tools', () => {
   const guide = fs.readFileSync(new URL('../../local/agent-guide.ts', import.meta.url), 'utf8');
   const tools = fs.readFileSync(new URL('../../local/tools.ts', import.meta.url), 'utf8');
-  assert.match(guide, /ax_snapshot/);
+  assert.match(guide, /snapshot_page/);
   assert.doesNotMatch(tools, /name: '(read_ax|ax_summary|accessibility)'/);
-  assert.match(tools, /name: 'ax_snapshot'/);
+  assert.match(tools, /name: 'snapshot_page'/);
 });

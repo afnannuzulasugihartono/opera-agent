@@ -108,6 +108,7 @@ export function asDriver(session: JsonRecord): SessionDriver {
     waitForRow: (options) => session.waitForRow(options),
     waitForText: (text, options) => session.waitForText(text, options),
     waitForStill: (options) => session.waitForStill(options),
+    waitForUrl: (options) => session.waitForUrl(options),
     upload: (options) => session.upload(options),
     dropFile: (options) => session.dropFile(options),
     interceptFileChooser: (enabled) => session.interceptFileChooser(enabled),

@@ -20,7 +20,7 @@
 // Measured on a real job: eight calls spent 34,974 characters, most of it the same sixty rows and the same page text riding along after every click.
 // An agent does not read that; it pays for it in tokens and in attention.
 // So an action reports where the page is and what moved - url, title, how much text it holds, which element has focus - and the rows that changed.
-// The rest stays one deliberate ax_snapshot away.
+// The rest stays one deliberate snapshot_page away.
 
 // WHY THE TEXT IS COUNTED AND NOT RETURNED.
 // The count answers "did this action change what the page says", which is the question an action's answer owes.
@@ -410,7 +410,7 @@ export function createObserveMethods({ cdp, primitives, capped, sleep = () => Pr
         found: false,
         why: probe.selector
           ? `no element on this page matches ${JSON.stringify(String(selector).slice(0, 40))}`
-          : `nothing at ${probe.x},${probe.y} - ax_snapshot() to see what is on screen`
+          : `nothing at ${probe.x},${probe.y} - snapshot_page() to see what is on screen`
       };
     }
     return { found: true, ...seen };

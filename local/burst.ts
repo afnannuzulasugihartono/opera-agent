@@ -22,7 +22,7 @@ export const BURST_ACTIONS = Object.freeze([
   'hover',
   'press_key',
   'type',
-  'append',
+  'append_text',
   'scroll',
   'stream_keys',
   'resolve',
@@ -39,7 +39,7 @@ export const BURST_INPUT_ACTIONS = Object.freeze([
   'hover',
   'press_key',
   'type',
-  'append',
+  'append_text',
   'scroll',
   'stream_keys'
 ]);
@@ -50,7 +50,7 @@ const STEP_KEYS: Record<string, readonly string[]> = Object.freeze({
   hover: ['action', 'x', 'y', 'refFromStep'],
   press_key: ['action', 'key', 'modifiers'],
   type: ['action', 'text'],
-  append: ['action', 'text'],
+  append_text: ['action', 'text'],
   scroll: ['action', 'y', 'end', 'text', 'selector'],
   stream_keys: ['action', 'events'],
   resolve: ['action', 'role', 'name'],
@@ -195,7 +195,7 @@ function normalizeStep(value: unknown, index: number): BurstStep {
   if (action === 'press_key') {
     return { action, key: textOf(step.key, `${where} key`), modifiers: modifiersOf(step.modifiers) };
   }
-  if (action === 'type' || action === 'append') {
+  if (action === 'type' || action === 'append_text') {
     if (typeof step.text !== 'string') throw new Error(`${where} text must be a string`);
     return { action, text: step.text };
   }
@@ -238,7 +238,7 @@ function normalizeStep(value: unknown, index: number): BurstStep {
 export function normalizeBurst(args: unknown): { steps: BurstStep[]; timeoutMs: number } {
   const bag = (typeof args === 'object' && args !== null ? args : {}) as { steps?: unknown; timeoutMs?: unknown };
   if (!Array.isArray(bag.steps) || bag.steps.length < 1 || bag.steps.length > BURST_MAX_STEPS) {
-    throw new Error(`browser_burst needs 1-${BURST_MAX_STEPS} steps`);
+    throw new Error(`run_steps needs 1-${BURST_MAX_STEPS} steps`);
   }
   const asked = Number(bag.timeoutMs ?? BURST_MAX_TIMEOUT_MS);
   const timeoutMs = Number.isFinite(asked)
@@ -275,7 +275,7 @@ async function runStep(driver: JsonRecord, step: BurstStep, results: BurstResult
   }
   if (step.action === 'press_key') return driver.key(step.key, step.modifiers ?? []);
   if (step.action === 'type') return driver.type(step.text);
-  if (step.action === 'append') return driver.append(step.text);
+  if (step.action === 'append_text') return driver.append(step.text);
   if (step.action === 'stream_keys') return driver.keys(step.events);
   if (step.action === 'resolve') return driver.resolve(step.role, step.name);
   if (step.action === 'scroll') {
@@ -358,7 +358,7 @@ export async function runLocalBurst({ driver, steps, timeoutMs = BURST_MAX_TIMEO
     const step = steps[index] as BurstStep;
     const remaining = deadline - clock();
     if (remaining < 50) {
-      return failure(index, step, new Error(`browser_burst ran out of its ${timeoutMs} ms budget before step ${index}`), true);
+      return failure(index, step, new Error(`run_steps ran out of its ${timeoutMs} ms budget before step ${index}`), true);
     }
     const stepStarted = clock();
     // WHY THE STEP'S OWN ANSWER IS NOT BOXED IN ANOTHER BOX.

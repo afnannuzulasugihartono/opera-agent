@@ -11,7 +11,7 @@ The rule in one line: **a dot separates namespaces, an underscore separates word
 
 | Space | Shape | Example | Read by |
 |---|---|---|---|
-| MCP tool name | `snake_case` | `browser_status`, `click_row`, `wait_for`, `ax_snapshot` | the model, and the person reading a tool list |
+| MCP tool name | `snake_case` | `browser_status`, `click_row`, `wait_for_text`, `snapshot_page` | the model, and the person reading a tool list |
 | Wire method name | `namespace.action` | `tabs.list`, `page.click`, `browser.burst`, `page.wait_for` | the service worker, the bridge and the gateway |
 | Postgres function and argument name | `snake_case` | `opera_claim_next_wait`, `p_device_name` | Postgres, and the edge functions that call it |
 
@@ -50,6 +50,6 @@ The shapes are pinned by tests, so a name in the wrong shape fails a gate rather
 
 A new name belongs to exactly one of the three spaces, and the shape follows from the space rather than from taste.
 
-A cloud tool that wraps one wire method is named for the job the caller asks for, never for the method it sends: the surface calls it `click_element` while the method underneath is `page.click`, `fill_element` for `page.fill`, and `run_browser_burst` for `browser.burst`. The local surface names the same jobs the same way — `click_row`, `browser_burst`, `read_page` — and it sends no wire method at all, because it drives the browser over CDP directly.
+A cloud tool that wraps one wire method is named for the job the caller asks for, never for the method it sends: the surface calls it `click_element` while the method underneath is `page.click`, `fill_element` for `page.fill`, and `run_browser_burst` for `browser.burst`. The local surface names the same jobs the same way — `click_row`, `run_steps`, `read_page` — and it sends no wire method at all, because it drives the browser over CDP directly.
 
 A new wire method is added to `METHOD_SPECS` in `extension/lib/protocol.ts` and nowhere else. That file is the one the service worker, the MCP server and the Node tests all read, which is why a second copy of the list has never been allowed to exist.

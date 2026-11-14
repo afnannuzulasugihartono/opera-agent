@@ -190,7 +190,7 @@ test('the surface covers what the driver can actually do', async () => {
   const { result } = await server.handle({ jsonrpc: '2.0', id: 3, method: 'tools/list', params: {} });
   const names = result.tools.map((t) => t.name).sort();
 
-  for (const required of ['browser_status', 'open_url', 'close_tab', 'list_tabs', 'read_page', 'search_bing', 'find_elements', 'click', 'click_row', 'hover', 'press_key', 'type', 'append', 'scroll', 'get_computed', 'stream_keys', 'wait_for', 'caret_line', 'upload', 'drop_file', 'intercept_file_chooser', 'download', 'capture_page', 'ax_snapshot', 'browser_burst']) {
+  for (const required of ['browser_status', 'open_url', 'close_tab', 'list_tabs', 'read_page', 'search_bing', 'find_elements', 'click', 'click_row', 'hover', 'press_key', 'type', 'append_text', 'scroll', 'get_computed', 'stream_keys', 'wait_for_text', 'read_caret_line', 'upload', 'drop_file', 'intercept_file_chooser', 'download', 'capture_page', 'snapshot_page', 'run_steps', 'wait_for_url', 'use_browser', 'query_page']) {
     assert.ok(names.includes(required), `missing ${required}`);
   }
 });
@@ -288,7 +288,7 @@ test('report_build turns an exported sheet into a checked report without a brows
   }
 });
 
-test('document_build turns a JSON paper into a checked document without a browser', async () => {
+test('document_write turns a JSON paper into a checked Word file and its plan in one call', async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'opera-document-tool-'));
   const source = path.join(dir, 'paper.json');
   fs.writeFileSync(source, JSON.stringify(insertMenuPaper([{
@@ -302,21 +302,24 @@ test('document_build turns a JSON paper into a checked document without a browse
     const res = await server.handle({
       jsonrpc: '2.0', id: 71, method: 'tools/call',
       params: {
-        name: 'document_build',
+        name: 'document_write',
         arguments: { source }
       }
     });
     assert.equal(res.result.isError, undefined);
     const payload = JSON.parse(res.result.content[0].text);
     assert.equal(payload.verified.ok, true);
-    assert.deepEqual(payload.document.figures[0].source.rows, [0, 1]);
-    assert.ok(fs.existsSync(payload.out), 'the document file is written beside the source');
+    assert.ok(fs.existsSync(payload.plan, 'the checked plan is written beside the source'), 'the checked plan path is answered');
+    const plan = JSON.parse(fs.readFileSync(payload.plan, 'utf8'));
+    assert.deepEqual(plan.document.figures[0].source.rows, [0, 1]);
+    assert.ok(fs.existsSync(payload.out), 'the Word file is written beside the source');
+    assert.ok(Number(payload.bytes) > 0, 'the Word file carries bytes, not an empty file');
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }
 });
 
-test('document_build refuses a graph with no source and writes nothing', async () => {
+test('document_write refuses a graph with no source and writes nothing', async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'opera-document-invalid-'));
   const source = path.join(dir, 'bad.json');
   fs.writeFileSync(source, JSON.stringify(insertMenuPaper([{
@@ -329,13 +332,14 @@ test('document_build refuses a graph with no source and writes nothing', async (
     const res = await server.handle({
       jsonrpc: '2.0', id: 72, method: 'tools/call',
       params: {
-        name: 'document_build',
+        name: 'document_write',
         arguments: { source }
       }
     });
     assert.ok(res.result?.isError, 'an invalid paper is a refusal that answers, not a crash');
     assert.match(failureOf(res), /source/);
-    assert.ok(!fs.existsSync(path.join(dir, 'bad.document.json')), 'no artifact is written for an invalid paper');
+    assert.ok(!fs.existsSync(path.join(dir, 'bad.document.json')), 'no plan is written for an invalid paper');
+    assert.ok(!fs.existsSync(path.join(dir, 'bad.docx')), 'no Word file is written for an invalid paper');
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }
@@ -364,7 +368,7 @@ test('type says where the proof lives when its own placement check cannot see it
 // An agent reads descriptions to decide whether to call a tool, and this one exists because a batch landed in a table cell: the measured failure is the argument for calling append instead of the click-then-End road, and a description without it is a description nobody trusts.
 
 test('the append says how it decides it reached the end, and when it cannot know', () => {
-  const append = TOOLS.find((tool) => tool.name === 'append');
+  const append = TOOLS.find((tool) => tool.name === 'append_text');
 
   assert.match(append.description, /atEnd is measured, not assumed/);
   assert.match(append.description, /found:false/);
@@ -439,14 +443,14 @@ test('scroll reaches the driver with the arguments it was given', async () => {
   assert.match(res.result.content[0].text, /"movedPx":\s*1400/);
 });
 
-test('append reaches the driver as one call with the text intact', async () => {
+test('append_text reaches the driver as one call with the text intact', async () => {
   const c = ctx();
   const server = createMcpServer(c);
   c.driver.append = async (text) => { c.driver.calls.push(['append', text]); return { chars: text.length, landed: true, atEnd: true, placed: { found: true, index: 9 } }; };
 
   const res = await server.handle({
     jsonrpc: '2.0', id: 97, method: 'tools/call',
-    params: { name: 'append', arguments: { text: 'one more line' } }
+    params: { name: 'append_text', arguments: { text: 'one more line' } }
   });
 
   assert.deepEqual(c.driver.calls.filter(([name]) => name === 'append'), [['append', 'one more line']]);
@@ -482,7 +486,7 @@ test('a snapshot reaches the driver and comes back as readable text', async () =
   const server = createMcpServer(ctx());
   const res = await server.handle({
     jsonrpc: '2.0', id: 10, method: 'tools/call',
-    params: { name: 'ax_snapshot', arguments: {} }
+    params: { name: 'snapshot_page', arguments: {} }
   });
 
   assert.match(res.result.content[0].text, /Insert/);
@@ -858,7 +862,7 @@ test('the page that rides along is smaller than the page you ask for', async () 
   const server = createMcpServer(c);
 
   await server.handle({ jsonrpc: '2.0', id: 10, method: 'tools/call', params: { name: 'click', arguments: { x: 1, y: 1 } } });
-  await server.handle({ jsonrpc: '2.0', id: 11, method: 'tools/call', params: { name: 'ax_snapshot', arguments: { limit: 120 } } });
+  await server.handle({ jsonrpc: '2.0', id: 11, method: 'tools/call', params: { name: 'snapshot_page', arguments: { limit: 120 } } });
 
   assert.ok(asked[0] < asked[1], `an action asks for fewer rows (${asked[0]}) than a deliberate read (${asked[1]})`);
 });
@@ -913,7 +917,7 @@ test('a tab another agent holds is refused, with the holder and the expiry named
 
   const res = await server.handle({
     jsonrpc: '2.0', id: 31, method: 'tools/call',
-    params: { name: 'ax_snapshot', arguments: { tabId: 't1' } }
+    params: { name: 'snapshot_page', arguments: { tabId: 't1' } }
   });
 
   assert.match(failureOf(res), /agent-b/, 'the refusal names who holds the tab');
@@ -925,8 +929,8 @@ test('the claim is renewed by every call, and released when the tab is closed', 
   const c = ctx();
   const server = createMcpServer(c);
 
-  await server.handle({ jsonrpc: '2.0', id: 32, method: 'tools/call', params: { name: 'ax_snapshot', arguments: { tabId: 't1' } } });
-  await server.handle({ jsonrpc: '2.0', id: 33, method: 'tools/call', params: { name: 'ax_snapshot', arguments: { tabId: 't1' } } });
+  await server.handle({ jsonrpc: '2.0', id: 32, method: 'tools/call', params: { name: 'snapshot_page', arguments: { tabId: 't1' } } });
+  await server.handle({ jsonrpc: '2.0', id: 33, method: 'tools/call', params: { name: 'snapshot_page', arguments: { tabId: 't1' } } });
 
   assert.deepEqual(c.lease.claims.map((entry) => entry[0]), ['t1', 't1'], 'each call asks again, which is the renewal');
   assert.ok(c.lease.claims.every((entry) => /^driver-/.test(entry[1])), 'and names this agent, by label and number');
@@ -944,7 +948,7 @@ test('a configured window is the one the claim asks for', async () => {
     const c = ctx();
     const server = createMcpServer(c);
 
-    await server.handle({ jsonrpc: '2.0', id: 35, method: 'tools/call', params: { name: 'ax_snapshot', arguments: { tabId: 't1' } } });
+    await server.handle({ jsonrpc: '2.0', id: 35, method: 'tools/call', params: { name: 'snapshot_page', arguments: { tabId: 't1' } } });
 
     assert.equal(c.lease.claims[0][2], 1234, 'the claim carries the configured window');
   } finally {
@@ -962,7 +966,7 @@ test('a tab id is found whether the caller sends a number or a string', async ()
 
     const res = await server.handle({
       jsonrpc: '2.0', id: 12, method: 'tools/call',
-      params: { name: 'ax_snapshot', arguments: { tabId } }
+      params: { name: 'snapshot_page', arguments: { tabId } }
     });
 
     assert.ok(res.result, `an id sent as ${typeof tabId} was refused: ${failureOf(res)}`);
@@ -979,7 +983,7 @@ test('a wait ends on the same evidence a read would show', async () => {
   c.driver.read = async () => ({ url: 'https://x/', title: 't', text: texts.shift() ?? '' });
   const server = createMcpServer(c);
 
-  const res = await server.handle({ jsonrpc: '2.0', id: 20, method: 'tools/call', params: { name: 'wait_for', arguments: { text: 'Heading', timeoutMs: 2000, intervalMs: 100 } } });
+  const res = await server.handle({ jsonrpc: '2.0', id: 20, method: 'tools/call', params: { name: 'wait_for_text', arguments: { text: 'Heading', timeoutMs: 2000, intervalMs: 100 } } });
   const payload = JSON.parse(res.result.content[0].text);
 
   assert.equal(payload.action.found, true);
@@ -997,7 +1001,7 @@ test('a wait that runs out of budget reports instead of failing', async () => {
   };
   const server = createMcpServer(c);
 
-  const res = await server.handle({ jsonrpc: '2.0', id: 21, method: 'tools/call', params: { name: 'wait_for', arguments: { text: 'Heading', timeoutMs: 500, intervalMs: 100 } } });
+  const res = await server.handle({ jsonrpc: '2.0', id: 21, method: 'tools/call', params: { name: 'wait_for_text', arguments: { text: 'Heading', timeoutMs: 500, intervalMs: 100 } } });
   const payload = JSON.parse(res.result.content[0].text);
 
   assert.equal(payload.action.found, false);
@@ -1012,7 +1016,7 @@ test('a wait with nothing to wait for is refused before the first read', async (
   c.driver.waitForText = async () => { waits += 1; return { url: 'u', title: 't', text: '' }; };
   const server = createMcpServer(c);
 
-  const res = await server.handle({ jsonrpc: '2.0', id: 22, method: 'tools/call', params: { name: 'wait_for', arguments: {} } });
+  const res = await server.handle({ jsonrpc: '2.0', id: 22, method: 'tools/call', params: { name: 'wait_for_text', arguments: {} } });
 
   assert.ok(res.result?.isError);
   assert.equal(waits, 0, 'a refused wait touches nothing');
@@ -1021,7 +1025,7 @@ test('a wait with nothing to wait for is refused before the first read', async (
 test('every call reports how long the browser took', async () => {
   const server = createMcpServer(ctx());
 
-  const res = await server.handle({ jsonrpc: '2.0', id: 23, method: 'tools/call', params: { name: 'ax_snapshot', arguments: {} } });
+  const res = await server.handle({ jsonrpc: '2.0', id: 23, method: 'tools/call', params: { name: 'snapshot_page', arguments: {} } });
   const payload = JSON.parse(res.result.content.at(-1).text);
 
   assert.equal(typeof payload.elapsedMs, 'number', 'the answer names the cost as a fact');
@@ -1143,14 +1147,14 @@ test('an action that already settled does not pay for a second settle', async ()
 });
 
 // WHY A WAIT THAT FOUND WHAT IT ASKED FOR DOES NOT LOOK AGAIN.
-// wait_for, wait_for_row and wait_still each settle the page while they look, so the answer they return is already the page as it stands.
-// A wait that ends on found:true paying a second settle before the snapshot is one round trip billed twice, measured at 42.0 ms of 48.1 ms for wait_for on a settled fixture.
+// wait_for_text, wait_for_row and wait_for_stable each settle the page while they look, so the answer they return is already the page as it stands.
+// A wait that ends on found:true paying a second settle before the snapshot is one round trip billed twice, measured at 42.0 ms of 48.1 ms for wait_for_text on a settled fixture.
 
 test('a wait trusts the settle it already paid', async () => {
   for (const [name, args] of [
-    ['wait_for', { text: 'Row 7' }],
+    ['wait_for_text', { text: 'Row 7' }],
     ['wait_for_row', { role: 'row', name: 'Row 7' }],
-    ['wait_still', {}]
+    ['wait_for_stable', {}]
   ]) {
     const c = ctx();
     c.driver.waitForText = async () => ({ text: 'Row 7' });
@@ -1188,7 +1192,7 @@ test('a burst runs dependent steps in one call and looks at the page once', asyn
   const res = await server.handle({
     jsonrpc: '2.0', id: 32, method: 'tools/call',
     params: {
-      name: 'browser_burst',
+      name: 'run_steps',
       arguments: {
         steps: [
           { action: 'resolve', role: 'menuitem', name: 'Insert' },
@@ -1219,7 +1223,7 @@ test('a burst that fails keeps its finished steps and still reports the page', a
   const res = await server.handle({
     jsonrpc: '2.0', id: 33, method: 'tools/call',
     params: {
-      name: 'browser_burst',
+      name: 'run_steps',
       arguments: { steps: [{ action: 'click_row', role: 'menuitem', name: 'Insert' }, { action: 'type', text: 'no' }] }
     }
   });
@@ -1243,7 +1247,7 @@ test('a read-only burst does not take the window away from the person', async ()
 
   await server.handle({
     jsonrpc: '2.0', id: 34, method: 'tools/call',
-    params: { name: 'browser_burst', arguments: { steps: [{ action: 'resolve', role: 'menuitem', name: 'Insert' }] } }
+    params: { name: 'run_steps', arguments: { steps: [{ action: 'resolve', role: 'menuitem', name: 'Insert' }] } }
   });
 
   assert.ok(!c.driver.calls.some(([name]) => name === 'ensureFront'));
@@ -1255,17 +1259,17 @@ test('an invalid burst is refused before the browser is touched', async () => {
 
   const res = await server.handle({
     jsonrpc: '2.0', id: 35, method: 'tools/call',
-    params: { name: 'browser_burst', arguments: { steps: [] } }
+    params: { name: 'run_steps', arguments: { steps: [] } }
   });
 
   assert.match(failureOf(res), /1-8 steps/);
   assert.deepEqual(c.driver.calls, []);
 });
 
-test('caret_line reports the line without moving past it', async () => {
+test('read_caret_line reports the line without moving past it', async () => {
   const server = createMcpServer(ctx());
 
-  const res = await server.handle({ jsonrpc: '2.0', id: 32, method: 'tools/call', params: { name: 'caret_line', arguments: {} } });
+  const res = await server.handle({ jsonrpc: '2.0', id: 32, method: 'tools/call', params: { name: 'read_caret_line', arguments: {} } });
 
   const payload = JSON.parse(res.result.content[0].text);
   const { elapsedMs, ...facts } = payload;
@@ -1379,7 +1383,7 @@ test('a drop the page took leaves no tab and reports a clean drop', async () => 
 // The whole value of asking the browser a question is lost the moment the question can also be an action, so the boundary is tested by what it refuses: no script in the page, no input, no navigation, no storage.
 // A method outside the list must be refused by name and with the list, because an agent that is told "no" can act on it and an agent that is told "unknown" can only guess.
 
-test('ask_page returns a raw read and hands the method its own params', async () => {
+test('query_page returns a raw read and hands the method its own params', async () => {
   const c = ctx();
   c.driver.ask = async (method, params) => ({ asked: method, params });
   c.resolveTab = async () => ['t1'];
@@ -1388,7 +1392,7 @@ test('ask_page returns a raw read and hands the method its own params', async ()
 
   const res = await server.handle({
     jsonrpc: '2.0', id: 51, method: 'tools/call',
-    params: { name: 'ask_page', arguments: { tabId: 't1', method: 'Page.getFrameTree' } }
+    params: { name: 'query_page', arguments: { tabId: 't1', method: 'Page.getFrameTree' } }
   });
   const payload = JSON.parse(res.result.content[0].text);
   const { elapsedMs, ...facts } = payload;
@@ -1397,7 +1401,7 @@ test('ask_page returns a raw read and hands the method its own params', async ()
   assert.deepEqual(facts, { method: 'Page.getFrameTree', asked: 'Page.getFrameTree', params: {}, ok: true });
 });
 
-test('ask_page defaults a screenshot to png, which is how a test image is made', async () => {
+test('query_page defaults a screenshot to png, which is how a test image is made', async () => {
   const c = ctx();
   c.driver.ask = async (method, params) => ({ asked: method, params });
   c.resolveTab = async () => ['t1'];
@@ -1406,14 +1410,14 @@ test('ask_page defaults a screenshot to png, which is how a test image is made',
 
   const res = await server.handle({
     jsonrpc: '2.0', id: 52, method: 'tools/call',
-    params: { name: 'ask_page', arguments: { tabId: 't1', method: 'Page.captureScreenshot' } }
+    params: { name: 'query_page', arguments: { tabId: 't1', method: 'Page.captureScreenshot' } }
   });
   const payload = JSON.parse(res.result.content[0].text);
 
   assert.equal(payload.params.format, 'png');
 });
 
-test('ask_page refuses anything that could act, and says what it may ask', async () => {
+test('query_page refuses anything that could act, and says what it may ask', async () => {
   const c = ctx();
   c.driver.ask = async () => ({ never: true });
   c.resolveTab = async () => ['t1'];
@@ -1423,7 +1427,7 @@ test('ask_page refuses anything that could act, and says what it may ask', async
   for (const method of ['Runtime.evaluate', 'Input.dispatchKeyEvent', 'Page.navigate', 'DOM.setFileInputFiles']) {
     const res = await server.handle({
       jsonrpc: '2.0', id: 53, method: 'tools/call',
-      params: { name: 'ask_page', arguments: { tabId: 't1', method } }
+      params: { name: 'query_page', arguments: { tabId: 't1', method } }
     });
     assert.match(failureOf(res), /read-only/, `${method} must be refused as an action`);
     assert.match(failureOf(res), /Page.getFrameTree/, 'and the refusal lists what is allowed');

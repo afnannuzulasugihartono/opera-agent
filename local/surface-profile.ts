@@ -170,7 +170,7 @@ const documentRegion = (nodes: AxNode[]): RegionSummary & { deepest: number } =>
   if (!here) return { count: 0, length: 0, parts: [], deepest: 0 };
   // WHY THE DESCENT CARRIES A VISITED SET AND NOT A COUNTER.
   // A tree that names a node's ancestor as its child makes a cycle, and the descent follows it: a node in the cycle holds as much text as everything beside it, so it keeps winning the comparison against its own siblings.
-  // Measured with a three-node tree hanging off a real root: measureAx never returned, and the hang is synchronous, so read, surface_profile and wait_for_text all stopped with no error and no timeout.
+  // Measured with a three-node tree hanging off a real root: measureAx never returned, and the hang is synchronous, so read, scan_page and wait_for_text all stopped with no error and no timeout.
   // A visited set ends the walk at the first node it has already stood on, which is the answer a depth cap would reach only after walking the same loop.
   const start = here;
   let hereRow: { id: string; sum: RegionSummary } = start;

@@ -258,17 +258,6 @@ async function ensureLiveServer(): Promise<BridgeTransport> {
 
 const PREFER_TIMEOUT_MS = 2000;
 
-export async function listBridgeDevices(): Promise<Record<string, unknown>> {
-  const srv = await ensureLiveServer();
-  const address = srv.address();
-  if (!address) throw new Error('bridge: the driver is not bound to any port');
-  const response = await fetch(`http://127.0.0.1:${address.port}/health`, { signal: AbortSignal.timeout(PREFER_TIMEOUT_MS) });
-  if (!response.ok) throw new Error(`the bridge answered ${response.status}`);
-  const body = (await response.json().catch(() => null)) as Record<string, unknown> | null;
-  if (!body || body.ok !== true) throw new Error('the bridge health door answered an unreadable body');
-  return { port: address.port, linked: body.linked === true, preferred: body.preferredSlot ?? null, devices: Array.isArray(body.devices) ? body.devices : [] };
-}
-
 export async function preferBridgeDevice(target: unknown): Promise<Record<string, unknown>> {
   const srv = await ensureLiveServer();
   const address = srv.address();

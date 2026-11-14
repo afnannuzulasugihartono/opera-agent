@@ -45,7 +45,7 @@ test('a side effect says something or is honestly empty', () => {
 
 test('the reads that move the page say so', () => {
   assert.ok(SIDE_EFFECTS.read_page.some((effect) => /caret/i.test(effect)));
-  assert.ok(SIDE_EFFECTS.caret_line.some((effect) => /caret/i.test(effect)));
+  assert.ok(SIDE_EFFECTS.read_caret_line.some((effect) => /caret/i.test(effect)));
 });
 
 test('a topic returns the roads for that task and nothing else', () => {
@@ -78,7 +78,7 @@ test('the guide names the things it will not pretend to do', () => {
 
   assert.equal(refusals.length, 6);
   assert.ok(refusals.some((line) => /native operating-system dialog/i.test(line)));
-  assert.ok(refusals.some((line) => /ask_page refuses/i.test(line)));
+  assert.ok(refusals.some((line) => /query_page refuses/i.test(line)));
   assert.ok(refusals.some((line) => /not proof/i.test(line)));
   assert.ok(refusals.some((line) => /cannot see whether the window in front/i.test(line)));
   assert.ok(refusals.some((line) => /focus_window with no match/i.test(line)));

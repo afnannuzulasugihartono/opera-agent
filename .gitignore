@@ -1,4 +1,4 @@
-# @last-edited: 2026-11-13 UTC+7.
+﻿# @last-edited: 2026-11-13 UTC+7.
 # @title: .gitignore - what the repository never tracks, so nothing generated or secret reaches a clone.
 # @state: dependencies (node_modules), build output, signing keys, and machine-local state are untracked; package-lock.json is tracked on purpose since 2026-11-13 so every install is byte-identical.
 # @dependencies: none stated.
