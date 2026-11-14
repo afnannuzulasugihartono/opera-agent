@@ -83,6 +83,22 @@ Two further notes the record should keep:
 - 256 ms is already the *median-ish* target printed by the poll tuning (insert-to-claim 24-160 ms with a 100 ms poll; halving that again buys ~50 ms and costs ten trivial indexed RPCs per second per connected device — not nothing, and not free).
 - Merging verify-plus-enqueue into the await call would save ~100 ms but touches authentication and pinned RPC surfaces. `docs/api.md` records it as deliberately unwritten. It should stay that way until an owner decides otherwise.
 
+## After the direct-DB warm (2026-11-14, same path, deploy landed in production)
+
+The hosted road carried every RPC on PostgREST, ~603 ms against ~162 ms for the same work; the HTTP handler never warmed the direct socket the WebSocket road had used since October. One line in `hosted/functions/opera-agent-mcp/index.ts` (after the token verified; the warming request rides PostgREST as before, every later request in the isolate rides the socket) closed that gap. The deploy exposed and fixed three stale steps in `.github/workflows/deploy-functions.yml` that the restructure had broken (the CLI's entrypoint layout, then the shared-core resolution, then symlinks the bundler would not follow), each as its own reviewed PR: `abdc5826` (the fix), `a76cbc76`, `5abf01c9`, `061b2d9c` (the workflow repairs). Deploy run `43551554056` landed green; the MCP health answers 200.
+
+Warm-call re-measurement, same machine, same path, multiple samples each (the first call after the redeploy was cold — 8.6 s and 11.2 s — and is excluded):
+
+| Tool | Before | After |
+|---|---|---|
+| browser_status | 5.5 s cold, 1.8-4.0 s warm | 1.5-2.2 s warm |
+| list_tabs | 1.9-2.1 s | 2.1-2.1 s |
+| switch_device | 1.3 s | 0.75-0.88 s |
+| check_update | 2.5 s | 1.8-2.4 s |
+| skill_recall | 0.7 s | 1.0 s |
+
+The honest read: the fix removes the PostgREST tax on every RPC in the request (typically four to five per call), which is real but was never the dominant term on this machine — the OpenCode-to-edge HTTPS hop and the device's own page work are. The 256 ms target is not reachable on the hosted road at all: the floor is HTTPS plus the edge plus the device, and `open_url`, `navigate_tab`, `capture_page`, `record_stop` and `close_tab` carry seconds of real browser work that no transport edit can compress. The sub-second road remains the local loopback driver (`opera-agent-mcp local`); the hosted road is now as fast as its architecture allows.
+
 ## Reproducing this table
 
 Drive a fresh tab on example.com, then httpbin.org/forms/post, and call each tool once with the wall clock around it. Delete the tab, delete the downloaded artifacts the tools write. What you should expect: the same order of magnitude, because the bottleneck is the path, not the caller.
