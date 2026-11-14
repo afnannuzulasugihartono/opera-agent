@@ -10,6 +10,8 @@
 # npm is restricting the tokens that bypass two-factor authentication, and direct publishing with one ends in January 2027.
 # Trusted publishing replaces the token with the runner's own identity: the workflow asks GitHub for a signed token, npm reads the repository and the workflow out of it, and nothing is stored on any machine.
 # So the identity lives in the npm package settings (GitHub Actions: afnannuzulasugihartono / opera-agent / publish-npm.yml) and this file is the other half of that pair.
+# WHY THE INSTALL IS IN THE GATES STEP.
+# `npm test` compiles the tree at pretest and then biome and the auditors walk it; a bare runner has none of those binaries, and the job exited 127 before the registry was ever reached. The install goes first, exactly as CI does it.
 
 name: Publish npm
 
@@ -57,9 +59,6 @@ jobs:
           fi
 
       - name: The gates are green before anything is published
-        # WHY THE INSTALL IS HERE FIRST.
-        # `npm test` compiles the TypeScript (pretest) and then biome and the auditors walk the tree; none of those binaries exist on a bare runner, and the job failed at exit 127 without the toolchain ever installing.
-        # CI installs first for the same reason (ci.yml "Install the toolchain"), and a publish that never reaches the registry is what a gate that cannot run proves.
         run: |
           npm ci --ignore-scripts --no-audit --no-fund
           npm test
