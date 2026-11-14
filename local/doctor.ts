@@ -74,6 +74,8 @@ export async function doctor({ env = process.env, stdout = process.stdout, fetch
         ? 'the bridge runs pre-meter code — restart the driver process so it can report the session'
         : 'the extension is not linked to this bridge; reload the everyday browser with Opera Agent installed');
     }
+    const preferRaw = (health as Record<string, unknown>).preferredSlot;
+    say('preferred', typeof preferRaw === 'number' ? `slot ${preferRaw} (tab-less commands follow it)` : 'none (tab-less commands follow the first ready browser)');
     for (const device of devices) {
       const slot = device?.slot ?? '?';
       say(`device ${slot}`, `version ${device?.extensionVersion ?? 'unknown (the hello carried none)'}; id ${device?.id ?? 'unknown'}`);

@@ -78,10 +78,10 @@ not who drives.
 
 ## Tools
 
-The server advertises 55 tools; `guide()` returns them as tasks rather than a list.
+The server advertises 57 tools; `guide()` returns them as tasks rather than a list.
 
 `browser_status`, `focus_window`, `dialog_state`, `dialog_type`, `dialog_press`,
-`list_tabs`, `open_url`, `close_tab`, `surface_profile`, `read_page`, `search_bing`,
+`list_devices`, `switch_device`, `list_tabs`, `open_url`, `close_tab`, `surface_profile`, `read_page`, `search_bing`,
 `find_elements`, `click`, `resolve_row`, `click_row`, `hover`, `press_key`,
 `type`, `get_computed`, `scroll`, `append`, `stream_keys`, `browser_burst`,
 `wait_for`, `ask_page`, `wait_for_row`, `wait_still`, `caret_line`, `upload`,
@@ -91,6 +91,11 @@ The server advertises 55 tools; `guide()` returns them as tasks rather than a li
 `document_write`, `gate_detect`, `gate_wait`, `login`, `captcha_solve`,
 `wallet_pair`, `wallet_balance`, `wallet_quote`, `wallet_top_up`,
 `task_reserve`, `task_settle`, `task_refund`.
+
+`list_devices` names the paired browsers and `switch_device` pins tab-less calls
+(`open_url` is the one that matters) to one of them until another switch says
+otherwise; pass a slot number, a device name, or `any` to follow the first ready
+browser again. Tab-scoped calls keep routing by their tab id either way.
 
 `browser_burst` runs 1-8 dependent steps on one tab in a single call and reads the page
 once at the end; the first failure stops the burst and keeps the steps that finished.

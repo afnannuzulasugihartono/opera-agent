@@ -36,7 +36,7 @@ import { documentFromFile, documentDocxFromFile } from './documents.js';
 import { detectGate, waitForGateClear, loginWithCredentials } from './gates.js';
 import { captchaAllowed, solverSettings, solveImageCaptcha } from './captcha-solver.js';
 import { BURST_INPUT_ACTIONS, normalizeBurst, runLocalBurst } from './burst.js';
-import { leaseTab, releaseTab } from './bridge.js';
+import { leaseTab, releaseTab, listBridgeDevices, preferBridgeDevice } from './bridge.js';
 
 // WHY THE SAME TIDY FUNCTION THE HOSTED SURFACE USES, AND WHY IT RIDES THE PACKAGE.
 // The rejections that keep a model from wasting tokens on envelopes, transport keys and duplicated chain fields apply to the local stdio surface too - a rule that lives in one place stays consistent and changes for one reason.
@@ -638,6 +638,10 @@ const windowMatch = async (tab: JsonRecord | null, driver: Driver): Promise<stri
         return asText(await driver.dialogPress(args.name ?? ''));
       case 'list_tabs':
         return asText(await driver.tabs());
+      case 'list_devices':
+        return asText(await listBridgeDevices());
+      case 'switch_device':
+        return asText(await preferBridgeDevice(args.device));
       case 'open_url':
         return afterAction(driver, tab
           ? { navigated: await driver.navigate(args.url), tab: args.tabId }

@@ -240,6 +240,46 @@ export async function openBridgeTarget(url: string): Promise<{ id: unknown; url:
   return { id: tab.id, url: String(tab.url ?? ''), title: String(tab.title ?? '') } as { id: unknown; url: string; title: string };
 }
 
+// WHY THE PREFERENCE RIDES THE HTTP DOOR AND NOT THE COMMAND QUEUE.
+// Tab-less commands must know the pin before they are routed, and both of this machine's drivers meet at the HTTP door - the owner through its own socket, the guest through the loopback port - so the pin is read and written there, not on the wire the extension owns.
+
+const PREFER_TIMEOUT_MS = 2000;
+
+export async function listBridgeDevices(): Promise<Record<string, unknown>> {
+  const srv = await ensureServer();
+  const address = srv.address();
+  if (!address) throw new Error('bridge: the driver is not bound to any port');
+  const response = await fetch(`http://127.0.0.1:${address.port}/health`, { signal: AbortSignal.timeout(PREFER_TIMEOUT_MS) });
+  if (!response.ok) throw new Error(`the bridge answered ${response.status}`);
+  const body = (await response.json().catch(() => null)) as Record<string, unknown> | null;
+  if (!body || body.ok !== true) throw new Error('the bridge health door answered an unreadable body');
+  return { port: address.port, linked: body.linked === true, preferred: body.preferredSlot ?? null, devices: Array.isArray(body.devices) ? body.devices : [] };
+}
+
+export async function preferBridgeDevice(target: unknown): Promise<Record<string, unknown>> {
+  const srv = await ensureServer();
+  const address = srv.address();
+  if (!address) throw new Error('bridge: the driver is not bound to any port');
+  const wanted = String(target ?? '').trim();
+  let payload: Record<string, unknown>;
+  if (wanted === '' || /^(any|first|none|clear)$/i.test(wanted)) payload = { slot: null };
+  else if (/^\d+$/.test(wanted)) payload = { slot: Number(wanted) };
+  else payload = { deviceName: wanted };
+  const response = await fetch(`http://127.0.0.1:${address.port}/prefer`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(payload),
+    signal: AbortSignal.timeout(PREFER_TIMEOUT_MS)
+  });
+  const body = (await response.json().catch(() => null)) as Record<string, unknown> | null;
+  if (!response.ok || !body) throw new Error(`the bridge preference door answered ${response.status}`);
+  if (body.ok !== true) {
+    const message = body.error && typeof body.error === 'object' && typeof (body.error as { message?: unknown }).message === 'string' ? String((body.error as { message: string }).message) : 'the preference was refused';
+    throw new Error(`bridge: ${message}`);
+  }
+  return body;
+}
+
 export async function closeBridgeTarget(targetId: unknown): Promise<unknown> {
   return request('tabs.close', { tabId: Number(targetId) });
 }

@@ -160,6 +160,8 @@ export const SIDE_EFFECTS = Object.freeze({
   guide: [],
   list_menus: [],
   open_menu: ['opens menus by hovering and clicking levels on the way to the path you gave'],
+  list_devices: [],
+  switch_device: ['pins tab-less commands to the named browser until another switch says otherwise; moves no tab by itself and steers no running drive'],
   list_tabs: [],
   open_url: ['opens a new tab in the same browser'],
   close_tab: ['closes a tab the caller may still be holding'],
