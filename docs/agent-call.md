@@ -56,7 +56,7 @@ first: `port: 9451` means the extension road. When a linked device's daily
 quota is spent the device card carries `planExhaustedDevices` with the device
 names, so a driver sees it before the next call is refused.
 
-The server advertises 55 tools. `guide()` returns them as tasks rather than a
+The server advertises 57 tools. `guide()` returns them as tasks rather than a
 list, and the full list is in [`local/README.md`](../local/README.md).
 
 ### The capture ladder

@@ -87,8 +87,18 @@ export const TOOLS = Object.freeze([
     inputSchema: { type: 'object', properties: { name: stringArg('button on the dialog, e.g. Open or Cancel') }, required: ['name'] }
   },
   {
+    name: 'list_devices',
+    description: 'List the browsers paired to this machine\'s bridge: slot, name, version, the plan each is metered on, and which one tab-less commands currently follow. When nothing is pinned, the first ready browser answers.',
+    inputSchema: { type: 'object', properties: {}, required: [] }
+  },
+  {
+    name: 'switch_device',
+    description: 'Choose which paired browser answers tab-less commands (open_url is the one that matters) until another switch says otherwise. Pass a slot number from list_devices, a device name, or "any" to follow the first ready browser again. Tab-scoped calls still route by their tab id, so a drive already in one browser never jumps mid-drive. Refused loudly when the named browser is not awake, so the drive never types into a window nobody asked for.',
+    inputSchema: { type: 'object', properties: { device: stringArg('a slot number from list_devices, a device name, or "any" to clear the preference') }, required: ['device'] }
+  },
+  {
     name: 'list_tabs',
-    description: 'List the page targets the browser currently has open, each with an id. Pass that id as tabId to drive a specific tab.',
+    description: 'List the page targets the browsers currently have open, each with an id. Pass that id as tabId to drive a specific tab. Each row names the browser it came from by its slot.',
     inputSchema: { type: 'object', properties: {}, required: [] }
   },
   {

@@ -1,6 +1,7 @@
 // @last-edited: 2026-11-09 UTC+7.
 // @title: bridge-ws — the loopback command server, speaking the frames the cloud bridge speaks.
 // @state: every browser that connects is carried, each target names its browser, each command reaches the one that owns it, and each session pays the cloud its allowance.
+// Tab-less commands follow the pinned browser when the person set one.
 // @dependencies: node:crypto, node:http, node:events, ./ws-server.js, ./leases.js, ./lib/*.
 
 // WHY THE HEARTBEAT IS THE WHOLE POINT.
@@ -170,6 +171,9 @@ export function createBridgeServer({ port = 9451, host = '127.0.0.1', heartbeatM
   const waiting = new Map<string, BridgeFrameWaitEntry>();
   const slotByInstanceId = new Map<string, number>();
   let slotCounter = 0;
+  // The one pin a person can set: tab-less commands (open_url and the like) follow this browser until another pin says otherwise.
+  // Tab-scoped commands never use it - a tab id already names its browser.
+  let preferredSlot: number | null = null;
   let timer: ReturnType<typeof setTimeout> | null = null;
   let lastRefusal: { message: string; at: number } | null = null;
   const pendingReports = new Set<Promise<void>>();
@@ -201,6 +205,18 @@ export function createBridgeServer({ port = 9451, host = '127.0.0.1', heartbeatM
     return [...newest.values()].sort((a, b) => Number(a.slot) - Number(b.slot));
   };
 
+  // WHY A PREFERENCE IS A NAMED REFUSAL, NOT A SILENT FALLBACK.
+  // A person who pinned the drive to one browser wants it there and nowhere else; falling back to the first ready browser would type into the wrong signed-in profile with no word about it.
+  // The awake list and the way out are named in the answer, the same shape the cloud meter uses for a pinned device that is asleep.
+  const preferredDevice = (): BridgeDevice | null => (preferredSlot === null ? null : readyDevices().find((device) => device.slot === preferredSlot) ?? null);
+  const preferredRefusal = (): Record<string, unknown> | null => {
+    if (preferredSlot === null) return null;
+    if (preferredDevice()) return null;
+    const awake = readyDevices().map((device) => `slot ${String(device.slot)} (${device.deviceName || device.id})`).join(', ');
+    return { ok: false, error: { code: 'PREFERRED_DEVICE_NOT_READY', message: `the preferred browser (slot ${String(preferredSlot)}) is not ready; awake: ${awake || 'none'} - switch_device to an awake slot or "any" to follow the first ready browser` } };
+  };
+  const deviceRows = () => readyDevices().map((device) => ({ slot: device.slot, id: device.id, instanceId: device.instanceId || null, deviceName: device.deviceName || null, extensionVersion: device.extensionVersion || null, connectedAt: device.connectedAt, meter: meterOf(device) }));
+
   const firstReady = () => readyDevices()[0] || null;
 
   const routedSlot = (params?: Record<string, unknown>): number => {
@@ -213,7 +229,7 @@ export function createBridgeServer({ port = 9451, host = '127.0.0.1', heartbeatM
   const pickDevice = (params?: Record<string, unknown>): BridgeDevice | null => {
     const slot = routedSlot(params);
     if (slot > 0) return readyDevices().find((device) => device.slot === slot) || null;
-    return firstReady();
+    return preferredSlot === null ? firstReady() : preferredDevice();
   };
 
   const toWire = (frame: BridgeCommandFrame): BridgeCommandFrame => {
@@ -388,6 +404,10 @@ export function createBridgeServer({ port = 9451, host = '127.0.0.1', heartbeatM
   }
 
   function commandRaw(method: string, params?: Record<string, unknown>, { timeoutMs = 60000 }: { timeoutMs?: number } = {}): Promise<unknown> {
+    if (routedSlot(params) === 0) {
+      const refusal = preferredRefusal();
+      if (refusal) return Promise.resolve({ ...refusal, ms: 0 });
+    }
     const id = commandId();
     const frame = { id, method, params, timeoutMs };
     return new Promise<unknown>((resolve, reject) => {
@@ -445,10 +465,10 @@ export function createBridgeServer({ port = 9451, host = '127.0.0.1', heartbeatM
     let live = readyDevices();
     if (!live.length) live = await waitForReady(timeoutMs);
     if (!live.length) throw new Error('no linked device answers tabs.open');
-    // live[0]!
-    const [first] = live;
-    if (first === undefined) throw new Error('bridge: no verified paired targets remain');
-    const target = first;
+    const preferred = preferredSlot === null ? undefined : live.find((device) => device.slot === preferredSlot);
+    if (preferredSlot !== null && preferred === undefined) return { ...(preferredRefusal() as Record<string, unknown>), ms: 0 };
+    const target = preferred ?? live[0];
+    if (target === undefined) throw new Error('bridge: no verified paired targets remain');
     const opened = (await commandToDevice(target, 'tabs.open', params, timeoutMs)) as Record<string, unknown>;
     if (!opened.ok) return opened;
     const openedResult = typeof opened.result === 'object' && opened.result !== null ? (opened.result as Record<string, unknown>) : {};
@@ -526,7 +546,8 @@ export function createBridgeServer({ port = 9451, host = '127.0.0.1', heartbeatM
         linked: live.length > 0,
         deviceId: live[0]?.id ?? null,
         deviceInstanceId: live[0]?.instanceId ?? null,
-        devices: live.map((device) => ({ slot: device.slot, id: device.id, instanceId: device.instanceId || null, deviceName: device.deviceName || null, extensionVersion: device.extensionVersion || null, connectedAt: device.connectedAt, meter: meterOf(device) })),
+        preferredSlot,
+        devices: deviceRows(),
         queued: queue.length,
         waiting: waiting.size,
         lastHeardMsAgo: live[0]?.lastHeardAt ? now() - live[0].lastHeardAt : null,
@@ -548,6 +569,47 @@ export function createBridgeServer({ port = 9451, host = '127.0.0.1', heartbeatM
         } catch (error: unknown) {
           json(res, 200, { ok: false, error: { message: String((error as Error)?.message ?? error) } });
         }
+      })();
+      return;
+    }
+
+    // The preference door: which browser answers tab-less commands until another ask says otherwise.
+    // Loopback like the rest of this server; the same threat model as the lease door.
+    if (req.method === 'POST' && req.url === '/prefer') {
+      void (async () => {
+        const body = await readJson(req);
+        const raw = body?.slot;
+        const wanted = typeof body?.deviceName === 'string' ? body.deviceName.trim() : '';
+        const clear = raw === null || raw === 'any' || raw === 'none' || raw === 'first' || raw === 'clear';
+        if (clear) {
+          preferredSlot = null;
+          json(res, 200, { ok: true, preferred: null, devices: deviceRows() });
+          return;
+        }
+        let target: BridgeDevice | undefined;
+        if (wanted !== '') {
+          const lower = wanted.toLowerCase();
+          target = readyDevices().find((device) => String(device.deviceName || '').toLowerCase() === lower || String(device.id) === wanted);
+          if (!target) {
+            const awake = readyDevices().map((device) => `${device.deviceName || device.id} (slot ${String(device.slot)})`).join(', ');
+            json(res, 200, { ok: false, error: { message: `no ready browser named "${wanted}"; awake: ${awake || 'none'}` } });
+            return;
+          }
+        } else {
+          const slotNumber = Number(raw);
+          if (!Number.isInteger(slotNumber) || slotNumber <= 0) {
+            json(res, 400, { ok: false, error: { message: 'prefer needs a slot (positive integer), a deviceName, or slot null to follow the first ready browser' } });
+            return;
+          }
+          target = readyDevices().find((device) => device.slot === slotNumber);
+          if (!target) {
+            const awake = readyDevices().map((device) => `slot ${String(device.slot)} (${device.deviceName || device.id})`).join(', ');
+            json(res, 200, { ok: false, error: { message: `slot ${String(slotNumber)} is not awake; awake: ${awake || 'none'}` } });
+            return;
+          }
+        }
+        preferredSlot = target.slot;
+        json(res, 200, { ok: true, preferred: preferredSlot, device: deviceRows().find((row) => row.slot === preferredSlot) ?? null, devices: deviceRows() });
       })();
       return;
     }
@@ -700,7 +762,8 @@ export function createBridgeServer({ port = 9451, host = '127.0.0.1', heartbeatM
     state: () => ({
       linked: attached.size > 0,
       deviceId: readyDevices()[0]?.id ?? null,
-      devices: readyDevices().map((device) => ({ slot: device.slot, id: device.id, instanceId: device.instanceId || null, deviceName: device.deviceName || null, meter: meterOf(device) })),
+      preferred: preferredSlot,
+      devices: deviceRows(),
       queued: queue.length,
       waiting: waiting.size,
       lastHeardMsAgo: readyDevices()[0]?.lastHeardAt ? now() - Number(readyDevices()[0]?.lastHeardAt) : null,

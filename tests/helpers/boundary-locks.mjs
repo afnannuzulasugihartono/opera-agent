@@ -102,7 +102,7 @@
 // The evaluator that walks the SERP lives in local/page-expressions.js; the tools.ts schema and the tools.ts registration moved with it.
 
 // WHY these two were re-pinned on 2026-11-14: the hosted MCP function is gone from the tree.
-// The local driver carries the surface byte-for-byte on its own road (55 tools), and the extension's pin stayed untouched with it.
+// The local driver carries the surface byte-for-byte on its own road (57 tools), and the extension's pin stayed untouched with it.
 // Extension files and the manifest did not move.
 
 // WHY these five moved again: the extension went to TypeScript, and the bytes moved with it.
