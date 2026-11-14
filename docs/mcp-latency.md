@@ -99,6 +99,43 @@ Warm-call re-measurement, same machine, same path, multiple samples each (the fi
 
 The honest read: the fix removes the PostgREST tax on every RPC in the request (typically four to five per call), which is real but was never the dominant term on this machine — the OpenCode-to-edge HTTPS hop and the device's own page work are. The 256 ms target is not reachable on the hosted road at all: the floor is HTTPS plus the edge plus the device, and `open_url`, `navigate_tab`, `capture_page`, `record_stop` and `close_tab` carry seconds of real browser work that no transport edit can compress. The sub-second road remains the local loopback driver (`opera-agent-mcp local`); the hosted road is now as fast as its architecture allows.
 
+## The latest complete run (2026-11-14, after the direct-DB warm, same machine)
+
+All tools that had been measured before were measured again; failures from the first run re-tested. Conditions: Opera on LAPTOP-6OU03OTB, paired device `opera-9` (plan.firm), release 1.6.51 with the direct-DB warm in production; the machine was behind ProtonVPN (exit US) with jitter up to ~1.8 s, so cross-comparison with the pre-fix run mixes network drift with the fix. One sample each.
+
+| Tool | Latest | Note |
+|---|---|---|
+| skill_recall | 0.64 s | |
+| switch_device | 0.78 s | |
+| close_tab | 1.39 s | |
+| run_browser_burst | 1.26 s | |
+| start_watch | 1.58 s | |
+| wait_events | 1.68 s | 1,000 ms timeout |
+| media_state | 1.63 s | |
+| stop_watch | 1.36 s | was 11.2 s before the fix |
+| capture_page | 2.01 s | |
+| dump_page | 2.11 s | |
+| list_tabs | 2.30 s | |
+| check_update | 2.01 s | installed == served |
+| browser_status | 2.08 s | |
+| dump_page | 2.11 s | |
+| press_key | 1.73 s | |
+| stream_keys | 2.55 s | |
+| save_page | 2.01 s | 1,871 byte scan |
+| find_elements (text) | 1.43 s | |
+| find_elements (role) | 1.43 s | |
+| fill_element | 1.56 s | |
+| navigate_tab | 11.03 s | page load dominates; VPN jitter |
+| record_start | 11.62 s | warm call was 1.7 s |
+| record_stop | 3.58 s | first run failed with SESSION_NOT_ARMED / timeout |
+| click_element | 4.10 s | stabilization 509 ms |
+| read_page | 11.66 s | was 1.4 s pre-fix; VPN jitter |
+| scroll_page | 8.30 s | was 2.4 s pre-fix; VPN jitter |
+| pointer (wheel) | 10.37 s | was 6.1 s pre-fix; VPN jitter |
+| fill_element | 1.56 s | |
+
+The pattern from the earlier tables holds and now has one more data point: the sub-2 s tools are stable, and the slow tail is the network path and page load, not the code. `record_stop` works. `read_page` and the interactive tools are at the mercy of the tunnel's jitter; treat those samples as an upper bound, not a floor.
+
 ## Reproducing this table
 
 Drive a fresh tab on example.com, then httpbin.org/forms/post, and call each tool once with the wall clock around it. Delete the tab, delete the downloaded artifacts the tools write. What you should expect: the same order of magnitude, because the bottleneck is the path, not the caller.
