@@ -707,7 +707,23 @@ const windowMatch = async (tab: JsonRecord | null, driver: Driver): Promise<stri
               throw new Error('the search tab did not reach Bing within 8 seconds; the everyday browser may throttle or discard background tabs - open a visible Bing search or retry');
             }
           }
-          await searchDriver.waitForStill?.({ timeoutMs: 4000, quietMs: 150 })?.catch(() => null);
+          // WHY THE WAIT IS ON THE PAGE, NOT ON A STILL FRAME.
+          // A background tab at about:blank reports zero rows and zero changes, which is the most still a page can be, so a stillness pass answered before Bing had rendered and the read came back with count: 0.
+          // The poll asks the page how many characters of text it actually carries; a page that never reaches them is refused by name, not answered with silence.
+          const rawBudget = Number(args.timeoutMs ?? 10000);
+          const contentBudgetMs = Number.isFinite(rawBudget) ? Math.min(30000, Math.max(1000, rawBudget)) : 10000;
+          if (typeof searchDriver.pageState === 'function') {
+            const contentDeadline = Date.now() + contentBudgetMs;
+            for (;;) {
+              const probe = (await searchDriver.pageState().catch(() => null)) as { textChars?: unknown; title?: unknown } | null;
+              const chars = Number(probe?.textChars ?? 0);
+              if (Number.isFinite(chars) && chars >= 500) break;
+              if (Date.now() >= contentDeadline) {
+                throw new Error(`the Bing results page did not render within ${Math.round(contentBudgetMs / 1000)} seconds; the everyday browser may throttle background tabs - open a Bing search in a visible tab or retry`);
+              }
+              await new Promise((resolve) => setTimeout(resolve, 150));
+            }
+          }
           const merged: SerpResult[] = [];
           let currentFirst = 1;
           let truncated = false;

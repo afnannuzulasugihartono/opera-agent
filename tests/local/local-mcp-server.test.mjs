@@ -125,7 +125,7 @@ function fakeSearchSession(calls) {
     },
     pageState: async () => {
       const opened = [...calls].reverse().find((call) => call[0] === 'open');
-      return { url: opened ? opened[1] : 'https://docs.google.com/document/d/1', title: 'Sheets', textChars: 11, focus: null };
+      return { url: opened ? opened[1] : 'https://docs.google.com/document/d/1', title: 'Sheets', textChars: 2954, focus: null };
     },
     snapshot: async () => [{ role: 'menuitem', name: 'Sheet', x: 1, y: 1 }],
     close: () => { calls.push(['session-close']); },
@@ -1505,17 +1505,17 @@ test('search_bing refuses loudly when the tab never reaches Bing', async () => {
   const c = ctx();
   c.open = async () => ({
     close: () => {},
-    waitForUrl: async () => ({ found: false, url: 'about:blank' }),
     waitForStill: async () => ({ still: true }),
-    evaluate: async () => ({ text: '', url: 'about:blank', title: '', links: [], truncated: false })
+    pageState: async () => ({ url: 'https://www.bing.com/search?q=anything', title: '', textChars: 0, focus: null }),
+    evaluate: async () => ({ text: '', url: 'https://www.bing.com/search?q=anything', title: '', links: [], truncated: false })
   });
   const server = createMcpServer(c);
 
   const res = await server.handle({
     jsonrpc: '2.0', id: 63, method: 'tools/call',
-    params: { name: 'search_bing', arguments: { query: 'anything' } }
+    params: { name: 'search_bing', arguments: { query: 'anything', timeoutMs: 1500 } }
   });
 
-  assert.ok(res.result?.isError, 'a tab that never reaches Bing is refused, not answered with silence');
-  assert.match(failureOf(res), /did not reach Bing/);
+  assert.ok(res.result?.isError, 'a tab that never renders Bing is refused, not answered with silence');
+  assert.match(failureOf(res), /did not render/);
 });
