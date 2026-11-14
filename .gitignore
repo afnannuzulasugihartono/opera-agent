@@ -124,3 +124,7 @@ extension/worker/*.js
 extension/content/*.js
 extension-stage
 
+
+# npm pack output (npm pack ./local writes the tarball beside the package)
+
+*.tgz
